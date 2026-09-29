@@ -1,0 +1,9 @@
+{
+  "name": "short-explorations-in-computer-science",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT AND CC-BY-SA-4.0 AND CC-BY-NC-SA-3.0",
+  "scripts": { "build": "node build.js", "test": "node test_course.js python && node test_course.js lisp && node test_course.js cpp && node test_course.js math && node test_cppstep.js && node test_subst.js" },
+  "dependencies": { "JSCPP": "2.0.9", "skulpt": "1.2.0" },
+  "devDependencies": { "esbuild": "*" }
+}

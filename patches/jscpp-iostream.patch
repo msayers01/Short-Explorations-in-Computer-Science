@@ -1,0 +1,86 @@
+--- node_modules/JSCPP/lib/includes/iostream.js	1985-10-26 08:15:00.000000000 +0000
++++ node_modules/JSCPP/lib/includes/iostream.js	2026-09-28 16:03:37.301049556 +0000
+@@ -207,6 +207,12 @@
+                             else if (t.t.name === "bool") {
+                                 r = t.v ? "1" : "0";
+                             }
++                            else if (Number.isNaN(t.v)) {
++                                r = "-858993460";
++                            }
++                            else if (t.t.name === "double" || t.t.name === "float") {
++                                r = (function(v){ if(!isFinite(v)) return v>0?"inf":v<0?"-inf":"nan"; if(v===0) return "0"; var e=Math.floor(Math.log10(Math.abs(v))); var out; if(e<-4||e>=6){ var m=v.toExponential(5); var parts=m.split("e"); var mant=parts[0]; if(mant.indexOf(".")>=0) mant=mant.replace(/0+$/,"").replace(/\.$/,""); var ex=parseInt(parts[1],10); out=mant+"e"+(ex<0?"-":"+")+(Math.abs(ex)<10?"0":"")+Math.abs(ex); } else { out=v.toPrecision(6); if(out.indexOf(".")>=0) out=out.replace(/0+$/,"").replace(/\.$/,""); } return out; })(t.v);
++                            }
+                             else {
+                                 r = t.v.toString();
+                             }
+--- node_modules/JSCPP/lib/defaults.js	2026-09-28 18:06:43.533606640 +0000
++++ node_modules/JSCPP/lib/defaults.js	2026-09-28 18:07:01.113562448 +0000
+@@ -191,9 +191,12 @@
+                     rt.raiseException(rt.makeTypeString(l.t) + " does not support / on " + rt.makeTypeString(r.t));
+                 }
+                 else {
++                    if (rt.isIntegerType(l.t) && rt.isIntegerType(r.t) && rt.booleanToNumber(r.v) === 0) {
++                        rt.raiseException("integer division by zero");
++                    }
+                     let ret = rt.booleanToNumber(l.v) / rt.booleanToNumber(r.v);
+                     if (rt.isIntegerType(l.t) && rt.isIntegerType(r.t)) {
+-                        ret = Math.floor(ret);
++                        ret = Math.trunc(ret);
+                     }
+                     const rett = rt.promoteNumeric(l.t, r.t);
+                     return rt.val(rett, ret);
+@@ -206,6 +209,9 @@
+                     rt.raiseException(rt.makeTypeString(l.t) + " does not support % on " + rt.makeTypeString(r.t));
+                 }
+                 else {
++                    if (rt.booleanToNumber(r.v) === 0) {
++                        rt.raiseException("integer division by zero (in %)");
++                    }
+                     const ret = rt.booleanToNumber(l.v) % rt.booleanToNumber(r.v);
+                     const rett = rt.promoteNumeric(l.t, r.t);
+                     return rt.val(rett, ret);
+--- node_modules/JSCPP/lib/includes/cstdlib.js	2026-09-28 18:08:19.300300375 +0000
++++ node_modules/JSCPP/lib/includes/cstdlib.js	2026-09-28 18:08:19.311149547 +0000
+@@ -4,7 +4,7 @@
+         let m_w = 123456789;
+         let m_z = 987654321;
+         const mask = 0xffffffff;
+-        const seed = (i) => m_w = i;
++        const seed = (i) => { m_w = i; m_z = 987654321; };
+         const random = function () {
+             m_z = ((36969 * (m_z & 65535)) + (m_z >> 16)) & mask;
+             m_w = ((18000 * (m_w & 65535)) + (m_w >> 16)) & mask;
+--- node_modules/JSCPP/lib/includes/cstring.js	2026-09-28 18:15:45.801387256 +0000
++++ node_modules/JSCPP/lib/includes/cstring.js	2026-09-28 18:15:45.842259355 +0000
+@@ -149,11 +149,12 @@
+                 let i = src.v.position;
+                 const destarr = dest.v.target;
+                 let j = dest.v.position;
+-                while ((i < srcarr.length) && (j < destarr.length) && (srcarr[i].v === destarr[i].v)) {
++                while ((i < srcarr.length) && (j < destarr.length) && (srcarr[i].v === destarr[j].v) && (srcarr[i].v !== 0)) {
+                     i++;
+                     j++;
+                 }
+-                return rt.val(rt.intTypeLiteral, destarr[i].v - srcarr[i].v);
++                const cd = (j < destarr.length ? destarr[j].v : 0), cs = (i < srcarr.length ? srcarr[i].v : 0);
++                return rt.val(rt.intTypeLiteral, cd < cs ? -1 : cd > cs ? 1 : 0);
+             }
+             else {
+                 return rt.raiseException("str1 or str2 is not an array");
+@@ -169,12 +170,14 @@
+                 const destarr = dest.v.target;
+                 let j = dest.v.position;
+                 let n = num.v;
+-                while ((n > 0) && (i < srcarr.length) && (j < destarr.length) && (srcarr[i].v === destarr[i].v)) {
++                while ((n > 0) && (i < srcarr.length) && (j < destarr.length) && (srcarr[i].v === destarr[j].v) && (srcarr[i].v !== 0)) {
+                     i++;
+                     j++;
+                     n--;
+                 }
+-                return rt.val(rt.intTypeLiteral, destarr[i].v - srcarr[i].v);
++                if (n === 0) return rt.val(rt.intTypeLiteral, 0);
++                const cd = (j < destarr.length ? destarr[j].v : 0), cs = (i < srcarr.length ? srcarr[i].v : 0);
++                return rt.val(rt.intTypeLiteral, cd < cs ? -1 : cd > cs ? 1 : 0);
+             }
+             else {
+                 return rt.raiseException("str1 or str2 is not an array");
