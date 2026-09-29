@@ -1,0 +1,898 @@
+/* Interactive figures used in the lessons: window.WIDGETS[name](mount, block, course). */
+(function () {
+  'use strict';
+  const { el, esc } = window.__h;
+  const NS = 'http://www.w3.org/2000/svg';
+  function sv(tag, attrs, ...kids) {
+    const e = document.createElementNS(NS, tag);
+    if (attrs) for (const k in attrs) if (attrs[k] !== null && attrs[k] !== undefined) e.setAttribute(k, attrs[k]);
+    for (const k of kids.flat()) if (k != null) e.appendChild(typeof k === 'string' ? document.createTextNode(k) : k);
+    return e;
+  }
+  const txt = (x, y, s, attrs) => sv('text', Object.assign({ x, y, 'font-size': 13, fill: 'var(--ink)' }, attrs || {}), s);
+  const mono = (x, y, s, attrs) => txt(x, y, s, Object.assign({ 'font-family': 'var(--mono)' }, attrs || {}));
+
+  /** Generic step controls: Back / Step / Play / Reset over n steps. */
+  function stepper(n, render, opts) {
+    opts = opts || {};
+    let i = 0, timer = null;
+    const status = el('span', { class: 'fig-note' });
+    const set = (k) => { i = Math.max(0, Math.min(n - 1, k)); render(i); status.textContent = 'step ' + (i + 1) + ' of ' + n; back.disabled = i === 0; fwd.disabled = i === n - 1; if (i === n - 1) stop(); };
+    const stop = () => { if (timer) { clearInterval(timer); timer = null; play.textContent = 'Play'; } };
+    const back = el('button', { class: 'btn sm', onclick: () => { stop(); set(i - 1); } }, 'Back');
+    const fwd = el('button', { class: 'btn sm primary', onclick: () => { stop(); set(i + 1); } }, 'Step');
+    const play = el('button', { class: 'btn sm', onclick: () => { if (timer) return stop(); if (i === n - 1) set(0); play.textContent = 'Pause'; timer = setInterval(() => set(i + 1), opts.interval || 700); } }, 'Play');
+    const reset = el('button', { class: 'btn sm quiet', onclick: () => { stop(); set(0); } }, 'Reset');
+    const bar = el('div', { class: 'fig-tools' }, back, fwd, play, reset, status);
+    set(0);
+    return { el: bar, set, get index() { return i; }, stop };
+  }
+
+  const W = window.WIDGETS = {};
+
+  /* ---------- 1. Python names → objects ---------- */
+  W.names = function (mount) {
+    const steps = [
+      { code: 'x = 5', names: { x: 'a' }, objs: { a: { v: '5', t: 'int' } }, note: 'Python makes an int object 5 and attaches the name x to it.' },
+      { code: 'y = x', names: { x: 'a', y: 'a' }, objs: { a: { v: '5', t: 'int' } }, note: 'No copy is made: y is a second name for the same object.' },
+      { code: 'x = x + 1', names: { x: 'b', y: 'a' }, objs: { a: { v: '5', t: 'int' }, b: { v: '6', t: 'int' } }, note: 'x + 1 makes a new object 6 and x moves to it. y still points at 5 — that is why y did not change.' },
+      { code: 'name = "Ada"', names: { x: 'b', y: 'a', name: 'c' }, objs: { a: { v: '5', t: 'int' }, b: { v: '6', t: 'int' }, c: { v: '"Ada"', t: 'str' } }, note: 'A name can point at any kind of object; the type belongs to the object, not the name.' },
+      { code: 'x = name', names: { x: 'c', y: 'a', name: 'c' }, objs: { a: { v: '5', t: 'int' }, b: { v: '6', t: 'int' }, c: { v: '"Ada"', t: 'str' } }, note: 'x now names a string. Nothing points at 6 any more, so Python will quietly reclaim it.' }
+    ];
+    const svg = sv('svg', { viewBox: '0 0 520 200', role: 'img', 'aria-label': 'Names pointing to objects' });
+    const codeLine = el('div', { class: 'subst' });
+    const note = el('div', { class: 'trace-note' });
+    function render(i) {
+      const s = steps[i]; svg.innerHTML = '';
+      codeLine.innerHTML = steps.map((st, k) => '<span class="' + (k === i ? 'now' : k < i ? '' : 'dim') + '">' + esc(st.code) + '</span>').join('\n');
+      note.textContent = s.note;
+      const objKeys = ['a', 'b', 'c']; const objY = { a: 40, b: 100, c: 160 };
+      const nameKeys = ['x', 'y', 'name']; const nameY = { x: 40, y: 100, name: 160 };
+      txt(20, 18, 'names', { fill: 'var(--ink-3)', 'font-size': 11 }); svg.append(txt(20, 18, 'names', { fill: 'var(--ink-3)', 'font-size': 11 }), txt(330, 18, 'objects', { fill: 'var(--ink-3)', 'font-size': 11 }));
+      for (const k of objKeys) if (s.objs[k]) {
+        const o = s.objs[k]; const live = Object.values(s.names).includes(k);
+        svg.append(sv('rect', { x: 330, y: objY[k] - 18, width: 120, height: 36, rx: 3, fill: live ? 'var(--paper)' : 'var(--paper-2)', stroke: live ? 'var(--ink)' : 'var(--rule)', 'stroke-width': 1.2 }));
+        svg.append(mono(342, objY[k] + 5, o.v, { fill: live ? 'var(--ink)' : 'var(--ink-3)', 'font-size': 14 }));
+        svg.append(txt(456, objY[k] + 4, o.t, { fill: 'var(--ink-3)', 'font-size': 11 }));
+      }
+      for (const nm of nameKeys) if (s.names[nm]) {
+        const y = nameY[nm], target = s.names[nm];
+        svg.append(sv('rect', { x: 20, y: y - 16, width: 70, height: 32, rx: 16, fill: 'var(--accent-soft)', stroke: 'var(--accent)' }));
+        svg.append(mono(55, y + 5, nm, { 'text-anchor': 'middle', 'font-size': 14 }));
+        const ty = objY[target];
+        svg.append(sv('path', { d: `M92 ${y} C 200 ${y}, 220 ${ty}, 326 ${ty}`, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 1.6, 'marker-end': 'url(#arr)' }));
+      }
+      svg.prepend(sv('defs', {}, sv('marker', { id: 'arr', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, sv('path', { d: 'M0 0L10 5L0 10z', fill: 'var(--accent)' }))));
+    }
+    const ctl = stepper(steps.length, render);
+    mount.append(codeLine, svg, note, ctl.el);
+  };
+
+  /* ---------- 2. generic trace stepper (frames + line highlight) ---------- */
+  W.trace = function (mount, b) {
+    const lines = b.code.split('\n');
+    const pre = el('pre', {}, lines.map((l, i) => el('span', { class: 'ln', html: (i + 1 < 10 ? ' ' : '') + (i + 1) + '  ' + window.__highlight(l, b.lang || 'python').replace(/\n$/, '') })));
+    const state = el('div', { class: 'trace-state' });
+    const note = el('div', { class: 'trace-note' });
+    const box = el('div', { class: 'trace' }, pre, el('div', {}, state, note));
+    let prev = null;
+    function render(i) {
+      const s = b.steps[i];
+      pre.querySelectorAll('.ln').forEach((ln, k) => ln.classList.toggle('on', k + 1 === s.line));
+      state.innerHTML = '';
+      const prevVars = prev && i > 0 ? b.steps[i - 1].frames : null;
+      (s.frames || []).forEach((f, fi) => {
+        const fr = el('div', { class: 'frame' }, el('div', { class: 'frame-name' }, f.name));
+        const vars = el('div', { class: 'frame-vars' });
+        const pv = prevVars && prevVars[fi] && prevVars[fi].name === f.name ? prevVars[fi].vars : {};
+        for (const k in f.vars) vars.append(el('span', { class: pv[k] !== f.vars[k] ? 'changed' : '' }, k), el('span', { class: pv[k] !== f.vars[k] ? 'changed' : '' }, String(f.vars[k])));
+        if (!Object.keys(f.vars).length) vars.append(el('span', { style: 'color:var(--ink-3)' }, '(empty)'));
+        fr.append(vars); state.append(fr);
+      });
+      if (s.out !== undefined) state.append(el('div', { class: 'trace-out' }, el('span', { class: 'lbl' }, 'output so far\n'), s.out || '(nothing yet)'));
+      note.textContent = s.note || ''; prev = s;
+    }
+    const ctl = stepper(b.steps.length, render, { interval: 900 });
+    mount.append(box, ctl.el);
+  };
+
+  /* ---------- 3. list index ruler + slice explorer ---------- */
+  W.indexer = function (mount, b) {
+    const items = b.items || ['p', 'y', 't', 'h', 'o', 'n'];
+    const n = items.length, cw = 54, x0 = 30;
+    const svg = sv('svg', { viewBox: '0 0 ' + (x0 * 2 + cw * n) + ' 150', role: 'img', 'aria-label': 'List indices' });
+    const startIn = el('input', { type: 'text', value: '1', size: 4, 'aria-label': 'start' }), stopIn = el('input', { type: 'text', value: '4', size: 4, 'aria-label': 'stop' });
+    const status = el('div', { class: 'fig-status' });
+    function parse(s) { s = s.trim(); if (s === '') return null; const v = parseInt(s, 10); return isNaN(v) ? undefined : v; }
+    function render() {
+      svg.innerHTML = '';
+      let a = parse(startIn.value), z = parse(stopIn.value);
+      const bad = a === undefined || z === undefined;
+      let lo = a == null ? 0 : a < 0 ? Math.max(0, n + a) : Math.min(n, a);
+      let hi = z == null ? n : z < 0 ? Math.max(0, n + z) : Math.min(n, z);
+      svg.append(txt(x0, 22, 'index', { fill: 'var(--ink-3)', 'font-size': 11 }), txt(x0, 130, 'negative index', { fill: 'var(--ink-3)', 'font-size': 11 }));
+      items.forEach((it, i) => {
+        const x = x0 + i * cw, sel = !bad && i >= lo && i < hi;
+        svg.append(sv('rect', { x, y: 40, width: cw, height: 50, fill: sel ? 'var(--accent-soft)' : 'var(--paper)', stroke: 'var(--ink)', 'stroke-width': 1.2 }));
+        svg.append(mono(x + cw / 2, 71, typeof it === 'string' ? "'" + it + "'" : String(it), { 'text-anchor': 'middle', 'font-size': 15 }));
+        svg.append(mono(x + cw / 2, 34, String(i), { 'text-anchor': 'middle', fill: 'var(--accent)', 'font-size': 12 }));
+        svg.append(mono(x + cw / 2, 108, String(i - n), { 'text-anchor': 'middle', fill: 'var(--ink-3)', 'font-size': 12 }));
+      });
+      // slice boundaries are between cells
+      if (!bad) {
+        for (const [pos, label] of [[lo, 'start'], [hi, 'stop']]) {
+          const x = x0 + pos * cw;
+          svg.append(sv('line', { x1: x, y1: 36, x2: x, y2: 94, stroke: 'var(--accent)', 'stroke-width': 2.5 }));
+          svg.append(txt(x, 146, label, { 'text-anchor': 'middle', fill: 'var(--accent)', 'font-size': 11 }));
+        }
+        const res = items.slice(lo, hi);
+        status.innerHTML = 'items[' + esc(startIn.value.trim()) + ':' + esc(stopIn.value.trim()) + ']  →  <span class="ok">' + esc(JSON.stringify(res).replace(/"/g, "'")) + '</span>';
+      } else status.innerHTML = '<span class="err">start and stop must be integers or empty</span>';
+    }
+    startIn.addEventListener('input', render); stopIn.addEventListener('input', render);
+    mount.append(svg, el('div', { class: 'fig-tools' }, el('span', {}, 'items = ' + JSON.stringify(items).replace(/"/g, "'")), el('span', {}, 'items['), startIn, el('span', {}, ':'), stopIn, el('span', {}, ']')), status);
+    render();
+  };
+
+  /* ---------- 4. binary search ---------- */
+  W.search = function (mount, b) {
+    const arr = b.items || [2, 5, 8, 12, 16, 23, 38, 42, 56, 61, 72, 79, 85, 91, 97, 104];
+    const n = arr.length, cw = 40, x0 = 14;
+    const svg = sv('svg', { viewBox: '0 0 ' + (x0 * 2 + n * cw) + ' 120', role: 'img', 'aria-label': 'Binary search' });
+    const target = el('input', { type: 'number', value: '61', 'aria-label': 'target' });
+    const log = el('div', { class: 'fig-status' });
+    let steps = [];
+    function compute() {
+      const t = parseInt(target.value, 10); steps = [];
+      let lo = 0, hi = n - 1, k = 0;
+      steps.push({ lo, hi, mid: null, msg: 'Search for ' + t + ' in a sorted list of ' + n + '. Start with the whole range.' });
+      while (lo <= hi) {
+        const mid = Math.floor((lo + hi) / 2); k++;
+        if (arr[mid] === t) { steps.push({ lo, hi, mid, found: true, msg: 'Compare with the middle, arr[' + mid + '] = ' + arr[mid] + ': equal. Found after ' + k + ' comparison' + (k > 1 ? 's' : '') + '.' }); return; }
+        if (arr[mid] < t) { steps.push({ lo, hi, mid, msg: 'arr[' + mid + '] = ' + arr[mid] + ' < ' + t + ', so the answer can only be to the right. Discard the left half.' }); lo = mid + 1; }
+        else { steps.push({ lo, hi, mid, msg: 'arr[' + mid + '] = ' + arr[mid] + ' > ' + t + ', so the answer can only be to the left. Discard the right half.' }); hi = mid - 1; }
+      }
+      steps.push({ lo, hi, mid: null, msg: 'The range is empty: ' + t + ' is not in the list. That took ' + k + ' comparisons; a linear scan would take up to ' + n + '.' });
+    }
+    function render(i) {
+      const s = steps[i]; svg.innerHTML = '';
+      arr.forEach((v, k) => {
+        const x = x0 + k * cw, inRange = k >= s.lo && k <= s.hi;
+        const fill = s.mid === k ? (s.found ? 'var(--ok)' : 'var(--accent)') : inRange ? 'var(--accent-soft)' : 'var(--paper-2)';
+        svg.append(sv('rect', { x, y: 40, width: cw - 4, height: 40, fill, stroke: inRange ? 'var(--ink)' : 'var(--rule)' }));
+        svg.append(mono(x + cw / 2 - 2, 65, String(v), { 'text-anchor': 'middle', fill: s.mid === k ? 'var(--accent-ink)' : inRange ? 'var(--ink)' : 'var(--ink-3)', 'font-size': 12 }));
+        svg.append(mono(x + cw / 2 - 2, 30, String(k), { 'text-anchor': 'middle', fill: 'var(--ink-3)', 'font-size': 10 }));
+      });
+      if (s.lo <= s.hi) {
+        const lx = x0 + s.lo * cw, hx = x0 + s.hi * cw + cw - 4;
+        svg.append(sv('path', { d: `M${lx} 92 v6 H${hx} v-6`, fill: 'none', stroke: 'var(--ink-2)' }));
+        svg.append(txt(lx, 112, 'lo = ' + s.lo, { 'font-size': 11, fill: 'var(--ink-2)' }), txt(hx, 112, 'hi = ' + s.hi, { 'font-size': 11, fill: 'var(--ink-2)', 'text-anchor': 'end' }));
+        if (s.mid !== null) svg.append(txt(x0 + s.mid * cw + cw / 2 - 2, 112, 'mid', { 'font-size': 11, fill: 'var(--accent)', 'text-anchor': 'middle', 'font-weight': 600 }));
+      }
+      log.textContent = s.msg;
+    }
+    compute();
+    let ctl = stepper(steps.length, render, { interval: 1100 });
+    const tools = el('div', { class: 'fig-tools' }, el('span', {}, 'target'), target, el('button', { class: 'btn sm', onclick: () => { compute(); ctl.stop(); const old = ctl.el; ctl = stepper(steps.length, render, { interval: 1100 }); old.replaceWith(ctl.el); } }, 'Search'));
+    mount.append(el('div', { class: 'fig-scroll' }, svg), tools, log, ctl.el);
+  };
+
+  /* ---------- 5. sorting animation ---------- */
+  W.sort = function (mount, b) {
+    const algo = b.algo || 'bubble';
+    let arr = (b.items || [7, 3, 9, 1, 6, 8, 2, 5, 4]).slice();
+    const n = arr.length, cw = 48, x0 = 10, H = 150;
+    const svg = sv('svg', { viewBox: '0 0 ' + (x0 * 2 + n * cw) + ' ' + (H + 30), role: 'img', 'aria-label': algo + ' sort' });
+    const log = el('div', { class: 'fig-status' });
+    let steps = [];
+    function record(a, opts) { steps.push(Object.assign({ a: a.slice() }, opts)); }
+    function compute() {
+      steps = []; const a = arr.slice();
+      if (algo === 'bubble') {
+        record(a, { msg: 'Bubble sort: repeatedly compare neighbours and swap them if they are out of order.' });
+        for (let i = 0; i < n - 1; i++) {
+          let swapped = false;
+          for (let j = 0; j < n - 1 - i; j++) {
+            record(a, { cmp: [j, j + 1], sortedFrom: n - i, msg: 'Compare ' + a[j] + ' and ' + a[j + 1] + (a[j] > a[j + 1] ? ': out of order, swap.' : ': in order, leave them.') });
+            if (a[j] > a[j + 1]) { [a[j], a[j + 1]] = [a[j + 1], a[j]]; swapped = true; record(a, { swap: [j, j + 1], sortedFrom: n - i, msg: 'Swapped.' }); }
+          }
+          record(a, { sortedFrom: n - i - 1, msg: 'End of pass ' + (i + 1) + ': the largest remaining value (' + a[n - 1 - i] + ') has bubbled to its final place.' });
+          if (!swapped) break;
+        }
+        record(a, { sortedFrom: 0, msg: 'Sorted.' });
+      } else if (algo === 'selection') {
+        record(a, { msg: 'Selection sort: find the smallest of the unsorted part and move it to the front.' });
+        for (let i = 0; i < n - 1; i++) {
+          let m = i;
+          for (let j = i + 1; j < n; j++) { record(a, { cmp: [m, j], sortedTo: i, msg: 'Smallest so far is ' + a[m] + '; compare with ' + a[j] + '.' }); if (a[j] < a[m]) m = j; }
+          if (m !== i) { [a[i], a[m]] = [a[m], a[i]]; record(a, { swap: [i, m], sortedTo: i + 1, msg: 'Swap ' + a[m] + ' with the smallest, ' + a[i] + '.' }); }
+          else record(a, { sortedTo: i + 1, msg: a[i] + ' is already the smallest — no swap needed.' });
+        }
+        record(a, { sortedTo: n, msg: 'Sorted.' });
+      } else {
+        record(a, { msg: 'Insertion sort: take each value and slide it left into the sorted prefix.' });
+        for (let i = 1; i < n; i++) {
+          let j = i;
+          record(a, { cmp: [j], sortedTo: i, msg: 'Take ' + a[i] + '.' });
+          while (j > 0 && a[j - 1] > a[j]) { [a[j - 1], a[j]] = [a[j], a[j - 1]]; j--; record(a, { swap: [j, j + 1], sortedTo: i + 1, msg: 'Slide it left past ' + a[j + 1] + '.' }); }
+          record(a, { sortedTo: i + 1, msg: 'The first ' + (i + 1) + ' values are sorted.' });
+        }
+        record(a, { sortedTo: n, msg: 'Sorted.' });
+      }
+    }
+    const max = Math.max(...arr);
+    function render(i) {
+      const s = steps[i]; svg.innerHTML = '';
+      s.a.forEach((v, k) => {
+        const x = x0 + k * cw, h = (v / max) * H;
+        const sorted = (s.sortedFrom !== undefined && k >= s.sortedFrom) || (s.sortedTo !== undefined && k < s.sortedTo);
+        const active = (s.cmp && s.cmp.includes(k)) || (s.swap && s.swap.includes(k));
+        const fill = s.swap && s.swap.includes(k) ? 'var(--ok)' : active ? 'var(--accent)' : sorted ? 'var(--ink-3)' : 'var(--accent-soft)';
+        svg.append(sv('rect', { x: x + 4, y: H - h + 5, width: cw - 8, height: h, fill, stroke: active ? 'var(--ink)' : 'var(--rule)' }));
+        svg.append(mono(x + cw / 2, H + 22, String(v), { 'text-anchor': 'middle', 'font-size': 12, fill: active ? 'var(--ink)' : 'var(--ink-2)' }));
+      });
+      log.textContent = s.msg;
+    }
+    compute();
+    let ctl = stepper(steps.length, render, { interval: 550 });
+    const shuffle = el('button', { class: 'btn sm', onclick: () => { for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } compute(); ctl.stop(); const old = ctl.el; ctl = stepper(steps.length, render, { interval: 550 }); old.replaceWith(ctl.el); } }, 'Shuffle');
+    mount.append(svg, log, ctl.el, el('div', { class: 'fig-tools' }, shuffle));
+  };
+
+  /* ---------- 6. Caesar wheel ---------- */
+  W.caesar = function (mount) {
+    const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const svg = sv('svg', { viewBox: '0 0 560 90', role: 'img', 'aria-label': 'Caesar shift' });
+    const range = el('input', { type: 'range', min: 0, max: 25, value: 3, 'aria-label': 'shift' });
+    const text = el('input', { type: 'text', value: 'MEET ME AT NOON', size: 24, 'aria-label': 'message' });
+    const status = el('div', { class: 'fig-status' });
+    function render() {
+      const k = +range.value; svg.innerHTML = '';
+      svg.append(txt(6, 22, 'plain', { fill: 'var(--ink-3)', 'font-size': 11 }), txt(6, 72, 'cipher', { fill: 'var(--ink-3)', 'font-size': 11 }));
+      for (let i = 0; i < 26; i++) {
+        const x = 50 + i * 19.5;
+        svg.append(mono(x, 24, A[i], { 'text-anchor': 'middle', 'font-size': 13 }));
+        svg.append(sv('line', { x1: x, y1: 32, x2: x, y2: 56, stroke: 'var(--rule)' }));
+        svg.append(mono(x, 74, A[(i + k) % 26], { 'text-anchor': 'middle', 'font-size': 13, fill: 'var(--accent)', 'font-weight': 600 }));
+      }
+      const out = text.value.toUpperCase().split('').map(c => A.includes(c) ? A[(A.indexOf(c) + k) % 26] : c).join('');
+      status.innerHTML = 'shift ' + k + ':  ' + esc(text.value.toUpperCase()) + '  →  <span class="ok">' + esc(out) + '</span>';
+    }
+    range.addEventListener('input', render); text.addEventListener('input', render);
+    mount.append(svg, el('div', { class: 'fig-tools' }, el('span', {}, 'shift'), range, el('span', {}, 'message'), text), status);
+    render();
+  };
+
+  /* ---------- 7. SICP evaluation tree ---------- */
+  W.evaltree = function (mount, b) {
+    const input = el('input', { type: 'text', value: b.expr || '(* (+ 2 (* 4 6)) (+ 3 5 7))', size: 34, 'aria-label': 'expression' });
+    const holder = el('div', { class: 'fig-scroll' });
+    const status = el('div', { class: 'fig-status' });
+    function build(x, it) {
+      if (x instanceof Scheme.Pair) {
+        const kids = []; let p = x; while (p instanceof Scheme.Pair) { kids.push(build(p.car, it)); p = p.cdr; }
+        let value, err = null; try { value = it.evaluate(x, it.G); } catch (e) { err = e.message; }
+        return { label: kids[0].label, kids: kids.slice(1), value: err ? '?' : Scheme.write(value), err };
+      }
+      let value; try { value = it.evaluate(x, it.G); } catch (e) { value = x; }
+      return { label: Scheme.write(x), kids: [], value: Scheme.write(value), leaf: true };
+    }
+    function render() {
+      holder.innerHTML = ''; status.textContent = '';
+      let forms; try { forms = Scheme.parseAll(input.value); } catch (e) { status.innerHTML = '<span class="err">' + esc(e.message) + '</span>'; return; }
+      if (!forms.length) return;
+      const it = Scheme.makeEvaluator();
+      const tree = build(forms[0], it);
+      const LW = 44, LH = 70;
+      const width = (t) => { t.w = t.kids.length ? Math.max(LW, t.kids.reduce((s, k) => s + width(k), 0) + (t.kids.length - 1) * 10) : LW; return t.w; };
+      width(tree);
+      const depth = (t) => 1 + (t.kids.length ? Math.max(...t.kids.map(depth)) : 0);
+      const H = depth(tree) * LH + 20, Wd = tree.w + 40;
+      const svg = sv('svg', { viewBox: '0 0 ' + Wd + ' ' + H, width: Math.min(Wd, 700), role: 'img', 'aria-label': 'Evaluation tree' });
+      svg.style.width = Math.min(Wd, 760) + 'px'; svg.style.maxWidth = '100%';
+      function draw(t, x, y) {
+        const cx = x + t.w / 2;
+        if (t.kids.length) {
+          let kx = x;
+          for (const k of t.kids) {
+            const kcx = kx + k.w / 2;
+            svg.append(sv('line', { x1: cx, y1: y + 12, x2: kcx, y2: y + LH - 14, stroke: 'var(--rule)', 'stroke-width': 1.5 }));
+            draw(k, kx, y + LH); kx += k.w + 10;
+          }
+          svg.append(sv('circle', { cx, cy: y, r: 16, fill: 'var(--accent)' }));
+          svg.append(mono(cx, y + 5, t.label, { 'text-anchor': 'middle', fill: 'var(--accent-ink)', 'font-size': 14, 'font-weight': 600 }));
+          svg.append(mono(cx + 22, y + 5, t.value, { fill: t.err ? 'var(--err)' : 'var(--ink)', 'font-size': 13 }));
+        } else {
+          svg.append(mono(cx, y + 5, t.label, { 'text-anchor': 'middle', 'font-size': 14 }));
+          if (t.value !== t.label) svg.append(mono(cx, y + 22, '= ' + t.value, { 'text-anchor': 'middle', fill: 'var(--ink-3)', 'font-size': 11 }));
+        }
+      }
+      draw(tree, 20, 22);
+      holder.append(svg);
+      if (tree.err) status.innerHTML = '<span class="err">' + esc(tree.err) + '</span>';
+      else status.innerHTML = 'value of the whole combination: <span class="ok">' + esc(tree.value) + '</span>';
+    }
+    input.addEventListener('input', render);
+    mount.append(el('div', { class: 'fig-tools' }, el('span', {}, 'expression'), input), holder, status);
+    render();
+  };
+
+  /* ---------- 8. substitution model / process shapes ---------- */
+  function factorialSteps(n) {   // Lesson 4's factorial: base case (= n 0)
+    const s = ['(factorial ' + n + ')'];
+    let pre = '', post = '';
+    for (let k = n; k >= 1; k--) { pre += '(* ' + k + ' '; post += ')'; s.push(pre + '(factorial ' + (k - 1) + ')' + post); }
+    s.push(pre + '1' + post);
+    let acc = 1;
+    for (let k = 1; k <= n; k++) { acc *= k; pre = pre.slice(0, -('(* ' + k + ' ').length); post = post.slice(0, -1); s.push(pre + acc + post); }
+    return s;
+  }
+  function factIterSteps(n) {
+    const s = ['(factorial ' + n + ')'];
+    let p = 1, c = 1;
+    while (c <= n + 1) { s.push('(fact-iter ' + p + ' ' + c + ' ' + n + ')'); if (c > n) break; p *= c; c++; }
+    s.push(String(p));
+    return s;
+  }
+  W.subst = function (mount, b) {
+    if (b.mode === 'shapes') {
+      const n = b.n || 6;
+      const rec = factorialSteps(n), iter = factIterSteps(n);
+      const left = el('div', { class: 'subst' }), right = el('div', { class: 'subst' });
+      const box = el('div', { class: 'shapes' }, el('div', {}, el('h4', {}, 'Linear recursive process'), left), el('div', {}, el('h4', {}, 'Linear iterative process'), right));
+      const N = Math.max(rec.length, iter.length);
+      function render(i) {
+        left.innerHTML = rec.slice(0, i + 1).map((s, k) => '<span class="' + (k === Math.min(i, rec.length - 1) ? 'now' : 'dim') + '">' + esc(s) + '</span>').join('\n');
+        right.innerHTML = iter.slice(0, Math.min(i + 1, iter.length)).map((s, k) => '<span class="' + (k === Math.min(i, iter.length - 1) ? 'now' : 'dim') + '">' + esc(s) + '</span>').join('\n');
+      }
+      const ctl = stepper(N, render, { interval: 600 });
+      mount.append(box, ctl.el);
+      return;
+    }
+    const steps = b.steps;
+    const box = el('div', { class: 'subst' });
+    const note = el('div', { class: 'trace-note' });
+    function render(i) {
+      box.innerHTML = steps.slice(0, i + 1).map((s, k) => '<span class="' + (k === i ? 'now' : 'dim') + '">' + esc(typeof s === 'string' ? s : s.text) + '</span>').join('\n');
+      note.textContent = typeof steps[i] === 'string' ? '' : steps[i].note || '';
+    }
+    const ctl = stepper(steps.length, render, { interval: 900 });
+    mount.append(box, note, ctl.el);
+  };
+
+  /* ---------- 9. two-set Venn diagram (math lesson 2) ---------- */
+  W.venn = function (mount, b) {
+    const parse = s => { const seen = [], raw = s.split(/[,\s]+/).map(t => t.trim()).filter(Boolean); for (const t of raw) if (!seen.includes(t)) seen.push(t); return { items: seen, dup: raw.length - seen.length }; };
+    const inA = el('input', { type: 'text', value: (b.a || [1, 2, 3, 4, 5, 6]).join(', '), size: 22, 'aria-label': 'elements of A', oninput: render });
+    const inB = el('input', { type: 'text', value: (b.b || [4, 5, 6, 7, 8]).join(', '), size: 22, 'aria-label': 'elements of B', oninput: render });
+    const svg = sv('svg', { viewBox: '0 0 520 230', role: 'img', 'aria-label': 'Venn diagram of two sets' });
+    const status = el('div', { class: 'fig-status' });
+    function region(items, cx) {
+      const per = 2, maxLines = 5, lines = [];
+      for (let i = 0; i < items.length && lines.length < maxLines; i += per) lines.push(items.slice(i, i + per).join(', '));
+      if (items.length > per * maxLines) lines[maxLines - 1] = '… ' + (items.length - per * (maxLines - 1)) + ' more';
+      const top = 118 - (lines.length - 1) * 10;
+      lines.forEach((ln, k) => svg.append(mono(cx, top + k * 20, ln, { 'text-anchor': 'middle', 'font-size': 13 })));
+      if (!items.length) svg.append(txt(cx, 122, '(none)', { 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-3)' }));
+    }
+    function render() {
+      const A = parse(inA.value), B = parse(inB.value);
+      const onlyA = A.items.filter(x => !B.items.includes(x)), both = A.items.filter(x => B.items.includes(x)), onlyB = B.items.filter(x => !A.items.includes(x));
+      svg.innerHTML = '';
+      svg.append(sv('circle', { cx: 190, cy: 115, r: 100, fill: 'var(--accent-soft)', 'fill-opacity': 0.55, stroke: 'var(--accent)', 'stroke-width': 1.5 }));
+      svg.append(sv('circle', { cx: 330, cy: 115, r: 100, fill: 'var(--accent-soft)', 'fill-opacity': 0.55, stroke: 'var(--accent)', 'stroke-width': 1.5 }));
+      svg.append(txt(110, 22, 'A', { 'font-size': 15, 'font-weight': 600, 'font-style': 'italic' }), txt(402, 22, 'B', { 'font-size': 15, 'font-weight': 600, 'font-style': 'italic' }));
+      region(onlyA, 138); region(both, 260); region(onlyB, 382);
+      svg.append(txt(138, 224, 'A − B: ' + onlyA.length, { 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-3)' }), txt(260, 224, 'A ∩ B: ' + both.length, { 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-3)' }), txt(382, 224, 'B − A: ' + onlyB.length, { 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-3)' }));
+      const a = A.items.length, bb = B.items.length, c = both.length, u = onlyA.length + c + onlyB.length;
+      status.innerHTML = '|A| + |B| − |A ∩ B| = ' + a + ' + ' + bb + ' − ' + c + ' = <span class="ok">' + (a + bb - c) + '</span> &nbsp;and &nbsp;|A ∪ B| = ' + u +
+        (A.dup + B.dup ? ' &nbsp;<span style="color:var(--ink-3)">(repeated elements ignored: a set has no repeats)</span>' : '');
+    }
+    mount.append(el('div', { class: 'fig-tools' }, el('label', {}, 'A = { ', inA, ' }'), el('label', {}, 'B = { ', inB, ' }')), el('div', { class: 'fig-scroll' }, svg), status);
+    render();
+  };
+
+  /* ---------- 10. box-and-pointer ---------- */
+  W.boxptr = function (mount, b) {
+    const input = el('input', { type: 'text', value: b.expr || '(list 1 (list 2 3) 4)', size: 34, 'aria-label': 'expression' });
+    const holder = el('div', { class: 'fig-scroll' });
+    const status = el('div', { class: 'fig-status' });
+    const CW = 28, GAP = 26, ROW = 64;
+    function render() {
+      holder.innerHTML = '';
+      let v;
+      try { const r = Scheme.runProgram(input.value); if (r.error) throw new Error(r.error); if (!r.results.length) return; v = r.results[r.results.length - 1].value; }
+      catch (e) { status.innerHTML = '<span class="err">' + esc(e.message) + '</span>'; return; }
+      status.innerHTML = 'printed form: <span class="ok">' + esc(Scheme.write(v)) + '</span>';
+      const items = [];
+      const atomW = (x) => Math.max(CW, Scheme.write(x).length * 8 + 10);
+      // layout pass: measure width of a chain
+      function measure(p, seen) {
+        if (!(p instanceof Scheme.Pair)) return atomW(p);
+        let w = 0; let q = p; let guard = 0;
+        while (q instanceof Scheme.Pair && guard++ < 200) {
+          const carW = q.car instanceof Scheme.Pair ? measure(q.car) : atomW(q.car);
+          w += Math.max(CW * 2, carW) + GAP;
+          q = q.cdr;
+        }
+        if (q !== Scheme.NIL) w += atomW(q);
+        return w;
+      }
+      function draw(p, x, y, depthMax) {
+        let q = p, guard = 0;
+        while (q instanceof Scheme.Pair && guard++ < 200) {
+          items.push(sv('rect', { x, y, width: CW, height: CW, fill: 'var(--paper)', stroke: 'var(--ink)', 'stroke-width': 1.3 }));
+          items.push(sv('rect', { x: x + CW, y, width: CW, height: CW, fill: 'var(--paper)', stroke: 'var(--ink)', 'stroke-width': 1.3 }));
+          let carW;
+          if (q.car instanceof Scheme.Pair) {
+            carW = measure(q.car);
+            items.push(sv('circle', { cx: x + CW / 2, cy: y + CW / 2, r: 3, fill: 'var(--ink)' }));
+            items.push(sv('line', { x1: x + CW / 2, y1: y + CW / 2, x2: x + CW / 2, y2: y + ROW - 4, stroke: 'var(--accent)', 'stroke-width': 1.5, 'marker-end': 'url(#bp-arr)' }));
+            depthMax.v = Math.max(depthMax.v, draw(q.car, x, y + ROW, depthMax));
+          } else if (q.car === Scheme.NIL) {
+            carW = CW; items.push(sv('line', { x1: x + 3, y1: y + CW - 3, x2: x + CW - 3, y2: y + 3, stroke: 'var(--ink)' }));
+          } else {
+            carW = atomW(q.car);
+            items.push(sv('circle', { cx: x + CW / 2, cy: y + CW / 2, r: 3, fill: 'var(--ink)' }));
+            items.push(sv('line', { x1: x + CW / 2, y1: y + CW / 2, x2: x + CW / 2, y2: y + ROW - 22, stroke: 'var(--accent)', 'stroke-width': 1.5, 'marker-end': 'url(#bp-arr)' }));
+            items.push(sv('rect', { x: x + CW / 2 - carW / 2, y: y + ROW - 20, width: carW, height: 22, fill: 'var(--accent-soft)', stroke: 'var(--accent)' }));
+            items.push(mono(x + CW / 2, y + ROW - 5, Scheme.write(q.car), { 'text-anchor': 'middle', 'font-size': 12 }));
+            depthMax.v = Math.max(depthMax.v, y + ROW + 10);
+          }
+          const cellW = Math.max(CW * 2, carW);
+          if (q.cdr instanceof Scheme.Pair) {
+            items.push(sv('circle', { cx: x + CW * 1.5, cy: y + CW / 2, r: 3, fill: 'var(--ink)' }));
+            items.push(sv('line', { x1: x + CW * 1.5, y1: y + CW / 2, x2: x + cellW + GAP - 4, y2: y + CW / 2, stroke: 'var(--accent)', 'stroke-width': 1.5, 'marker-end': 'url(#bp-arr)' }));
+          } else if (q.cdr === Scheme.NIL) {
+            items.push(sv('line', { x1: x + CW + 3, y1: y + CW - 3, x2: x + CW * 2 - 3, y2: y + 3, stroke: 'var(--ink)' }));
+          } else {
+            items.push(sv('circle', { cx: x + CW * 1.5, cy: y + CW / 2, r: 3, fill: 'var(--ink)' }));
+            items.push(sv('line', { x1: x + CW * 1.5, y1: y + CW / 2, x2: x + cellW + GAP - 4, y2: y + CW / 2, stroke: 'var(--accent)', 'stroke-width': 1.5, 'marker-end': 'url(#bp-arr)' }));
+            const aw = atomW(q.cdr);
+            items.push(sv('rect', { x: x + cellW + GAP, y: y + 3, width: aw, height: 22, fill: 'var(--accent-soft)', stroke: 'var(--accent)' }));
+            items.push(mono(x + cellW + GAP + aw / 2, y + 18, Scheme.write(q.cdr), { 'text-anchor': 'middle', 'font-size': 12 }));
+          }
+          x += cellW + GAP; q = q.cdr;
+        }
+        depthMax.v = Math.max(depthMax.v, y + CW + 10);
+        return depthMax.v;
+      }
+      items.length = 0;
+      if (!(v instanceof Scheme.Pair)) { holder.append(el('p', { style: 'color:var(--ink-2)' }, 'That value is not a pair, so there is nothing to draw: ' + Scheme.write(v))); return; }
+      const dm = { v: 0 };
+      const w = measure(v) + 40, h = draw(v, 20, 14, dm) + 10;
+      const svg = sv('svg', { viewBox: '0 0 ' + w + ' ' + h, role: 'img', 'aria-label': 'Box and pointer diagram' });
+      svg.style.width = Math.min(w, 760) + 'px'; svg.style.maxWidth = '100%';
+      svg.append(sv('defs', {}, sv('marker', { id: 'bp-arr', viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, sv('path', { d: 'M0 0L10 5L0 10z', fill: 'var(--accent)' }))));
+      items.forEach(i => svg.append(i));
+      holder.append(svg);
+    }
+    input.addEventListener('input', render);
+    mount.append(el('div', { class: 'fig-tools' }, el('span', {}, 'expression'), input), holder, status);
+    render();
+  };
+
+  /* ---------- 11. higher-order pipeline ---------- */
+  W.hof = function (mount) {
+    const mapSel = el('select', { 'aria-label': 'map' }, ['square', '(lambda (x) (+ x 1))', '(lambda (x) (* 2 x))', 'fib'].map(o => el('option', { value: o }, o)));
+    const filtSel = el('select', { 'aria-label': 'filter' }, ['odd?', 'even?', '(lambda (x) (> x 10))', '(lambda (x) #t)'].map(o => el('option', { value: o }, o)));
+    const accSel = el('select', { 'aria-label': 'accumulate' }, ['+', '*', 'max', 'cons'].map(o => el('option', { value: o }, o)));
+    const listIn = el('input', { type: 'text', value: '(1 2 3 4 5 6)', size: 18, 'aria-label': 'list' });
+    const svg = sv('svg', { viewBox: '0 0 640 150', role: 'img', 'aria-label': 'map filter accumulate pipeline' });
+    const status = el('div', { class: 'fig-status' });
+    function render() {
+      svg.innerHTML = '';
+      const prog = `(define (fib n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))
+(define (accumulate op initial sequence) (if (null? sequence) initial (op (car sequence) (accumulate op initial (cdr sequence)))))
+(define xs '${listIn.value})
+(define mapped (map ${mapSel.value} xs))
+(define kept (filter ${filtSel.value} mapped))
+(define init ${accSel.value === '+' ? 0 : accSel.value === '*' ? 1 : accSel.value === 'max' ? '-1000000' : "'()"})
+(define result (accumulate ${accSel.value} init kept))
+xs mapped kept result`;
+      const r = Scheme.runProgram(prog);
+      if (r.error) { status.innerHTML = '<span class="err">' + esc(r.error) + '</span>'; return; }
+      const vals = r.results.slice(-4).map(x => x.text);
+      const stages = [['list', vals[0]], ['(map ' + mapSel.value + ' …)', vals[1]], ['(filter ' + filtSel.value + ' …)', vals[2]], ['(accumulate ' + accSel.value + ' …)', vals[3]]];
+      stages.forEach(([name, val], i) => {
+        const x = 20 + i * 155;
+        svg.append(sv('rect', { x, y: 30, width: 140, height: 70, rx: 4, fill: i === 3 ? 'var(--accent)' : 'var(--paper)', stroke: i === 3 ? 'var(--accent)' : 'var(--ink)' }));
+        svg.append(txt(x + 70, 22, name.length > 24 ? name.slice(0, 23) + '…' : name, { 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-2)', 'font-family': 'var(--mono)' }));
+        svg.append(mono(x + 70, 70, val.length > 18 ? val.slice(0, 17) + '…' : val, { 'text-anchor': 'middle', 'font-size': 13, fill: i === 3 ? 'var(--accent-ink)' : 'var(--ink)' }));
+        if (i < 3) svg.append(sv('path', { d: `M${x + 142} 65 h10`, stroke: 'var(--accent)', 'stroke-width': 2, 'marker-end': 'url(#hof-arr)' }));
+      });
+      svg.prepend(sv('defs', {}, sv('marker', { id: 'hof-arr', viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, sv('path', { d: 'M0 0L10 5L0 10z', fill: 'var(--accent)' }))));
+      status.innerHTML = 'map → ' + esc(vals[1]) + '<br>filter → ' + esc(vals[2]) + '<br>accumulate → <span class="ok">' + esc(vals[3]) + '</span>';
+    }
+    [mapSel, filtSel, accSel].forEach(s => s.addEventListener('change', render)); listIn.addEventListener('input', render);
+    mount.append(el('div', { class: 'fig-tools' }, el('span', {}, 'list'), listIn, el('span', {}, 'map'), mapSel, el('span', {}, 'filter'), filtSel, el('span', {}, 'accumulate'), accSel), svg, status);
+    render();
+  };
+
+  /* ---------- 12. C++ compile pipeline ---------- */
+  W.pipeline = function (mount) {
+    const svg = sv('svg', { viewBox: '0 0 640 130', role: 'img', 'aria-label': 'From source code to a running program' });
+    const stages = [['hello.cpp', 'source code', 'text you write'], ['compiler', 'g++ / clang++', 'checks types, translates'], ['a.out', 'machine code', 'CPU instructions'], ['CPU', 'runs it', 'Hello, world!']];
+    stages.forEach(([a, b, c], i) => {
+      const x = 15 + i * 160;
+      svg.append(sv('rect', { x, y: 25, width: 130, height: 76, rx: 4, fill: i === 1 ? 'var(--accent)' : 'var(--paper)', stroke: i === 1 ? 'var(--accent)' : 'var(--ink)', 'stroke-width': 1.3 }));
+      svg.append(mono(x + 65, 50, a, { 'text-anchor': 'middle', 'font-size': 14, 'font-weight': 600, fill: i === 1 ? 'var(--accent-ink)' : 'var(--ink)' }));
+      svg.append(txt(x + 65, 70, b, { 'text-anchor': 'middle', 'font-size': 12, fill: i === 1 ? 'var(--accent-ink)' : 'var(--ink-2)' }));
+      svg.append(txt(x + 65, 88, c, { 'text-anchor': 'middle', 'font-size': 11, fill: i === 1 ? 'var(--accent-ink)' : 'var(--ink-3)' }));
+      if (i < 3) svg.append(sv('path', { d: `M${x + 133} 63 h16`, stroke: 'var(--ink)', 'stroke-width': 1.6, 'marker-end': 'url(#pl-arr)' }));
+    });
+    svg.append(txt(95, 122, 'compile time — errors caught here never reach the user', { 'font-size': 11, fill: 'var(--ink-3)' }), txt(560, 122, 'run time', { 'font-size': 11, fill: 'var(--ink-3)', 'text-anchor': 'end' }));
+    svg.prepend(sv('defs', {}, sv('marker', { id: 'pl-arr', viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, sv('path', { d: 'M0 0L10 5L0 10z', fill: 'var(--ink)' }))));
+    mount.append(svg);
+  };
+
+  /* ---------- 13. C++ type footprints in memory ---------- */
+  W.memory = function (mount) {
+    const types = { char: { size: 1, sample: "'A'", bytes: [0x41], note: 'one byte: the ASCII code of the character (65)' }, bool: { size: 1, sample: 'true', bytes: [0x01], note: 'one byte holding 0 or 1' }, int: { size: 4, sample: '42', bytes: [0x2a, 0, 0, 0], note: 'four bytes, two’s complement; the range is about ±2.1 billion' }, double: { size: 8, sample: '2.5', bytes: [0, 0, 0, 0, 0, 0, 0x04, 0x40], note: 'eight bytes in IEEE-754 floating-point format' }, 'long long': { size: 8, sample: '42', bytes: [0x2a, 0, 0, 0, 0, 0, 0, 0], note: 'eight bytes, range about ±9.2 quintillion' } };
+    const svg = sv('svg', { viewBox: '0 0 640 110', role: 'img', 'aria-label': 'Bytes in memory' });
+    const status = el('div', { class: 'fig-status' });
+    let cur = 'int';
+    const btns = Object.keys(types).map(t => el('button', { class: 'btn sm' + (t === cur ? ' primary' : ''), onclick: () => { cur = t; btns.forEach(b => b.classList.toggle('primary', b.textContent === t)); render(); } }, t));
+    function render() {
+      svg.innerHTML = ''; const T = types[cur]; const base = 0x1000;
+      for (let i = 0; i < 16; i++) {
+        const x = 12 + i * 38, on = i < T.size;
+        svg.append(sv('rect', { x, y: 30, width: 36, height: 36, fill: on ? 'var(--accent-soft)' : 'var(--paper)', stroke: on ? 'var(--accent)' : 'var(--rule)', 'stroke-width': on ? 1.5 : 1 }));
+        svg.append(mono(x + 18, 53, on ? T.bytes[i].toString(16).padStart(2, '0') : '··', { 'text-anchor': 'middle', 'font-size': 12, fill: on ? 'var(--ink)' : 'var(--ink-3)' }));
+        svg.append(mono(x + 18, 84, '0x' + (base + i).toString(16), { 'text-anchor': 'middle', 'font-size': 9, fill: 'var(--ink-3)' }));
+      }
+      svg.append(txt(12, 18, cur + ' x = ' + T.sample + ';   sizeof(x) = ' + T.size, { 'font-size': 13, 'font-family': 'var(--mono)' }));
+      svg.append(txt(12, 104, 'addresses (each cell is one byte; little-endian, so the low byte comes first)', { 'font-size': 11, fill: 'var(--ink-3)' }));
+      status.textContent = T.note;
+    }
+    mount.append(el('div', { class: 'fig-tools' }, btns), el('div', { class: 'fig-scroll' }, svg), status);
+    render();
+  };
+
+  /* ---------- 14. arrays and pointer arithmetic ---------- */
+  W.array = function (mount) {
+    const vals = [10, 20, 30, 40, 50, 60], base = 0x7ffc10, n = vals.length;
+    const svg = sv('svg', { viewBox: '0 0 640 130', role: 'img', 'aria-label': 'An int array in memory' });
+    const range = el('input', { type: 'range', min: 0, max: n - 1, value: 2, 'aria-label': 'index' });
+    const status = el('div', { class: 'fig-status' });
+    function render() {
+      const i = +range.value; svg.innerHTML = '';
+      svg.append(txt(12, 18, 'int arr[6] = {10, 20, 30, 40, 50, 60};', { 'font-family': 'var(--mono)', 'font-size': 13 }));
+      vals.forEach((v, k) => {
+        const x = 12 + k * 100, on = k === i;
+        svg.append(sv('rect', { x, y: 30, width: 96, height: 40, fill: on ? 'var(--accent)' : 'var(--paper)', stroke: on ? 'var(--accent)' : 'var(--ink)' }));
+        svg.append(mono(x + 48, 56, String(v), { 'text-anchor': 'middle', 'font-size': 15, fill: on ? 'var(--accent-ink)' : 'var(--ink)' }));
+        svg.append(mono(x + 48, 88, '0x' + (base + 4 * k).toString(16), { 'text-anchor': 'middle', 'font-size': 10, fill: 'var(--ink-3)' }));
+        svg.append(mono(x + 48, 104, 'arr[' + k + ']', { 'text-anchor': 'middle', 'font-size': 11, fill: on ? 'var(--accent)' : 'var(--ink-2)' }));
+        for (let b = 1; b < 4; b++) svg.append(sv('line', { x1: x + b * 24, y1: 30, x2: x + b * 24, y2: 70, stroke: on ? 'var(--accent-ink)' : 'var(--rule)', 'stroke-opacity': 0.5 }));
+      });
+      svg.append(txt(12, 124, 'each int is 4 bytes, so consecutive elements are 4 addresses apart', { 'font-size': 11, fill: 'var(--ink-3)' }));
+      status.innerHTML = 'i = ' + i + '   arr[i] = <span class="ok">' + vals[i] + '</span>   &arr[i] = arr + i = 0x' + (base + 4 * i).toString(16) + '   *(arr + i) = <span class="ok">' + vals[i] + '</span>';
+    }
+    range.addEventListener('input', render);
+    mount.append(el('div', { class: 'fig-scroll' }, svg), el('div', { class: 'fig-tools' }, el('span', {}, 'i'), range), status);
+    render();
+  };
+
+  /* ---------- 15. sieve of Eratosthenes ---------- */
+  W.sieve = function (mount, b) {
+    const N = b.n || 100;
+    const grid = el('div', { class: 'sieve' });
+    const cells = [];
+    for (let i = 1; i <= N; i++) { const c = el('div', {}, String(i)); cells.push(c); grid.append(c); }
+    const log = el('div', { class: 'fig-status' });
+    const steps = [];
+    const marked = new Array(N + 1).fill(false);
+    steps.push({ state: [], msg: 'Every number from 2 up starts as "possibly prime". 1 is not prime by definition.' });
+    for (let p = 2; p * p <= N; p++) {
+      if (marked[p]) continue;
+      const m = [];
+      for (let k = p * p; k <= N; k += p) if (!marked[k]) { marked[k] = true; m.push(k); }
+      steps.push({ p, m, msg: p + ' is prime. Cross out its multiples starting at ' + p + '×' + p + ' = ' + (p * p) + ' (smaller multiples were already crossed out).' });
+    }
+    steps.push({ done: true, msg: 'Anything still uncrossed is prime: no need to check beyond √' + N + ' ≈ ' + Math.floor(Math.sqrt(N)) + '.' });
+    function render(i) {
+      const crossed = new Set(), primes = new Set();
+      for (let k = 1; k <= i; k++) { const s = steps[k]; if (s.m) { s.m.forEach(x => crossed.add(x)); primes.add(s.p); } }
+      const s = steps[i];
+      cells.forEach((c, k) => {
+        const v = k + 1; c.className = '';
+        if (v === 1) c.className = 'cross';
+        else if (crossed.has(v)) c.className = 'cross' + (s.m && s.m.includes(v) ? ' marking' : '');
+        else if (primes.has(v)) c.className = 'prime' + (s.p === v ? ' cur' : '');
+        else if (s.done) c.className = 'prime';
+      });
+      log.textContent = s.msg;
+    }
+    const ctl = stepper(steps.length, render, { interval: 1200 });
+    mount.append(grid, log, ctl.el);
+  };
+
+  /* ---------- 16. call-stack recursion diagram (scheme fib tree) ---------- */
+  W.fibtree = function (mount, b) {
+    const n = b.n || 5;
+    let id = 0;
+    function build(k, depth) { const node = { k, depth, id: id++, kids: [] }; if (k >= 2) { node.kids.push(build(k - 1, depth + 1)); node.kids.push(build(k - 2, depth + 1)); } return node; }
+    const root = build(n, 0);
+    const width = (t) => { t.w = t.kids.length ? t.kids.reduce((s, k) => s + width(k), 0) : 40; return t.w; }; width(root);
+    const H = (n + 1) * 56;
+    const svg = sv('svg', { viewBox: '0 0 ' + (root.w + 20) + ' ' + H, role: 'img', 'aria-label': 'Tree of recursive fib calls' });
+    svg.style.width = Math.min(root.w + 20, 760) + 'px'; svg.style.maxWidth = '100%';
+    let count = 0;
+    function draw(t, x, y) {
+      const cx = x + t.w / 2; count++;
+      let kx = x;
+      for (const k of t.kids) { const kcx = kx + k.w / 2; svg.append(sv('line', { x1: cx, y1: y + 10, x2: kcx, y2: y + 46, stroke: 'var(--rule)' })); draw(k, kx, y + 56); kx += k.w; }
+      const leaf = t.k < 2;
+      svg.append(sv('rect', { x: cx - 18, y: y - 10, width: 36, height: 22, rx: 11, fill: leaf ? 'var(--accent)' : 'var(--paper)', stroke: 'var(--accent)' }));
+      svg.append(mono(cx, y + 5, 'fib ' + t.k, { 'text-anchor': 'middle', 'font-size': 11, fill: leaf ? 'var(--accent-ink)' : 'var(--ink)' }));
+    }
+    draw(root, 10, 18);
+    const call = b.lang === 'python' ? (k) => 'fib(' + k + ')' : (k) => '(fib ' + k + ')';
+    mount.append(el('div', { class: 'fig-scroll' }, svg), el('div', { class: 'fig-status' }, call(n) + ' makes ' + count + ' calls to compute the answer ' + (function f(k) { return k < 2 ? k : f(k - 1) + f(k - 2); })(n) + '. Notice how ' + call(n - 2) + ' is computed twice, ' + call(n - 3) + ' three times…'));
+  };
+  /* ---------- 17. breadth-first search on the towns graph (math course) ---------- */
+  W.graphbfs = function (mount, b) {
+    const pos = { Ash: [70, 60], Birch: [190, 40], Cedar: [150, 130], Dell: [310, 60], Elm: [420, 110], Fir: [520, 50], Gum: [600, 120] };
+    const graph = { Ash: ['Birch', 'Cedar'], Birch: ['Ash', 'Cedar', 'Dell'], Cedar: ['Ash', 'Birch'], Dell: ['Birch', 'Elm'], Elm: ['Dell'], Fir: ['Gum'], Gum: ['Fir'] };
+    const start = b.start || 'Ash';
+    const edges = []; for (const v in graph) for (const w of graph[v]) if (v < w) edges.push([v, w]);
+    const steps = [];
+    const dist = { [start]: 0 }; const queue = [start]; const done = [];
+    steps.push({ dist: { ...dist }, queue: queue.slice(), done: [], cur: null, edge: null, msg: 'Start at ' + start + ' (distance 0) and put it in the queue.' });
+    while (queue.length) {
+      const v = queue.shift(); 
+      let found = 0;
+      for (const w of graph[v]) {
+        if (!(w in dist)) { dist[w] = dist[v] + 1; queue.push(w); found++; steps.push({ dist: { ...dist }, queue: queue.slice(), done: done.slice(), cur: v, edge: [v, w], msg: 'From ' + v + ': ' + w + ' is new. Its distance is ' + dist[v] + ' + 1 = ' + dist[w] + '; it joins the back of the queue.' }); }
+      }
+      done.push(v);
+      steps.push({ dist: { ...dist }, queue: queue.slice(), done: done.slice(), cur: v, edge: null, msg: 'Take ' + v + ' off the front of the queue' + (found ? '' : ': all of its neighbours were already seen') + '. ' + v + ' is finished.' });
+    }
+    const unreached = Object.keys(graph).filter(v => !(v in dist));
+    steps.push({ dist: { ...dist }, queue: [], done: done.slice(), cur: null, edge: null, msg: 'The queue is empty, so the search is over. ' + (unreached.length ? unreached.join(' and ') + ' were never reached: no road connects them to ' + start + '.' : 'Every vertex was reached.') });
+    const svg = sv('svg', { viewBox: '0 0 660 170', role: 'img', 'aria-label': 'Breadth-first search on a graph of seven towns' });
+    const qbox = el('div', { class: 'fig-status' });
+    const log = el('div', { class: 'fig-status' });
+    function render(i) {
+      const s = steps[i]; svg.innerHTML = '';
+      for (const [v, w] of edges) {
+        const hot = s.edge && ((s.edge[0] === v && s.edge[1] === w) || (s.edge[0] === w && s.edge[1] === v));
+        svg.append(sv('line', { x1: pos[v][0], y1: pos[v][1], x2: pos[w][0], y2: pos[w][1], stroke: hot ? 'var(--accent)' : 'var(--rule)', 'stroke-width': hot ? 3 : 1.5 }));
+      }
+      for (const v in pos) {
+        const [x, y] = pos[v]; const seen = v in s.dist; const fin = s.done.includes(v); const inq = s.queue.includes(v);
+        const fill = fin ? 'var(--accent)' : inq ? 'var(--accent-soft)' : 'var(--paper-2)';
+        svg.append(sv('circle', { cx: x, cy: y, r: 18, fill, stroke: s.cur === v ? 'var(--ink)' : seen ? 'var(--accent)' : 'var(--rule)', 'stroke-width': s.cur === v ? 2.5 : 1.5 }));
+        svg.append(txt(x, y - 24, v, { 'text-anchor': 'middle', 'font-size': 12, fill: 'var(--ink-2)' }));
+        if (seen) svg.append(mono(x, y + 5, String(s.dist[v]), { 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 600, fill: fin ? 'var(--accent-ink)' : 'var(--ink)' }));
+      }
+      qbox.textContent = 'queue: [' + s.queue.join(', ') + ']';
+      log.textContent = s.msg;
+    }
+    const ctl = stepper(steps.length, render, { interval: 1100 });
+    mount.append(el('div', { class: 'fig-scroll' }, svg), qbox, log, ctl.el);
+  };
+
+  let dfaCount = 0;
+  /* ---------- 18. finite automaton, stepping through an input string ---------- */
+  W.dfa = function (mount, b) {
+    const mk = 'dfa-arrow-' + (++dfaCount);   // marker ids unique to this figure (a lesson can show several)
+    const MACHINES = {
+      ends01: { start: 'a', accept: ['c'], states: { a: [80, 80], b: [240, 80], c: [400, 80] }, alphabet: '01',
+        delta: { a: { 0: 'b', 1: 'a' }, b: { 0: 'b', 1: 'c' }, c: { 0: 'b', 1: 'a' } }, sample: '1101', what: 'ends in 01' },
+      div3: { start: 'r0', accept: ['r0'], states: { r0: [80, 80], r1: [240, 80], r2: [400, 80] }, alphabet: '01',
+        delta: { r0: { 0: 'r0', 1: 'r1' }, r1: { 0: 'r2', 1: 'r0' }, r2: { 0: 'r1', 1: 'r2' } }, sample: '1001', what: 'is divisible by 3' }
+    };
+    const m = MACHINES[b.machine] || MACHINES.ends01;
+    const names = Object.keys(m.states);
+    // group transitions by (from, to) so parallel labels merge
+    const arcs = {};
+    for (const q of names) for (const ch of m.alphabet) { const k = q + '>' + m.delta[q][ch]; (arcs[k] = arcs[k] || { from: q, to: m.delta[q][ch], labels: [] }).labels.push(ch); }
+    const input = el('input', { type: 'text', value: b.sample || m.sample, 'aria-label': 'input string', size: 12 });
+    const log = el('div', { class: 'fig-status' });
+    let steps = [];
+    function compute() {
+      const s = input.value.replace(/[^01]/g, ''); input.value = s; steps = [];
+      let q = m.start;
+      steps.push({ q, i: 0, s, arc: null, msg: 'Start in state ' + q + '.' + (s ? '' : ' The input is empty, so we are already at the end.') });
+      for (let i = 0; i < s.length; i++) { const nq = m.delta[q][s[i]]; steps.push({ q: nq, i: i + 1, s, arc: q + '>' + nq, msg: 'Read ' + s[i] + ' in state ' + q + ': go to ' + nq + '.' }); q = nq; }
+      const acc = m.accept.includes(q);
+      steps.push({ q, i: s.length, s, arc: null, end: true, msg: 'Input finished in state ' + q + ', which is ' + (acc ? 'an accepting state: ACCEPT. ' : 'not accepting: REJECT. ') + (s ? '"' + s + '" ' + (acc ? '' : 'does not ') + m.what + '.' : '') });
+    }
+    const svg = sv('svg', { viewBox: '0 0 480 190', role: 'img', 'aria-label': 'Finite automaton' });
+    svg.append(sv('defs', {}, sv('marker', { id: mk, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, sv('path', { d: 'M0 0 L10 5 L0 10 z', fill: 'var(--ink-2)' })),
+      sv('marker', { id: mk + '-hot', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, sv('path', { d: 'M0 0 L10 5 L0 10 z', fill: 'var(--accent)' }))));
+    const R = 24;
+    function render(k) {
+      const st = steps[k];
+      while (svg.childNodes.length > 1) svg.removeChild(svg.lastChild);
+      // start arrow
+      const [sx, sy] = m.states[m.start];
+      svg.append(sv('line', { x1: sx - R - 34, y1: sy, x2: sx - R - 2, y2: sy, stroke: 'var(--ink-2)', 'marker-end': 'url(#' + mk + ')' }));
+      for (const key in arcs) {
+        const a = arcs[key]; const hot = st.arc === key; const col = hot ? 'var(--accent)' : 'var(--ink-2)';
+        const [x1, y1] = m.states[a.from], [x2, y2] = m.states[a.to]; const label = a.labels.join(', ');
+        if (a.from === a.to) {
+          svg.append(sv('path', { d: `M${x1 - 12} ${y1 - R + 4} C ${x1 - 40} ${y1 - 80}, ${x1 + 40} ${y1 - 80}, ${x1 + 12} ${y1 - R + 4}`, fill: 'none', stroke: col, 'stroke-width': hot ? 2.5 : 1.5, 'marker-end': hot ? 'url(#' + mk + '-hot)' : 'url(#' + mk + ')' }));
+          svg.append(mono(x1, y1 - R - 42, label, { 'text-anchor': 'middle', 'font-size': 13, fill: col }));
+        } else {
+          const forward = x2 > x1; const dx = x2 - x1; const bend = Math.abs(dx) > 200 ? 70 : 34;
+          const yoff = forward ? -1 : 1; // forward arcs curve above, backward below
+          const cy = y1 + yoff * bend;
+          const ax = x1 + (forward ? R : -R) * 0.9, ay = y1 + yoff * R * 0.45, bx = x2 - (forward ? R : -R) * 0.9, by = y2 + yoff * R * 0.45;
+          svg.append(sv('path', { d: `M${ax} ${ay} Q ${(x1 + x2) / 2} ${cy}, ${bx} ${by}`, fill: 'none', stroke: col, 'stroke-width': hot ? 2.5 : 1.5, 'marker-end': hot ? 'url(#' + mk + '-hot)' : 'url(#' + mk + ')' }));
+          svg.append(mono((x1 + x2) / 2, (y1 + cy) / 2 + (forward ? -2 : 12), label, { 'text-anchor': 'middle', 'font-size': 13, fill: col }));
+        }
+      }
+      for (const q of names) {
+        const [x, y] = m.states[q]; const cur = st.q === q; const acc = m.accept.includes(q);
+        svg.append(sv('circle', { cx: x, cy: y, r: R, fill: cur ? (st.end ? (acc ? 'var(--ok)' : 'var(--err)') : 'var(--accent)') : 'var(--paper)', stroke: cur ? 'var(--ink)' : 'var(--ink-2)', 'stroke-width': 1.5 }));
+        if (acc) svg.append(sv('circle', { cx: x, cy: y, r: R - 5, fill: 'none', stroke: cur ? 'var(--accent-ink)' : 'var(--ink-2)', 'stroke-width': 1.5 }));
+        svg.append(mono(x, y + 5, q, { 'text-anchor': 'middle', 'font-size': 14, 'font-weight': 600, fill: cur ? 'var(--accent-ink)' : 'var(--ink)' }));
+      }
+      // the input, with the read position marked
+      const s = st.s; const cw = 22; const x0 = 240 - (s.length * cw) / 2;
+      for (let i = 0; i < s.length; i++) {
+        const read = i < st.i;
+        svg.append(sv('rect', { x: x0 + i * cw, y: 150, width: cw - 2, height: 26, fill: read ? 'var(--accent-soft)' : 'var(--paper)', stroke: i === st.i - 1 && !st.end ? 'var(--accent)' : 'var(--rule)', 'stroke-width': i === st.i - 1 && !st.end ? 2 : 1 }));
+        svg.append(mono(x0 + i * cw + cw / 2 - 1, 168, s[i], { 'text-anchor': 'middle', 'font-size': 14, fill: read ? 'var(--ink-3)' : 'var(--ink)' }));
+      }
+      if (!s.length) svg.append(txt(240, 168, '(empty input)', { 'text-anchor': 'middle', 'font-size': 12, fill: 'var(--ink-3)' }));
+      log.textContent = st.msg;
+    }
+    compute();
+    let ctl = stepper(steps.length, render, { interval: 900 });
+    const run = () => { compute(); ctl.stop(); const old = ctl.el; ctl = stepper(steps.length, render, { interval: 900 }); old.replaceWith(ctl.el); };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+    const tools = el('div', { class: 'fig-tools' }, el('span', {}, 'input (0s and 1s)'), input, el('button', { class: 'btn sm', onclick: run }, 'Load'));
+    mount.append(el('div', { class: 'fig-scroll' }, svg), tools, log, ctl.el);
+  };
+
+  /* ---------- 19. Turing machine tape ---------- */
+  W.tape = function (mount, b) {
+    // rules: { 'state,symbol': [write, move, next] }; '_' is the blank
+    const MACHINES = {
+      increment: {
+        start: 'right', rules: {
+          'right,0': ['0', 'R', 'right'], 'right,1': ['1', 'R', 'right'], 'right,_': ['_', 'L', 'add'],
+          'add,1': ['0', 'L', 'add'], 'add,0': ['1', 'L', 'done'], 'add,_': ['1', 'L', 'done']
+        }, sample: '1011', what: 'Adds one to a binary number: walk to the right end, then carry leftwards.'
+      },
+      flip: {
+        start: 'go', rules: { 'go,0': ['1', 'R', 'go'], 'go,1': ['0', 'R', 'go'], 'go,_': ['_', 'L', 'done'] },
+        sample: '1001', what: 'Flips every bit, then stops at the blank.'
+      },
+      beaver: {
+        start: 'A', rules: {
+          'A,_': ['1', 'R', 'B'], 'A,1': ['1', 'L', 'B'],
+          'B,_': ['1', 'L', 'A'], 'B,1': ['1', 'R', 'H']
+        }, sample: '', what: 'The two-state busy beaver: started on a blank tape, it writes four 1s in six steps and halts in state H. No two-state machine that halts does better.'
+      }
+    };
+    const m = MACHINES[b.machine] || MACHINES.increment;
+    const input = el('input', { type: 'text', value: b.sample != null ? b.sample : m.sample, 'aria-label': 'tape', size: 12, placeholder: '(blank)' });
+    const log = el('div', { class: 'fig-status' });
+    const rulebox = el('div', { class: 'fig-status' });
+    let steps = [];
+    function compute() {
+      const s = input.value.replace(/[^01]/g, ''); input.value = s;
+      let tape = {}; for (let i = 0; i < s.length; i++) tape[i] = s[i];
+      let head = 0, q = m.start; steps = [];
+      const snap = (rule, msg) => steps.push({ tape: { ...tape }, head, q, rule, msg });
+      snap(null, 'Start in state ' + q + ' with the head on the leftmost cell.');
+      for (let n = 0; n < 200; n++) {
+        const sym = tape[head] === undefined ? '_' : tape[head];
+        const key = q + ',' + sym; const r = m.rules[key];
+        if (!r) { snap(null, 'No rule for (' + q + ', ' + sym + '): the machine halts. Tape: ' + tapeString(tape)); break; }
+        if (r[0] === '_') delete tape[head]; else tape[head] = r[0];
+        head += r[1] === 'R' ? 1 : -1; q = r[2];
+        snap(key, 'In state ' + steps[steps.length - 1].q + ' reading ' + sym + ': write ' + r[0] + ', move ' + (r[1] === 'R' ? 'right' : 'left') + ', go to ' + r[2] + '.');
+        if (!Object.keys(m.rules).some(k => k.startsWith(q + ','))) { snap(null, 'State ' + q + ' has no rules: the machine halts. Tape: ' + tapeString(tape)); break; }
+      }
+    }
+    function tapeString(t) { const ks = Object.keys(t).map(Number); if (!ks.length) return '(blank)'; let out = ''; for (let i = Math.min(...ks); i <= Math.max(...ks); i++) out += t[i] === undefined ? '_' : t[i]; return out; }
+    const svg = sv('svg', { viewBox: '0 0 520 110', role: 'img', 'aria-label': 'Turing machine tape' });
+    const cw = 34, N = 13;
+    function render(k) {
+      const st = steps[k]; svg.innerHTML = '';
+      const lo = Math.min(...Object.keys(st.tape).map(Number).concat([st.head])) - 1;
+      for (let i = 0; i < N; i++) {
+        const cell = lo + i; const x = 20 + i * cw; const isHead = cell === st.head; const sym = st.tape[cell] === undefined ? '' : st.tape[cell];
+        svg.append(sv('rect', { x, y: 40, width: cw, height: 34, fill: isHead ? 'var(--accent-soft)' : 'var(--paper)', stroke: 'var(--ink-2)' }));
+        if (sym) svg.append(mono(x + cw / 2, 63, sym, { 'text-anchor': 'middle', 'font-size': 16, fill: 'var(--ink)' }));
+        if (isHead) {
+          svg.append(sv('path', { d: `M${x + cw / 2 - 8} 20 L${x + cw / 2 + 8} 20 L${x + cw / 2} 34 z`, fill: 'var(--accent)' }));
+          svg.append(mono(x + cw / 2, 96, st.q, { 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 600, fill: 'var(--accent)' }));
+        }
+      }
+      svg.append(txt(20, 14, 'blank cells stretch on forever in both directions', { 'font-size': 11, fill: 'var(--ink-3)' }));
+      rulebox.textContent = st.rule ? 'rule used: (' + st.rule + ') → write ' + m.rules[st.rule][0] + ', move ' + m.rules[st.rule][1] + ', state ' + m.rules[st.rule][2] : 'rules: ' + Object.keys(m.rules).map(k => '(' + k + ')→' + m.rules[k].join('')).join('  ');
+      log.textContent = st.msg;
+    }
+    compute();
+    let ctl = stepper(steps.length, render, { interval: 800 });
+    const run = () => { compute(); ctl.stop(); const old = ctl.el; ctl = stepper(steps.length, render, { interval: 800 }); old.replaceWith(ctl.el); };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+    const tools = el('div', { class: 'fig-tools' }, el('span', {}, 'tape'), input, el('button', { class: 'btn sm', onclick: run }, 'Load'));
+    mount.append(el('div', { class: 'fig-scroll' }, svg), tools, rulebox, log, ctl.el, el('div', { class: 'fig-status' }, m.what));
+  };
+
+  /* ---------- 20. splitting double vowel spelling into letters (math lesson 7) ---------- */
+  W.letters = function (mount, b) {
+    const CHARS = "abcdeghijkmnopstwyz'";             // the characters the system writes with (c only in ch)
+    const TWO = ['aa', 'ii', 'oo', 'ch', 'sh', 'zh'];   // the letters written with two characters
+    const LONG = ['aa', 'ii', 'oo', 'e'], SHORT = ['a', 'i', 'o'];
+    const kindOf = l => LONG.includes(l) ? 'long vowel' : SHORT.includes(l) ? 'short vowel' : 'consonant';
+    const WORDS = ['Boozhoo', 'Miigwech', 'Gikinoo\'amaagoowin', 'Niizho-giizhigad'];
+    const input = el('input', { type: 'text', value: b.sample || 'Boozhoo', 'aria-label': 'word to split', size: 20, lang: 'ciw', spellcheck: 'false', autocapitalize: 'off' });
+    const mode = el('select', { 'aria-label': 'how to read' },
+      el('option', { value: 'long' }, 'longest letter that fits'), el('option', { value: 'short' }, 'shortest letter that fits'));
+    const log = el('div', { class: 'fig-status' });
+    const svg = sv('svg', { viewBox: '0 0 480 150', role: 'img', 'aria-label': 'A word split into letters' });
+    let steps = [];
+    function compute() {
+      const s = input.value.toLowerCase().replace(/[\u2018\u2019\u02bc]/g, "'").replace(/\s+/g, '').slice(0, 30);
+      input.value = s; steps = [];
+      const longest = mode.value === 'long';
+      const pieces = [];   // { from, to, letter } ; letter null for a hyphen
+      steps.push({ s, pieces: [], cur: -1, msg: s ? 'Start before the first character.' : 'Type a word, or choose one below.' });
+      let i = 0, stuck = '';
+      while (i < s.length) {
+        const c = s[i], two = s.slice(i, i + 2);
+        if (c === '-') { pieces.push({ from: i, to: i + 1, letter: null }); steps.push({ s, pieces: pieces.slice(), cur: pieces.length - 1, msg: 'A hyphen joins two parts of the word. It is not a letter; skip it.' }); i += 1; continue; }
+        if (!CHARS.includes(c) && c !== 'c') { stuck = '\u201c' + c + '\u201d is not a character of the double vowel system, so no split exists.'; break; }
+        let letter;
+        if (c === 'c') { if (two !== 'ch') { stuck = 'A c must be followed by h: c alone is not a letter, so no split exists.'; break; } letter = 'ch'; }
+        else letter = longest && TWO.includes(two) ? two : c;
+        pieces.push({ from: i, to: i + letter.length, letter });
+        const why = letter === 'ch' ? ' (c is not a letter by itself, so ch is the only choice)' : longest && letter.length === 2 ? ' (two characters: the longer letter fits, so take it)' : !longest && TWO.includes(two) ? ' (the shorter letter, although ' + two + ' would also fit)' : '';
+        steps.push({ s, pieces: pieces.slice(), cur: pieces.length - 1, msg: 'Take \u201c' + letter + '\u201d: a ' + kindOf(letter) + why + '.' });
+        i += letter.length;
+      }
+      const L = pieces.filter(p => p.letter);
+      const n = k => L.filter(p => kindOf(p.letter) === k).length;
+      steps.push({ s, pieces: pieces.slice(), cur: -1, end: true, stuck, at: i,
+        msg: stuck ? 'STUCK at character ' + (i + 1) + '. ' + stuck
+          : s ? 'Done: ' + L.length + ' letters from ' + s.replace(/-/g, '').length + ' characters: ' + n('long vowel') + ' long vowels, ' + n('short vowel') + ' short vowels, ' + n('consonant') + ' consonants.' : '' });
+    }
+    function render(k) {
+      const st = steps[k], s = st.s, cw = 22, W0 = Math.max(400, s.length * cw + 60), x0 = (W0 - s.length * cw) / 2;
+      svg.setAttribute('viewBox', '0 0 ' + W0 + ' 150');
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      // legend
+      [['long vowel', 'var(--accent)'], ['short vowel', 'var(--accent-soft)'], ['consonant', 'var(--paper)']].forEach(([t, f], j) => {
+        const lx = W0 / 2 - 165 + j * 115;
+        svg.append(sv('rect', { x: lx, y: 10, width: 14, height: 14, fill: f, stroke: 'var(--ink-3)' }), txt(lx + 20, 22, t, { 'font-size': 12, fill: 'var(--ink-2)' }));
+      });
+      // letters taken so far, above the characters
+      st.pieces.forEach((p, j) => {
+        const x = x0 + p.from * cw, w = (p.to - p.from) * cw - 2, hot = j === st.cur;
+        if (!p.letter) { svg.append(txt(x + w / 2, 70, '\u2013', { 'text-anchor': 'middle', fill: 'var(--ink-3)' })); return; }
+        const kd = kindOf(p.letter), fill = kd === 'long vowel' ? 'var(--accent)' : kd === 'short vowel' ? 'var(--accent-soft)' : 'var(--paper)';
+        svg.append(sv('rect', { x, y: 46, width: w, height: 32, rx: 4, fill, stroke: hot ? 'var(--ink)' : 'var(--ink-3)', 'stroke-width': hot ? 2.5 : 1 }));
+        svg.append(mono(x + w / 2, 67, p.letter, { 'text-anchor': 'middle', 'font-size': 15, 'font-weight': 600, fill: kd === 'long vowel' ? 'var(--accent-ink)' : 'var(--ink)' }));
+      });
+      // the characters, as typed
+      const done = st.pieces.length ? st.pieces[st.pieces.length - 1].to : 0;
+      for (let i = 0; i < s.length; i++) {
+        const bad = st.stuck && i === st.at;
+        svg.append(sv('rect', { x: x0 + i * cw, y: 96, width: cw - 2, height: 26, fill: i < done ? 'var(--paper-2)' : 'var(--paper)', stroke: bad ? 'var(--err)' : 'var(--rule)', 'stroke-width': bad ? 2 : 1 }));
+        svg.append(mono(x0 + i * cw + cw / 2 - 1, 114, s[i], { 'text-anchor': 'middle', 'font-size': 14, fill: i < done ? 'var(--ink-3)' : 'var(--ink)' }));
+      }
+      if (!s.length) svg.append(txt(W0 / 2, 114, '(empty input)', { 'text-anchor': 'middle', 'font-size': 12, fill: 'var(--ink-3)' }));
+      svg.append(txt(x0 - 6, 67, 'letters', { 'text-anchor': 'end', 'font-size': 11, fill: 'var(--ink-3)' }), txt(x0 - 6, 114, 'typed', { 'text-anchor': 'end', 'font-size': 11, fill: 'var(--ink-3)' }));
+      log.textContent = st.msg;
+      log.className = 'fig-status' + (st.end && st.stuck ? ' err' : '');
+    }
+    compute();
+    let ctl = stepper(steps.length, render, { interval: 900 });
+    const run = () => { compute(); ctl.stop(); const old = ctl.el; ctl = stepper(steps.length, render, { interval: 900 }); old.replaceWith(ctl.el); };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+    mode.addEventListener('change', run);
+    const presets = el('div', { class: 'fig-tools' }, el('span', {}, 'words from this site:'),
+      WORDS.map(w => el('button', { class: 'btn sm quiet', lang: 'ciw', onclick: () => { input.value = w; run(); } }, w)));
+    const tools = el('div', { class: 'fig-tools' }, el('span', {}, 'word'), input, el('button', { class: 'btn sm', onclick: run }, 'Load'), el('span', {}, 'read the'), mode);
+    mount.append(el('div', { class: 'fig-scroll' }, svg), tools, presets, log, ctl.el);
+  };
+})();
