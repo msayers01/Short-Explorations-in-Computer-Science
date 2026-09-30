@@ -77,7 +77,7 @@ console.log('wrote dist/index.html', (html.length / 1024 / 1024).toFixed(2), 'MB
 const guideSrc = r('src/guide.js'); const gm = guideSrc.match(/const html = `([\s\S]*?)`;/);
 if (gm) {
   const guide = head.replace('<title>Short Explorations in Computer Science</title>', '<title>A guide for teachers — Short Explorations in Computer Science</title>')
-    .replace('<div id="app"><noscript>These pages need JavaScript to run the code examples.</noscript></div>', '<main class="guide"><div class="g-tools"><button class="btn quiet tiny" onclick="window.print()">Print or save as PDF</button></div>' + gm[1].replace(/href="#\/([a-z]+)"/g, 'href="index.html#/$1"') + '</main>')
+    .replace('<div id="app"><noscript>These pages need JavaScript to run the code examples.</noscript></div>', '<main class="guide"><div class="g-tools"><button class="btn quiet tiny" onclick="window.print()">Print or save as PDF</button></div>' + gm[1].replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16))).replace(/href="#\/([a-z]+)"/g, 'href="index.html#/$1"') + '</main>')
     + '</body>\n</html>\n';
   fs.writeFileSync('dist/teacher-guide.html', guide);
   console.log('wrote dist/teacher-guide.html', (guide.length / 1024).toFixed(0), 'KB');

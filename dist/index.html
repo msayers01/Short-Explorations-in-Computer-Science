@@ -17,7 +17,7 @@
   --paper-2: #f5f5f3;
   --ink: #000000;
   --ink-2: #555555;
-  --ink-3: #8a8a8a;
+  --ink-3: #6b6b6b;
   --rule: #d8d8d6;
   --rule-2: #ececea;
   --code-bg: #f4f4f2;
@@ -33,7 +33,7 @@
   --serif: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
   --sans: 'Source Sans 3', 'Segoe UI', Helvetica, Arial, sans-serif;
   --mono: 'IBM Plex Mono', 'SF Mono', Menlo, Consolas, monospace;
-  --hl-k: #8a2c8a; --hl-s: #1f6b2f; --hl-c: #8a8a8a; --hl-n: #1d5fb8; --hl-b: #2a5a9a; --hl-p: #8a5a00;
+  --hl-k: #8a2c8a; --hl-s: #1f6b2f; --hl-c: #6b6b6b; --hl-n: #1d5fb8; --hl-b: #2a5a9a; --hl-p: #8a5a00;
   color-scheme: light dark;
 }
 :root[data-course="python"] { --accent: #b06400; --accent-soft: #fcf1df; }
@@ -42,9 +42,9 @@
 :root[data-course="math"] { --accent: #1f6e4a; --accent-soft: #e4f2ea; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #7c7c78; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
+    --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
     --accent: #d6d6d2; --accent-ink: #131313; --accent-soft: #262624; --ok: #4cc06d; --ok-soft: #14301c; --err: #ff7b6e; --err-soft: #3a1a17; --warn: #e0b060; --link: #8fb3ee;
-    --hl-k: #d68fd6; --hl-s: #8fd49a; --hl-c: #7c7c78; --hl-n: #8ab8f5; --hl-b: #9ec4f0; --hl-p: #e0b060;
+    --hl-k: #d68fd6; --hl-s: #8fd49a; --hl-c: #8f8f8b; --hl-n: #8ab8f5; --hl-b: #9ec4f0; --hl-p: #e0b060;
   }
   :root:not([data-theme="light"])[data-course="python"] { --accent: #e8a640; --accent-ink: #1a1200; --accent-soft: #2e2410; }
   :root:not([data-theme="light"])[data-course="lisp"] { --accent: #b99ae6; --accent-ink: #1a1030; --accent-soft: #2a2138; }
@@ -52,9 +52,9 @@
   :root:not([data-theme="light"])[data-course="math"] { --accent: #6fcf97; --accent-ink: #072415; --accent-soft: #14301c; }
 }
 :root[data-theme="dark"] {
-  --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #7c7c78; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
+  --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
   --accent: #d6d6d2; --accent-ink: #131313; --accent-soft: #262624; --ok: #4cc06d; --ok-soft: #14301c; --err: #ff7b6e; --err-soft: #3a1a17; --warn: #e0b060; --link: #8fb3ee;
-  --hl-k: #d68fd6; --hl-s: #8fd49a; --hl-c: #7c7c78; --hl-n: #8ab8f5; --hl-b: #9ec4f0; --hl-p: #e0b060;
+  --hl-k: #d68fd6; --hl-s: #8fd49a; --hl-c: #8f8f8b; --hl-n: #8ab8f5; --hl-b: #9ec4f0; --hl-p: #e0b060;
 }
 :root[data-theme="dark"][data-course="python"] { --accent: #e8a640; --accent-ink: #1a1200; --accent-soft: #2e2410; }
 :root[data-theme="dark"][data-course="lisp"] { --accent: #b99ae6; --accent-ink: #1a1030; --accent-soft: #2a2138; }
@@ -456,7 +456,7 @@ table.vars td, table.vars th { text-align: left; } table.vars code { font-size: 
 @media (hover: none) { .touch-only { display: inline-block; } }
 .lab-editor.wrap .hl, .lab-editor.wrap textarea { white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
 .lab-out .goto { font-family: var(--sans); font-size: 0.85rem; color: var(--accent); }
-.trace-box:focus { outline: 2px solid var(--accent-soft); }
+.trace-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (max-width: 900px) {
   .lab-body { grid-template-columns: minmax(0, 1fr); }
   .lab-side { width: auto; position: static; }
@@ -473,7 +473,7 @@ table.vars td, table.vars th { text-align: left; } table.vars code { font-size: 
 .ex-prompt { margin-top: 0.5rem; font-family: var(--serif); font-size: 0.98rem; } .ex-prompt[hidden] { display: none; }
 .subst-box { border: 1px solid var(--rule); margin-top: 0.7rem; background: var(--paper); }
 .subst-box[hidden] { display: none; }
-.subst-box:focus { outline: 2px solid var(--accent-soft); }
+.subst-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .subst-box .toolbar { margin: 0.5rem 0.8rem; }
 .subst-list { padding: 0 0.8rem 0.6rem; font-family: var(--mono); font-size: 0.84rem; max-height: 28rem; overflow: auto; }
 .sub-def { color: var(--ink-3); padding: 0.2rem 0; display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: baseline; }
@@ -522,9 +522,10 @@ table.vars td, table.vars th { text-align: left; } table.vars code { font-size: 
 .small { font-size: 0.85rem; }
 
 /* ---------- Teacher guide (#/guide and dist/teacher-guide.html) ---------- */
+.prose code { overflow-wrap: anywhere; }
 .guide { max-width: 44rem; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; --g-accent: #1f6e4a; --g-soft: #e4f2ea; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .guide { --g-accent: #6fcf97; --g-soft: #14301c; } }
-:root[data-theme="dark"] .guide { --g-accent: #6fcf97; --g-soft: #14301c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .guide { --g-accent: #6fcf97; --g-soft: #14301c; --g-ink: #072415; } }
+:root[data-theme="dark"] .guide { --g-accent: #6fcf97; --g-soft: #14301c; --g-ink: #072415; }
 .g-tools { display: flex; justify-content: flex-end; margin-bottom: 0.5rem; }
 .g-hero { margin-bottom: 3rem; padding-bottom: 2rem; border-bottom: 3px double var(--rule); }
 .g-kicker { font-family: var(--sans); font-size: 0.95rem; color: var(--g-accent); margin: 0 0 0.6rem; }
@@ -543,7 +544,7 @@ table.vars td, table.vars th { text-align: left; } table.vars code { font-size: 
 .g-steps { display: flex; flex-direction: column; gap: 0.9rem; margin: 1rem 0 1.4rem; }
 .g-step { display: flex; gap: 0.8rem; align-items: flex-start; } .g-step > div { flex: 1; min-width: 0; }
 .g-step p { margin: 0.25rem 0 0; color: var(--ink-2); }
-.g-num { flex: none; width: 2.1rem; height: 2.1rem; border-radius: 50%; background: var(--g-accent); color: #fff; font-family: var(--sans); font-weight: 600; display: inline-flex; align-items: center; justify-content: center; font-size: 0.95rem; margin-top: 0.1rem; }
+.g-num { flex: none; width: 2.1rem; height: 2.1rem; border-radius: 50%; background: var(--g-accent); color: var(--g-ink, #fff); font-family: var(--sans); font-weight: 600; display: inline-flex; align-items: center; justify-content: center; font-size: 0.95rem; margin-top: 0.1rem; }
 .g-callout { border-left: 3px solid var(--g-accent); background: var(--g-soft); padding: 0.8rem 1rem; margin: 1.2rem 0; font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
 .g-callout.g-warn { border-left-color: var(--warn); background: #fdf3e0; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .g-callout.g-warn { background: #3a2b0c; } }
@@ -576,7 +577,7 @@ table.vars td, table.vars th { text-align: left; } table.vars code { font-size: 
 /* ---------- C++ memory stepper (cppstep.js; Code Lab "Step through memory") ---------- */
 .mem-box { border: 1px solid var(--rule); margin-top: 0.7rem; background: var(--paper); }
 .mem-box[hidden] { display: none; }
-.mem-box:focus { outline: 2px solid var(--accent-soft); }
+.mem-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .mem-box .toolbar { margin: 0.5rem 0.8rem; flex-wrap: wrap; gap: 0.4rem; }
 .mem-slider { flex: 1 1 8rem; min-width: 6rem; accent-color: var(--accent); }
 .mem-help { margin: 0 0.8rem 0.5rem; }
@@ -12219,7 +12220,7 @@ window.GUIDE = (function () {
   async function pack(obj) {
     const json = JSON.stringify(obj); const bytes = encodeUtf8(json);
     if (typeof CompressionStream !== 'undefined') {
-      try { const cs = new CompressionStream('deflate-raw'); const w = cs.writable.getWriter(); w.write(bytes); w.close(); const buf = await new Response(cs.readable).arrayBuffer(); return 'z' + b64(new Uint8Array(buf)); } catch (e) { }
+      try { const cs = new CompressionStream('deflate-raw'); const w = cs.writable.getWriter(); w.write(bytes).catch(() => { }); w.close().catch(() => { }); const buf = await new Response(cs.readable).arrayBuffer(); return 'z' + b64(new Uint8Array(buf)); } catch (e) { }
     }
     return 'p' + b64(bytes);
   }
@@ -12227,7 +12228,7 @@ window.GUIDE = (function () {
     if (!s) return null;
     const kind = s[0], body = unb64(s.slice(1));
     let bytes = body;
-    if (kind === 'z') { if (typeof DecompressionStream === 'undefined') throw new Error('This browser cannot open compressed links; try a current version of Chrome, Safari or Firefox.'); const ds = new DecompressionStream('deflate-raw'); const w = ds.writable.getWriter(); w.write(body); w.close(); bytes = new Uint8Array(await new Response(ds.readable).arrayBuffer()); }
+    if (kind === 'z') { if (typeof DecompressionStream === 'undefined') throw new Error('This browser cannot open compressed links; try a current version of Chrome, Safari or Firefox.'); const ds = new DecompressionStream('deflate-raw'); const w = ds.writable.getWriter(); w.write(body).catch(() => { }); w.close().catch(() => { }); bytes = new Uint8Array(await new Response(ds.readable).arrayBuffer()); }
     return JSON.parse(decodeUtf8(bytes));
   }
   const baseUrl = () => location.href.split('#')[0];
@@ -12901,7 +12902,7 @@ window.GUIDE = (function () {
     const status = el('div', { class: 'fig-status' });
     const CW = 28, GAP = 26, ROW = 64;
     function render() {
-      holder.innerHTML = '';
+      holder.innerHTML = ''; status.textContent = '';
       let v;
       try { const r = Scheme.runProgram(input.value); if (r.error) throw new Error(r.error); if (!r.results.length) return; v = r.results[r.results.length - 1].value; }
       catch (e) { status.innerHTML = '<span class="err">' + esc(e.message) + '</span>'; return; }
@@ -13182,16 +13183,16 @@ xs mapped kept result`;
     const mk = 'dfa-arrow-' + (++dfaCount);   // marker ids unique to this figure (a lesson can show several)
     const MACHINES = {
       ends01: { start: 'a', accept: ['c'], states: { a: [80, 80], b: [240, 80], c: [400, 80] }, alphabet: '01',
-        delta: { a: { 0: 'b', 1: 'a' }, b: { 0: 'b', 1: 'c' }, c: { 0: 'b', 1: 'a' } }, sample: '1101', what: 'ends in 01' },
+        delta: { a: { 0: 'b', 1: 'a' }, b: { 0: 'b', 1: 'c' }, c: { 0: 'b', 1: 'a' } }, sample: '1101', what: 'ends in 01', whatNot: 'does not end in 01' },
       div3: { start: 'r0', accept: ['r0'], states: { r0: [80, 80], r1: [240, 80], r2: [400, 80] }, alphabet: '01',
-        delta: { r0: { 0: 'r0', 1: 'r1' }, r1: { 0: 'r2', 1: 'r0' }, r2: { 0: 'r1', 1: 'r2' } }, sample: '1001', what: 'is divisible by 3' }
+        delta: { r0: { 0: 'r0', 1: 'r1' }, r1: { 0: 'r2', 1: 'r0' }, r2: { 0: 'r1', 1: 'r2' } }, sample: '1001', what: 'is divisible by 3', whatNot: 'is not divisible by 3' }
     };
     const m = MACHINES[b.machine] || MACHINES.ends01;
     const names = Object.keys(m.states);
     // group transitions by (from, to) so parallel labels merge
     const arcs = {};
     for (const q of names) for (const ch of m.alphabet) { const k = q + '>' + m.delta[q][ch]; (arcs[k] = arcs[k] || { from: q, to: m.delta[q][ch], labels: [] }).labels.push(ch); }
-    const input = el('input', { type: 'text', value: b.sample || m.sample, 'aria-label': 'input string', size: 12 });
+    const input = el('input', { type: 'text', value: b.sample || m.sample, 'aria-label': 'input string', size: 12, maxlength: 16 });
     const log = el('div', { class: 'fig-status' });
     let steps = [];
     function compute() {
@@ -13200,7 +13201,7 @@ xs mapped kept result`;
       steps.push({ q, i: 0, s, arc: null, msg: 'Start in state ' + q + '.' + (s ? '' : ' The input is empty, so we are already at the end.') });
       for (let i = 0; i < s.length; i++) { const nq = m.delta[q][s[i]]; steps.push({ q: nq, i: i + 1, s, arc: q + '>' + nq, msg: 'Read ' + s[i] + ' in state ' + q + ': go to ' + nq + '.' }); q = nq; }
       const acc = m.accept.includes(q);
-      steps.push({ q, i: s.length, s, arc: null, end: true, msg: 'Input finished in state ' + q + ', which is ' + (acc ? 'an accepting state: ACCEPT. ' : 'not accepting: REJECT. ') + (s ? '"' + s + '" ' + (acc ? '' : 'does not ') + m.what + '.' : '') });
+      steps.push({ q, i: s.length, s, arc: null, end: true, msg: 'Input finished in state ' + q + ', which is ' + (acc ? 'an accepting state: ACCEPT. ' : 'not accepting: REJECT. ') + (s ? '"' + s + '" ' + (acc ? m.what : m.whatNot) + '.' : '') });
     }
     const svg = sv('svg', { viewBox: '0 0 480 190', role: 'img', 'aria-label': 'Finite automaton' });
     svg.append(sv('defs', {}, sv('marker', { id: mk, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, sv('path', { d: 'M0 0 L10 5 L0 10 z', fill: 'var(--ink-2)' })),
@@ -13273,7 +13274,7 @@ xs mapped kept result`;
       }
     };
     const m = MACHINES[b.machine] || MACHINES.increment;
-    const input = el('input', { type: 'text', value: b.sample != null ? b.sample : m.sample, 'aria-label': 'tape', size: 12, placeholder: '(blank)' });
+    const input = el('input', { type: 'text', value: b.sample != null ? b.sample : m.sample, 'aria-label': 'tape', size: 12, maxlength: 10, placeholder: '(blank)' });
     const log = el('div', { class: 'fig-status' });
     const rulebox = el('div', { class: 'fig-status' });
     let steps = [];
@@ -13673,8 +13674,11 @@ xs mapped kept result`;
         typeof DecompressionStream === 'undefined' ? el('p', {}, 'This browser also cannot read compressed links. Open it in a current Chrome, Edge, Firefox or Safari.') : null));
       return;
     }
-    P.lab = P.lab || [];
-    const doc = renderDoc(P, { own: false });
+    P.items = P.items.filter(it => it && typeof it.id === 'string');
+    P.lab = (Array.isArray(P.lab) ? P.lab : []).filter(f => f && typeof f.code === 'string' && (f.lang === 'python' || f.lang === 'cpp' || f.lang === 'scheme'));
+    let doc;
+    try { doc = renderDoc(P, { own: false }); }
+    catch (e) { main.innerHTML = ''; main.append(el('header', { class: 'pf-intro' }, el('h1', {}, 'This portfolio link did not open'), el('p', { class: 'lead' }, 'The link opened, but its contents are not a portfolio this site can show.'))); return; }
     const status = el('span', { class: 'muted small' });
     const check = el('button', { class: 'btn primary', onclick: () => checkAll(P, doc, check, status) }, 'Check every exercise on this computer');
     main.innerHTML = '';
@@ -14070,7 +14074,7 @@ xs mapped kept result`;
   function clock(opts) {
     opts = opts || {};
     const box = h('div', { class: 'oj-clock' });
-    let timer = 0, last = '', seen = false;
+    let timer = 0, last = '', seen = false; const born = Date.now();
     function draw() {
       const d = new Date(), words = timeWords(d);
       const digits = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -14086,7 +14090,7 @@ xs mapped kept result`;
     function stop() { clearTimeout(timer); timer = 0; document.removeEventListener('visibilitychange', onVisible); }
     function schedule() { clearTimeout(timer); timer = setTimeout(tick, 60000 - Date.now() % 60000 + 50); }
     function tick() {
-      if (!box.isConnected) { if (seen) stop(); else schedule(); return; }   // not yet on the page: wait
+      if (!box.isConnected) { if (seen || Date.now() - born > 2000) stop(); else schedule(); return; }   // not yet on the page: wait a moment, then give up
       seen = true; draw(); schedule();
     }
     function onVisible() { if (!document.hidden) tick(); }

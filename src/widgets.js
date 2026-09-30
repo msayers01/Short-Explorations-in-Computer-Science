@@ -399,7 +399,7 @@
     const status = el('div', { class: 'fig-status' });
     const CW = 28, GAP = 26, ROW = 64;
     function render() {
-      holder.innerHTML = '';
+      holder.innerHTML = ''; status.textContent = '';
       let v;
       try { const r = Scheme.runProgram(input.value); if (r.error) throw new Error(r.error); if (!r.results.length) return; v = r.results[r.results.length - 1].value; }
       catch (e) { status.innerHTML = '<span class="err">' + esc(e.message) + '</span>'; return; }
@@ -680,16 +680,16 @@ xs mapped kept result`;
     const mk = 'dfa-arrow-' + (++dfaCount);   // marker ids unique to this figure (a lesson can show several)
     const MACHINES = {
       ends01: { start: 'a', accept: ['c'], states: { a: [80, 80], b: [240, 80], c: [400, 80] }, alphabet: '01',
-        delta: { a: { 0: 'b', 1: 'a' }, b: { 0: 'b', 1: 'c' }, c: { 0: 'b', 1: 'a' } }, sample: '1101', what: 'ends in 01' },
+        delta: { a: { 0: 'b', 1: 'a' }, b: { 0: 'b', 1: 'c' }, c: { 0: 'b', 1: 'a' } }, sample: '1101', what: 'ends in 01', whatNot: 'does not end in 01' },
       div3: { start: 'r0', accept: ['r0'], states: { r0: [80, 80], r1: [240, 80], r2: [400, 80] }, alphabet: '01',
-        delta: { r0: { 0: 'r0', 1: 'r1' }, r1: { 0: 'r2', 1: 'r0' }, r2: { 0: 'r1', 1: 'r2' } }, sample: '1001', what: 'is divisible by 3' }
+        delta: { r0: { 0: 'r0', 1: 'r1' }, r1: { 0: 'r2', 1: 'r0' }, r2: { 0: 'r1', 1: 'r2' } }, sample: '1001', what: 'is divisible by 3', whatNot: 'is not divisible by 3' }
     };
     const m = MACHINES[b.machine] || MACHINES.ends01;
     const names = Object.keys(m.states);
     // group transitions by (from, to) so parallel labels merge
     const arcs = {};
     for (const q of names) for (const ch of m.alphabet) { const k = q + '>' + m.delta[q][ch]; (arcs[k] = arcs[k] || { from: q, to: m.delta[q][ch], labels: [] }).labels.push(ch); }
-    const input = el('input', { type: 'text', value: b.sample || m.sample, 'aria-label': 'input string', size: 12 });
+    const input = el('input', { type: 'text', value: b.sample || m.sample, 'aria-label': 'input string', size: 12, maxlength: 16 });
     const log = el('div', { class: 'fig-status' });
     let steps = [];
     function compute() {
@@ -698,7 +698,7 @@ xs mapped kept result`;
       steps.push({ q, i: 0, s, arc: null, msg: 'Start in state ' + q + '.' + (s ? '' : ' The input is empty, so we are already at the end.') });
       for (let i = 0; i < s.length; i++) { const nq = m.delta[q][s[i]]; steps.push({ q: nq, i: i + 1, s, arc: q + '>' + nq, msg: 'Read ' + s[i] + ' in state ' + q + ': go to ' + nq + '.' }); q = nq; }
       const acc = m.accept.includes(q);
-      steps.push({ q, i: s.length, s, arc: null, end: true, msg: 'Input finished in state ' + q + ', which is ' + (acc ? 'an accepting state: ACCEPT. ' : 'not accepting: REJECT. ') + (s ? '"' + s + '" ' + (acc ? '' : 'does not ') + m.what + '.' : '') });
+      steps.push({ q, i: s.length, s, arc: null, end: true, msg: 'Input finished in state ' + q + ', which is ' + (acc ? 'an accepting state: ACCEPT. ' : 'not accepting: REJECT. ') + (s ? '"' + s + '" ' + (acc ? m.what : m.whatNot) + '.' : '') });
     }
     const svg = sv('svg', { viewBox: '0 0 480 190', role: 'img', 'aria-label': 'Finite automaton' });
     svg.append(sv('defs', {}, sv('marker', { id: mk, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, sv('path', { d: 'M0 0 L10 5 L0 10 z', fill: 'var(--ink-2)' })),
@@ -771,7 +771,7 @@ xs mapped kept result`;
       }
     };
     const m = MACHINES[b.machine] || MACHINES.increment;
-    const input = el('input', { type: 'text', value: b.sample != null ? b.sample : m.sample, 'aria-label': 'tape', size: 12, placeholder: '(blank)' });
+    const input = el('input', { type: 'text', value: b.sample != null ? b.sample : m.sample, 'aria-label': 'tape', size: 12, maxlength: 10, placeholder: '(blank)' });
     const log = el('div', { class: 'fig-status' });
     const rulebox = el('div', { class: 'fig-status' });
     let steps = [];

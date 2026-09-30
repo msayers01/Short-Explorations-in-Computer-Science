@@ -17,7 +17,7 @@
   --paper-2: #f5f5f3;
   --ink: #000000;
   --ink-2: #555555;
-  --ink-3: #8a8a8a;
+  --ink-3: #6b6b6b;
   --rule: #d8d8d6;
   --rule-2: #ececea;
   --code-bg: #f4f4f2;
@@ -33,7 +33,7 @@
   --serif: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
   --sans: 'Source Sans 3', 'Segoe UI', Helvetica, Arial, sans-serif;
   --mono: 'IBM Plex Mono', 'SF Mono', Menlo, Consolas, monospace;
-  --hl-k: #8a2c8a; --hl-s: #1f6b2f; --hl-c: #8a8a8a; --hl-n: #1d5fb8; --hl-b: #2a5a9a; --hl-p: #8a5a00;
+  --hl-k: #8a2c8a; --hl-s: #1f6b2f; --hl-c: #6b6b6b; --hl-n: #1d5fb8; --hl-b: #2a5a9a; --hl-p: #8a5a00;
   color-scheme: light dark;
 }
 :root[data-course="python"] { --accent: #b06400; --accent-soft: #fcf1df; }
@@ -42,9 +42,9 @@
 :root[data-course="math"] { --accent: #1f6e4a; --accent-soft: #e4f2ea; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #7c7c78; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
+    --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
     --accent: #d6d6d2; --accent-ink: #131313; --accent-soft: #262624; --ok: #4cc06d; --ok-soft: #14301c; --err: #ff7b6e; --err-soft: #3a1a17; --warn: #e0b060; --link: #8fb3ee;
-    --hl-k: #d68fd6; --hl-s: #8fd49a; --hl-c: #7c7c78; --hl-n: #8ab8f5; --hl-b: #9ec4f0; --hl-p: #e0b060;
+    --hl-k: #d68fd6; --hl-s: #8fd49a; --hl-c: #8f8f8b; --hl-n: #8ab8f5; --hl-b: #9ec4f0; --hl-p: #e0b060;
   }
   :root:not([data-theme="light"])[data-course="python"] { --accent: #e8a640; --accent-ink: #1a1200; --accent-soft: #2e2410; }
   :root:not([data-theme="light"])[data-course="lisp"] { --accent: #b99ae6; --accent-ink: #1a1030; --accent-soft: #2a2138; }
@@ -52,9 +52,9 @@
   :root:not([data-theme="light"])[data-course="math"] { --accent: #6fcf97; --accent-ink: #072415; --accent-soft: #14301c; }
 }
 :root[data-theme="dark"] {
-  --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #7c7c78; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
+  --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
   --accent: #d6d6d2; --accent-ink: #131313; --accent-soft: #262624; --ok: #4cc06d; --ok-soft: #14301c; --err: #ff7b6e; --err-soft: #3a1a17; --warn: #e0b060; --link: #8fb3ee;
-  --hl-k: #d68fd6; --hl-s: #8fd49a; --hl-c: #7c7c78; --hl-n: #8ab8f5; --hl-b: #9ec4f0; --hl-p: #e0b060;
+  --hl-k: #d68fd6; --hl-s: #8fd49a; --hl-c: #8f8f8b; --hl-n: #8ab8f5; --hl-b: #9ec4f0; --hl-p: #e0b060;
 }
 :root[data-theme="dark"][data-course="python"] { --accent: #e8a640; --accent-ink: #1a1200; --accent-soft: #2e2410; }
 :root[data-theme="dark"][data-course="lisp"] { --accent: #b99ae6; --accent-ink: #1a1030; --accent-soft: #2a2138; }
@@ -456,7 +456,7 @@ table.vars td, table.vars th { text-align: left; } table.vars code { font-size: 
 @media (hover: none) { .touch-only { display: inline-block; } }
 .lab-editor.wrap .hl, .lab-editor.wrap textarea { white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
 .lab-out .goto { font-family: var(--sans); font-size: 0.85rem; color: var(--accent); }
-.trace-box:focus { outline: 2px solid var(--accent-soft); }
+.trace-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (max-width: 900px) {
   .lab-body { grid-template-columns: minmax(0, 1fr); }
   .lab-side { width: auto; position: static; }
@@ -473,7 +473,7 @@ table.vars td, table.vars th { text-align: left; } table.vars code { font-size: 
 .ex-prompt { margin-top: 0.5rem; font-family: var(--serif); font-size: 0.98rem; } .ex-prompt[hidden] { display: none; }
 .subst-box { border: 1px solid var(--rule); margin-top: 0.7rem; background: var(--paper); }
 .subst-box[hidden] { display: none; }
-.subst-box:focus { outline: 2px solid var(--accent-soft); }
+.subst-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .subst-box .toolbar { margin: 0.5rem 0.8rem; }
 .subst-list { padding: 0 0.8rem 0.6rem; font-family: var(--mono); font-size: 0.84rem; max-height: 28rem; overflow: auto; }
 .sub-def { color: var(--ink-3); padding: 0.2rem 0; display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: baseline; }
@@ -522,9 +522,10 @@ table.vars td, table.vars th { text-align: left; } table.vars code { font-size: 
 .small { font-size: 0.85rem; }
 
 /* ---------- Teacher guide (#/guide and dist/teacher-guide.html) ---------- */
+.prose code { overflow-wrap: anywhere; }
 .guide { max-width: 44rem; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; --g-accent: #1f6e4a; --g-soft: #e4f2ea; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .guide { --g-accent: #6fcf97; --g-soft: #14301c; } }
-:root[data-theme="dark"] .guide { --g-accent: #6fcf97; --g-soft: #14301c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .guide { --g-accent: #6fcf97; --g-soft: #14301c; --g-ink: #072415; } }
+:root[data-theme="dark"] .guide { --g-accent: #6fcf97; --g-soft: #14301c; --g-ink: #072415; }
 .g-tools { display: flex; justify-content: flex-end; margin-bottom: 0.5rem; }
 .g-hero { margin-bottom: 3rem; padding-bottom: 2rem; border-bottom: 3px double var(--rule); }
 .g-kicker { font-family: var(--sans); font-size: 0.95rem; color: var(--g-accent); margin: 0 0 0.6rem; }
@@ -543,7 +544,7 @@ table.vars td, table.vars th { text-align: left; } table.vars code { font-size: 
 .g-steps { display: flex; flex-direction: column; gap: 0.9rem; margin: 1rem 0 1.4rem; }
 .g-step { display: flex; gap: 0.8rem; align-items: flex-start; } .g-step > div { flex: 1; min-width: 0; }
 .g-step p { margin: 0.25rem 0 0; color: var(--ink-2); }
-.g-num { flex: none; width: 2.1rem; height: 2.1rem; border-radius: 50%; background: var(--g-accent); color: #fff; font-family: var(--sans); font-weight: 600; display: inline-flex; align-items: center; justify-content: center; font-size: 0.95rem; margin-top: 0.1rem; }
+.g-num { flex: none; width: 2.1rem; height: 2.1rem; border-radius: 50%; background: var(--g-accent); color: var(--g-ink, #fff); font-family: var(--sans); font-weight: 600; display: inline-flex; align-items: center; justify-content: center; font-size: 0.95rem; margin-top: 0.1rem; }
 .g-callout { border-left: 3px solid var(--g-accent); background: var(--g-soft); padding: 0.8rem 1rem; margin: 1.2rem 0; font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
 .g-callout.g-warn { border-left-color: var(--warn); background: #fdf3e0; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .g-callout.g-warn { background: #3a2b0c; } }
@@ -576,7 +577,7 @@ table.vars td, table.vars th { text-align: left; } table.vars code { font-size: 
 /* ---------- C++ memory stepper (cppstep.js; Code Lab "Step through memory") ---------- */
 .mem-box { border: 1px solid var(--rule); margin-top: 0.7rem; background: var(--paper); }
 .mem-box[hidden] { display: none; }
-.mem-box:focus { outline: 2px solid var(--accent-soft); }
+.mem-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .mem-box .toolbar { margin: 0.5rem 0.8rem; flex-wrap: wrap; gap: 0.4rem; }
 .mem-slider { flex: 1 1 8rem; min-width: 6rem; accent-color: var(--accent); }
 .mem-help { margin: 0 0.8rem 0.5rem; }
@@ -889,7 +890,7 @@ html.classroom .about { padding-bottom: 7rem; }
     </tbody>
   </table>
   <p>Suggested paths: a one-semester elective is Python followed by the mathematics course; a two-year sequence adds C++ and Lisp; a single Hour of Code event uses Python lesson 1 alone.</p>
-  <p>Lesson length: the programming lessons are sized for an hour (45–60 minutes). The mathematics lessons are longer, most of them 60 to 90 minutes, because proofs are read slowly and the exercises ask for reasoning. Any lesson likely to run past an hour is marked \u201cLonger than an hour\u201d in its course\u2019s list, with an estimate, and again at the top of the lesson. The estimate comes from how much the lesson asks students to read, run and solve, so treat it as a guide.</p>
+  <p>Lesson length: the programming lessons are sized for an hour (45–60 minutes). The mathematics lessons are longer, most of them 60 to 90 minutes, because proofs are read slowly and the exercises ask for reasoning. Any lesson likely to run past an hour is marked “Longer than an hour” in its course’s list, with an estimate, and again at the top of the lesson. The estimate comes from how much the lesson asks students to read, run and solve, so treat it as a guide.</p>
 </section>
 
 <section id="g-4">
@@ -919,7 +920,7 @@ html.classroom .about { padding-bottom: 7rem; }
     </tbody>
   </table>
   <h3>Lessons longer than an hour</h3>
-  <p>For a lesson marked \u201cLonger than an hour\u201d (most of the mathematics course), split it across two class periods: the explanation and the examples in the first, the exercises and the recap in the second. The lesson page remembers each student\u2019s code and answers, so nothing is lost in between.</p>
+  <p>For a lesson marked “Longer than an hour” (most of the mathematics course), split it across two class periods: the explanation and the examples in the first, the exercises and the recap in the second. The lesson page remembers each student’s code and answers, so nothing is lost in between.</p>
   <h3>Projecting a lesson: classroom mode</h3>
   <p>The button with a small screen on it, in the top bar next to the light/dark switch, turns on <em>classroom mode</em>. The type becomes large enough to read from the back of the room, grey text becomes darker, and the list of lessons is hidden so the lesson fills the screen. The browser remembers the setting until you turn it off.</p>
   <p>On a lesson page a bar appears at the bottom, and you can move through the lesson one step at a time: a paragraph, a "Try it" box, a figure, an exercise. A coloured line in the left margin marks where the class is, and <em>Spotlight</em> dims everything else, so nobody reads ahead to the answer.</p>
