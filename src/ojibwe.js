@@ -149,7 +149,7 @@
   function clock(opts) {
     opts = opts || {};
     const box = h('div', { class: 'oj-clock' });
-    let timer = 0, last = '', seen = false;
+    let timer = 0, last = '', seen = false; const born = Date.now();
     function draw() {
       const d = new Date(), words = timeWords(d);
       const digits = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -165,7 +165,7 @@
     function stop() { clearTimeout(timer); timer = 0; document.removeEventListener('visibilitychange', onVisible); }
     function schedule() { clearTimeout(timer); timer = setTimeout(tick, 60000 - Date.now() % 60000 + 50); }
     function tick() {
-      if (!box.isConnected) { if (seen) stop(); else schedule(); return; }   // not yet on the page: wait
+      if (!box.isConnected) { if (seen || Date.now() - born > 2000) stop(); else schedule(); return; }   // not yet on the page: wait a moment, then give up
       seen = true; draw(); schedule();
     }
     function onVisible() { if (!document.hidden) tick(); }

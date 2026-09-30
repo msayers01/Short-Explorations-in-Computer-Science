@@ -270,8 +270,11 @@
         typeof DecompressionStream === 'undefined' ? el('p', {}, 'This browser also cannot read compressed links. Open it in a current Chrome, Edge, Firefox or Safari.') : null));
       return;
     }
-    P.lab = P.lab || [];
-    const doc = renderDoc(P, { own: false });
+    P.items = P.items.filter(it => it && typeof it.id === 'string');
+    P.lab = (Array.isArray(P.lab) ? P.lab : []).filter(f => f && typeof f.code === 'string' && (f.lang === 'python' || f.lang === 'cpp' || f.lang === 'scheme'));
+    let doc;
+    try { doc = renderDoc(P, { own: false }); }
+    catch (e) { main.innerHTML = ''; main.append(el('header', { class: 'pf-intro' }, el('h1', {}, 'This portfolio link did not open'), el('p', { class: 'lead' }, 'The link opened, but its contents are not a portfolio this site can show.'))); return; }
     const status = el('span', { class: 'muted small' });
     const check = el('button', { class: 'btn primary', onclick: () => checkAll(P, doc, check, status) }, 'Check every exercise on this computer');
     main.innerHTML = '';

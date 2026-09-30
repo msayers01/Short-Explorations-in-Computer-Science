@@ -21,7 +21,7 @@
   async function pack(obj) {
     const json = JSON.stringify(obj); const bytes = encodeUtf8(json);
     if (typeof CompressionStream !== 'undefined') {
-      try { const cs = new CompressionStream('deflate-raw'); const w = cs.writable.getWriter(); w.write(bytes); w.close(); const buf = await new Response(cs.readable).arrayBuffer(); return 'z' + b64(new Uint8Array(buf)); } catch (e) { }
+      try { const cs = new CompressionStream('deflate-raw'); const w = cs.writable.getWriter(); w.write(bytes).catch(() => { }); w.close().catch(() => { }); const buf = await new Response(cs.readable).arrayBuffer(); return 'z' + b64(new Uint8Array(buf)); } catch (e) { }
     }
     return 'p' + b64(bytes);
   }
@@ -29,7 +29,7 @@
     if (!s) return null;
     const kind = s[0], body = unb64(s.slice(1));
     let bytes = body;
-    if (kind === 'z') { if (typeof DecompressionStream === 'undefined') throw new Error('This browser cannot open compressed links; try a current version of Chrome, Safari or Firefox.'); const ds = new DecompressionStream('deflate-raw'); const w = ds.writable.getWriter(); w.write(body); w.close(); bytes = new Uint8Array(await new Response(ds.readable).arrayBuffer()); }
+    if (kind === 'z') { if (typeof DecompressionStream === 'undefined') throw new Error('This browser cannot open compressed links; try a current version of Chrome, Safari or Firefox.'); const ds = new DecompressionStream('deflate-raw'); const w = ds.writable.getWriter(); w.write(body).catch(() => { }); w.close().catch(() => { }); bytes = new Uint8Array(await new Response(ds.readable).arrayBuffer()); }
     return JSON.parse(decodeUtf8(bytes));
   }
   const baseUrl = () => location.href.split('#')[0];
