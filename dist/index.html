@@ -2004,7 +2004,7 @@ lodash/lodash.js:
     const n = t && t.name;
     if (n === 'char' || n === 'signed char' || n === 'unsigned char') return charText(v);
     if (n === 'bool') return v ? 'true' : 'false';
-    if (n === 'float' || n === 'double' || n === 'long double') return String(Number(v.toPrecision(12)));
+    if (n === 'float' || n === 'double' || n === 'long double') return String(Number(v.toPrecision(15)));
     return String(v);
   }
   function defaultErrorText(m) {
@@ -2096,7 +2096,7 @@ lodash/lodash.js:
           if (kind === 'array') registerArray(x.name, v.v.target, addr, t);
           f.vars.push(entry);
         }
-        if (!f.global) cur = p;
+        if (f.global) cur = Math.max(cur, align(p, 16)); else cur = p;   // stacks start above the globals, however many there are
       }
       // 3. values
       const values = new Map();
@@ -2313,12 +2313,18 @@ lodash/lodash.js:
     quote: sym('quote'), define: sym('define'), lambda: sym('lambda'), if: sym('if'), cond: sym('cond'), else: sym('else'),
     let: sym('let'), letstar: sym('let*'), begin: sym('begin'), and: sym('and'), or: sym('or'), set: sym('set!'), arrow: sym('=>'),
     quasi: sym('quasiquote'), unquote: sym('unquote'), when: sym('when'), unless: sym('unless'), letrec: sym('letrec'), dot: sym('.'),
-    do: sym('do')
+    do: sym('do'), splice: sym('unquote-splicing')
   };
 
   const list = (...xs) => { let r = NIL; for (let i = xs.length - 1; i >= 0; i--) r = new Pair(xs[i], r); return r; };
-  const arr = (p) => { const out = []; while (p instanceof Pair) { out.push(p.car); p = p.cdr; } if (p !== NIL) throw new SchemeError('The object ' + write(p) + ', passed as the last argument, is not a list.'); return out; };
-  const isList = (p) => { while (p instanceof Pair) p = p.cdr; return p === NIL; };
+  const fromArr = (xs, tail) => { let r = tail === undefined ? NIL : tail; for (let i = xs.length - 1; i >= 0; i--) r = new Pair(xs[i], r); return r; };
+  const MAX_LIST = 1e7;   // a circular list would otherwise loop forever
+  const arr = (p) => { const out = []; while (p instanceof Pair) { out.push(p.car); p = p.cdr; if (out.length > MAX_LIST) throw new SchemeError('The object is a circular list, which this procedure cannot process.'); } if (p !== NIL) throw new SchemeError('The object ' + write(p) + ', passed as the last argument, is not a list.'); return out; };
+  const isList = (p) => {   // Floyd's cycle detection: a circular list is not a list
+    let slow = p;
+    while (p instanceof Pair) { p = p.cdr; if (!(p instanceof Pair)) break; p = p.cdr; slow = slow.cdr; if (p === slow) return false; }
+    return p === NIL;
+  };
 
   // ---------- reader ----------
   function tokenize(src) {
@@ -2327,6 +2333,7 @@ lodash/lodash.js:
       const c = src[i];
       if (/\s/.test(c)) { i++; continue; }
       if (c === ';') { while (i < n && src[i] !== '\n') i++; continue; }
+      if (c === ',' && src[i + 1] === '@') { toks.push(',@'); i += 2; continue; }
       if (c === '(' || c === ')' || c === '\'' || c === '`' || c === ',') { toks.push(c); i++; continue; }
       if (c === '[' || c === ']') { toks.push(c === '[' ? '(' : ')'); i++; continue; }
       if (c === '"') {
@@ -2360,6 +2367,7 @@ lodash/lodash.js:
       if (t === '\'') return list(S.quote, read());
       if (t === '`') return list(S.quasi, read());
       if (t === ',') return list(S.unquote, read());
+      if (t === ',@') return list(S.splice, read());
       if (t === '#t' || t === '#true' || t === 'true') return true;
       if (t === '#f' || t === '#false' || t === 'false') return false;
       if (/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(t)) return parseFloat(t);
@@ -2375,7 +2383,8 @@ lodash/lodash.js:
   function fmtNum(x) {
     if (Number.isInteger(x)) return String(x);
     if (!isFinite(x)) return x > 0 ? '+inf' : x < 0 ? '-inf' : 'nan';
-    let s = String(parseFloat(x.toPrecision(12)));
+    const intDigits = Math.floor(Math.abs(x)).toString().length;
+    let s = String(parseFloat(x.toPrecision(Math.max(12, intDigits + 1))));   // 12 significant digits, but never fewer than the whole part plus one decimal
     if (s.startsWith('0.')) s = s.slice(1); else if (s.startsWith('-0.')) s = '-' + s.slice(2);
     if (!/[.e]/.test(s)) s += '.';
     return s;
@@ -2390,8 +2399,8 @@ lodash/lodash.js:
     if (x instanceof Pair) {
       if (x.car === S.quote && x.cdr instanceof Pair && x.cdr.cdr === NIL) return "'" + write(x.cdr.car, display);
       const parts = []; let p = x, count = 0;
-      while (p instanceof Pair) { parts.push(write(p.car, display)); p = p.cdr; if (++count > 10000) { parts.push('...'); break; } }
-      if (p !== NIL && count <= 10000) parts.push('.', write(p, display));
+      while (p instanceof Pair) { parts.push(write(p.car, display)); p = p.cdr; if (++count > 1e6) { parts.push('...'); break; } }
+      if (p !== NIL && count <= 1e6) parts.push('.', write(p, display));
       return '(' + parts.join(' ') + ')';
     }
     if (x instanceof Lambda) return '#[compound-procedure ' + (x.name || 'anonymous') + ']';
@@ -2430,6 +2439,7 @@ lodash/lodash.js:
           switch (op) {
             case S.quote: return x.cdr.car;
             case S.if: {
+              if (!(x.cdr instanceof Pair && x.cdr.cdr instanceof Pair)) throw new SchemeError('Ill-formed special form: ' + write(x));
               const t = evaluate(x.cdr.car, env);
               if (t !== false) x = x.cdr.cdr.car;
               else if (x.cdr.cdr.cdr instanceof Pair) x = x.cdr.cdr.cdr.car;
@@ -2448,7 +2458,7 @@ lodash/lodash.js:
               if (v instanceof Lambda && !v.name) v.name = target.name;
               env.define(target, v); return sym(target.name);
             }
-            case S.set: { env.set(x.cdr.car, evaluate(x.cdr.cdr.car, env)); return UNSPEC; }
+            case S.set: { if (!(x.cdr instanceof Pair && x.cdr.cdr instanceof Pair)) throw new SchemeError('Ill-formed special form: ' + write(x)); env.set(x.cdr.car, evaluate(x.cdr.cdr.car, env)); return UNSPEC; }
             case S.lambda: return makeLambda(x.cdr.car, x.cdr.cdr, env, null);
             case S.begin: {
               let b = x.cdr; if (b === NIL) return UNSPEC;
@@ -2508,7 +2518,12 @@ lodash/lodash.js:
               for (const b of bindings) { if (b instanceof Pair) ne.define(b.car, evaluate(b.cdr.car, env)); else ne.define(b, UNSPEC); }
               env = ne; x = new Pair(S.begin, x.cdr.cdr); continue;
             }
-            case S.letstar: case S.letrec: {
+            case S.letstar: {
+              let e = env;
+              for (const b of arr(x.cdr.car)) { const ne = new Env(e); ne.define(b.car, evaluate(b.cdr.car, e)); e = ne; }
+              env = new Env(e); x = new Pair(S.begin, x.cdr.cdr); continue;
+            }
+            case S.letrec: {
               const bindings = arr(x.cdr.car);
               const ne = new Env(env);
               for (const b of bindings) ne.define(b.car, evaluate(b.cdr.car, ne));
@@ -2542,6 +2557,7 @@ lodash/lodash.js:
     function quasi(x, env) {
       if (!(x instanceof Pair)) return x;
       if (x.car === S.unquote) return evaluate(x.cdr.car, env);
+      if (x.car instanceof Pair && x.car.car === S.splice) return fromArr(arr(evaluate(x.car.cdr.car, env)), quasi(x.cdr, env));
       return new Pair(quasi(x.car, env), quasi(x.cdr, env));
     }
     function makeLambda(params, body, env, name) {
@@ -2554,14 +2570,14 @@ lodash/lodash.js:
     function bindArgs(f, args) {
       const ne = new Env(f.env);
       if (args.length < f.params.length || (!f.rest && args.length > f.params.length))
-        throw new SchemeError('The procedure ' + write(f) + ' has been called with ' + args.length + ' argument' + (args.length === 1 ? '' : 's') + '; it requires exactly ' + f.params.length + ' argument' + (f.params.length === 1 ? '' : 's') + '.');
+        throw new SchemeError('The procedure ' + write(f) + ' has been called with ' + args.length + ' argument' + (args.length === 1 ? '' : 's') + '; it requires ' + (f.rest ? 'at least ' : 'exactly ') + f.params.length + ' argument' + (f.params.length === 1 ? '' : 's') + '.');
       for (let i = 0; i < f.params.length; i++) ne.define(f.params[i], args[i]);
-      if (f.rest) ne.define(f.rest, list(...args.slice(f.params.length)));
+      if (f.rest) ne.define(f.rest, fromArr(args.slice(f.params.length)));
       return { body: f.body, env: ne };
     }
     function callPrim(f, args) {
       if (args.length < f.min || (f.max >= 0 && args.length > f.max))
-        throw new SchemeError('The procedure ' + write(f) + ' has been called with ' + args.length + ' argument' + (args.length === 1 ? '' : 's') + '; it requires ' + (f.min === f.max ? 'exactly ' + f.min : f.max < 0 ? 'at least ' + f.min : 'between ' + f.min + ' and ' + f.max) + ' argument' + (f.min === 1 && f.max === 1 ? '' : 's') + '.');
+        throw new SchemeError('The procedure ' + write(f) + ' has been called with ' + args.length + ' argument' + (args.length === 1 ? '' : 's') + '; it requires ' + (f.min === f.max ? 'exactly ' + f.min : f.max < 0 ? 'at least ' + f.min : 'between ' + f.min + ' and ' + f.max) + ' argument' + ((f.min === 1 && f.max === 1) || (f.max < 0 && f.min === 1) ? '' : 's') + '.');
       return f.fn(args);
     }
     function apply(f, args) {
@@ -2606,7 +2622,7 @@ lodash/lodash.js:
     def('not', ([a]) => a === false, 1, 1);
     def('eq?', ([a, b]) => a === b || (typeof a === 'number' && a === b) || (typeof a === 'string' && a === b), 2, 2);
     def('eqv?', ([a, b]) => a === b, 2, 2);
-    const equal = (a, b) => a === b || (a instanceof Pair && b instanceof Pair && equal(a.car, b.car) && equal(a.cdr, b.cdr));
+    const equal = (a, b) => { while (a instanceof Pair && b instanceof Pair) { if (!equal(a.car, b.car)) return false; a = a.cdr; b = b.cdr; } return a === b; };
     def('equal?', ([a, b]) => equal(a, b), 2, 2);
     def('cons', ([a, b]) => new Pair(a, b), 2, 2);
     def('car', ([a]) => pair(a, 'car').car, 1, 1); def('cdr', ([a]) => pair(a, 'cdr').cdr, 1, 1);
@@ -2616,7 +2632,7 @@ lodash/lodash.js:
       def(name, ([a]) => { let v = a; for (let i = path.length - 1; i >= 0; i--) v = path[i] === 'a' ? pair(v, name).car : pair(v, name).cdr; return v; }, 1, 1);
     }
     def('set-car!', ([p, v]) => { pair(p, 'set-car!').car = v; return UNSPEC; }, 2, 2); def('set-cdr!', ([p, v]) => { pair(p, 'set-cdr!').cdr = v; return UNSPEC; }, 2, 2);
-    def('list', (a) => list(...a), 0); def('cons*', (a) => { let r = a[a.length - 1]; for (let i = a.length - 2; i >= 0; i--) r = new Pair(a[i], r); return r; }, 1);
+    def('list', (a) => fromArr(a), 0); def('cons*', (a) => { let r = a[a.length - 1]; for (let i = a.length - 2; i >= 0; i--) r = new Pair(a[i], r); return r; }, 1);
     def('pair?', ([a]) => a instanceof Pair, 1, 1); def('null?', ([a]) => a === NIL, 1, 1); def('list?', ([a]) => isList(a), 1, 1);
     def('symbol?', ([a]) => a instanceof Sym, 1, 1); def('string?', ([a]) => typeof a === 'string', 1, 1); def('boolean?', ([a]) => typeof a === 'boolean', 1, 1);
     def('procedure?', ([a]) => a instanceof Lambda || a instanceof Primitive, 1, 1);
@@ -2634,9 +2650,9 @@ lodash/lodash.js:
     mem('memq', (a, b) => a === b); mem('memv', (a, b) => a === b); mem('member', equal);
     const ass = (name, eq) => def(name, ([x, l]) => { let p = l; while (p instanceof Pair) { if (p.car instanceof Pair && eq(p.car.car, x)) return p.car; p = p.cdr; } return false; }, 2, 2);
     ass('assq', (a, b) => a === b); ass('assv', (a, b) => a === b); ass('assoc', equal);
-    def('map', (a) => { const f = a[0], lists = a.slice(1).map(l => arr(l)); const n = Math.min(...lists.map(l => l.length)); const out = []; for (let i = 0; i < n; i++) out.push(apply(f, lists.map(l => l[i]))); return list(...out); }, 2);
+    def('map', (a) => { const f = a[0], lists = a.slice(1).map(l => arr(l)); const n = Math.min(...lists.map(l => l.length)); const out = []; for (let i = 0; i < n; i++) out.push(apply(f, lists.map(l => l[i]))); return fromArr(out); }, 2);
     def('for-each', (a) => { const f = a[0], lists = a.slice(1).map(l => arr(l)); const n = Math.min(...lists.map(l => l.length)); for (let i = 0; i < n; i++) apply(f, lists.map(l => l[i])); return UNSPEC; }, 2);
-    def('filter', ([f, l]) => list(...arr(l).filter(x => apply(f, [x]) !== false)), 2, 2);
+    def('filter', ([f, l]) => fromArr(arr(l).filter(x => apply(f, [x]) !== false)), 2, 2);
     def('reduce', ([f, init, l]) => { const xs = arr(l); if (!xs.length) return init; let r = xs[0]; for (let i = 1; i < xs.length; i++) r = apply(f, [xs[i], r]); return r; }, 3, 3);
     def('fold-left', ([f, init, l]) => { let r = init; for (const x of arr(l)) r = apply(f, [r, x]); return r; }, 3, 3);
     def('fold-right', ([f, init, l]) => { let r = init; const xs = arr(l); for (let i = xs.length - 1; i >= 0; i--) r = apply(f, [xs[i], r]); return r; }, 3, 3);
@@ -2645,19 +2661,27 @@ lodash/lodash.js:
     G.define(sym('system-global-environment'), G);
     def('eval', ([x]) => evaluate(x, G), 1, 2);
     def('apply', (a) => { const f = a[0]; const args = a.slice(1, -1).concat(arr(a[a.length - 1])); return apply(f, args); }, 2);
-    def('iota', ([n, start, step]) => { const s = start === undefined ? 0 : start, st = step === undefined ? 1 : step; const out = []; for (let i = 0; i < num(n, 'iota'); i++) out.push(s + i * st); return list(...out); }, 1, 3);
+    def('iota', ([n, start, step]) => { const s = start === undefined ? 0 : start, st = step === undefined ? 1 : step; const out = []; for (let i = 0; i < num(n, 'iota'); i++) out.push(s + i * st); return fromArr(out); }, 1, 3);
     def('display', ([x]) => { out(write(x, true)); return UNSPEC; }, 1, 2);
     def('write', ([x]) => { out(write(x, false)); return UNSPEC; }, 1, 2);
     def('newline', () => { out('\n'); return UNSPEC; }, 0, 1);
     def('write-line', ([x]) => { out(write(x, false) + '\n'); return UNSPEC; }, 1, 2);
     def('error', (a) => { throw new SchemeError(a.map((x, i) => write(x, i === 0)).join(' ')); }, 1);
-    def('number->string', ([n]) => fmtNum(num(n, 'number->string')), 1, 2); def('string->number', ([s]) => { const v = parseFloat(s); return isNaN(v) ? false : v; }, 1, 2);
+    def('number->string', ([n, radix]) => radix && radix !== 10 && Number.isInteger(num(n, 'number->string')) ? n.toString(radix) : fmtNum(num(n, 'number->string')), 1, 2);
+    def('string->number', ([s, radix]) => {
+      if (typeof s !== 'string') throw new SchemeError('The object ' + write(s) + ', passed as the first argument to string->number, is not the correct type.');
+      s = s.trim();
+      if (radix && radix !== 10) { const ok = new RegExp('^[-+]?[' + '0123456789abcdefghijklmnopqrstuvwxyz'.slice(0, radix) + ']+$', 'i').test(s); return ok ? parseInt(s, radix) : false; }
+      if (/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(s)) return parseFloat(s);
+      if (/^[-+]?\d+\/\d+$/.test(s)) { const [a, b] = s.split('/'); return parseFloat(a) / parseFloat(b); }
+      return false;
+    }, 1, 2);
     def('symbol->string', ([s]) => s.name, 1, 1); def('string->symbol', ([s]) => sym(s), 1, 1);
     def('string-append', (a) => a.join(''), 0); def('string-length', ([s]) => s.length, 1, 1);
     def('string=?', ([a, b]) => a === b, 2, 2); def('string<?', ([a, b]) => a < b, 2, 2);
-    def('substring', ([s, a, b]) => s.substring(a, b === undefined ? s.length : b), 2, 3);
+    def('substring', ([s, a, b]) => { if (typeof s !== 'string') throw new SchemeError('The object ' + write(s) + ', passed as the first argument to substring, is not the correct type.'); const e = b === undefined ? s.length : b; if (!Number.isInteger(a) || a < 0 || a > s.length) throw new SchemeError('The object ' + write(a) + ', passed as the second argument to substring, is not in the correct range.'); if (!Number.isInteger(e) || e < a || e > s.length) throw new SchemeError('The object ' + write(e) + ', passed as the third argument to substring, is not in the correct range.'); return s.substring(a, e); }, 2, 3);
     def('string-upcase', ([s]) => s.toUpperCase(), 1, 1); def('string-downcase', ([s]) => s.toLowerCase(), 1, 1);
-    def('list->string', ([l]) => arr(l).join(''), 1, 1); def('string->list', ([s]) => list(...s.split('')), 1, 1);
+    def('list->string', ([l]) => arr(l).join(''), 1, 1); def('string->list', ([s]) => fromArr(s.split('')), 1, 1);
     def('runtime', () => Date.now() / 1000, 0, 0); def('real-time', () => Date.now(), 0, 0);
     def('void', () => UNSPEC, 0);
     def('assert', ([x]) => { if (x === false) throw new SchemeError('Assertion failed'); return UNSPEC; }, 1, 1);
@@ -2709,7 +2733,7 @@ lodash/lodash.js:
 })(typeof self !== 'undefined' ? self : this, function (Scheme) {
   const { Pair, NIL, UNSPEC, Sym, sym, Lambda, Primitive, SchemeError } = Scheme;
   const S = {};
-  for (const n of ['quote', 'define', 'lambda', 'if', 'cond', 'else', 'let', 'and', 'or', 'begin', 'set!', 'let*', 'letrec', 'do', 'when', 'unless', 'quasiquote', 'delay', 'cons-stream', 'define-syntax', 'case']) S[n] = sym(n);
+  for (const n of ['quote', 'define', 'lambda', 'if', 'cond', 'else', 'let', 'and', 'or', 'begin', 'set!', 'let*', 'letrec', 'do', 'when', 'unless', 'quasiquote', 'delay', 'cons-stream', 'define-syntax', 'case', '=>', 'unquote', 'unquote-splicing']) S[n] = sym(n);
   const OPAQUE = new Set([S['set!'], S['let*'], S.letrec, S.do, S.when, S.unless, S.quasiquote, S.delay, S['cons-stream'], S.case]);
   const HIGHER = new Set(['map', 'filter', 'reduce', 'fold-left', 'fold-right', 'fold', 'for-each', 'apply', 'sort', 'accumulate', 'assoc', 'member', 'vector-map', 'list-sort', 'delete', 'find', 'any', 'every', 'assq', 'memq'].map(sym));
 
@@ -2724,6 +2748,8 @@ lodash/lodash.js:
     const it = Scheme.makeEvaluator({ onOutput: opts.onOutput, stepLimit: 5e6 });
     const G = it.G;
     const maxSteps = opts.maxSteps || 400;
+    let uid = 0;
+    const without2 = (m, names) => new Map([...m].filter(([k]) => !names.includes(k)));
     const isLambdaForm = (x) => x instanceof Pair && x.car === S.lambda;
     const globalProc = (s) => { try { const v = G.lookup(s); return (v instanceof Lambda || v instanceof Primitive) ? v : null; } catch (e) { return null; } };
     const isValue = (x) => typeof x === 'number' || typeof x === 'boolean' || typeof x === 'string' || x instanceof Datum || x === NIL || isLambdaForm(x) || (x instanceof Sym && !!globalProc(x));
@@ -2750,12 +2776,38 @@ lodash/lodash.js:
         const nb = list(binds.map(b => b instanceof Pair ? list([b.car, substitute(b.cdr.car, map)]) : b));
         return new Pair(S.let, new Pair(nb, substitute(x.cdr.cdr, m2)));
       }
+      const without = (m, names) => new Map([...m].filter(([k]) => !names.includes(k)));
+      if (x.car === S['let*'] && x.cdr instanceof Pair) {   // each binding sees the ones before it, and shadows from then on
+        let m = map; const nb = [];
+        for (const b of arr(x.cdr.car)) { if (b instanceof Pair) { nb.push(list([b.car, substitute(b.cdr.car, m)])); m = without(m, [b.car]); } else { nb.push(b); m = without(m, [b]); } }
+        return new Pair(S['let*'], new Pair(list(nb), substitute(x.cdr.cdr, m)));
+      }
+      if (x.car === S.letrec && x.cdr instanceof Pair) {   // the binders scope over their own inits too
+        const binds = arr(x.cdr.car), m2 = without(map, binds.map(b => b instanceof Pair ? b.car : b));
+        return new Pair(S.letrec, new Pair(list(binds.map(b => b instanceof Pair ? list([b.car, substitute(b.cdr.car, m2)]) : b)), substitute(x.cdr.cdr, m2)));
+      }
+      if (x.car === S.let && x.cdr instanceof Pair && x.cdr.car instanceof Sym && x.cdr.cdr instanceof Pair) {   // named let: the name and the variables shadow in the body
+        const name = x.cdr.car, binds = arr(x.cdr.cdr.car), m2 = without(map, [name, ...binds.map(b => b instanceof Pair ? b.car : b)]);
+        return new Pair(S.let, new Pair(name, new Pair(list(binds.map(b => b instanceof Pair ? list([b.car, substitute(b.cdr.car, map)]) : b)), substitute(x.cdr.cdr.cdr, m2))));
+      }
+      if (x.car === S.do && x.cdr instanceof Pair && x.cdr.cdr instanceof Pair) {   // inits see the outer names; steps, test and body see the loop variables
+        const specs = arr(x.cdr.car), m2 = without(map, specs.map(b => b.car));
+        const ns = specs.map(b => new Pair(b.car, new Pair(substitute(b.cdr.car, map), substitute(b.cdr.cdr, m2))));
+        return new Pair(S.do, new Pair(list(ns), substitute(x.cdr.cdr, m2)));
+      }
+      if (x.car === S.quasiquote && x.cdr instanceof Pair) return new Pair(S.quasiquote, list([substituteQuasi(x.cdr.car, map)]));
       if (x.car === S.define && x.cdr instanceof Pair) {   // (define (name params) body) or (define name expr): substitute inside, not into the bound names
         const head = x.cdr.car;
         if (head instanceof Pair) { const bound = new Set(arr(head.cdr)); let p = head.cdr; while (p instanceof Pair) p = p.cdr; if (p instanceof Sym) bound.add(p); const m2 = new Map([...map].filter(([k]) => !bound.has(k))); return new Pair(S.define, new Pair(head, substitute(x.cdr.cdr, m2))); }
         return new Pair(S.define, new Pair(head, substitute(x.cdr.cdr, map)));
       }
       return new Pair(substitute(x.car, map), substitute(x.cdr, map));
+    }
+    /** Inside a quasiquote only the unquoted parts are expressions. */
+    function substituteQuasi(x, map) {
+      if (!(x instanceof Pair)) return x;
+      if ((x.car === S.unquote || x.car === S['unquote-splicing']) && x.cdr instanceof Pair) return new Pair(x.car, list([substitute(x.cdr.car, map)]));
+      return new Pair(substituteQuasi(x.car, map), substituteQuasi(x.cdr, map));
     }
     function replaceAt(root, target, repl) {
       if (root === target) return repl;
@@ -2791,6 +2843,7 @@ lodash/lodash.js:
         const clause = rest[0];
         if (clause.car === S.else) return { target: x, result: seq(arr(clause.cdr)), note: 'the else clause is taken' };
         if (!isValue(clause.car)) return inner(x, clause.car);
+        if (clause.car !== false && clause.cdr instanceof Pair && clause.cdr.car === S['=>'] && clause.cdr.cdr instanceof Pair) return { target: x, result: new Pair(clause.cdr.cdr.car, list([clause.car])), note: 'this clause\u2019s test is true, so the procedure after => is applied to the test value' };
         if (clause.car !== false) return { target: x, result: clause.cdr === NIL ? clause.car : seq(arr(clause.cdr)), note: 'this clause\u2019s test is true, so cond reduces to its body' };
         return { target: x, result: new Pair(S.cond, x.cdr.cdr), note: 'this clause\u2019s test is false, so it is dropped' };
       }
@@ -2821,6 +2874,7 @@ lodash/lodash.js:
         return { target: x, result: new Pair(new Pair(S.lambda, new Pair(params, x.cdr.cdr)), list(args)), note: 'let is a lambda applied to the initial values' };
       }
       if (op === S.define) return opaque(x, 'define');
+      if (op === S['set!'] && !(x.cdr.car instanceof Sym)) throw new SchemeError('set! changes a variable, which the substitution model cannot show (the parameter was already replaced by its value). Press Run to see what a program that uses set! does.');
       if (OPAQUE.has(op)) return opaque(x, op.name);
       // an application
       for (const e of [x.car, ...rest]) if (!isValue(e)) return inner(x, e);
@@ -2839,7 +2893,7 @@ lodash/lodash.js:
       const lam = proc;
       const body = lam.body instanceof Pair && lam.body.car === S.begin ? lam.body.cdr : list([lam.body]);
       if (rest.length < lam.params.length || (!lam.rest && rest.length > lam.params.length))
-        throw new SchemeError('The procedure ' + Scheme.write(lam) + ' has been called with ' + rest.length + ' argument' + (rest.length === 1 ? '' : 's') + '; it requires exactly ' + lam.params.length + ' argument' + (lam.params.length === 1 ? '' : 's') + '.');
+        throw new SchemeError('The procedure ' + Scheme.write(lam) + ' has been called with ' + rest.length + ' argument' + (rest.length === 1 ? '' : 's') + '; it requires ' + (lam.rest ? 'at least ' : 'exactly ') + lam.params.length + ' argument' + (lam.params.length === 1 ? '' : 's') + '.');
       const map = new Map(); lam.params.forEach((p, i) => map.set(p, rest[i]));
       if (lam.rest) map.set(lam.rest, new Datum(list(rest.slice(lam.params.length).map(toRaw))));
       // A procedure made inside another call (a closure) remembers the names around its birthplace:
@@ -2852,9 +2906,16 @@ lodash/lodash.js:
       const name = f instanceof Sym ? f.name : 'the lambda';
       const binding = (lam.params.length ? lam.params.map((p, i) => p.name + ' \u2192 ' + Scheme.write(toRaw(rest[i]))).join(', ') : 'no parameters') + (remembered.length ? ' (and the values it remembers from where it was made: ' + remembered.join(', ') + ')' : '');
       let exprs = arr(substitute(seq(arr(body)), map) instanceof Pair && body.cdr !== NIL ? substitute(new Pair(S.begin, body), map).cdr : list([substitute(body.car, map)]));
-      const defs = exprs.filter(e => e instanceof Pair && e.car === S.define); exprs = exprs.filter(e => !(e instanceof Pair && e.car === S.define));
-      let defNote = '';
-      if (defs.length) { for (const d of defs) it.evaluate(toEvalable(d), G); defNote = '; its internal definition' + (defs.length > 1 ? 's' : '') + ' of ' + defs.map(d => Scheme.write(d.cdr.car instanceof Pair ? d.cdr.car.car : d.cdr.car)).join(', ') + ' (with ' + binding + ' already substituted) ' + (defs.length > 1 ? 'are' : 'is') + ' now available'; }
+      let defs = exprs.filter(e => e instanceof Pair && e.car === S.define); exprs = exprs.filter(e => !(e instanceof Pair && e.car === S.define));
+      let defNote = '', ren = null;
+      if (defs.length) {
+        // Internal definitions live in this call's own frame, which the substitution model has no place to draw. Give each one a name
+        // made for this call (g#3), so another call, or a global of the same name, is never touched.
+        const nameOf = (d) => d.cdr.car instanceof Pair ? d.cdr.car.car : d.cdr.car;
+        ren = new Map(defs.map(d => [nameOf(d), sym(nameOf(d).name + '#' + (++uid))]));
+        defs = defs.map(d => { const h = d.cdr.car; const nh = h instanceof Pair ? new Pair(ren.get(h.car), h.cdr) : ren.get(h); return substitute(new Pair(S.define, new Pair(nh, d.cdr.cdr)), without2(ren, h instanceof Pair ? arr(h.cdr) : [])); });
+        exprs = exprs.map(e => substitute(e, ren));
+        for (const d of defs) it.evaluate(toEvalable(d), G); defNote = '; its internal definition' + (defs.length > 1 ? 's' : '') + ' of ' + [...ren.keys()].map(k => k.name).join(', ') + ' (with ' + binding + ' already substituted, under a name made for this call) ' + (defs.length > 1 ? 'are' : 'is') + ' now available'; }
       return { target: x, result: seq(exprs), note: 'replace the call by the body of ' + name + ', with ' + binding + defNote };
     }
     const inner = (x, e) => { const r = reduce(e); return r; };
@@ -9979,15 +10040,19 @@ print("and reads the message:", pow(locked, inverse(e, m2), n))`, caption: 'No e
     .replace(/[\u2212\u2013\u2014]/g, '-').replace(/\u00d7/g, '*').replace(/\u00b7/g, '*')
     .replace(/\u00b2/g, '^2').replace(/\u00b3/g, '^3')
     .replace(/\s+/g, '').replace(/\.$/, '');
-  const asNum = s => { const t = norm(s).replace(/,/g, ''); return /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/.test(t) ? Number(t) : null; };
+  const asNum = s => { let t = norm(s); if (/^[-+]?\d{1,3}(,\d{3})+(\.\d*)?$/.test(t)) t = t.replace(/,/g, ''); return /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/.test(t) ? Number(t) : null; };
   const same = (got, want) => {
     const g = norm(got), w = norm(want);
     if (g === '' && w !== '') return false;
     if (g === w) return true;
     const gn = asNum(got), wn = asNum(want);
-    if (gn !== null && wn !== null) return Math.abs(gn - wn) <= 1e-9 * Math.max(1, Math.abs(wn));
-    const tf = { t: 'true', f: 'false', '1': 'true', '0': 'false', yes: 'true', no: 'false' };
-    if ((tf[g] || g) === (tf[w] || w) && (tf[g] || tf[w])) return true;
+    if (gn !== null && wn !== null) {
+      if (Number.isInteger(gn) && Number.isInteger(wn) && Math.abs(wn) > 2 ** 31) return gn === wn;   // a relative tolerance would accept off-by-one big integers
+      return Math.abs(gn - wn) <= Math.max(1e-12, 1e-9 * Math.abs(wn));
+    }
+    // true/false answers: yes/no/t/f are accepted, but only when the expected answer is itself such a word
+    const tf = { t: 'true', f: 'false', yes: 'true', no: 'false', true: 'true', false: 'false' };
+    if (tf[w] && (tf[g] || g === '1' || g === '0') && (tf[g] || (g === '1' ? 'true' : 'false')) === tf[w]) return true;
     return false;
   };
   const list = x => (Array.isArray(x) ? x : [x]);
@@ -10014,13 +10079,13 @@ print("and reads the message:", pow(locked, inverse(e, m2), n))`, caption: 'No e
         results.push({ name: p.name || (ex.parts.length > 1 ? 'Part ' + String.fromCharCode(97 + i) : 'Answer'), ok, got, msg });
       });
     } else if (ex.kind === 'choice') {
-      const chosen = new Set((answers || []).map(Number));
+      const chosen = new Set((answers || []).map(Number).filter(i => Number.isInteger(i) && i >= 0 && i < ex.options.length));
       const correct = new Set(ex.options.map((o, i) => o.ok ? i : -1).filter(i => i >= 0));
       const ok = chosen.size === correct.size && [...chosen].every(i => correct.has(i));
       let msg = '';
       if (!ok) {
         if (!chosen.size) msg = 'Choose an option first.';
-        else { const wrongPick = [...chosen].find(i => !correct.has(i)); msg = wrongPick != null && ex.options[wrongPick].why ? ex.options[wrongPick].why : (ex.multi ? 'Not quite. More than one option may be right — or fewer.' : 'Not that one.'); }
+        else { const wrongPick = [...chosen].find(i => !correct.has(i)); msg = wrongPick != null && ex.options[wrongPick] && ex.options[wrongPick].why ? ex.options[wrongPick].why : (ex.multi ? 'Not quite. More than one option may be right — or fewer.' : 'Not that one.'); }
       }
       results.push({ name: 'Choice', ok, got: [...chosen].map(i => String.fromCharCode(65 + i)).join(', '), msg });
     } else if (ex.kind === 'table') {
@@ -10298,6 +10363,8 @@ print("and reads the message:", pow(locked, inverse(e, m2), n))`, caption: 'No e
     return m.replace(/^<position unavailable> /, '').replace(/^(\d+):(\d+) /, 'line $1: ');
   }
   function ensureMainReturns(code) {
+    // JSCPP cannot interrupt an empty-condition loop, which would freeze the page: for(;;) means for(;1;)
+    code = code.replace(/\bfor\s*\(\s*;\s*;\s*\)/g, (m, off) => ((code.slice(code.lastIndexOf('\n', off) + 1, off).match(/"/g) || []).length % 2 ? m : 'for(;1;)'));
     const i = code.search(/\bint\s+main\s*\(/); if (i < 0) return code;
     const open = code.indexOf('{', i); if (open < 0) return code;
     let depth = 0, j = open, inStr = null;
@@ -11716,6 +11783,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
         log.append(el('span', { class: 'repl-in' }, '1 ]=> ' + text + '\n'));
         try {
           const forms = Scheme.parseAll(text);
+          it.reset();   // every entry gets a fresh step budget; otherwise a long session ends with "ran for too long" for everything
           for (const f of forms) { const v = it.evaluate(f, it.G); const t = Scheme.write(v); log.append(el('span', { class: 'val' }, t === '' ? ';Unspecified return value' : ';Value: ' + t), '\n'); }
         } catch (e) { const msg = e instanceof RangeError ? ';Aborting!: maximum recursion depth exceeded' : (e instanceof Scheme.SchemeError ? e.message : 'Internal error: ' + e.message); log.append(el('span', { class: 'err' }, ';' + msg.replace(/^;/, '')), '\n'); const ex = explain('scheme', msg); if (ex) log.append(el('span', { class: 'note' }, '↳ ' + ex), '\n'); }
         log.scrollTop = log.scrollHeight;
@@ -12091,7 +12159,7 @@ window.GUIDE = (function () {
     [26, 7, 1, 10, 1], [44, 10, 1, 16, 1], [70, 15, 1, 26, 1], [100, 20, 1, 18, 2], [134, 26, 1, 24, 2], [172, 18, 2, 16, 4], [196, 20, 2, 18, 4], [242, 24, 2, 22, 4], [292, 30, 2, 22, 5], [346, 18, 4, 26, 5],
     [404, 20, 4, 30, 5], [466, 24, 4, 22, 8], [532, 26, 4, 22, 9], [581, 30, 4, 24, 9], [655, 22, 6, 24, 10], [733, 24, 6, 28, 10], [815, 28, 6, 28, 11], [901, 30, 6, 26, 13], [991, 28, 7, 26, 14], [1085, 28, 8, 26, 16],
     [1156, 28, 8, 26, 17], [1258, 28, 9, 28, 17], [1364, 30, 9, 28, 18], [1474, 30, 10, 28, 20], [1588, 26, 12, 28, 21], [1706, 28, 12, 28, 23], [1828, 30, 12, 28, 25], [1921, 30, 13, 28, 26], [2051, 30, 14, 28, 28], [2185, 30, 15, 28, 29],
-    [2323, 30, 16, 28, 31], [2465, 30, 17, 28, 33], [2611, 30, 18, 30, 35], [2761, 30, 19, 30, 37], [2876, 30, 19, 30, 38], [3034, 30, 20, 30, 40], [3196, 30, 21, 30, 43], [3362, 30, 22, 30, 45], [3532, 30, 24, 30, 47], [3706, 30, 25, 30, 49]
+    [2323, 30, 16, 28, 31], [2465, 30, 17, 28, 33], [2611, 30, 18, 28, 35], [2761, 30, 19, 28, 37], [2876, 30, 19, 28, 38], [3034, 30, 20, 28, 40], [3196, 30, 21, 28, 43], [3362, 30, 22, 28, 45], [3532, 30, 24, 28, 47], [3706, 30, 25, 28, 49]
   ];
   const ALIGN = [[], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50], [6, 30, 54], [6, 32, 58], [6, 34, 62], [6, 26, 46, 66], [6, 26, 48, 70], [6, 26, 50, 74], [6, 30, 54, 78], [6, 30, 56, 82], [6, 30, 58, 86], [6, 34, 62, 90], [6, 28, 50, 72, 94], [6, 26, 50, 74, 98], [6, 30, 54, 78, 102], [6, 28, 54, 80, 106], [6, 32, 58, 84, 110], [6, 30, 58, 86, 114], [6, 34, 62, 90, 118], [6, 26, 50, 74, 98, 122], [6, 30, 54, 78, 102, 126], [6, 26, 52, 78, 104, 130], [6, 30, 56, 82, 108, 134], [6, 34, 60, 86, 112, 138], [6, 30, 58, 86, 114, 142], [6, 34, 62, 90, 118, 146], [6, 30, 54, 78, 102, 126, 150], [6, 24, 50, 76, 102, 128, 154], [6, 28, 54, 80, 106, 132, 158], [6, 32, 58, 84, 110, 136, 162], [6, 26, 54, 82, 110, 138, 166], [6, 30, 58, 86, 114, 142, 170]];
 
@@ -12103,7 +12171,7 @@ window.GUIDE = (function () {
     const bytes = toBytes(text);
     let version = 0;
     for (let v = 1; v <= 40; v++) { const c = capacity(v, ec); const lenBits = v < 10 ? 8 : 16; if (4 + lenBits + bytes.length * 8 <= c.data * 8) { version = v; break; } }
-    if (!version) throw new Error('Text too long for a QR code (' + bytes.length + ' bytes; the maximum is about 2950).');
+    if (!version) throw new Error('Text too long for a QR code (' + bytes.length + ' bytes; the maximum is about ' + (ec === 'M' ? 2331 : 2953) + ').');
     const cap = capacity(version, ec);
     // bit stream: mode 0100, length, data, terminator, pad
     const bits = [];

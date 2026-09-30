@@ -20,12 +20,18 @@
     quote: sym('quote'), define: sym('define'), lambda: sym('lambda'), if: sym('if'), cond: sym('cond'), else: sym('else'),
     let: sym('let'), letstar: sym('let*'), begin: sym('begin'), and: sym('and'), or: sym('or'), set: sym('set!'), arrow: sym('=>'),
     quasi: sym('quasiquote'), unquote: sym('unquote'), when: sym('when'), unless: sym('unless'), letrec: sym('letrec'), dot: sym('.'),
-    do: sym('do')
+    do: sym('do'), splice: sym('unquote-splicing')
   };
 
   const list = (...xs) => { let r = NIL; for (let i = xs.length - 1; i >= 0; i--) r = new Pair(xs[i], r); return r; };
-  const arr = (p) => { const out = []; while (p instanceof Pair) { out.push(p.car); p = p.cdr; } if (p !== NIL) throw new SchemeError('The object ' + write(p) + ', passed as the last argument, is not a list.'); return out; };
-  const isList = (p) => { while (p instanceof Pair) p = p.cdr; return p === NIL; };
+  const fromArr = (xs, tail) => { let r = tail === undefined ? NIL : tail; for (let i = xs.length - 1; i >= 0; i--) r = new Pair(xs[i], r); return r; };
+  const MAX_LIST = 1e7;   // a circular list would otherwise loop forever
+  const arr = (p) => { const out = []; while (p instanceof Pair) { out.push(p.car); p = p.cdr; if (out.length > MAX_LIST) throw new SchemeError('The object is a circular list, which this procedure cannot process.'); } if (p !== NIL) throw new SchemeError('The object ' + write(p) + ', passed as the last argument, is not a list.'); return out; };
+  const isList = (p) => {   // Floyd's cycle detection: a circular list is not a list
+    let slow = p;
+    while (p instanceof Pair) { p = p.cdr; if (!(p instanceof Pair)) break; p = p.cdr; slow = slow.cdr; if (p === slow) return false; }
+    return p === NIL;
+  };
 
   // ---------- reader ----------
   function tokenize(src) {
@@ -34,6 +40,7 @@
       const c = src[i];
       if (/\s/.test(c)) { i++; continue; }
       if (c === ';') { while (i < n && src[i] !== '\n') i++; continue; }
+      if (c === ',' && src[i + 1] === '@') { toks.push(',@'); i += 2; continue; }
       if (c === '(' || c === ')' || c === '\'' || c === '`' || c === ',') { toks.push(c); i++; continue; }
       if (c === '[' || c === ']') { toks.push(c === '[' ? '(' : ')'); i++; continue; }
       if (c === '"') {
@@ -67,6 +74,7 @@
       if (t === '\'') return list(S.quote, read());
       if (t === '`') return list(S.quasi, read());
       if (t === ',') return list(S.unquote, read());
+      if (t === ',@') return list(S.splice, read());
       if (t === '#t' || t === '#true' || t === 'true') return true;
       if (t === '#f' || t === '#false' || t === 'false') return false;
       if (/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(t)) return parseFloat(t);
@@ -82,7 +90,8 @@
   function fmtNum(x) {
     if (Number.isInteger(x)) return String(x);
     if (!isFinite(x)) return x > 0 ? '+inf' : x < 0 ? '-inf' : 'nan';
-    let s = String(parseFloat(x.toPrecision(12)));
+    const intDigits = Math.floor(Math.abs(x)).toString().length;
+    let s = String(parseFloat(x.toPrecision(Math.max(12, intDigits + 1))));   // 12 significant digits, but never fewer than the whole part plus one decimal
     if (s.startsWith('0.')) s = s.slice(1); else if (s.startsWith('-0.')) s = '-' + s.slice(2);
     if (!/[.e]/.test(s)) s += '.';
     return s;
@@ -97,8 +106,8 @@
     if (x instanceof Pair) {
       if (x.car === S.quote && x.cdr instanceof Pair && x.cdr.cdr === NIL) return "'" + write(x.cdr.car, display);
       const parts = []; let p = x, count = 0;
-      while (p instanceof Pair) { parts.push(write(p.car, display)); p = p.cdr; if (++count > 10000) { parts.push('...'); break; } }
-      if (p !== NIL && count <= 10000) parts.push('.', write(p, display));
+      while (p instanceof Pair) { parts.push(write(p.car, display)); p = p.cdr; if (++count > 1e6) { parts.push('...'); break; } }
+      if (p !== NIL && count <= 1e6) parts.push('.', write(p, display));
       return '(' + parts.join(' ') + ')';
     }
     if (x instanceof Lambda) return '#[compound-procedure ' + (x.name || 'anonymous') + ']';
@@ -137,6 +146,7 @@
           switch (op) {
             case S.quote: return x.cdr.car;
             case S.if: {
+              if (!(x.cdr instanceof Pair && x.cdr.cdr instanceof Pair)) throw new SchemeError('Ill-formed special form: ' + write(x));
               const t = evaluate(x.cdr.car, env);
               if (t !== false) x = x.cdr.cdr.car;
               else if (x.cdr.cdr.cdr instanceof Pair) x = x.cdr.cdr.cdr.car;
@@ -155,7 +165,7 @@
               if (v instanceof Lambda && !v.name) v.name = target.name;
               env.define(target, v); return sym(target.name);
             }
-            case S.set: { env.set(x.cdr.car, evaluate(x.cdr.cdr.car, env)); return UNSPEC; }
+            case S.set: { if (!(x.cdr instanceof Pair && x.cdr.cdr instanceof Pair)) throw new SchemeError('Ill-formed special form: ' + write(x)); env.set(x.cdr.car, evaluate(x.cdr.cdr.car, env)); return UNSPEC; }
             case S.lambda: return makeLambda(x.cdr.car, x.cdr.cdr, env, null);
             case S.begin: {
               let b = x.cdr; if (b === NIL) return UNSPEC;
@@ -215,7 +225,12 @@
               for (const b of bindings) { if (b instanceof Pair) ne.define(b.car, evaluate(b.cdr.car, env)); else ne.define(b, UNSPEC); }
               env = ne; x = new Pair(S.begin, x.cdr.cdr); continue;
             }
-            case S.letstar: case S.letrec: {
+            case S.letstar: {
+              let e = env;
+              for (const b of arr(x.cdr.car)) { const ne = new Env(e); ne.define(b.car, evaluate(b.cdr.car, e)); e = ne; }
+              env = new Env(e); x = new Pair(S.begin, x.cdr.cdr); continue;
+            }
+            case S.letrec: {
               const bindings = arr(x.cdr.car);
               const ne = new Env(env);
               for (const b of bindings) ne.define(b.car, evaluate(b.cdr.car, ne));
@@ -249,6 +264,7 @@
     function quasi(x, env) {
       if (!(x instanceof Pair)) return x;
       if (x.car === S.unquote) return evaluate(x.cdr.car, env);
+      if (x.car instanceof Pair && x.car.car === S.splice) return fromArr(arr(evaluate(x.car.cdr.car, env)), quasi(x.cdr, env));
       return new Pair(quasi(x.car, env), quasi(x.cdr, env));
     }
     function makeLambda(params, body, env, name) {
@@ -261,14 +277,14 @@
     function bindArgs(f, args) {
       const ne = new Env(f.env);
       if (args.length < f.params.length || (!f.rest && args.length > f.params.length))
-        throw new SchemeError('The procedure ' + write(f) + ' has been called with ' + args.length + ' argument' + (args.length === 1 ? '' : 's') + '; it requires exactly ' + f.params.length + ' argument' + (f.params.length === 1 ? '' : 's') + '.');
+        throw new SchemeError('The procedure ' + write(f) + ' has been called with ' + args.length + ' argument' + (args.length === 1 ? '' : 's') + '; it requires ' + (f.rest ? 'at least ' : 'exactly ') + f.params.length + ' argument' + (f.params.length === 1 ? '' : 's') + '.');
       for (let i = 0; i < f.params.length; i++) ne.define(f.params[i], args[i]);
-      if (f.rest) ne.define(f.rest, list(...args.slice(f.params.length)));
+      if (f.rest) ne.define(f.rest, fromArr(args.slice(f.params.length)));
       return { body: f.body, env: ne };
     }
     function callPrim(f, args) {
       if (args.length < f.min || (f.max >= 0 && args.length > f.max))
-        throw new SchemeError('The procedure ' + write(f) + ' has been called with ' + args.length + ' argument' + (args.length === 1 ? '' : 's') + '; it requires ' + (f.min === f.max ? 'exactly ' + f.min : f.max < 0 ? 'at least ' + f.min : 'between ' + f.min + ' and ' + f.max) + ' argument' + (f.min === 1 && f.max === 1 ? '' : 's') + '.');
+        throw new SchemeError('The procedure ' + write(f) + ' has been called with ' + args.length + ' argument' + (args.length === 1 ? '' : 's') + '; it requires ' + (f.min === f.max ? 'exactly ' + f.min : f.max < 0 ? 'at least ' + f.min : 'between ' + f.min + ' and ' + f.max) + ' argument' + ((f.min === 1 && f.max === 1) || (f.max < 0 && f.min === 1) ? '' : 's') + '.');
       return f.fn(args);
     }
     function apply(f, args) {
@@ -313,7 +329,7 @@
     def('not', ([a]) => a === false, 1, 1);
     def('eq?', ([a, b]) => a === b || (typeof a === 'number' && a === b) || (typeof a === 'string' && a === b), 2, 2);
     def('eqv?', ([a, b]) => a === b, 2, 2);
-    const equal = (a, b) => a === b || (a instanceof Pair && b instanceof Pair && equal(a.car, b.car) && equal(a.cdr, b.cdr));
+    const equal = (a, b) => { while (a instanceof Pair && b instanceof Pair) { if (!equal(a.car, b.car)) return false; a = a.cdr; b = b.cdr; } return a === b; };
     def('equal?', ([a, b]) => equal(a, b), 2, 2);
     def('cons', ([a, b]) => new Pair(a, b), 2, 2);
     def('car', ([a]) => pair(a, 'car').car, 1, 1); def('cdr', ([a]) => pair(a, 'cdr').cdr, 1, 1);
@@ -323,7 +339,7 @@
       def(name, ([a]) => { let v = a; for (let i = path.length - 1; i >= 0; i--) v = path[i] === 'a' ? pair(v, name).car : pair(v, name).cdr; return v; }, 1, 1);
     }
     def('set-car!', ([p, v]) => { pair(p, 'set-car!').car = v; return UNSPEC; }, 2, 2); def('set-cdr!', ([p, v]) => { pair(p, 'set-cdr!').cdr = v; return UNSPEC; }, 2, 2);
-    def('list', (a) => list(...a), 0); def('cons*', (a) => { let r = a[a.length - 1]; for (let i = a.length - 2; i >= 0; i--) r = new Pair(a[i], r); return r; }, 1);
+    def('list', (a) => fromArr(a), 0); def('cons*', (a) => { let r = a[a.length - 1]; for (let i = a.length - 2; i >= 0; i--) r = new Pair(a[i], r); return r; }, 1);
     def('pair?', ([a]) => a instanceof Pair, 1, 1); def('null?', ([a]) => a === NIL, 1, 1); def('list?', ([a]) => isList(a), 1, 1);
     def('symbol?', ([a]) => a instanceof Sym, 1, 1); def('string?', ([a]) => typeof a === 'string', 1, 1); def('boolean?', ([a]) => typeof a === 'boolean', 1, 1);
     def('procedure?', ([a]) => a instanceof Lambda || a instanceof Primitive, 1, 1);
@@ -341,9 +357,9 @@
     mem('memq', (a, b) => a === b); mem('memv', (a, b) => a === b); mem('member', equal);
     const ass = (name, eq) => def(name, ([x, l]) => { let p = l; while (p instanceof Pair) { if (p.car instanceof Pair && eq(p.car.car, x)) return p.car; p = p.cdr; } return false; }, 2, 2);
     ass('assq', (a, b) => a === b); ass('assv', (a, b) => a === b); ass('assoc', equal);
-    def('map', (a) => { const f = a[0], lists = a.slice(1).map(l => arr(l)); const n = Math.min(...lists.map(l => l.length)); const out = []; for (let i = 0; i < n; i++) out.push(apply(f, lists.map(l => l[i]))); return list(...out); }, 2);
+    def('map', (a) => { const f = a[0], lists = a.slice(1).map(l => arr(l)); const n = Math.min(...lists.map(l => l.length)); const out = []; for (let i = 0; i < n; i++) out.push(apply(f, lists.map(l => l[i]))); return fromArr(out); }, 2);
     def('for-each', (a) => { const f = a[0], lists = a.slice(1).map(l => arr(l)); const n = Math.min(...lists.map(l => l.length)); for (let i = 0; i < n; i++) apply(f, lists.map(l => l[i])); return UNSPEC; }, 2);
-    def('filter', ([f, l]) => list(...arr(l).filter(x => apply(f, [x]) !== false)), 2, 2);
+    def('filter', ([f, l]) => fromArr(arr(l).filter(x => apply(f, [x]) !== false)), 2, 2);
     def('reduce', ([f, init, l]) => { const xs = arr(l); if (!xs.length) return init; let r = xs[0]; for (let i = 1; i < xs.length; i++) r = apply(f, [xs[i], r]); return r; }, 3, 3);
     def('fold-left', ([f, init, l]) => { let r = init; for (const x of arr(l)) r = apply(f, [r, x]); return r; }, 3, 3);
     def('fold-right', ([f, init, l]) => { let r = init; const xs = arr(l); for (let i = xs.length - 1; i >= 0; i--) r = apply(f, [xs[i], r]); return r; }, 3, 3);
@@ -352,19 +368,27 @@
     G.define(sym('system-global-environment'), G);
     def('eval', ([x]) => evaluate(x, G), 1, 2);
     def('apply', (a) => { const f = a[0]; const args = a.slice(1, -1).concat(arr(a[a.length - 1])); return apply(f, args); }, 2);
-    def('iota', ([n, start, step]) => { const s = start === undefined ? 0 : start, st = step === undefined ? 1 : step; const out = []; for (let i = 0; i < num(n, 'iota'); i++) out.push(s + i * st); return list(...out); }, 1, 3);
+    def('iota', ([n, start, step]) => { const s = start === undefined ? 0 : start, st = step === undefined ? 1 : step; const out = []; for (let i = 0; i < num(n, 'iota'); i++) out.push(s + i * st); return fromArr(out); }, 1, 3);
     def('display', ([x]) => { out(write(x, true)); return UNSPEC; }, 1, 2);
     def('write', ([x]) => { out(write(x, false)); return UNSPEC; }, 1, 2);
     def('newline', () => { out('\n'); return UNSPEC; }, 0, 1);
     def('write-line', ([x]) => { out(write(x, false) + '\n'); return UNSPEC; }, 1, 2);
     def('error', (a) => { throw new SchemeError(a.map((x, i) => write(x, i === 0)).join(' ')); }, 1);
-    def('number->string', ([n]) => fmtNum(num(n, 'number->string')), 1, 2); def('string->number', ([s]) => { const v = parseFloat(s); return isNaN(v) ? false : v; }, 1, 2);
+    def('number->string', ([n, radix]) => radix && radix !== 10 && Number.isInteger(num(n, 'number->string')) ? n.toString(radix) : fmtNum(num(n, 'number->string')), 1, 2);
+    def('string->number', ([s, radix]) => {
+      if (typeof s !== 'string') throw new SchemeError('The object ' + write(s) + ', passed as the first argument to string->number, is not the correct type.');
+      s = s.trim();
+      if (radix && radix !== 10) { const ok = new RegExp('^[-+]?[' + '0123456789abcdefghijklmnopqrstuvwxyz'.slice(0, radix) + ']+$', 'i').test(s); return ok ? parseInt(s, radix) : false; }
+      if (/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(s)) return parseFloat(s);
+      if (/^[-+]?\d+\/\d+$/.test(s)) { const [a, b] = s.split('/'); return parseFloat(a) / parseFloat(b); }
+      return false;
+    }, 1, 2);
     def('symbol->string', ([s]) => s.name, 1, 1); def('string->symbol', ([s]) => sym(s), 1, 1);
     def('string-append', (a) => a.join(''), 0); def('string-length', ([s]) => s.length, 1, 1);
     def('string=?', ([a, b]) => a === b, 2, 2); def('string<?', ([a, b]) => a < b, 2, 2);
-    def('substring', ([s, a, b]) => s.substring(a, b === undefined ? s.length : b), 2, 3);
+    def('substring', ([s, a, b]) => { if (typeof s !== 'string') throw new SchemeError('The object ' + write(s) + ', passed as the first argument to substring, is not the correct type.'); const e = b === undefined ? s.length : b; if (!Number.isInteger(a) || a < 0 || a > s.length) throw new SchemeError('The object ' + write(a) + ', passed as the second argument to substring, is not in the correct range.'); if (!Number.isInteger(e) || e < a || e > s.length) throw new SchemeError('The object ' + write(e) + ', passed as the third argument to substring, is not in the correct range.'); return s.substring(a, e); }, 2, 3);
     def('string-upcase', ([s]) => s.toUpperCase(), 1, 1); def('string-downcase', ([s]) => s.toLowerCase(), 1, 1);
-    def('list->string', ([l]) => arr(l).join(''), 1, 1); def('string->list', ([s]) => list(...s.split('')), 1, 1);
+    def('list->string', ([l]) => arr(l).join(''), 1, 1); def('string->list', ([s]) => fromArr(s.split('')), 1, 1);
     def('runtime', () => Date.now() / 1000, 0, 0); def('real-time', () => Date.now(), 0, 0);
     def('void', () => UNSPEC, 0);
     def('assert', ([x]) => { if (x === false) throw new SchemeError('Assertion failed'); return UNSPEC; }, 1, 1);
