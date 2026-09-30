@@ -365,7 +365,7 @@ wherever the term is used).
      jump in time (sleep) the right time appears as soon as the tab is visible.
    - About: all three sections render; every `THIRD_PARTY` entry is listed with its full licence text; the licence
      wording follows `SITE.licence`; the source link shows only when `SITE.sourceUrl` is set.
-4. Deploy `dist/index.html` (any static host; it also works opened from disk).
+4. Deploy `dist/index.html` (any static host; it also works opened from disk). For Cloudflare Workers, `wrangler.jsonc` serves `dist/` as static assets: set the build command to `npm run build` and the deploy command to `npx wrangler deploy` (`npx wrangler preview` for non-production branches).
 
 ## 12. Known limits and sharp edges
 

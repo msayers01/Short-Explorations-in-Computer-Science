@@ -1,0 +1,9 @@
+{
+  // Cloudflare Workers static-assets deployment: the built site is the single self-contained dist/index.html
+  // (plus dist/teacher-guide.html). Build it first with `npm run build`.
+  "name": "short-explorations-in-computer-science",
+  "compatibility_date": "2026-09-30",
+  "assets": { "directory": "./dist" },
+  // Needed by `wrangler preview` (branch / pull-request previews); can stay empty.
+  "previews": {}
+}
