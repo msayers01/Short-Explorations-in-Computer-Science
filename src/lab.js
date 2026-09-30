@@ -869,6 +869,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
         log.append(el('span', { class: 'repl-in' }, '1 ]=> ' + text + '\n'));
         try {
           const forms = Scheme.parseAll(text);
+          it.reset();   // every entry gets a fresh step budget; otherwise a long session ends with "ran for too long" for everything
           for (const f of forms) { const v = it.evaluate(f, it.G); const t = Scheme.write(v); log.append(el('span', { class: 'val' }, t === '' ? ';Unspecified return value' : ';Value: ' + t), '\n'); }
         } catch (e) { const msg = e instanceof RangeError ? ';Aborting!: maximum recursion depth exceeded' : (e instanceof Scheme.SchemeError ? e.message : 'Internal error: ' + e.message); log.append(el('span', { class: 'err' }, ';' + msg.replace(/^;/, '')), '\n'); const ex = explain('scheme', msg); if (ex) log.append(el('span', { class: 'note' }, '↳ ' + ex), '\n'); }
         log.scrollTop = log.scrollHeight;

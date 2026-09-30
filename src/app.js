@@ -238,6 +238,8 @@
     return m.replace(/^<position unavailable> /, '').replace(/^(\d+):(\d+) /, 'line $1: ');
   }
   function ensureMainReturns(code) {
+    // JSCPP cannot interrupt an empty-condition loop, which would freeze the page: for(;;) means for(;1;)
+    code = code.replace(/\bfor\s*\(\s*;\s*;\s*\)/g, (m, off) => ((code.slice(code.lastIndexOf('\n', off) + 1, off).match(/"/g) || []).length % 2 ? m : 'for(;1;)'));
     const i = code.search(/\bint\s+main\s*\(/); if (i < 0) return code;
     const open = code.indexOf('{', i); if (open < 0) return code;
     let depth = 0, j = open, inStr = null;

@@ -35,5 +35,8 @@ check('brace in a block comment', ensureMainReturns('int main() {\n  /* } and do
 check('brace in a string', ensureMainReturns('int main() {\n  cout << "}";\n}'), 'int main() {\n  cout << "}";\n\n    return 0;\n}');
 check('brace in a char', ensureMainReturns("int main() {\n  char c = '{';\n}"), "int main() {\n  char c = '{';\n\n    return 0;\n}");
 
+check('for(;;) cannot hang', ensureMainReturns('int main() {\n  for (;;) { break; }\n  return 0;\n}'), 'int main() {\n  for(;1;) { break; }\n  return 0;\n}');
+check('for(;;) inside a string is left alone', ensureMainReturns('int main() {\n  cout << "for(;;)";\n  return 0;\n}'), 'int main() {\n  cout << "for(;;)";\n  return 0;\n}');
+
 if (bad) { console.log(bad + ' problems'); process.exit(1); }
 console.log('app helpers OK');
