@@ -11,7 +11,8 @@
    window.CPPRUN.run(code, {stdin, onOutput}) → Promise<{out, err}>      window.CPPRUN.trace(code, stdin) → Promise<{trace, err}>
    window.JAVARUN.run(code, {stdin, onOutput}) → Promise<{out, err}>     (the site's own Java interpreter, src/java.js)
    window.CLANGRUN.run(code, {stdin, std, onOutput, onNote}) → Promise<{out, err, exit, notes}>   (real C++; see below: downloaded on demand)
-   window.CLANGRUN.runMany(code, [stdin…]) → Promise<{err, parts:[{out, all, err, exit}]}>        compile once, run once for each input */
+   window.CLANGRUN.runMany(code, [stdin…]) → Promise<{err, parts:[{out, all, err, exit}]}>        compile once, run once for each input
+   window.CPPRUN.check(code), window.JAVARUN.check(code), window.CLANGRUN.compile(code, {std}) → Promise<{err}>   compile only (the terminal's g++ and javac) */
 (function () {
   'use strict';
   const MAX_OUT = 2e6;   // characters of output before a program is stopped
@@ -144,7 +145,7 @@
       } else if (m.t === 'result' && m.trace && typeof m.trace === 'object') {
         r.result = m.trace;
       } else if (m.t === 'done') {
-        finish(r, { err: typeof m.err === 'string' ? m.err.slice(0, 20000) : null, result: r.result });
+        finish(r, { err: typeof m.err === 'string' ? m.err.slice(0, 20000) : null, exit: Number(m.exit) || 0, result: r.result });
       }
     }
 
@@ -203,6 +204,8 @@
     /** compile once, run once for each input in stdins → Promise<{out, err, parts:[{out, all, err, exit}], notes}>; err is the compiler's messages */
     runMany: (code, stdins, opts) => { opts = opts || {}; const n = stdins.length; return clang.run({ t: 'run', totalMs: 10000 + 2000 * n, idleMs: 10000 + 2000 * n, opts, payload: { code: String(code), stdins: stdins.map(String), std: opts.std } }); },
     run: (code, opts) => { opts = opts || {}; return window.CLANGRUN.runMany(code, [opts.stdin == null ? '' : opts.stdin], opts).then((r) => Object.assign(r, { exit: r.parts[0] ? r.parts[0].exit : 0, err: r.err || (r.parts[0] && r.parts[0].err) || null })); },
+    /** compile only, nothing run → Promise<{err, notes}> */
+    compile: (code, opts) => { opts = opts || {}; return clang.run({ t: 'run', totalMs: 12000, idleMs: 12000, opts, payload: { code: String(code), stdins: [], std: opts.std, compileOnly: true } }); },
     cancel: () => clang.cancel()
   };
 
@@ -223,11 +226,13 @@
   };
   window.JAVARUN = {
     run: (code, opts) => { opts = opts || {}; return java.run({ t: 'run', totalMs: 8000, idleMs: 8000, opts, payload: { code: String(code), stdin: opts.stdin == null ? '' : String(opts.stdin), maxTimeout: 5000 } }); },
+    check: (code) => java.run({ t: 'run', totalMs: 8000, idleMs: 8000, opts: {}, payload: { code: String(code), stdin: '', maxTimeout: 5000, checkOnly: true } }),
     cancel: () => java.cancel()
   };
   window.CPPRUN = {
     run: (code, opts) => { opts = opts || {}; return cpp.run({ t: 'run', totalMs: 7000, idleMs: 7000, opts, payload: { code: String(code), stdin: opts.stdin == null ? '' : String(opts.stdin), maxTimeout: 4000 } }); },
     trace: (code, stdin, opts) => { opts = opts || {}; return cpp.run({ t: 'trace', totalMs: 9000, idleMs: 9000, opts, payload: { code: String(code), stdin: String(stdin || ''), maxSteps: opts.maxSteps || 1500 } }); },
+    check: (code) => cpp.run({ t: 'check', totalMs: 7000, idleMs: 7000, opts: {}, payload: { code: String(code), maxTimeout: 4000 } }),
     cancel: () => cpp.cancel()
   };
 })();

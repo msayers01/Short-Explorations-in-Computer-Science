@@ -3,6 +3,7 @@
    stopped by the page ending the worker.
 
    Messages from the page: {t:'run', id, code, stdin, maxTimeout}   {t:'trace', id, code, stdin, maxSteps}   (the memory stepper)
+                           {t:'check', id, code}   (g++ in the practice terminal: parse the program, run nothing)
    Messages to the page:   {t:'ready'} {t:'out', id, text} {t:'result', id, trace} {t:'done', id, err} */
 (function () {
   'use strict';
@@ -18,7 +19,10 @@
     const flush = () => { if (buf) { post({ t: 'out', id, text: buf }); buf = ''; } };
     let err = null;
     try {
-      if (msg.t === 'trace') {
+      if (msg.t === 'check') {
+        // JSCPP's debugger parses the program and prepares it without running a statement; the parse errors are what g++ would report here
+        JSCPP.run(CPPUTIL.ensureMainReturns(String(msg.code)), '', { stdio: { write: () => { } }, debug: true, maxTimeout: msg.maxTimeout || 4000, unsigned_overflow: 'warn' });
+      } else if (msg.t === 'trace') {
         const trace = CPPSTEP.trace(String(msg.code), stdin, { prepare: CPPUTIL.ensureMainReturns, errorText: CPPUTIL.cppErrorText, maxSteps: msg.maxSteps || 1500 });
         post({ t: 'result', id, trace });
       } else {
@@ -30,7 +34,7 @@
   }
 
   listen((m) => {
-    if (!m || typeof m !== 'object' || (m.t !== 'run' && m.t !== 'trace')) return;
+    if (!m || typeof m !== 'object' || (m.t !== 'run' && m.t !== 'trace' && m.t !== 'check')) return;
     if (busy) post({ t: 'done', id: m.id, err: 'The C++ sandbox is busy with another program.' }); else start(m);
   });
   post({ t: 'ready' });

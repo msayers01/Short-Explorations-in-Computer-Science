@@ -1,6 +1,6 @@
 /* Saving a person's work to a file and restoring it. Progress is kept only in the browser, so without this it is lost when the
    site's data is cleared, and cannot move to another computer. The file holds: exercise progress and the code that passed, the Code Lab's
-   files, the portfolio settings, and (student side of teach.js) the student's name and the assignments they received. A teacher can also
+   files, the terminal's files, the portfolio settings, and (student side of teach.js) the student's name and the assignments they received. A teacher can also
    include the teacher tools' data: assignments with their hidden tests, and the grade book. That is off unless asked for.
 
    A backup file is untrusted input, like a link: anyone can hand someone a file. parse() checks and rebuilds every part of it (types,
@@ -17,9 +17,11 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
   const FORMAT = 'short-explorations-backup', VERSION = 1, MAX_FILE = 8 * 1024 * 1024;
-  const KEYS = { progress: 'shortcourses.progress.v1', lab: 'shortcourses.lab.v1', portfolio: 'shortcourses.portfolio.v1', teach: 'shortcourses.teach.v1' };
+  const KEYS = { progress: 'shortcourses.progress.v1', lab: 'shortcourses.lab.v1', portfolio: 'shortcourses.portfolio.v1', teach: 'shortcourses.teach.v1', shell: 'shortcourses.shell.v1' };
   const LANGS = ['python', 'cpp', 'java', 'scheme'];
   const TEACH = () => (typeof window !== 'undefined' && window.TEACH) || null;
+  // the terminal's file system: shell.js checks and caps everything it loads, so it is the sanitizer here (in node the module is required)
+  const SHELL = () => (typeof window !== 'undefined' && window.SHELL) || (typeof require === 'function' ? require('./shell.js') : null);
 
   // ---------- small, strict helpers: everything from a file or from storage goes through these ----------
   const isObj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
@@ -70,6 +72,14 @@
     return out;
   }
 
+  function cleanShell(s) {
+    const S = SHELL();
+    if (!isObj(s) || !isObj(s.fs) || !S) return null;
+    const fs = S.makeFS(s.fs);
+    if (!fs.usage().files && fs.walk('/home/student').length <= 1) return null;   // nothing made in the terminal
+    return { v: 1, fs: fs.toJSON() };
+  }
+
   function cleanPortfolio(p) {
     if (!isObj(p)) return null;
     return { name: str(p.name, 200), note: str(p.note, 2000), unfinished: !!p.unfinished, tasks: !!p.tasks, lab: (Array.isArray(p.lab) ? p.lab : []).filter((x) => typeof x === 'string').slice(0, 500).map((x) => x.slice(0, 200)) };
@@ -115,13 +125,15 @@
     if (isObj(raw.progress)) out.progress = cleanProgress(raw.progress);
     const lab = cleanLab(raw.lab); if (lab) out.lab = lab;
     const pf = cleanPortfolio(raw.portfolio); if (pf) out.portfolio = pf;
+    const shl = cleanShell(raw.shell); if (shl) out.shell = shl;
     const th = cleanTeach(raw.teach, withTeacher); if (th) out.teach = th;
     return out;
   }
 
   function summarize(data) {
-    const s = { exercises: 0, programs: 0, portfolio: false, received: 0, assignments: 0, submissions: 0, hasTeacher: false };
+    const s = { exercises: 0, programs: 0, portfolio: false, received: 0, assignments: 0, submissions: 0, hasTeacher: false, terminal: 0 };
     if (data.progress) s.exercises = keys(data.progress.done).length;
+    if (data.shell) { const S = SHELL(); if (S) s.terminal = S.makeFS(data.shell.fs).usage().files; }
     if (data.lab) s.programs = LANGS.reduce((n, l) => n + data.lab.files[l].filter((f) => !f.ex || f.code.trim()).length, 0);
     if (data.portfolio) s.portfolio = !!(data.portfolio.name || data.portfolio.note || data.portfolio.lab.length);
     if (data.teach) {
@@ -134,7 +146,7 @@
   // ---------- making and reading the file ----------
   function collect(storage, opts) {
     opts = opts || {};
-    const raw = { progress: read(storage, KEYS.progress), lab: read(storage, KEYS.lab), portfolio: read(storage, KEYS.portfolio), teach: read(storage, KEYS.teach) };
+    const raw = { progress: read(storage, KEYS.progress), lab: read(storage, KEYS.lab), portfolio: read(storage, KEYS.portfolio), teach: read(storage, KEYS.teach), shell: read(storage, KEYS.shell) };
     const data = sanitize(raw, !!opts.teacher);
     return { app: FORMAT, v: VERSION, saved: new Date().toISOString(), data };
   }
@@ -150,7 +162,7 @@
     if (!isObj(o.data)) throw new Error('This backup file has no saved work in it.');
     const data = sanitize(o.data, true);
     const summary = summarize(data);
-    if (!summary.exercises && !summary.programs && !summary.portfolio && !summary.received && !summary.assignments && !summary.submissions && !(data.progress && keys(data.progress.code).length)) throw new Error('This backup file is empty: there is no saved work in it.');
+    if (!summary.exercises && !summary.programs && !summary.portfolio && !summary.received && !summary.assignments && !summary.submissions && !summary.terminal && !(data.progress && keys(data.progress.code).length)) throw new Error('This backup file is empty: there is no saved work in it.');
     return { saved: typeof o.saved === 'string' ? o.saved.slice(0, 40) : '', data, summary };
   }
 
@@ -178,6 +190,14 @@
     }
     return out;
   }
+  // the device's files stay; files from the backup that are missing here are added (folders are made as needed)
+  function mergeShell(mine, theirs) {
+    const S = SHELL(); const fs = S.makeFS(mine.fs), other = S.makeFS(theirs.fs);
+    for (const [p, n] of other.walk('/home').concat(other.walk('/tmp'))) {
+      try { if (n.t === 'd') { if (!fs.exists(p)) fs.mkdir(p, true); } else if (!fs.exists(p)) { fs.mkdir(p.slice(0, p.lastIndexOf('/')) || '/', true); fs.write(p, n.d, false, n.bin); if (n.x) fs.chmod(p, true); } } catch (e) { /* over a cap: that file is left out */ }
+    }
+    return { v: 1, fs: fs.toJSON() };
+  }
   function mergePortfolio(mine, theirs) {
     return { name: mine.name || theirs.name, note: mine.note || theirs.note, unfinished: mine.unfinished || theirs.unfinished, tasks: mine.tasks || theirs.tasks, lab: Array.from(new Set(mine.lab.concat(theirs.lab))) };
   }
@@ -196,6 +216,7 @@
       write(storage, KEYS.lab, merge && mine ? mergeLab(mine, data.lab) : data.lab);
     }
     if (data.portfolio) { const mine = cleanPortfolio(read(storage, KEYS.portfolio)); write(storage, KEYS.portfolio, merge && mine ? mergePortfolio(mine, data.portfolio) : data.portfolio); }
+    if (data.shell) { const raw = read(storage, KEYS.shell), mine = cleanShell(raw); const next = merge && mine ? mergeShell(mine, data.shell) : data.shell; if (raw && Array.isArray(raw.history)) next.history = raw.history; write(storage, KEYS.shell, next); }
     if (data.teach) {
       const raw = read(storage, KEYS.teach) || {}, mine = cleanTeach(raw, true) || { studentName: '', received: dict() };
       const next = Object.assign({}, raw);   // keeps whatever else is stored there (the teacher-tools switch, the teacher's name)
@@ -233,7 +254,7 @@
       const url = URL.createObjectURL(blob);
       const a = el('a', { href: url, download: 'short-explorations-work-' + content.saved.slice(0, 10) + '.json' });
       document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
-      note('Saved: ' + s.exercises + ' completed exercise' + (s.exercises === 1 ? '' : 's') + ' and ' + s.programs + ' Code Lab program' + (s.programs === 1 ? '' : 's') + (s.hasTeacher ? ', and the teacher tools' : '') + '. Keep the file somewhere safe; it holds your code and your name.');
+      note('Saved: ' + s.exercises + ' completed exercise' + (s.exercises === 1 ? '' : 's') + ' and ' + s.programs + ' Code Lab program' + (s.programs === 1 ? '' : 's') + (s.terminal ? ', ' + s.terminal + ' terminal file' + (s.terminal === 1 ? '' : 's') : '') + (s.hasTeacher ? ', and the teacher tools' : '') + '. Keep the file somewhere safe; it holds your code and your name.');
     } }, 'Save my work to a file');
     const restore = el('button', { class: 'btn', onclick: () => file.click() }, 'Restore from a file…');
 
@@ -247,6 +268,7 @@
       note('');
       const s = parsed.summary, when = parsed.saved && !isNaN(Date.parse(parsed.saved)) ? new Date(parsed.saved).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'an unknown time';
       const items = [s.exercises + ' completed exercise' + (s.exercises === 1 ? '' : 's'), s.programs + ' Code Lab program' + (s.programs === 1 ? '' : 's')];
+      if (s.terminal) items.push(s.terminal + ' terminal file' + (s.terminal === 1 ? '' : 's'));
       if (s.received) items.push(s.received + ' assignment' + (s.received === 1 ? '' : 's') + ' received');
       if (s.portfolio) items.push('portfolio settings');
       if (s.hasTeacher) items.push('teacher tools: ' + s.assignments + ' assignment' + (s.assignments === 1 ? '' : 's') + ', ' + s.submissions + ' submission' + (s.submissions === 1 ? '' : 's'));

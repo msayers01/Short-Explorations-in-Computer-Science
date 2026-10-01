@@ -84,6 +84,8 @@ site/
     mathgrade.js         grader for non-code exercise kinds → window.MATHGRADE (shared with tests)
     app.js               router, pages, course editor, runners, grader, progress, widgets glue
     lab.js               Code Lab page → window.LAB
+    shell.js             the practice shell and its file system → window.SHELL (also required by node tests and backup.js) (§9f)
+    terminal.js          the Terminal panel of the Code Lab, in front of shell.js → window.TERMINAL (§9f)
     guide.js             the teacher guide (one HTML string) → window.GUIDE; build.js also writes dist/teacher-guide.html
     qr.js                QR encoder → window.QR
     teach.js             assignments / submissions / grade book → window.TEACH
@@ -194,10 +196,11 @@ lesson 7 has `ma-13-1/2`, and lessons 8–13 have `ma-7-*` … `ma-12-*`.
 | `shortcourses.portfolio.v1` | portfolio.js | `{ name, note, unfinished, tasks, lab: ["<lang>/<file name>", …] }` (name starts as teach's `studentName` if set) |
 | `shortcourses.classroom.v1` | classroom.js | `{ on, scale: index into [1.1, 1.25, 1.4, 1.6, 1.8], spot }` |
 | `shortcourses.teach.v1` | teach.js | `{ teacher, name, studentName, assignments: {id: A}, book: {id: {studentName: entry}}, received: {id: studentCopy} }` |
+| `shortcourses.shell.v1` | terminal.js | `{ v: 1, fs: { v: 1, cwd, root }, history: [lines] }`; `root` holds only `/home` and `/tmp` (`shell.js: fs.toJSON`); the system part (`/bin`, `/etc`, `/dev`) is rebuilt on load. A file is `{ t:'f', d, x?, m, bin? }`, a directory `{ t:'d', m, c: [[name, node], …] }` |
 
 Bumping a `.vN` suffix is how a breaking layout change is handled (old data is simply ignored).
 
-**The backup file** (`backup.js`) is JSON: `{ app: 'short-explorations-backup', v: 1, saved: ISO date, data: { progress, lab, portfolio, teach } }`,
+**The backup file** (`backup.js`) is JSON: `{ app: 'short-explorations-backup', v: 1, saved: ISO date, data: { progress, lab, portfolio, teach, shell } }`,
 each part in the shape of its storage key, but rebuilt through strict checks (types, lengths, ids that are not members of
 `Object.prototype`, dictionaries without a prototype) because a file is untrusted input like a link. `teach` holds only the student side
 (`studentName`, `received`, never with hidden tests) unless the teacher ticks the box, which adds `assignments` (hidden tests included), `book`,
@@ -468,6 +471,45 @@ in the tests) wraps method-writing exercises in a class with a `main`.
 - **Testing.** `node test_java.js` checks the interpreter against outputs of real javac/java (expected strings were written from Java's
   documented behaviour, not run against a JVM here); `node test_course.js java` grades the course; the browser test runs Java in the worker,
   checks the lockdown and the Lab.
+
+## 9f. The practice terminal (`shell.js`, `terminal.js`)
+
+A command line for learning the Unix shell, in the Code Lab (the **Terminal** button; a course on it is planned). Design notes:
+
+- **It is a shell, not an emulator.** `shell.js` has its own tokenizer and parser (words with `' " \` quoting, `$VAR ${VAR} $? $# $@ $1`,
+  `$(…)`, `$((…))`, `{a,b}` and `{1..5}`, `~`, `* ? […]`, `> >> < 2> 2>&1 | ; && || !`, `if/elif/else/fi`, `for/in/do/done`, `while`, `until`,
+  `{ }` and `( )`), an executor that runs pipelines stage by stage (each stage's output buffered into the next: nothing runs concurrently),
+  and about seventy commands written here with GNU's wording for their errors (`ls: cannot access 'x': No such file or directory`,
+  `bash: x: command not found`, exit 127, and so on). `help` lists them, `man NAME` prints a page from the same table (`COMMANDS`).
+  No `eval`, no `new Function`; the module has no DOM and runs in node (`test_shell.js`).
+- **The file system** is a tree in memory (`makeFS`): `/home/student` (the home, `~`), `/tmp`, and a read-only system (`/bin` with a stub
+  per command, `/etc/passwd`, `/etc/hostname`, `/etc/motd`, `/dev/null`). Caps (`LIMITS`): 500 files, 2 MB in all, 256 KB a file, 32 levels,
+  100-character names; names may not contain `/` or control characters. Children live in null-prototype dictionaries, so `__proto__` is
+  an ordinary file name. Only the exec bit is a real permission (`chmod +x`, `./script.sh` → `Permission denied` without it);
+  writes outside `/home` and `/tmp` are `Permission denied`. Saving (`fs.toJSON`) keeps `/home` and `/tmp` only; loading checks every
+  node (names, shapes, sizes, the caps) and rebuilds the system part, so a hostile saved copy or backup cannot plant a `/bin/ls` or an
+  oversized tree. `backup.js` uses the same loader as its sanitizer (`cleanShell`), and `mergeShell` adds a backup's missing files.
+- **Programs.** `g++`/`clang++` compile through a hook (`CPPRUN.check`: JSCPP in debug mode parses without running; or
+  `CLANGRUN.compile`/`Runners.cppFull.compile` when the Lab's engine is Full C++ or `-std=` is given, behind the usual download gate) and
+  write a file with `bin: { lang, src, std }` and ELF-looking bytes; `./name` runs the source through the same sandbox as the Run button.
+  `javac` checks with `JAVARUN.check` (`java.js: run(..., {checkOnly})`) and writes `Name.class`; `java Name` runs it; `java Name.java`
+  compiles and runs. `python file.py` and `scheme file.scm` run the file. stdin: a pipe or `<` gives the text; otherwise Python's `input()`
+  asks on the command line, and a C++ or Java program that reads (`cin`, `Scanner`) is given its lines first (an empty line ends them).
+  stdout can go to a file or pipe. Exit status: the program's, or 1 on an error.
+- **Limits that stop runaway lines.** 20 000 simple commands per line typed (`while true; do :; done` ends with a message), 2 MB of output
+  into a pipe or capture, 256 KB into a file, 10 000 keyboard lines for a command reading stdin at the terminal, Ctrl+C cancels (`^C`,
+  status 130) and also cancels the running sandbox.
+- **The panel** (`terminal.js`) reuses the output panel's look. One `<input>` is the command line; while a program asks for input the
+  same line answers it. Arrow keys recall history, Tab completes commands and paths (`sh.complete`), Ctrl+L clears. `nano file` opens a
+  textarea with nano's bottom bar inside the panel (Ctrl+S / Ctrl+X); `edit file.py` opens the file in the Lab editor above (a file in
+  `~/lab` directly, anything else as a copy in `~/lab`). Output is batched into text nodes; the scrollback is trimmed at 300 K characters.
+  Everything shown is text: a class name on a span for colour (directories, programs, headings), never HTML.
+- **`~/lab` mirrors the Code Lab's files.** Before each command the Lab's files are written into `~/lab` (the Lab wins); after it, a
+  file there that changed is written back, a new file with a known extension (`.py .cpp .java .scm`) becomes a Lab file, and a mirrored
+  file that was `rm`ed is removed from the Lab (said in a note). Removing the whole folder removes nothing from the Lab. The Lab's
+  "Reset the Code Lab" also clears the terminal; "Reset files" in the terminal bar clears only the terminal.
+- **Not there (yet):** job control (`&`), functions, `case`, `[[ ]]`, arrays, `${x:-default}`, here-documents, `awk`, `tar`, `ssh` and
+  anything needing a network (those names answer with a sentence saying so), a Windows `cmd`/PowerShell dialect (planned with the course).
 
 ## 10. Adding things — recipes
 

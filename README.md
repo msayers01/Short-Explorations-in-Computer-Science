@@ -35,7 +35,9 @@ add lessons, figures and exercise types.
     src/style.css          design tokens, layout and every component's styles
     src/app.js             router, pages, code editor, runners, grader, saved progress
     src/lab.js             the Code Lab (#/lab): files, editor, Python tracer and turtle, Scheme REPL,
-                           templates, quick reference, share links, open and save
+                           templates, quick reference, share links, open and save, the Terminal panel
+    src/shell.js           the practice shell: a Unix-style command line with its own file system (no eval, no DOM)
+    src/terminal.js        the Terminal panel in front of it: prompt, history, Tab completion, nano, the ~/lab mirror
     src/teach.js           assignments, submissions and grade book, carried in links
     src/portfolio.js       the student portfolio (#/portfolio)
     src/classroom.js       classroom (projector) mode
@@ -64,6 +66,7 @@ add lessons, figures and exercise types.
     test_subst.js          checks the substitution stepper
     test_security.js       checks the Python sandbox and the size limit on links
     test_backup.js         checks saving and restoring work to a file, including hostile files
+    test_shell.js          checks the practice shell: file system, parser, every command, limits, hostile saved copies
     test_browser.js        browser tests (npm run test:browser): sandboxes, Stop, the Code Lab and the Content Security Policy
     dist/                  the built site
 
@@ -91,6 +94,7 @@ The patched JSCPP is already bundled in `vendor/jscpp.min.js`; the patch also ha
     node test_course.js python      # or lisp, cpp, math, modern (real compiler: about a minute)
     node test_cppstep.js
     node test_subst.js
+    node test_shell.js
 
 Each course test prints one line per exercise: the reference solution must pass and the
 starter code must fail. It also runs every playground and reports errors.
@@ -159,7 +163,10 @@ for definitions and theorems, `<div class="proof">…<span class="qed">∎</span
 `#/lab` is a sandbox with its own editor (src/lab.js). It reuses the highlighter, runners and
 output panel from app.js through `window.__app.internal`. Files are kept in localStorage under
 `shortcourses.lab.v1`, one list per language. A share link is `#/lab?l=<lang>&n=<name>&c=<base64url code>`;
-opening one adds the file to the visitor's Code Lab. Starter programs live in `TEMPLATES` and the
+opening one adds the file to the visitor's Code Lab. The **Terminal** button opens a practice command line
+(src/terminal.js, src/shell.js): a Unix-style shell with its own file system in localStorage (`shortcourses.shell.v1`),
+where `~/lab` mirrors the Code Lab's files both ways and `python`, `javac`/`java`, `g++` and `scheme` run programs
+through the same sandboxes as the Run button. Starter programs live in `TEMPLATES` and the
 cheatsheets in `REFERENCE` at the top of lab.js. The Python tracer uses Skulpt's debugging
 suspensions (`Sk.debug`): module-level variables come from `$loc`, function locals from `$tmps`.
 Stop works through `yieldLimit` suspensions; `killableWhile/killableFor` must stay off (they hang).

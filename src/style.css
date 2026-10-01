@@ -394,7 +394,7 @@ table.fill td.blank input.ans { width: 4.5rem; border: 0; border-bottom: 2px sol
 .out .inline-input { font: inherit; border: 0; border-bottom: 1px solid var(--t-prompt); background: transparent; color: #fff; caret-color: var(--t-prompt); padding: 0 0.3rem; min-width: 8rem; outline: none; }
 .out .inline-input:focus-visible { outline: none; box-shadow: 0 1px 0 var(--t-prompt); }
 .out .input-line::before { content: "\203A "; color: var(--t-prompt); }
-html.classroom .out-text { font-size: 1rem; }
+html.classroom .out-text, html.classroom .term-input, html.classroom .nano { font-size: 1rem; }
 .inline-input { font: inherit; border: 0; border-bottom: 1px solid var(--accent); background: var(--accent-soft); color: var(--ink); padding: 0 0.3rem; min-width: 8rem; outline: none; }
 .inline-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .exercise { border: 1px solid var(--rule); border-top: 3px solid var(--accent); padding: 1rem 1.25rem 1.25rem; margin: 2rem 0; background: var(--paper); }
@@ -529,6 +529,30 @@ html.classroom .out-text { font-size: 1rem; }
 .find-close { margin-left: auto; }
 .lab-out { margin-top: 0.7rem; } .lab-out .out-text { max-height: 20rem; }
 .stdin-box, .turtle-box, .trace-box, .repl-box { border: 1px solid var(--rule); margin-top: 0.7rem; background: var(--paper); }
+/* the Terminal panel (src/terminal.js): the output panel's look, plus a command line */
+.lab-term { margin-top: 0.7rem; } .lab-term[hidden] { display: none; }
+.lab-term .cmd::before { content: none; }   /* the prompt is in the line itself */
+.lab-term .term-scroll { max-height: 22rem; min-height: 6rem; }
+.lab-term .term-scroll:empty { min-height: 0; padding: 0; }
+.term-reset, .term-close { color: var(--t-dim); font-family: var(--sans); font-size: 0.74rem; padding: 0 0.3rem; } .term-reset:hover, .term-close:hover { color: var(--t-fg); }
+.term-close { font-size: 1rem; line-height: 1; }
+.term-bar .term-status { margin-left: auto; } .term-bar .term-status:empty + .term-reset { margin-left: auto; }
+.term-input { display: flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.95rem 0.55rem; border-top: 1px solid var(--t-rule); background: var(--t-bg); font-size: 0.86rem; }
+.term-input[hidden] { display: none; }
+.term-ps1 { color: var(--t-cmd); white-space: pre; font-weight: 500; } .term-ps1:empty { display: none; }
+.term-inp { flex: 1; min-width: 4rem; font: inherit; border: 0; background: transparent; color: var(--t-fg); caret-color: var(--t-prompt); outline: none; padding: 0; }
+.term-inp::placeholder { color: var(--t-dim); opacity: 0.7; font-style: italic; }
+.term-input:focus-within { box-shadow: inset 2px 0 0 var(--t-prompt); }
+.out .t-dir { color: var(--t-prompt); font-weight: 600; } .out .t-exe { color: var(--t-ok); } .out .t-hd { color: var(--t-warn); font-weight: 700; }
+.lab-toolbar .btn.on { box-shadow: inset 0 -2px 0 var(--accent); }
+/* nano, inside the terminal */
+.nano { display: flex; flex-direction: column; border-top: 1px solid var(--t-rule); font-size: 0.86rem; }
+.nano-top { display: flex; gap: 1rem; background: var(--t-fg); color: var(--t-bg); padding: 0.15rem 0.95rem; font-weight: 600; white-space: pre; }
+.nano-brand { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.74rem; align-self: center; }
+.nano-ta { display: block; width: 100%; box-sizing: border-box; min-height: 14rem; resize: vertical; font: inherit; line-height: 1.55; padding: 0.6rem 0.95rem; border: 0; outline: none; background: var(--t-bg); color: var(--t-fg); caret-color: var(--t-prompt); tab-size: 4; white-space: pre; overflow: auto; }
+.nano-msg { min-height: 1.4em; text-align: center; color: var(--t-dim); } .nano-msg.nano-ask { background: var(--t-fg); color: var(--t-bg); font-weight: 600; }
+.nano-keys { display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; padding: 0.35rem 0.95rem 0.5rem; }
+.nano-key { font: inherit; border: 0; background: transparent; color: var(--t-fg); cursor: pointer; padding: 0; } .nano-key b { display: inline-block; background: var(--t-fg); color: var(--t-bg); padding: 0 0.3em; border-radius: 2px; font-weight: 700; } .nano-key:hover { text-decoration: underline; }
 .stdin-box[hidden], .turtle-box[hidden], .trace-box[hidden], .repl-box[hidden] { display: none; }
 .stdin-ta { display: block; width: 100%; box-sizing: border-box; font-family: var(--mono); font-size: 0.86rem; border: 0; background: var(--code-bg); color: var(--ink); padding: 0.5rem 0.8rem; resize: vertical; }
 .turtle-mount { padding: 0.5rem; overflow: auto; min-height: 4rem; } .turtle-mount canvas { max-width: 100%; }
