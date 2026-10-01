@@ -1017,7 +1017,9 @@ xs mapped kept result`;
   /* ---------- 25. Scratch blocks beside Python (From Scratch to Python) ----------
      block: [category, text, children?, elseChildren?]; in text, [words] is a text input, (10) a number or reporter, <cond> a boolean.
      categories: event looks motion control sensing operators variables myblocks pen sound */
-  W.blocks = function (mount, b) {
+  // A stack of Scratch-style blocks: [[category, text, children?, elseChildren?], ...]. In text, [words] is a text input, (10) a number,
+  // <cond> a boolean. Shared by the blocks figure and the translate-the-block quiz.
+  function blockStack(stack) {
     const inline = (text) => {
       const out = [];
       const re = /\[([^\]]*)\]|\(([^()]*)\)|<([^<>]*)>/g; let last = 0, m;
@@ -1042,12 +1044,66 @@ xs mapped kept result`;
       }
       return el('div', { class: 'sb sb-' + cat + (first && cat === 'event' ? ' sb-hat' : '') }, el('div', { class: 'sb-row' }, inline(text)));
     };
-    const stack = el('div', { class: 'sb-stack' }, (b.stack || []).map((blk, i) => render(blk, i === 0)));
+    return el('div', { class: 'sb-stack' }, (stack || []).map((blk, i) => render(blk, i === 0)));
+  }
+  W.blocks = function (mount, b) {
     const code = el('pre', { class: 'code sb-py' }, el('code', { html: window.__highlight ? window.__highlight(b.python || '', 'python') : esc(b.python || '') }));
     mount.append(el('div', { class: 'sb-pair' },
-      el('div', { class: 'sb-col' }, el('div', { class: 'sb-head' }, b.leftLabel || 'In Scratch'), stack),
+      el('div', { class: 'sb-col' }, el('div', { class: 'sb-head' }, b.leftLabel || 'In Scratch'), blockStack(b.stack)),
       el('div', { class: 'sb-arrow', 'aria-hidden': 'true' }, '→'),
       el('div', { class: 'sb-col' }, el('div', { class: 'sb-head' }, b.rightLabel || 'In Python'), code)));
+  };
+
+  /* ---------- 25b. translate the block: a Scratch block is shown, the student types the Python line (From Scratch to Python) ---------- */
+  // items: [{ stack, answer: 'print("Hi")' | ['...', '...'], hint }]. Answers are compared with the spaces outside quotes removed and
+  // single quotes read as double, so print ('Hi') passes; capitals and the colon are not forgiven, because Python does not forgive them.
+  W.blockquiz = function (mount, b) {
+    const items = (b.items || []).filter((it) => it && it.stack && it.answer);
+    if (!items.length) return;
+    const norm = (s) => { let out = '', q = null; for (const ch of String(s).trim()) { if (q) { out += ch === q ? '"' : ch; if (ch === q) q = null; } else if (ch === '"' || ch === "'") { q = ch; out += '"'; } else if (!/\s/.test(ch)) out += ch; } return out; };
+    let k = 0, tries = 0, right = 0, done = false;
+    const stackBox = el('div', { class: 'bq-stack' });
+    const input = el('input', { type: 'text', class: 'bq-input', spellcheck: 'false', autocapitalize: 'off', autocomplete: 'off', 'aria-label': 'the Python line' });
+    const msg = el('div', { class: 'fig-status bq-msg', role: 'status' });
+    const score = el('span', { class: 'fig-note' });
+    const check = el('button', { class: 'btn sm primary' }, 'Check');
+    const next = el('button', { class: 'btn sm', hidden: '' }, 'Next');
+    const show = el('button', { class: 'btn sm quiet' }, 'Show me');
+    const again = el('button', { class: 'btn sm quiet', hidden: '' }, 'Play again');
+    const answers = (it) => (Array.isArray(it.answer) ? it.answer : [it.answer]);
+    function load() {
+      const it = items[k]; tries = 0; stackBox.replaceChildren(blockStack(it.stack)); input.value = ''; input.disabled = false; msg.textContent = ''; msg.classList.remove('ok', 'err');
+      check.hidden = false; next.hidden = true; show.hidden = false; score.textContent = 'block ' + (k + 1) + ' of ' + items.length + (right ? ' · ' + right + ' right' : '');
+      input.focus();
+    }
+    function finish() {
+      done = true; stackBox.replaceChildren(); input.hidden = true; check.hidden = true; next.hidden = true; show.hidden = true; again.hidden = false;
+      msg.classList.add('ok');
+      msg.textContent = right === items.length ? 'All ' + items.length + ' right! You can read Scratch and write Python.' : right + ' of ' + items.length + ' right. Play again and try the ones you missed.';
+      score.textContent = '';
+    }
+    function reveal(it, text) { input.value = answers(it)[0]; input.disabled = true; msg.textContent = text; check.hidden = true; show.hidden = true; next.hidden = false; next.focus(); }
+    check.onclick = () => {
+      const it = items[k]; const got = norm(input.value);
+      if (!got) { msg.textContent = 'Type the Python line, then Check.'; return; }
+      if (answers(it).some((a) => norm(a) === got)) { right++; msg.classList.remove('err'); msg.classList.add('ok'); msg.textContent = ['Yes!', 'Right!', 'Exactly.', 'That is it.'][right % 4]; input.disabled = true; check.hidden = true; show.hidden = true; next.hidden = false; next.focus(); return; }
+      tries++; msg.classList.remove('ok'); msg.classList.add('err');
+      const a = answers(it)[0], raw = input.value.trim();
+      let why = it.hint || 'Not quite. Look at the block again.';
+      if (raw.toLowerCase() === a.toLowerCase() && raw !== a) why = 'Almost: check the capital letters. Python cares about them.';
+      else if (a.endsWith(':') && !raw.endsWith(':')) why = 'Close. A line that opens a C-block ends with a colon.';
+      else if (/==/.test(a) && /[^=!<>]=[^=]/.test(raw) && !/==/.test(raw)) why = 'One = sets a variable. Two (==) ask "are these the same?".';
+      else if (/"/.test(a) && !/["']/.test(raw)) why = 'The words that get shown need quotation marks.';
+      msg.textContent = (tries >= 2 ? 'Still not it. ' : 'Not quite. ') + why + (tries >= 2 ? ' Press Show me if you are stuck.' : '');
+    };
+    show.onclick = () => reveal(items[k], 'The answer is ' + answers(items[k])[0] + '. Type it once to remember it, then press Next.');
+    next.onclick = () => { k++; if (k >= items.length) finish(); else load(); };
+    again.onclick = () => { k = 0; right = 0; done = false; input.hidden = false; again.hidden = true; msg.classList.remove('ok'); load(); };
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); if (!next.hidden) next.click(); else if (!done) check.click(); } });
+    mount.append(el('div', { class: 'bq' }, el('div', { class: 'sb-head' }, b.title || 'Translate the block'), stackBox,
+      el('div', { class: 'bq-row' }, el('span', { class: 'bq-arrow', 'aria-hidden': 'true' }, '→'), input),
+      el('div', { class: 'fig-tools' }, check, next, show, again, score), msg));
+    load();
   };
 
   /* ---------- 26. merge sort, bottom up: runs doubling in size, every merge step shown (DSA lesson 4) ---------- */

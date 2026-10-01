@@ -167,6 +167,11 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('the linked-list figure renders', (await page.locator('.fig-mount svg').count()) >= 1);
   await goto('#/scratch/4');
   check('a Scratch if-else block renders with an else arm', (await page.locator('.sb-c .sb-row:has-text("else")').count()) >= 1);
+  const quiz = page.locator('.bq').first();
+  await quiz.locator('.bq-input').fill('if score > 100'); await quiz.locator('button:has-text("Check")').click();
+  const quizWrong = await quiz.locator('.bq-msg').textContent();
+  await quiz.locator('.bq-input').fill("if score > 100:"); await quiz.locator('button:has-text("Check")').click();
+  check('the translate-the-block quiz marks a missing colon and accepts the right line', /colon/.test(quizWrong) && (await quiz.locator('.bq-msg.ok').count()) === 1, quizWrong);
   for (const h of ['#/', '#/lisp/2', '#/math/1', '#/dsa/2', '#/dsa/3', '#/dsa/4', '#/scratch/5', '#/scratch/6', '#/guide', '#/about', '#/portfolio']) await goto(h);
 
   // ---- 6b. saving and restoring work

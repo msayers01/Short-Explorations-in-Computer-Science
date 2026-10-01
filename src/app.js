@@ -463,6 +463,7 @@
 
   // ---------- exercise block ----------
   function exerciseBlock(ex, course, lessonIdx) {
+    const affirm = (course && Array.isArray(course.affirm) && course.affirm.length) ? course.affirm : null;   // a course's own words for a pass
     const saved = Progress.getCode(ex.id);
     const done = Progress.isDone(ex.id);
     const box = el('section', { class: 'exercise' + (done ? ' done' : ''), id: ex.id });
@@ -478,7 +479,7 @@
       out.hide(); verdict.hidden = false; verdict.innerHTML = '';
       try {
         const r = await grade(ex, editor.value, verdict);
-        renderVerdict(verdict, r, ex, attempts);
+        renderVerdict(verdict, r, ex, attempts, affirm);
         if (r.passed) { box.classList.add('done'); Progress.markDone(ex.id, editor.value); document.dispatchEvent(new CustomEvent('progress-changed')); }
       } catch (e) {
         verdict.className = 'verdict fail'; verdict.append(el('p', { class: 'v-title' }, 'The checker failed unexpectedly: ' + (e && e.message || e)));
@@ -503,7 +504,8 @@
     return box;
   }
   // ---------- non-code exercises (answer / choice / table) ----------
-  function mathExerciseBlock(ex) {
+  function mathExerciseBlock(ex, course) {
+    const affirm = (course && Array.isArray(course.affirm) && course.affirm.length) ? course.affirm : null;
     const MG = window.MATHGRADE;
     let saved = null; try { saved = JSON.parse(Progress.getCode(ex.id) || 'null'); } catch (e) { saved = null; }
     const done = Progress.isDone(ex.id);
@@ -556,7 +558,7 @@
     const checkBtn = el('button', { class: 'btn primary', onclick: () => {
       attempts++; verdict.hidden = false; verdict.innerHTML = '';
       const r = MG.grade(ex, readAnswers());
-      renderMathVerdict(verdict, r, ex, attempts);
+      renderMathVerdict(verdict, r, ex, attempts, affirm);
       if (r.passed) { box.classList.add('done'); Progress.markDone(ex.id, JSON.stringify(read())); document.dispatchEvent(new CustomEvent('progress-changed')); }
     } }, lbl('check'));
     const resetBtn = el('button', { class: 'btn quiet', onclick: () => armConfirm(resetBtn, 'Clear answers?', () => { resetBtn.classList.remove('armed'); ex.kind === 'choice' ? inputs[0].set([]) : setAll(null); persist(); verdict.hidden = true; }) }, 'Clear');
@@ -575,11 +577,12 @@
     box.append(form, el('div', { class: 'toolbar' }, checkBtn, resetBtn, el('span', { class: 'spacer' }), hintBtn, solBtn), verdict, hintBox, solBox);
     return box;
   }
-  function renderMathVerdict(v, r, ex, attempts) {
+  const pickAffirm = (affirm) => { const a = affirm || AFFIRM; return a[Math.floor(Math.random() * a.length)]; };
+  function renderMathVerdict(v, r, ex, attempts, affirm) {
     if (r.error) { v.className = 'verdict fail'; v.append(el('p', { class: 'v-title' }, r.error)); return; }
     if (r.passed) {
       v.className = 'verdict pass';
-      v.append(el('div', { class: 'v-pass' }, checkSVG(), el('div', {}, el('p', { class: 'v-title' }, AFFIRM[Math.floor(Math.random() * AFFIRM.length)]), el('p', { html: ex.followup || (r.results.length > 1 ? 'All ' + r.results.length + ' parts are right.' : 'That is the right answer.') }))));
+      v.append(el('div', { class: 'v-pass' }, checkSVG(), el('div', {}, el('p', { class: 'v-title' }, pickAffirm(affirm)), el('p', { html: ex.followup || (r.results.length > 1 ? 'All ' + r.results.length + ' parts are right.' : 'That is the right answer.') }))));
       return;
     }
     v.className = 'verdict fail';
@@ -597,7 +600,7 @@
     const p = document.createElementNS(ns, 'path'); p.setAttribute('d', 'M6.5 12.5l3.5 3.5 7.5-8');
     s.append(c, p); return s;
   }
-  function renderVerdict(v, r, ex, attempts) {
+  function renderVerdict(v, r, ex, attempts, affirm) {
     if (r.error) {
       v.className = 'verdict fail';
       v.append(el('p', { class: 'v-title' }, 'Not yet — the code did not run.'), el('pre', { class: 'v-err' }, r.error));
@@ -606,7 +609,7 @@
     }
     if (r.passed) {
       v.className = 'verdict pass';
-      v.append(el('div', { class: 'v-pass' }, checkSVG(), el('div', {}, el('p', { class: 'v-title' }, AFFIRM[Math.floor(Math.random() * AFFIRM.length)]), el('p', {}, r.results.length + ' of ' + r.results.length + ' tests passed.' + (ex.followup ? ' ' + ex.followup : '')))));
+      v.append(el('div', { class: 'v-pass' }, checkSVG(), el('div', {}, el('p', { class: 'v-title' }, pickAffirm(affirm)), el('p', {}, r.results.length + ' of ' + r.results.length + ' tests passed.' + (ex.followup ? ' ' + ex.followup : '')))));
       return;
     }
     v.className = 'verdict fail';
@@ -650,7 +653,7 @@
     for (const b of blocks) {
       if (typeof b === 'string') frag.append(el('div', { class: 'prose', html: b }));
       else if (b.play) { playCount++; frag.append(playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount })); }
-      else if (b.ex) { b.ex.lang = b.ex.lang || course.lang; b.ex.runtime = b.ex.runtime || course.runtime; frag.append(window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex) : exerciseBlock(b.ex, course, lessonIdx)); }
+      else if (b.ex) { b.ex.lang = b.ex.lang || course.lang; b.ex.runtime = b.ex.runtime || course.runtime; frag.append(window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex, course) : exerciseBlock(b.ex, course, lessonIdx)); }
       else if (b.fig) {
         const wrap = el('figure', { class: 'fig' + (b.wide ? ' wide' : '') });
         const mount = el('div', { class: 'fig-mount' });

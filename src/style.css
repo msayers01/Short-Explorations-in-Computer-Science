@@ -891,4 +891,11 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .sb-sensing { background: #5cb1d6; } .sb-operators { background: #59c059; } .sb-variables { background: #ff8c1a; } .sb-myblocks { background: #ff6680; } .sb-pen { background: #0fbd8c; } .sb-sound { background: #cf63cf; }
 .sb-control .sb-body, .sb-event .sb-body { background: var(--paper); }
 .sb-py { margin: 0; font-size: 0.86rem; }
+.bq { font-family: var(--sans); }
+.bq-stack { min-height: 2.4rem; margin-bottom: 0.5rem; }
+.bq-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+.bq-arrow { font-size: 1.4rem; color: var(--ink-3); }
+.bq-input { flex: 1; min-width: 0; font-family: var(--mono); font-size: 0.95rem; padding: 0.4rem 0.6rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); }
+.bq-input:disabled { color: var(--ink-2); }
+.bq-msg { min-height: 1.4em; }
 @media (max-width: 640px) { .sb-pair { grid-template-columns: minmax(0, 1fr); } .sb-arrow { display: none; } }
