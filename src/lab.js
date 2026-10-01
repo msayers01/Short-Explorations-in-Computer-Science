@@ -194,7 +194,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
     cpp: [
       [/integer division by zero/, 'Division by zero. The divisor became 0 here; check the values before dividing.'],
       [/index out of bound/, 'An array index went past the array size. Valid indices are 0 to size - 1.'],
-      [/overflow/, 'A number became too large for its type. Use long, or check the arithmetic.'],
+      [/overflow/, 'A number became too large for its type. Use long long, or check the arithmetic.'],
       [/uninitialized|uninitialised/, 'A variable was read before it was given a value. Initialise it: int total = 0;'],
       [/Syntax error/, 'C++ could not read the program. Check for a missing semicolon at the end of the previous statement, unmatched braces or parentheses, and a missing #include or using namespace std;'],
       [/undefined|not defined|is not declared/, 'A name was used that was never declared. Declare variables with a type (int x = 0;), and define functions before main, or add an #include.']
@@ -208,6 +208,16 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
       [/unexpected|Unbalanced|end of input|EOF/, 'The parentheses do not balance. Count them, or use the highlighted matching bracket in the editor.']
     ]
   };
+
+  // The same quick reference for the Full C++ engine: the note at the end changes, and the library is no longer limited.
+  REFERENCE.cppfull = REFERENCE.cpp.replace(/<p class="ref-note">[\s\S]*<\/p>$/, `<h4>With Full C++ you can also use</h4>
+<pre><code>#include &lt;string&gt;   #include &lt;vector&gt;   #include &lt;algorithm&gt;
+string s = "hello";  s += " world";  s.size()  s.substr(0, 5)
+vector&lt;int&gt; v = {3, 1, 2};  v.push_back(9);  sort(v.begin(), v.end());
+for (int x : v) { ... }          auto n = v.size();
+int&amp; r = x;                      // a reference: another name for x
+struct Point { int x, y; };      class Counter { ... };</code></pre>
+<p class="ref-note">Full C++ is a real compiler (Clang 22) running in your browser, in 32-bit mode: <code>long</code> and pointers are 4 bytes, <code>long long</code> is 8. Exceptions (<code>try</code>, <code>throw</code>) and threads are not available. Compiler warnings are shown above the output. The compiler is downloaded the first time you use it (about 28 MB), and only this engine needs the internet.</p>`);
 
   /* ---------------- state ---------------- */
   let S = null;
@@ -224,6 +234,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
       if (S.active[l] == null || S.active[l] >= S.files[l].length) S.active[l] = 0;
     }
     if (!S.panels) S.panels = {};
+    S.fullCpp = S.fullCpp === true;
     return S;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
@@ -510,7 +521,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
       document.documentElement.setAttribute('data-course', LANG_INFO[l].accent);
       editor.setLang(l); editor.value = curFile().code;
       renderTabs(); renderToolbar(); renderStatusBar(); renderExBar(); renderAsgBar(); out.hide(); replBox.hidden = l !== 'scheme'; turtleBox.hidden = true; traceBox.hidden = true; stdinBox.hidden = true; substBox.hidden = true; endMem();
-      refBody.innerHTML = REFERENCE[l]; renderTemplates(); repl.reset();
+      refBody.innerHTML = REFERENCE[l === 'cpp' && isFull() ? 'cppfull' : l]; renderTemplates(); repl.reset(); engineChanged();
     }
 
     // ----- file tabs
@@ -538,7 +549,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
       return form;
     }
     function cleanName(n, l) { n = (n || '').trim().replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_'); if (!n) return null; if (!/\.\w+$/.test(n)) n += LANG_INFO[l].ext; return n; }
-    function activate(i) { if (tracer) tracer.stop(); endMem(); S.active[S.lang] = i; save(); editor.value = curFile().code; renderTabs(); renderStatusBar(); renderExBar(); renderAsgBar(); if (!isTouch()) editor.focus(); }
+    function activate(i) { if (tracer) tracer.stop(); endMem(); S.active[S.lang] = i; save(); editor.value = curFile().code; renderTabs(); renderStatusBar(); engineChanged(); renderExBar(); renderAsgBar(); if (!isTouch()) editor.focus(); }
     const isTouch = () => window.matchMedia && matchMedia('(hover: none)').matches;
     function newFile() {
       const l = S.lang; const addBtn = tabs.lastElementChild;
@@ -576,7 +587,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
       const { ex, course, lessonIdx, lesson } = found; exBar.hidden = false;
       const check = el('button', { class: 'btn primary', onclick: async () => {
         check.disabled = true; check.textContent = 'Checking…'; exAttempts++; exVerdict.hidden = false; exVerdict.innerHTML = '';
-        const r = await A().grade(ex, editor.value);
+        const r = await A().grade(ex, editor.value, exVerdict);
         A().renderVerdict(exVerdict, r, ex, exAttempts);
         if (r.passed) { A().Progress.markDone(ex.id, editor.value); A().Progress.setCode(ex.id, editor.value); document.dispatchEvent(new CustomEvent('progress-changed')); }
         check.disabled = false; check.textContent = 'Check against the exercise';
@@ -614,8 +625,22 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
     const findBtn = el('button', { class: 'btn quiet', title: 'Find and replace (Ctrl+F / Ctrl+H)', onclick: () => openFind(false) }, 'Find');
     const fontDown = el('button', { class: 'btn quiet font-btn', title: 'Smaller text', onclick: () => setFont(-1) }, 'A−');
     const fontUp = el('button', { class: 'btn quiet font-btn', title: 'Larger text', onclick: () => setFont(1) }, 'A+');
+    // C++ has two engines: the teaching one (JSCPP; step-through memory, always available, works offline) and Full C++ (Clang; the whole language and library,
+    // downloaded the first time). An exercise from a Full C++ course always uses Full C++.
+    const exFull = () => { const f = curFile(); const found = f.ex && findExercise(f.ex.id); return !!(found && found.ex.runtime === 'full'); };
+    const isFull = () => S.lang === 'cpp' && (exFull() || S.fullCpp === true);
+    const engineBtn = el('button', { class: 'btn quiet', onclick: () => { S.fullCpp = !S.fullCpp; save(); engineChanged(); } });
+    function engineChanged() {
+      if (S.lang !== 'cpp') return;
+      const why = window.CLANGRUN.unavailable(), forced = exFull();
+      engineBtn.textContent = isFull() ? 'Engine: Full C++' : 'Engine: Teaching';
+      engineBtn.disabled = forced || (!isFull() && !!why);
+      engineBtn.title = forced ? 'This exercise is written for Full C++' : (!isFull() && why ? 'Full C++ is not available here: ' + why : isFull() ? 'Full C++ is a real compiler: all of the language and the standard library. Click to go back to the teaching engine, which can step through memory and works offline.' : 'The teaching engine covers the basics of C++ and can step through memory. Click for Full C++, a real compiler with strings, vectors, classes and the rest of the library (downloads about ' + window.CLANGRUN.mb() + ' MB the first time).');
+      refBody.innerHTML = REFERENCE[isFull() ? 'cppfull' : 'cpp'];
+      endMem(); renderToolbar();
+    }
     const fileInput = el('input', { type: 'file', accept: '.py,.cpp,.cc,.cxx,.h,.scm,.ss,.rkt,.txt', hidden: '', onchange: openFiles });
-    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'python' ? stepBtn : null, S.lang === 'cpp' && window.CPPSTEP ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, findBtn, tplBtn, refBtn, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
+    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'python' ? stepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, findBtn, tplBtn, refBtn, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
     function setFont(d) { S.fontSize = Math.min(24, Math.max(11, S.fontSize + d)); save(); editor.el.style.setProperty('--lab-font', S.fontSize + 'px'); editor.render(); }
 
     // ----- find / replace bar
@@ -648,7 +673,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
     // ----- side panels: templates, reference
     const tplBox = el('div', { class: 'lab-panel', hidden: '' });
     const refBox = el('div', { class: 'lab-panel lab-ref', hidden: '' });
-    const refBody = el('div', { class: 'prose ref-body', html: REFERENCE[S.lang] });
+    const refBody = el('div', { class: 'prose ref-body', html: REFERENCE[S.lang === 'cpp' && S.fullCpp ? 'cppfull' : S.lang] });
     refBox.append(el('div', { class: 'panel-head' }, el('b', {}, 'Quick reference'), el('button', { class: 'btn quiet', onclick: () => togglePanel('ref') }, '×')), refBody);
     function renderTemplates() {
       tplBox.innerHTML = '';
@@ -682,7 +707,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
     function explain(lang, err) { const tip = tipFor(lang, err); for (const [re, msg] of EXPLAIN[lang] || []) if (re.test(err)) return msg; return tip; }
     function showError(lang, err) {
       out.error(err);
-      const m = err.match(/line (\d+)/i);
+      const m = err.match(/line (\d+)/i) || err.match(/main\.cpp:(\d+):\d+/);
       if (m) { const pre = out.el.querySelector('.out-text'); pre.append(el('button', { class: 'linklike goto', onclick: () => editor.goToLine(+m[1]) }, '→ go to line ' + m[1]), '\n'); }
       const ex = explain(lang, err); if (ex) out.note('↳ ' + ex);
     }
@@ -705,6 +730,10 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
           if (r.error) showError('scheme', ';' + r.error.replace(/^;/, ''));
           out.note(r.error ? 'stopped; definitions before the error are available in the REPL' : 'definitions loaded into the REPL');
           if (!isTouch()) repl.focus();
+        } else if (lang === 'cpp' && isFull()) {
+          const r = await Runners.cppFull.run(code, { onOutput: (s) => out.write(s), onNote: (s) => out.note(s), stdin: stdinTa.value, host: out.el });
+          if (r.err) showError('cppfull', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
+          if (r.exit) out.note('(the program ended with status ' + r.exit + ')');
         } else if (lang === 'cpp') {
           const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: stdinTa.value });
           if (r.err) showError('cpp', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
@@ -717,7 +746,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
     const usesTurtleIn = (code) => /\b(import\s+turtle|from\s+turtle\s+import)\b/.test(code);
     function turtleOptions() { turtleBox.hidden = false; turtleMount.textContent = ''; if (turtleBox.scrollIntoView) turtleBox.scrollIntoView({ block: 'nearest' });   // the browser pauses the drawing of a frame that is off screen
      return { mount: turtleMount, width: Math.min(560, turtleMount.clientWidth || 560), height: 360 }; }
-    function stop() { window.PYRUN.cancel(); window.CPPRUN.cancel(); }
+    function stop() { window.PYRUN.cancel(); window.CPPRUN.cancel(); window.CLANGRUN.cancel(); }
 
     // ----- Python tracer
     function startTrace() {
@@ -918,7 +947,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
     const editorArea = el('div', { class: 'lab-editor-area' }, tabs, findBar, editor.el, statusBar);
     const side = el('div', { class: 'lab-side' }, tplBox, refBox);
     const body = el('div', { class: 'lab-body' }, el('div', { class: 'lab-main' }, teach ? teach.panel : null, asgHost, exBar, toolbar, editorArea, exVerdict, stdinBox, out.el, traceBox, memBox, substBox, turtleBox, replBox), side);
-    renderTabs(); renderToolbar(); applyWrap(); renderStatusBar(); renderExBar(); renderAsgBar();
+    renderTabs(); renderToolbar(); applyWrap(); renderStatusBar(); renderExBar(); renderAsgBar(); engineChanged();
     if (pendingStep) {
       const ps = pendingStep; pendingStep = null;
       if (ps.mode === 'mem' && S.lang === 'cpp') { if (ps.stdin != null) { stdinTa.value = ps.stdin; stdinBox.hidden = false; } setTimeout(startMem, 0); }
@@ -942,12 +971,13 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
     if (o.ex) idx = files.findIndex(f => f.ex && f.ex.id === o.ex.id);   // one file per exercise: reopen it (keeping the student's Lab edits) rather than duplicate
     if (idx >= 0) { if (files[idx].code.trim() === '' || files[idx].code === o.code) files[idx].code = o.code; }
     else { files.push({ name: uniqueNameFor(l, (o.name || 'from-course') + LANG_INFO[l].ext), code: o.code, ex: o.ex || undefined }); idx = files.length - 1; }
+    if (l === 'cpp' && o.runtime === 'full') S.fullCpp = true;
     S.lang = l; S.active[l] = idx; save();
     location.hash = '#/lab';
   }
   function uniqueNameFor(l, name) { const names = S.files[l].map(f => f.name); let n = name, i = 2; const base = name.replace(/(\.\w+)$/, ''), ext = (name.match(/\.\w+$/) || [''])[0]; while (names.includes(n)) n = base + i++ + ext; return n; }
   function findExercise(id) {
-    for (const c of window.COURSES || []) for (const [li, lesson] of c.lessons.entries()) for (const b of lesson.blocks) if (b && b.ex && b.ex.id === id) { b.ex.lang = b.ex.lang || c.lang; return { ex: b.ex, course: c, lessonIdx: li, lesson }; }
+    for (const c of window.COURSES || []) for (const [li, lesson] of c.lessons.entries()) for (const b of lesson.blocks) if (b && b.ex && b.ex.id === id) { b.ex.lang = b.ex.lang || c.lang; b.ex.runtime = b.ex.runtime || c.runtime; return { ex: b.ex, course: c, lessonIdx: li, lesson }; }
     return null;
   }
   window.LAB = { page, openCode, TEMPLATES, REFERENCE };

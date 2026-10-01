@@ -32,7 +32,7 @@
     if (INDEX) return INDEX;
     INDEX = Object.create(null);   // keyed by ids that come from a link: no prototype, so "constructor" and "__proto__" are not exercises
     for (const course of window.COURSES) course.lessons.forEach((lesson, li) => {
-      for (const b of lesson.blocks) if (b && b.ex) INDEX[b.ex.id] = { ex: Object.assign({}, b.ex, { lang: b.ex.lang || course.lang }), course, lessonIdx: li, lesson };
+      for (const b of lesson.blocks) if (b && b.ex) INDEX[b.ex.id] = { ex: Object.assign({}, b.ex, { lang: b.ex.lang || course.lang, runtime: b.ex.runtime || course.runtime }), course, lessonIdx: li, lesson };
     });
     return INDEX;
   }
@@ -169,7 +169,7 @@
     for (const it of items) {
       n++; status.textContent = 'Checking ' + n + ' of ' + items.length + '…';
       const { ex } = INDEX[it.id]; let r;
-      try { r = isMath(ex) ? window.MATHGRADE.grade(ex, answersFor(ex, it.code)) : await A().grade(ex, it.code || ''); }
+      try { r = isMath(ex) ? window.MATHGRADE.grade(ex, answersFor(ex, it.code)) : await A().grade(ex, it.code || '', ex.runtime === 'full' ? status.parentElement || doc : undefined); }
       catch (e) { r = { passed: false, error: String(e && e.message || e), results: [] }; }
       const box = [...doc.querySelectorAll('.pf-item')].find(b => b.id === 'pf-' + it.id), slot = box && box.querySelector('.pf-check');
       if (it.done) { if (r.passed) pass++; else claimedBad.push(it); }

@@ -1,6 +1,6 @@
 /* The page's side of the program sandboxes. Student programs (Python and C++) never run in the page. Each runs in a Web Worker that
-   holds only its interpreter (src/pyworker.js, src/cppworker.js): no DOM, no localStorage, no network (the Content Security Policy is
-   inherited), and the page can end it at any moment. Python programs that draw with turtle need a canvas, so they run in a sandboxed
+   holds only its interpreter (src/pyworker.js, src/cppworker.js): no DOM, no localStorage, and no way to send anything out (the Content
+   Security Policy is inherited: the only address a worker may ask for anything at is this site itself, whose files are public), and the page can end it at any moment. Python programs that draw with turtle need a canvas, so they run in a sandboxed
    iframe (no allow-same-origin: its origin is opaque, so it cannot touch this page) with the same interpreter. Where a browser cannot
    make a worker, the same interpreter is loaded into a hidden sandboxed iframe instead.
 
@@ -8,7 +8,9 @@
 
    window.PYRUN.run(code, {stdin, execLimit, turtle:{mount,width,height}, onOutput, onInput}) → Promise<{out, err}>
    window.PYRUN.trace(code, {…, onStep}) → {done, next(), finish(), stop()}        window.PYRUN.cancel()
-   window.CPPRUN.run(code, {stdin, onOutput}) → Promise<{out, err}>      window.CPPRUN.trace(code, stdin) → Promise<{trace, err}> */
+   window.CPPRUN.run(code, {stdin, onOutput}) → Promise<{out, err}>      window.CPPRUN.trace(code, stdin) → Promise<{trace, err}>
+   window.CLANGRUN.run(code, {stdin, std, onOutput, onNote}) → Promise<{out, err, exit, notes}>   (real C++; see below: downloaded on demand)
+   window.CLANGRUN.runMany(code, [stdin…]) → Promise<{err, parts:[{out, all, err, exit}]}>        compile once, run once for each input */
 (function () {
   'use strict';
   const MAX_OUT = 2e6;   // characters of output before a program is stopped
@@ -20,20 +22,26 @@
   function Engine(cfg) {
     let shared = null, workersWork = true, turtleFrame = null, queue = Promise.resolve(), active = null, nextId = 1;
 
-    function workerChannel() {
+    function state(st, v) { if (cfg.onState) cfg.onState({ state: st, v: v || 0 }); }
+
+    async function workerChannel() {
+      const src = cfg.source ? await cfg.source() : text(cfg.srcId);   // the real-C++ compiler's source is downloaded first
+      state('loading', 0);
       return new Promise((resolve, reject) => {
-        let w, url, ready = false;
-        try { url = URL.createObjectURL(new Blob([text(cfg.srcId)], { type: 'text/javascript' })); w = new Worker(url); } catch (e) { reject(e); return; }
-        const ch = { kind: 'worker', onmessage: null, send: (m) => w.postMessage(m), kill: () => { w.terminate(); URL.revokeObjectURL(url); } };
+        let w, url, ready = false, timer = 0;
+        const arm = () => { clearTimeout(timer); timer = setTimeout(() => { if (!ready) { ch.kill(); state('failed'); reject(new Error('the worker did not start')); } }, cfg.startMs || 20000); };
+        try { url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' })); w = new Worker(url); } catch (e) { state('failed'); reject(e); return; }
+        const ch = { kind: 'worker', onmessage: null, send: (m) => w.postMessage(m), kill: () => { clearTimeout(timer); w.terminate(); URL.revokeObjectURL(url); if (ready) state('idle'); } };
         w.onmessage = (e) => {
           const m = e.data;
           if (!m || typeof m !== 'object') return;
-          if (m.t === 'ready' && !ready) { ready = true; resolve(ch); }
-          else if (m.t === 'fatal') { ch.kill(); reject(new Error(String(m.error))); }
+          if (m.t === 'ready' && !ready) { ready = true; clearTimeout(timer); state('ready'); resolve(ch); }
+          else if (m.t === 'progress' && !ready) { state('loading', Number(m.v) || 0); arm(); }
+          else if (m.t === 'fatal') { ch.kill(); state('failed'); reject(new Error(String(m.error))); }
           else if (ch.onmessage) ch.onmessage(m);
         };
-        w.onerror = (e) => { if (e.preventDefault) e.preventDefault(); if (!ready) { ch.kill(); reject(new Error(e.message || 'the worker failed to start')); } };
-        setTimeout(() => { if (!ready) { ch.kill(); reject(new Error('the worker did not start')); } }, 20000);
+        w.onerror = (e) => { if (e.preventDefault) e.preventDefault(); if (!ready) { ch.kill(); state('failed'); reject(new Error(e.message || 'the worker failed to start')); } };
+        arm();
       });
     }
 
@@ -69,6 +77,7 @@
         return turtleFrame;
       }
       if (shared) return shared;
+      if (cfg.workerOnly) { shared = await workerChannel(); return shared; }   // no fallback: the compiler needs a worker, and says so if it cannot have one
       if (workersWork) { try { shared = await workerChannel(); return shared; } catch (e) { workersWork = false; } }
       shared = await frameChannel(null, null);
       return shared;
@@ -80,13 +89,13 @@
       if (r.finished) return;
       r.finished = true; clearInterval(r.timer);
       if (active === r) active = null;
-      r.resolve(Object.assign({ out: r.out, err: null }, extra));
+      r.resolve(Object.assign({ out: r.out, err: null, parts: r.parts, notes: r.notes }, extra));
     }
 
     function exec(job) {
       const o = job.opts || {};
       return new Promise((resolve) => {
-        const r = { id: nextId++, finished: false, resolve, ch: null, out: '', paused: false, waitingInput: false, last: Date.now(), timer: 0, busy: 0, totalMs: job.totalMs || 10000, idleMs: job.idleMs || 8000, result: undefined };
+        const r = { id: nextId++, finished: false, resolve, ch: null, out: '', parts: [], notes: '', paused: false, waitingInput: false, last: Date.now(), timer: 0, busy: 0, totalMs: job.totalMs || 10000, idleMs: job.idleMs || 8000, result: undefined };
         active = r;
         channelFor(o).then((ch) => {
           if (r.finished) return;   // stopped while the sandbox was starting
@@ -101,7 +110,7 @@
             if (r.busy > r.totalMs || Date.now() - r.last > r.idleMs) { dropChannel(r.ch); finish(r, { err: cfg.timeoutMessage }); }
           }, 500);
           ch.send(Object.assign({ t: job.t, id: r.id }, job.payload));
-        }, (e) => finish(r, { err: 'This browser could not start the sandbox that runs programs (' + (e && e.message || e) + ').' }));
+        }, (e) => finish(r, { err: cfg.startError ? cfg.startError(e) : 'This browser could not start the sandbox that runs programs (' + (e && e.message || e) + ').' }));
       });
     }
 
@@ -112,6 +121,11 @@
         r.out += m.text;
         if (o.onOutput) o.onOutput(m.text);
         if (r.out.length > MAX_OUT) { dropChannel(r.ch); finish(r, { err: 'The program printed more than it was allowed to, so it was stopped.' }); }
+      } else if (m.t === 'note' && typeof m.text === 'string') {
+        r.notes += m.text;
+        if (o.onNote) o.onNote(m.text);
+      } else if (m.t === 'part') {
+        if (r.parts.length < 500) r.parts.push({ out: String(m.out == null ? '' : m.out).slice(0, MAX_OUT), all: String(m.all == null ? '' : m.all).slice(0, MAX_OUT), err: typeof m.err === 'string' ? m.err : null, exit: Number(m.exit) || 0 });
       } else if (m.t === 'input') {
         r.waitingInput = true;
         Promise.resolve().then(() => (o.onInput ? o.onInput(String(m.prompt == null ? '' : m.prompt)) : '')).then((v) => v, () => '').then((v) => {
@@ -139,6 +153,47 @@
 
   const py = Engine({ srcId: 'py-src', timeoutMessage: 'Time limit exceeded: the program ran for too long. Is there a loop that never ends?' });
   const cpp = Engine({ srcId: 'cpp-src', timeoutMessage: 'Time limit exceeded: the program ran for too long. Is there a loop that never ends?' });
+
+  // Real C++ (Clang built for WebAssembly, src/clangworker.js). Unlike the others it is not in the page: its files (about 29 MB, from dist/clang/) are
+  // downloaded the first time they are needed, and the browser keeps them. A student agrees to that first (CLANGRUN.allow); nothing is fetched before.
+  const CLANG = () => (window.BUILD && window.BUILD.clang) || null;
+  const clangListeners = new Set();
+  let clangState = { state: 'idle', v: 0 };
+  let allowedNow = false;
+  const KEY = 'se.realcpp';
+  async function clangSource() {
+    if (!CLANG()) throw new Error('this copy of the site was built without it');
+    if (location.protocol !== 'http:' && location.protocol !== 'https:') throw new Error('it only works when the site is opened from a web address, not from a file on this computer');
+    const base = new URL(CLANG().path, location.href).href;
+    const r = await fetch(base + 'toolchain.js');
+    if (!r.ok) throw new Error('the compiler files are not on this site (' + r.status + ')');
+    return 'self.CLANG_BASE=' + JSON.stringify(base) + ';\n' + await r.text() + ';\n' + text('clang-src');
+  }
+  const clang = Engine({
+    workerOnly: true, source: clangSource, startMs: 40000,
+    onState: (s) => { clangState = s; clangListeners.forEach((f) => { try { f(s); } catch (e) { /* a listener's problem is its own */ } }); },
+    startError: (e) => 'The real C++ compiler could not be loaded: ' + (e && e.message || e) + '.',
+    timeoutMessage: 'Time limit exceeded: the program (or the compiler) ran for too long. Is there a loop that never ends?'
+  });
+  window.CLANGRUN = {
+    /** can this copy of the site offer real C++ at all? → null, or the reason it cannot */
+    unavailable() {
+      if (!CLANG()) return 'this copy of the site does not include it';
+      if (location.protocol !== 'http:' && location.protocol !== 'https:') return 'it needs the site to be opened from a web address (not as a file on this computer)';
+      if (typeof Worker === 'undefined' || typeof WebAssembly === 'undefined') return 'this browser cannot run it';
+      return null;
+    },
+    mb: () => (CLANG() ? CLANG().mb : 0),
+    /** has the student agreed to the download? (remembered on this device) */
+    allowed() { if (allowedNow) return true; try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } },
+    allow() { allowedNow = true; try { localStorage.setItem(KEY, '1'); } catch (e) { /* kept for this visit only */ } },
+    state: () => clangState,
+    subscribe(f) { clangListeners.add(f); return () => clangListeners.delete(f); },
+    /** compile once, run once for each input in stdins → Promise<{out, err, parts:[{out, all, err, exit}], notes}>; err is the compiler's messages */
+    runMany: (code, stdins, opts) => { opts = opts || {}; const n = stdins.length; return clang.run({ t: 'run', totalMs: 10000 + 2000 * n, idleMs: 10000 + 2000 * n, opts, payload: { code: String(code), stdins: stdins.map(String), std: opts.std } }); },
+    run: (code, opts) => { opts = opts || {}; return window.CLANGRUN.runMany(code, [opts.stdin == null ? '' : opts.stdin], opts).then((r) => Object.assign(r, { exit: r.parts[0] ? r.parts[0].exit : 0, err: r.err || (r.parts[0] && r.parts[0].err) || null })); },
+    cancel: () => clang.cancel()
+  };
 
   const pyJob = (t, code, opts) => {
     opts = opts || {};

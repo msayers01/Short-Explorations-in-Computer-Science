@@ -193,8 +193,39 @@
         return Promise.resolve(r);
       }
     },
-    cpp: { run: (code, opts) => window.CPPRUN.run(code, opts) }
+    cpp: { run: (code, opts) => window.CPPRUN.run(code, opts) },
+    // Real C++ (Clang built for WebAssembly): see CLANGRUN in runner.js. Its first use downloads about 29 MB, so the student agrees to that first,
+    // in a box shown in opts.host (the output panel or the verdict), where its progress is shown too.
+    cppFull: {
+      available: () => !window.CLANGRUN.unavailable(),
+      run: (code, opts) => fullCpp((o) => window.CLANGRUN.run(code, o), opts),
+      runMany: (code, stdins, opts) => fullCpp((o) => window.CLANGRUN.runMany(code, stdins, o), opts)
+    }
   };
+  async function fullCpp(go, opts) {
+    opts = Object.assign({}, opts);
+    const C = window.CLANGRUN, host = opts.host, none = (err) => ({ out: '', err, parts: [], notes: '', exit: 0 });
+    const why = C.unavailable();
+    if (why) return none('Full C++ is not available here: ' + why + '. The teaching engine still works.');
+    if (!C.allowed()) {
+      if (!host) return none('Full C++ needs to download its compiler first. Run a program in the Code Lab with Full C++ chosen to do that.');
+      const yes = await new Promise((resolve) => {
+        const box = el('div', { class: 'clang-gate' },
+          el('p', {}, el('b', {}, 'Full C++ uses a real compiler. '), 'It runs in your browser, so nothing you write leaves this device, but the first time your browser has to download it: about ' + C.mb() + ' MB. After that it is kept on this device, and only this part of the site needs the internet.'),
+          el('div', { class: 'toolbar' }, el('button', { class: 'btn primary', onclick: () => { C.allow(); box.remove(); resolve(true); } }, 'Download it and continue'), el('button', { class: 'btn quiet', onclick: () => { box.remove(); resolve(false); } }, 'Not now')));
+        host.hidden = false; host.append(box);
+      });
+      if (!yes) return none('Not run: the compiler was not downloaded.');
+    }
+    const status = el('div', { class: 'clang-status', role: 'status' });
+    const show = (st) => { status.textContent = st.state === 'loading' ? 'Getting the C++ compiler… ' + Math.round(st.v * 100) + '% (this happens the first time only)' : 'Compiling…'; };
+    show(C.state());
+    if (host) { host.hidden = false; host.append(status); }
+    const unsub = C.subscribe(show);
+    const userOut = opts.onOutput;
+    try { return await go(Object.assign(opts, { onOutput: (t) => { status.remove(); if (userOut) userOut(t); } })); }
+    finally { unsub(); status.remove(); }
+  }
   window.__runners = Runners;
 
   // ---------- output panel ----------
@@ -238,6 +269,11 @@
         else out.value(';Unspecified return value');
       }
       if (r.error) out.error(';' + r.error.replace(/^;/, ''));
+    } else if (lang === 'cpp' && opts.runtime === 'full') {
+      const r = await Runners.cppFull.run(code, { onOutput: (s) => out.write(s), onNote: (s) => out.note(s), stdin: opts.stdin, host: out.el });
+      if (r.err) { out.error(r.err); const tip = tipFor('cppfull', r.err); if (tip) out.note('↳ ' + tip); }
+      else if (!r.out) out.note('(the program finished without printing anything)');
+      if (r.exit) out.note('(the program ended with status ' + r.exit + ')');
     } else if (lang === 'cpp') {
       const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: opts.stdin });
       if (r.err) out.error(r.err);
@@ -278,13 +314,26 @@
       [/Time limit/, 'The loop never ends. Check that the loop variable changes and the condition can become false.'],
       [/overflow/, 'An int cannot hold that value: it overflowed. Use long long for big numbers, or check the arithmetic.'],
       [/input format mismatch/, 'cin tried to read a value of one type but the input had something else (or nothing left).']
+    ],
+    // messages from the real compiler (Clang), for the programs that run with Full C++
+    cppfull: [
+      [/expected ';'|expected '\)'|expected '\}'|expected expression|expected unqualified-id/, 'The compiler could not read the code at that point. Look at the line it points to and at the one before it: a missing semicolon, an unmatched bracket or brace, or a misspelt keyword.'],
+      [/use of undeclared identifier|undeclared identifier/, 'A name is used that the compiler has not seen. Check the spelling, that you declared it before using it, and that it is in scope. For a library name, check the #include and the std:: prefix.'],
+      [/no member named|no type named/, 'That type has no such member or function. Check the spelling and the type of the object, and which header the type comes from.'],
+      [/no matching function|no viable|candidate/, 'The call does not match any version of that function. Compare the arguments you pass (how many, and their types) with its declaration.'],
+      [/cannot initialize|cannot convert|no viable conversion|incompatible/, 'A value of one type is being put where another type is needed. Check the types on both sides, and convert explicitly where it is meant.'],
+      [/undefined reference|undefined symbol/, 'The program uses a function that was declared but never defined. Check that it has a body, and that main exists.'],
+      [/non-const|binding reference|discards qualifiers/, 'A const value is being used where it may be changed. Either the parameter or variable should not be const, or the code should not change it.'],
+      [/stopped abnormally/, 'The program was stopped by something it did that cannot continue: an out-of-range .at(), a failed assert, abort(), or recursion that never ends. Print values before the failing line to find where.'],
+      [/Time limit/, 'The program ran for too long. Check that every loop changes something that will end it.']
     ]
   };
   function tipFor(lang, err) { for (const [re, tip] of TIPS[lang] || []) if (re.test(err)) return tip; return null; }
+  const tipLang = (ex) => (ex.lang === 'cpp' && ex.runtime === 'full' ? 'cppfull' : ex.lang);
   const norm = (s) => String(s).replace(/\r/g, '').split('\n').map(l => l.replace(/\s+$/, '')).join('\n').replace(/\n+$/, '');
 
   /** Grade an exercise. Returns {passed, results:[{name, ok, expected, got, err}], error} */
-  async function grade(ex, code) {
+  async function grade(ex, code, host) {
     const lang = ex.lang;
     if (ex.mustContain) for (const rule of ex.mustContain) if (!rule.re.test(code)) return { passed: false, results: [], error: rule.msg };
     if (ex.mustNotContain) for (const rule of ex.mustNotContain) if (rule.re.test(code)) return { passed: false, results: [], error: rule.msg };
@@ -321,6 +370,15 @@
           results.push({ name: t.call, expected: exp, got, ok: norm(got) === norm(exp) });
         } catch (e) { results.push({ name: t.call, expected: t.expect, got: null, ok: false, err: e.message }); }
       }
+    } else if (lang === 'cpp' && ex.runtime === 'full') {
+      const h = window.CPPFULL.harness(ex, code);
+      if (h.error) return { passed: false, results, error: h.error };
+      const r = await Runners.cppFull.runMany(h.src, h.stdins, { host });
+      if (r.err) return { passed: false, results, error: window.CPPFULL.shiftLines(r.err, h.shift) };
+      ex.tests.forEach((t, i) => {
+        const p = r.parts[i] || { out: '', err: 'did not run' };
+        results.push({ name: t.name || (t.call !== undefined ? t.call : (t.stdin ? 'input: ' + JSON.stringify(t.stdin) : 'program output')), expected: t.expect, got: p.out, ok: !p.err && norm(p.out) === norm(t.expect), err: p.err, io: t.call === undefined });
+      });
     } else if (lang === 'cpp') {
       for (const t of ex.tests) {
         let src = code;
@@ -356,12 +414,12 @@
     const out = outputPanel();
     const verdict = el('div', { class: 'verdict', hidden: '', role: 'status' });
     let attempts = 0;
-    const runBtn = el('button', { class: 'btn', onclick: () => { runCell(ex.lang, editor.value, out, { stdin: ex.sampleStdin }); } }, 'Run');
+    const runBtn = el('button', { class: 'btn', onclick: () => { runCell(ex.lang, editor.value, out, { stdin: ex.sampleStdin, runtime: ex.runtime }); } }, 'Run');
     const checkBtn = el('button', { class: 'btn primary', onclick: async () => {
       checkBtn.disabled = true; checkBtn.textContent = 'Checking…'; attempts++;
       out.hide(); verdict.hidden = false; verdict.innerHTML = '';
       try {
-        const r = await grade(ex, editor.value);
+        const r = await grade(ex, editor.value, verdict);
         renderVerdict(verdict, r, ex, attempts);
         if (r.passed) { box.classList.add('done'); Progress.markDone(ex.id, editor.value); document.dispatchEvent(new CustomEvent('progress-changed')); }
       } catch (e) {
@@ -485,7 +543,7 @@
     if (r.error) {
       v.className = 'verdict fail';
       v.append(el('p', { class: 'v-title' }, 'Not yet — the code did not run.'), el('pre', { class: 'v-err' }, r.error));
-      const tip = tipFor(ex.lang, r.error); if (tip) v.append(el('p', { class: 'v-tip' }, tip));
+      const tip = tipFor(tipLang(ex), r.error); if (tip) v.append(el('p', { class: 'v-tip' }, tip));
       return;
     }
     if (r.passed) {
@@ -501,7 +559,7 @@
       const li = el('li', { class: t.ok ? 'ok' : 'bad' });
       li.append(el('code', { class: 't-name' }, t.name));
       if (!t.ok) {
-        if (t.err) { li.append(el('div', { class: 't-detail' }, 'raised an error: ', el('code', {}, t.err))); const tip = tipFor(ex.lang, t.err); if (tip) li.append(el('div', { class: 't-tip' }, tip)); }
+        if (t.err) { li.append(el('div', { class: 't-detail' }, 'raised an error: ', el('code', {}, t.err))); const tip = tipFor(tipLang(ex), t.err); if (tip) li.append(el('div', { class: 't-tip' }, tip)); }
         else if (t.io) li.append(el('div', { class: 't-io' }, el('div', {}, el('span', { class: 'lbl' }, 'expected output'), el('pre', {}, t.expected)), el('div', {}, el('span', { class: 'lbl' }, 'your output'), el('pre', {}, t.got === '' ? '(nothing)' : t.got))));
         else li.append(el('div', { class: 't-detail' }, 'expected ', el('code', {}, t.expected), ' but got ', el('code', {}, t.got === '' || t.got == null ? '(nothing)' : t.got)));
       }
@@ -518,11 +576,11 @@
     if (b.caption) box.append(el('div', { class: 'play-cap' }, el('span', { class: 'play-label' }, lbl('tryIt')), el('span', { html: b.caption })));
     const editor = makeEditor(b.lang, b.code);
     const out = outputPanel();
-    const runBtn = el('button', { class: 'btn primary', onclick: () => runCell(b.lang, editor.value, out, { stdin: b.stdin }) }, 'Run');
+    const runBtn = el('button', { class: 'btn primary', onclick: () => runCell(b.lang, editor.value, out, { stdin: b.stdin, runtime: b.runtime }) }, 'Run');
     const resetBtn = el('button', { class: 'btn quiet', onclick: () => { editor.value = b.code; out.hide(); } }, 'Reset');
-    const labBtn = window.LAB ? el('button', { class: 'btn quiet lab-open', title: 'Copy this code into the Code Lab', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName }) }, 'Open in Code Lab') : null;
+    const labBtn = window.LAB ? el('button', { class: 'btn quiet lab-open', title: 'Copy this code into the Code Lab', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, runtime: b.runtime }) }, 'Open in Code Lab') : null;
     const substBtn = window.LAB && window.SUBST && (b.lang === 'lisp' || b.lang === 'scheme') && !b.expectError ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and watch each expression being rewritten, one step of the substitution model at a time', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, subst: true }) }, 'Show the substitution') : null;
-    const memBtn = window.LAB && window.CPPSTEP && b.lang === 'cpp' ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and run it one line at a time, watching every variable, address and pointer', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, step: true, stdin: b.stdin }) }, 'Step through memory') : null;
+    const memBtn = window.LAB && window.CPPSTEP && b.lang === 'cpp' && b.runtime !== 'full' ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and run it one line at a time, watching every variable, address and pointer', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, step: true, stdin: b.stdin }) }, 'Step through memory') : null;
     box.append(editor.el, el('div', { class: 'toolbar' }, runBtn, resetBtn, b.stdin != null ? el('span', { class: 'stdin-note' }, 'input provided: ', el('code', {}, JSON.stringify(b.stdin))) : null, el('span', { class: 'spacer' }), memBtn, substBtn, labBtn), out.el);
     return box;
   }
@@ -532,8 +590,8 @@
     const frag = document.createDocumentFragment(); let playCount = 0;
     for (const b of blocks) {
       if (typeof b === 'string') frag.append(el('div', { class: 'prose', html: b }));
-      else if (b.play) { playCount++; frag.append(playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount })); }
-      else if (b.ex) { b.ex.lang = b.ex.lang || course.lang; frag.append(window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex) : exerciseBlock(b.ex, course, lessonIdx)); }
+      else if (b.play) { playCount++; frag.append(playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount })); }
+      else if (b.ex) { b.ex.lang = b.ex.lang || course.lang; b.ex.runtime = b.ex.runtime || course.runtime; frag.append(window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex) : exerciseBlock(b.ex, course, lessonIdx)); }
       else if (b.fig) {
         const wrap = el('figure', { class: 'fig' + (b.wide ? ' wide' : '') });
         const mount = el('div', { class: 'fig-mount' });

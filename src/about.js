@@ -52,7 +52,7 @@
   function softwareList() {
     const tp = (window.BUILD && window.BUILD.thirdParty) || [];
     return [
-      h('p', {}, 'Three programming languages run inside this one page, with nothing installed. These are the parts other people wrote; each is used under the MIT License, whose full text is below, as it asks.'),
+      h('p', {}, 'Programming languages run inside this one page, with nothing installed. These are the parts other people wrote; each is used under the licence named beside it, whose full text is below, as it asks.'),
       h('ul', { class: 'ab-list' }, tp.map(t => h('li', {},
         ext(t.url, t.name), ' ', h('span', { class: 'ab-meta' }, t.version + ' \u00b7 ' + t.licence), ': ', t.role, '.',
         t.changes ? h('span', { class: 'ab-meta ab-changes' }, ' ' + t.changes) : null))),
@@ -81,7 +81,7 @@
         h('p', {}, 'Nothing you do leaves your computer unless you send it yourself. There are no accounts, no tracking and no advertising. The web host sees that the page was downloaded, as with any website, but the page itself never sends anything back.'),
         h('p', {}, 'What you do is saved in this browser only: your progress and your code in the lessons, your Code Lab files, your portfolio settings, a teacher\u2019s assignments and grade book, and display choices such as light or dark. Another computer, or another browser on this one, starts empty, unless you use \u201cSave my work to a file\u201d on the home page and restore the file there (the file holds your code and your name, so keep it private). \u201cReset my progress\u201d on the home page clears the lessons; clearing the browser\u2019s site data clears everything.'),
         h('p', {}, 'The links the site makes (a shared program, an assignment, a submission, a portfolio) carry their contents inside the link itself. Anyone who has a link can read what is in it, so share them the way you would share the work itself.'),
-        h('p', {}, 'The page makes no requests to any other site: the typefaces are part of the page itself, so no one else, not even a font provider, learns that you opened it.')),
+        h('p', {}, 'The page makes no requests to any other site: the typefaces are part of the page itself, so no one else, not even a font provider, learns that you opened it. The one thing the page ever fetches is the real C++ compiler (about ' + ((window.BUILD && window.BUILD.clang && window.BUILD.clang.mb) || 28) + ' MB), and only from this same site, only after you agree, and only when you choose Full C++ or the Modern C++ course. It is stored by your browser so it is downloaded once.')),
 
       licenceSection(),
 

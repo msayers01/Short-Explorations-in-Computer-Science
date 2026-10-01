@@ -8,8 +8,9 @@ a route, or a block format, update the matching section here in the same change.
 A single self-contained `index.html` (about 2.6 MB) containing four interactive short courses (Python, Scheme,
 C++, mathematics of computing) with autograded exercises, a full sandbox editor ("Code Lab"), and a
 serverless assignment system for teachers. Three language runtimes run in the browser: Skulpt (Python),
-JSCPP (C++), and a Scheme interpreter written for the site. There is no backend, no account, no network
-dependency at all (the typefaces are embedded); everything the user creates lives in `localStorage`, and everything that
+JSCPP (C++), and a Scheme interpreter written for the site; a fourth, optional one, real C++ (Clang compiled to
+WebAssembly), is downloaded on demand from the same site (section "Full C++" below). There is no backend, no account, and
+no network dependency except that optional download (the typefaces are embedded); everything the user creates lives in `localStorage`, and everything that
 must move between people travels inside a URL.
 
 ## 2. Design constraints (do not break these)
@@ -31,12 +32,12 @@ must move between people travels inside a URL.
    - A link that stores something or runs a stranger's program asks the teacher first (`confirmLink`).
    - Packed links are size-limited (`MAX_LINK`, `MAX_UNPACKED`).
    - Python and C++ programs never run in the page. Each runs in a Web Worker that holds only its interpreter (`runner.js`,
-     `pyworker.js`, `cppworker.js`): no DOM, no localStorage, no network, and the page can end it at any moment (Stop, a watchdog).
+     `pyworker.js`, `cppworker.js`): no DOM, no localStorage, nothing sent anywhere (their only reachable address is this site, `connect-src 'self'`, and its files are public), and the page can end it at any moment (Stop, a watchdog).
      Python that draws with turtle runs in a sandboxed iframe without `allow-same-origin`. `sandbox.js` also removes Skulpt's
      `document`, `urllib` and other modules that reach out; do not add one back. Nothing the sandboxes send back is trusted: it is
      checked and shown as text. Scheme runs in the page: it is our own interpreter, with no way to name a host object, a step limit and
      no `eval`.
-   - `build.js` writes a Content Security Policy (script hashes, no network) into every page and into `dist/_headers`. A new inline
+   - `build.js` writes a Content Security Policy (script hashes; `connect-src 'self'`, which exists only for the Full C++ download) into every page and into `dist/_headers`. A new inline
      script needs no change (its hash is computed); a new external resource must be added to the policy deliberately.
 
 ## 3. Repository layout
@@ -51,7 +52,7 @@ site/
   test_course.js         node harness: solutions pass, starters fail, playgrounds run (per course)
   test_cppstep.js        node tests for the C++ memory stepper, including stepping every C++ course program
   test_subst.js          node tests for the substitution stepper: every Lisp playground steps without error and ends at the interpreter's value
-  package.json           npm test runs all four courses and the node tests; npm run test:browser the browser tests; deps: skulpt, JSCPP,
+  package.json           npm test runs all five courses and the node tests; npm run test:browser the browser tests; deps: skulpt, JSCPP,
                          esbuild, the typefaces, playwright-core (tests)
   .github/workflows/ci.yml   runs npm test, the build and the browser tests on every push to main and every pull request
   patches/jscpp-iostream.patch, patches/jscpp-unsigned.patch   applied to node_modules/JSCPP by scripts/patch-jscpp.js
@@ -65,9 +66,11 @@ site/
     course_python.js     SC 101 (13 lessons)   ─┐
     course_lisp.js       SC 102 (11 lessons)    │ each pushes one course object onto window.COURSES
     course_cpp.js        SC 103 (11 lessons)    │
-    course_math.js       SC 104 (13 lessons)   ─┘
+    course_math.js       SC 104 (13 lessons)   ─┤
+    course_modern.js     SC 105 (runtime: 'full') ─┘
     style.css            design tokens, layout, course accents, every component's styles
     cppstep.js           C++ memory stepper → window.CPPSTEP { trace, render, describe } (uses JSCPP's debugger)
+    clangworker.js       the Full C++ worker (Clang for WebAssembly); cppfull.js builds the programs that grade a Full C++ exercise
     backup.js            save my work to a file / restore it (home page, "Your work") → window.BACKUP { collect, parse, apply, panel }
     runner.js            the page's side of the program sandboxes → window.PYRUN, window.CPPRUN (run, trace, cancel; queue, watchdog, limits)
     pyworker.js          the Python runtime that runs inside a worker/iframe: Skulpt, run + step-through protocol (messages in its header)
@@ -355,6 +358,36 @@ SICP section it draws on; keep doing that. Also credited: Bentley's *Programming
 story) and the trademarks Hour of Code (Code.org), Python (PSF) and QR Code (DENSO WAVE, which asks for that line
 wherever the term is used).
 
+## 9d. Full C++ (real Clang in the browser)
+
+C++ has two engines. The *teaching engine* is JSCPP (SC 103): small, always in the page bundle, works offline, and is the only one the
+memory stepper understands. *Full C++* is Clang 22 compiled to WebAssembly (`@live-codes/clang-wasm`, pinned in `package.json`): all of the
+language and the standard library, wasm32 (`long` and pointers are 4 bytes), no exceptions or threads (the sysroot has none), no checking of
+out-of-range indexes (an out-of-range `.at()` aborts the program). It is used by the Code Lab's "Engine" button and by every course
+with `runtime: 'full'` (SC 105); an exercise inherits `runtime` from its course (`renderBlocks`, `findExercise`).
+
+- **Files, not in the page.** `build.js` copies the compiler's files (about 28 MB: `bin/*.wasm.gz`, the sysroot, the manifest, and the
+  toolchain script as `toolchain.js`) to `dist/clang/<package version>/` (git-ignored; Cloudflare's build command makes them), writes
+  `BUILD.clang = {path, mb}` into the page, and gives that directory `Cache-Control: immutable` in `_headers`. The directory name carries the
+  version, so a new version never meets an old cached file. A copy of the site opened from `file://`, or built without the files, shows
+  "not available" and nothing else changes.
+- **Loading.** `runner.js` (`CLANGRUN`) fetches `toolchain.js`, puts `self.CLANG_BASE` and it in front of `clangworker.js` (a data block,
+  `clang-src`) and starts a blob Web Worker from the lot. No iframe fallback: if the worker cannot start, it says so. The worker downloads
+  the rest from `CLANG_BASE` (progress messages feed the "Getting the C++ compiler… 34%" line). This is why the policy has
+  `connect-src 'self'`; it is the only reason, and it also lets the Python and JSCPP workers ask for this site's own (public) files.
+- **Consent.** Nothing is fetched until the student agrees (`CLANGRUN.allow()`, remembered in localStorage under `se.realcpp`); the box
+  is shown in the output panel or the verdict (`fullCpp()` in app.js).
+- **Running.** One worker, kept alive: the program is compiled once (about 1–4 s) and executed once per input (milliseconds). Warnings of a
+  successful compile come back as a `note`. A run is limited by the page's watchdog (`10 s + 2 s per input`, compile included); a program that
+  does not finish ends the worker, and the next run loads the compiler again from the browser's cache (about 2–3 s). Output is capped at 2 MB.
+- **Grading.** `grade(ex, code, host)` uses `CPPFULL.harness` (`src/cppfull.js`): tests that call a function share one `main()`
+  that reads the test's number from the first line of stdin (so a whole exercise is one compile); compile errors are moved back by the
+  lines the harness put before the student's code. Exercises of a full course do not mix call tests with whole-program tests.
+- **Testing.** `node test_course.js modern` uses the same toolchain in node; it takes about a minute (every compile is real). The browser
+  test serves `dist/` from a local web server (the compiler cannot load from `file://`).
+- Updating the compiler: bump `@live-codes/clang-wasm` (exact version), rebuild, run `npm test` and the browser test. Its notices are
+  appended to `THIRD-PARTY-NOTICES.md` by `build.js`.
+
 ## 10. Adding things — recipes
 
 - **A lesson:** add a lesson object in `course_X.js` with new ids `xx-<n>-1/2`, `<n>` being the next number
@@ -423,6 +456,8 @@ wherever the term is used).
 
 ## 12. Known limits and sharp edges
 
+- Full C++ needs the site to be served over http(s) and ~28 MB once; it has no exceptions, no threads, no checked indexes, and a program that
+  runs forever costs a compiler reload (see §9d). Programs written for the teaching engine mostly run unchanged on it, not the other way round.
 - Skulpt prints floats to 15 digits; `(/ 1 3)` in Scheme prints `.333333333333` (12 significant digits; whole numbers are exact at any size, as BigInts); JSCPP lacks
   `std::string`, `vector`, classes, references. Write examples that avoid these.
 - Downloads (Save, CSV, the portfolio web page) do nothing inside sandboxed frames that block them; they work
