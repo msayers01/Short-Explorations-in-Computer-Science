@@ -76,11 +76,13 @@ int main() {
     cout << "position of 'zz': " << (line.find("zz") == string::npos ? "not found" : "found") << endl;
     return 0;
 }`, caption: 'substr(start) with one argument takes everything from start to the end. Try a line with no = in it.' },
+        { check: "What does <code>s.find(\"x\")</code> give when there is no x in s?", options: ["−1", "<code>string::npos</code>", "0"], answer: 1, why: "find returns the position, or the special value string::npos for \"not found\". Compare against npos, not −1." },
         `<p>The type of <code>eq</code> is worth a second look. <code>size_t</code> is an <em>unsigned</em> whole number: it cannot be negative. Every <code>size()</code> and <code>find()</code> in the library returns one. That is almost always fine, with one famous trap.</p>
 <div class="stmt"><p><span class="kind">Trap.</span> If <code>s</code> is empty, <code>s.size() - 1</code> is not −1. An unsigned number cannot go below 0, so it wraps round to the largest number there is: about four billion in the compiler used on this site, and far more on a modern computer. A loop that runs "to the last character" with <code>i &lt;= s.size() - 1</code> then runs past the end of an empty string. Write <code>i + 1 &lt; s.size()</code>, or convert first with <code>(int)s.size() - 1</code>.</p></div>
 <p>The compiler can warn you about some comparisons between signed and unsigned numbers. Compiler output on this site includes warnings, so read them: in a real project, a clean build with no warnings is the normal standard.</p>
 <h2>Reading text</h2>
 <p><code>cin &gt;&gt; word</code> reads one <em>word</em>: it skips spaces and stops at the next one. To read a whole line, spaces included, use <code>getline</code>.</p>`,
+        { check: "For an empty string s, what is <code>s.size() - 1</code>?", options: ["−1", "An enormous number: size() is unsigned and wraps round", "0"], answer: 1, why: "An unsigned number cannot go below 0, so it wraps to the largest value. Write i + 1 < s.size(), or cast to int first." },
         { play: `#include <iostream>
 #include <string>
 using namespace std;
@@ -94,6 +96,7 @@ int main() {
     cout << "the rest:   [" << rest << "]" << endl;
     return 0;
 }`, stdin: 'Margaret Heafield Hamilton', caption: 'Notice the space at the start of the rest: cin stopped just before it, so getline began there.' },
+        { check: "After <code>cin &gt;&gt; n</code>, a <code>getline</code> reads what?", options: ["The next line the user typed", "The empty rest of the current line, because the newline is still waiting", "Nothing: it waits"], answer: 1, why: "The end-of-line after the number is still in the stream. Skip it with cin >> ws, or read lines and convert." },
         `<div class="stmt"><p><span class="kind">Trap.</span> After <code>cin &gt;&gt; n</code> reads a number, the end-of-line character the student typed is still waiting. A <code>getline</code> straight afterwards reads <em>that</em>, an empty line. To skip the leftover, read with <code>cin &gt;&gt; ws</code> first, which discards white space, or start with <code>getline</code> and convert.</p></div>
 <h2>Going through the characters</h2>
 <p>A string is a sequence of characters, and C++ lets you walk through one directly. The loop below is called a <em>range-based for</em>; read it as "for each character <code>c</code> in <code>text</code>". The functions <code>isalpha</code>, <code>isdigit</code>, <code>toupper</code> and <code>tolower</code> live in <code>&lt;cctype&gt;</code>.</p>`,
@@ -211,6 +214,7 @@ int main() {
     cout << endl;
     return 0;
 }`, caption: 'Read "for (string name : languages)" as "for each name in languages". The word auto asks the compiler to fill in the type it can already see.' },
+        { check: "What is the last valid index of a vector with <code>v.size()</code> items?", options: ["<code>v.size()</code>", "<code>v.size() - 1</code>", "<code>v.size() + 1</code>"], answer: 1, why: "Indexes start at 0, so the last one is size() − 1. v[v.size()] is one past the end." },
         `<p>Reading numbers until there are no more is the other everyday job. <code>cin &gt;&gt; x</code> is itself a yes-or-no question: it is true if it managed to read a value, and false when the input has run out or holds something that is not a number, so it can be the condition of a <code>while</code>.</p>`,
         { play: `#include <iostream>
 #include <vector>
@@ -229,6 +233,7 @@ int main() {
     cout << numbers.size() << " numbers, biggest " << biggest << endl;
     return 0;
 }`, stdin: '12 7 31 5 19', caption: 'The program does not need to be told how many numbers there are: it keeps reading until the input ends. What happens if there are none?' },
+        { check: "What does <code>while (cin &gt;&gt; x)</code> do?", options: ["Reads one value", "Reads values until the input ends or a value cannot be read", "Loops forever"], answer: 1, why: "cin >> x is true while a value could be read. The loop runs until the input runs out." },
         `<h2>Going out of range</h2>
 <p>An array in SC 103 had a fixed size and the interpreter told you when an index was too big. A real compiler does not check <code>v[i]</code>: if <code>i</code> is out of range the program carries on, reading or overwriting whatever memory happens to be there. That is called <em>undefined behaviour</em>: the language promises nothing about what happens, and a program that does it may seem fine on Tuesday and crash on Wednesday. This is exactly what happened in the Morris worm.</p>
 <p>The checked version is <code>v.at(i)</code>. Run the program below.</p>`,
@@ -244,6 +249,7 @@ int main() {
     cout << "this line is never reached" << endl;
     return 0;
 }`, expectError: true, caption: 'The program stops at the bad access and says why. On a normal computer, at() throws an exception that the program may catch; this site’s compiler has exceptions switched off, so the program simply ends.' },
+        { check: "What is the difference between <code>v[i]</code> and <code>v.at(i)</code>?", options: ["None", "v[i] is unchecked (undefined behaviour out of range); at(i) checks and stops with an error", "at(i) is faster"], answer: 1, why: "v[i] trusts you. at(i) checks the index and throws (here: ends the program) when it is out of range." },
         { aside: `<p><b>Common mistakes in this lesson.</b> Taking <code>back()</code> or <code>numbers[0]</code> of an empty vector. Using <code>v[i]</code> where <code>i == v.size()</code>: the last valid position is <code>size() - 1</code>. Changing a vector while a range-based for loop is going through it (adding or removing items): the loop can end up looking at memory that has moved. Forgetting <code>#include &lt;vector&gt;</code>.</p>` },
         {
           ex: {
@@ -319,6 +325,7 @@ int main() {
     cout << "same address? " << (&x == &r ? "yes" : "no") << endl;
     return 0;
 }`, caption: 'One variable, two names. The last line asks whether the two names are at the same address in memory.' },
+        { check: "<code>int x = 3; int&amp; r = x; r = 10;</code>. What is x?", options: ["3", "10: r is another name for x", "An error"], answer: 1, why: "A reference is not a copy. There is one int with two names, so writing through r changes x." },
         `<p>A reference is simpler than a pointer: it is always bound to something, from the moment it is made, and never needs <code>*</code> to get at the value. It cannot be changed to refer to something else later, and it cannot be "null". In return it can do less. (Pointers are still needed when "no object" is a possible answer, or when something must be re-pointed.)</p>
 <h2>References as parameters</h2>
 <p>Put the <code>&amp;</code> on a parameter and the function works on the caller's own variable instead of a copy. That is the whole fix for <code>swapInts</code>:</p>`,
@@ -342,6 +349,7 @@ int main() {
 <br><b>Small value, function only reads it</b> (<code>int</code>, <code>double</code>, <code>char</code>, <code>bool</code>): pass by value, <code>int n</code>.
 <br><b>Big object, function only reads it</b> (<code>string</code>, <code>vector</code>): pass by <em>const reference</em>, <code>const vector&lt;int&gt;&amp; v</code>. No copy, and the compiler refuses any attempt to change it.
 <br><b>Function must change the caller's variable</b>: pass by reference, <code>vector&lt;int&gt;&amp; v</code>.</p></div>`,
+        { check: "A function only reads a big vector. How should it take it?", options: ["By value: <code>vector&lt;int&gt; v</code>", "By const reference: <code>const vector&lt;int&gt;&amp; v</code>", "By pointer"], answer: 1, why: "No copy is made, and the compiler refuses any change. Pass by value copies the whole vector; plain & allows changes." },
         { play: `#include <iostream>
 #include <vector>
 using namespace std;
@@ -380,6 +388,7 @@ int main() {
     cout << "c is " << c << endl;
     return 0;
 }`, expectError: true, caption: 'Read what the compiler says: it warns about this, but a warning does not stop the program. It runs and uses memory that no longer belongs to it, which is undefined behaviour, so it may print the right-looking answer today and something else tomorrow.' },
+        { check: "A function returns a reference to one of its local variables. What is wrong?", options: ["Nothing, if the caller uses it quickly", "The local no longer exists when the function ends: undefined behaviour", "It does not compile"], answer: 1, why: "The compiler warns but does not stop you. The reference names memory that has been given back." },
         { aside: `<p><b>Common mistakes in this lesson.</b> Forgetting the <code>&amp;</code> and wondering why the caller's variable did not change. Writing <code>&amp;</code> but then passing a plain number such as <code>swapInts(3, 4)</code>: a reference needs a variable to name. Returning a reference to a local variable. Passing a huge <code>vector</code> by value in a function that is called in a loop.</p>` },
         {
           ex: {
@@ -455,6 +464,7 @@ int main() {
     cout << "b.x is still " << b.x << ", c.x is " << c.x << endl;
     return 0;
 }`, caption: 'A Point is two doubles with names. Assigning one struct to another copies every member, so c is a separate point from b.' },
+        { check: "What is missing from <code>struct Point { double x; double y; }</code>?", options: ["Nothing", "The semicolon after the closing brace", "A return type"], answer: 1, why: "A struct definition ends with a semicolon. Without it the error appears on the next line." },
         `<h2>Structs in vectors, and in functions</h2>
 <p>A struct is a type like any other, so you can make a <code>vector</code> of them, pass them to functions and return them. The rules of the last lesson apply: a struct you only read goes in as a <code>const&amp;</code>, so that it is not copied.</p>`,
         { play: `#include <iostream>
@@ -486,6 +496,7 @@ int main() {
     cout << "average " << total / roster.size() << endl;
     return 0;
 }`, caption: 'push_back({...}) builds a Student from its members in order. const Student& in the loop reads each one without copying it.' },
+        { check: "How do you reach the <code>name</code> member of a variable <code>s</code> of type Student?", options: ["<code>Student.name</code>", "<code>s.name</code>", "<code>s-&gt;name</code>"], answer: 1, why: "variable.member. Student.name names the type, not a value." },
         `<p>A function can also hand back a struct, which is the tidy way to return two values at once.</p>`,
         { play: `#include <iostream>
 using namespace std;
@@ -503,6 +514,7 @@ int main() {
     cout << "(" << m.x << ", " << m.y << ")" << endl;
     return 0;
 }`, caption: 'Members of the same type can share a line (double x, y;). The braces after return build the Point to hand back.' },
+        { check: "Two Points hold the same x and y. What does <code>a == b</code> do?", options: ["Gives true", "Does not compile until you define == for Point", "Compares their addresses"], answer: 1, why: "A struct has no == until you write one. Assignment copies members; comparison must be taught." },
         `<h2>Giving members a starting value</h2>
 <p>A member can have a default written beside it. A struct made with no values then starts in a known state instead of holding garbage:</p><pre class="code"><code>struct Settings {
     int volume = 5;
@@ -571,6 +583,7 @@ int main() {
         `<h2>A class guards its data</h2>
 <p>The fix is to make the data <em>private</em>, so that only a small number of functions, which belong to the type and which you write carefully, can touch it. Those functions are the type's <em>member functions</em> and together they are its interface.</p>
 <div class="stmt"><p><span class="kind">Rule (class).</span> In a <code>class</code>, members are private unless a <code>public:</code> label says otherwise. (In a <code>struct</code> it is the other way round.) A <em>constructor</em> is a member function with the same name as the class and no return type; it runs when a variable of the class is made and sets the starting state. A member function that does not change the object is marked <code>const</code>.</p></div>`,
+        { check: "What is a constructor?", options: ["A member function with the class's name and no return type, run when an object is made", "A function that deletes an object", "Any public function"], answer: 0, why: "It sets the starting state, usually with an initialiser list, so the invariant holds from the first moment." },
         { play: `#include <iostream>
 using namespace std;
 
@@ -600,6 +613,7 @@ int main() {
     cout << "balance: " << a.getBalance() << endl;
     return 0;
 }`, caption: 'Whatever else the program does, this balance can never go below zero, because no line outside the class can change it except through withdraw and deposit.' },
+        { check: "In a class, members with no label are…", options: ["public", "private", "protected"], answer: 1, why: "Private unless a public: label says otherwise. In a struct it is the other way round." },
         `<p>Read the constructor's header, <code>Account(int opening) : balance(opening) {}</code>. The part after the colon is an <em>initialiser list</em>: it sets each member as the object is created. Prefer it to assigning in the body.</p>
 <p>The compiler enforces the privacy. Try to do what the struct allowed:</p>`,
         { play: `#include <iostream>
@@ -645,6 +659,7 @@ int main() {
     b.show();
     return 0;
 }`, caption: 'Each object has its own copy of the data. A constructor parameter can have a default (label = "counter"), so Counter a; works as well as Counter b("visitors");.' },
+        { check: "Why mark a member function <code>const</code>?", options: ["To make it faster", "To promise it does not change the object, so it can be called on a const object", "To make it private"], answer: 1, why: "A reader function marked const can be used through const references and objects; without the mark, it cannot." },
         { aside: `<p><b>Common mistakes in this lesson.</b> Forgetting the semicolon after the closing brace of a class. Writing <code>Account a();</code>, which declares a function, rather than making an object. Forgetting <code>public:</code> and then finding that nothing can be called. Forgetting <code>const</code> on a function that only reads: it then cannot be called on a <code>const</code> object. Giving a getter for every private member: if everything can be read and set, you have a struct with extra typing.</p>` },
         {
           ex: {
@@ -726,6 +741,7 @@ int main() {
     }
     return 0;
 }`, caption: 'find and max_element hand back a position, not a value. The star in *max_element(...) means "the item at that position". find says "not found" by returning v.end(). accumulate lives in <numeric>.' },
+        { check: "What does <code>*max_element(v.begin(), v.end())</code> give?", options: ["The position of the largest item", "The largest item itself", "The number of items"], answer: 1, why: "max_element returns a position; the star gives the item at that position. On an empty vector there is nothing to point at." },
         `<h2>Telling an algorithm what you mean: lambdas</h2>
 <p><code>sort</code> puts numbers in increasing order unless told otherwise. To sort differently (biggest first, shortest word first) you give it a third argument: a function that says which of two items should come first. Writing a whole named function for that is heavy, so C++ lets you write the function right where it is needed, with no name. It is called a <em>lambda</em>.</p>
 <div class="stmt"><p><span class="kind">Rule (lambda).</span> <code>[captures](parameters) { body }</code>. It works like a function with the given parameters and body. The square brackets name outside variables the body may use: <code>[limit]</code> copies <code>limit</code> in, <code>[&amp;total]</code> lets the body change <code>total</code>. A sorting comparison takes two items and returns <code>true</code> if the first must come <em>before</em> the second.</p></div>`,
@@ -755,9 +771,11 @@ int main() {
     cout << longer << " words are longer than " << limit << endl;
     return 0;
 }`, caption: 'The lambda in the first sort says "a comes first if it is bigger". count_if counts the items for which its lambda says true; [limit] is how the lambda sees the variable limit.' },
+        { check: "In <code>[limit](int x) { return x &gt; limit; }</code>, what are the square brackets for?", options: ["The parameters", "The outside variables the lambda may use", "The return type"], answer: 1, why: "Captures: [limit] copies limit in; [&total] lets the body change total." },
         `<div class="stmt"><p><span class="kind">Rule (a comparison must be strict).</span> The function you give <code>sort</code> must say <code>&lt;</code>, never <code>&lt;=</code>: for two equal items it must say <code>false</code> both ways. A comparison that says <code>true</code> for equal items breaks the algorithm's assumptions, and the program may misbehave or crash. Also, <code>sort</code> does not promise to keep equal items in their original order. If that matters, use <code>stable_sort</code>, which has the same form.</p></div>
 <h2>Sorting your own types</h2>
 <p>Lessons 4 and 5 gave you types of your own; a lambda says how to order them.</p>`,
+        { check: "Your sort comparison uses <code>&lt;=</code>. What can happen?", options: ["Nothing: it sorts the same way", "The algorithm's assumptions break; it may misbehave or crash", "It sorts in reverse"], answer: 1, why: "A comparison must say false for equal items both ways. Use <, and stable_sort if equal items must keep their order." },
         { play: `#include <iostream>
 #include <string>
 #include <vector>
@@ -849,6 +867,7 @@ int main() {
     }
     return 0;
 }`, caption: 'Each entry is a pair: entry.first is the key and entry.second the value. A map keeps its keys in order, so the loop prints alphabetically.' },
+        { check: "In a loop over a map, what are <code>entry.first</code> and <code>entry.second</code>?", options: ["The first and second entries", "The key and the value of one entry", "The smallest and largest keys"], answer: 1, why: "Each entry is a pair: key first, value second, visited in key order." },
         `<h2>Counting</h2>
 <p>The everyday use of a map is counting. When you write <code>m[key]</code> for a key that is not there yet, the map creates it with a value of zero (for numbers), so <code>m[word]++</code> is the whole counting loop.</p>`,
         { play: `#include <iostream>
@@ -870,6 +889,7 @@ int main() {
         `<div class="stmt"><p><span class="kind">Trap.</span> Reading with <code>m[key]</code> <em>adds</em> the key if it was missing. To ask whether a key is present without changing the map, use <code>m.count(key)</code> (0 or 1) or <code>m.find(key)</code> (which returns <code>m.end()</code> when it is absent). A program that tests <code>if (m["x"] == 0)</code> has just added an "x".</p></div>
 <h2>A set: only keys</h2>
 <p>A <code>set&lt;T&gt;</code> holds items with no duplicates and keeps them in order. It answers "have I seen this before?" and "what are the different ones?" Include <code>&lt;set&gt;</code>.</p>`,
+        { check: "What does <code>if (m[\"x\"] == 0)</code> do to the map when \"x\" is absent?", options: ["Nothing", "Adds \"x\" with value 0", "Throws an error"], answer: 1, why: "Reading with [] inserts a missing key. Ask with m.count(key) or m.find(key) instead." },
         { play: `#include <iostream>
 #include <set>
 #include <vector>
@@ -887,6 +907,7 @@ int main() {
     cout << "was 6 rolled? " << (distinct.count(6) ? "yes" : "no") << endl;
     return 0;
 }`, caption: 'count(x) on a set is 1 if x is there and 0 if not, so it works as a yes-or-no question.' },
+        { check: "What does <code>unordered_map</code> give up compared with <code>map</code>?", options: ["Speed", "The ordering of keys", "Lookup by key"], answer: 1, why: "Same functions, no order, and faster for large collections." },
         `<h2>The faster, unordered cousins</h2>
 <p><code>map</code> and <code>set</code> keep their keys in order, which costs a little time. <code>unordered_map</code> and <code>unordered_set</code> (from <code>&lt;unordered_map&gt;</code> and <code>&lt;unordered_set&gt;</code>) have exactly the same functions but give up the ordering for speed; looping over one visits the keys in an order you must not depend on. Reach for the ordered ones when you want sorted output, and the unordered ones when you are only counting or checking membership of very large collections.</p>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> Using <code>m[key]</code> to test for presence. Forgetting that a <code>map</code> has one value per key: assigning again replaces the old one. Expecting <code>unordered_map</code> to print in any particular order. Changing the map while looping over it. Using a type as a key that cannot be compared (your own struct needs a comparison first).</p>` },
@@ -984,6 +1005,9 @@ int main() {
     }
     return 0;
 }`, stdin: '5\nbo 80\nada 90\nbo 70\ncy 100\nada 95', caption: 'Step one: count scores per student. Extend it in the exercise below.' },
+        { check: "Which tool fits \"find a student's record by name\"?", options: ["A vector searched with a loop", "A map from name to record", "A struct"], answer: 1, why: "A map looks up by key in one step. A struct holds what belongs together; a vector is for a sequence." },
+        { check: "What do <code>fixed</code> and <code>setprecision(2)</code> do together?", options: ["Round to 2 significant figures", "Print exactly 2 digits after the decimal point", "Limit the width to 2 characters"], answer: 1, why: "fixed switches to fixed-point notation; setprecision then counts digits after the point. Both come from &lt;iomanip&gt;." },
+        { check: "What should you decide before typing a bigger program?", options: ["What must be remembered, how it will be found, and what each answer should look like", "Which compiler flags to use", "How many lines it will be"], answer: 0, why: "Those three questions pick the data structures and the output format; the code follows from them." },
         {
           ex: {
             id: 'mc-8-1', title: 'The gradebook report',

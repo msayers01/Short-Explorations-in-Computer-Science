@@ -44,6 +44,7 @@ window.COURSES.push({
 (+)
 (+ 2 (* 3 4))
 (* (+ 2 3) 4)`, caption: 'Prefix notation in six lines. Add a line that computes 100 minus 3 times 7.' },
+        { check: "How do you write 3 + 4 in Scheme?", options: ["<code>3 + 4</code>", "<code>(+ 3 4)</code>", "<code>(3 + 4)</code>"], answer: 1, why: "Operator first, then the operands, inside parentheses. (3 + 4) tries to apply 3 as a procedure." },
         `<h2>Reading nested expressions</h2>
 <p>Combinations can contain combinations, to any depth. The skill of reading them is the skill of finding the matching parentheses, and it is easier than it looks, because you never read left to right. You read from the <em>inside out</em>: find an innermost combination (one with no parentheses inside it), work out its value, and imagine it replaced by that value. Repeat.</p>
 <p>Take <code>(+ (* 3 5) (- 10 6))</code>. The innermost combinations are <code>(* 3 5)</code>, which is 15, and <code>(- 10 6)</code>, which is 4. Replace them: <code>(+ 15 4)</code>, which is 19.</p>
@@ -66,6 +67,7 @@ window.COURSES.push({
         { play: `+
 *
 (+ 1 2)`, caption: 'The value of the name + is a procedure. The first two replies show how the interpreter prints one. Only in the third line is the procedure applied to something.' },
+        { check: "To evaluate <code>(* (+ 1 2) 4)</code>, what does the interpreter do first?", options: ["Multiply", "Evaluate every part: the operator * and both operands, including (+ 1 2)", "Look for a definition of *"], answer: 1, why: "The evaluation rule: evaluate every expression in the combination, then apply the operator's value to the operands' values." },
         `<h2>Naming things</h2>
 <p>A program that could only compute with numbers you typed would be a calculator. The step from a calculator to a language is the ability to give a value a name and use the name later. In Scheme that is done with <code>define</code>:</p>`,
         { code: `(define size 2)`, caption: 'Read it as: from now on, the name size stands for 2.' },
@@ -87,6 +89,7 @@ circumference`, caption: 'Once a name is defined it can be used in any later exp
         { play: `(define x 10)
 (+ x y)`, expectError: true, caption: 'Unbound variable: y. The name y is not in the environment. Define y on a line before the sum and run again.' },
         { play: `(3 + 4)`, expectError: true, caption: 'The object 3 is not applicable. Everyone writes this once. The interpreter followed its rule: the first thing in the combination, 3, is the operator, and 3 is not a procedure. Rewrite it in prefix notation.' },
+        { check: "What does <code>(3 + 4)</code> give?", options: ["7", "An error: the object 3 is not applicable", "3"], answer: 1, why: "The first thing in a combination is the operator. 3 is not a procedure, so it cannot be applied." },
         { play: `(+ 1 (* 2 3)`, expectError: true, caption: 'Unexpected end of input: a parenthesis is missing. Count them: three opened, two closed. The editor highlights matching pairs when your cursor is next to one.' },
         `<h2>A note on numbers</h2>
 <p>Real MIT Scheme keeps fractions exact: there, <code>(/ 1 3)</code> is <code>1/3</code>. The small interpreter on this site uses ordinary decimal arithmetic, so you will see <code>.333333333333</code>, written without a leading zero the way MIT Scheme prints decimals. For whole-number division use <code>quotient</code> and <code>remainder</code>: <code>(quotient 7 2)</code> is 3 and <code>(remainder 7 2)</code> is 1, the same pair that Python calls <code>//</code> and <code>%</code>. Nothing else in these lessons depends on the difference.</p>
@@ -147,6 +150,7 @@ circumference`, caption: 'Once a name is defined it can be used in any later exp
 (square (+ 2 5))
 (square (square 3))
 square`, caption: 'The first reply, square, only confirms the definition. Then 441, 49 and 81. The last line evaluates the name without applying it, so the reply is the procedure itself.' },
+        { check: "When is the body of <code>(define (square x) (* x x))</code> evaluated?", options: ["When the define is typed", "Each time square is applied to an argument", "Never"], answer: 1, why: "A definition only records the body. Nothing in it runs until the procedure is used." },
         `<p>The last line is worth a second look. Lesson 1 showed that the value of the name <code>+</code> is a procedure. The value of <code>square</code> is a procedure too, and the interpreter prints both the same way, except that it calls yours <em>compound</em> because you built it from other procedures.</p>
 <h2>Procedures built from procedures</h2>
 <p>A procedure you define is used exactly as a built-in one is, so it can appear in the body of the next procedure you define. Here is <code>sum-of-squares</code>, built from <code>square</code>, and then <code>f</code>, built from <code>sum-of-squares</code>.</p>`,
@@ -186,6 +190,7 @@ x
 
 (define (square-again n) (* n n))
 (square-again 3)`, caption: '(square 3) is 9 and x is still 10: the parameter x and the defined x are two different names that happen to be spelled alike. square-again is the same procedure with its parameter renamed, and gives the same answer.' },
+        { check: "After <code>(define x 10)</code> and <code>(define (square x) (* x x))</code>, what is <code>(square 3)</code>, and what is <code>x</code> afterwards?", options: ["9, and x is 3", "9, and x is still 10", "100"], answer: 1, why: "The parameter x belongs to square and means nothing outside it. The defined x is a different name that happens to be spelled alike." },
         `<p>SICP says that a procedure definition <em>binds</em> its formal parameters, and calls a parameter a <em>bound variable</em>. Whatever the vocabulary, the practical rule is simple: inside the body, a parameter means the argument; outside, it means nothing at all.</p>
 <details class="reveal"><summary>Predict: after <code>(define y 4)</code>, what is <code>(square y)</code>, and what is <code>y</code> afterwards?</summary><p><code>16</code>, and <code>y</code> is still <code>4</code>. The operand <code>y</code> is evaluated to 4, and 4 is what gets substituted. Applying a procedure computes a new value; it never changes the things it was given.</p></details>
 <h2>Two orders of evaluation</h2>
@@ -225,6 +230,7 @@ x
 
 (distance 0 0 3 4)
 dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of distance, the name dx means nothing. That is a feature: a helper name inside one procedure can never collide with the same name used somewhere else.' },
+        { check: "An internal define inside a procedure creates a name that exists…", options: ["Everywhere, after the procedure is first called", "Only inside that procedure's body", "Only on the line where it is defined"], answer: 1, why: "Helper names inside one procedure can never collide with the same name used elsewhere." },
         `<p>An internal definition can also define a procedure, and an internal procedure can use the names around it without having them passed in. Below, <code>disc</code> computes the area of a disc of radius <code>r</code>. It uses <code>pi</code>, which is neither one of its parameters nor defined at the top level of the program: it is defined in the body where <code>disc</code> itself was defined.</p>`,
         { play: `(define (square x) (* x x))
 
@@ -324,6 +330,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
 (abs -7)
 (abs 0)
 (abs 3.5)`, caption: 'Three clauses, one for each case of the mathematical definition. (- x) is negation, as in Lesson 1. The replies are 7, 0 and 3.5.' },
+        { check: "In a <code>cond</code>, what happens after the first true test?", options: ["The remaining clauses are also checked", "Its expression is the value of the whole cond; nothing else is evaluated", "The else clause also runs"], answer: 1, why: "Clauses are tried from the top, and the first true one decides. Clause order is part of the meaning." },
         `<p>The substitution model of Lesson 2 extends to <code>cond</code> with one more kind of step: evaluate the first test that is left, and either drop its clause (if the test is false) or replace the whole <code>cond</code> by that clause's expression (if the test is true). Step through <code>(abs -3)</code>, and afterwards press <b>Show the substitution</b> under the <code>abs</code> example above to see the same steps for all three calls.</p>`,
         { fig: 'subst', steps: [
           { text: '(abs -3)', note: 'abs is a defined procedure: replace the call by its body, with -3 in place of x.' },
@@ -353,6 +360,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
 
 (choose #t 1 2)
 (choose #t 1 undefined-name)`, expectError: true, caption: 'The first call gives 1. The second fails with Unbound variable: undefined-name, although choose would have returned 1 and never used b. choose is a procedure, so all three operands were evaluated before it started.' },
+        { check: "Why must <code>if</code> be a special form rather than a procedure?", options: ["For speed", "A procedure evaluates every operand first; if must evaluate only the branch it chooses", "Because it has three operands"], answer: 1, why: "If if were a procedure, both branches would be evaluated, and a branch that errors or recurses forever would run." },
         `<p>A special form is evaluated by its own rule, and the rule for <code>cond</code> evaluates only what it needs: tests in order until one is true, and then just one expression. In this example the cost of evaluating too much was an error message. In Lesson 4 the unneeded expression will be a recursive call, and evaluating it would never stop. That is why every language, Scheme included, builds its decisions into the language itself.</p>
 <h2>if</h2>
 <p>For a choice between exactly two cases there is a shorter form.</p>
@@ -387,6 +395,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
 
 (define d 0)
 (and (not (= d 0)) (> (/ 10 d) 2))`, caption: 'teenager? is built from between?, which is built from >= and <=. The last line would divide by zero, but and stops at the false test on its left: the reply is #f, not an error.' },
+        { check: "What is <code>(and (> 1 2) (/ 1 0))</code>?", options: ["An error: division by zero", "#f: and stops at the first false and never divides", "#t"], answer: 1, why: "and evaluates left to right and stops as soon as one expression is false." },
         `<p>Two habits of style follow from these rules. Put the test that makes the rest safe first inside an <code>and</code>, as in the last line. And never write <code>(if (&gt; x 0) #t #f)</code>: <code>(&gt; x 0)</code> already <em>is</em> <code>#t</code> or <code>#f</code>, so the <code>if</code> adds nothing.</p>
 <h2>A mistake the interpreter does not catch</h2>
 <p>Most mistakes in this lesson produce an error message. One common one does not. Each <code>cond</code> clause needs its own parentheses around the test <em>and</em> around the whole clause; leave out a layer and the result can still be legal Scheme, with a different meaning.</p>`,
@@ -469,6 +478,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
 (factorial 0)
 (factorial 5)
 (factorial 20)`, caption: 'The two equations became the two branches of an if. The replies are 1, 120 and 2432902008176640000.' },
+        { check: "Why can factorial's body refer to factorial?", options: ["Because Scheme allows circular definitions", "Because the body is only evaluated when applied, and by then the name is defined", "It cannot; it needs a special keyword"], answer: 1, why: "A definition records the body. By the time (factorial 5) is applied, factorial is in the environment, so the lookup succeeds." },
         `<h2>Why this is allowed</h2>
 <p>The body of <code>factorial</code> uses the name <code>factorial</code>, which might look circular. It is not, and the rules from earlier lessons already explain why. Nothing new is needed in the language.</p>
 <div class="stmt"><p><span class="kind">Why a procedure can call itself.</span> By Lesson 2's rule, a definition only records the body; nothing in it is evaluated until the procedure is applied. By the time <code>(factorial 5)</code> is applied, the name <code>factorial</code> is already in the environment, so when the body refers to it, the lookup succeeds. The body is not a circle; it is a recipe that sometimes asks for the same recipe on a smaller input.</p></div>
@@ -497,6 +507,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
       (* n (factorial (- n 1)))))
 
 (factorial -1)`, expectError: true, caption: ';Aborting!: maximum recursion depth exceeded. The calls go -1, -2, -3, … and each one waits for the next, until the interpreter runs out of room. A test of (< n 1) in place of (= n 0) would have stopped it, returning 1.' },
+        { check: "<code>(factorial -1)</code> with the test <code>(= n 0)</code>. What happens?", options: ["Returns 1", "Maximum recursion depth exceeded: the calls go −2, −3, … and never reach 0", "Returns −1"], answer: 1, why: "The base case is stepped over. Every recursive call must move towards a base case that is actually reached." },
         `<p>The message comes from the waiting work, not from the arithmetic: every pending multiplication takes space, and there is only so much. In the trace above, the width of the expression is that space.</p>
 <h2>Why it is right</h2>
 <p>Tracing shows that <code>(factorial 4)</code> is 24. What shows that <code>(factorial n)</code> is <i>n</i>! for <em>every</em> whole number <i>n</i>? Checking cases cannot, as the mathematics course insists. The argument that does is induction, and it has exactly the shape of the procedure.</p>
@@ -524,6 +535,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
          (sum-digits (quotient n 10)))))
 
 (sum-digits 12345)`, caption: 'Same skeleton, different base answer and different combining step: 1, 5 and 15. Trace (sum-digits 45) by hand: (+ 5 (sum-digits 4)), then (+ 5 4), then 9.' },
+        { check: "What does induction check to prove a recursive procedure right?", options: ["Many example inputs", "The base case, and that each case is right assuming the smaller call is", "That it halts"], answer: 1, why: "Those two checks cover every input, like falling dominoes. That is what \"trust the recursive call\" means." },
         `<p>For question 3: the base case is every <i>n</i> below 10, and <code>(quotient n 10)</code> is smaller than <i>n</i> whenever <i>n</i> ≥ 10, so a whole number ≥ 0 always reaches the base case. The base case here is a whole range of inputs rather than one value, which is often safer: <code>(&lt; n 10)</code> cannot be stepped over the way <code>(= n 0)</code> was by −1.</p>
 <h2>Before the exercises</h2>
 <p>Both exercises are recursive definitions of the same shape as <code>factorial</code>: a base case at 0, and a recursive case that combines <i>n</i> (or something built from it) with the answer for <i>n</i> − 1. Here is one more worked example, the sum of the squares 1² + 2² + … + <i>n</i>². Question 1: the sum of no squares, for <i>n</i> = 0, is 0. Question 2: the sum up to <i>n</i> is <i>n</i>² plus the sum up to <i>n</i> − 1. Question 3: <i>n</i> − 1 moves towards 0.</p>`,
@@ -598,6 +610,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
 
 (factorial 6)
 (factorial-2 6)`, caption: 'Both give 720. Trace (factorial-2 3) by hand: (fact-iter 1 1 3), then (fact-iter 1 2 3), then (fact-iter 2 3 3), then (fact-iter 6 4 3), and since 4 > 3 the answer is 6. Then press Show the substitution and compare the two traces: one expression grows wide and shrinks again, the other stays the same width all the way.' },
+        { check: "What is the difference between a procedure and a process?", options: ["None", "The procedure is the text; the process is what happens when it runs", "A process is a procedure with a loop"], answer: 1, why: "A recursive procedure can generate an iterative process; the question is what the interpreter must keep while running." },
         `<p>Put the two traces side by side, and the difference is visible at once.</p>`,
         { fig: 'subst', mode: 'shapes', n: 6, caption: 'Left: the first factorial on 6. The expression grows as multiplications are deferred, then shrinks. Right: the second. Every line is one call of fact-iter with three numbers, and nothing is waiting.' },
         `<div class="stmt"><p><span class="kind">Definition.</span> A <em>recursive process</em> is one that builds up a chain of <em>deferred operations</em>, operations that cannot be done until a later call returns, and then performs them as the calls return. If the chain grows in proportion to <i>n</i>, it is a <em>linear recursive process</em>.</p>
@@ -624,6 +637,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
 
 (sum-to 1000)
 (sum-to 100000)`, caption: 'The same answers, 500500 and 5000050000, and no limit on depth: at every step the whole state is the two numbers i and total.' },
+        { check: "A recursive process is one that…", options: ["calls itself", "builds up deferred operations that wait for later calls to return", "uses state variables"], answer: 1, why: "Its memory grows with the input. An iterative process keeps a fixed set of state variables and runs in fixed memory." },
         `<h2>Why the iterative version needs no memory: tail calls</h2>
 <p>Look at where each procedure calls itself. In <code>sum-to</code>'s first version the recursive call is an operand of <code>+</code>: when it returns, there is still an addition to do. In <code>iter</code> the recursive call is the whole of the alternative branch of the <code>if</code>: when it returns, its value simply becomes the value of the current call.</p>
 <div class="stmt"><p><span class="kind">Definition.</span> A call is in <em>tail position</em> if, when it returns, there is nothing left for the calling procedure to do except return that same value.</p>
@@ -637,6 +651,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
 <p>The process stops at the first call with counter &gt; <i>n</i>, which is counter = <i>n</i> + 1, since counter goes up by one each time. Then it returns product = ((<i>n</i> + 1) − 1)! = <i>n</i>!, which is the right answer. It also stops for <i>n</i> = 0, returning 1. Designing an iterative process is choosing state variables and an invariant that, when the stopping test succeeds, says the answer is in hand.</p>
 <h2>When recursion branches</h2>
 <p>Some recursive definitions use themselves more than once. The Fibonacci numbers 0, 1, 1, 2, 3, 5, 8, 13, … are defined by Fib(0) = 0, Fib(1) = 1 and Fib(<i>n</i>) = Fib(<i>n</i> − 1) + Fib(<i>n</i> − 2). The direct translation makes two recursive calls, so its process branches like a tree.</p>`,
+        { check: "A call is in tail position when…", options: ["it is the last line of the file", "nothing remains for the caller to do but return the call's value", "it has one argument"], answer: 1, why: "Scheme runs such calls without keeping anything for the caller, so tail calls are Scheme's loops." },
         { play: `(define (fib n)
   (cond ((= n 0) 0)
         ((= n 1) 1)
@@ -715,6 +730,7 @@ p
 q
 (car q)
 (car (car q))`, caption: 'A pair prints with a dot between its parts: (1 . 2). q is a pair whose first part is itself a pair, so it prints with a pair inside: ((1 . 2) . 3).' },
+        { check: "What is <code>(car (cdr (cons 1 (cons 2 '()))))</code>?", options: ["1", "2", "'()"], answer: 1, why: "cdr gives the rest of the list, (2); car of that is 2. cadr is the shorthand." },
         `<p>Since a pair can hold pairs, pairs can be glued into any shape at all: chains, trees, tables. SICP calls this the <em>closure property</em>: combining pairs gives you something you can combine again. The shape that turns out to be most useful by far is a chain.</p>
 <h2>Lists</h2>
 <div class="stmt"><p><span class="kind">Definition.</span> A <em>list</em> is either the empty list, written <code>'()</code>, or a pair whose <code>cdr</code> is a list.</p></div>
@@ -732,6 +748,7 @@ q
 (null? (cdr (list 7)))
 
 (cons 1 (cons 2 3))`, caption: 'The first two lines print the same thing. car of a list is its first item and cdr is the rest of the list. The last line is a chain that does not end in the empty list, so it is not a list, and the printer shows the dot: (1 2 . 3).' },
+        { check: "Which of these is a list?", options: ["<code>(cons 1 2)</code>", "<code>(cons 1 '())</code>", "Both"], answer: 1, why: "A list is '() or a pair whose cdr is a list. (cons 1 2) ends in 2, not '(), so it prints as (1 . 2)." },
         `<details class="reveal"><summary>Predict: which of these are lists? <code>'()</code>, <code>(cons 1 '())</code>, <code>(cons 1 2)</code>, <code>(cons '() '())</code>.</summary><p>The first three are settled by the definition at once: <code>'()</code> is the empty list; <code>(cons 1 '())</code> is a pair whose cdr is a list, so it is the one-item list <code>(1)</code>; <code>(cons 1 2)</code> is a pair whose cdr, 2, is not a list, so it is not a list. The last is a pair whose cdr is the empty list, so it <em>is</em> a list: the one-item list whose only item happens to be the empty list, printed <code>(())</code>.</p></details>
 <h2>Taking lists apart</h2>
 <p>To reach an item deep inside a list, compose <code>car</code> and <code>cdr</code>. Each <code>cdr</code> steps past one item; the final <code>car</code> takes the item you have arrived at. The compositions have abbreviations: <code>(cadr x)</code> means <code>(car (cdr x))</code>, and in general the middle letters are read from right to left, in the order the operations happen. Every combination of <code>a</code> and <code>d</code> up to four letters is built in, from <code>caar</code> to <code>cddddr</code>.</p>`,
@@ -756,6 +773,7 @@ q
 (append '(1 2) '(3 4))
 (reverse '(1 2 3))
 (car '())`, expectError: true, caption: 'Without the quote, (mon tue wed) would try to apply a procedure called mon. append joins two lists; reverse gives a reversed copy. The last line fails: the empty list is not a pair, so it has no car.' },
+        { check: "What is the difference between <code>(cons 1 '(2 3))</code> and <code>(list 1 '(2 3))</code>?", options: ["None", "(1 2 3) against (1 (2 3)): cons adds at the front, list makes a two-item list", "The second is an error"], answer: 1, why: "cons attaches 1 to the front of the list (2 3). list builds a new list whose items are 1 and the list (2 3)." },
         `<h2>What is a pair, really?</h2>
 <p>Here is the promised shock, from SICP §2.1.3. We have used <code>cons</code>, <code>car</code> and <code>cdr</code> as if pairs were a special kind of object built into the machine. But all a pair has to do is keep the two promises in the rule at the top of the lesson. Anything that keeps them is a pair, as far as any program can tell. And procedures can keep them.</p>`,
         { play: `(define (my-cons x y)
@@ -853,6 +871,7 @@ colours
 (length (list 1 3 5 7))
 (sum (list 1 3 5 7))
 (count-evens (list 1 2 3 4 5 6))`, caption: 'The replies are 4, 16 and 3. count-evens splits the non-empty case in two, one for an item that counts and one for an item that does not.' },
+        { check: "What must <code>(product '())</code> return in the list template?", options: ["0", "1", "'()"], answer: 1, why: "The answer for the empty list must leave the combining operation unchanged: 1 for a product, 0 for a sum, '() when building a list." },
         `<details class="reveal"><summary>Predict: what must <code>(sum '())</code> be, and what would go wrong with any other answer? What about a procedure <code>product</code>?</summary><p><code>0</code>. Every sum ends by adding the sum of the empty list, so that value is added to every answer; only 0 leaves the answers unchanged. For the same reason <code>(product '())</code> must be <code>1</code>. This is Lesson 4's rule that an empty sum is 0 and an empty product is 1, and it is not a convention but a necessity.</p></details>
 <h2>Shape two: building a new list</h2>
 <p>If the answer for the empty list is <code>'()</code> and the combining step is <code>cons</code>, the procedure builds a new list, one item at a time, on the way back from the recursion. Here is <code>scale-list</code>, which multiplies every item, and <code>append</code>, which joins two lists.</p>`,
@@ -870,6 +889,7 @@ colours
 
 (scale-list (list 1 2 3 4 5) 10)
 (append (list 1 2 3) (list 4 5))`, caption: 'Trace (append (list 1 2) (list 3)) by substitution: (cons 1 (append (2) (3))), then (cons 1 (cons 2 (append () (3)))), then (cons 1 (cons 2 (3))), which is (1 2 3).' },
+        { check: "What does the list template recurse on?", options: ["<code>items</code>", "<code>(cdr items)</code>", "<code>(car items)</code>"], answer: 1, why: "Each call is on a shorter list, so it stops. Recursing on items itself never ends." },
         `<p>Notice that <code>append</code> follows the template on <code>list1</code> only. It never takes <code>list2</code> apart, and it never copies it either: the last <code>cons</code> simply points at it. Draw the result in the box-and-pointer figure of Lesson 6 and you will see the second list shared, not copied. That is one reason list programs can be fast despite all the consing.</p>
 <h2>Why append is right: induction on length</h2>
 <p>Structural recursion comes with its own proof method. To prove something about every list, prove it for the empty list, and prove it for a list of length <i>n</i> + 1 assuming it for the list of length <i>n</i> that is its <code>cdr</code>. That is ordinary induction (Lesson 4's "trust the recursive call"), counting the length.</p>
@@ -903,6 +923,7 @@ colours
 
 (sum-list '(1 2 3 4))
 (copy-list '(1 2 3))`, caption: 'sum-list gives 10, as expected. copy-list was meant to copy the list, but it gives (3 2 1): the list came out backwards!' },
+        { check: "An iterative process builds a list with cons as it walks along. What comes out?", options: ["A copy in the same order", "The list reversed", "An error"], answer: 1, why: "Each item is consed onto the front of the answer so far, so the first item ends up last. That is how reverse is written." },
         `<details class="reveal"><summary>Why did <code>copy-list</code> reverse the list?</summary><p>An iterative process visits the items first to last, and <code>cons</code> always adds at the <em>front</em>. So the first item visited is the first one added, which ends up at the back, and the last item visited ends up at the front. Trace it: <code>(iter (1 2 3) ())</code>, then <code>(iter (2 3) (1))</code>, then <code>(iter (3) (2 1))</code>, then <code>(iter () (3 2 1))</code>. For a sum the order does not matter; for a list it does. Sometimes, as in the second exercise, this "bug" is exactly what you want.</p></details>
 <h2>Lists inside lists</h2>
 <p>An item of a list can itself be a list, and then the structure is a <em>tree</em>, like boxes packed inside boxes. <code>length</code> counts only the top-level items; to count every number at every depth, SICP's <code>count-leaves</code> recurses on <em>both</em> the <code>car</code> and the <code>cdr</code>, with one more base case: something that is not a pair at all is a single leaf.</p>`,
@@ -995,6 +1016,7 @@ boxes
 
 (sum-cubes 1 10)
 (sum-integers 1 100)`, caption: 'sum captures the idea of summation itself. The replies are 3025 and 5050. Note that cube and inc are passed by name, with no parentheses: we are passing the procedures, not calling them.' },
+        { check: "What is the difference between passing <code>cube</code> and <code>(cube)</code> to sum?", options: ["None", "cube is the procedure itself; (cube) tries to call it with no arguments", "(cube) is a list"], answer: 1, why: "Procedures are first-class values. A name with no parentheses is the procedure; parentheses apply it." },
         `<p>The substitution model of Lesson 2 needs no change: <code>(sum cube 1 inc 10)</code> becomes the body of <code>sum</code> with the procedure <code>cube</code> put wherever <code>term</code> appears, so <code>(term a)</code> becomes <code>(cube 1)</code>. A procedure is substituted like any other value.</p>
 <h2>lambda: a procedure with no name</h2>
 <p>Defining <code>inc</code> and <code>identity</code> just so that we can pass them in is clumsy, like having to name every number before you add it.</p>
@@ -1032,6 +1054,7 @@ boxes
 
 (let ((a 10) (b 20))
   (* a b))`, caption: 'let is not a new idea but a new spelling: a lambda applied at once to the values. Compare Lesson 2\u2019s internal defines, which did the same job.' },
+        { check: "After <code>(define x 2)</code>, what is <code>(let ((x 3) (y (+ x 2))) (* x y))</code>?", options: ["15", "12", "10"], answer: 1, why: "The let values are evaluated outside the let, so y uses the outer x: 2 + 2 = 4. Then 3 × 4 = 12." },
         `<details class="reveal"><summary>Puzzle from SICP: after <code>(define x 2)</code>, what is <code>(let ((x 3) (y (+ x 2))) (* x y))</code>?</summary><p><code>12</code>, not 15. By the rule, <code>(+ x 2)</code> is evaluated <em>outside</em> the let, where <code>x</code> is still 2, so <code>y</code> is 4, and the body computes 3 × 4. When one local name must use another, nest two lets, or use <code>let*</code>, which binds its names one at a time: <code>(let* ((x 3) (y (+ x 2))) (* x y))</code> is 15.</p></details>
 <h2>Handing procedures back</h2>
 <p>If procedures can be passed in, they can be returned too. Here is a procedure that <em>builds</em> adders, and one that glues two procedures together, the way mathematicians compose functions: (<i>f</i> ∘ <i>g</i>)(<i>x</i>) = <i>f</i>(<i>g</i>(<i>x</i>)).</p>`,
@@ -1048,6 +1071,7 @@ boxes
 (define (inc x) (+ x 1))
 ((compose square inc) 6)
 ((compose inc square) 6)`, caption: 'add5 gives 15 and the next line 101. Then 49 and 37: composition is not commutative, and the order matters. Squaring 7 and adding one to 36 are different things.' },
+        { check: "What does <code>(define (add n) (lambda (x) (+ x n)))</code> return when called as <code>(add 5)</code>?", options: ["5", "A procedure that adds 5 to its argument", "An error"], answer: 1, why: "A procedure can return a procedure. The returned one remembers n = 5: it is a closure." },
         `<div class="stmt"><p><span class="kind">Definition.</span> A procedure together with the environment in which it was created is called a <em>closure</em>. By Lesson 2's rule of lexical scoping, a procedure's free names are looked up where it was defined, so a closure keeps those names alive for as long as the procedure exists.</p></div>
 <p>Something remarkable just happened. <code>make-adder</code> finished its work long ago, yet the <code>n</code> it was given, 5, lives on inside <code>add5</code>. And <code>my-cons</code> in Lesson 6 was a closure all along: each "pair" was a procedure remembering its <i>x</i> and <i>y</i>. Nearly every modern language, Python and JavaScript included, now has closures, and Scheme is where they learned it.</p>
 <h2>Calculus as a procedure</h2>
@@ -1152,6 +1176,7 @@ boxes
 (accumulate + 0 (list 1 2 3 4 5))
 (accumulate * 1 (list 1 2 3 4 5))
 (accumulate cons '() (list 1 2 3))`, caption: 'The replies are (1 4 9 16 25), (1 3 5 7), 15, 120, and (1 2 3). Stare at the last one: accumulating with cons and the empty list simply rebuilds the list, because (cons 1 (cons 2 (cons 3 \'()))) is the list itself.' },
+        { check: "What is <code>(filter odd? (list 1 2 3 4 5))</code>?", options: ["<code>(#t #f #t #f #t)</code>", "<code>(1 3 5)</code>", "<code>3</code>"], answer: 1, why: "filter keeps the items for which the predicate is true. map with odd? would give the booleans." },
         `<p><code>map</code> is <code>scale-list</code> with "multiply by factor" replaced by any procedure; <code>filter</code> is <code>keep-positive</code> with "positive?" replaced by any predicate; <code>accumulate</code> is <code>sum</code> with "add" and "0" replaced by any operation and starting value. The starting value must be what the operation does nothing to: 0 for <code>+</code>, 1 for <code>*</code>, <code>'()</code> for <code>cons</code>, for exactly the reason Lesson 7 gave.</p>
 <details class="reveal"><summary>Predict: what are <code>(accumulate + 0 (map square (list 1 2 3)))</code> and <code>(map (lambda (x) (&gt; x 2)) (list 1 2 3 4))</code>?</summary><p><code>14</code>: <code>map</code> gives (1 4 9), and <code>accumulate</code> adds them. And <code>(#f #f #t #t)</code>: <code>map</code> with a predicate gives a list of truth values, one per item; it does not remove anything. Keeping only some items is <code>filter</code>'s job.</p></details>
 <h2>Pipelines</h2>
@@ -1177,6 +1202,7 @@ boxes
 (accumulate + 0 (filter even? (fibs-below 4000000)))
 
 (accumulate + 0 (map square (filter odd? (enumerate 1 10))))`, caption: 'The Fibonacci numbers below 100, then the answer to the puzzle: 4613732. The last line is the sum of the squares of the odd numbers from 1 to 10: 1 + 9 + 25 + 49 + 81 = 165. Read each pipeline from the inside out.' },
+        { check: "What is <code>(accumulate + 0 (map square (list 1 2 3)))</code>?", options: ["14", "6", "(1 4 9)"], answer: 0, why: "map gives (1 4 9); accumulate with + from 0 adds them: 14." },
         `<h2>A law, and its proof</h2>
 <p>Pipelines can be reasoned about, not just run. Here is a fact that a compiler can use to make pipelines faster: mapping twice is the same as mapping once with the composition.</p>
 <div class="stmt"><p><span class="kind">Claim (map fusion).</span> For any procedures <i>f</i> and <i>g</i> and any list <i>items</i>, <code>(map <i>f</i> (map <i>g</i> <i>items</i>))</code> equals <code>(map (compose <i>f</i> <i>g</i>) <i>items</i>)</code>, where <code>(compose f g)</code> is Lesson 8's <code>(lambda (x) (f (g x)))</code>.</p></div>
@@ -1192,6 +1218,7 @@ boxes
 
 (fold-right list '() (list 1 2 3))
 (fold-left list '() (list 1 2 3))`, caption: 'The sums agree: 6 and 6. The divisions do not: fold-right computes 1 / (2 / (3 / 1)), which is 1.5, and fold-left computes ((1 / 1) / 2) / 3, which is about 0.1667. The last two lines show the nesting directly.' },
+        { check: "For which operation do fold-left and fold-right always agree?", options: ["Subtraction", "Addition", "Division"], answer: 1, why: "They agree for associative operations such as + and *, and differ for − and /." },
         `<details class="reveal"><summary>Which property must an operation have for <code>fold-right</code> and <code>fold-left</code> to always agree? (This is SICP exercise 2.38.)</summary><p>It is enough that the operation is <em>associative</em>, (<i>a</i> op <i>b</i>) op <i>c</i> = <i>a</i> op (<i>b</i> op <i>c</i>), and that <i>initial</i> does nothing to either side, as 0 does for <code>+</code>. Then both folds compute <i>x</i><sub>1</sub> op <i>x</i><sub>2</sub> op … op <i>x</i><sub><i>n</i></sub>, only with the brackets in different places, and associativity says the brackets do not matter. Division and subtraction are not associative, so their folds differ.</p></details>
 <h2>Nested mappings</h2>
 <p>Pipelines can also replace nested loops. SICP's example: for a given <i>n</i>, find all pairs of whole numbers (<i>i</i>, <i>j</i>) with 1 ≤ <i>j</i> &lt; <i>i</i> ≤ <i>n</i> such that <i>i</i> + <i>j</i> is prime. For each <i>i</i>, map over the possible <i>j</i> to make a list of pairs; that gives a list of lists, which <code>flatmap</code> joins into one list with <code>append</code>. Then filter.</p>`,
@@ -1288,6 +1315,7 @@ boxes
 '(+ 1 2)
 (car '(+ 1 2))
 (symbol? (car '(+ 1 2)))`, caption: '(list a b) looks up the variables and gives (1 2); (list \'a \'b) gives the symbols, (a b). (+ 1 2) is 3, but \'(+ 1 2) is a list whose car is the symbol +.' },
+        { check: "What is <code>(car '(+ 1 2))</code>?", options: ["3", "The symbol +", "The addition procedure"], answer: 1, why: "The quote keeps the list unevaluated. Its first item is the symbol +, not the procedure that + names." },
         `<details class="reveal"><summary>Puzzle (SICP exercise 2.55): what is <code>(car ''abracadabra)</code>?</summary><p>The symbol <code>quote</code>. By the rule, <code>''abracadabra</code> is <code>(quote (quote abracadabra))</code>. Evaluating the outer quote gives its argument unevaluated: the two-item list <code>(quote abracadabra)</code>. Its <code>car</code> is the symbol <code>quote</code>. The printer shows the list <code>(quote abracadabra)</code> as <code>'abracadabra</code>, which is why this looks like magic until you apply the rule.</p></details>
 <h2>Three kinds of equality</h2>
 <div class="stmt"><p><span class="kind">Rule (equality).</span> <code>(= <i>a</i> <i>b</i>)</code> compares numbers. <code>(eq? <i>a</i> <i>b</i>)</code> asks whether <i>a</i> and <i>b</i> are the very same object; two symbols with the same name are always the same object, so <code>eq?</code> is the test for symbols. <code>(equal? <i>a</i> <i>b</i>)</code> asks whether two structures have the same shape and the same contents, however they were built.</p></div>`,
@@ -1297,6 +1325,7 @@ boxes
 (equal? (list 1 2) (list 1 2))
 (equal? '(1 (2 3)) '(1 (2 3)))
 (= 3 3.0)`, caption: '#t, #f, then #f and #t: two separately built lists are different pairs, so not eq?, but they have the same contents, so equal?. The last line is #t: = compares values as numbers.' },
+        { check: "Two lists built separately hold the same symbols in the same order. Which test says #t?", options: ["<code>eq?</code>", "<code>equal?</code>", "<code>=</code>"], answer: 1, why: "eq? asks \"the very same object?\"; equal? asks \"same shape and contents?\"; = is for numbers only." },
         `<p><code>equal?</code> is not magic either. Two things are equal if both are pairs whose <code>car</code>s are equal and whose <code>cdr</code>s are equal, or if neither is a pair and they are <code>eq?</code>. That is a recursive definition, so it becomes a recursive procedure that walks two trees at once, like Lesson 7's <code>count-leaves</code> (SICP exercise 2.54).</p>`,
         { play: `(define (my-equal? a b)
   (cond ((and (pair? a) (pair? b))
@@ -1362,6 +1391,7 @@ expr
 (define e (make-power-expr 2 10))
 e
 (eval e system-global-environment)`, caption: 'expr is the list (+ 1 (* 2 3)), and evaluating it gives 7. make-power-expr writes a program: the expression (* 2 2 2 2 2 2 2 2 2 2), which eval then runs, giving 1024.' },
+        { check: "Why can a Scheme program build and run another expression?", options: ["Because Scheme is interpreted", "Because expressions are lists, so programs can take them apart and build them; eval runs one", "It cannot"], answer: 1, why: "Code is data. A quoted expression is a list of symbols, and eval evaluates it as if typed in." },
         `<p>This is the loop at the heart of Lisp: code is data, data can be code. The interpreter running on this page is a program that takes lists and evaluates them, and SICP's fourth chapter writes a complete Scheme interpreter in Scheme, in a few pages. Compilers, computer algebra systems and proof checkers are all this idea, scaled up. The final project scales it up just far enough to do calculus.</p>
 <h2>Before the exercises</h2>
 <p>The first exercise walks a list of symbols, comparing each with <code>eq?</code>, in Lesson 7's shape with a match case and a miss case. The second builds the vocabulary the project needs: procedures that recognise, take apart and build expressions, exactly like <code>sum?</code> above. Here is a worked example of both skills, for expressions of the form <code>(- a b)</code>.</p>`,
@@ -1440,6 +1470,7 @@ d
 (variable? 3)
 (same-variable? 'x 'x)
 (same-variable? 'x 'y)`, caption: '#t, #f, #t, #f. A variable is any symbol, and two variables are the same when they are the same symbol.' },
+        { check: "Why is <code>deriv</code> naturally recursive?", options: ["Because expressions are long", "Because the derivative of a sum or product is built from the derivatives of its parts", "Because Scheme has no loops"], answer: 1, why: "The rules of calculus are themselves recursive: differentiate the parts, then combine." },
         `<h2>Wishful thinking</h2>
 <p>SICP's method is to write <code>deriv</code> first, as if the procedures for recognising, taking apart and building expressions already existed, and to write those afterwards. The algorithm then talks only about sums and products, never about lists. Each <code>cond</code> clause is one row of the table.</p>`,
         { code: `(define (deriv exp var)
@@ -1475,6 +1506,7 @@ d
 <p>The rules are the ones you use by hand. A sum with a 0 in it is just the other term, and a sum of two numbers is their sum. A product with a 0 in it is 0, a product with a 1 is the other factor, and a product of two numbers is their product. Why is this safe? Each rule replaces an expression by a simpler one that has the same value <em>whatever numbers the variables stand for</em>: <i>u</i> + 0 = <i>u</i> and <i>u</i> · 1 = <i>u</i> for every <i>u</i>. That is the contract a constructor must keep, and as long as it keeps it, every answer <code>deriv</code> builds still means the same derivative. A helper makes the checks tidy:</p>`,
         { code: `(define (=number? exp num)
   (and (number? exp) (= exp num)))`, caption: "True when exp is a number equal to num. (= 'x 0) on its own would be an error, since = accepts only numbers; and stops before reaching it." },
+        { check: "Why check <code>(number? exp)</code> before <code>(= exp 0)</code>?", options: ["For speed", "= accepts only numbers; and stops at the false number? test before = is reached", "It makes no difference"], answer: 1, why: "Short-circuit and protects the comparison from a symbol." },
         {
           ex: {
             id: 'ls-11-2', title: 'Smarter constructors',
@@ -1525,6 +1557,7 @@ d
 (define (numeric-deriv g)
   (lambda (x) (/ (- (g (+ x dx)) (g x)) dx)))
 ((numeric-deriv (lambda (x) (* x (* x x)))) 5)`, caption: 'The symbolic derivative is (+ (* x (+ x x)) (* x x)), which is 2x² + x², that is 3x², and at 5 it gives exactly 75. The numerical method gives 75.0001499966. Two methods with nothing in common agree, which is strong evidence that both are right.' },
+        { check: "The symbolic derivative at 5 gives exactly 75 and the numerical one gives 75.00015. What does the agreement show?", options: ["That the numerical method is wrong", "Strong evidence both are right: two independent methods agree", "Nothing"], answer: 1, why: "Methods with nothing in common rarely share a mistake. Agreement is how you check a program when there is no answer key." },
         `<p>The comparison also shows what each method is good for. The numerical derivative works for any procedure, even one whose formula you do not know, but it is only approximate. The symbolic derivative is exact and gives a formula you can read, but it needs the expression, and it knows only the rules you gave it.</p>
 <h2>Stretch goals</h2>
 <p>Each of these extends the program without changing the part of <code>deriv</code> you already have, only adding to it. The first is SICP exercise 2.56: represent <i>u</i><sup><i>n</i></sup> as <code>(** u n)</code> for a number <i>n</i>, and add the rule that its derivative is <i>n</i> · <i>u</i><sup><i>n</i>−1</sup> · d<i>u</i>/d<i>x</i>; that needs a predicate, two selectors, a constructor and one new <code>cond</code> clause. The second is exercise 2.57: let sums and products take any number of terms, so that <code>(+ x y z)</code> works, by changing only <code>augend</code> and <code>multiplicand</code> (the augend of a three-term sum is the sum of the last two). The third is a <code>simplify</code> procedure that rebuilds any expression through the smart constructors, so that <code>(simplify '(+ (* 1 x) 0))</code> is <code>x</code>.</p>

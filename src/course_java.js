@@ -62,6 +62,7 @@ window.COURSES.push({
         System.out.println("So nothing at all is printed");
     }
 }`, expectError: true, caption: 'Main.java:4: error: \';\' expected. A compiler reports the problem and refuses to go on; even the correct first line does not run. Fix line 4 and run again.' },
+        { check: "A Java program has a missing semicolon on line 4 of 6. What runs?", options: ["Lines 1 to 3", "Nothing: the compiler refuses the whole program", "Everything except line 4"], answer: 1, why: "javac checks and translates the whole program before anything runs. One error, and nothing runs." },
         `<h2>Types</h2>
 <p>In Python a name can hold anything, and the interpreter checks what it is each time it is used. In Java every variable has a type, fixed when the variable is created, and the compiler uses the type to decide what <code>+</code>, <code>/</code> and <code>println</code> mean for it. Five types cover nearly everything in this course.</p>
 <div class="tbl-wrap"><table>
@@ -108,6 +109,7 @@ window.COURSES.push({
         System.out.println(Math.max(3, 9) + Math.abs(-4));
     }
 }`, caption: 'A cast, (double) total, makes a copy of the value as a double before the division. The last line shows the classic mistake: casting the result instead of an operand.' },
+        { check: "What does <code>7 / 2</code> give in Java?", options: ["3.5", "3", "4"], answer: 1, why: "int divided by int is an int: the fraction is dropped, not rounded. 7 / 2.0 gives 3.5." },
         `<div class="stmt"><p><span class="kind">Rule (division).</span> <code>int / int</code> is an <code>int</code>: the fraction is dropped, not rounded. To get a decimal answer, make one operand a <code>double</code> first, with a cast or by writing <code>2.0</code> instead of <code>2</code>.</p>
 <p><span class="kind">Rule (mixing).</span> When an <code>int</code> meets a <code>double</code>, the <code>int</code> is converted and the answer is a <code>double</code>. Going the other way needs a cast, <code>(int) 3.99</code>, which gives <code>3</code>: the fraction is cut off, not rounded. Storing a <code>double</code> in an <code>int</code> without a cast is a compile error: <em>possible lossy conversion from double to int</em>.</p></div>
 <h2>Printing</h2>
@@ -129,6 +131,7 @@ window.COURSES.push({
         `<div class="stmt"><p><span class="kind">Trap.</span> <code>"x" + 1 + 2</code> is <code>x12</code>, but <code>1 + 2 + "x"</code> is <code>3x</code>. Java works from left to right and only starts joining text once it meets a <code>String</code>. Put the arithmetic in parentheses when you mean it: <code>"x" + (1 + 2)</code>.</p></div>
 <h2>Reading input</h2>
 <p>To read what the user types, Java uses an object called a <code>Scanner</code>. The recipe has three lines, and for now you can copy them without understanding every word; lesson 8, on objects, explains them. The first line, before the class, says where <code>Scanner</code> lives; the second makes a scanner that reads the keyboard; the third reads one whole number.</p>`,
+        { check: "What does <code>\"Total: \" + 1 + 2</code> give?", options: ["<code>Total: 3</code>", "<code>Total: 12</code>", "A compile error"], answer: 1, why: "Java works left to right. Once a String is involved, every later + joins text. Write \"Total: \" + (1 + 2)." },
         { play: `import java.util.Scanner;
 
 public class Main {
@@ -214,6 +217,7 @@ public class Main {
         System.out.println("Done");
     }
 }`, caption: 'Change the temperature to 25, 15 and -5. Exactly one block runs, the first whose condition is true; Done is printed every time because it is after the whole chain.' },
+        { check: "What does Java say about <code>if (x = 5)</code>?", options: ["It compiles and is always true", "It does not compile: int cannot be converted to boolean", "It compiles and checks whether x is 5"], answer: 1, why: "The condition of an if must be a boolean. The assignment has type int, so the compiler refuses it. In C the typo compiles." },
         `<p>The order of a chain matters. Because each test is only reached if every test above it failed, <code>temperature &gt; 20</code> really means "above 20 and not above 30". Reverse the first two tests and every hot day is reported as merely warm.</p>
 <div class="stmt"><p><span class="kind">Rule (braces).</span> Java lets you leave the braces out when the block is a single statement: <code>if (x &gt; 0) System.out.println(x);</code>. Do not. Write the braces every time, even for one line. A second statement added later, indented to look like part of the block, will otherwise run unconditionally, exactly as in Apple's code. The compiler cannot tell what you meant; only the braces say it.</p>
 <p><span class="kind">Rule (conditions are boolean).</span> The condition of an <code>if</code> must be a <code>boolean</code>. <code>if (x = 5)</code> does not compile: <em>incompatible types: int cannot be converted to boolean</em>. In C this famous typo compiles and is always true; Java's type checker catches it for you.</p></div>
@@ -246,6 +250,7 @@ if (answer.equalsIgnoreCase("YES")) { ... }   // true for yes, Yes, YES`, captio
         `<div class="stmt"><p><span class="kind">Rule (strings).</span> Compare text with <code>.equals</code>, never with <code>==</code>. To put the ordering of two strings into a number, <code>a.compareTo(b)</code> is negative when <code>a</code> comes first in dictionary order, zero when they are equal, and positive otherwise.</p></div>
 <h2>Reading what the user types</h2>
 <p>Lesson 1 read numbers with <code>nextInt()</code>. A <code>Scanner</code> can also read a single word, <code>next()</code>, or a whole line, <code>nextLine()</code>. The difference matters, and there is a trap where the two meet. <code>nextInt()</code> reads the digits and stops: the end-of-line character the user typed after the number is still waiting. A <code>nextLine()</code> straight afterwards reads <em>that</em>, and comes back with an empty string. The fix is to call <code>nextLine()</code> once to throw the leftover away, or to read everything with <code>nextLine()</code> and convert with <code>Integer.parseInt</code>.</p>`,
+        { check: "How do you compare two Strings for equal text?", options: ["<code>a == b</code>", "<code>a.equals(b)</code>", "<code>a = b</code>"], answer: 1, why: "== on strings asks \"same object?\", which is usually no. equals compares the characters." },
         { play: `import java.util.Scanner;
 
 public class Main {
@@ -302,6 +307,7 @@ public class Main {
         System.out.println(result);
     }
 }`, caption: 'The arrow form of switch (Java 14 and later) runs exactly one case; several statements go in braces. The last lines show cond ? a : b, an if/else squeezed into one expression; use it for a simple choice between two values and nothing more.' },
+        { check: "What does <code>int big = x &gt; 10 ? 1 : 0;</code> do?", options: ["Sets big to 1 if x &gt; 10, otherwise 0", "Sets big to x", "Does not compile"], answer: 0, why: "cond ? a : b is an if/else squeezed into one expression: the value is a when the condition holds, b otherwise." },
         `<p>You will also meet the older form of <code>switch</code> in textbooks: <code>case 1:</code> with a colon, statements, and a <code>break;</code> at the end of each case. Without the <code>break</code>, execution <em>falls through</em> into the next case, a trap the arrow form removes. Read the old form when you see it; write the new one.</p>`,
         `<details class="reveal"><summary>Puzzle: what does this print? <code>int x = 5; if (x &gt; 3) if (x &gt; 10) System.out.println("big"); else System.out.println("small");</code></summary><p><code>small</code>. The <code>else</code> belongs to the nearest <code>if</code>, the inner one (<code>x &gt; 10</code>), not to the outer one as the layout might suggest. With braces around each block the question would not arise, which is the point of the rule above.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> <code>=</code> where <code>==</code> was meant (Java refuses it, with <em>int cannot be converted to boolean</em>). Comparing strings with <code>==</code>. Leaving out the braces, then adding a second line to the block. <code>3 &lt;= x &lt;= 10</code> for a range: write <code>3 &lt;= x &amp;&amp; x &lt;= 10</code>. <code>x == 1 || 2</code>: write <code>x == 1 || x == 2</code>. <code>!x &gt; 5</code> for "not greater than 5": write <code>!(x &gt; 5)</code>. A semicolon straight after the condition, <code>if (x &gt; 3);</code>, which gives the <code>if</code> an empty statement to control, so the block after it runs every time. Overlapping conditions in the wrong order in an <code>else if</code> chain. <code>nextLine()</code> straight after <code>nextInt()</code>.</p>` },
@@ -374,6 +380,7 @@ public class Main {
         }
     }
 }`, expectError: true, caption: 'After about five seconds this site stops the program with "Time limit exceeded". n goes 1, 3, 5, 7, 9, 11, …: always odd, so it is never 10. Change != to < and it stops at 11.' },
+        { check: "Why prefer <code>n &lt; 10</code> to <code>n != 10</code> as a loop test?", options: ["It is faster", "A counter that steps past 10 ends a &lt; loop and never ends a != one", "It makes no difference"], answer: 1, why: "If n goes 1, 3, 5, …, it is never exactly 10. The < test stops at 11; the != test runs forever." },
         `<h2>for</h2>
 <p>Most loops count: start somewhere, test, step. Java's <code>for</code> puts those three parts on one line, separated by semicolons, so the whole shape of the loop can be read at a glance: <code>for (start; keep going while; step)</code>. The variable declared in the start part belongs to the loop and does not exist after it.</p>`,
         { play: `public class Main {
@@ -398,6 +405,7 @@ public class Main {
         System.out.println(sum);
     }
 }`, caption: 'Python’s range(0, 5) is for (int i = 0; i < 5; i++): the end is not included. The third loop is the accumulator pattern: a total declared as 0 before the loop, added to inside it, used after it.' },
+        { check: "How many times does <code>for (int i = 0; i &lt;= 5; i++)</code> run?", options: ["5", "6", "4"], answer: 1, why: "i takes 0, 1, 2, 3, 4, 5: six values. With &lt; 5 it would be five." },
         `<div class="stmt"><p><span class="kind">Rule (choosing).</span> Use <code>for</code> when you know how many times, or over what range, before the loop starts. Use <code>while</code> when the loop ends on a condition you discover as you go: a balance reaching a target, the user typing <code>quit</code>, a number becoming 0.</p>
 <p><span class="kind">Trap (off by one).</span> <code>i &lt;= n</code> runs one time more than <code>i &lt; n</code>. Starting at 1 and starting at 0 differ by one too. There is no rule that fixes this for you: for each loop, say what the first value is, what the last value is, and how many times the body runs.</p></div>
 <h2>Loops inside loops</h2>
@@ -492,6 +500,7 @@ public class Main {
         System.out.println(Integer.MAX_VALUE + 1);
     }
 }`, caption: '13! does not fit in an int: the value printed is wrong from there on, with no error. The long gets 20! right. Read the last two lines slowly.' },
+        { check: "An int holding 2,147,483,647 is incremented. What happens?", options: ["An exception is thrown", "It wraps round to −2,147,483,648 with no warning", "It becomes a long"], answer: 1, why: "Java ints are 32 bits and wrap silently. Use long for big totals and products." },
         `<details class="reveal"><summary>Puzzle: how many times does the body run? <code>for (int i = 0; i &lt; 10; i++)</code>, <code>for (int i = 1; i &lt;= 10; i++)</code>, <code>for (int i = 10; i &gt; 0; i -= 3)</code>, <code>for (int i = 0; i &lt; 10; i += 0)</code></summary><p>10, 10, 4 (i is 10, 7, 4, 1) and forever: the last loop never changes <code>i</code>, so this site stops it with "Time limit exceeded" and a real machine runs until you kill it.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> Off-by-one: <code>i &lt;= n</code> runs one pass more than <code>i &lt; n</code>; say the first and last values aloud. A <code>while</code> whose body never changes the variables in its condition, or changes them past the stopping point: prefer <code>&lt;</code> to <code>!=</code>. Forgetting to set an accumulator to 0 before the loop (Java will refuse to use an unset variable: <em>variable total might not have been initialized</em>). Using a <code>for</code> loop's variable after the loop: it no longer exists. A semicolon straight after the loop header, <code>for (…);</code> or <code>while (…);</code>, which gives the loop an empty body. Putting the <code>println</code> that ends a row inside the inner loop. <code>charAt(s.length())</code>: the last character is at <code>length() - 1</code>. A product or total in an <code>int</code> that quietly wraps around.</p>` },
         {
@@ -571,6 +580,7 @@ public class Main {
         System.out.println(sign(5));
     }
 }`, expectError: true, caption: 'Main.java:8: error: missing return statement. For n equal to 0 neither branch returns, so the method would fall off its end. Add return 0; before the closing brace, or make the last branch a plain else.' },
+        { check: "An int method has an if that returns and an else-if that returns, and no else. What does the compiler say?", options: ["Nothing: it compiles", "missing return statement: some path reaches the end without returning", "It returns 0 by default"], answer: 1, why: "A non-void method must return on every path. The compiler can see a way to the closing brace, so it refuses." },
         `<h2>Methods that do something: void</h2>
 <p>Not every method hands back a value. One that prints, or draws, or changes a list, has the return type <code>void</code>, "nothing". A <code>void</code> method is called as a statement on its own, not inside an expression, and may end with a bare <code>return;</code> or simply by reaching its closing brace. <code>main</code> is one.</p>`,
         { play: `public class Main {
@@ -612,6 +622,7 @@ public class Main {
         System.out.println("after plusTen: " + score);
     }
 }`, caption: 'addTen changes its own copy and the change is lost. plusTen returns the new value, and main stores it: that is the Java way to "change" a number through a method. (Arrays and objects behave differently; lesson 5 explains.)' },
+        { check: "<code>static void addTen(int n) { n += 10; }</code>, then <code>int x = 5; addTen(x);</code>. What is x?", options: ["15", "5: the method changed its own copy", "An error"], answer: 1, why: "Parameters are copies. To change the caller's number, return the new value and store it." },
         `<h2>Each method has its own variables</h2>
 <p>A variable declared inside a method, including its parameters, exists only while that method runs and is invisible to every other method. <code>main</code> cannot see <code>x</code> inside <code>square</code>, and <code>square</code> cannot see <code>n</code> inside <code>main</code>. If two methods need to share a value, one passes it to the other as an argument. This is the point of methods, not a limitation: you can read <code>square</code> on its own and know everything about it.</p>`,
         { play: `public class Main {
@@ -653,6 +664,7 @@ public class Main {
         System.out.println(describe(7 / 2));
     }
 }`, caption: 'area(1) matches the one-parameter version; the int 1 widens to double. In the last line the argument is an int, so the first describe runs: overloads are chosen by the types in the call, before anything runs.' },
+        { check: "There are <code>describe(int)</code> and <code>describe(double)</code>. Which runs for <code>describe(3)</code>?", options: ["describe(int)", "describe(double)", "Both, in order"], answer: 0, why: "The compiler picks the overload from the argument types at compile time. 3 is an int, so the int version is chosen." },
         `<h2>A method that calls itself</h2>
 <p>Nothing stops a method from calling itself, provided each call works on a smaller problem and some case stops without calling. The factorial of <code>n</code> is <code>n</code> times the factorial of <code>n − 1</code>, and the factorial of 0 is 1. Written out, that definition <em>is</em> the method. This is <em>recursion</em>; the Lisp course is built on it, and here it is a first look.</p>`,
         { play: `public class Main {

@@ -147,7 +147,10 @@ drives the accent colour through CSS tokens.
 Course: `{ id, code, short, lang, title, grades, audience, tagline, description, outcomes[], lessons[], readingWpm?,
 howItWorks?, textbook?, status? }`. `status: 'developing'` marks a course still being written: app.js shows an "Under development"
 tag on the catalog card, the course page and every lesson's crumb (`devTag`), and the guide says what the tag means.
-Lesson: `{ title, summary, blocks[] }`. Blocks, rendered by `renderBlocks()`:
+Lesson: `{ title, summary, blocks[] }`. Blocks, rendered by `renderBlocks()`, which also labels each block with a small tag (Example, Listing,
+Interactive, Quiz, Quick check, Watch out, Exercise n), gives every `<h2>` an id, and collects the lesson's parts (Story, each section,
+Quiz, Exercises, Recap) for the map under the title (`lessonMap`) and the "On this page" list in the side column, which follows the
+reader with an IntersectionObserver (`watchParts`):
 
 | Block | Renders |
 |---|---|
@@ -156,6 +159,7 @@ Lesson: `{ title, summary, blocks[] }`. Blocks, rendered by `renderBlocks()`:
 | `{ code, caption, lang }` | static listing |
 | `{ fig, caption, ...params }` | `WIDGETS[fig]` figure |
 | `{ aside }` | "Common mistakes" aside |
+| `{ check, options[], answer, why, wrong[]? }` | a quick check: one multiple-choice question with instant feedback, nothing saved (every lesson has three, after an idea has been stated) |
 | `{ ex: {...} }` | exercise (code kind or math kind, see below) |
 
 Code exercise: `{ id, title, prompt, starter, solution, hints[], tests[], mustContain[], mustNotContain[], followup, failTip, sampleStdin, prelude }`.

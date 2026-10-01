@@ -54,6 +54,7 @@ print("Comments explain code.")   # a comment can also follow an instruction`, c
 print(type(2.0))
 print(type("7"))
 print(type(True))`, caption: 'Change 7 to "7" on the first line and run again.' },
+        { check: "What is the type of <code>\"7\"</code>, with the quotation marks?", options: ["int, a whole number", "str, a piece of text", "float, a decimal"], answer: 1, why: "Quotation marks make text, even when the characters are digits. <code>\"7\" + 1</code> is an error; <code>7 + 1</code> is 8." },
         `<h2>Arithmetic</h2>
 <p>Python is a very good calculator. Adding, subtracting and multiplying work as you expect; <code>*</code> is the multiplication sign. Python works out the value of each expression and <code>print</code> shows the result. When you give <code>print</code> several things separated by commas, it prints them on one line with spaces between.</p>`,
         { play: `print(7 + 3)
@@ -66,6 +67,7 @@ print(7 + 3, 7 - 3, 7 * 3)    # three values, one line`, caption: 'Change the nu
 print(7 // 2)
 print(7 % 2)
 print(10 / 2)`, caption: 'Try 17 // 5 and 17 % 5. Then 20 % 4.' },
+        { check: "What does <code>print(10 / 2)</code> show?", options: ["<code>5</code>", "<code>5.0</code>", "<code>5.00</code>"], answer: 1, why: "<code>/</code> always gives a float, even when the division is exact. <code>10 // 2</code> gives the int 5." },
         `<p>The remainder operator looks odd at first, but you will use it constantly. <code>n % 2</code> is 0 exactly when <code>n</code> is even. <code>n % 10</code> is the last digit of <code>n</code>. <code>n // 60</code> and <code>n % 60</code> turn seconds into minutes and leftover seconds. One more operator: <code>**</code> means "to the power of", so <code>2 ** 10</code> is 1024.</p>
 <p>Python follows the usual order of operations: powers first, then multiplication, division and remainder, then addition and subtraction, with parentheses overriding everything. <code>2 + 3 * 4</code> is 14, and <code>(2 + 3) * 4</code> is 20. When in doubt, add parentheses; they cost nothing and make your intention clear.</p>
 <h2>Giving a value a name</h2>
@@ -100,6 +102,7 @@ print("In 2030 you will be about", 2030 - year)`, caption: 'Run it and type your
         { play: `days = int(input("Days: "))
 hours = days * 24
 print(days, "days is", hours, "hours")`, caption: 'Three steps: read and convert, calculate, print. The commas in print put single spaces between the pieces.', testStdin: '3\n' },
+        { check: "After <code>x = 4</code> and then <code>x = x + 2</code>, what is <code>x</code>?", options: ["4, because <code>x = x + 2</code> is a false equation", "6", "An error: a name cannot appear on both sides"], answer: 1, why: "<code>=</code> means \"becomes\": the right side is worked out with the old value (4 + 2), and the name is attached to the result." },
         `<p>Notice how the pieces of the last line, joined by commas, produce <code>3 days is 72 hours</code> when the input is 3. Your exercises follow the same three steps.</p>`,
         `<details class="reveal"><summary>Puzzle: without running it, what does this print? <code>x = 3</code>, then <code>x = x * x</code>, then <code>x = x + 1</code>, then <code>print(x, "x")</code></summary><p><code>10 x</code>. The lines run in order, top to bottom. After the first line <code>x</code> is 3; the second works out 3 × 3 = 9 and gives <code>x</code> that value; the third works out 9 + 1 = 10. In the last line, <code>x</code> without quotes is the name, so its value is printed, while <code>"x"</code> in quotes is just the letter x.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> Forgetting the quotes around text: <code>print(Hello)</code> looks for a variable called Hello. Writing <code>Print</code> or <code>PRINT</code>: Python knows only <code>print</code>. Expecting <code>10 / 2</code> to give <code>5</code>: it gives <code>5.0</code>. Reading <code>=</code> as "equals" and then being puzzled by <code>x = x + 1</code>. Forgetting that <code>input()</code> gives text, so <code>input() + 1</code> fails.</p>` },
@@ -158,6 +161,7 @@ print("But this one is missing a quote)`, caption: 'Notice what does not appear:
 print("So does this one.")
 print(total)
 print("This line is never reached.")`, caption: 'Two lines print, then Python stops: total was never given a value.', expectError: true },
+        { check: "A program has a missing closing quote on line 8 and a misspelt variable name on line 3. What happens when you run it?", options: ["Lines 1 and 2 run, then the NameError on line 3 stops it", "Nothing runs: the SyntaxError on line 8 is reported first", "Both errors are reported together"], answer: 1, why: "Python reads the whole program before running any of it. A syntax error is found at the reading stage, so no line runs at all." },
         `<p><code>NameError: name 'total' is not defined</code>: a name was used that has no value. That happens with a typo in a name, with <code>Print</code> for <code>print</code>, with a forgotten quote around text (<code>print(Hello)</code>), or, most often later on, with a variable you meant to set earlier and did not. You will meet more kinds of runtime error as the course goes on; the lesson on finding and fixing bugs (Lesson 8) is about hunting them systematically. For now, the two-stage picture is what to hold on to.</p>
 <div class="tbl-wrap"><table>
 <tr><th>when</th><th>error looks like</th><th>meaning</th><th>what ran</th></tr>
@@ -192,6 +196,7 @@ print("this should be indented")`, caption: 'Add four spaces at the start of lin
         { play: `if True:
     print("four spaces")
    print("three spaces")`, caption: 'Make line 3 start with four spaces, like line 2.', expectError: true },
+        { check: "Which line ends a block?", options: ["The first line that is indented less than the block", "A line containing <code>end</code>", "A blank line"], answer: 0, why: "The block is the lines indented under the colon line. It ends where the indentation stops; blank lines do not matter." },
         `<p>Two habits prevent nearly all of these. Always use exactly four spaces per level; the editor on this page inserts them when you press Tab, and it indents the next line for you after a colon. And never mix tabs with spaces: they can look identical on the screen and be different to Python.</p>
 <h2>Mixing text and numbers</h2>
 <p>One more rule, and it is about types rather than spelling. Remember from Lesson 1 that every value has a type. <code>+</code> means "add" for numbers and "join" for strings, but Python refuses to do either between a string and a number, because it will not guess which you wanted.</p>`,
@@ -214,6 +219,7 @@ print(f"Next year you will be {int(age) + 1}")`, caption: 'The first print shows
 count = int(input("How many books? "))
 print(f"{name} has {count} books.")
 print(f"After buying two more: {count + 2}.")`, caption: 'Everything inside { } is calculated; everything outside is copied exactly, including the full stop.', testStdin: 'Ada\n4\n' },
+        { check: "<code>age = 12</code>. Which line prints <code>Age: 12</code> without an error?", options: ["<code>print(\"Age: \" + age)</code>", "<code>print(\"Age:\", age)</code>", "<code>print(\"Age: \" age)</code>"], answer: 1, why: "A comma in print joins pieces of any type with a space. <code>+</code> cannot join text to a number; you would need <code>str(age)</code> or an f-string." },
         `<details class="reveal"><summary>Puzzle: a four-line program has a missing closing bracket on line 3. Lines 1 and 2 are <code>print("one")</code> and <code>print("two")</code>. What appears when you press Run?</summary><p>Only the error message. Python reads the whole program before running any of it, so a syntax error anywhere means nothing runs at all, not even the correct lines above it. A runtime error is different: the lines before it do run, and only then does the program stop.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> Reading the error message's line number and then not looking at that line. Fixing the second error before the first. Indenting a line "to make it look nicer": in Python that changes the meaning. Forgetting the colon at the end of an <code>if</code> line. Forgetting the <code>f</code> in front of an f-string, so the braces are printed as they are. Adding text to a number with <code>+</code> instead of using commas, <code>str()</code> or an f-string.</p>` },
         {
@@ -286,6 +292,7 @@ else:
     print("Come back when you are 13.")
 
 print("Thanks for visiting.")`, testStdin: '15\n', caption: 'Run it with 15, then with 9, then with exactly 13. The last line is outside both blocks, so it runs every time.' },
+        { check: "What is wrong with <code>if x = 5:</code>?", options: ["Nothing: it checks whether x is 5", "A single <code>=</code> stores a value and cannot be a question; it needs <code>==</code>", "It should be <code>if x = 5 then</code>"], answer: 1, why: "<code>=</code> assigns, <code>==</code> compares. Python refuses the single <code>=</code> with a SyntaxError." },
         `<p>Because the comparison is <code>&gt;=</code>, an age of exactly 13 joins. Had it been <code>&gt;</code>, 13 would have been turned away. When you write a condition, always ask what happens <em>at</em> the boundary.</p>
 <h2>More than two choices: elif</h2>
 <div class="stmt"><p><span class="kind">Rule (elif).</span> Between the <code>if</code> and the <code>else</code> you may put any number of <code>elif <i>condition</i>:</code> blocks ("else if"). Python checks the conditions from the top, one at a time, and runs the block of the <em>first</em> one that is <code>True</code>. Then it skips everything else in the chain, even if later conditions are also true. If none is <code>True</code>, the <code>else</code> block runs; if there is no <code>else</code>, nothing runs.</p></div>`,
@@ -302,6 +309,7 @@ else:
     print("Cold.")
 
 print("This line runs no matter what.")`, caption: 'Change the temperature to 25, 15, 30 and -5, predicting each time. Exactly one branch runs.' },
+        { check: "In an <code>if … elif … else</code> chain, how many of the blocks run?", options: ["Every block whose condition is True", "Exactly one: the first whose condition is True, or else", "All of them, in order"], answer: 1, why: "Python checks from the top and runs the first true branch, then skips the rest of the chain, even if later conditions are also true." },
         `<p>Follow it for 31. The first condition, 31 &gt; 30, is <code>True</code>, so "Hot." and "Drink water." are printed, and Python jumps straight past the rest of the chain. It never checks 31 &gt; 20, although that is true too. Now follow 25: the first condition is <code>False</code>, the second is <code>True</code>, so "Pleasant." is printed. That second condition does not need to say "and not above 30", because it is only ever checked when the first one was <code>False</code>.</p>
 <details class="reveal"><summary>Predict: if the chain checked <code>temperature &gt; 10</code> first, what would 31 print?</summary><p>"Bring a jacket." 31 &gt; 10 is <code>True</code>, it is the first true condition, and the rest are skipped. In fact "Hot." could then never be printed, for any temperature. When the conditions overlap, put the hardest one to satisfy first and the catch-all <code>else</code> last.</p></details>
 <h2>Combining conditions: and, or, not</h2>
@@ -326,6 +334,7 @@ if x == 1 or x == 2:
     print("right version says yes")
 else:
     print("right version says no")`, caption: 'x is 5, and yet the first version says yes. Python reads it as (x == 1) or (2), and 2 on its own counts as True (the next section explains why). Always repeat the comparison: x == 1 or x == 2.' },
+        { check: "<code>x = 7</code>. What does <code>x == 1 or x == 2</code> give, and what does <code>x == 1 or 2</code> give?", options: ["False and False", "False and 2 (which counts as True)", "True and True"], answer: 1, why: "Each side of <code>or</code> is a separate expression. <code>x == 1 or 2</code> is <code>False or 2</code>, which is 2, and any non-zero number counts as True." },
         `<h2>Any value can be a condition</h2>
 <div class="stmt"><p><span class="kind">Rule (truth of other values).</span> When a value that is not <code>True</code> or <code>False</code> is used as a condition, Python treats <code>0</code>, <code>0.0</code>, the empty string <code>""</code> and a few other "empty" values as <code>False</code>, and every other value as <code>True</code>.</p></div>
 <p>This is why <code>2</code> counted as <code>True</code> above. It is also handy on purpose: <code>if name:</code> means "if the name is not empty". While you are learning, prefer writing the comparison out, <code>if name != "":</code>, so that the condition says exactly what you mean.</p>
@@ -424,6 +433,7 @@ for i in range(2, 8, 2):    # start at 2, stop before 8, jump by 2
 <p>A <code>for</code> loop can go through other collections too. A list of values, written in square brackets, is one; Lesson 5 is about lists, and for now it is enough to know that the loop visits the values in the order they are written.</p>`,
         { play: `for word in ["red", "green", "blue"]:
     print(word, "has", len(word), "letters")`, caption: 'The name word takes each value in turn. len gives the number of characters in a piece of text.' },
+        { check: "How many numbers does <code>range(3, 8)</code> give, and what is the last one?", options: ["6 numbers, ending at 8", "5 numbers, ending at 7", "5 numbers, ending at 8"], answer: 1, why: "<code>range(a, b)</code> starts at a and stops before b: 3, 4, 5, 6, 7, which is b − a = 5 numbers." },
         `<h2>The accumulator pattern</h2>
 <p>The most common job for a loop is to build up an answer one step at a time: a total, a count, a largest value. It always takes the same three steps.</p>
 <div class="stmt"><p><span class="kind">The accumulator pattern.</span> <em>Before</em> the loop, create a variable holding the answer for "nothing seen yet". <em>Inside</em> the loop, update it using the current item. <em>After</em> the loop, use it.</p></div>
@@ -457,6 +467,7 @@ for n in [3, 17, 4, 12, 9]:
         biggest = n
 print("even numbers:", count)
 print("biggest:", biggest)`, caption: 'The counter goes up only when the condition is true; biggest is replaced only when a bigger number arrives. Prints 2 and 17.' },
+        { check: "You want the product of the numbers in a list. What should the accumulator start at?", options: ["0", "1", "The first number, with the loop over the rest"], answer: 1, why: "The accumulator holds the answer for \"nothing seen yet\". For a product that is 1; starting at 0 makes every product 0. (Starting at the first item also works, if the list is not empty.)" },
         `<details class="reveal"><summary>Predict: what does this program say is the biggest if the list is <code>[-5, -2, -9]</code>?</summary><p>It says <code>0</code>, which is not in the list at all. No number beats the starting value 0, so it is never replaced. The starting value must be the answer for "nothing seen yet", and for "largest" there is no such number. The fix is to start with the first value in the list itself; Lesson 5 shows how to get it.</p></details>
 <h2>while loops</h2>
 <div class="stmt"><p><span class="kind">Rule (while).</span> <code>while <i>condition</i>:</code> followed by an indented block checks the condition. If it is <code>False</code>, the loop is over. If it is <code>True</code>, the block runs, and then Python goes back and checks the condition again.</p></div>
@@ -496,6 +507,7 @@ n = 101
 while n % 7 != 0:
     n += 1
 print(n)`, caption: 'Both print 105. The second is shorter and says when the loop ends in one place.' },
+        { check: "A <code>while</code> loop's condition is False the very first time it is checked. How many times does its block run?", options: ["Once", "Zero times", "It is an error"], answer: 1, why: "<code>while</code> checks before every pass, including the first. A false condition at the start means the block never runs." },
         `<h2>Before the exercises</h2>
 <p>The first exercise is an accumulator inside a <code>for</code> loop over a range, with an <code>if</code> deciding which numbers to add. The second repeats "until nothing is left", so it needs a <code>while</code> loop. Here is a worked example of each shape. Plan the three accumulator steps first: what the answer is before anything is seen, how one item changes it, and what to do at the end.</p>`,
         { play: `n = int(input("n: "))
@@ -565,6 +577,7 @@ print(playlist[0])      # the first song
 print(playlist[2])      # the third song
 print(playlist[-1])     # the last song
 print(playlist[len(playlist) - 1])   # also the last song`, caption: '5, then Moon Socks, Rain on Tin, and Goodnight Pixel twice. Add print(playlist[5]) and read the error: there is no position 5 in a list of five.' },
+        { check: "<code>xs = [10, 20, 30, 40]</code>. What is <code>xs[-1]</code>, and what is <code>xs[4]</code>?", options: ["40 and 40", "40 and an IndexError", "10 and 40"], answer: 1, why: "Negative positions count from the end, so −1 is the last item. Positions run 0 to 3; 4 is one past the end." },
         `<details class="reveal"><summary>Why start counting at 0? It seems backwards.</summary><p>Think of a position as "how many steps from the front". The first song is zero steps from the front, the second is one step, and so on. Counting this way makes <code>range(len(xs))</code>, from Lesson 4, give exactly the valid positions, 0 up to <code>len(xs) - 1</code>. Almost every programming language counts from 0 for the same reason. (C++ has an even more concrete one, as its Lesson 6 shows.)</p></details>
 <h2>Slices</h2>
 <div class="stmt"><p><span class="kind">Rule (slices).</span> <code>xs[<i>a</i>:<i>b</i>]</code> is a <em>new</em> list containing the items at positions <i>a</i>, <i>a</i> + 1, …, <i>b</i> − 1: it starts at <i>a</i> and stops <em>before</em> <i>b</i>, exactly like <code>range(<i>a</i>, <i>b</i>)</code>. Leave out <i>a</i> to start from the beginning, and <i>b</i> to go to the end. <code>xs[<i>a</i>:<i>b</i>:<i>step</i>]</code> takes every <i>step</i>-th item. A slice never raises an error: positions past the end are simply treated as the end.</p></div>
@@ -578,6 +591,7 @@ print(days[::2])          # every second day
 print(days[::-1])         # a step of -1 walks backwards
 print(days[5:100])        # past the end: no error
 print("Wed" in days, "Funday" in days)`, caption: 'Predict each line first. in asks "is this value somewhere in the list?" and gives True or False.' },
+        { check: "<code>days = [\"Mon\", \"Tue\", \"Wed\", \"Thu\", \"Fri\"]</code>. What is <code>days[1:3]</code>?", options: ["<code>[\"Tue\", \"Wed\", \"Thu\"]</code>", "<code>[\"Tue\", \"Wed\"]</code>", "<code>[\"Mon\", \"Tue\", \"Wed\"]</code>"], answer: 1, why: "A slice starts at the first position and stops before the second, like range: positions 1 and 2." },
         `<details class="reveal"><summary>Slice challenge: using <code>days</code>, write one slice for each of these. The weekdays. The middle three days. Every day except the first and the last.</summary><p><code>days[:5]</code>, then <code>days[2:5]</code> (Wed, Thu, Fri), then <code>days[1:-1]</code>. The last one works because −1 names the gap before the last item. Each slice has <i>b</i> − <i>a</i> items when both ends are inside the list: 5, 3, and 7 − 2 = 5.</p></details>
 <h2>Looping over a list</h2>
 <p>Lesson 4's <code>for</code> loop goes through any collection, and a list is the most common one. Looping over the items directly is usually clearer than looping over positions. When you need both the position and the item, <code>enumerate</code> hands you the pair.</p>`,
@@ -626,6 +640,7 @@ print("fridge: ", fridge)
 print("sister: ", sister)
 print("brother:", brother)
 print(sister is fridge, brother is fridge)`, caption: 'fridge and sister both show cake: they are two names for one list. brother\u2019s copy was made before cake was added, and it is a separate list.' },
+        { check: "After <code>a = [1, 2, 3]</code>, <code>b = a</code>, <code>b.append(4)</code>, what is <code>a</code>?", options: ["<code>[1, 2, 3]</code>: b is a copy", "<code>[1, 2, 3, 4]</code>: a and b name the same list", "An error: a cannot be changed through b"], answer: 1, why: "<code>b = a</code> does not copy. Both names refer to one list, so a change through either is seen through both. <code>b = a[:]</code> would have made a copy." },
         `<details class="reveal"><summary>Predict: after <code>a = [1, 2, 3]</code>, <code>b = a</code>, <code>b[0] = 99</code>, what is <code>a</code>? And what if the second line had been <code>b = a[:]</code>?</summary><p><code>[99, 2, 3]</code>: <code>a</code> and <code>b</code> are the same list, so changing it through <code>b</code> changes what <code>a</code> sees. With <code>b = a[:]</code>, <code>b</code> is a copy, and <code>a</code> stays <code>[1, 2, 3]</code>. Numbers and text never cause this surprise, because they cannot be changed in place: <code>x = x + 1</code> makes a new number, as Lesson 1's picture of names and values showed.</p></details>
 <h2>Handy built-ins</h2>
 <div class="tbl-wrap"><table>
@@ -720,6 +735,7 @@ for ch in "abc":
 <div class="stmt"><p><span class="kind">Rule (strings are immutable).</span> A string cannot be changed in place. Assigning to a position, <code>s[0] = "P"</code>, is an error. Every string operation, including every method, makes a <em>new</em> string and leaves the original exactly as it was.</p></div>`,
         { play: `word = "python"
 word[0] = "P"`, expectError: true, caption: 'TypeError: \'str\' does not support item assignment. Lists can be changed in place; strings cannot.' },
+        { check: "<code>word = \"python\"</code> and then <code>word.upper()</code>. What is <code>word</code> now?", options: ["<code>\"PYTHON\"</code>", "<code>\"python\"</code>: the method made a new string that was not stored", "An error"], answer: 1, why: "Strings never change. Every method returns a new string; to keep it, write <code>word = word.upper()</code>." },
         `<p>So how does anything ever change? You make a new string and store it, perhaps under the same name. <code>word.upper()</code> does not shout <code>word</code>; it hands you a shouting copy, and if you want to keep it you must store it.</p>`,
         { play: `word = "python"
 shout = word.upper()
@@ -736,6 +752,7 @@ print(word)`, caption: 'python PYTHON, then python (the line in the middle did n
 print('It\\'s easy with the other quotes: "hi"')
 print("one\\ntwo")
 print(len("a\\nb"))`, caption: 'The newline escape prints as a line break, and "a\\nb" has length 3: a, the newline, b.' },
+        { check: "What is <code>len(\"hi\\n\")</code>?", options: ["2", "3", "4"], answer: 1, why: "An escape is one character: h, i and the newline. The backslash is not stored." },
         `<h2>The methods worth knowing</h2>
 <p>A <em>method</em> is a function that belongs to a value, called with a dot: <code>text.upper()</code>. Strings have dozens of methods; these earn their keep. By the immutability rule, every one of them gives back something new and changes nothing.</p>
 <div class="tbl-wrap"><table>
@@ -761,6 +778,7 @@ print(line.replace("World", "Duluth"))
 record = "Ada,Lovelace,London"
 first, last, city = record.split(",")
 print(last + ", " + first + " (" + city + ")")`, caption: 'split turns text into a list, and join turns a list back into text: they are opposites. The last part splits one line of a spreadsheet file into its three fields.' },
+        { check: "What does <code>\"a b  c\".split()</code> give?", options: ["<code>[\"a\", \"b\", \"\", \"c\"]</code>", "<code>[\"a\", \"b\", \"c\"]</code>", "<code>\"a\", \"b\", \"c\"</code>"], answer: 1, why: "<code>split()</code> with no argument splits on runs of white space and drops empty pieces. <code>split(\" \")</code> would keep the empty piece between the two spaces." },
         `<details class="reveal"><summary>Predict: what are <code>"a,,b".split(",")</code> and <code>"a,,b".split()</code>?</summary><p><code>['a', '', 'b']</code> and <code>['a,,b']</code>. Splitting at commas is exact: between the two commas there is an empty piece. Plain <code>split()</code> splits only at spaces and newlines, and there are none, so the whole string is one piece. Choosing the wrong <code>split</code> is a common source of bugs when reading data files.</p></details>
 <h2>Building text piece by piece</h2>
 <p>Because strings cannot change, text is built with Lesson 4's accumulator pattern: start with the empty string <code>""</code>, and use <code>+=</code> to make a new, longer string on each pass. Here are three accumulators over one sentence: a count, a filtered copy, and the first letters of the words.</p>`,
@@ -877,6 +895,7 @@ b = double_return(5)
 print("a is", a)
 print("b is", b)
 print(double_return(5) + 1)`, caption: 'double_print shows 10, but a is None: nothing was handed back. b is 10, and double_return(5) + 1 is 11. A function that computes something should return it, and leave printing to the caller.' },
+        { check: "<code>def f(x): print(x * 2)</code>, then <code>a = f(5)</code>. What is <code>a</code>?", options: ["10", "<code>None</code>: the function printed but returned nothing", "5"], answer: 1, why: "print shows a value; return hands it back. A function without a return gives back None, whatever it printed." },
         `<h2>What happens during a call</h2>
 <p>Each call gets its own private workspace, called a <em>frame</em>, holding its parameters and any variables it creates. When the call returns, its frame is thrown away. Step through this trace and watch frames appear and disappear.</p>`,
         {
@@ -913,6 +932,7 @@ def tick():
     count = count + 1    # assigning makes count local in tick...
 
 tick()`, expectError: true, caption: 'UnboundLocalError: local variable \'count\' referenced before assignment. Because tick assigns to count, count is local in tick, and the right-hand side tries to read the local count before it has a value.' },
+        { check: "A function assigns <code>total = 0</code> inside its block. The program also has a global <code>total</code>. What does the assignment do?", options: ["Changes the global total", "Makes a new local total that lives only in this call", "Causes an error"], answer: 1, why: "A name assigned anywhere inside a function is local to that function. The global is untouched; pass values in and return results instead." },
         `<p>The cure is not a trick but a habit: pass what a function needs in as parameters, and hand what it produces back with <code>return</code>. Here that means <code>def tick(count): return count + 1</code>, called as <code>count = tick(count)</code>. A function that only talks to the outside world through its parameters and its return value can be understood, tested and reused on its own. That one habit is most of what makes large programs manageable.</p>
 <h2>Defaults, keywords and returning several values</h2>
 <div class="stmt"><p><span class="kind">Rule (defaults and keywords).</span> A parameter written <code><i>name</i>=<i>value</i></code> has a <em>default</em>: if the caller leaves that argument out, the default is used. A caller may also name an argument, <code>f(b=5)</code>, in which case its position does not matter.</p>
@@ -927,6 +947,7 @@ def min_max(xs):
 
 lo, hi = min_max([4, 9, 1, 7])
 print(lo, hi)`, caption: 'Prints 25 1024 8, then 1 9. print itself has defaults: print(a, b, sep="-") changes the separator from its default of a space.' },
+        { check: "<code>def area(w, h=1): return w * h</code>. What does <code>area(5)</code> give?", options: ["An error: h is missing", "5, because h takes its default of 1", "0"], answer: 1, why: "A parameter written <code>name=value</code> has a default that is used when the caller leaves it out." },
         `<h2>Testing your functions</h2>
 <p>A function can be tested on its own, before the rest of the program exists, and that is one of the best reasons to write functions at all. Python has a statement made for it.</p>
 <div class="stmt"><p><span class="kind">Rule (assert).</span> <code>assert <i>condition</i>, <i>message</i></code> does nothing if the condition is <code>True</code>, and stops the program with an <code>AssertionError</code> showing the message if it is <code>False</code>.</p></div>
@@ -1016,6 +1037,7 @@ for s in scores:
     total += s
 average = totl / len(scores)
 print("average:", average)`, expectError: true, caption: 'NameError means "you used a name I have never seen". The line number points at line 5, and the description names totl. Fix the typo and run again.' },
+        { check: "A program runs to the end and prints a wrong answer, with no message. What kind of error is that?", options: ["A syntax error", "A runtime error", "A logic error"], answer: 2, why: "Syntax errors stop the program before it starts; runtime errors stop it with a message; logic errors give wrong answers silently, and only a test can catch them." },
         `<p>The kinds you will meet most often, and what they usually mean:</p>
 <div class="tbl-wrap"><table>
 <tr><th>error</th><th>usual cause</th></tr>
@@ -1057,6 +1079,7 @@ assert count_vowels("xyz") == 0, "no vowels"
 assert count_vowels("banana") == 3, "three vowels"
 assert count_vowels("Apple") == 2, "capital A counts too"
 print("all tests passed")`, expectError: true, caption: 'The first two tests pass: they cannot see the bug, because the answer is 0 either way. The third fails. Find and fix that bug; then the fourth test finds a second one. Both are small fixes.' },
+        { check: "Which test is most useful for a function that counts the even numbers in a list?", options: ["One where the answer is 0, such as an empty list", "One where a wrong program could fail, such as a list with evens and odds mixed", "Any test: all tests are equally useful"], answer: 1, why: "A test is useful when a wrong program could fail it. A test whose answer is 0 either way cannot tell a working function from a broken one." },
         `<p>Notice which tests passed: the ones whose answer was 0 whether the code was right or not. A test is only useful if a wrong program could fail it. That is why "banana" is a better test than "xyz" here.</p>
 <h2>Errors you expect: try and except</h2>
 <p>Sometimes a runtime error is not a bug at all. If you ask a person for a number and they type "seven", then <code>int("seven")</code> raising <code>ValueError</code> is correct behaviour; what you want is to handle it gracefully instead of crashing.</p>
@@ -1068,6 +1091,7 @@ try:
 except ValueError:
     print("That is not a whole number.")
 print("The program keeps going either way.")`, stdin: 'seven', caption: 'This run types "seven", so int raises ValueError, the print inside try is skipped, and the except block runs. Change the input to 21 and the try block completes normally.' },
+        { check: "Inside <code>try:</code>, a line raises a <code>ZeroDivisionError</code>. The only handler is <code>except ValueError:</code>. What happens?", options: ["The except block runs anyway", "The error is not caught and the program stops, as usual", "Python skips the line and carries on"], answer: 1, why: "<code>except</code> catches only the kind it names. Any other kind passes through and stops the program, which is what you want for errors you did not expect." },
         `<p>Keep the <code>try</code> block small, around just the risky line, and name the exact kind of error you expect. The last sentence of the rule is a feature: an error you did not expect should still stop the program, because it is probably a real bug. A bare <code>except:</code> with no error kind catches everything, including typos and <code>NameError</code>s, and hides real bugs; avoid it.</p>
 <details class="reveal"><summary>Predict: what does this print? <code>try:</code> / <code>n = int("12")</code> / <code>print(10 / (n - 12))</code> / <code>except ValueError:</code> / <code>print("not a number")</code></summary><p>Nothing is caught: the program stops with <code>ZeroDivisionError</code>. <code>int("12")</code> succeeds, and the error comes from the division by zero, which is not a <code>ValueError</code>, so the <code>except</code> block does not apply. That is exactly the behaviour you want: "not a number" would have been a lie.</p></details>
 <h2>Before the exercises</h2>
@@ -1138,6 +1162,7 @@ ojibwe["mitig"] = "tree"          # a new key: adds a pair
 ojibwe["nibi"] = "water (noun)"   # an existing key: replaces its value
 print(ojibwe)
 print(len(ojibwe))`, caption: 'bear, then 4; after adding mitig and changing nibi, 5 pairs. Notice that storing under nibi a second time did not make a second nibi: each key appears once.' },
+        { check: "<code>d = {\"a\": 1}</code>, then <code>d[\"a\"] = 5</code>, then <code>d[\"b\"] = 2</code>. What is <code>len(d)</code>?", options: ["3", "2", "1"], answer: 1, why: "Storing under an existing key replaces its value; storing under a new key adds a pair. Two keys, a and b." },
         `<h2>Missing keys</h2>
 <div class="stmt"><p><span class="kind">Rule (missing keys).</span> <code>d[<i>key</i>]</code> for a key that is not in the dictionary raises <code>KeyError</code>. <code><i>key</i> in d</code> asks whether the key is there. <code>d.get(<i>key</i>, <i>fallback</i>)</code> gives the value if the key is there and the fallback if it is not, without an error.</p></div>`,
         { play: `prices = {"apple": 0.5, "fig": 1.25}
@@ -1145,6 +1170,7 @@ print("fig" in prices, "mango" in prices)
 print(prices.get("apple", 0))
 print(prices.get("mango", 0))     # not there: the fallback, 0
 print(prices["mango"])            # not there: an error`, expectError: true, caption: 'True False, then 0.5 and 0, and then the last line raises KeyError: mango. Delete it and the program runs cleanly.' },
+        { check: "Which expression looks up <code>\"pear\"</code> safely, giving 0 if it is missing?", options: ["<code>d[\"pear\"] or 0</code>", "<code>d.get(\"pear\", 0)</code>", "<code>d[\"pear\", 0]</code>"], answer: 1, why: "<code>get</code> returns the value if the key is there and the fallback if not, without an error. <code>d[\"pear\"]</code> raises KeyError first." },
         `<p>Use square brackets when a missing key would be a bug, so that the error tells you about it (Lesson 8). Use <code>get</code> when a missing key is a normal situation, such as a word you have not counted yet. One more trap: <code>in</code> checks the <em>keys</em> only. <code>"bear" in ojibwe</code> is <code>False</code>, because "bear" is a value, not a key.</p>
 <h2>Looping over a dictionary</h2>
 <div class="stmt"><p><span class="kind">Rule (looping).</span> <code>for k in d:</code> visits the keys, in the order they were first added. <code>d.values()</code> gives the values, and <code>d.items()</code> gives the pairs, so <code>for k, v in d.items():</code> visits each key together with its value.</p></div>`,
@@ -1183,6 +1209,7 @@ student["scores"].append(90)
 print(student["name"], "average:", sum(student["scores"]) / len(student["scores"]))
 
 bad = {[1, 2]: "no"}                           # a list as a key`, expectError: true, caption: 'Coordinates make natural keys for a game map. The last line raises TypeError: unhashable type: \'list\', because a list could change after being used as a key.' },
+        { check: "Which of these can be a dictionary key?", options: ["A list, <code>[1, 2]</code>", "A tuple, <code>(1, 2)</code>", "Another dictionary"], answer: 1, why: "A key must be a value that can never change: numbers, strings, True and False, and tuples of these. Lists and dictionaries can change, so they cannot be keys." },
         `<p>Why the restriction? A dictionary finds a key in one step by computing a number from it, called a <em>hash</em>, and using that number to decide where to store the pair. (The mathematics course's Lesson 10 calls this a hash table and explains why it matters so much for speed.) If a key could change after it was stored, its hash would change, and the dictionary would look for it in the wrong place. So keys must be values that never change. That one design decision is why <code>word in counts</code> takes one step however many words have been counted, while <code>word in some_list</code> may have to check every item.</p>
 <h2>Before the exercises</h2>
 <p>The first exercise is the counting pattern, wrapped in a function. The second counts, then looks through the counts for the largest, with Lesson 4's "best so far" pattern: start with nothing, and replace the best only when something is strictly bigger. Here are worked examples of both shapes: counting the letters of a word, and finding the highest scorer.</p>`,
@@ -1256,6 +1283,7 @@ print(random.random())             # a decimal from 0 up to 1
 deck = ["A", "K", "Q", "J", "10"]
 random.shuffle(deck)               # changes deck itself
 print(deck)`, caption: 'Run it several times: different answers each time is the point. Like append in Lesson 5, shuffle changes the list and gives back None, so write random.shuffle(deck), never deck = random.shuffle(deck).' },
+        { check: "Which values can <code>random.randint(1, 6)</code> give?", options: ["1 to 5, like range", "1 to 6, including both ends", "0 to 6"], answer: 1, why: "Unlike range, randint includes both ends: a dice roll is exactly <code>randint(1, 6)</code>." },
         `<h2>Numbers that only look random</h2>
 <p>A computer follows instructions exactly, so it cannot really produce chance. What <code>random</code> produces are <em>pseudorandom</em> numbers: a long sequence computed by a fixed rule from a starting value called the <em>seed</em>, designed so that no pattern shows. Normally Python picks the seed from the clock, so every run is different. You can choose it yourself.</p>
 <div class="stmt"><p><span class="kind">Rule (seeds).</span> <code>random.seed(<i>s</i>)</code> sets the seed. After the same seed, the random functions give exactly the same sequence of results.</p></div>`,
@@ -1267,6 +1295,7 @@ random.seed(7)
 print(random.randint(1, 100), random.randint(1, 100), random.randint(1, 100))
 random.seed(8)
 print(random.randint(1, 100), random.randint(1, 100), random.randint(1, 100))`, caption: 'The same seed replays the same numbers; a different seed gives different ones. Games use this to share a level ("try seed 4471"), and scientists so that others can repeat their results exactly.' },
+        { check: "Two runs of a program both start with <code>random.seed(42)</code>. What do their random numbers look like?", options: ["Different each run, as random numbers should be", "Exactly the same sequence in both runs", "The same only for the first number"], answer: 1, why: "The numbers are pseudorandom: the seed decides the whole sequence. The same seed replays it exactly, which is useful for debugging and sharing." },
         `<p>Seeds are also a debugging tool (Lesson 8): a bug that appears only with certain random numbers is maddening, but fix the seed and the bug happens the same way every time, so you can reproduce it, shrink it and fix it.</p>
 <h2>Counting what comes up</h2>
 <p>A loop and <code>randint</code> make a dice machine; Lesson 9's counting pattern tallies the faces. A fair die shows each face with probability 1/6, so in 600 rolls each should appear about 100 times, but not exactly.</p>`,
@@ -1279,6 +1308,7 @@ for rolls in [60, 600, 6000]:
         counts[face] = counts.get(face, 0) + 1
     fractions = [round(counts.get(face, 0) / rolls, 3) for face in range(1, 7)]
     print(rolls, "rolls:", fractions)`, caption: 'Every fraction should be about 0.167. With 60 rolls some are far off; with 6000 all are close. Run it again and compare.' },
+        { check: "To estimate the probability of rolling a double six, a program repeats the experiment 10,000 times. What does it compute at the end?", options: ["The number of double sixes", "The number of double sixes divided by 10,000", "10,000 divided by the number of double sixes"], answer: 1, why: "Monte Carlo: repeat the experiment, count the successes, divide by the number of trials. The estimate settles as the trials grow." },
         `<p>That the fractions settle down as the number of trials grows is called the <em>law of large numbers</em>. But they settle slowly. The typical error of an estimate from <i>n</i> trials shrinks in proportion to 1/√<i>n</i>, so to make an estimate ten times more precise you need a <em>hundred</em> times as many trials. Keep that in mind whenever a simulation gives you a number: it is an estimate with a wobble, not an exact answer.</p>
 <h2>Answering a question by simulation</h2>
 <p>Here is the trick promised at the start. To find how likely something is, you do not need to calculate: run the experiment many times, count how often it happens, and divide by the number of trials. This is called a <em>Monte Carlo simulation</em>, after the casino, and it is used for real, to price insurance, forecast weather and plan space missions. Back to the birthdays.</p>`,
@@ -1388,6 +1418,7 @@ print(factorial(20))`, caption: '120, then 2432902008176640000. The function nev
     return n * factorial(n - 1)
 
 print(factorial(-1))`, expectError: true, caption: 'RecursionError. From -1 the calls go -2, -3, -4, … moving away from 0, until Python runs out of room for waiting calls. A base case of n <= 0 would have stopped it.' },
+        { check: "What are the two things every recursive function needs?", options: ["A loop and a return", "A base case, and progress towards it on every call", "Two parameters"], answer: 1, why: "Without a base case, or without progress towards it, the calls never stop and Python runs out of room: RecursionError." },
         `<h2>What actually happens</h2>
 <p>Lesson 7 showed that every call gets its own frame. A recursive call is no different: <code>factorial(3)</code> gets a frame, and inside it <code>factorial(2)</code> gets another, each with its own <code>n</code>. The frames stack up until the base case answers without calling again; then they finish one by one, most recent first. Step through it.</p>`,
         {
@@ -1429,6 +1460,7 @@ def count_down(n):
     count_down(n - 1)
 
 count_down(5)`, caption: 'sum_list gives 14. In count_down, try moving print(n) below the recursive call: the numbers come out in the opposite order, because each print now happens while the frames finish.' },
+        { check: "<code>def sum_list(xs): return xs[0] + sum_list(xs[1:])</code>, with base case <code>if xs == []: return 0</code>. Why 0 and not <code>xs[0]</code>?", options: ["Because the empty list has no xs[0], and 0 is the sum of nothing", "Because recursion always ends with 0", "It makes no difference"], answer: 0, why: "The base case must answer the smallest input correctly: the sum of an empty list is 0, and the empty list has no first item to return." },
         `<details class="reveal"><summary>Predict: why must the base case of <code>sum_list</code> return 0, and not, say, the first item?</summary><p>Every sum eventually adds the sum of the empty list, so that value is added to every answer. Only 0 leaves the answers unchanged. And the empty list has no first item at all: <code>xs[0]</code> would be an <code>IndexError</code>.</p></details>
 <h2>The Tower of Hanoi</h2>
 <p>Back to the priests. To move a tower of <i>n</i> discs from peg A to peg C, using B as the spare: first move the top <i>n</i> − 1 discs from A to B (using C as the spare), then move the biggest disc from A to C, then move the <i>n</i> − 1 discs from B onto it on C (using A). The two smaller moves are the same puzzle with one disc fewer, so the function calls itself twice. The base case: moving zero discs takes no moves at all.</p>`,
@@ -1455,6 +1487,7 @@ for i in range(10):
     print(fib(i), end=" ")
 print()
 print(fib(25))`, caption: 'fib(25) is 75025, but getting there takes over 240,000 calls, because the tree recomputes the same values. fib(30) would take over two and a half million.' },
+        { check: "Why is the plain recursive <code>fib</code> so slow?", options: ["Recursion is always slower than loops", "The same small values are computed again and again, because the calls branch", "Python limits recursion to 1000 calls"], answer: 1, why: "Each call makes two more, and both branches recompute the same sub-problems. Storing each answer in a dictionary (memoisation) removes the repeats." },
         `<p>The cure uses Lesson 9. Keep a dictionary of answers already worked out, and before computing <code>fib(n)</code>, look it up. Each value is then computed only once. This trick is called <em>memoisation</em>, from "memo", a note to yourself.</p>`,
         { play: `memo = {}
 
@@ -1558,6 +1591,7 @@ print(linear_search(data, 7))`, caption: 'Prints 9, the position of 61, then -1.
 data = [2, 5, 8, 12, 16, 23, 38, 42, 56, 61, 72, 79, 85, 91, 97, 104]
 print(binary_search(data, 61))
 print(binary_search(data, 7))`, caption: 'Same answers as linear search, with far fewer comparisons. The // matters: (lo + hi) / 2 would give a decimal, and a list position must be a whole number.' },
+        { check: "Binary search is run on a list that is not sorted. What happens?", options: ["It still finds the item, more slowly", "It can give a wrong answer with no error", "Python raises an error"], answer: 1, why: "Binary search relies on the invariant that the target, if present, lies between lo and hi. On unsorted data that is simply false, and nothing checks it." },
         `<h2>Why halving is a big deal</h2>
 <p>Each comparison at least halves the part still in play. The number of times you can halve <i>n</i> before reaching 1 is about log<sub>2</sub> <i>n</i>, the power you must raise 2 to in order to get <i>n</i>, so binary search needs at most about log<sub>2</sub> <i>n</i> + 1 comparisons. For a phone book of a million names that is 20 comparisons, against up to a million for linear search.</p>
 <details class="reveal"><summary>Predict: how many comparisons does binary search need, at most, for a billion items? And for two billion?</summary><p>About 30, since 2<sup>30</sup> is just over a billion. For two billion, 31: doubling the input adds a <em>single</em> comparison. Linear search on two billion items could take two billion.</p></details>
@@ -1574,6 +1608,7 @@ print(binary_search(data, 7))`, caption: 'Same answers as linear search, with fa
     return xs
 
 print(bubble_sort([7, 3, 9, 1, 6, 8, 2, 5, 4]))`, caption: 'The swap line exchanges two values at once, a Python speciality: both right-hand values are worked out before either is stored.' },
+        { check: "About how many comparisons does binary search need for a million sorted items, at most?", options: ["About 20", "About 1,000", "About 500,000"], answer: 0, why: "Each comparison halves the part still in play, and a million halves to 1 in about 20 steps: 2²⁰ is just over a million." },
         `<p>Count the work exactly. The first sweep makes <i>n</i> − 1 comparisons, the next <i>n</i> − 2, and so on down to 1, which adds up to <i>n</i>(<i>n</i> − 1)/2. That is O(<i>n</i>²). For 10 items it is 45 comparisons, nothing at all. For a million items it is about 500 billion, which even a fast computer needs many minutes for, and Python much longer. Doubling the input quadruples the work.</p>
 <h2>Merge sort: divide and conquer</h2>
 <p>A far better idea uses Lesson 11's recursion. To sort a list, split it in half, sort each half (by calling yourself), and then <em>merge</em> the two sorted halves into one, by repeatedly taking the smaller of the two front items. A list of one item is already sorted: that is the base case.</p>`,
@@ -1604,6 +1639,7 @@ ys = merge_sort(xs, counter)
 print("sorted correctly:", ys == sorted(xs))
 print("merge sort comparisons:", counter[0])
 print("bubble sort would make:", 1000 * 999 // 2)`, caption: 'About 8,700 comparisons against 499,500. The counter is a one-item list so that every call can add to the same count: changing counter[0] changes the one list they all share, as in Lesson 5.' },
+        { check: "Bubble sort on 1,000 items takes about 1 second. Roughly how long on 10,000 items?", options: ["About 10 seconds", "About 100 seconds", "About 1,000 seconds"], answer: 1, why: "Bubble sort is O(n²): ten times the items means a hundred times the comparisons. Merge sort, at n log n, would take about 13 times as long." },
         `<details class="reveal"><summary>Why does merge sort need only about <i>n</i> log<sub>2</sub> <i>n</i> comparisons?</summary><p>Picture the splitting as layers. The top layer is the whole list; the next has two halves; the next, four quarters; and so on down to single items, which takes about log<sub>2</sub> <i>n</i> layers, the number of halvings. At each layer, merging all the pieces makes at most one comparison per item, so at most <i>n</i> per layer. That is about <i>n</i> × log<sub>2</sub> <i>n</i> in all: for a million items, about 20 million comparisons instead of 500 billion.</p></details>
 <p>Python's built-in <code>sorted()</code> uses <em>Timsort</em>, written by Tim Peters for Python in 2002, which is a refined merge sort that also takes advantage of any stretches of the list that are already in order. The lesson is not "never write bubble sort"; it is that the <em>choice of algorithm</em> can matter far more than the speed of the computer. A fast machine running an O(<i>n</i>²) sort loses to a slow machine running an O(<i>n</i> log <i>n</i>) one, once the list is big enough.</p>
 <h2>Before the exercises</h2>
@@ -1683,6 +1719,7 @@ def shift_letter(ch, k):
 print(shift_letter("A", 3), shift_letter("x", 3), shift_letter("!", 3))
 print(shift_letter("D", -3))    # shifting back
 print(-1 % 26)`, caption: 'X shifted by 3 wraps to a: its position is 23, and (23 + 3) % 26 = 0. The last line shows why shifting back works: in Python, -1 % 26 is 25, never a negative number.' },
+        { check: "What is <code>chr(ord(\"A\") + 2)</code>?", options: ["<code>\"A2\"</code>", "<code>\"C\"</code>", "<code>67</code>"], answer: 1, why: "ord gives the code of A, 65; adding 2 gives 67; chr turns 67 back into the character C." },
         `<p>Why does shifting by <i>k</i> and then by −<i>k</i> always give back the original letter? A letter at position <i>p</i> goes to (<i>p</i> + <i>k</i>) mod 26 and then to ((<i>p</i> + <i>k</i>) mod 26 − <i>k</i>) mod 26, which is the same as (<i>p</i> + <i>k</i> − <i>k</i>) mod 26 = <i>p</i>: adding and taking remainders can be done in any order, as the mathematics course proves in its Lesson 4. Python's rule that <code>%</code> never gives a negative answer, when dividing by a positive number, is exactly what makes the negative shift land back inside 0 to 25.</p>
 <details class="reveal"><summary>Predict: what are <code>chr(ord("A") + 1)</code>, <code>shift_letter("Z", 1)</code> and <code>shift_letter("m", 26)</code>?</summary><p><code>"B"</code>; then <code>"A"</code>, since Z is position 25 and (25 + 1) % 26 = 0; then <code>"m"</code> again, because a shift of 26 goes all the way round. So only the shifts 1 to 25 actually change anything.</p></details>
 <h2>Part 2: whole messages</h2>
@@ -1717,6 +1754,7 @@ def decrypt(message, k):
 secret = "Wkh vhfuhw wr jhwwlqj dkhdg lv jhwwlqj vwduwhg."
 for k in range(1, 26):
     print(k, decrypt(secret, k))`, caption: 'All 25 candidates. Your eye finds the English one at once. To break the cipher automatically, the program must do what your eye just did.' },
+        { check: "Why can a Caesar cipher be broken by trying every key?", options: ["Because the alphabet is known", "Because there are only 25 possible shifts", "Because computers are fast"], answer: 1, why: "A shift of 26 is no shift at all, so there are only 25 keys to try, and a reader (or a program) picks the one that gives English." },
         `<p>Trying every key is called a <em>brute-force attack</em>, and the defence against it is simply to have more keys than anyone could try. Modern ciphers have keys with 128 binary digits or more, so there are at least 2<sup>128</sup> of them, about 3 × 10<sup>38</sup>, and trying them all would take every computer on Earth far longer than the age of the universe.</p>
 <h2>Part 4: breaking it by counting</h2>
 <p>Here is al-Kindi's idea. In ordinary English text, the letters do not appear equally often: <code>e</code> is by far the most common, followed by <code>t</code>, <code>a</code>, <code>o</code>, <code>i</code> and <code>n</code>. A Caesar shift moves every letter by the same amount, so it relabels the counts but does not change them. Whatever letter is most common in the ciphertext is probably the disguised <code>e</code>, and the distance from <code>e</code> to it is probably the key. Lesson 9's counting pattern does the work.</p>`,
@@ -1737,6 +1775,7 @@ for letter in sorted(counts):
 
 guess = (ord(best) - ord("e")) % 26
 print("most common letter:", best, "  so the shift is probably", guess)`, caption: 'The letter l towers over the others. If l is the disguised e, the shift is (11 − 4) % 26 = 7. Decrypt with 7 and read the message. (best is None is the test for "nothing chosen yet"; None is Python\u2019s value for "no value".)' },
+        { check: "A ciphertext's most common letter is <code>k</code>. If plain English's most common letter is <code>e</code>, what shift was probably used?", options: ["6", "7", "11"], answer: 0, why: "k is at position 10 and e at position 4; (10 − 4) % 26 = 6. Decrypt with 6 and check that the text reads as English." },
         `<p>On a sentence or two, the single most common letter can mislead. A sturdier method, and the one the second exercise uses, gives each of the 26 candidate decryptions a score for how English it looks, counting how many of its letters are among the commonest in English, <code>etaoinshr</code>, and picks the highest. That combines both attacks: brute force supplies the candidates, and counting chooses between them. It is real cryptanalysis, and on any ordinary sentence it almost never fails.</p>`,
         {
           ex: {

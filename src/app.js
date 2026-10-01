@@ -648,26 +648,87 @@
   }
 
   // ---------- lesson rendering ----------
-  function renderBlocks(blocks, course, lessonIdx) {
-    const frag = document.createDocumentFragment(); let playCount = 0;
+  // A quick check: one question, a few options, instant feedback, nothing saved. { check, options[], answer (index), why }
+  function checkBlock(b) {
+    const box = el('div', { class: 'qc', role: 'group', 'aria-label': 'Quick check' });
+    const why = el('p', { class: 'qc-why', hidden: '' });
+    const opts = el('div', { class: 'qc-opts' });
+    const btns = (b.options || []).map((o, i) => el('button', { class: 'qc-opt', type: 'button', onclick: () => {
+      if (box.classList.contains('done')) return;
+      if (i === b.answer) { box.classList.add('done'); btns[i].classList.add('right'); btns.forEach((x) => { x.disabled = true; }); why.innerHTML = '<b>Yes.</b> ' + (b.why || ''); why.hidden = false; }
+      else { btns[i].classList.add('wrong'); btns[i].disabled = true; why.innerHTML = '<b>Not that one.</b> ' + (b.wrong && b.wrong[i] ? b.wrong[i] : 'Try another.'); why.hidden = false; }
+    } }, el('span', { class: 'qc-letter' }, String.fromCharCode(65 + i)), el('span', { html: o })));
+    opts.append(...btns);
+    box.append(el('p', { class: 'qc-q', html: b.check }), opts, why);
+    return box;
+  }
+  // Each kind of block gets a small label above it, so a reader can see what the next thing is before reading it.
+  const tagged = (label, node, extraClass) => el('div', { class: 'blk' + (extraClass ? ' ' + extraClass : '') }, el('div', { class: 'blk-tag', 'aria-hidden': 'true' }, label), node);
+  const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');   // from textContent: plain text, no tags to strip
+  function renderBlocks(blocks, course, lessonIdx, parts) {
+    const frag = document.createDocumentFragment(); let playCount = 0, exCount = 0, checkCount = 0, firstEx = true, firstProse = true;
+    const part = (id, title, kind) => { if (parts) parts.push({ id, title, kind }); };
     for (const b of blocks) {
-      if (typeof b === 'string') frag.append(el('div', { class: 'prose', html: b }));
-      else if (b.play) { playCount++; frag.append(playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount })); }
-      else if (b.ex) { b.ex.lang = b.ex.lang || course.lang; b.ex.runtime = b.ex.runtime || course.runtime; frag.append(window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex, course) : exerciseBlock(b.ex, course, lessonIdx)); }
+      if (typeof b === 'string') {
+        const d = el('div', { class: 'prose', html: b });
+        if (firstProse) { firstProse = false; const first = d.firstElementChild; if (first && first.tagName === 'P') { d.id = 'part-story'; part('part-story', 'Story', 'story'); } }
+        d.querySelectorAll('h2').forEach((h) => { if (!h.id) h.id = 'sec-' + slug(h.textContent); part(h.id, h.textContent, 'section'); });
+        const recap = d.querySelector('.recap'); if (recap) { recap.id = 'part-recap'; part('part-recap', 'Recap', 'recap'); }
+        frag.append(d);
+      }
+      else if (b.check) { checkCount++; frag.append(tagged('Quick check', checkBlock(b), 'blk-check')); }
+      else if (b.play) { playCount++; frag.append(tagged('Example · run it', playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount }), 'blk-play')); }
+      else if (b.ex) {
+        b.ex.lang = b.ex.lang || course.lang; b.ex.runtime = b.ex.runtime || course.runtime; exCount++;
+        const node = window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex, course) : exerciseBlock(b.ex, course, lessonIdx);
+        const wrap = tagged('Exercise ' + exCount, node, 'blk-ex');
+        if (firstEx) { firstEx = false; wrap.id = 'part-exercises'; part('part-exercises', 'Exercises', 'exercises'); }
+        frag.append(wrap);
+      }
       else if (b.fig) {
         const wrap = el('figure', { class: 'fig' + (b.wide ? ' wide' : '') });
         const mount = el('div', { class: 'fig-mount' });
         wrap.append(mount);
         if (b.caption) wrap.append(el('figcaption', { html: b.caption }));
-        frag.append(wrap);
+        const quiz = b.fig === 'blockquiz';
+        const t = tagged(quiz ? 'Quiz' : 'Interactive · try it', wrap, quiz ? 'blk-quiz' : 'blk-fig');
+        if (quiz) { t.id = 'part-quiz'; part('part-quiz', 'Quiz', 'quiz'); }
+        frag.append(t);
         const W = window.WIDGETS && window.WIDGETS[b.fig];
         if (W) { try { W(mount, b, course); } catch (e) { mount.textContent = 'Figure failed to render: ' + e.message; console.error(e); } }
         else mount.textContent = 'Unknown figure ' + b.fig;
       }
-      else if (b.code) frag.append(el('pre', { class: 'code' + (b.caption ? ' captioned' : '') }, b.caption ? el('span', { class: 'code-cap' }, b.caption) : null, el('code', { html: highlight(b.code, b.lang || course.lang) })));
-      else if (b.aside) frag.append(el('aside', { class: 'aside', html: b.aside }));
+      else if (b.code) frag.append(tagged('Listing', el('pre', { class: 'code' + (b.caption ? ' captioned' : '') }, b.caption ? el('span', { class: 'code-cap' }, b.caption) : null, el('code', { html: highlight(b.code, b.lang || course.lang) })), 'blk-code'));
+      else if (b.aside) frag.append(tagged('Watch out', el('aside', { class: 'aside', html: b.aside }), 'blk-aside'));
     }
+    if (parts) parts.counts = { plays: playCount, checks: checkCount, exercises: exCount, figs: blocks.filter((x) => x.fig && x.fig !== 'blockquiz').length };
     return frag;
+  }
+  // The map of a lesson: its parts in order (story, sections, quiz, exercises, recap) as links, and what it contains.
+  function lessonMap(parts) {
+    const n = parts.counts || {};
+    const bits = [];
+    if (n.plays) bits.push(n.plays + (n.plays === 1 ? ' example' : ' examples'));
+    if (n.figs) bits.push(n.figs + ' interactive');
+    if (n.checks) bits.push(n.checks + ' quick checks');
+    if (n.exercises) bits.push(n.exercises + (n.exercises === 1 ? ' exercise' : ' exercises'));
+    return el('nav', { class: 'lesson-map', 'aria-label': 'Parts of this lesson' },
+      el('ol', {}, parts.map((p) => el('li', { class: 'map-' + p.kind }, el('a', { href: '#' + p.id, onclick: (e) => { e.preventDefault(); const t = document.getElementById(p.id); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, p.title)))),
+      bits.length ? el('p', { class: 'map-counts' }, bits.join(' · ')) : null);
+  }
+  // The "on this page" list in the side column follows the reader: the part in view is marked.
+  function watchParts(parts, listEl) {
+    if (!('IntersectionObserver' in window)) return;
+    const items = new Map(parts.map((p, i) => [p.id, listEl.children[i]]));
+    const seen = new Map();
+    const io = new IntersectionObserver((entries) => {
+      for (const en of entries) seen.set(en.target.id, en.isIntersecting ? en.boundingClientRect.top : null);
+      let best = null;
+      for (const p of parts) { const top = seen.get(p.id); if (top !== null && top !== undefined && (best === null || top < best.top)) best = { id: p.id, top }; }
+      if (!best) { let last = null; for (const p of parts) { const t = document.getElementById(p.id); if (t && t.getBoundingClientRect().top < 80) last = p.id; } best = last ? { id: last } : null; }
+      items.forEach((li, id) => li.classList.toggle('current', !!best && id === best.id));
+    }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+    parts.forEach((p) => { const t = document.getElementById(p.id); if (t) io.observe(t); });
   }
 
   // Ojibwe labels (src/ojibwe.js): the Ojibwe word with its English beside it; plain English if ojibwe.js is absent.
@@ -692,6 +753,7 @@
       else if (b.code) w += words(b.caption);
       else if (b.fig) { w += words(b.caption); t += 2; }
       else if (b.aside) w += words(b.aside);
+      else if (b.check) { w += words(b.check) + words((b.options || []).join(' ')); t += 0.5; }
       else if (b.ex) { w += words(b.ex.title) + words(b.ex.prompt); t += b.ex.kind ? 12 : 10; }
     }
     return Math.round(w / (course.readingWpm || 130) + t);
@@ -814,7 +876,9 @@
     const art = el('article', { class: 'lesson-body' });
     art.append(el('header', { class: 'lesson-head' }, el('p', { class: 'crumb' }, el('a', { href: '#/' + course.id }, course.code), ' · ', lbl('lesson', ' ' + (idx + 1)), devTag(course, true)), el('h1', {}, L.title), el('p', { class: 'lead' }, L.summary),
       (() => { const m = lessonMinutes(course, L); return m > LONG_LESSON ? el('p', { class: 'lesson-time' }, 'This lesson may take longer than an hour: about ' + about5(m) + ' minutes. Plan for two sessions, or leave the exercises for the next one.') : null; })()));
-    art.append(renderBlocks(L.blocks, course, idx));
+    const parts = []; const body = renderBlocks(L.blocks, course, idx, parts);
+    art.append(lessonMap(parts), body);
+    if (parts.length) { const onPage = el('div', { class: 'onpage' }, el('p', { class: 'onpage-head' }, 'On this page'), el('ol', {}, parts.map((p) => el('li', { class: 'map-' + p.kind }, el('a', { href: '#' + p.id, onclick: (e) => { e.preventDefault(); const t = document.getElementById(p.id); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, p.title))))); nav.append(onPage); setTimeout(() => watchParts(parts, onPage.querySelector('ol')), 0); }
     const prev = idx > 0 ? el('a', { class: 'pager prev', href: '#/' + course.id + '/' + idx }, el('span', {}, 'Previous'), course.lessons[idx - 1].title) : el('span');
     const next = idx < course.lessons.length - 1 ? el('a', { class: 'pager next', href: '#/' + course.id + '/' + (idx + 2) }, el('span', {}, 'Next'), course.lessons[idx + 1].title) : el('a', { class: 'pager next', href: '#/' + course.id }, el('span', {}, 'Finished'), 'Back to ' + course.code);
     art.append(el('footer', { class: 'lesson-foot' }, prev, next));

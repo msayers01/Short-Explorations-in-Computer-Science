@@ -173,6 +173,12 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('the call-stack figure piles up frames', (await cs.locator('svg rect').count()) >= 4);
   await goto('#/scratch/4');
   check('a Scratch if-else block renders with an else arm', (await page.locator('.sb-c .sb-row:has-text("else")').count()) >= 1);
+  const qc = page.locator('.qc').first();
+  await qc.locator('.qc-opt').nth(0).click();
+  const qcFirst = await qc.locator('.qc-why').textContent();
+  await qc.locator('.qc-opt').nth(1).click();
+  check('a quick check marks a wrong option and then the right one, with an explanation', /Not that one/.test(qcFirst) && (await qc.locator('.qc-opt.right').count()) === 1 && /Yes\./.test(await qc.locator('.qc-why').textContent()));
+  check('the lesson map lists the parts and the side column follows the page', (await page.locator('.lesson-map li').count()) >= 4 && (await page.locator('.onpage li').count()) >= 4);
   const quiz = page.locator('.bq').first();
   await quiz.locator('.bq-input').fill('if score > 100'); await quiz.locator('button:has-text("Check")').click();
   const quizWrong = await quiz.locator('.bq-msg').textContent();
