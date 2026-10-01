@@ -105,5 +105,26 @@ const e1 = BACKUP.collect(empty, {}); check('empty storage collects to nothing',
 const broken = store({ 'shortcourses.progress.v1': 'not json', 'shortcourses.lab.v1': '[]', 'shortcourses.teach.v1': '"str"' });
 check('broken storage does not throw', Object.keys(BACKUP.collect(broken, { teacher: true }).data).length === 0);
 
+
+// ---- the C++ engine choice: assignments carry "runtime" and the Lab remembers a standard; nothing else gets through
+{
+  const T = window.TEACH;
+  const cppAsg = { id: 'cppasg23', v: 1, title: 'Words', lang: 'cpp', runtime: 'full', text: '', starter: '', tests: [], hints: [], roster: [], author: '', due: '', created: 5 };
+  check('assignment: Full C++ is kept for a C++ assignment', T.normalize(cppAsg).runtime === 'full');
+  check('assignment: no runtime key when the teaching interpreter is meant', !('runtime' in T.normalize(Object.assign({}, cppAsg, { runtime: undefined }))));
+  check('assignment: a runtime on a Python assignment is dropped', !('runtime' in T.normalize(Object.assign({}, cppAsg, { lang: 'python' }))));
+  for (const evil of ['FULL', 'teaching', 1, true, {}, ['full'], '__proto__']) check('assignment: runtime ' + J(evil) + ' is dropped', !('runtime' in T.normalize(Object.assign({}, cppAsg, { runtime: evil }))), T.normalize(Object.assign({}, cppAsg, { runtime: evil })));
+  const copy = T.studentCopy(T.normalize(cppAsg));
+  check('assignment: the student copy carries Full C++', copy.runtime === 'full' && T.toEx(copy, false).runtime === 'full');
+  check('assignment: the teaching interpreter gives an exercise with no runtime', T.toEx(T.normalize(Object.assign({}, cppAsg, { runtime: undefined })), false).runtime === undefined);
+  const labC = Object.assign({}, lab, { fullCpp: true, cppStd: 'gnu++23' });
+  const sc = store(); BACKUP.apply(sc, BACKUP.parse(J({ app: 'short-explorations-backup', v: 1, saved: new Date().toISOString(), data: { lab: labC } })).data, 'replace');
+  check('lab: the engine and the standard survive a backup', sc.dump('shortcourses.lab.v1').fullCpp === true && sc.dump('shortcourses.lab.v1').cppStd === 'gnu++23', sc.dump('shortcourses.lab.v1'));
+  for (const evil of ['gnu++99', 'c++20', 20, {}, null, '-std=gnu++20 -fsomething']) {
+    const sh = store(); BACKUP.apply(sh, BACKUP.parse(J({ app: 'short-explorations-backup', v: 1, saved: new Date().toISOString(), data: { lab: Object.assign({}, lab, { cppStd: evil }) } })).data, 'replace');
+    check('lab: standard ' + J(evil) + ' is dropped', !('cppStd' in sh.dump('shortcourses.lab.v1')), sh.dump('shortcourses.lab.v1'));
+  }
+}
+
 if (bad) { console.log(bad + ' problems'); process.exit(1); }
 console.log('backup OK');

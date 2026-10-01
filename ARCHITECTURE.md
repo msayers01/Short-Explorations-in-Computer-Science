@@ -205,7 +205,7 @@ preferences (`theme`, `classroom`) are deliberately not in the file.
 ## 8. Data that travels in links (`teach.js: pack/unpack`)
 
 `pack(obj)` = JSON → deflate-raw via `CompressionStream` (prefix `z`) or plain (prefix `p`) → base64url.
-Assignment `A`: `{ id, v, title, lang, text, starter, tests[{k:'stdin'|'call', in, expect, hidden}], hints[], roster[], author, due, created }`.
+Assignment `A`: `{ id, v, title, lang, runtime?, text, starter, tests[{k:'stdin'|'call', in, expect, hidden}], hints[], roster[], author, due, created }`. `runtime` is `'full'` (C++ only) when the teacher chose Full C++; it is absent for the teaching interpreter, and `normalize` drops any other value. `toEx` passes it on, so `grade` uses the real compiler, and the Lab fixes the engine for a file of such an assignment.
 Student copy = `A` minus hidden tests. Submission: `{ v, a: id, t: title, name, code, at, check }`.
 Back-up: `{ v, assignments }`. Portfolio (`#/portfolio?p=`, same `pack`): `{ v, name, note, made, tasks,
 items: [{ id, done: timestamp or 0, code }], lab: [{ lang, name, code }] }` — exercise titles, prompts and tests are
@@ -383,6 +383,7 @@ with `runtime: 'full'` (SC 105); an exercise inherits `runtime` from its course 
 - **Grading.** `grade(ex, code, host)` uses `CPPFULL.harness` (`src/cppfull.js`): tests that call a function share one `main()`
   that reads the test's number from the first line of stdin (so a whole exercise is one compile); compile errors are moved back by the
   lines the harness put before the student's code. Exercises of a full course do not mix call tests with whole-program tests.
+- **Standard.** With Full C++ the Lab shows a C++17 / 20 / 23 picker (`S.cppStd`, default `gnu++20`, saved in the Lab state and in back-ups); the worker accepts only `gnu++11`…`gnu++23`. Checks of exercises and assignments always use the default, so a student's choice cannot change a result.
 - **Testing.** `node test_course.js modern` uses the same toolchain in node; it takes about a minute (every compile is real). The browser
   test serves `dist/` from a local web server (the compiler cannot load from `file://`).
 - Updating the compiler: bump `@live-codes/clang-wasm` (exact version), rebuild, run `npm test` and the browser test. Its notices are

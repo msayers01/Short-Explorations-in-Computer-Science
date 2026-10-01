@@ -70,9 +70,10 @@
   // the language is one we run, and every field has the type the rest of the code expects. Returns null if it is not an assignment.
   function normalize(a) {
     if (!a || typeof a !== 'object' || typeof a.id !== 'string' || !ID_RE.test(a.id) || !Object.prototype.hasOwnProperty.call(LANG_LABEL, a.lang)) return null;
-    return { id: a.id, v: 1, title: str(a.title, 200), lang: a.lang, text: str(a.text), starter: str(a.starter, 100000),
+    return Object.assign({ id: a.id, v: 1, title: str(a.title, 200), lang: a.lang, text: str(a.text), starter: str(a.starter, 100000),
       tests: (Array.isArray(a.tests) ? a.tests : []).filter(t => t && typeof t === 'object').slice(0, 200).map(t => ({ k: t.k === 'call' ? 'call' : 'stdin', in: str(t.in, 5000), expect: str(t.expect, 5000), hidden: !!t.hidden })),
-      hints: strs(a.hints), roster: strs(a.roster, 200), author: str(a.author, 200), due: str(a.due, 200), created: Number.isFinite(a.created) ? a.created : Date.now() };
+      hints: strs(a.hints), roster: strs(a.roster, 200), author: str(a.author, 200), due: str(a.due, 200), created: Number.isFinite(a.created) ? a.created : Date.now() },
+      a.lang === 'cpp' && a.runtime === 'full' ? { runtime: 'full' } : {});   // only C++ has a choice of engine; absent means the built-in teaching interpreter
   }
   // The same for a submission link: who, which assignment, the program, and what the student's own check showed.
   function cleanSub(sub) {
@@ -82,10 +83,10 @@
   }
 
   // ---------- assignment model
-  function studentCopy(a) { return { v: 1, id: a.id, title: a.title, lang: a.lang, text: a.text, starter: a.starter, tests: (a.tests || []).filter(t => !t.hidden).map(t => ({ k: t.k, in: t.in, expect: t.expect })), hints: a.hints || [], roster: a.roster || [], author: a.author || '', due: a.due || '', created: a.created }; }
+  function studentCopy(a) { return Object.assign({ v: 1, id: a.id, title: a.title, lang: a.lang, text: a.text, starter: a.starter, tests: (a.tests || []).filter(t => !t.hidden).map(t => ({ k: t.k, in: t.in, expect: t.expect })), hints: a.hints || [], roster: a.roster || [], author: a.author || '', due: a.due || '', created: a.created }, a.lang === 'cpp' && a.runtime === 'full' ? { runtime: 'full' } : {}); }
   function toEx(a, includeHidden) {
     const tests = (a.tests || []).filter(t => includeHidden === 'hidden' ? t.hidden : (includeHidden || !t.hidden)).map(t => t.k === 'call' ? { call: t.in, expect: t.expect } : { stdin: t.in, expect: t.expect, name: t.in ? 'input ' + JSON.stringify(t.in) : 'output' });
-    return { id: 'asg-' + a.id, lang: a.lang, title: a.title, tests, hints: a.hints || [], followup: '' };
+    return { id: 'asg-' + a.id, lang: a.lang, runtime: a.lang === 'cpp' && a.runtime === 'full' ? 'full' : undefined, title: a.title, tests, hints: a.hints || [], followup: '' };
   }
   function textToHtml(t) {   // plain text with paragraphs, `code`, and lines starting with "- " as bullets
     const paras = String(t || '').replace(/\r/g, '').split(/\n{2,}/);
@@ -167,6 +168,11 @@
       const field = (label, input, note) => el('label', { class: 'teach-field' }, el('span', { class: 'teach-label' }, label), input, note ? el('span', { class: 'muted small' }, note) : null);
       f.title = el('input', { class: 'find-inp wide', value: a.title, placeholder: 'e.g. Leap years' });
       f.lang = el('select', { class: 'teach-select' }, Object.keys(LANG_LABEL).map(l => { const o = el('option', { value: l }, LANG_LABEL[l]); if (l === a.lang) o.selected = true; return o; }));
+      f.runtime = el('select', { class: 'teach-select' }, el('option', { value: '' }, 'Teaching interpreter (built in, works offline)'), el('option', { value: 'full' }, 'Full C++ (real compiler, downloaded once)'));
+      f.runtime.value = a.runtime === 'full' ? 'full' : '';
+      const runtimeField = field('C++ engine', f.runtime, 'Full C++ has strings, vectors, classes and the whole library; students and you download about 28 MB the first time, and it needs the site opened from a web address.');
+      const showRuntime = () => { runtimeField.style.display = f.lang.value === 'cpp' ? '' : 'none'; };
+      f.lang.addEventListener('change', showRuntime); showRuntime();
       f.author = el('input', { class: 'find-inp', value: a.author, placeholder: 'shown to students' });
       f.due = el('input', { class: 'find-inp', value: a.due, placeholder: 'e.g. Friday 10 October' });
       f.text = el('textarea', { class: 'teach-ta', rows: 6, placeholder: 'What the student must do. Blank lines make paragraphs, `backticks` make code, lines starting with "- " make a list.' }); f.text.value = a.text;
@@ -188,15 +194,15 @@
       (a.tests || []).forEach(addRow); if (!a.tests || !a.tests.length) addRow();
       const testsTable = el('table', { class: 'teach-table tests' }, el('thead', {}, el('tr', {}, el('th', {}, 'Kind'), el('th', {}, 'Input given / expression called'), el('th', {}, 'Expected output / value'), el('th', {}, 'Hidden'), el('th', {}, ''))), testsBody);
       const collect = () => ({
-        id: a.id, v: 1, title: f.title.value.trim(), lang: f.lang.value, text: f.text.value, starter: f.starter.value, author: f.author.value.trim(), due: f.due.value.trim(), created: a.created,
+        id: a.id, v: 1, title: f.title.value.trim(), lang: f.lang.value, runtime: f.lang.value === 'cpp' && f.runtime.value === 'full' ? 'full' : undefined, text: f.text.value, starter: f.starter.value, author: f.author.value.trim(), due: f.due.value.trim(), created: a.created,
         hints: f.hints.value.split('\n').map(s => s.trim()).filter(Boolean), roster: f.roster.value.split('\n').map(s => s.trim()).filter(Boolean),
         tests: rows.map(r => ({ k: r.kind.value, in: r.inp.value.replace(/\r/g, ''), expect: r.exp.value.replace(/\r/g, ''), hidden: r.hid.checked })).filter(t => t.in !== '' || t.expect !== '')
       });
       const tryOut = el('div', { class: 'verdict', hidden: '', role: 'status' });
       const saveBtn = el('button', { class: 'btn primary', onclick: () => { const na = collect(); if (!na.title) { f.title.focus(); ctx.status('give the assignment a title'); return; } T.assignments[a.id] = na; T.name = na.author; save(); ctx.status('saved'); shareAssignment(a.id); } }, 'Save');
-      const tryBtn = el('button', { class: 'btn', title: 'Run these tests on the code in the editor (write your own solution there first)', onclick: async () => { const na = collect(); tryOut.hidden = false; tryOut.innerHTML = ''; const r = await ctx.grade(toEx(na, true), ctx.editor.value); ctx.renderVerdict(tryOut, r, toEx(na, true), 1); } }, 'Run tests on the editor code');
+      const tryBtn = el('button', { class: 'btn', title: 'Run these tests on the code in the editor (write your own solution there first)', onclick: async () => { const na = collect(); tryOut.hidden = false; tryOut.innerHTML = ''; const r = await ctx.grade(toEx(na, true), ctx.editor.value, tryOut); ctx.renderVerdict(tryOut, r, toEx(na, true), 1); } }, 'Run tests on the editor code');
       panel.append(el('div', { class: 'panel-head' }, el('b', {}, id ? 'Edit assignment' : 'New assignment'), el('span', { class: 'spacer' }), el('button', { class: 'btn quiet tiny', onclick: showList }, 'Back to the list')),
-        el('div', { class: 'teach-grid' }, field('Title', f.title), field('Language', f.lang), field('Teacher', f.author), field('Due', f.due)),
+        el('div', { class: 'teach-grid' }, field('Title', f.title), field('Language', f.lang), field('Teacher', f.author), field('Due', f.due)), runtimeField,
         field('Instructions', f.text),
         field('Starter code', f.starter, ''), el('div', { class: 'toolbar' }, el('button', { class: 'btn quiet tiny', onclick: () => { f.starter.value = ctx.editor.value; } }, 'Use the editor code as the starter'), el('button', { class: 'btn quiet tiny', onclick: () => { ctx.editor.value = f.starter.value; } }, 'Put the starter in the editor')),
         el('div', { class: 'teach-field' }, el('span', { class: 'teach-label' }, 'Tests'), el('span', { class: 'muted small' }, 'Input → output: the program is run with the input (one value per line) and must print exactly the output. Call → value: for a function the student writes, e.g. is_leap(2024) → True (Python shows strings in quotes: \'yes\'). Hidden tests are never sent to students; they run only when you review a submission.')),
@@ -214,6 +220,9 @@
         el('div', { class: 'toolbar' }, el('a', { class: 'btn quiet tiny', href: link }, 'Preview as a student')));
     }
 
+    // which engine the assignment of a file needs ('full' or '')
+    ui.assignmentRuntime = (file) => { const a = file && file.asg && (T.received[file.asg] || T.assignments[file.asg]); return a && a.runtime === 'full' ? 'full' : ''; };
+
     // ----- student side: a file that belongs to an assignment
     ui.assignmentBar = (file) => {
       const a = file.asg && T.received[file.asg]; if (!a) return null;
@@ -223,7 +232,7 @@
       instr.hidden = !!file.asgSeen;
       const verdict = el('div', { class: 'verdict', hidden: '', role: 'status' }); let attempts = 0, hintIdx = 0;
       const hintBox = el('div', { class: 'hints' });
-      const check = el('button', { class: 'btn primary', onclick: async () => { if (!ex.tests.length) { verdict.hidden = false; verdict.className = 'verdict'; verdict.textContent = 'This assignment has no visible tests; run your program and read the task carefully, then submit.'; return; } check.disabled = true; attempts++; verdict.hidden = false; verdict.innerHTML = ''; const r = await ctx.grade(ex, ctx.editor.value); ctx.renderVerdict(verdict, r, ex, attempts); file.lastCheck = { passed: r.results ? r.results.filter(x => x.ok).length : 0, total: r.results ? r.results.length : 0, at: Date.now() }; ctx.save(); check.disabled = false; } }, 'Check');
+      const check = el('button', { class: 'btn primary', onclick: async () => { if (!ex.tests.length) { verdict.hidden = false; verdict.className = 'verdict'; verdict.textContent = 'This assignment has no visible tests; run your program and read the task carefully, then submit.'; return; } check.disabled = true; attempts++; verdict.hidden = false; verdict.innerHTML = ''; const r = await ctx.grade(ex, ctx.editor.value, verdict); ctx.renderVerdict(verdict, r, ex, attempts); file.lastCheck = { passed: r.results ? r.results.filter(x => x.ok).length : 0, total: r.results ? r.results.length : 0, at: Date.now() }; ctx.save(); check.disabled = false; } }, 'Check');
       const hintBtn = el('button', { class: 'btn quiet', onclick: () => { if (hintIdx < a.hints.length) hintBox.append(el('p', { class: 'hint' }, el('b', {}, 'Hint ' + (hintIdx + 1) + '. '), a.hints[hintIdx++])); hintBtn.textContent = hintIdx < a.hints.length ? 'Hint (' + (a.hints.length - hintIdx) + ' left)' : 'No more hints'; hintBtn.disabled = hintIdx >= a.hints.length; } }, a.hints.length ? 'Hint (' + a.hints.length + ')' : 'No hints');
       if (!a.hints.length) hintBtn.disabled = true;
       const submitBox = el('div', { class: 'submit-box', hidden: '' });
@@ -245,7 +254,7 @@
         submitBox.append(el('div', { class: 'toolbar' }, el('span', { class: 'small' }, 'Name:'), nameInp, make), outBox);
       }
       bar.append(
-        el('div', { class: 'ex-bar-text' }, el('span', { class: 'ex-label' }, 'Assignment'), ' ', el('b', {}, a.title), el('span', { class: 'ex-bar-where' }, (a.author ? ' · ' + a.author : '') + (a.due ? ' · due ' + a.due : '') + ' · ' + ex.tests.length + ' visible test' + (ex.tests.length === 1 ? '' : 's'))),
+        el('div', { class: 'ex-bar-text' }, el('span', { class: 'ex-label' }, 'Assignment'), ' ', el('b', {}, a.title), el('span', { class: 'ex-bar-where' }, (a.author ? ' · ' + a.author : '') + (a.due ? ' · due ' + a.due : '') + (a.runtime === 'full' ? ' · Full C++' : '') + ' · ' + ex.tests.length + ' visible test' + (ex.tests.length === 1 ? '' : 's'))),
         el('div', { class: 'toolbar' }, check, submitBtn, el('button', { class: 'btn quiet', onclick: () => { instr.hidden = !instr.hidden; file.asgSeen = true; ctx.save(); } }, 'Task'), hintBtn, el('button', { class: 'btn quiet', title: 'Put the starter code back', onclick: (e) => ctx.armConfirm(e.currentTarget, 'Replace your code with the starter?', () => { ctx.editor.value = a.starter; }) }, 'Reset to starter')),
         instr, verdict, hintBox, submitBox);
       file.asgSeen = true; ctx.save();
@@ -296,8 +305,8 @@
       // Visible and hidden tests are graded separately: a grader may return its results in a different order from the tests.
       const vex = toEx(a, false), hex = toEx(a, 'hidden');
       if (!vex.tests.length && !hex.tests.length) return { passed: 0, total: 0, hiddenPassed: 0, hiddenTotal: 0, results: [], error: null };
-      const vr = vex.tests.length ? await ctx.grade(vex, code) : { results: [] };
-      const hr = hex.tests.length ? await ctx.grade(hex, code) : { results: [] };
+      const vr = vex.tests.length ? await ctx.grade(vex, code, panel) : { results: [] };
+      const hr = hex.tests.length ? await ctx.grade(hex, code, panel) : { results: [] };
       const vres = vr.results || [], hres = hr.results || [];
       const res = vres.concat(hres);
       const total = vex.tests.length + hex.tests.length;   // tests that could not run (syntax error...) still count

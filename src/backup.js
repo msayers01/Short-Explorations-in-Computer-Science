@@ -60,6 +60,7 @@
     if (!isObj(l)) return null;
     const out = { lang: LANGS.includes(l.lang) ? l.lang : 'python', files: {}, active: {}, fontSize: l.fontSize === undefined ? 15 : fin(l.fontSize, 11, 24) || 15, wrap: !!l.wrap, panels: {} };
     if (l.fullCpp === true) out.fullCpp = true;
+    if (['gnu++17', 'gnu++20', 'gnu++23'].includes(l.cppStd) && l.cppStd !== 'gnu++20') out.cppStd = l.cppStd;
     for (const lang of LANGS) {
       const files = (isObj(l.files) && Array.isArray(l.files[lang]) ? l.files[lang] : []).slice(0, 200).map(cleanLabFile).filter(Boolean);
       out.files[lang] = files;
@@ -162,6 +163,7 @@
   function mergeLab(mine, theirs) {
     const out = { lang: mine.lang, files: {}, active: Object.assign({}, mine.active), fontSize: mine.fontSize, wrap: mine.wrap, panels: Object.assign({}, theirs.panels, mine.panels) };
     if (mine.fullCpp) out.fullCpp = true;
+    if (mine.cppStd) out.cppStd = mine.cppStd;
     for (const lang of LANGS) {
       const files = mine.files[lang].map((f) => Object.assign({}, f));
       for (const f of theirs.files[lang]) {
