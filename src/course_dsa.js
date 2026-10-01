@@ -1,12 +1,12 @@
 // Lesson content, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
 // Data Structures and Algorithms, in Java, on the site's own interpreter (src/java.js). Every structure and algorithm is shown three ways:
-// an interactive figure to step through (src/widgets.js: growth, arrayops, dynarray, search, sortlab, mergeviz, partition, linkedlist), code to write, and a cost to count.
+// an interactive figure to step through (src/widgets.js: growth, arrayops, dynarray, search, sortlab, mergeviz, partition, linkedlist, stackqueue, callstack), code to write, and a cost to count.
 window.COURSES = window.COURSES || [];
 window.COURSES.push({
   id: 'dsa', code: 'SC 107', short: 'DSA', lang: 'java', status: 'developing',
   title: 'Data Structures and Algorithms',
   grades: 'Grades 11–12 · after Java, or C++ with the Java primer',
-  audience: `<p><b>Grades 11–12</b>, after <em>Introduction to Java</em> (SC 106) or after <em>Introduction to C++</em> and lesson 1 of SC 106. This is the course that every computer science degree puts second: how data is arranged in memory, what each arrangement makes cheap and what it makes expensive, and how to tell, before running anything, how a program's running time will grow with its input. It is the material of technical interviews, of the second AP exam's hardest questions, and of every system that has to stay fast as it grows.</p><p>The code is Java, but every idea transfers unchanged to any language. Each lesson has interactive figures you can step through, code you write, and costs you count. The course is being written: the first five lessons are here.</p>`,
+  audience: `<p><b>Grades 11–12</b>, after <em>Introduction to Java</em> (SC 106) or after <em>Introduction to C++</em> and lesson 1 of SC 106. This is the course that every computer science degree puts second: how data is arranged in memory, what each arrangement makes cheap and what it makes expensive, and how to tell, before running anything, how a program's running time will grow with its input. It is the material of technical interviews, of the second AP exam's hardest questions, and of every system that has to stay fast as it grows.</p><p>The code is Java, but every idea transfers unchanged to any language. Each lesson has interactive figures you can step through, code you write, and costs you count. The course is being written: the first seven lessons are here.</p>`,
   tagline: 'How data is arranged, what each arrangement costs, and how to know before you run it: arrays, searching, sorting, and the measure of growth.',
   description: `<p>Two programs can give the same answer and differ in running time by a factor of a billion. The difference is rarely the computer, the language or how neatly the code is written. It is the <em>arrangement</em> of the data and the <em>method</em> that works on it: a data structure and an algorithm. Choosing them is the part of programming that separates a program that works on the test file from one that still works when the file is a million times bigger.</p>
 <p>This course teaches the classical structures (arrays, lists, stacks, queues, hash tables, trees, graphs) and the classical algorithms on them (searching, sorting, traversal), and, more than any one of them, the habit of asking <em>how does the cost grow?</em> and the tools to answer it. Everything is shown three ways: as a picture you can step through one operation at a time, as Java code you write and check, and as a count of steps you can predict and then measure.</p>
@@ -18,6 +18,8 @@ window.COURSES.push({
     'Write selection and insertion sort, count their comparisons and moves, and say when each is the right choice',
     'Write merge sort and quicksort, explain why halving gives n log n, and say what each one guarantees and what it risks',
     'Build a linked list from nodes, give the cost of each operation, and say when it beats an array (rarely) and why it still matters',
+    'Implement a stack and a ring-buffer queue in O(1) per operation, and know what each is for',
+    'Write a recursive method with a sound base case, trace its call stack, and know when a memo or a loop is needed instead',
     'Predict a running time from a doubling experiment, and check a prediction by measuring',
     'Choose a structure for a task by the operations the task needs most'
   ],
@@ -1149,6 +1151,498 @@ public class Main {
 <li>To remove a node you must hold the one before it; to reverse you need three references, prev, cur and after, and must save <code>after</code> before turning the arrow.</li>
 <li>On modern hardware the array's contiguity wins most races; <code>ArrayList</code> is the default and <code>LinkedList</code> the exception, used for queues and deques.</li>
 <li>The node-and-reference idea is the atom of trees, hash chains and graphs: this lesson is the first time you follow a reference until <code>null</code>, not the last.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      title: 'Stacks and queues', summary: 'Two structures defined by what they refuse to do: the stack, where the last thing in is the first out, and the queue, where the first in is the first out; both in an array, the queue as a ring; what each is for; and the library classes that implement them.',
+      blocks: [
+        `<p>In 1955 two mathematicians in Munich, Friedrich Bauer and Klaus Samelson, were designing a machine that could work out an algebraic formula typed in the ordinary way, with brackets and with multiplication done before addition. The difficulty is that when the machine reads <code>3 + 4 ×</code> it cannot yet do the plus: it has to put the plus aside, wait for the multiplication, and come back. Their answer was a store they called the <em>Keller</em>, the cellar: things go in at the top, and whatever went in last comes out first. The plus goes into the cellar, the times goes in on top of it, the times comes out and is done, then the plus. They patented the idea in 1957. We call the cellar a stack, and every compiler, every calculator and every running program has one.</p>
+<p>A stack is the first structure in this course that is defined not by how it is stored but by what it <em>refuses</em> to do. You may only add at the top and only remove from the top. Its twin, the queue, refuses differently: add at the back, remove from the front. Those refusals are the point. A structure that can do less is easier to reason about, and can be made faster, because it only has to be good at a few things.</p>
+<h2>The stack</h2>
+<div class="stmt"><p><span class="kind">Stack.</span> A collection with four operations: <code>push(x)</code> adds <code>x</code> at the top; <code>pop()</code> removes and returns the top item; <code>peek()</code> returns it without removing it; <code>isEmpty()</code>. The last item pushed is the first popped: <em>LIFO</em>, last in, first out.</p>
+<p><span class="kind">Cost.</span> Every operation is O(1). That is the contract; an implementation that cannot keep it is not a stack worth having.</p></div>
+<p>An array and one integer are enough. The integer, <code>top</code>, is the number of items, which is also the index the next push writes to. Push writes and increments; pop decrements and reads. Nothing is ever shifted. When the array fills, double it, exactly as the growing array of lesson 1 did, and the cost stays O(1) on average.</p>`,
+        { fig: 'stackqueue', kind: 'stack', caption: 'Eight cells and a top index. Push a few values, pop some, push again: the cells below top are the stack, the cells above it are garbage that nobody reads. Fill it to see what a growing stack would do.' },
+        { play: `import java.util.Arrays;
+
+class ArrayStack {
+    private int[] cells = new int[4];
+    private int top = 0;                        // number of items; also where the next push goes
+
+    boolean isEmpty() { return top == 0; }
+    int size() { return top; }
+
+    void push(int x) {
+        if (top == cells.length) cells = Arrays.copyOf(cells, cells.length * 2);   // full: double
+        cells[top] = x;
+        top++;
+    }
+
+    int pop() {
+        if (top == 0) throw new IllegalStateException("pop from an empty stack");
+        top--;
+        return cells[top];
+    }
+
+    int peek() {
+        if (top == 0) throw new IllegalStateException("peek at an empty stack");
+        return cells[top - 1];
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        ArrayStack s = new ArrayStack();
+        for (int i = 1; i <= 6; i++) s.push(i * 10);          // 10 20 30 40 50 60: the array doubled at the fifth push
+        System.out.println("size " + s.size() + ", top " + s.peek());
+        System.out.print("popped:");
+        while (!s.isEmpty()) System.out.print(" " + s.pop());
+        System.out.println();
+        try { s.pop(); } catch (IllegalStateException e) { System.out.println("then: " + e.getMessage()); }
+    }
+}`, caption: 'The values come out in reverse order: that is the whole behaviour of a stack. Arrays.copyOf makes the bigger array and copies the old one in. Pop does not clear the cell; it just moves top, and the next push overwrites it.' },
+        `<h2>What stacks are for</h2>
+<p>Anything that nests, and anything you undo. Brackets nest: an opening bracket is pushed, and a closing bracket must match the most recent opening one, which is exactly the one on top. Undo in an editor is a stack of changes; the most recent is undone first. A web browser's Back button is a stack of pages. And the method calls of a running program nest: a method that calls another must wait for it to finish, so the calls form a stack, and the next lesson is about what happens when a method calls itself.</p>`,
+        { play: `import java.util.ArrayDeque;
+
+public class Main {
+    // true if every bracket closes the most recent open one of the same kind
+    static boolean balanced(String s) {
+        ArrayDeque<Character> open = new ArrayDeque<>();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '(' || c == '[' || c == '{') open.push(c);
+            else if (c == ')' || c == ']' || c == '}') {
+                if (open.isEmpty()) return false;                 // nothing to close
+                char o = open.pop();
+                if ((c == ')' && o != '(') || (c == ']' && o != '[') || (c == '}' && o != '{')) return false;
+            }
+        }
+        return open.isEmpty();                                     // anything still open was never closed
+    }
+
+    public static void main(String[] args) {
+        String[] tests = {"(a + b) * [c]", "{[()()]}", "(]", "((a)", "a + b)", "", "f(g(x), h[y]) {}"};
+        for (String t : tests) System.out.println(balanced(t) + "   " + t);
+    }
+}`, caption: 'The library’s stack is ArrayDeque, with push, pop, peek and isEmpty. (Java also has a class called Stack, from 1995; its own documentation tells you to use ArrayDeque instead.) The three ways to fail are the three ways brackets go wrong: a closer with nothing open, a closer of the wrong kind, and an opener never closed.' },
+        `<p>Bauer and Samelson's cellar did arithmetic, and so can yours. Write the formula with each operator <em>after</em> its two operands, which is called postfix or reverse Polish notation: <code>3 4 2 * +</code> means 3 + (4 × 2). Then no brackets are needed and one stack evaluates it: push numbers; on an operator, pop two, apply, push the result.</p>`,
+        { play: `import java.util.ArrayDeque;
+
+public class Main {
+    static int evalPostfix(String expr) {
+        ArrayDeque<Integer> st = new ArrayDeque<>();
+        for (String tok : expr.split(" ")) {
+            if (tok.equals("+") || tok.equals("-") || tok.equals("*") || tok.equals("/")) {
+                int b = st.pop(), a = st.pop();                   // b was pushed last: it is the right operand
+                if (tok.equals("+")) st.push(a + b);
+                else if (tok.equals("-")) st.push(a - b);
+                else if (tok.equals("*")) st.push(a * b);
+                else st.push(a / b);
+            } else st.push(Integer.parseInt(tok));
+        }
+        return st.pop();
+    }
+
+    public static void main(String[] args) {
+        System.out.println(evalPostfix("3 4 2 * +"));          // 3 + 4 * 2
+        System.out.println(evalPostfix("3 4 + 2 *"));          // (3 + 4) * 2
+        System.out.println(evalPostfix("10 2 8 * + 3 -"));     // 10 + 2 * 8 - 3
+        System.out.println(evalPostfix("100 5 / 4 /"));        // 100 / 5 / 4
+    }
+}`, caption: 'Four formulas, no brackets, one stack. The order of the two pops matters for − and /: the top of the stack is the right-hand operand. Turning ordinary notation into postfix is itself done with a stack (Dijkstra’s shunting-yard algorithm, 1961), which is how a compiler reads 3 + 4 * 2.' },
+        `<h2>The queue</h2>
+<div class="stmt"><p><span class="kind">Queue.</span> A collection with <code>enqueue(x)</code> (add at the back), <code>dequeue()</code> (remove and return the front), <code>peek()</code> and <code>isEmpty()</code>. The first item in is the first out: <em>FIFO</em>. Java's <code>Queue</code> interface calls them <code>offer</code>, <code>poll</code> and <code>peek</code>.</p>
+<p><span class="kind">Cost.</span> O(1) for every operation. Again, the contract.</p></div>
+<p>A queue in an array is harder than a stack, and the difficulty is instructive. If the front is always cell 0, then dequeue must shift every remaining item left: O(n), which breaks the contract. The fix is to let the front move. Keep two indices, <code>head</code> for the front and <code>tail</code> for the next free cell at the back, and let both walk rightwards. When one reaches the end of the array it wraps round to cell 0, because the cells at the start have been freed by earlier dequeues. The array is used as a <em>ring</em>.</p>`,
+        { fig: 'stackqueue', kind: 'queue', caption: 'Enqueue five, dequeue three, enqueue five more: tail wraps round to the cells that head has left behind. The items in order are from head, going round, to tail. Nothing is ever shifted.' },
+        { play: `class RingQueue {
+    private int[] cells = new int[4];
+    private int head = 0, tail = 0, count = 0;
+
+    int size() { return count; }
+    boolean isEmpty() { return count == 0; }
+
+    void enqueue(int x) {
+        if (count == cells.length) grow();
+        cells[tail] = x;
+        tail = (tail + 1) % cells.length;      // the % is the wrap-round
+        count++;
+    }
+
+    int dequeue() {
+        if (count == 0) throw new IllegalStateException("dequeue from an empty queue");
+        int x = cells[head];
+        head = (head + 1) % cells.length;
+        count--;
+        return x;
+    }
+
+    private void grow() {
+        int[] bigger = new int[cells.length * 2];
+        for (int i = 0; i < count; i++) bigger[i] = cells[(head + i) % cells.length];   // copy in queue order, unwrapping
+        cells = bigger;
+        head = 0;
+        tail = count;
+    }
+
+    public String toString() {
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < count; i++) sb.append(i > 0 ? ", " : "").append(cells[(head + i) % cells.length]);
+        return sb.append("]").toString();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        RingQueue q = new RingQueue();
+        q.enqueue(1); q.enqueue(2); q.enqueue(3);
+        System.out.println(q + "  served " + q.dequeue() + ", " + q.dequeue());
+        q.enqueue(4); q.enqueue(5);                  // tail wraps: 4 goes in cell 3, 5 in cell 0
+        System.out.println(q + "  size " + q.size());
+        q.enqueue(6); q.enqueue(7);                  // full at 4: grows to 8, unwrapping as it copies
+        System.out.println(q + "  size " + q.size());
+        while (!q.isEmpty()) System.out.print(q.dequeue() + " ");
+        System.out.println();
+    }
+}`, caption: 'The values come out in the order they went in, through two wrap-rounds and one growth. The grow method is the subtle part: it must copy from head, going round, so that the new array holds the queue in order starting at 0.' },
+        `<h2>What queues are for</h2>
+<p>Anything served in order of arrival: print jobs, requests to a server, messages between parts of a program, the frames of a video waiting to be shown. And one algorithm this course will meet twice: breadth-first search, which explores a graph level by level by keeping the frontier in a queue (lesson 11). The library's queue is <code>ArrayDeque</code> again, used from the other end, or <code>LinkedList</code>, which also implements <code>Queue</code>.</p>`,
+        { play: `import java.util.ArrayDeque;
+import java.util.Queue;
+
+public class Main {
+    public static void main(String[] args) {
+        // Josephus: n children in a circle pass a potato; every k-th pass, the holder is out. Who is left?
+        int n = 7, k = 3;
+        Queue<Integer> circle = new ArrayDeque<>();
+        for (int i = 1; i <= n; i++) circle.offer(i);
+        while (circle.size() > 1) {
+            for (int pass = 1; pass < k; pass++) circle.offer(circle.poll());   // pass the potato: front goes to the back
+            System.out.print("out: " + circle.poll() + "  ");
+        }
+        System.out.println();
+        System.out.println("left: " + circle.peek());
+
+        ArrayDeque<String> both = new ArrayDeque<>();        // a deque works at both ends
+        both.addLast("b"); both.addLast("c"); both.addFirst("a");
+        System.out.println(both + " " + both.pollFirst() + " " + both.pollLast() + " " + both);
+    }
+}`, caption: 'A queue models a circle: moving the front to the back is one pass. ArrayDeque is a double-ended queue, a deque: addFirst/addLast and pollFirst/pollLast, all O(1), in one ring buffer. Used from one end it is a stack, from the other a queue.' },
+        `<h2>Choosing</h2>
+<table class="growth-table"><thead><tr><th></th><th>Stack</th><th>Queue</th></tr></thead><tbody>
+<tr><td>Order out</td><td>reverse of order in (LIFO)</td><td>same as order in (FIFO)</td></tr>
+<tr><td>Storage</td><td>array + top</td><td>ring buffer: array + head + tail, or a linked list with a tail reference</td></tr>
+<tr><td>All operations</td><td>O(1)</td><td>O(1)</td></tr>
+<tr><td>Typical uses</td><td>brackets, undo, expression evaluation, the call stack, depth-first search</td><td>jobs and requests, simulations, breadth-first search</td></tr>
+<tr><td>In Java</td><td><code>ArrayDeque</code>: push, pop, peek</td><td><code>ArrayDeque</code> or <code>LinkedList</code> as <code>Queue</code>: offer, poll, peek</td></tr>
+</tbody></table>
+<details class="reveal"><summary>Puzzle: you have two stacks and nothing else. How do you make a queue? What does each operation cost?</summary><p>Enqueue pushes onto stack A. Dequeue pops from stack B; if B is empty, first pop everything from A and push it onto B, which reverses it, so B's top is the oldest item. Enqueue is O(1). A single dequeue can cost O(n), but each item is moved from A to B only once in its life, so n operations cost O(n) in total: O(1) <em>amortised</em>, the same accounting as the growing array. This is a real technique, used where only stacks are cheap.</p></details>`,
+        { aside: `<p><b>Common mistakes in this lesson.</b> Reading <code>cells[top]</code> for peek: the top item is at <code>top − 1</code>. Forgetting the <code>%</code> in the ring queue, so tail runs off the end of the array. Testing "full" with <code>head == tail</code>, which is also what "empty" looks like; keep a count. Growing a ring queue by copying cells 0 to n − 1, which copies the wrong cells when the queue has wrapped. Using <code>java.util.Stack</code> because the name is right. Calling <code>pop</code> on an empty <code>ArrayDeque</code>, which throws <code>NoSuchElementException</code>; test <code>isEmpty</code> first.</p>` },
+        {
+          ex: {
+            id: 'ds-6-1', title: 'A stack in an array',
+            prompt: `<p>Complete the class <code>IntStack</code>: an array of <code>int</code> that starts with 2 cells and doubles when full, with <code>push</code>, <code>pop</code>, <code>peek</code>, <code>size</code> and <code>isEmpty</code>. <code>pop</code> and <code>peek</code> on an empty stack throw <code>IllegalStateException</code> with the message <code>empty stack</code>. Write only the class; the checker supplies <code>main</code>.</p>`,
+            classes: true,
+            prelude: 'import java.util.Arrays;',
+            starter: `class IntStack {\n    private int[] cells = new int[2];\n    private int top = 0;\n\n    int size() { return top; }\n    boolean isEmpty() { return top == 0; }\n\n    void push(int x) {\n        // double the array if full, then write at top and move top up\n    }\n\n    int pop() {\n        // throw if empty; move top down; return the cell\n        return 0;\n    }\n\n    int peek() {\n        // throw if empty; return the top item without removing it\n        return 0;\n    }\n}`,
+            solution: `class IntStack {\n    private int[] cells = new int[2];\n    private int top = 0;\n\n    int size() { return top; }\n    boolean isEmpty() { return top == 0; }\n\n    void push(int x) {\n        if (top == cells.length) cells = Arrays.copyOf(cells, cells.length * 2);\n        cells[top] = x;\n        top++;\n    }\n\n    int pop() {\n        if (top == 0) throw new IllegalStateException("empty stack");\n        top--;\n        return cells[top];\n    }\n\n    int peek() {\n        if (top == 0) throw new IllegalStateException("empty stack");\n        return cells[top - 1];\n    }\n}`,
+            mustNotContain: [{ re: /ArrayDeque|ArrayList|LinkedList|java\.util\.Stack/, msg: 'Build the stack on a plain int array; the library classes are what you are learning to write.' }],
+            hints: ['push: if (top == cells.length) cells = Arrays.copyOf(cells, cells.length * 2); then cells[top] = x; top++;', 'pop: check top == 0 first, then top--; return cells[top]; peek returns cells[top - 1].'],
+            tests: [
+              { name: 'push and pop reverse the order', main: '        IntStack s = new IntStack();\n        for (int i = 1; i <= 5; i++) s.push(i);\n        StringBuilder sb = new StringBuilder();\n        while (!s.isEmpty()) sb.append(s.pop()).append(" ");\n        System.out.println(sb.toString().trim());', expect: '5 4 3 2 1' },
+              { name: 'peek does not remove', main: '        IntStack s = new IntStack();\n        s.push(7); s.push(9);\n        System.out.println(s.peek() + " " + s.peek() + " " + s.size());', expect: '9 9 2' },
+              { name: 'grows past 2, 4, 8 cells', main: '        IntStack s = new IntStack();\n        for (int i = 0; i < 1000; i++) s.push(i * i);\n        System.out.println(s.size() + " " + s.peek() + " " + s.pop() + " " + s.pop() + " " + s.size());', expect: '1000 998001 998001 996004 998' },
+              { name: 'empty stack throws', main: '        IntStack s = new IntStack();\n        try { s.pop(); } catch (IllegalStateException e) { System.out.println("pop: " + e.getMessage()); }\n        try { s.peek(); } catch (IllegalStateException e) { System.out.println("peek: " + e.getMessage()); }\n        s.push(1); s.pop();\n        try { s.pop(); } catch (IllegalStateException e) { System.out.println("again: " + e.getMessage()); }', expect: 'pop: empty stack\npeek: empty stack\nagain: empty stack' },
+              { name: 'interleaved pushes and pops', main: '        IntStack s = new IntStack();\n        s.push(1); s.push(2); int a = s.pop(); s.push(3); s.push(4); int b = s.pop(); int c = s.pop(); s.push(5);\n        System.out.println(a + " " + b + " " + c + " " + s.pop() + " " + s.pop() + " " + s.isEmpty());', expect: '2 4 3 5 1 true' }
+            ],
+            failTip: 'ArrayIndexOutOfBounds on the third push means the array did not grow. If peek returns the wrong value, it is reading cells[top] instead of cells[top − 1].'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-6-2', title: 'Balanced brackets, strictly',
+            prompt: `<p>Write</p><pre class="code">static int firstError(String s)</pre><p>that scans <code>s</code> for the brackets <code>( ) [ ] { }</code> (other characters are ignored) and returns the index of the first character where the brackets go wrong: a closing bracket with nothing open, or one that does not match the most recently opened bracket. If the string ends with brackets still open, return the index of the earliest-opened bracket that was never closed (the one deepest in the stack). If everything balances, return <code>-1</code>. Use <code>ArrayDeque</code> as a stack; push the <em>index</em> of each opener, not the character, so you can report it.</p>`,
+            prelude: 'import java.util.ArrayDeque;',
+            starter: `static int firstError(String s) {\n    ArrayDeque<Integer> open = new ArrayDeque<>();   // indices of unclosed openers\n    for (int i = 0; i < s.length(); i++) {\n        char c = s.charAt(i);\n        // opener: push i\n        // closer: if nothing open, return i; pop; if the opener at that index does not match c, return i\n    }\n    // anything left open: return the index at the BOTTOM of the stack\n    return -1;\n}`,
+            solution: `static int firstError(String s) {\n    ArrayDeque<Integer> open = new ArrayDeque<>();\n    for (int i = 0; i < s.length(); i++) {\n        char c = s.charAt(i);\n        if (c == '(' || c == '[' || c == '{') open.push(i);\n        else if (c == ')' || c == ']' || c == '}') {\n            if (open.isEmpty()) return i;\n            char o = s.charAt(open.pop());\n            if ((c == ')' && o != '(') || (c == ']' && o != '[') || (c == '}' && o != '{')) return i;\n        }\n    }\n    if (open.isEmpty()) return -1;\n    int bottom = -1;\n    while (!open.isEmpty()) bottom = open.pop();\n    return bottom;\n}`,
+            hints: ['Push i for an opener. For a closer: if open.isEmpty() return i; int j = open.pop(); char o = s.charAt(j); compare o with c.', 'The earliest-opened unclosed bracket is at the bottom of the stack: pop until empty, remembering the last value popped. (ArrayDeque also has peekLast, which looks at the bottom directly.)'],
+            tests: [
+              { call: 'firstError("(a + b) * [c]")', expect: '-1', name: 'balanced' },
+              { call: 'firstError("{[()()]}")', expect: '-1', name: 'nested, balanced' },
+              { call: 'firstError("a + b)")', expect: '5', name: 'a closer with nothing open' },
+              { call: 'firstError("(x]")', expect: '2', name: 'the wrong kind of closer' },
+              { call: 'firstError("((a)")', expect: '0', name: 'the outer bracket never closed' },
+              { call: 'firstError("f(g(x), h[y)")', expect: '11', name: 'mismatch deep inside' },
+              { call: 'firstError("[(])")', expect: '2', name: 'crossed brackets' },
+              { call: 'firstError("") + " " + firstError("no brackets here")', expect: '-1 -1', name: 'nothing to check' },
+              { call: 'firstError("(()")', expect: '0', name: 'two open, one closed: the first stays open' }
+            ],
+            failTip: 'For "((a)" the answer is 0, not 1: the inner pair closes, the outer bracket at index 0 is the one left open. For "(()" also 0. The unclosed opener is at the bottom of the stack.'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-6-3', title: 'A ring-buffer queue',
+            prompt: `<p>Complete the class <code>IntQueue</code>: a ring buffer of <code>int</code> starting with 2 cells, with <code>enqueue</code>, <code>dequeue</code>, <code>peek</code>, <code>size</code> and <code>isEmpty</code>, all O(1), growing by doubling when full. <code>dequeue</code> and <code>peek</code> on an empty queue throw <code>IllegalStateException</code> with the message <code>empty queue</code>. Write only the class.</p>`,
+            classes: true,
+            starter: `class IntQueue {\n    private int[] cells = new int[2];\n    private int head = 0, tail = 0, count = 0;\n\n    int size() { return count; }\n    boolean isEmpty() { return count == 0; }\n\n    void enqueue(int x) {\n        // grow if full; write at tail; move tail round the ring; count++\n    }\n\n    int dequeue() {\n        // throw if empty; take the item at head; move head round; count--\n        return 0;\n    }\n\n    int peek() {\n        return 0;\n    }\n\n    private void grow() {\n        // a new array twice the size; copy the items IN QUEUE ORDER starting from head; head = 0; tail = count\n    }\n}`,
+            solution: `class IntQueue {\n    private int[] cells = new int[2];\n    private int head = 0, tail = 0, count = 0;\n\n    int size() { return count; }\n    boolean isEmpty() { return count == 0; }\n\n    void enqueue(int x) {\n        if (count == cells.length) grow();\n        cells[tail] = x;\n        tail = (tail + 1) % cells.length;\n        count++;\n    }\n\n    int dequeue() {\n        if (count == 0) throw new IllegalStateException("empty queue");\n        int x = cells[head];\n        head = (head + 1) % cells.length;\n        count--;\n        return x;\n    }\n\n    int peek() {\n        if (count == 0) throw new IllegalStateException("empty queue");\n        return cells[head];\n    }\n\n    private void grow() {\n        int[] bigger = new int[cells.length * 2];\n        for (int i = 0; i < count; i++) bigger[i] = cells[(head + i) % cells.length];\n        cells = bigger;\n        head = 0;\n        tail = count;\n    }\n}`,
+            mustNotContain: [{ re: /ArrayDeque|ArrayList|LinkedList|System\.arraycopy|Arrays\.copyOf/, msg: 'Build the ring yourself on a plain int array, and write the copy loop in grow: it has to unwrap the ring, which copyOf cannot do.' }],
+            hints: ['enqueue: if (count == cells.length) grow(); cells[tail] = x; tail = (tail + 1) % cells.length; count++;', 'dequeue: int x = cells[head]; head = (head + 1) % cells.length; count--; return x;', 'grow: for (int i = 0; i < count; i++) bigger[i] = cells[(head + i) % cells.length]; then cells = bigger; head = 0; tail = count;'],
+            tests: [
+              { name: 'first in, first out', main: '        IntQueue q = new IntQueue();\n        for (int i = 1; i <= 5; i++) q.enqueue(i);\n        StringBuilder sb = new StringBuilder();\n        while (!q.isEmpty()) sb.append(q.dequeue()).append(" ");\n        System.out.println(sb.toString().trim());', expect: '1 2 3 4 5' },
+              { name: 'wraps round without growing', main: '        IntQueue q = new IntQueue();\n        q.enqueue(1); q.enqueue(2); q.dequeue(); q.enqueue(3); q.dequeue(); q.enqueue(4); q.dequeue(); q.enqueue(5);\n        System.out.println(q.size() + " " + q.peek() + " " + q.dequeue() + " " + q.dequeue() + " " + q.isEmpty());', expect: '2 4 4 5 true' },
+              { name: 'grows while wrapped, keeping the order', main: '        IntQueue q = new IntQueue();\n        q.enqueue(1); q.enqueue(2); q.dequeue(); q.enqueue(3); q.enqueue(4); q.enqueue(5);\n        StringBuilder sb = new StringBuilder();\n        while (!q.isEmpty()) sb.append(q.dequeue()).append(" ");\n        System.out.println(sb.toString().trim());', expect: '2 3 4 5' },
+              { name: 'a thousand in, a thousand out', main: '        IntQueue q = new IntQueue();\n        for (int i = 0; i < 1000; i++) q.enqueue(i);\n        boolean ok = true;\n        for (int i = 0; i < 1000; i++) if (q.dequeue() != i) ok = false;\n        System.out.println(ok + " " + q.size());', expect: 'true 0' },
+              { name: 'a long run of enqueue and dequeue in step', main: '        IntQueue q = new IntQueue();\n        int sum = 0;\n        for (int i = 0; i < 500; i++) { q.enqueue(i); q.enqueue(i); sum += q.dequeue(); }\n        System.out.println(q.size() + " " + sum + " " + q.peek());', expect: '500 62250 250' },
+              { name: 'empty queue throws', main: '        IntQueue q = new IntQueue();\n        try { q.dequeue(); } catch (IllegalStateException e) { System.out.println(e.getMessage()); }\n        try { q.peek(); } catch (IllegalStateException e) { System.out.println(e.getMessage()); }', expect: 'empty queue\nempty queue' }
+            ],
+            failTip: 'If the "grows while wrapped" test prints 4 5 2 3 or similar, grow copied cells 0..n−1 instead of starting from head. If values repeat or vanish, a % is missing on head or tail.'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-6-4', kind: 'answer', title: 'Trace the operations',
+            prompt: `<p>Work each sequence by hand. For the ring queue, the array has 4 cells and starts with <code>head = tail = 0</code>; it does not grow in these sequences.</p>`,
+            parts: [
+              { label: '(a) Stack: push 1, push 2, push 3, pop, push 4, pop, pop. Which values were popped, in order? (three numbers, separated by spaces)', answer: '3 4 2', width: '8rem', wrong: [{ match: '1 2 3', msg: 'That is a queue. A stack returns the most recent push.' }, { match: '3 4 1', msg: 'After popping 3 and pushing 4, the stack holds 1 2 4. Popping twice gives 4, then 2.' }] },
+              { label: '(b) After the sequence in (a), what single value remains on the stack?', answer: '1', width: '6rem' },
+              { label: '(c) Ring queue (4 cells): enqueue 10, 20, 30; dequeue; dequeue; enqueue 40; enqueue 50. What is tail now?', answer: '1', width: '6rem', wrong: [{ match: '5', msg: 'tail wraps: it goes 0, 1, 2, 3, then (3 + 1) % 4 = 0, then 1.' }, { match: '0', msg: 'Five enqueues move tail five times from 0: 1, 2, 3, 0, 1.' }] },
+              { label: '(d) In (c), which cell (index) holds the value 50?', answer: '0', width: '6rem', wrong: [{ match: '4', msg: 'There is no cell 4. 40 went into cell 3; tail wrapped to 0 for 50.' }] },
+              { label: '(e) In (c), what is head, and what is the queue’s size? Give both numbers separated by a space.', answer: '2 3', width: '8rem', wrong: [{ match: '2 2', msg: 'Five enqueues and two dequeues leave three items: 30, 40, 50.' }] },
+              { label: '(f) A queue is built from two stacks as in the puzzle. Enqueue 1, 2, 3, then dequeue once, then enqueue 4, then dequeue everything. What comes out, in order? (four numbers)', answer: '1 2 3 4', width: '10rem', wrong: [{ match: ['3 2 1 4', '1 4 2 3', '1 4 3 2'], msg: 'Stack B holds 3 2 1 (top 1) after the first transfer; 4 waits in A until B is empty. Out: 1, 2, 3, then 4.' }] }
+            ],
+            hints: ['Draw the four cells and move head and tail with every operation; tail = (tail + 1) % 4. For (f), items move from A to B only when B is empty, and the move reverses them.'],
+            solution: `<p>(a) <b>3 4 2</b>. (b) <b>1</b>. (c) tail moves 0 → 1 → 2 → 3 → 0 → 1: <b>1</b>. (d) 50 was written at tail = 0: cell <b>0</b>. (e) head moved twice: <b>2</b>; size 5 − 2 = <b>3</b> (30 in cell 2, 40 in cell 3, 50 in cell 0). (f) <b>1 2 3 4</b>: the two-stack queue is still a queue; that is the point of it.</p>`,
+            followup: 'If (c) to (e) felt mechanical, good: that mechanical feeling is what O(1) looks like from the inside. No shifting, no searching, just two indices and a remainder.'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li>A stack is push, pop, peek on one end: last in, first out. An array and a top index give O(1) for everything; double when full.</li>
+<li>A queue is enqueue at the back, dequeue at the front: first in, first out. In an array it must be a ring, with head and tail that wrap with <code>%</code>, and a grow that copies in queue order.</li>
+<li>Stacks: brackets, undo, postfix arithmetic, the call stack. Queues: anything served in arrival order, and breadth-first search.</li>
+<li>In Java, <code>ArrayDeque</code> is both (push/pop from one end, offer/poll from the other), and a deque besides. <code>java.util.Stack</code> is a historical mistake.</li>
+<li>A structure that refuses to do things is easier to make fast and easier to reason about. The next lesson is about the stack you never see: the one that holds every method call.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      title: 'Recursion', summary: 'A method that calls itself; the base case and the smaller problem; the call stack that makes it work and the overflow that happens without it; recursion against loops; the exponential trap in fib and the memo that fixes it; and the Tower of Hanoi.',
+      blocks: [
+        `<p>In 1883 a French mathematician, Édouard Lucas, put a puzzle on sale under the name "N. Claus de Siam", an anagram of Lucas d'Amiens, his home town. Three pegs; eight discs of different sizes stacked on one peg, largest at the bottom; move the whole tower to another peg, one disc at a time, never putting a larger disc on a smaller one. The box came with a legend: in a temple in India, priests were moving a tower of sixty-four golden discs by the same rules, and when they finished, the world would end.</p>
+<p>The puzzle is hard to solve by staring at it and easy to solve by refusing to. To move eight discs, you need the largest disc moved to the target peg, and for that the seven above it must be out of the way on the spare peg. So: move seven discs to the spare peg, move the big one, move the seven discs on top of it. How do you move seven? The same way. The legend's priests, by the way, need 2⁶⁴ − 1 moves; at one a second that is about 585 billion years, so the world is safe.</p>
+<p>That way of thinking is called <em>recursion</em>: solve a problem by solving a smaller copy of it, and stop when the copy is small enough to be trivial. You met it in lesson 4, where merge sort sorted an array by sorting its halves. This lesson is about recursion itself: how to write it, how the machine runs it, when it is the right tool and when it is a trap.</p>
+<h2>A method that calls itself</h2>
+<p>The sum of an array from index <code>i</code> onwards is <code>a[i]</code> plus the sum from <code>i + 1</code> onwards. The sum from past the end is 0. That is a complete definition, and it is also a complete program.</p>`,
+        { play: `public class Main {
+    static int sum(int[] a, int i) {
+        if (i == a.length) return 0;            // base case: nothing left
+        return a[i] + sum(a, i + 1);            // one item, plus the sum of the rest
+    }
+
+    static long factorial(int n) {
+        if (n <= 1) return 1;
+        return n * factorial(n - 1);
+    }
+
+    static boolean isPalindrome(String s) {
+        if (s.length() < 2) return true;                                          // "" and "a" read the same both ways
+        if (s.charAt(0) != s.charAt(s.length() - 1)) return false;
+        return isPalindrome(s.substring(1, s.length() - 1));                      // strip both ends, ask again
+    }
+
+    public static void main(String[] args) {
+        int[] a = {3, 1, 4, 1, 5, 9, 2, 6};
+        System.out.println(sum(a, 0));
+        System.out.println(factorial(5) + " " + factorial(20));
+        System.out.println(isPalindrome("racecar") + " " + isPalindrome("level") + " " + isPalindrome("python") + " " + isPalindrome(""));
+    }
+}`, caption: 'Three recursive methods, each with the same shape: a base case that answers directly, and a recursive case that does one step and hands the rest to a smaller call. factorial(20) is the largest that fits in a long; 21! overflows.' },
+        `<div class="stmt"><p><span class="kind">Recursion.</span> A method that calls itself on a smaller input. It needs a <em>base case</em>, an input small enough to answer without a call, and a <em>recursive case</em> that makes progress towards it: every call must bring the input closer to the base case.</p>
+<p><span class="kind">The leap of faith.</span> When writing the recursive case, assume the recursive call works, and use its answer. Do not try to trace it in your head; that is the machine's job. Check only that the base case is right and that each call gets smaller.</p></div>
+<p>The figure shows what the machine does with <code>sum</code>. Each call gets a frame on the call stack (lesson 6), holding its own <code>i</code> and the place to continue when the call below it returns. Frames pile up on the way down to the base case and unwind on the way back, each adding its item to the answer it received.</p>`,
+        { fig: 'callstack', fn: 'sum', n: 4, caption: 'sum over the first n items. Step through it: four frames pile up, the base case returns 0, and the frames unwind adding 1, then 4, then 1, then 3. Change n and step again.' },
+        { fig: 'callstack', fn: 'fact', n: 5, caption: 'factorial(5). Every frame is waiting for the one above it; no multiplication happens until the base case has returned. The depth of the stack equals n: a recursive method uses memory in proportion to its depth.' },
+        `<h2>What happens without a base case</h2>
+<p>The call stack is finite. A method that calls itself without ever reaching a base case pushes frames until there is no room, and the program dies with a <code>StackOverflowError</code>. The same happens with a base case that is never reached, because the argument does not shrink. Run it once to know the shape of the message.</p>`,
+        { play: `public class Main {
+    static int countDown(int n) {
+        if (n >= 0) System.out.println(n);      // prints 3 2 1 0, then calls on in silence
+        return countDown(n - 1);               // no base case: n passes 0 and keeps going
+    }
+
+    public static void main(String[] args) {
+        countDown(3);
+    }
+}`, expectError: true, caption: 'The site’s interpreter stops at 1,200 frames; a real JVM manages about ten thousand before the same error, more if asked. Either way the fix is the same: a base case that is reached. Here, if (n == 0) return 0; at the top.' },
+        `<p>That limit matters for a design decision. A recursion that goes <code>n</code> deep, like <code>sum</code> above, is fine for an array of a thousand and fatal for an array of a million. A loop has no such limit. The rule of thumb: recursion is for problems whose depth is small, which means problems that <em>halve</em> rather than problems that <em>decrement</em>. Binary search and merge sort go log n deep; summing an array one element at a time goes n deep, and should be a loop.</p>`,
+        { play: `public class Main {
+    // the binary search of lesson 2, written as it is usually thought: look in the half that can contain it
+    static int search(int[] a, int target, int lo, int hi) {
+        if (lo > hi) return -1;                          // empty range: not here
+        int mid = (lo + hi) >>> 1;
+        if (a[mid] == target) return mid;
+        if (a[mid] < target) return search(a, target, mid + 1, hi);
+        return search(a, target, lo, mid - 1);
+    }
+
+    static long sumLoop(int[] a) { long s = 0; for (int x : a) s += x; return s; }   // long: a million values overflow an int
+
+    public static void main(String[] args) {
+        int[] sorted = new int[1000000];
+        for (int i = 0; i < sorted.length; i++) sorted[i] = i * 2;
+        System.out.println(search(sorted, 123456, 0, sorted.length - 1) + " " + search(sorted, 7, 0, sorted.length - 1));
+        System.out.println(sumLoop(sorted));           // a million items: a loop, not a recursion
+    }
+}`, caption: 'A million sorted values, found in about 20 recursive calls: halving means the stack never gets deep. The sum of a million values is a loop, because the recursive sum would need a million frames.' },
+        `<h2>The exponential trap</h2>
+<p>The Fibonacci numbers are defined recursively: each is the sum of the two before, starting 0, 1. Written straight from the definition, the method is three lines, correct, and catastrophically slow. The figure shows why: <code>fib(5)</code> calls <code>fib(4)</code> and <code>fib(3)</code>; <code>fib(4)</code> calls <code>fib(3)</code> again; the same small problems are solved over and over, and the number of calls roughly doubles with each increase in <code>n</code>.</p>`,
+        { fig: 'callstack', fn: 'fib', n: 5, caption: 'fib(5): fifteen calls for a five-line answer, and fib(2) is computed three times. Set n to 7 and play it through: 41 calls. Every +1 on n multiplies the work by about 1.6.' },
+        { play: `public class Main {
+    static long calls;
+
+    static long fib(int n) {
+        calls++;
+        if (n < 2) return n;
+        return fib(n - 1) + fib(n - 2);
+    }
+
+    static long[] memo = new long[91];           // memo[n] = fib(n) once known; 0 means not yet (fib(0) is 0 anyway)
+
+    static long fibMemo(int n) {
+        calls++;
+        if (n < 2) return n;
+        if (memo[n] != 0) return memo[n];        // already solved: look it up
+        memo[n] = fibMemo(n - 1) + fibMemo(n - 2);
+        return memo[n];
+    }
+
+    public static void main(String[] args) {
+        for (int n : new int[] {10, 15, 20, 25}) {
+            calls = 0; long v = fib(n);
+            System.out.printf("fib(%2d) = %6d   %8d calls%n", n, v, calls);
+        }
+        calls = 0;
+        System.out.println("fibMemo(90) = " + fibMemo(90) + "   " + calls + " calls");
+    }
+}`, caption: 'Five more on n, about eleven times the calls: fib(25) takes a quarter of a million. The memoised version remembers every answer and makes 179 calls for fib(90), about two per n. Same definition, same recursion; the only change is that no sub-problem is solved twice.' },
+        `<div class="stmt"><p><span class="kind">Memoisation.</span> If a recursion solves the same sub-problem more than once, store each answer the first time and look it up after. The cost drops from the number of calls to the number of <em>distinct</em> sub-problems. This is the first step towards dynamic programming, which a later course treats properly.</p></div>
+<h2>The Tower of Hanoi</h2>
+<p>Lucas's puzzle is the recursion that cannot be written any other way without a stack of your own. To move <code>n</code> discs from peg A to peg C using B as the spare: move <code>n − 1</code> discs from A to B (using C as the spare), move the last disc from A to C, move the <code>n − 1</code> discs from B to C (using A as the spare). The base case is zero discs: do nothing.</p>`,
+        { play: `public class Main {
+    static long moves;
+    static boolean show = true;
+
+    static void hanoi(int n, char from, char to, char via) {
+        if (n == 0) return;
+        hanoi(n - 1, from, via, to);              // clear the way: n - 1 discs onto the spare peg
+        moves++;
+        if (show) System.out.println("move disc " + n + " from " + from + " to " + to);
+        hanoi(n - 1, via, to, from);              // bring them back on top
+    }
+
+    public static void main(String[] args) {
+        hanoi(3, 'A', 'C', 'B');
+        System.out.println("3 discs: " + moves + " moves");
+        show = false;
+        for (int n : new int[] {8, 10, 16, 20}) { moves = 0; hanoi(n, 'A', 'C', 'B'); System.out.println(n + " discs: " + moves + " moves = 2^" + n + " - 1"); }
+        System.out.println("64 discs: 18446744073709551615 moves, which a long cannot even hold");
+    }
+}`, caption: 'Seven moves for three discs, printed; 2ⁿ − 1 in general, and the method makes that many moves because it has to: there is no shorter solution. Twenty discs is a million moves, which already takes the interpreter a moment; thirty would be a billion. The count obeys T(n) = 2T(n − 1) + 1, which solves to 2ⁿ − 1.' },
+        `<h2>Recursion or a loop?</h2>
+<table class="growth-table"><thead><tr><th>Shape of the problem</th><th>Write it as</th><th>Why</th></tr></thead><tbody>
+<tr><td>Walk along n things once (sum, find, count)</td><td>a loop</td><td>recursion goes n deep for no gain</td></tr>
+<tr><td>Halve the problem (binary search, merge sort, quicksort)</td><td>recursion</td><td>log n deep, and the recursive version is the clear one</td></tr>
+<tr><td>Branch into several sub-problems (Hanoi, trees, permutations)</td><td>recursion</td><td>a loop would need its own explicit stack to do the same</td></tr>
+<tr><td>Sub-problems repeat (fib, many counting problems)</td><td>recursion with a memo, or a loop that builds a table</td><td>exponential otherwise</td></tr>
+</tbody></table>
+<p>Every recursion can be turned into a loop with an explicit stack, because that is what the machine does anyway; and every loop can be written as a recursion. Choose by clarity and by depth. Trees, the subject of lesson 9, are where recursion stops being a choice and becomes the natural language: a tree is a node with smaller trees hanging from it, and almost everything you do to one is "do it to the left subtree, do it to the right subtree".</p>
+<details class="reveal"><summary>Puzzle: <code>static int f(int n) { if (n == 0) return 0; return f(n / 2) + n % 2; }</code>. What does f compute? How deep does it go for n = 1,000,000?</summary><p>The number of 1 bits in the binary form of n: the last bit is <code>n % 2</code>, the rest are in <code>n / 2</code>. It halves, so it goes about log₂ n deep: 20 frames for a million. <code>f(1000000)</code> is 7, because 1,000,000 = 11110100001001000000 in binary.</p></details>`,
+        { aside: `<p><b>Common mistakes in this lesson.</b> A base case that comes <em>after</em> the recursive call, so it is never reached. An argument that does not shrink (<code>f(n)</code> calling <code>f(n)</code>, or <code>search(lo, hi)</code> calling <code>search(lo, mid)</code> when <code>mid == hi</code>). Forgetting to <code>return</code> the result of the recursive call, so the method returns its default. Using <code>int</code> for factorial, which overflows at 13. Tracing the recursion by hand instead of trusting it. A memo that uses 0 for "unknown" when 0 is a possible answer (fib is safe only because fib(0) is never asked for by a larger call that needs a non-zero).</p>` },
+        {
+          ex: {
+            id: 'ds-7-1', title: 'Fast power',
+            prompt: `<p>Write</p><pre class="code">static long power(long base, int exp)</pre><p>that returns <code>base</code> to the power <code>exp</code> (<code>exp ≥ 0</code>) by recursion, using the halving trick: if <code>exp</code> is even, <code>power(base, exp)</code> is <code>power(base, exp / 2)</code> squared; if odd, it is <code>base</code> times <code>power(base, exp − 1)</code>. Make <em>one</em> recursive call per step, so that the depth is about <code>2 log₂ exp</code>. Do not use <code>Math.pow</code> or a loop.</p>`,
+            starter: `static long power(long base, int exp) {\n    // base case: exp == 0\n    // even exp: square the half power (compute it once!)\n    // odd exp: base times power(base, exp - 1)\n    return 0;\n}`,
+            solution: `static long power(long base, int exp) {\n    if (exp == 0) return 1;\n    if (exp % 2 == 0) {\n        long half = power(base, exp / 2);\n        return half * half;\n    }\n    return base * power(base, exp - 1);\n}`,
+            mustNotContain: [{ re: /Math\.pow|\bfor\s*\(|\bwhile\s*\(/, msg: 'Recursion only: no Math.pow and no loop.' }, { re: /power\s*\([^;]*\)\s*\*\s*power\s*\(/, msg: 'Call power once for the half and square the result; calling it twice makes the work 2ⁿ instead of log n.' }],
+            hints: ['if (exp == 0) return 1;', 'long half = power(base, exp / 2); return half * half; for even exp. Store the half in a variable: calling power twice would double the work at every level.', 'return base * power(base, exp - 1); for odd exp.'],
+            tests: [
+              { call: 'power(2, 10)', expect: '1024', name: '2^10' },
+              { call: 'power(3, 0) + " " + power(0, 0) + " " + power(7, 1)', expect: '1 1 7', name: 'exponent 0 and 1' },
+              { call: 'power(2, 62)', expect: '4611686018427387904', name: '2^62, the largest power of two in a long' },
+              { call: 'power(3, 39)', expect: '4052555153018976267', name: '3^39 fits in a long' },
+              { call: 'power(-2, 7) + " " + power(-2, 8)', expect: '-128 256', name: 'negative base' },
+              { call: 'power(10, 18)', expect: '1000000000000000000', name: '10^18' },
+              { call: 'power(1, 1000000)', expect: '1', name: 'a million: fine for halving, fatal for decrementing' }
+            ],
+            failTip: 'If the last test overflows the stack, the odd case is being used for every step (exp − 1 each time); check that the even branch halves. If 2^62 is wrong, the multiplication is happening in int: base is a long.'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-7-2', title: 'Tower of Hanoi',
+            prompt: `<p>Write</p><pre class="code">static int hanoi(int n, String from, String to, String via)</pre><p>that prints the moves to transfer <code>n</code> discs from peg <code>from</code> to peg <code>to</code>, one per line as <code>disc 1: A -> C</code> (disc 1 is the smallest), and returns the number of moves made. Zero discs: print nothing, return 0.</p>`,
+            starter: `static int hanoi(int n, String from, String to, String via) {\n    // base case\n    // move n - 1 discs out of the way, move disc n, move the n - 1 discs back on top\n    // return the total number of moves\n    return 0;\n}`,
+            solution: `static int hanoi(int n, String from, String to, String via) {\n    if (n == 0) return 0;\n    int before = hanoi(n - 1, from, via, to);\n    System.out.println("disc " + n + ": " + from + " -> " + to);\n    int after = hanoi(n - 1, via, to, from);\n    return before + 1 + after;\n}`,
+            hints: ['if (n == 0) return 0;', 'int a = hanoi(n - 1, from, via, to); print the move of disc n from from to to; int b = hanoi(n - 1, via, to, from); return a + 1 + b;', 'In the first call the spare peg is the target of the small tower, so to and via swap places; in the second they swap back.'],
+            tests: [
+              { name: 'one disc', main: '        int m = hanoi(1, "A", "C", "B");\n        System.out.println(m);', expect: 'disc 1: A -> C\n1' },
+              { name: 'two discs', main: '        int m = hanoi(2, "A", "C", "B");\n        System.out.println(m);', expect: 'disc 1: A -> B\ndisc 2: A -> C\ndisc 1: B -> C\n3' },
+              { name: 'three discs', main: '        int m = hanoi(3, "A", "C", "B");\n        System.out.println(m);', expect: 'disc 1: A -> C\ndisc 2: A -> B\ndisc 1: C -> B\ndisc 3: A -> C\ndisc 1: B -> A\ndisc 2: B -> C\ndisc 1: A -> C\n7' },
+              { name: 'other peg names', main: '        int m = hanoi(2, "left", "right", "middle");\n        System.out.println(m);', expect: 'disc 1: left -> middle\ndisc 2: left -> right\ndisc 1: middle -> right\n3' },
+              { name: 'zero discs', main: '        System.out.println(hanoi(0, "A", "C", "B"));', expect: '0' }
+            ],
+            failTip: 'For two discs the first move is disc 1 to the SPARE peg (B), not to C: the first recursive call passes via as its target. If the count is wrong, make sure both recursive results are added, plus 1.'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-7-3', title: 'Count the paths',
+            prompt: `<p>A robot stands at the top-left corner of a grid with <code>rows</code> rows and <code>cols</code> columns and can only step right or down. Write</p><pre class="code">static long paths(int rows, int cols)</pre><p>that returns the number of different routes to the bottom-right corner. Think recursively: from a grid with one row or one column there is exactly one route; otherwise the first step is either down (leaving a grid with one row fewer) or right (one column fewer). The plain recursion is exponential; add a memo so that <code>paths(18, 18)</code> is instant. The memo must be a field, declared outside the method.</p>`,
+            starter: `static long[][] memo = new long[20][20];   // 0 = not yet computed (no real answer is 0)\n\nstatic long paths(int rows, int cols) {\n    // base case: one row or one column\n    // if memo[rows][cols] is known, return it\n    // otherwise compute paths(rows - 1, cols) + paths(rows, cols - 1), store it, return it\n    return 0;\n}`,
+            solution: `static long[][] memo = new long[20][20];\n\nstatic long paths(int rows, int cols) {\n    if (rows == 1 || cols == 1) return 1;\n    if (memo[rows][cols] != 0) return memo[rows][cols];\n    memo[rows][cols] = paths(rows - 1, cols) + paths(rows, cols - 1);\n    return memo[rows][cols];\n}`,
+            mustNotContain: [{ re: /\bfor\s*\(|\bwhile\s*\(/, msg: 'Recursion with a memo, not a loop; the loop version is the next course’s dynamic programming.' }],
+            hints: ['if (rows == 1 || cols == 1) return 1;', 'if (memo[rows][cols] != 0) return memo[rows][cols];', 'memo[rows][cols] = paths(rows - 1, cols) + paths(rows, cols - 1); return memo[rows][cols];'],
+            tests: [
+              { call: 'paths(1, 1) + " " + paths(1, 5) + " " + paths(5, 1)', expect: '1 1 1', name: 'a single row or column' },
+              { call: 'paths(2, 2)', expect: '2', name: '2 by 2: down-right or right-down' },
+              { call: 'paths(3, 3)', expect: '6', name: '3 by 3' },
+              { call: 'paths(3, 7)', expect: '28', name: '3 by 7' },
+              { call: 'paths(10, 10)', expect: '48620', name: '10 by 10' },
+              { call: 'paths(18, 18)', expect: '2333606220', name: '18 by 18: 2.3 billion routes, needs the memo and a long' },
+              { call: 'paths(19, 19)', expect: '9075135300', name: '19 by 19' }
+            ],
+            failTip: 'If paths(18, 18) times out, the memo is not being read before recursing, or not being written. If the large answers are negative or wrong, the memo is an int array.'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-7-4', kind: 'answer', title: 'Depth and count',
+            prompt: `<p>Count calls and frames. "Calls" means the total number of times the method is entered, including the first; "depth" means the greatest number of frames on the stack at once.</p>`,
+            parts: [
+              { label: '(a) sum(a, 0) on an array of 100 values (the version in this lesson): how many calls, and how deep? Give the two numbers separated by a space.', answer: '101 101', width: '8rem', wrong: [{ match: '100 100', msg: 'The base case, sum(a, 100), is a call too, and it sits on top of the other 100 frames.' }] },
+              { label: '(b) Plain fib(10): how many calls?', answer: '177', width: '6rem', wrong: [{ match: ['55', '89'], msg: 'That is a Fibonacci number, not the call count. calls(n) = 1 + calls(n − 1) + calls(n − 2), with calls(0) = calls(1) = 1: 1, 1, 3, 5, 9, 15, 25, 41, 67, 109, 177.' }] },
+              { label: '(c) Plain fib(10): how deep does the stack get?', answer: '10', width: '6rem', wrong: [{ match: '177', msg: 'That is the count. Only the leftmost chain fib(10) → fib(9) → … → fib(1) is on the stack at once.' }, { match: ['9', '11'], msg: 'fib(10), fib(9), …, fib(1): ten frames.' }] },
+              { label: '(d) fibMemo(40), with an empty memo: how many calls? (Count exactly: each n from 2 to 40 is computed once, and each computation makes two calls; the second of each pair is answered from the memo or by a base case.)', answer: '79', width: '6rem', wrong: [{ match: '40', msg: 'Each of the 39 computed values (n = 2..40) makes two calls, and there is the first call itself: 1 + 2 × 39.' }, { match: '81', msg: '1 + 2 × 39 = 79: the values computed are n = 2 to 40, which is 39 of them.' }] },
+              { label: '(e) hanoi(12): how many moves, and how deep, counting only the frames for n ≥ 1 (the n = 0 call returns at once)?', answer: '4095 12', width: '8rem', wrong: [{ match: '4096 12', msg: '2¹² − 1 = 4095.' }, { match: '4095 13', msg: 'Frames for n = 12 down to 1: twelve of them.' }] },
+              { label: '(f) power(2, 1000) from this lesson’s exercise, by halving: about how deep? (Choose the nearest: 10, 20, 500, 1000)', answer: '20', width: '6rem', wrong: [{ match: '1000', msg: 'That is the decrementing version. Halving takes 10 even steps, each possibly preceded by an odd step: at most about 2 log₂ 1000 ≈ 20.' }, { match: '10', msg: 'Close: log₂ 1000 ≈ 10 even steps, but odd exponents add a step each; the bound is about 20.' }] }
+            ],
+            hints: ['Calls count every entry; depth counts the longest chain of unfinished calls. For fib the chain is the leftmost path; the count follows calls(n) = 1 + calls(n − 1) + calls(n − 2).'],
+            solution: `<p>(a) <b>101 101</b>: indices 0 to 100, all on the stack at once at the bottom. (b) <b>177</b>. (c) <b>10</b>. (d) <b>79</b>: the first call, then two calls for each of the 39 values computed. (e) <b>4095 12</b>. (f) <b>20</b>: 1000 in binary has 10 bits, and each bit costs at most two calls.</p>`,
+            followup: 'Parts (b) and (d) are the whole argument for memoisation in two numbers: 177 against 79 at n = 10, and at n = 40 it is 331 million against 79.'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li>Recursion: a base case that answers directly, and a recursive case that does one step and calls itself on a smaller input. Trust the call; check the base case and the shrinking.</li>
+<li>Each call is a frame on the call stack. Depth costs memory, and a missing or unreachable base case is a StackOverflowError.</li>
+<li>Halving problems (search, sorting) recurse log n deep and should be recursive. Walking n things recurses n deep and should be a loop.</li>
+<li>Repeated sub-problems make a recursion exponential; a memo makes it linear. fib(25): 243 thousand calls plain, 49 with a memo.</li>
+<li>Hanoi takes 2ⁿ − 1 moves and no clever idea can reduce that; branching recursions are where loops need a stack of their own.</li>
 </ul></div>`
       ]
     }
