@@ -192,6 +192,76 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('fallback has no policy violations', fbViolations.length === 0, fbViolations);
   await fb.close();
 
+  // ---- 7b. Full C++: the real compiler, downloaded on demand (needs the site served over http, so start a small web server)
+  check('full c++ is unavailable when the site is opened as a file', /web address/.test(await page.evaluate(() => window.CLANGRUN.unavailable() || '')));
+  const http = require('http');
+  const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.gz': 'application/gzip', '.md': 'text/plain' };
+  const root = path.join(__dirname, 'dist');
+  const server = http.createServer((req, res) => {
+    const p = path.join(root, decodeURIComponent(req.url.split('?')[0]).replace(/^\/$/, '/index.html'));
+    if (!p.startsWith(root) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); res.end('no'); return; }
+    res.writeHead(200, { 'Content-Type': types[path.extname(p)] || 'application/octet-stream', 'Content-Length': fs.statSync(p).size }); fs.createReadStream(p).pipe(res);
+  });
+  await new Promise((ok) => server.listen(0, '127.0.0.1', ok));
+  const origin = 'http://127.0.0.1:' + server.address().port;
+  const hp = await browser.newPage({ viewport: { width: 1100, height: 900 } }); const hpViolations = [], hpErrors = [], clangReqs = [], otherReqs = [];
+  hp.on('console', (m) => { if (/Content Security Policy|Refused to/i.test(m.text())) hpViolations.push(m.text().slice(0, 200)); });
+  hp.on('pageerror', (e) => hpErrors.push(e.message));
+  hp.on('request', (rq) => { const u = rq.url(); if (u.includes('/clang/')) clangReqs.push(u); else if (!u.startsWith(origin) && !u.startsWith('blob:') && !u.startsWith('data:')) otherReqs.push(u); });
+  await hp.goto(origin + '/index.html#/lab'); await hp.waitForSelector('#app > *');
+  check('full c++: available over http', (await hp.evaluate(() => window.CLANGRUN.unavailable())) === null);
+  await hp.click('.lang-btn:has-text("C++")');
+  check('full c++: the Lab offers the choice of engine, teaching by default', (await hp.locator('button:has-text("Engine: Teaching")').count()) === 1 && (await hp.locator('button:has-text("Step through memory")').count()) === 1);
+  await hp.click('button:has-text("Engine: Teaching")');
+  check('full c++: choosing it hides the memory stepper', (await hp.locator('button:has-text("Engine: Full C++")').count()) === 1 && (await hp.locator('button:has-text("Step through memory")').count()) === 0);
+  const setHpCode = async (code) => { await hp.fill('.lab-editor-area textarea', code); };
+  const hpOut = () => hp.locator('.lab-out').innerText();
+  await setHpCode('#include <iostream>\n#include <string>\n#include <vector>\nusing namespace std;\nint main() { vector<string> v = {"a", "b"}; int unused; for (auto& s : v) cout << s << "\\n"; return 0; }\n');
+  await hp.click('button:has-text("Run")');
+  await hp.waitForSelector('.clang-gate');
+  check('full c++: the first run asks before downloading anything', clangReqs.length === 0 && /about \d+ MB/.test(await hp.locator('.clang-gate').innerText()), clangReqs);
+  await hp.click('button:has-text("Download it and continue")');
+  await hp.waitForFunction(() => /\ba\nb\n/.test(document.querySelector('.lab-out .out-text').textContent), null, { timeout: 120000 });
+  r = await hpOut();
+  check('full c++: a program with std::string and vector runs', /\na\nb\n/.test('\n' + r.replace(/^[\s\S]*generated\.\n/, '')) || /a\nb/.test(r), r);
+  check('full c++: compiler warnings are shown', /unused variable 'unused'/.test(r), r);
+  check('full c++: the download came from this site only, under /clang/<version>/', clangReqs.length > 3 && clangReqs.every((u) => u.startsWith(origin + '/clang/')) && otherReqs.length === 0, [clangReqs, otherReqs]);
+  check('full c++: agreeing is remembered', (await hp.evaluate(() => localStorage.getItem('se.realcpp'))) === '1');
+  await setHpCode('#include <iostream>\nint main() { int x = "a"; return y; }\n');
+  await hp.click('button:has-text("Run")');
+  await hp.waitForFunction(() => /error/.test(document.querySelector('.lab-out .out-text').textContent), null, { timeout: 60000 });
+  r = await hpOut();
+  check('full c++: compiler errors are shown, with a link to the line', /error: use of undeclared identifier 'y'/.test(r) && /go to line 2/.test(r), r);
+  check('full c++: no "process exited" noise in the error', !/process exited/.test(r), r);
+  await setHpCode('#include <iostream>\nint main() { std::cout << "start" << std::endl; for (;;) {} }\n');
+  await hp.click('button:has-text("Run")');
+  await hp.waitForFunction(() => /start/.test(document.querySelector('.lab-out .out-text').textContent), null, { timeout: 60000 });
+  await hp.click('button:has-text("Stop")');
+  await hp.waitForFunction(() => /Stopped/.test(document.querySelector('.lab-out .out-text').textContent), null, { timeout: 10000 });
+  check('full c++: Stop ends a program that never finishes', true);
+  await setHpCode('#include <iostream>\n#include <vector>\nint main() { std::vector<int> v(2); std::cout << "hi\\n"; std::cout << v.at(5); }\n');
+  await hp.click('button:has-text("Run")');
+  await hp.waitForFunction(() => /stopped abnormally/.test(document.querySelector('.lab-out .out-text').textContent), null, { timeout: 60000 });
+  check('full c++: a program that aborts is stopped with an explanation, and its earlier output is kept', /hi\n/.test(await hpOut()), await hpOut());
+  check('full c++: the engine choice is remembered', (await hp.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.lab.v1')).fullCpp)) === true);
+  // the course: every exercise of SC 105 is graded by compiling once and running once for each test
+  await hp.goto(origin + '/index.html#/modern'); await hp.reload(); await hp.waitForSelector('#app > *');
+  check('full c++: the Modern C++ course is listed with its code', /SC 105/.test(await hp.locator('main').innerText()));
+  await hp.goto(origin + '/index.html#/modern/1'); await hp.reload(); await hp.waitForSelector('.exercise');   // rendering the lesson is what gives each exercise its language and runtime
+  const graded = await hp.evaluate(async () => {
+    const ex = window.COURSES.find((c) => c.id === 'modern').lessons[0].blocks.filter((b) => b.ex).map((b) => b.ex)[1];
+    const host = document.createElement('div'); document.body.append(host);
+    const good = await window.__app.grade(ex, ex.solution, host), bad = await window.__app.grade(ex, ex.starter, host);
+    const broken = await window.__app.grade(ex, 'bool isPalindrome(string s) { return s.size( }', host);
+    const hasMain = await window.__app.grade(ex, 'bool isPalindrome(string s) { return true; }\nint main() { return 0; }', host);
+    return { runtime: ex.runtime, good: good.passed + ':' + good.results.length, bad: bad.passed, broken: broken.error, hasMain: hasMain.error };
+  });
+  check('full c++: an exercise of the course is graded on the real compiler (solution passes, starter fails)', graded.runtime === 'full' && graded.good === 'true:7' && graded.bad === false, graded);
+  check('full c++: a compile error in an exercise is reported with the student\'s own line numbers', /main\.cpp:\d+:\d+: error/.test(graded.broken || '') && /main\.cpp:1:/.test(graded.broken || ''), graded.broken);
+  check('full c++: an exercise that supplies main() refuses the student\'s own', /write only the function/.test(graded.hasMain || ''), graded.hasMain);
+  check('full c++: no policy violations, no page errors', hpViolations.length === 0 && hpErrors.length === 0, [hpViolations, hpErrors]);
+  await hp.close(); server.close();
+
   check('no Content Security Policy violations', violations.length === 0, violations.slice(0, 3));
   check('no page errors', errors.length === 0, errors.slice(0, 3));
   check('no dialogs', dialogs.length === 0, dialogs);

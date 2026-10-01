@@ -5,6 +5,8 @@ const r = p => fs.readFileSync(p, 'utf8');
 const scriptSafe = s => s.replace(/<\/script/gi, '<\\/script');
 // Content Security Policy. Every inline script is allowed by its hash, so a <script> or an onerror= handler that gets into the page
 // by any route does not run; nothing may load from, or be sent to, any other origin: the typefaces are embedded in the page, so the page makes no requests at all.
+// connect-src 'self' is there for one purpose: the optional real-C++ compiler (see CLANG_DIR below) downloads its files from this site, once. Nothing
+// else is ever requested, and nothing can be sent to another origin.
 // 'unsafe-eval' is there because Skulpt and JSCPP compile programs with new Function(). Inline styles are needed by the page itself.
 // The typefaces (SIL Open Font License, from the @fontsource packages) are embedded as data: URIs, Latin subsets only, so the
 // page needs nothing from any other site. Characters outside Latin (some mathematical symbols) fall back to the system's fonts.
@@ -20,7 +22,7 @@ const FONTS = [
 const fontFaces = FONTS.map(([family, style, weight, file]) => `@font-face { font-family: '${family}'; font-style: ${style}; font-weight: ${weight}; font-display: swap; src: url(data:font/woff2;base64,${fs.readFileSync('node_modules/' + file).toString('base64')}) format('woff2'); }`).join('\n');
 const sha = (text) => "'sha256-" + crypto.createHash('sha256').update(text, 'utf8').digest('base64') + "'";
 const csp = (hashes, extra) => ["default-src 'none'", "script-src " + hashes.join(' ') + " 'unsafe-eval'", "style-src 'unsafe-inline'",
-  "font-src data:", "img-src data: blob:", "connect-src 'none'", "media-src 'none'", "frame-src 'none'", "worker-src blob:",
+  "font-src data:", "img-src data: blob:", "connect-src 'self'", "media-src 'none'", "frame-src 'none'", "worker-src blob:",
   "object-src 'none'", "base-uri 'none'", "form-action 'none'"].concat(extra || []).join('; ');
 const headFor = (hashes) => `<!DOCTYPE html>
 <html lang="en">
@@ -49,7 +51,9 @@ const scripts = [
   'src/course_lisp.js',
   'src/course_cpp.js',
   'src/course_math.js',
+  'src/course_modern.js',
   'src/mathgrade.js',
+  'src/cppfull.js',
   'src/runner.js',
   'src/app.js',
   'src/lab.js',
@@ -82,9 +86,26 @@ const THIRD_PARTY = [
   { name: 'Newsreader', pkg: '@fontsource-variable/newsreader', file: 'LICENSE', url: 'https://github.com/productiontype/Newsreader', role: 'is the typeface for text and headings' },
   { name: 'Source Sans 3', pkg: '@fontsource-variable/source-sans-3', file: 'LICENSE', url: 'https://github.com/adobe-fonts/source-sans', role: 'is the typeface for labels and buttons' },
   { name: 'IBM Plex Mono', pkg: '@fontsource/ibm-plex-mono', file: 'LICENSE', url: 'https://github.com/IBM/plex', role: 'is the typeface for code' },
+  { name: 'Clang and LLVM, as packaged by clang-wasm', pkg: '@live-codes/clang-wasm', file: 'LICENSE', url: 'https://github.com/live-codes/clang-wasm', role: 'is the real C++ compiler (Clang 22 built for WebAssembly), downloaded only when a student chooses Full C++',
+    extra: 'THIRD-PARTY-NOTICES.md' },
   { name: 'PEG.js', pkg: 'pegjs', file: 'LICENSE', url: 'https://pegjs.org/', role: 'generated the C++ parser inside JSCPP' }
-].map(t => { const j = pkg(t.pkg); return { name: t.name, version: j.version, licence: j.license, url: t.url, role: t.role, changes: t.changes || '', text: licenceText(t.pkg, t.file) }; });
-const BUILD = { date: new Date().toISOString().slice(0, 10), thirdParty: THIRD_PARTY };
+].map(t => { const j = pkg(t.pkg); return { name: t.name, version: j.version, licence: j.license, url: t.url, role: t.role, changes: t.changes || '', text: licenceText(t.pkg, t.file) + (t.extra ? '\n\n' + licenceText(t.pkg, t.extra) : '') }; });
+// Real C++ (Clang compiled to WebAssembly). Its files are not in the page: they are about 29 MB, so build.js copies them next to it, to dist/clang/<version>/,
+// and the page downloads them (once; the browser keeps them) only when a student picks Full C++ or opens the Modern C++ course.
+// The directory name carries the version, so the files can be cached forever (see _headers below).
+const CLANG_PKG = pkg('@live-codes/clang-wasm');
+const CLANG_DIR = 'clang/' + CLANG_PKG.version + '/';
+const clangFiles = ['runtime-manifest.v1.json', 'bin/clang.wasm.gz', 'bin/lld.wasm.gz', 'bin/memfs.wasm.gz', 'bin/sysroot.tar.gz'].map(f => ['assets/' + f, f]).concat([['dist/clang-wasm-toolchain.global.js', 'toolchain.js'], ['LICENSE', 'LICENSE'], ['THIRD-PARTY-NOTICES.md', 'THIRD-PARTY-NOTICES.md']]);
+let clangBytes = 0;
+fs.rmSync('dist/clang', { recursive: true, force: true });
+for (const [from, to] of clangFiles) {
+  const dest = 'dist/' + CLANG_DIR + to;
+  fs.mkdirSync(require('path').dirname(dest), { recursive: true });
+  fs.copyFileSync('node_modules/@live-codes/clang-wasm/' + from, dest);
+  clangBytes += fs.statSync(dest).size;
+}
+console.log('copied the real-C++ compiler to dist/' + CLANG_DIR, (clangBytes / 1024 / 1024).toFixed(1), 'MB');
+const BUILD = { date: new Date().toISOString().slice(0, 10), thirdParty: THIRD_PARTY, clang: { path: CLANG_DIR, mb: Math.round(clangBytes / 1024 / 1024), llvm: CLANG_PKG.version } };
 // The same notices as a file at the repository root, for copies of the source and of dist/index.html.
 fs.writeFileSync('THIRD-PARTY-NOTICES.md', '# Third-party notices\n\nThe built site (dist/index.html) and vendor/jscpp.min.js include the '
   + 'following software. Each is used under the licence reproduced here.\n'
@@ -96,12 +117,13 @@ const clean = (text) => scriptSafe(text.replace(/\r\n?/g, '\n'));   // the HTML 
 const pySrc = ['node_modules/skulpt/dist/skulpt.min.js', 'node_modules/skulpt/dist/skulpt-stdlib.js', 'src/sandbox.js', 'src/pyworker.js'].map(r).join(';\n');
 const cppSrc = ['vendor/jscpp.min.js', 'src/cpputil.js', 'src/cppstep.js', 'src/cppworker.js'].map(r).join(';\n');
 const bootSrc = r('src/pyboot.js');
+const clangSrc = r('src/clangworker.js');   // the toolchain itself is downloaded (see CLANG_DIR); only this glue is in the page
 const dataBlock = (id, text) => `<script type="text/plain" id="${id}">${clean(text)}</script>\n`;
 const inline = [];   // the exact text of every inline script, for the CSP hashes
 const scriptTag = (text) => { inline.push(text); return `<script>${text}</script>\n`; };
 let body = scriptTag(`/* build info and third-party licences (build.js) */\nwindow.BUILD = ${scriptSafe(JSON.stringify(BUILD))};\n`);
 for (const s of scripts) body += scriptTag(`/* ${s} */\n${scriptSafe(r(s))}\n`);
-body += dataBlock('py-src', pySrc) + dataBlock('cpp-src', cppSrc) + dataBlock('py-boot', bootSrc);
+body += dataBlock('py-src', pySrc) + dataBlock('cpp-src', cppSrc) + dataBlock('py-boot', bootSrc) + dataBlock('clang-src', clangSrc);
 const indexHashes = inline.map(sha).concat(sha(clean(bootSrc)));   // the last one is the script inside the sandboxed iframe (see pyboot.js)
 const html = headFor(indexHashes) + body + '</body>\n</html>\n';
 fs.mkdirSync('dist', { recursive: true });
@@ -124,5 +146,6 @@ if (gm) {
 // learning-management systems; to forbid that, add "frame-ancestors 'none'" to the policy below (csp's second argument).
 const common = ['X-Content-Type-Options: nosniff', 'Referrer-Policy: no-referrer', 'Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()'];
 const rule = (paths, hashes) => paths.map(p => p + '\n').join('') + ['Content-Security-Policy: ' + csp(hashes)].concat(common).map(h => '  ' + h + '\n').join('') + '\n';
-fs.writeFileSync('dist/_headers', '# Written by build.js. Do not edit.\n' + rule(['/', '/index.html'], indexHashes) + rule(['/teacher-guide', '/teacher-guide.html'], guideHashes));
+const immutable = '/' + CLANG_DIR + '*\n  Cache-Control: public, max-age=31536000, immutable\n  X-Content-Type-Options: nosniff\n\n';
+fs.writeFileSync('dist/_headers', '# Written by build.js. Do not edit.\n' + immutable + rule(['/', '/index.html'], indexHashes) + rule(['/teacher-guide', '/teacher-guide.html'], guideHashes));
 console.log('wrote dist/_headers');

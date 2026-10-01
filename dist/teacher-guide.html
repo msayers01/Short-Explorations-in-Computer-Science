@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-yJPYz7bv/uJQ0VUrAuTHlDYf61lh7fI4VqKtunGMU8o=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src data: blob:; connect-src 'none'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-yJPYz7bv/uJQ0VUrAuTHlDYf61lh7fI4VqKtunGMU8o=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>A guide for teachers — Short Explorations in Computer Science</title>
 <style>
@@ -46,6 +46,7 @@
 :root[data-course="lisp"] { --accent: #5b3a8c; --accent-soft: #efe8f8; }
 :root[data-course="cpp"] { --accent: #1c5aa6; --accent-soft: #e5eefb; }
 :root[data-course="math"] { --accent: #1f6e4a; --accent-soft: #e4f2ea; }
+:root[data-course="modern"] { --accent: #0e6b77; --accent-soft: #e0f1f3; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
@@ -56,6 +57,7 @@
   :root:not([data-theme="light"])[data-course="lisp"] { --accent: #b99ae6; --accent-ink: #1a1030; --accent-soft: #2a2138; }
   :root:not([data-theme="light"])[data-course="cpp"] { --accent: #7fb0f0; --accent-ink: #0b1a2e; --accent-soft: #172538; }
   :root:not([data-theme="light"])[data-course="math"] { --accent: #6fcf97; --accent-ink: #072415; --accent-soft: #14301c; }
+  :root:not([data-theme="light"])[data-course="modern"] { --accent: #5cc9d6; --accent-ink: #04222a; --accent-soft: #11313a; }
 }
 :root[data-theme="dark"] {
   --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
@@ -66,6 +68,7 @@
 :root[data-theme="dark"][data-course="lisp"] { --accent: #b99ae6; --accent-ink: #1a1030; --accent-soft: #2a2138; }
 :root[data-theme="dark"][data-course="cpp"] { --accent: #7fb0f0; --accent-ink: #0b1a2e; --accent-soft: #172538; }
 :root[data-theme="dark"][data-course="math"] { --accent: #6fcf97; --accent-ink: #072415; --accent-soft: #14301c; }
+:root[data-theme="dark"][data-course="modern"] { --accent: #5cc9d6; --accent-ink: #04222a; --accent-soft: #11313a; }
 
 *, *::before, *::after { box-sizing: inherit; }
 html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
@@ -108,10 +111,12 @@ pre.code.captioned { padding-top: 1.6rem; }
 .catalog li[data-course="lisp"] .cat-code { color: #5b3a8c; box-shadow: inset 0 -2px 0 #5b3a8c; }
 .catalog li[data-course="cpp"] .cat-code { color: #1c5aa6; box-shadow: inset 0 -2px 0 #1c5aa6; }
 .catalog li[data-course="math"] .cat-code { color: #1f6e4a; box-shadow: inset 0 -2px 0 #1f6e4a; }
+.catalog li[data-course="modern"] .cat-code { color: #0e6b77; box-shadow: inset 0 -2px 0 #0e6b77; }
 :root[data-theme="dark"] .catalog li[data-course="python"] .cat-code { color: #e8a640; box-shadow: inset 0 -2px 0 #e8a640; }
 :root[data-theme="dark"] .catalog li[data-course="lisp"] .cat-code { color: #b99ae6; box-shadow: inset 0 -2px 0 #b99ae6; }
 :root[data-theme="dark"] .catalog li[data-course="cpp"] .cat-code { color: #7fb0f0; box-shadow: inset 0 -2px 0 #7fb0f0; }
 :root[data-theme="dark"] .catalog li[data-course="math"] .cat-code { color: #6fcf97; box-shadow: inset 0 -2px 0 #6fcf97; }
+:root[data-theme="dark"] .catalog li[data-course="modern"] .cat-code { color: #5cc9d6; box-shadow: inset 0 -2px 0 #5cc9d6; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .catalog li[data-course="python"] .cat-code { color: #e8a640; box-shadow: inset 0 -2px 0 #e8a640; }
   :root:not([data-theme="light"]) .catalog li[data-course="lisp"] .cat-code { color: #b99ae6; box-shadow: inset 0 -2px 0 #b99ae6; }
@@ -851,6 +856,11 @@ html.classroom .about { padding-bottom: 7rem; }
 .backup-review { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid var(--rule); }
 .backup-choice { display: flex; gap: 0.5rem; align-items: baseline; margin: 0.35rem 0; cursor: pointer; }
 
+/* Full C++ (real compiler): the consent box and the progress line in the output panel */
+.clang-gate { margin: .5rem 0 0; padding: .7rem .9rem; border: 1px solid var(--accent); border-radius: 6px; background: var(--accent-soft); }
+.clang-gate p { margin: 0 0 .6rem; }
+.clang-status { margin: .4rem 0 0; font-style: italic; opacity: .85; }
+
 </style>
 </head>
 <body>
@@ -862,7 +872,7 @@ html.classroom .about { padding-bottom: 7rem; }
   <nav class="g-toc" aria-label="Contents">
     <a href="#g-1">1. What the site is</a>
     <a href="#g-2">2. Before the first class</a>
-    <a href="#g-3">3. The four courses</a>
+    <a href="#g-3">3. The five courses</a>
     <a href="#g-4">4. Inside a lesson</a>
     <a href="#g-5">5. Leading an hour of coding</a>
     <a href="#g-6">6. The Code Lab</a>
@@ -877,7 +887,7 @@ html.classroom .about { padding-bottom: 7rem; }
   <h2>1. What the site is</h2>
   <p>This is a single web page that contains four short courses, a code editor, and a set of teacher tools. It runs entirely inside the browser. Nothing is installed on the computer, nobody signs in, and no information about a student is ever sent anywhere. That is a deliberate design choice, and it has three consequences worth knowing from the start.</p>
   <ul class="g-list">
-    <li><b>It works anywhere a browser works.</b> A school laptop, a Chromebook, a phone, a computer with no internet after the page has loaded, even a copy on a USB stick.</li>
+    <li><b>It works anywhere a browser works.</b> A school laptop, a Chromebook, a phone, a computer with no internet after the page has loaded, even a copy on a USB stick. (The one exception is optional: the course <em>Modern C++</em> and the <em>Full C++</em> choice in the Code Lab use a real compiler that the browser downloads once, about 28 MB, the first time a student uses it. After that it is kept on the device and works offline too. A copy opened as a file from a USB stick cannot use it.)</li>
     <li><b>Progress is saved on the device, not in an account.</b> A student who uses the same computer sees their completed exercises and saved code next time. A student who switches computers starts fresh there. Section 9 explains how to live with this, and section 8 how a student takes their work with them.</li>
     <li><b>Work moves between people as links.</b> A student's submission is a link that contains their program. Your assignment is a link that contains the task. You share these the way your class already shares things: Google Classroom, email, a message, a QR code on the projector.</li>
   </ul>
@@ -899,8 +909,8 @@ html.classroom .about { padding-bottom: 7rem; }
 </section>
 
 <section id="g-3">
-  <h2>3. The four courses</h2>
-  <p>Each course is a sequence of self-contained lessons; a lesson is designed to fill one class period of 45–60 minutes and can be used on its own. The three programming courses teach the same core ideas in three different languages; the fourth course uses Python as a laboratory for mathematics.</p>
+  <h2>3. The five courses</h2>
+  <p>Each course is a sequence of self-contained lessons; a lesson is designed to fill one class period of 45–60 minutes and can be used on its own. The first three programming courses teach the same core ideas in three different languages; the fourth course uses Python as a laboratory for mathematics; the fifth continues C++ with a real compiler.</p>
   <table class="g-table">
     <thead><tr><th>Course</th><th>Who it is for</th><th>What students do</th></tr></thead>
     <tbody>
@@ -908,6 +918,7 @@ html.classroom .about { padding-bottom: 7rem; }
       <tr><td><b>SC 102 Introduction to Lisp</b><br><span class="g-muted">11 lessons</span></td><td>Grades 11–12 or a strong 10th grader, after Python.</td><td>Think in expressions and recursion, see how a language evaluates code step by step, and build a program that differentiates algebra.</td></tr>
       <tr><td><b>SC 103 Introduction to C++</b><br><span class="g-muted">11 lessons</span></td><td>Grades 10–12, after Python or with some experience.</td><td>Meet types, pointers and arrays; learn what happens under the hood; finish with a prime-number sieve.</td></tr>
       <tr><td><b>SC 104 The Mathematics of Computing</b><br><span class="g-muted">13 lessons</span></td><td>Grades 10–12 or a strong 9th grader, after Python. Algebra only, no calculus.</td><td>Logic, sets, proof and induction, number theory, graphs, machines with finite memory, patterns and the double vowel spelling of Ojibwe, what no program can compute, and how hard problems and codes work.</td></tr>
+    <tr><td><b>SC 105 Modern C++</b><br><span class="g-muted">3 lessons</span></td><td>Grades 11–12, after SC 103.</td><td>Use strings and vectors, pass by reference, and read a real compiler’s warnings. Needs a one-time download of the compiler (about 28 MB) and a web address: it does not run from a file on a USB stick.</td></tr>
     </tbody>
   </table>
   <p>Suggested paths: a one-semester elective is Python followed by the mathematics course; a two-year sequence adds C++ and Lisp; a single Hour of Code event uses Python lesson 1 alone.</p>

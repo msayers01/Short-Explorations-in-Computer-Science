@@ -1,10 +1,12 @@
 # Short Explorations in Computer Science
 
-Four free, self-paced courses (Introduction to Python, Introduction to Lisp, Introduction to C++, and
-Introduction to the Mathematics of Computing) with runnable examples and autograded exercises, a Code Lab
+Five free, self-paced courses (Introduction to Python, Introduction to Lisp, Introduction to C++,
+Introduction to the Mathematics of Computing, and Modern C++) with runnable examples and autograded exercises, a Code Lab
 sandbox, and tools for teachers: assignments and submissions shared as links, a grade book, student
 portfolios and a classroom (projector) mode. Python, C++ and Scheme all run in the browser, so there is no
-server and no account. The build produces one self-contained `index.html` that can be hosted anywhere or
+server and no account. For C++ there are two engines: a small teaching interpreter that is part of the page, and a real
+compiler (Clang built for WebAssembly) that the browser downloads once, on request, for the Modern C++ course and the
+Code Lab's Full C++ option. The build produces one self-contained `index.html` that can be hosted anywhere or
 opened from disk.
 
 Source and releases: <https://github.com/msayers01/Short-Explorations-in-Computer-Science>.
@@ -26,6 +28,7 @@ add lessons, figures and exercise types.
     src/course_lisp.js     SC 102 Introduction to Lisp
     src/course_cpp.js      SC 103 Introduction to C++
     src/course_math.js     SC 104 Introduction to the Mathematics of Computing (uses Python)
+    src/course_modern.js   SC 105 Modern C++ (runs on the real compiler)
     src/style.css          design tokens, layout and every component's styles
     src/app.js             router, pages, code editor, runners, grader, saved progress
     src/lab.js             the Code Lab (#/lab): files, editor, Python tracer and turtle, Scheme REPL,
@@ -41,6 +44,7 @@ add lessons, figures and exercise types.
     src/scheme.js          Scheme interpreter (MIT Scheme / SICP dialect)
     src/subst.js           substitution-model stepper for Scheme
     src/cppstep.js         C++ memory stepper (frames, addresses, arrays and pointers)
+    src/clangworker.js     the Full C++ worker (real Clang, downloaded on demand); src/cppfull.js grades its exercises
     src/qr.js              QR code encoder for sharing links
     vendor/jscpp.min.js    the JSCPP C++ interpreter, bundled for the browser (see below)
     stubs/                 shims used when bundling JSCPP
@@ -60,7 +64,12 @@ add lessons, figures and exercise types.
 ## Building
 
     npm install
-    node build.js                               # writes dist/index.html and dist/teacher-guide.html
+    node build.js                               # writes dist/index.html and dist/teacher-guide.html,
+                                                # and copies the real-C++ compiler (28 MB) to dist/clang/<version>/
+
+The site is `dist/index.html` plus, for the Modern C++ course and Full C++ in the Code Lab, the `dist/clang/` folder next
+to it (it is not in git; the build makes it). Host both; the page fetches the compiler only when asked. `index.html` alone
+still works, without those two features. They also need the site to be served over http(s), not opened as a file.
 
 The patched JSCPP is already bundled in `vendor/jscpp.min.js`; the patch also has to be applied to
 `node_modules` for the C++ tests; `npm test` does that for you (`scripts/patch-jscpp.js`). To rebuild the bundle after changing JSCPP:
@@ -73,7 +82,7 @@ The patched JSCPP is already bundled in `vendor/jscpp.min.js`; the patch also ha
 ## Testing
 
     npm test          # all of the below
-    node test_course.js python      # or lisp, cpp, math
+    node test_course.js python      # or lisp, cpp, math, modern (real compiler: about a minute)
     node test_cppstep.js
     node test_subst.js
 

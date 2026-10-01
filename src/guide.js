@@ -10,7 +10,7 @@ window.GUIDE = (function () {
   <nav class="g-toc" aria-label="Contents">
     <a href="#g-1">1. What the site is</a>
     <a href="#g-2">2. Before the first class</a>
-    <a href="#g-3">3. The four courses</a>
+    <a href="#g-3">3. The five courses</a>
     <a href="#g-4">4. Inside a lesson</a>
     <a href="#g-5">5. Leading an hour of coding</a>
     <a href="#g-6">6. The Code Lab</a>
@@ -25,7 +25,7 @@ window.GUIDE = (function () {
   <h2>1. What the site is</h2>
   <p>This is a single web page that contains four short courses, a code editor, and a set of teacher tools. It runs entirely inside the browser. Nothing is installed on the computer, nobody signs in, and no information about a student is ever sent anywhere. That is a deliberate design choice, and it has three consequences worth knowing from the start.</p>
   <ul class="g-list">
-    <li><b>It works anywhere a browser works.</b> A school laptop, a Chromebook, a phone, a computer with no internet after the page has loaded, even a copy on a USB stick.</li>
+    <li><b>It works anywhere a browser works.</b> A school laptop, a Chromebook, a phone, a computer with no internet after the page has loaded, even a copy on a USB stick. (The one exception is optional: the course <em>Modern C++</em> and the <em>Full C++</em> choice in the Code Lab use a real compiler that the browser downloads once, about 28 MB, the first time a student uses it. After that it is kept on the device and works offline too. A copy opened as a file from a USB stick cannot use it.)</li>
     <li><b>Progress is saved on the device, not in an account.</b> A student who uses the same computer sees their completed exercises and saved code next time. A student who switches computers starts fresh there. Section 9 explains how to live with this, and section 8 how a student takes their work with them.</li>
     <li><b>Work moves between people as links.</b> A student's submission is a link that contains their program. Your assignment is a link that contains the task. You share these the way your class already shares things: Google Classroom, email, a message, a QR code on the projector.</li>
   </ul>
@@ -47,8 +47,8 @@ window.GUIDE = (function () {
 </section>
 
 <section id="g-3">
-  <h2>3. The four courses</h2>
-  <p>Each course is a sequence of self-contained lessons; a lesson is designed to fill one class period of 45–60 minutes and can be used on its own. The three programming courses teach the same core ideas in three different languages; the fourth course uses Python as a laboratory for mathematics.</p>
+  <h2>3. The five courses</h2>
+  <p>Each course is a sequence of self-contained lessons; a lesson is designed to fill one class period of 45–60 minutes and can be used on its own. The first three programming courses teach the same core ideas in three different languages; the fourth course uses Python as a laboratory for mathematics; the fifth continues C++ with a real compiler.</p>
   <table class="g-table">
     <thead><tr><th>Course</th><th>Who it is for</th><th>What students do</th></tr></thead>
     <tbody>
@@ -56,6 +56,7 @@ window.GUIDE = (function () {
       <tr><td><b>SC 102 Introduction to Lisp</b><br><span class="g-muted">11 lessons</span></td><td>Grades 11–12 or a strong 10th grader, after Python.</td><td>Think in expressions and recursion, see how a language evaluates code step by step, and build a program that differentiates algebra.</td></tr>
       <tr><td><b>SC 103 Introduction to C++</b><br><span class="g-muted">11 lessons</span></td><td>Grades 10–12, after Python or with some experience.</td><td>Meet types, pointers and arrays; learn what happens under the hood; finish with a prime-number sieve.</td></tr>
       <tr><td><b>SC 104 The Mathematics of Computing</b><br><span class="g-muted">13 lessons</span></td><td>Grades 10–12 or a strong 9th grader, after Python. Algebra only, no calculus.</td><td>Logic, sets, proof and induction, number theory, graphs, machines with finite memory, patterns and the double vowel spelling of Ojibwe, what no program can compute, and how hard problems and codes work.</td></tr>
+    <tr><td><b>SC 105 Modern C++</b><br><span class="g-muted">3 lessons</span></td><td>Grades 11–12, after SC 103.</td><td>Use strings and vectors, pass by reference, and read a real compiler\u2019s warnings. Needs a one-time download of the compiler (about 28 MB) and a web address: it does not run from a file on a USB stick.</td></tr>
     </tbody>
   </table>
   <p>Suggested paths: a one-semester elective is Python followed by the mathematics course; a two-year sequence adds C++ and Lisp; a single Hour of Code event uses Python lesson 1 alone.</p>
