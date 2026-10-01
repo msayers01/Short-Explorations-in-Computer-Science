@@ -9,7 +9,7 @@
 })(typeof self !== 'undefined' ? self : this, function (Scheme) {
   const { Pair, NIL, UNSPEC, Sym, sym, Lambda, Primitive, SchemeError } = Scheme;
   const S = {};
-  for (const n of ['quote', 'define', 'lambda', 'if', 'cond', 'else', 'let', 'and', 'or', 'begin', 'set!', 'let*', 'letrec', 'do', 'when', 'unless', 'quasiquote', 'delay', 'cons-stream', 'define-syntax', 'case']) S[n] = sym(n);
+  for (const n of ['quote', 'define', 'lambda', 'if', 'cond', 'else', 'let', 'and', 'or', 'begin', 'set!', 'let*', 'letrec', 'do', 'when', 'unless', 'quasiquote', 'delay', 'cons-stream', 'define-syntax', 'case', '=>', 'unquote', 'unquote-splicing']) S[n] = sym(n);
   const OPAQUE = new Set([S['set!'], S['let*'], S.letrec, S.do, S.when, S.unless, S.quasiquote, S.delay, S['cons-stream'], S.case]);
   const HIGHER = new Set(['map', 'filter', 'reduce', 'fold-left', 'fold-right', 'fold', 'for-each', 'apply', 'sort', 'accumulate', 'assoc', 'member', 'vector-map', 'list-sort', 'delete', 'find', 'any', 'every', 'assq', 'memq'].map(sym));
 
@@ -24,13 +24,15 @@
     const it = Scheme.makeEvaluator({ onOutput: opts.onOutput, stepLimit: 5e6 });
     const G = it.G;
     const maxSteps = opts.maxSteps || 400;
+    let uid = 0;
+    const without2 = (m, names) => new Map([...m].filter(([k]) => !names.includes(k)));
     const isLambdaForm = (x) => x instanceof Pair && x.car === S.lambda;
     const globalProc = (s) => { try { const v = G.lookup(s); return (v instanceof Lambda || v instanceof Primitive) ? v : null; } catch (e) { return null; } };
-    const isValue = (x) => typeof x === 'number' || typeof x === 'boolean' || typeof x === 'string' || x instanceof Datum || x === NIL || isLambdaForm(x) || (x instanceof Sym && !!globalProc(x));
+    const isValue = (x) => typeof x === 'number' || typeof x === 'bigint' || typeof x === 'boolean' || typeof x === 'string' || x instanceof Datum || x === NIL || isLambdaForm(x) || (x instanceof Sym && !!globalProc(x));
 
     // expression -> raw Scheme value (for handing to primitives / the interpreter)
     const toRaw = (x) => x instanceof Datum ? x.v : (x instanceof Sym ? G.lookup(x) : (isLambdaForm(x) ? it.evaluate(x, G) : x));
-    const fromRaw = (v) => (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string' || v === NIL) ? v : new Datum(v);
+    const fromRaw = (v) => (typeof v === 'number' || typeof v === 'bigint' || typeof v === 'boolean' || typeof v === 'string' || v === NIL) ? v : new Datum(v);
     // expression with Datums turned back into quoted data, so the interpreter can evaluate it
     const toEvalable = (x) => x instanceof Datum ? (x.v instanceof Pair || x.v instanceof Sym || x.v === NIL ? list([S.quote, x.v]) : x.v) : (x instanceof Pair ? new Pair(toEvalable(x.car), toEvalable(x.cdr)) : x);
 
@@ -50,12 +52,38 @@
         const nb = list(binds.map(b => b instanceof Pair ? list([b.car, substitute(b.cdr.car, map)]) : b));
         return new Pair(S.let, new Pair(nb, substitute(x.cdr.cdr, m2)));
       }
+      const without = (m, names) => new Map([...m].filter(([k]) => !names.includes(k)));
+      if (x.car === S['let*'] && x.cdr instanceof Pair) {   // each binding sees the ones before it, and shadows from then on
+        let m = map; const nb = [];
+        for (const b of arr(x.cdr.car)) { if (b instanceof Pair) { nb.push(list([b.car, substitute(b.cdr.car, m)])); m = without(m, [b.car]); } else { nb.push(b); m = without(m, [b]); } }
+        return new Pair(S['let*'], new Pair(list(nb), substitute(x.cdr.cdr, m)));
+      }
+      if (x.car === S.letrec && x.cdr instanceof Pair) {   // the binders scope over their own inits too
+        const binds = arr(x.cdr.car), m2 = without(map, binds.map(b => b instanceof Pair ? b.car : b));
+        return new Pair(S.letrec, new Pair(list(binds.map(b => b instanceof Pair ? list([b.car, substitute(b.cdr.car, m2)]) : b)), substitute(x.cdr.cdr, m2)));
+      }
+      if (x.car === S.let && x.cdr instanceof Pair && x.cdr.car instanceof Sym && x.cdr.cdr instanceof Pair) {   // named let: the name and the variables shadow in the body
+        const name = x.cdr.car, binds = arr(x.cdr.cdr.car), m2 = without(map, [name, ...binds.map(b => b instanceof Pair ? b.car : b)]);
+        return new Pair(S.let, new Pair(name, new Pair(list(binds.map(b => b instanceof Pair ? list([b.car, substitute(b.cdr.car, map)]) : b)), substitute(x.cdr.cdr.cdr, m2))));
+      }
+      if (x.car === S.do && x.cdr instanceof Pair && x.cdr.cdr instanceof Pair) {   // inits see the outer names; steps, test and body see the loop variables
+        const specs = arr(x.cdr.car), m2 = without(map, specs.map(b => b.car));
+        const ns = specs.map(b => new Pair(b.car, new Pair(substitute(b.cdr.car, map), substitute(b.cdr.cdr, m2))));
+        return new Pair(S.do, new Pair(list(ns), substitute(x.cdr.cdr, m2)));
+      }
+      if (x.car === S.quasiquote && x.cdr instanceof Pair) return new Pair(S.quasiquote, list([substituteQuasi(x.cdr.car, map)]));
       if (x.car === S.define && x.cdr instanceof Pair) {   // (define (name params) body) or (define name expr): substitute inside, not into the bound names
         const head = x.cdr.car;
         if (head instanceof Pair) { const bound = new Set(arr(head.cdr)); let p = head.cdr; while (p instanceof Pair) p = p.cdr; if (p instanceof Sym) bound.add(p); const m2 = new Map([...map].filter(([k]) => !bound.has(k))); return new Pair(S.define, new Pair(head, substitute(x.cdr.cdr, m2))); }
         return new Pair(S.define, new Pair(head, substitute(x.cdr.cdr, map)));
       }
       return new Pair(substitute(x.car, map), substitute(x.cdr, map));
+    }
+    /** Inside a quasiquote only the unquoted parts are expressions. */
+    function substituteQuasi(x, map) {
+      if (!(x instanceof Pair)) return x;
+      if ((x.car === S.unquote || x.car === S['unquote-splicing']) && x.cdr instanceof Pair) return new Pair(x.car, list([substitute(x.cdr.car, map)]));
+      return new Pair(substituteQuasi(x.car, map), substituteQuasi(x.cdr, map));
     }
     function replaceAt(root, target, repl) {
       if (root === target) return repl;
@@ -91,6 +119,7 @@
         const clause = rest[0];
         if (clause.car === S.else) return { target: x, result: seq(arr(clause.cdr)), note: 'the else clause is taken' };
         if (!isValue(clause.car)) return inner(x, clause.car);
+        if (clause.car !== false && clause.cdr instanceof Pair && clause.cdr.car === S['=>'] && clause.cdr.cdr instanceof Pair) return { target: x, result: new Pair(clause.cdr.cdr.car, list([clause.car])), note: 'this clause\u2019s test is true, so the procedure after => is applied to the test value' };
         if (clause.car !== false) return { target: x, result: clause.cdr === NIL ? clause.car : seq(arr(clause.cdr)), note: 'this clause\u2019s test is true, so cond reduces to its body' };
         return { target: x, result: new Pair(S.cond, x.cdr.cdr), note: 'this clause\u2019s test is false, so it is dropped' };
       }
@@ -121,6 +150,7 @@
         return { target: x, result: new Pair(new Pair(S.lambda, new Pair(params, x.cdr.cdr)), list(args)), note: 'let is a lambda applied to the initial values' };
       }
       if (op === S.define) return opaque(x, 'define');
+      if (op === S['set!'] && !(x.cdr.car instanceof Sym)) throw new SchemeError('set! changes a variable, which the substitution model cannot show (the parameter was already replaced by its value). Press Run to see what a program that uses set! does.');
       if (OPAQUE.has(op)) return opaque(x, op.name);
       // an application
       for (const e of [x.car, ...rest]) if (!isValue(e)) return inner(x, e);
@@ -139,7 +169,7 @@
       const lam = proc;
       const body = lam.body instanceof Pair && lam.body.car === S.begin ? lam.body.cdr : list([lam.body]);
       if (rest.length < lam.params.length || (!lam.rest && rest.length > lam.params.length))
-        throw new SchemeError('The procedure ' + Scheme.write(lam) + ' has been called with ' + rest.length + ' argument' + (rest.length === 1 ? '' : 's') + '; it requires exactly ' + lam.params.length + ' argument' + (lam.params.length === 1 ? '' : 's') + '.');
+        throw new SchemeError('The procedure ' + Scheme.write(lam) + ' has been called with ' + rest.length + ' argument' + (rest.length === 1 ? '' : 's') + '; it requires ' + (lam.rest ? 'at least ' : 'exactly ') + lam.params.length + ' argument' + (lam.params.length === 1 ? '' : 's') + '.');
       const map = new Map(); lam.params.forEach((p, i) => map.set(p, rest[i]));
       if (lam.rest) map.set(lam.rest, new Datum(list(rest.slice(lam.params.length).map(toRaw))));
       // A procedure made inside another call (a closure) remembers the names around its birthplace:
@@ -152,9 +182,16 @@
       const name = f instanceof Sym ? f.name : 'the lambda';
       const binding = (lam.params.length ? lam.params.map((p, i) => p.name + ' \u2192 ' + Scheme.write(toRaw(rest[i]))).join(', ') : 'no parameters') + (remembered.length ? ' (and the values it remembers from where it was made: ' + remembered.join(', ') + ')' : '');
       let exprs = arr(substitute(seq(arr(body)), map) instanceof Pair && body.cdr !== NIL ? substitute(new Pair(S.begin, body), map).cdr : list([substitute(body.car, map)]));
-      const defs = exprs.filter(e => e instanceof Pair && e.car === S.define); exprs = exprs.filter(e => !(e instanceof Pair && e.car === S.define));
-      let defNote = '';
-      if (defs.length) { for (const d of defs) it.evaluate(toEvalable(d), G); defNote = '; its internal definition' + (defs.length > 1 ? 's' : '') + ' of ' + defs.map(d => Scheme.write(d.cdr.car instanceof Pair ? d.cdr.car.car : d.cdr.car)).join(', ') + ' (with ' + binding + ' already substituted) ' + (defs.length > 1 ? 'are' : 'is') + ' now available'; }
+      let defs = exprs.filter(e => e instanceof Pair && e.car === S.define); exprs = exprs.filter(e => !(e instanceof Pair && e.car === S.define));
+      let defNote = '', ren = null;
+      if (defs.length) {
+        // Internal definitions live in this call's own frame, which the substitution model has no place to draw. Give each one a name
+        // made for this call (g#3), so another call, or a global of the same name, is never touched.
+        const nameOf = (d) => d.cdr.car instanceof Pair ? d.cdr.car.car : d.cdr.car;
+        ren = new Map(defs.map(d => [nameOf(d), sym(nameOf(d).name + '#' + (++uid))]));
+        defs = defs.map(d => { const h = d.cdr.car; const nh = h instanceof Pair ? new Pair(ren.get(h.car), h.cdr) : ren.get(h); return substitute(new Pair(S.define, new Pair(nh, d.cdr.cdr)), without2(ren, h instanceof Pair ? arr(h.cdr) : [])); });
+        exprs = exprs.map(e => substitute(e, ren));
+        for (const d of defs) it.evaluate(toEvalable(d), G); defNote = '; its internal definition' + (defs.length > 1 ? 's' : '') + ' of ' + [...ren.keys()].map(k => k.name).join(', ') + ' (with ' + binding + ' already substituted, under a name made for this call) ' + (defs.length > 1 ? 'are' : 'is') + ' now available'; }
       return { target: x, result: seq(exprs), note: 'replace the call by the body of ' + name + ', with ' + binding + defNote };
     }
     const inner = (x, e) => { const r = reduce(e); return r; };

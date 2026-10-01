@@ -21,7 +21,7 @@
   async function pack(obj) {
     const json = JSON.stringify(obj); const bytes = encodeUtf8(json);
     if (typeof CompressionStream !== 'undefined') {
-      try { const cs = new CompressionStream('deflate-raw'); const w = cs.writable.getWriter(); w.write(bytes); w.close(); const buf = await new Response(cs.readable).arrayBuffer(); return 'z' + b64(new Uint8Array(buf)); } catch (e) { }
+      try { const cs = new CompressionStream('deflate-raw'); const w = cs.writable.getWriter(); w.write(bytes).catch(() => { }); w.close().catch(() => { }); const buf = await new Response(cs.readable).arrayBuffer(); return 'z' + b64(new Uint8Array(buf)); } catch (e) { }
     }
     return 'p' + b64(bytes);
   }
@@ -29,7 +29,7 @@
     if (!s) return null;
     const kind = s[0], body = unb64(s.slice(1));
     let bytes = body;
-    if (kind === 'z') { if (typeof DecompressionStream === 'undefined') throw new Error('This browser cannot open compressed links; try a current version of Chrome, Safari or Firefox.'); const ds = new DecompressionStream('deflate-raw'); const w = ds.writable.getWriter(); w.write(body); w.close(); bytes = new Uint8Array(await new Response(ds.readable).arrayBuffer()); }
+    if (kind === 'z') { if (typeof DecompressionStream === 'undefined') throw new Error('This browser cannot open compressed links; try a current version of Chrome, Safari or Firefox.'); const ds = new DecompressionStream('deflate-raw'); const w = ds.writable.getWriter(); w.write(body).catch(() => { }); w.close().catch(() => { }); bytes = new Uint8Array(await new Response(ds.readable).arrayBuffer()); }
     return JSON.parse(decodeUtf8(bytes));
   }
   const baseUrl = () => location.href.split('#')[0];
@@ -37,7 +37,7 @@
   // ---------- assignment model
   function studentCopy(a) { return { v: 1, id: a.id, title: a.title, lang: a.lang, text: a.text, starter: a.starter, tests: (a.tests || []).filter(t => !t.hidden).map(t => ({ k: t.k, in: t.in, expect: t.expect })), hints: a.hints || [], roster: a.roster || [], author: a.author || '', due: a.due || '', created: a.created }; }
   function toEx(a, includeHidden) {
-    const tests = (a.tests || []).filter(t => includeHidden || !t.hidden).map(t => t.k === 'call' ? { call: t.in, expect: t.expect } : { stdin: t.in, expect: t.expect, name: t.in ? 'input ' + JSON.stringify(t.in) : 'output' });
+    const tests = (a.tests || []).filter(t => includeHidden === 'hidden' ? t.hidden : (includeHidden || !t.hidden)).map(t => t.k === 'call' ? { call: t.in, expect: t.expect } : { stdin: t.in, expect: t.expect, name: t.in ? 'input ' + JSON.stringify(t.in) : 'output' });
     return { id: 'asg-' + a.id, lang: a.lang, title: a.title, tests, hints: a.hints || [], followup: '' };
   }
   function textToHtml(t) {   // plain text with paragraphs, `code`, and lines starting with "- " as bullets
@@ -81,7 +81,7 @@
       panel.innerHTML = '';
       const ta = el('textarea', { class: 'teach-paste', rows: 3, placeholder: 'Paste an assignment link, a back-up link, or the JSON of a back-up' });
       panel.append(el('div', { class: 'panel-head' }, el('b', {}, 'Import'), el('span', { class: 'spacer' }), el('button', { class: 'btn quiet tiny', onclick: showList }, 'Back')), el('p', { class: 'muted small teach-p' }, 'Importing an assignment link made on another device gives you an editable copy. Note that a student link does not contain hidden tests; import from a back-up to keep those.'), ta,
-        el('div', { class: 'toolbar' }, el('button', { class: 'btn primary tiny', onclick: async () => { try { const s = ta.value.trim(); let obj; if (s.startsWith('{') || s.startsWith('[')) obj = JSON.parse(s); else { const m = s.match(/[?&](a|b)=([^&#\s]+)/); if (!m) throw new Error('That is not an assignment or back-up link.'); obj = await unpack(m[2]); if (m[1] === 'b') obj = obj.assignments; } const items = Array.isArray(obj) ? obj : (obj.assignments ? Object.values(obj.assignments) : [obj]); let n = 0; for (const a of items) { if (!a || !a.id || !a.lang) continue; T.assignments[a.id] = normalize(a); n++; } save(); ctx.status('imported ' + n + ' assignment' + (n === 1 ? '' : 's')); showList(); } catch (e) { ctx.status('could not import: ' + e.message); } } }, 'Import')));
+        el('div', { class: 'toolbar' }, el('button', { class: 'btn primary tiny', onclick: async () => { try { const s = ta.value.trim(); let obj; if (s.startsWith('{') || s.startsWith('[')) obj = JSON.parse(s); else { const m = s.match(/[?&](a|b)=([^&#\s]+)/); if (!m) throw new Error('That is not an assignment or back-up link.'); obj = await unpack(m[2]); } const items = Array.isArray(obj) ? obj : (obj.assignments ? Object.values(obj.assignments) : [obj]); let n = 0; for (const a of items) { if (!a || !a.id || !a.lang) continue; T.assignments[a.id] = normalize(a); n++; } save(); ctx.status('imported ' + n + ' assignment' + (n === 1 ? '' : 's')); showList(); } catch (e) { ctx.status('could not import: ' + e.message); } } }, 'Import')));
     }
     function normalize(a) { return { id: a.id, v: 1, title: a.title || '', lang: a.lang, text: a.text || '', starter: a.starter || '', tests: (a.tests || []).map(t => ({ k: t.k === 'call' ? 'call' : 'stdin', in: t.in || '', expect: t.expect || '', hidden: !!t.hidden })), hints: a.hints || [], roster: a.roster || [], author: a.author || '', due: a.due || '', created: a.created || Date.now() }; }
     async function backupAll() {
@@ -89,8 +89,9 @@
       panel.innerHTML = '';
       panel.append(el('div', { class: 'panel-head' }, el('b', {}, 'Back up'), el('span', { class: 'spacer' }), el('button', { class: 'btn quiet tiny', onclick: showList }, 'Back')),
         el('p', { class: 'muted small teach-p' }, 'Your assignments live only in this browser. Keep this link somewhere safe (a note, an email to yourself): opening it in any Code Lab re-imports every assignment, hidden tests included. The JSON below is the same data in plain form.'),
-        linkBox(link), el('textarea', { class: 'teach-paste', rows: 4, readonly: '' , value: JSON.stringify(Object.values(T.assignments)) }));
+        linkBox(link), jsonBox(JSON.stringify(Object.values(T.assignments))));
     }
+    function jsonBox(text) { const ta = el('textarea', { class: 'teach-paste', rows: 4, readonly: '', 'aria-label': 'Back-up JSON' }); ta.value = text; return ta; }
     function linkBox(link, label) {
       const inp = el('input', { class: 'find-inp teach-link', readonly: '', value: link, 'aria-label': label || 'Link' });
       const copy = el('button', { class: 'btn tiny', onclick: () => { inp.select(); const done = (ok) => { copy.textContent = ok ? 'Copied' : 'Select and copy'; setTimeout(() => { copy.textContent = 'Copy link'; }, 2500); }; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(() => done(true), () => done(false)); else done(false); } }, 'Copy link');
@@ -136,7 +137,7 @@
         hints: f.hints.value.split('\n').map(s => s.trim()).filter(Boolean), roster: f.roster.value.split('\n').map(s => s.trim()).filter(Boolean),
         tests: rows.map(r => ({ k: r.kind.value, in: r.inp.value.replace(/\r/g, ''), expect: r.exp.value.replace(/\r/g, ''), hidden: r.hid.checked })).filter(t => t.in !== '' || t.expect !== '')
       });
-      const tryOut = el('div', { class: 'verdict', hidden: '' });
+      const tryOut = el('div', { class: 'verdict', hidden: '', role: 'status' });
       const saveBtn = el('button', { class: 'btn primary', onclick: () => { const na = collect(); if (!na.title) { f.title.focus(); ctx.status('give the assignment a title'); return; } T.assignments[a.id] = na; T.name = na.author; save(); ctx.status('saved'); shareAssignment(a.id); } }, 'Save');
       const tryBtn = el('button', { class: 'btn', title: 'Run these tests on the code in the editor (write your own solution there first)', onclick: async () => { const na = collect(); tryOut.hidden = false; tryOut.innerHTML = ''; const r = await ctx.grade(toEx(na, true), ctx.editor.value); ctx.renderVerdict(tryOut, r, toEx(na, true), 1); } }, 'Run tests on the editor code');
       panel.append(el('div', { class: 'panel-head' }, el('b', {}, id ? 'Edit assignment' : 'New assignment'), el('span', { class: 'spacer' }), el('button', { class: 'btn quiet tiny', onclick: showList }, 'Back to the list')),
@@ -165,7 +166,7 @@
       const ex = toEx(a, false);
       const instr = el('div', { class: 'prose ex-prompt', html: textToHtml(a.text) + (a.hints && a.hints.length ? '' : '') });
       instr.hidden = !!file.asgSeen;
-      const verdict = el('div', { class: 'verdict', hidden: '' }); let attempts = 0, hintIdx = 0;
+      const verdict = el('div', { class: 'verdict', hidden: '', role: 'status' }); let attempts = 0, hintIdx = 0;
       const hintBox = el('div', { class: 'hints' });
       const check = el('button', { class: 'btn primary', onclick: async () => { if (!ex.tests.length) { verdict.hidden = false; verdict.className = 'verdict'; verdict.textContent = 'This assignment has no visible tests; run your program and read the task carefully, then submit.'; return; } check.disabled = true; attempts++; verdict.hidden = false; verdict.innerHTML = ''; const r = await ctx.grade(ex, ctx.editor.value); ctx.renderVerdict(verdict, r, ex, attempts); file.lastCheck = { passed: r.results ? r.results.filter(x => x.ok).length : 0, total: r.results ? r.results.length : 0, at: Date.now() }; ctx.save(); check.disabled = false; } }, 'Check');
       const hintBtn = el('button', { class: 'btn quiet', onclick: () => { if (hintIdx < a.hints.length) hintBox.append(el('p', { class: 'hint' }, el('b', {}, 'Hint ' + (hintIdx + 1) + '. '), a.hints[hintIdx++])); hintBtn.textContent = hintIdx < a.hints.length ? 'Hint (' + (a.hints.length - hintIdx) + ' left)' : 'No more hints'; hintBtn.disabled = hintIdx >= a.hints.length; } }, a.hints.length ? 'Hint (' + a.hints.length + ')' : 'No hints');
@@ -215,17 +216,21 @@
       history.replaceState(null, '', '#/lab');
     };
     async function reviewLinks(links) {
-      let n = 0, last = null;
-      for (const l of links) { const m = l.match(/[?&]s=([^&#\s]+)/); if (!m) continue; try { last = await unpack(m[1]); await reviewSubmission(last, false); n++; } catch (e) { } }
-      ctx.status(n + ' submission' + (n === 1 ? '' : 's') + ' reviewed');
+      let n = 0, bad = 0, last = null;
+      for (const l of links) { const m = l.match(/[?&]s=([^&#\s]+)/); if (!m) { bad++; continue; } try { const sub = await unpack(m[1]); if (!sub || !sub.code || !sub.a || !sub.name) throw new Error('not a submission'); await reviewSubmission(sub, false); last = sub; n++; } catch (e) { bad++; } }
+      ctx.status(n + ' submission' + (n === 1 ? '' : 's') + ' reviewed' + (bad ? '; ' + bad + ' could not be read (is each one a complete submission link?)' : ''));
       if (last) gradeBook(last.a); else showList();
     }
     async function runAll(a, code) {
-      const ex = toEx(a, true); if (!ex.tests.length) return { passed: 0, total: 0, hiddenPassed: 0, hiddenTotal: 0, results: [], error: null };
-      const r = await ctx.grade(ex, code);
-      const vis = (a.tests || []).filter(t => !t.hidden).length;
-      const res = r.results || [];
-      return { passed: res.filter(x => x.ok).length, total: res.length, visPassed: res.slice(0, vis).filter(x => x.ok).length, visTotal: vis, hiddenPassed: res.slice(vis).filter(x => x.ok).length, hiddenTotal: res.length - vis, error: r.error || null, results: res };
+      // Visible and hidden tests are graded separately: a grader may return its results in a different order from the tests.
+      const vex = toEx(a, false), hex = toEx(a, 'hidden');
+      if (!vex.tests.length && !hex.tests.length) return { passed: 0, total: 0, hiddenPassed: 0, hiddenTotal: 0, results: [], error: null };
+      const vr = vex.tests.length ? await ctx.grade(vex, code) : { results: [] };
+      const hr = hex.tests.length ? await ctx.grade(hex, code) : { results: [] };
+      const vres = vr.results || [], hres = hr.results || [];
+      const res = vres.concat(hres);
+      const total = vex.tests.length + hex.tests.length;   // tests that could not run (syntax error...) still count
+      return { passed: res.filter(x => x.ok).length, total, visPassed: vres.filter(x => x.ok).length, visTotal: vex.tests.length, hiddenPassed: hres.filter(x => x.ok).length, hiddenTotal: hex.tests.length, error: vr.error || hr.error || null, results: res };
     }
     async function reviewSubmission(sub, show) {
       const a = T.assignments[sub.a];
@@ -279,12 +284,13 @@
     }
     function exportCsv(aid) {
       const a = T.assignments[aid]; const book = T.book[aid] || {};
-      const q = (s) => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
+      const q = (s) => { s = String(s == null ? '' : s); if (/^[=+\-@\t\r]/.test(s) && isNaN(Number(s))) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
       const lines = [['student', 'submitted', 'tests passed', 'tests total', 'hidden passed', 'hidden total', 'percent'].map(q).join(',')];
       for (const nm of Object.keys(book).sort()) { const e = book[nm], r = e.result || {}; lines.push([nm, fmtDate(e.at), r.passed, r.total, r.hiddenPassed, r.hiddenTotal, r.total ? Math.round(100 * r.passed / r.total) : ''].map(q).join(',')); }
       const csv = lines.join('\n');
       const ta = el('textarea', { class: 'teach-paste', rows: 6, readonly: '' }); ta.value = csv;
-      panel.append(el('div', { class: 'teach-field' }, el('span', { class: 'teach-label' }, 'CSV (select all and copy into a spreadsheet, or download)'), ta, el('div', { class: 'toolbar' }, el('button', { class: 'btn tiny', onclick: () => { const blob = new Blob([csv], { type: 'text/csv' }); const link = el('a', { href: URL.createObjectURL(blob), download: (a ? a.title.replace(/[^a-z0-9]+/gi, '_') : aid) + '.csv' }); document.body.append(link); link.click(); link.remove(); } }, 'Download CSV'))));
+      const old = panel.querySelector('.csv-box'); if (old) old.remove();
+      panel.append(el('div', { class: 'teach-field csv-box' }, el('span', { class: 'teach-label' }, 'CSV (select all and copy into a spreadsheet, or download)'), ta, el('div', { class: 'toolbar' }, el('button', { class: 'btn tiny', onclick: () => { const blob = new Blob([csv], { type: 'text/csv' }); const link = el('a', { href: URL.createObjectURL(blob), download: (a ? a.title.replace(/[^a-z0-9]+/gi, '_') : aid) + '.csv' }); document.body.append(link); link.click(); link.remove(); } }, 'Download CSV'))));
       ta.scrollIntoView && ta.scrollIntoView({ block: 'nearest' });
     }
 

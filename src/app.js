@@ -20,7 +20,7 @@
   const Progress = {
     key: 'shortcourses.progress.v1',
     data: null,
-    load() { if (this.data) return this.data; try { this.data = JSON.parse(localStorage.getItem(this.key) || '{}'); } catch (e) { this.data = {}; } if (!this.data.done) this.data.done = {}; if (!this.data.code) this.data.code = {}; if (!this.data.pass) this.data.pass = {}; return this.data; },
+    load() { if (this.data) return this.data; try { this.data = JSON.parse(localStorage.getItem(this.key) || '{}'); } catch (e) { this.data = {}; } if (!this.data || typeof this.data !== 'object') this.data = {}; if (!this.data.done) this.data.done = {}; if (!this.data.code) this.data.code = {}; if (!this.data.pass) this.data.pass = {}; return this.data; },
     save() { try { localStorage.setItem(this.key, JSON.stringify(this.data)); } catch (e) { /* storage unavailable */ } },
     isDone(id) { return !!this.load().done[id]; },
     // code (optional) is the work that passed; the portfolio shows it even if the student edits it later.
@@ -33,7 +33,7 @@
   // ---------- syntax highlighting ----------
   const LANGS = {
     python: {
-      comment: /#.*$/m, string: /("""[\s\S]*?"""|'''[\s\S]*?'''|f?"(?:[^"\\\n]|\\.)*"|f?'(?:[^'\\\n]|\\.)*')/,
+      comment: /#.*$/m, string: /(?:"""[\s\S]*?"""|'''[\s\S]*?'''|f?"(?:[^"\\\n]|\\.)*"|f?'(?:[^'\\\n]|\\.)*')/,
       keywords: 'def return if elif else for while in not and or import from as class pass break continue lambda True False None is with try except finally raise global del yield'.split(' '),
       builtins: 'print len range input int str float list dict set tuple sorted sum min max abs round type enumerate zip map filter reversed isinstance chr ord repr any all'.split(' '),
       tab: '    '
@@ -45,7 +45,7 @@
       tab: '  '
     },
     cpp: {
-      comment: /(\/\/.*$|\/\*[\s\S]*?\*\/)/m, string: /("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')/,
+      comment: /(?:\/\/.*$|\/\*[\s\S]*?\*\/)/m, string: /(?:"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')/,
       keywords: 'int double float char bool void long unsigned short const return if else for while do break continue struct class true false using namespace include new delete sizeof static'.split(' '),
       builtins: 'cout cin endl std main sqrt pow abs strlen'.split(' '),
       tab: '    '
@@ -117,9 +117,9 @@
     const undo = () => { if (hi > 0) restore(hist[--hi]); };
     const redo = () => { if (hi < hist.length - 1) restore(hist[++hi]); };
     // Apply an edit: replace [s, t) with text, put caret at caretPos, and record it.
-    const edit = (s, t, text, caretPos) => {
+    const edit = (s, t, text, caretPos, selEnd) => {
       ta.value = ta.value.slice(0, s) + text + ta.value.slice(t);
-      ta.selectionStart = ta.selectionEnd = caretPos;
+      ta.selectionStart = caretPos; ta.selectionEnd = selEnd == null ? caretPos : selEnd;
       record(null); render(); if (onChange) onChange(ta.value);
     };
 
@@ -143,7 +143,11 @@
       if (e.key === 'Tab') {
         e.preventDefault();
         const s = ta.selectionStart, t = ta.selectionEnd;
-        if (e.shiftKey) {
+        if (s !== t && ta.value.slice(s, t).includes('\n')) {
+          const v = ta.value, ls = v.lastIndexOf('\n', s - 1) + 1; let le = v.indexOf('\n', t - 1); if (le < 0) le = v.length;
+          const text = v.slice(ls, le).split('\n').map(l => e.shiftKey ? (l.startsWith(L.tab) ? l.slice(L.tab.length) : l.replace(/^ {1,3}/, '')) : (l === '' ? l : L.tab + l)).join('\n');
+          edit(ls, le, text, ls, ls + text.length);
+        } else if (e.shiftKey) {
           const ls = ta.value.lastIndexOf('\n', s - 1) + 1;
           if (ta.value.startsWith(L.tab, ls)) edit(ls, ls + L.tab.length, '', Math.max(ls, s - L.tab.length));
         } else edit(s, t, L.tab, s + L.tab.length);
@@ -234,6 +238,8 @@
     return m.replace(/^<position unavailable> /, '').replace(/^(\d+):(\d+) /, 'line $1: ');
   }
   function ensureMainReturns(code) {
+    // JSCPP cannot interrupt an empty-condition loop, which would freeze the page: for(;;) means for(;1;)
+    code = code.replace(/\bfor\s*\(\s*;\s*;\s*\)/g, (m, off) => ((code.slice(code.lastIndexOf('\n', off) + 1, off).match(/"/g) || []).length % 2 ? m : 'for(;1;)'));
     const i = code.search(/\bint\s+main\s*\(/); if (i < 0) return code;
     const open = code.indexOf('{', i); if (open < 0) return code;
     let depth = 0, j = open, inStr = null;
@@ -242,6 +248,7 @@
       if (inStr) { if (c === '\\') j++; else if (c === inStr) inStr = null; continue; }
       if (c === '"' || c === "'") { inStr = c; continue; }
       if (c === '/' && code[j + 1] === '/') { j = code.indexOf('\n', j); if (j < 0) return code; continue; }
+      if (c === '/' && code[j + 1] === '*') { j = code.indexOf('*/', j + 2); if (j < 0) return code; j++; continue; }
       if (c === '{') depth++; else if (c === '}') { depth--; if (depth === 0) break; }
     }
     if (j >= code.length) return code;
@@ -408,15 +415,19 @@
     box.append(head, el('div', { class: 'prose', html: ex.prompt }));
     const editor = makeEditor(ex.lang, saved != null ? saved : ex.starter, (v) => Progress.setCode(ex.id, v));
     const out = outputPanel();
-    const verdict = el('div', { class: 'verdict', hidden: '' });
+    const verdict = el('div', { class: 'verdict', hidden: '', role: 'status' });
     let attempts = 0;
     const runBtn = el('button', { class: 'btn', onclick: () => { runCell(ex.lang, editor.value, out, { stdin: ex.sampleStdin }); } }, 'Run');
     const checkBtn = el('button', { class: 'btn primary', onclick: async () => {
       checkBtn.disabled = true; checkBtn.textContent = 'Checking…'; attempts++;
       out.hide(); verdict.hidden = false; verdict.innerHTML = '';
-      const r = await grade(ex, editor.value);
-      renderVerdict(verdict, r, ex, attempts);
-      if (r.passed) { box.classList.add('done'); Progress.markDone(ex.id, editor.value); document.dispatchEvent(new CustomEvent('progress-changed')); }
+      try {
+        const r = await grade(ex, editor.value);
+        renderVerdict(verdict, r, ex, attempts);
+        if (r.passed) { box.classList.add('done'); Progress.markDone(ex.id, editor.value); document.dispatchEvent(new CustomEvent('progress-changed')); }
+      } catch (e) {
+        verdict.className = 'verdict fail'; verdict.append(el('p', { class: 'v-title' }, 'The checker failed unexpectedly: ' + (e && e.message || e)));
+      }
       checkBtn.disabled = false; checkBtn.replaceChildren(lbl('check'));
     } }, lbl('check'));
     const resetBtn = el('button', { class: 'btn quiet', onclick: () => armConfirm(resetBtn, 'Reset to starter?', () => { resetBtn.classList.remove('armed'); editor.value = ex.starter; Progress.setCode(ex.id, ex.starter); verdict.hidden = true; out.hide(); }) }, 'Reset');
@@ -485,7 +496,7 @@
       t.append(tb); form.append(el('div', { class: 'table-wrap' }, t));
     }
     const readAnswers = () => ex.kind === 'choice' ? inputs[0]() : read();
-    const verdict = el('div', { class: 'verdict', hidden: '' });
+    const verdict = el('div', { class: 'verdict', hidden: '', role: 'status' });
     let attempts = 0;
     const checkBtn = el('button', { class: 'btn primary', onclick: () => {
       attempts++; verdict.hidden = false; verdict.innerHTML = '';
@@ -755,7 +766,7 @@
     const qi = hash.indexOf('?'); const query = qi >= 0 ? hash.slice(qi + 1) : '';
     const parts = (qi >= 0 ? hash.slice(0, qi) : hash).split('/').filter(Boolean);
     const app = $('#app'); app.innerHTML = '';
-    if (parts[0] === 'guide' && window.GUIDE) { document.title = 'A guide for teachers — ' + SITE.name; app.append(topBar('guide'), window.GUIDE.page()); window.scrollTo(0, 0); return; }
+    if (parts[0] === 'guide' && window.GUIDE) { document.documentElement.setAttribute('data-course', ''); document.title = 'A guide for teachers — ' + SITE.name; app.append(topBar('guide'), window.GUIDE.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'ojibwe' && window.OJIBWE) { document.documentElement.setAttribute('data-course', ''); document.title = 'Ojibwemowin — ' + SITE.name; app.append(topBar('ojibwe'), window.OJIBWE.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'about' && window.ABOUT) { document.documentElement.setAttribute('data-course', ''); document.title = 'About and credits — ' + SITE.name; app.append(topBar('about'), window.ABOUT.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'portfolio' && window.PORTFOLIO) { document.documentElement.setAttribute('data-course', ''); document.title = 'Portfolio — ' + SITE.name; app.append(topBar('portfolio'), window.PORTFOLIO.page(query)); window.scrollTo(0, 0); return; }

@@ -14,15 +14,19 @@
     .replace(/[\u2212\u2013\u2014]/g, '-').replace(/\u00d7/g, '*').replace(/\u00b7/g, '*')
     .replace(/\u00b2/g, '^2').replace(/\u00b3/g, '^3')
     .replace(/\s+/g, '').replace(/\.$/, '');
-  const asNum = s => { const t = norm(s).replace(/,/g, ''); return /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/.test(t) ? Number(t) : null; };
+  const asNum = s => { let t = norm(s); if (/^[-+]?\d{1,3}(,\d{3})+(\.\d*)?$/.test(t)) t = t.replace(/,/g, ''); return /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/.test(t) ? Number(t) : null; };
   const same = (got, want) => {
     const g = norm(got), w = norm(want);
     if (g === '' && w !== '') return false;
     if (g === w) return true;
     const gn = asNum(got), wn = asNum(want);
-    if (gn !== null && wn !== null) return Math.abs(gn - wn) <= 1e-9 * Math.max(1, Math.abs(wn));
-    const tf = { t: 'true', f: 'false', '1': 'true', '0': 'false', yes: 'true', no: 'false' };
-    if ((tf[g] || g) === (tf[w] || w) && (tf[g] || tf[w])) return true;
+    if (gn !== null && wn !== null) {
+      if (Number.isInteger(gn) && Number.isInteger(wn) && Math.abs(wn) > 2 ** 31) return gn === wn;   // a relative tolerance would accept off-by-one big integers
+      return Math.abs(gn - wn) <= Math.max(1e-12, 1e-9 * Math.abs(wn));
+    }
+    // true/false answers: yes/no/t/f are accepted, but only when the expected answer is itself such a word
+    const tf = { t: 'true', f: 'false', yes: 'true', no: 'false', true: 'true', false: 'false' };
+    if (tf[w] && (tf[g] || g === '1' || g === '0') && (tf[g] || (g === '1' ? 'true' : 'false')) === tf[w]) return true;
     return false;
   };
   const list = x => (Array.isArray(x) ? x : [x]);
@@ -49,13 +53,13 @@
         results.push({ name: p.name || (ex.parts.length > 1 ? 'Part ' + String.fromCharCode(97 + i) : 'Answer'), ok, got, msg });
       });
     } else if (ex.kind === 'choice') {
-      const chosen = new Set((answers || []).map(Number));
+      const chosen = new Set((answers || []).map(Number).filter(i => Number.isInteger(i) && i >= 0 && i < ex.options.length));
       const correct = new Set(ex.options.map((o, i) => o.ok ? i : -1).filter(i => i >= 0));
       const ok = chosen.size === correct.size && [...chosen].every(i => correct.has(i));
       let msg = '';
       if (!ok) {
         if (!chosen.size) msg = 'Choose an option first.';
-        else { const wrongPick = [...chosen].find(i => !correct.has(i)); msg = wrongPick != null && ex.options[wrongPick].why ? ex.options[wrongPick].why : (ex.multi ? 'Not quite. More than one option may be right — or fewer.' : 'Not that one.'); }
+        else { const wrongPick = [...chosen].find(i => !correct.has(i)); msg = wrongPick != null && ex.options[wrongPick] && ex.options[wrongPick].why ? ex.options[wrongPick].why : (ex.multi ? 'Not quite. More than one option may be right — or fewer.' : 'Not that one.'); }
       }
       results.push({ name: 'Choice', ok, got: [...chosen].map(i => String.fromCharCode(65 + i)).join(', '), msg });
     } else if (ex.kind === 'table') {

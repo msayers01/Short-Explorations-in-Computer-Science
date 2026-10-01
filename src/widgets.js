@@ -16,7 +16,7 @@
   function stepper(n, render, opts) {
     opts = opts || {};
     let i = 0, timer = null;
-    const status = el('span', { class: 'fig-note' });
+    const status = el('span', { class: 'fig-note', role: 'status' });
     const set = (k) => { i = Math.max(0, Math.min(n - 1, k)); render(i); status.textContent = 'step ' + (i + 1) + ' of ' + n; back.disabled = i === 0; fwd.disabled = i === n - 1; if (i === n - 1) stop(); };
     const stop = () => { if (timer) { clearInterval(timer); timer = null; play.textContent = 'Play'; } };
     const back = el('button', { class: 'btn sm', onclick: () => { stop(); set(i - 1); } }, 'Back');
@@ -41,14 +41,14 @@
     ];
     const svg = sv('svg', { viewBox: '0 0 520 200', role: 'img', 'aria-label': 'Names pointing to objects' });
     const codeLine = el('div', { class: 'subst' });
-    const note = el('div', { class: 'trace-note' });
+    const note = el('div', { class: 'trace-note', role: 'status' });
     function render(i) {
       const s = steps[i]; svg.innerHTML = '';
       codeLine.innerHTML = steps.map((st, k) => '<span class="' + (k === i ? 'now' : k < i ? '' : 'dim') + '">' + esc(st.code) + '</span>').join('\n');
       note.textContent = s.note;
       const objKeys = ['a', 'b', 'c']; const objY = { a: 40, b: 100, c: 160 };
       const nameKeys = ['x', 'y', 'name']; const nameY = { x: 40, y: 100, name: 160 };
-      txt(20, 18, 'names', { fill: 'var(--ink-3)', 'font-size': 11 }); svg.append(txt(20, 18, 'names', { fill: 'var(--ink-3)', 'font-size': 11 }), txt(330, 18, 'objects', { fill: 'var(--ink-3)', 'font-size': 11 }));
+      svg.append(txt(20, 18, 'names', { fill: 'var(--ink-3)', 'font-size': 11 }), txt(330, 18, 'objects', { fill: 'var(--ink-3)', 'font-size': 11 }));
       for (const k of objKeys) if (s.objs[k]) {
         const o = s.objs[k]; const live = Object.values(s.names).includes(k);
         svg.append(sv('rect', { x: 330, y: objY[k] - 18, width: 120, height: 36, rx: 3, fill: live ? 'var(--paper)' : 'var(--paper-2)', stroke: live ? 'var(--ink)' : 'var(--rule)', 'stroke-width': 1.2 }));
@@ -73,7 +73,7 @@
     const lines = b.code.split('\n');
     const pre = el('pre', {}, lines.map((l, i) => el('span', { class: 'ln', html: (i + 1 < 10 ? ' ' : '') + (i + 1) + '  ' + window.__highlight(l, b.lang || 'python').replace(/\n$/, '') })));
     const state = el('div', { class: 'trace-state' });
-    const note = el('div', { class: 'trace-note' });
+    const note = el('div', { class: 'trace-note', role: 'status' });
     const box = el('div', { class: 'trace' }, pre, el('div', {}, state, note));
     let prev = null;
     function render(i) {
@@ -102,7 +102,7 @@
     const n = items.length, cw = 54, x0 = 30;
     const svg = sv('svg', { viewBox: '0 0 ' + (x0 * 2 + cw * n) + ' 150', role: 'img', 'aria-label': 'List indices' });
     const startIn = el('input', { type: 'text', value: '1', size: 4, 'aria-label': 'start' }), stopIn = el('input', { type: 'text', value: '4', size: 4, 'aria-label': 'stop' });
-    const status = el('div', { class: 'fig-status' });
+    const status = el('div', { class: 'fig-status', role: 'status' });
     function parse(s) { s = s.trim(); if (s === '') return null; const v = parseInt(s, 10); return isNaN(v) ? undefined : v; }
     function render() {
       svg.innerHTML = '';
@@ -140,10 +140,11 @@
     const n = arr.length, cw = 40, x0 = 14;
     const svg = sv('svg', { viewBox: '0 0 ' + (x0 * 2 + n * cw) + ' 120', role: 'img', 'aria-label': 'Binary search' });
     const target = el('input', { type: 'number', value: '61', 'aria-label': 'target' });
-    const log = el('div', { class: 'fig-status' });
+    const log = el('div', { class: 'fig-status', role: 'status' });
     let steps = [];
     function compute() {
       const t = parseInt(target.value, 10); steps = [];
+      if (isNaN(t)) { steps.push({ lo: 0, hi: n - 1, mid: null, msg: 'Type a whole number to search for.' }); return; }
       let lo = 0, hi = n - 1, k = 0;
       steps.push({ lo, hi, mid: null, msg: 'Search for ' + t + ' in a sorted list of ' + n + '. Start with the whole range.' });
       while (lo <= hi) {
@@ -183,7 +184,7 @@
     let arr = (b.items || [7, 3, 9, 1, 6, 8, 2, 5, 4]).slice();
     const n = arr.length, cw = 48, x0 = 10, H = 150;
     const svg = sv('svg', { viewBox: '0 0 ' + (x0 * 2 + n * cw) + ' ' + (H + 30), role: 'img', 'aria-label': algo + ' sort' });
-    const log = el('div', { class: 'fig-status' });
+    const log = el('div', { class: 'fig-status', role: 'status' });
     let steps = [];
     function record(a, opts) { steps.push(Object.assign({ a: a.slice() }, opts)); }
     function compute() {
@@ -245,7 +246,7 @@
     const svg = sv('svg', { viewBox: '0 0 560 90', role: 'img', 'aria-label': 'Caesar shift' });
     const range = el('input', { type: 'range', min: 0, max: 25, value: 3, 'aria-label': 'shift' });
     const text = el('input', { type: 'text', value: 'MEET ME AT NOON', size: 24, 'aria-label': 'message' });
-    const status = el('div', { class: 'fig-status' });
+    const status = el('div', { class: 'fig-status', role: 'status' });
     function render() {
       const k = +range.value; svg.innerHTML = '';
       svg.append(txt(6, 22, 'plain', { fill: 'var(--ink-3)', 'font-size': 11 }), txt(6, 72, 'cipher', { fill: 'var(--ink-3)', 'font-size': 11 }));
@@ -267,7 +268,7 @@
   W.evaltree = function (mount, b) {
     const input = el('input', { type: 'text', value: b.expr || '(* (+ 2 (* 4 6)) (+ 3 5 7))', size: 34, 'aria-label': 'expression' });
     const holder = el('div', { class: 'fig-scroll' });
-    const status = el('div', { class: 'fig-status' });
+    const status = el('div', { class: 'fig-status', role: 'status' });
     function build(x, it) {
       if (x instanceof Scheme.Pair) {
         const kids = []; let p = x; while (p instanceof Scheme.Pair) { kids.push(build(p.car, it)); p = p.cdr; }
@@ -351,7 +352,7 @@
     }
     const steps = b.steps;
     const box = el('div', { class: 'subst' });
-    const note = el('div', { class: 'trace-note' });
+    const note = el('div', { class: 'trace-note', role: 'status' });
     function render(i) {
       box.innerHTML = steps.slice(0, i + 1).map((s, k) => '<span class="' + (k === i ? 'now' : 'dim') + '">' + esc(typeof s === 'string' ? s : s.text) + '</span>').join('\n');
       note.textContent = typeof steps[i] === 'string' ? '' : steps[i].note || '';
@@ -366,7 +367,7 @@
     const inA = el('input', { type: 'text', value: (b.a || [1, 2, 3, 4, 5, 6]).join(', '), size: 22, 'aria-label': 'elements of A', oninput: render });
     const inB = el('input', { type: 'text', value: (b.b || [4, 5, 6, 7, 8]).join(', '), size: 22, 'aria-label': 'elements of B', oninput: render });
     const svg = sv('svg', { viewBox: '0 0 520 230', role: 'img', 'aria-label': 'Venn diagram of two sets' });
-    const status = el('div', { class: 'fig-status' });
+    const status = el('div', { class: 'fig-status', role: 'status' });
     function region(items, cx) {
       const per = 2, maxLines = 5, lines = [];
       for (let i = 0; i < items.length && lines.length < maxLines; i += per) lines.push(items.slice(i, i + per).join(', '));
@@ -396,10 +397,10 @@
   W.boxptr = function (mount, b) {
     const input = el('input', { type: 'text', value: b.expr || '(list 1 (list 2 3) 4)', size: 34, 'aria-label': 'expression' });
     const holder = el('div', { class: 'fig-scroll' });
-    const status = el('div', { class: 'fig-status' });
+    const status = el('div', { class: 'fig-status', role: 'status' });
     const CW = 28, GAP = 26, ROW = 64;
     function render() {
-      holder.innerHTML = '';
+      holder.innerHTML = ''; status.textContent = '';
       let v;
       try { const r = Scheme.runProgram(input.value); if (r.error) throw new Error(r.error); if (!r.results.length) return; v = r.results[r.results.length - 1].value; }
       catch (e) { status.innerHTML = '<span class="err">' + esc(e.message) + '</span>'; return; }
@@ -479,7 +480,7 @@
     const accSel = el('select', { 'aria-label': 'accumulate' }, ['+', '*', 'max', 'cons'].map(o => el('option', { value: o }, o)));
     const listIn = el('input', { type: 'text', value: '(1 2 3 4 5 6)', size: 18, 'aria-label': 'list' });
     const svg = sv('svg', { viewBox: '0 0 640 150', role: 'img', 'aria-label': 'map filter accumulate pipeline' });
-    const status = el('div', { class: 'fig-status' });
+    const status = el('div', { class: 'fig-status', role: 'status' });
     function render() {
       svg.innerHTML = '';
       const prog = `(define (fib n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))
@@ -530,9 +531,9 @@ xs mapped kept result`;
   W.memory = function (mount) {
     const types = { char: { size: 1, sample: "'A'", bytes: [0x41], note: 'one byte: the ASCII code of the character (65)' }, bool: { size: 1, sample: 'true', bytes: [0x01], note: 'one byte holding 0 or 1' }, int: { size: 4, sample: '42', bytes: [0x2a, 0, 0, 0], note: 'four bytes, two’s complement; the range is about ±2.1 billion' }, double: { size: 8, sample: '2.5', bytes: [0, 0, 0, 0, 0, 0, 0x04, 0x40], note: 'eight bytes in IEEE-754 floating-point format' }, 'long long': { size: 8, sample: '42', bytes: [0x2a, 0, 0, 0, 0, 0, 0, 0], note: 'eight bytes, range about ±9.2 quintillion' } };
     const svg = sv('svg', { viewBox: '0 0 640 110', role: 'img', 'aria-label': 'Bytes in memory' });
-    const status = el('div', { class: 'fig-status' });
+    const status = el('div', { class: 'fig-status', role: 'status' });
     let cur = 'int';
-    const btns = Object.keys(types).map(t => el('button', { class: 'btn sm' + (t === cur ? ' primary' : ''), onclick: () => { cur = t; btns.forEach(b => b.classList.toggle('primary', b.textContent === t)); render(); } }, t));
+    const btns = Object.keys(types).map(t => el('button', { class: 'btn sm' + (t === cur ? ' primary' : ''), 'aria-pressed': String(t === cur), onclick: () => { cur = t; btns.forEach(b => { b.classList.toggle('primary', b.textContent === t); b.setAttribute('aria-pressed', String(b.textContent === t)); }); render(); } }, t));
     function render() {
       svg.innerHTML = ''; const T = types[cur]; const base = 0x1000;
       for (let i = 0; i < 16; i++) {
@@ -554,7 +555,7 @@ xs mapped kept result`;
     const vals = [10, 20, 30, 40, 50, 60], base = 0x7ffc10, n = vals.length;
     const svg = sv('svg', { viewBox: '0 0 640 130', role: 'img', 'aria-label': 'An int array in memory' });
     const range = el('input', { type: 'range', min: 0, max: n - 1, value: 2, 'aria-label': 'index' });
-    const status = el('div', { class: 'fig-status' });
+    const status = el('div', { class: 'fig-status', role: 'status' });
     function render() {
       const i = +range.value; svg.innerHTML = '';
       svg.append(txt(12, 18, 'int arr[6] = {10, 20, 30, 40, 50, 60};', { 'font-family': 'var(--mono)', 'font-size': 13 }));
@@ -580,7 +581,7 @@ xs mapped kept result`;
     const grid = el('div', { class: 'sieve' });
     const cells = [];
     for (let i = 1; i <= N; i++) { const c = el('div', {}, String(i)); cells.push(c); grid.append(c); }
-    const log = el('div', { class: 'fig-status' });
+    const log = el('div', { class: 'fig-status', role: 'status' });
     const steps = [];
     const marked = new Array(N + 1).fill(false);
     steps.push({ state: [], msg: 'Every number from 2 up starts as "possibly prime". 1 is not prime by definition.' });
@@ -629,7 +630,7 @@ xs mapped kept result`;
     }
     draw(root, 10, 18);
     const call = b.lang === 'python' ? (k) => 'fib(' + k + ')' : (k) => '(fib ' + k + ')';
-    mount.append(el('div', { class: 'fig-scroll' }, svg), el('div', { class: 'fig-status' }, call(n) + ' makes ' + count + ' calls to compute the answer ' + (function f(k) { return k < 2 ? k : f(k - 1) + f(k - 2); })(n) + '. Notice how ' + call(n - 2) + ' is computed twice, ' + call(n - 3) + ' three times…'));
+    mount.append(el('div', { class: 'fig-scroll' }, svg), el('div', { class: 'fig-status', role: 'status' }, call(n) + ' makes ' + count + ' calls to compute the answer ' + (function f(k) { return k < 2 ? k : f(k - 1) + f(k - 2); })(n) + '. Notice how ' + call(n - 2) + ' is computed twice, ' + call(n - 3) + ' three times…'));
   };
   /* ---------- 17. breadth-first search on the towns graph (math course) ---------- */
   W.graphbfs = function (mount, b) {
@@ -652,8 +653,8 @@ xs mapped kept result`;
     const unreached = Object.keys(graph).filter(v => !(v in dist));
     steps.push({ dist: { ...dist }, queue: [], done: done.slice(), cur: null, edge: null, msg: 'The queue is empty, so the search is over. ' + (unreached.length ? unreached.join(' and ') + ' were never reached: no road connects them to ' + start + '.' : 'Every vertex was reached.') });
     const svg = sv('svg', { viewBox: '0 0 660 170', role: 'img', 'aria-label': 'Breadth-first search on a graph of seven towns' });
-    const qbox = el('div', { class: 'fig-status' });
-    const log = el('div', { class: 'fig-status' });
+    const qbox = el('div', { class: 'fig-status', role: 'status' });
+    const log = el('div', { class: 'fig-status', role: 'status' });
     function render(i) {
       const s = steps[i]; svg.innerHTML = '';
       for (const [v, w] of edges) {
@@ -680,17 +681,17 @@ xs mapped kept result`;
     const mk = 'dfa-arrow-' + (++dfaCount);   // marker ids unique to this figure (a lesson can show several)
     const MACHINES = {
       ends01: { start: 'a', accept: ['c'], states: { a: [80, 80], b: [240, 80], c: [400, 80] }, alphabet: '01',
-        delta: { a: { 0: 'b', 1: 'a' }, b: { 0: 'b', 1: 'c' }, c: { 0: 'b', 1: 'a' } }, sample: '1101', what: 'ends in 01' },
+        delta: { a: { 0: 'b', 1: 'a' }, b: { 0: 'b', 1: 'c' }, c: { 0: 'b', 1: 'a' } }, sample: '1101', what: 'ends in 01', whatNot: 'does not end in 01' },
       div3: { start: 'r0', accept: ['r0'], states: { r0: [80, 80], r1: [240, 80], r2: [400, 80] }, alphabet: '01',
-        delta: { r0: { 0: 'r0', 1: 'r1' }, r1: { 0: 'r2', 1: 'r0' }, r2: { 0: 'r1', 1: 'r2' } }, sample: '1001', what: 'is divisible by 3' }
+        delta: { r0: { 0: 'r0', 1: 'r1' }, r1: { 0: 'r2', 1: 'r0' }, r2: { 0: 'r1', 1: 'r2' } }, sample: '1001', what: 'is divisible by 3', whatNot: 'is not divisible by 3' }
     };
     const m = MACHINES[b.machine] || MACHINES.ends01;
     const names = Object.keys(m.states);
     // group transitions by (from, to) so parallel labels merge
     const arcs = {};
     for (const q of names) for (const ch of m.alphabet) { const k = q + '>' + m.delta[q][ch]; (arcs[k] = arcs[k] || { from: q, to: m.delta[q][ch], labels: [] }).labels.push(ch); }
-    const input = el('input', { type: 'text', value: b.sample || m.sample, 'aria-label': 'input string', size: 12 });
-    const log = el('div', { class: 'fig-status' });
+    const input = el('input', { type: 'text', value: b.sample || m.sample, 'aria-label': 'input string', size: 12, maxlength: 16 });
+    const log = el('div', { class: 'fig-status', role: 'status' });
     let steps = [];
     function compute() {
       const s = input.value.replace(/[^01]/g, ''); input.value = s; steps = [];
@@ -698,7 +699,7 @@ xs mapped kept result`;
       steps.push({ q, i: 0, s, arc: null, msg: 'Start in state ' + q + '.' + (s ? '' : ' The input is empty, so we are already at the end.') });
       for (let i = 0; i < s.length; i++) { const nq = m.delta[q][s[i]]; steps.push({ q: nq, i: i + 1, s, arc: q + '>' + nq, msg: 'Read ' + s[i] + ' in state ' + q + ': go to ' + nq + '.' }); q = nq; }
       const acc = m.accept.includes(q);
-      steps.push({ q, i: s.length, s, arc: null, end: true, msg: 'Input finished in state ' + q + ', which is ' + (acc ? 'an accepting state: ACCEPT. ' : 'not accepting: REJECT. ') + (s ? '"' + s + '" ' + (acc ? '' : 'does not ') + m.what + '.' : '') });
+      steps.push({ q, i: s.length, s, arc: null, end: true, msg: 'Input finished in state ' + q + ', which is ' + (acc ? 'an accepting state: ACCEPT. ' : 'not accepting: REJECT. ') + (s ? '"' + s + '" ' + (acc ? m.what : m.whatNot) + '.' : '') });
     }
     const svg = sv('svg', { viewBox: '0 0 480 190', role: 'img', 'aria-label': 'Finite automaton' });
     svg.append(sv('defs', {}, sv('marker', { id: mk, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, sv('path', { d: 'M0 0 L10 5 L0 10 z', fill: 'var(--ink-2)' })),
@@ -771,9 +772,9 @@ xs mapped kept result`;
       }
     };
     const m = MACHINES[b.machine] || MACHINES.increment;
-    const input = el('input', { type: 'text', value: b.sample != null ? b.sample : m.sample, 'aria-label': 'tape', size: 12, placeholder: '(blank)' });
-    const log = el('div', { class: 'fig-status' });
-    const rulebox = el('div', { class: 'fig-status' });
+    const input = el('input', { type: 'text', value: b.sample != null ? b.sample : m.sample, 'aria-label': 'tape', size: 12, maxlength: 10, placeholder: '(blank)' });
+    const log = el('div', { class: 'fig-status', role: 'status' });
+    const rulebox = el('div', { class: 'fig-status', role: 'status' });
     let steps = [];
     function compute() {
       const s = input.value.replace(/[^01]/g, ''); input.value = s;
@@ -815,7 +816,7 @@ xs mapped kept result`;
     const run = () => { compute(); ctl.stop(); const old = ctl.el; ctl = stepper(steps.length, render, { interval: 800 }); old.replaceWith(ctl.el); };
     input.addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
     const tools = el('div', { class: 'fig-tools' }, el('span', {}, 'tape'), input, el('button', { class: 'btn sm', onclick: run }, 'Load'));
-    mount.append(el('div', { class: 'fig-scroll' }, svg), tools, rulebox, log, ctl.el, el('div', { class: 'fig-status' }, m.what));
+    mount.append(el('div', { class: 'fig-scroll' }, svg), tools, rulebox, log, ctl.el, el('div', { class: 'fig-status', role: 'status' }, m.what));
   };
 
   /* ---------- 20. splitting double vowel spelling into letters (math lesson 7) ---------- */
@@ -828,7 +829,7 @@ xs mapped kept result`;
     const input = el('input', { type: 'text', value: b.sample || 'Boozhoo', 'aria-label': 'word to split', size: 20, lang: 'ciw', spellcheck: 'false', autocapitalize: 'off' });
     const mode = el('select', { 'aria-label': 'how to read' },
       el('option', { value: 'long' }, 'longest letter that fits'), el('option', { value: 'short' }, 'shortest letter that fits'));
-    const log = el('div', { class: 'fig-status' });
+    const log = el('div', { class: 'fig-status', role: 'status' });
     const svg = sv('svg', { viewBox: '0 0 480 150', role: 'img', 'aria-label': 'A word split into letters' });
     let steps = [];
     function compute() {
