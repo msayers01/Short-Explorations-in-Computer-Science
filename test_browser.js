@@ -224,6 +224,11 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('shell lesson: an exercise is graded on the files and marked done', (await page.locator('#sh-2-1 .verdict').getAttribute('class')) === 'verdict pass' && (await page.locator('#sh-2-1.done').count()) === 1 && (await page.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.progress.v1')).done['sh-2-1'] > 0)), await page.locator('#sh-2-1 .verdict').innerText());
   await page.click('#sh-2-2 .toolbar button:has-text("Check")'); await page.waitForSelector('#sh-2-2 .verdict.fail', { timeout: 10000 });
   check('shell lesson: an untouched exercise fails with the files named', /desk\/photos\/cat\.jpg exists/.test(await page.locator('#sh-2-2 .verdict').innerText()));
+  await goto('#/shell/4');
+  const pipeTerm = page.locator('#sh-4-1 .term-inp');
+  await pipeTerm.fill('tr -s " " "\\n" < speech.txt | sort | uniq -c | sort -rn | head -n 3 > top.txt'); await pipeTerm.press('Enter'); await page.waitForFunction(() => /^exit/.test(document.querySelector('#sh-4-1 .term-status').textContent), null, { timeout: 10000 });
+  await page.click('#sh-4-1 .toolbar button:has-text("Check")'); await page.waitForSelector('#sh-4-1 .verdict.pass, #sh-4-1 .verdict.fail', { timeout: 10000 });
+  check('shell lesson: a pipeline with redirection typed into an exercise terminal passes', (await page.locator('#sh-4-1 .verdict').getAttribute('class')) === 'verdict pass', await page.locator('#sh-4-1 .verdict').innerText());
 
   // ---- 6. a graded exercise and a lesson example, under the policy
   await goto('#/python/1');

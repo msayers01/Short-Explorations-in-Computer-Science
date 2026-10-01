@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Zi4R0Ub6aEd8fOR1gIxbZVLS8njeH9fjTku8c/kxEwY=' 'sha256-vxxw2ERl9sAPYxhDQT0ARGwv6OFyfV5NfNqEbzWWnzY=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Zi4R0Ub6aEd8fOR1gIxbZVLS8njeH9fjTku8c/kxEwY=' 'sha256-2fgyoVAwcRRuztJ1Wr8MaqMSo+KFEdPUUk34rD0UhHI=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -13820,6 +13820,27 @@ window.COURSES.push({
       'desk/old.tmp': 'junk\n',
       'desk/junk.tmp': 'more junk\n',
       'recipe.txt': 'pancakes: flour, eggs, milk\n'
+    },
+    lesson3: {
+      'poem.txt': 'The fog comes\non little cat feet.\n\nIt sits looking\nover harbor and city\non silent haunches\nand then moves on.\n',
+      'server.log': '09:00:01 INFO  server started\n09:00:05 INFO  user ada logged in\n09:01:12 WARN  slow query (2.1 s)\n09:02:30 ERROR disk full on /data\n09:02:31 INFO  retrying write\n09:02:33 ERROR disk full on /data\n09:05:00 INFO  user grace logged in\n09:07:45 WARN  slow query (3.4 s)\n09:09:10 INFO  backup finished\n09:12:02 ERROR connection lost to db1\n09:12:03 INFO  reconnected to db1\n09:15:00 INFO  user ada logged out\n',
+      'scores.csv': 'name,quiz,test\nada,9,88\nbob,7,74\ncy,10,95\ndee,8,81\n',
+      'library/': null,
+      'library/moby.txt': 'Call me Ishmael. Some years ago, never mind how long precisely,\nhaving little or no money in my purse, I thought I would sail about\na little and see the watery part of the world.\n',
+      'library/hobbit.txt': 'In a hole in the ground there lived a hobbit. Not a nasty, dirty,\nwet hole, nor yet a dry, bare, sandy hole: it was a hobbit-hole,\nand that means comfort. The dragon came much later.\n',
+      'library/old/alice.txt': 'Alice was beginning to get very tired of sitting by her sister on\nthe bank, and of having nothing to do.\n',
+      'projects/game/main.py': 'print("game")\n',
+      'projects/game/levels.py': 'levels = [1, 2, 3]\n',
+      'projects/game/notes.txt': 'ideas for level 4\n',
+      'projects/calc/calc.py': 'print(2 + 2)\n',
+      'projects/README.md': '# My projects\n'
+    },
+    lesson4: {
+      'speech.txt': 'the quick brown fox jumps over the lazy dog the dog sleeps\nthe fox runs and the fox jumps again\nthe end\n',
+      'server.log': '09:00:01 INFO  server started\n09:00:05 INFO  user ada logged in\n09:01:12 WARN  slow query (2.1 s)\n09:02:30 ERROR disk full on /data\n09:02:31 INFO  retrying write\n09:02:33 ERROR disk full on /data\n09:05:00 INFO  user grace logged in\n09:07:45 WARN  slow query (3.4 s)\n09:09:10 INFO  backup finished\n09:12:02 ERROR connection lost to db1\n09:12:03 INFO  reconnected to db1\n09:15:00 INFO  user ada logged out\n',
+      'scores.csv': 'name,quiz,test\nada,9,88\nbob,7,74\ncy,10,95\ndee,8,81\n',
+      'names.txt': 'bob\nada\ncy\nada\ndee\nbob\nada\n',
+      'notes/': null
     }
   },
   lessons: [
@@ -13986,6 +14007,144 @@ ls`, setup: 'lesson2', caption: '<code>echo *.tmp</code> is the way to see what 
 <li><b>Copy and move:</b> <code>cp from to</code> and <code>mv from to</code>. A destination that is a directory means "into it"; any other name means "with this name", so <code>mv</code> also renames. Write the trailing slash when you mean a directory. Directories copy with <code>cp -r</code>.</li>
 <li><b>Remove:</b> <code>rm file</code>, <code>rmdir emptydir</code>, <code>rm -r dir</code>. Nothing asks, nothing comes back. <code>ls</code> the name first.</li>
 <li><b>Wildcards:</b> <code>*</code> is anything, <code>?</code> is one character, <code>{a,b}</code> and <code>{1..5}</code> make several names. The shell expands them before the command runs; <code>echo</code> the pattern to see what it will become.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      title: 'Looking inside files', summary: 'cat, head and tail to read; wc to count; grep to search inside files; find to search for files; diff to compare two.',
+      blocks: [
+        `<p>In 1973 Lee McMahon, a researcher at Bell Labs, was trying to work out who had written each of the <em>Federalist Papers</em>, the anonymous essays of 1787 that argued for the American constitution. He wanted to count how often certain words appeared in each essay, and the editor he was using could not hold the text. He mentioned it to Ken Thompson. The next morning Thompson handed him a small program that read a file and printed every line matching a pattern. In the editor <code>ed</code>, the command for that was <code>g/re/p</code>: <em>globally</em> find the <em>regular expression</em> and <em>print</em>. So the program was called <code>grep</code>, and half a century later it is still the first thing a programmer types when looking for something.</p>
+<p>This lesson is about reading files without opening an editor: showing them, counting them, searching inside them, and searching for them.</p>
+<h2>Reading a file</h2>
+<p><code>cat</code> prints a whole file. For a long one you want a piece: <code>head</code> prints the first ten lines, <code>tail</code> the last ten, and <code>-n</code> changes how many. The lesson's home has a short poem and a server's log in it.</p>`,
+        { play: `cat poem.txt
+head -n 3 server.log
+tail -n 2 server.log
+cat -n poem.txt`, setup: 'lesson3', caption: 'The whole poem; the first three and the last two lines of the log; the poem with line numbers (<code>-n</code>). <code>head -3</code> works too.' },
+        `<div class="stmt"><p><span class="kind">Logs grow at the end.</span> A program that runs all day writes a line to its log for everything that happens, so the newest news is at the bottom: <code>tail server.log</code> is how you look at what just happened.</p>
+<p><span class="kind">Several files.</span> <code>cat a.txt b.txt</code> prints both, one after the other (that is what the name means: con-cat-enate). <code>head</code> and <code>tail</code> put a header before each file when given several.</p></div>
+<p><code>wc</code>, "word count", counts lines, words and characters. Three numbers, in that order, and then the name. <code>-l</code> asks for lines only, which is the one you want most of the time: how many entries are in this log, how many names in this list.</p>`,
+        { play: `wc poem.txt
+wc -l server.log
+wc -w library/*.txt`, setup: 'lesson3', caption: 'Lines, words and characters of the poem (the blank line counts as a line); just the line count of the log; the word counts of every text in the library, with a total.' },
+        { check: 'A log file has 500 lines. Which command shows the newest 20 entries?', options: ['<code>head -n 20 app.log</code>', '<code>tail -n 20 app.log</code>', '<code>cat -n 20 app.log</code>', '<code>wc -l app.log</code>'], answer: 1, why: 'New lines are added at the end of a log, so the newest entries are the last ones, and <code>tail</code> prints the end. <code>head</code> would show how the day started.', wrong: ['<code>head</code> shows the first lines: the oldest entries.', '', '<code>cat -n</code> numbers the lines; the 20 would be taken as a file name.', '<code>wc -l</code> only counts the lines.'] },
+        `<h2>Searching inside files</h2>
+<p><code>grep</code> prints every line of a file that contains a pattern. Put the pattern in quotes, especially when it has a space in it. Three options do most of the work: <code>-i</code> ignores capitals, <code>-n</code> shows the line numbers, <code>-c</code> only counts the matching lines. <code>-v</code> turns it around: the lines that do <em>not</em> match.</p>`,
+        { play: `grep ERROR server.log
+grep -c ERROR server.log
+grep -n "disk full" server.log
+grep -i ada server.log
+grep -v INFO server.log`, setup: 'lesson3', caption: 'Every error; how many errors; where "disk full" happened, with line numbers; everything about ada, capitals or not; everything that is not routine. The pattern is a plain word here. It can also be a <em>regular expression</em>, a small language for patterns; <code>^</code> means "at the start of the line" and <code>$</code> "at the end", and lesson 7 says more.' },
+        `<div class="stmt"><p><span class="kind">grep and several files.</span> <code>grep dragon library/*.txt</code> searches every text in the library and puts the file name in front of each match. <code>grep -r dragon library</code> ("recursive") searches the whole directory, including directories inside it. <code>-l</code> lists only the names of the files that match.</p></div>`,
+        { play: `grep -n hole library/*.txt
+grep -r dragon library
+grep -rl Alice library
+grep -ri "ALICE" library`, setup: 'lesson3', caption: 'A word in several files, with names and line numbers; a search through the whole library, which finds a file in a directory inside it; only the names; and a search that ignores capitals. The last line finds the same file as the one before it: without <code>-i</code>, <code>ALICE</code> would match nothing.' },
+        { check: 'What does <code>grep -c error app.log</code> print?', options: ['Every line containing <code>error</code>', 'The number of lines containing <code>error</code>', 'Every line that does not contain <code>error</code>', 'The number of times the word appears, even twice on one line'], answer: 1, why: '<code>-c</code> counts matching <em>lines</em>. A line with the word twice counts once. For the lines themselves, leave <code>-c</code> off; for the lines without it, <code>-v</code>.', wrong: ['That is <code>grep</code> without <code>-c</code>.', '', 'That is <code>-v</code>.', 'A line counts once however many times the word is on it.'] },
+        `<h2>Searching for files</h2>
+<p><code>grep</code> looks inside files. <code>find</code> looks for files, by name or by kind, in a directory and everything under it. Give it where to start, then what to look for: <code>-name</code> with a pattern in quotes (so the shell does not expand the <code>*</code> itself), <code>-type f</code> for files only or <code>-type d</code> for directories only. With no tests it simply lists everything under the start.</p>`,
+        { play: `find projects
+find projects -name "*.py"
+find . -type d
+find . -name "*.txt" -type f | wc -l`, setup: 'lesson3', caption: 'Everything under <code>projects</code>; only the Python files; only the directories, starting from here (<code>.</code>); and a count of every text file, which hands <code>find</code>\'s list to <code>wc</code> through a pipe. The next lesson is about that vertical bar.' },
+        `<div class="stmt"><p><span class="kind">Two more that are worth knowing.</span> <code>diff a.txt b.txt</code> prints the lines where two files differ, and nothing when they are the same: the way to check that a copy is really a copy. <code>file name</code> says what kind of thing a file is, for a file whose name does not tell you.</p></div>`,
+        { play: `cp poem.txt poem2.txt
+diff poem.txt poem2.txt
+echo "and then moves on." >> poem2.txt
+diff poem.txt poem2.txt
+file poem.txt projects scores.csv`, setup: 'lesson3', expectError: true, caption: 'No difference after the copy; one added line after the <code>&gt;&gt;</code> (<code>7a8</code> means "after line 7 of the first file, line 8 of the second was added"). <code>diff</code> answers with status 1 when the files differ, which is why the terminal says <em>exit 1</em>; that is not an error.' },
+        { check: 'You want every Python file anywhere under <code>projects</code>. Which command?', options: ['<code>grep .py projects</code>', '<code>ls projects/*.py</code>', '<code>find projects -name "*.py"</code>', '<code>cat projects/*/*.py</code>'], answer: 2, why: '<code>find</code> walks the whole tree under its start, however deep. <code>ls projects/*.py</code> looks only directly inside <code>projects</code>, and <code>grep</code> searches the text inside files, not their names.', wrong: ['<code>grep</code> searches inside files for text. It would complain that <code>projects</code> is a directory.', 'That lists only Python files directly inside <code>projects</code>, not in <code>projects/game</code>.', '', 'That prints the contents of the files one level down, and misses deeper ones.'] },
+        { ex: { id: 'sh-3-1', kind: 'shell', title: 'Find the dragon', setup: 'lesson3',
+          prompt: '<p>One of the books in <code>library</code> (look in its directories too) mentions a dragon. Find out which file it is with <code>grep</code>, then copy that file to your home directory under the name <code>found.txt</code>. The check looks at <code>found.txt</code> and at whether <code>grep</code> was used.</p>',
+          tests: [{ ran: /\bgrep\b/, name: 'grep was used to search' }, { content: 'found.txt', expect: 'In a hole in the ground there lived a hobbit. Not a nasty, dirty,\nwet hole, nor yet a dry, bare, sandy hole: it was a hobbit-hole,\nand that means comfort. The dragon came much later.' }],
+          hints: ['<code>grep -r dragon library</code> searches the whole library, and prints the file name in front of the match.', 'Then <code>cp library/hobbit.txt found.txt</code>.'],
+          solution: 'grep -rl dragon library\ncp library/hobbit.txt found.txt',
+          followup: 'Count the lines of every book in the library with one command, including the one in <code>old</code>.' } },
+        { ex: { id: 'sh-3-2', kind: 'answer', title: 'Reading the log', setup: 'lesson3',
+          prompt: '<p>Use the terminal from any example above (Reset it first if you changed things). Answer these about <code>server.log</code> and <code>projects</code> with <code>grep</code>, <code>wc</code> and <code>find</code>.</p>',
+          parts: [
+            { label: 'How many lines of <code>server.log</code> contain <code>ERROR</code>?', answer: '3' },
+            { label: 'On which line number does the connection to <code>db1</code> get lost?', answer: '10' },
+            { label: 'How many Python files are there under <code>projects</code>?', answer: ['3', 'three'] },
+            { label: 'How many words are in <code>poem.txt</code>?', answer: '21' }
+          ],
+          hints: ['<code>grep -c ERROR server.log</code> counts; <code>grep -n "connection lost" server.log</code> shows the line number.', '<code>find projects -name "*.py"</code> lists the Python files; <code>wc -w poem.txt</code> counts words.'],
+          solution: '<p><code>grep -c ERROR server.log</code> prints 3. <code>grep -n lost server.log</code> shows line 10. <code>find projects -name "*.py"</code> lists three files. <code>wc -w poem.txt</code> prints 21.</p>',
+          followup: 'Print only the WARN lines of the log, then only the lines that are neither INFO nor the first line.' } },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li><b>Reading:</b> <code>cat</code> prints a file (<code>-n</code> numbers the lines); <code>head -n 5</code> and <code>tail -n 5</code> print the first or last lines. Logs grow at the end, so <code>tail</code> shows what just happened.</li>
+<li><b>Counting:</b> <code>wc</code> gives lines, words and characters; <code>wc -l</code> just the lines; several files get a total.</li>
+<li><b>Searching inside:</b> <code>grep pattern file</code>, with <code>-i</code> (ignore capitals), <code>-n</code> (line numbers), <code>-c</code> (count), <code>-v</code> (the other lines), <code>-r</code> (a whole directory), <code>-l</code> (names only). Quote the pattern.</li>
+<li><b>Searching for files:</b> <code>find start -name "*.py"</code>, <code>-type f</code> or <code>-type d</code>; it walks the whole tree.</li>
+<li><code>diff a b</code> shows where two files differ, and <code>file x</code> says what a file is.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      title: 'Pipes and redirection', summary: 'Sending output to a file with > and >>, reading input from a file with <, and joining commands with | so that small tools do big jobs.',
+      blocks: [
+        `<p>In 1986 the programmer Jon Bentley asked Donald Knuth, the author of <em>The Art of Computer Programming</em>, to write a program for his column in a computing magazine: read a text and print the most common words with their counts. Knuth, who had just invented a way of writing programs as readable essays, produced ten pages of beautifully explained Pascal. Bentley then asked Doug McIlroy, the Bell Labs researcher who had first proposed the idea of pipes in 1964, to review it. McIlroy admired the program, and then did the same job in six commands joined by five vertical bars: split the text into words, make them lowercase, sort them, count the repeats, sort by count, show the top. It fitted on one line.</p>
+<p>That line is the idea of this lesson. Unix commands are small tools that each do one job; the shell lets you plug the output of one into the input of the next. By the end you will have typed McIlroy's program yourself.</p>
+<h2>Output into a file</h2>
+<p>Every command writes its output to the screen. <code>&gt;</code> sends it into a file instead, replacing whatever the file held. <code>&gt;&gt;</code> adds to the end of the file instead of replacing it. Lesson 2 used this with <code>echo</code>; it works with any command.</p>`,
+        { play: `grep ERROR server.log > errors.txt
+cat errors.txt
+wc -l server.log >> errors.txt
+cat errors.txt
+echo "nothing happened" > errors.txt
+cat errors.txt`, setup: 'lesson4', caption: 'The errors go into a file; a count is added to its end; then one <code>&gt;</code> replaces the whole file with one line. Nothing appears on the screen while the output is going into a file.' },
+        `<div class="stmt"><p><span class="kind">The file is emptied first.</span> <code>&gt;</code> empties the file before the command runs, so <code>sort names.txt &gt; names.txt</code> leaves you with an empty file: the input was wiped before <code>sort</code> read it. Write to a new name, then <code>mv</code> it over the old one.</p>
+<p><span class="kind">Input from a file.</span> <code>&lt;</code> is the other direction: the command reads the file as if you were typing it. <code>wc -l &lt; server.log</code> prints just the number, with no file name after it, because <code>wc</code> was never told a name.</p></div>`,
+        { check: 'What is in <code>list.txt</code> after <code>echo one &gt; list.txt</code>, <code>echo two &gt;&gt; list.txt</code>, <code>echo three &gt; list.txt</code>?', options: ['<code>one two three</code>, one per line', '<code>three</code> only', '<code>two</code> and <code>three</code>', 'Nothing: the file was emptied'], answer: 1, why: 'The second command appended, so the file held <code>one</code> and <code>two</code>. The third used a single <code>&gt;</code>, which empties the file first, so only <code>three</code> remains.', wrong: ['That would be the result if every line used <code>&gt;&gt;</code>.', '', 'The last <code>&gt;</code> wiped <code>two</code> along with <code>one</code>.', 'It was emptied and then <code>three</code> was written into it.'] },
+        `<h2>The pipe</h2>
+<p>The vertical bar <code>|</code>, the <em>pipe</em>, sends the output of the command on its left into the input of the command on its right. No file in between: the text flows straight through. Any command that can read a file can read a pipe instead.</p>`,
+        { play: `cat server.log | grep ERROR
+grep ERROR server.log | wc -l
+ls | wc -l
+history | tail -n 3`, setup: 'lesson4', caption: 'The errors, through a pipe; the number of them; how many things are in this directory; the last three commands typed. Each command on the right never knows it was reading from another program rather than a file.' },
+        `<p>Four small tools turn pipes into a toolkit. <code>sort</code> puts lines in order (<code>-n</code> for numbers, <code>-r</code> for reverse). <code>uniq</code> removes repeated lines when they are next to each other, so it comes after <code>sort</code>; <code>uniq -c</code> counts how many times each line appeared. <code>cut</code> keeps one column of each line: <code>-d ,</code> says the columns are separated by commas, <code>-f 2</code> keeps the second. <code>tr</code> translates characters: <code>tr a-z A-Z</code> makes capitals.</p>`,
+        { play: `sort names.txt
+sort names.txt | uniq
+sort names.txt | uniq -c
+sort names.txt | uniq -c | sort -rn
+cut -d , -f 1 scores.csv
+cut -d , -f 3 scores.csv | sort -n | tail -n 1`, setup: 'lesson4', caption: 'The names in order; each name once; each name with its count; the counts from most to fewest; the first column of the spreadsheet; and the highest test score, found by keeping the third column, sorting as numbers and taking the last line.' },
+        { check: 'Why does <code>uniq</code> usually come after <code>sort</code> in a pipeline?', options: ['<code>uniq</code> only works on sorted input; it refuses anything else', '<code>uniq</code> removes repeats only when they are next to each other, and sorting puts equal lines together', '<code>sort</code> is faster when <code>uniq</code> is after it', 'It does not matter; <code>uniq | sort</code> gives the same result'], answer: 1, why: '<code>uniq</code> compares each line with the one just before it. In <code>bob, ada, bob</code> nothing is removed; sorted to <code>ada, bob, bob</code>, the second <code>bob</code> goes.', wrong: ['It accepts any input; it just misses repeats that are not adjacent.', '', 'Speed has nothing to do with it.', 'Try it on <code>names.txt</code>: the counts come out wrong without sorting first.'] },
+        `<h2>McIlroy's program</h2>
+<p>Here is the one-liner, one stage at a time. Each line adds a stage to the pipeline; run them in order and watch the text change shape.</p>`,
+        { play: `cat speech.txt
+tr -s " " "\\n" < speech.txt
+tr -s " " "\\n" < speech.txt | sort
+tr -s " " "\\n" < speech.txt | sort | uniq -c
+tr -s " " "\\n" < speech.txt | sort | uniq -c | sort -rn
+tr -s " " "\\n" < speech.txt | sort | uniq -c | sort -rn | head -n 3`, setup: 'lesson4', caption: 'The text; every word on its own line (each run of spaces becomes a newline); sorted; counted; counted and sorted by count; the top three. McIlroy\'s version had one more stage, <code>tr A-Z a-z</code>, so that "The" and "the" counted as one word.' },
+        `<div class="stmt"><p><span class="kind">Build a pipeline one stage at a time.</span> Run the first command alone and look. Add <code>| next</code> and look again. When the output is right, add the next stage. Nobody types a six-stage pipeline in one go and gets it right.</p>
+<p><span class="kind">Errors do not go down the pipe.</span> A command's error messages are a separate stream, called <em>standard error</em>, and <code>|</code> and <code>&gt;</code> only take the normal output. That is why <code>ls nothere | wc -l</code> still shows the error on the screen and prints 0. To put errors in a file too: <code>2&gt; errors.txt</code>, and <code>2&gt;/dev/null</code> throws them away.</p></div>`,
+        { play: `ls nothere | wc -l
+ls nothere 2> oops.txt
+cat oops.txt
+ls nothere 2>/dev/null
+echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error message skips the pipe and goes to the screen; <code>2&gt;</code> catches it in a file; <code>/dev/null</code> is a place where output disappears. <code>$?</code> is the status of the last command: 0 means it worked, anything else means it did not, and here it is 2 because <code>ls</code> failed.' },
+        { check: 'What does <code>sort scores.csv &gt; scores.csv</code> leave in <code>scores.csv</code>?', options: ['The file, sorted', 'The file, unchanged', 'An empty file', 'An error: a file cannot be its own output'], answer: 2, why: 'The shell empties the output file before it starts <code>sort</code>, so <code>sort</code> finds nothing to read and writes nothing. Sort into a new file, then <code>mv</code> it.', wrong: ['It would be, if the file still had anything in it when <code>sort</code> ran.', '', '', 'The shell allows it; it just does the steps in an order that loses the data.'] },
+        { ex: { id: 'sh-4-1', kind: 'shell', title: 'The word counts', setup: 'lesson4',
+          prompt: '<p>Make a file called <code>top.txt</code> in your home directory holding the three most common words of <code>speech.txt</code>, with their counts, most common first: the output of McIlroy\'s pipeline from the example above, sent into a file. The check reads the file.</p>',
+          tests: [{ content: 'top.txt', expect: '      6 the\n      3 fox\n      2 jumps' }, { ran: /\|/, name: 'a pipe was used' }],
+          hints: ['Take the last line of the McIlroy example and add <code>&gt; top.txt</code> at the end.', 'Check it with <code>cat top.txt</code>. The numbers are right-aligned: that is how <code>uniq -c</code> prints them.'],
+          solution: 'tr -s " " "\\n" < speech.txt | sort | uniq -c | sort -rn | head -n 3 > top.txt\ncat top.txt',
+          followup: 'Add the stage McIlroy had and this lesson left out, so that capitals do not matter, and keep only the words that appear more than once.' } },
+        { ex: { id: 'sh-4-2', kind: 'shell', title: 'A report from the log', setup: 'lesson4',
+          prompt: '<p>Inside the <code>notes</code> directory, make two files from <code>server.log</code>: <code>errors.txt</code> holding every ERROR line, and <code>count.txt</code> holding just the number of ERROR lines (a bare number, no file name). Then make <code>people.txt</code> holding the names of the users who logged in, one per line, each once, in alphabetical order.</p>',
+          tests: [{ content: 'notes/errors.txt', expect: '09:02:30 ERROR disk full on /data\n09:02:33 ERROR disk full on /data\n09:12:02 ERROR connection lost to db1' }, { content: 'notes/count.txt', expect: '3' }, { content: 'notes/people.txt', expect: 'ada\ngrace' }],
+          hints: ['<code>grep ERROR server.log &gt; notes/errors.txt</code>; for the bare number, <code>grep -c</code>, or <code>grep ERROR server.log | wc -l</code>.', 'The "logged in" lines have the name in the fourth word: <code>grep "logged in" server.log | cut -d " " -f 4</code>. Then <code>sort | uniq</code>. Mind the double spaces after INFO: <code>-f 4</code> counts the empty piece between them, so try <code>-f 5</code> if the names do not come out.'],
+          solution: 'grep ERROR server.log > notes/errors.txt\ngrep -c ERROR server.log > notes/count.txt\ngrep "logged in" server.log | cut -d " " -f 5 | sort | uniq > notes/people.txt\ncat notes/people.txt',
+          followup: 'Make <code>notes/warnings.txt</code> with the WARN lines, but only the time and the message, without the word WARN.' } },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li><code>cmd &gt; file</code> sends output into a file, replacing it (the file is emptied first, so never read and write the same file); <code>&gt;&gt;</code> appends; <code>cmd &lt; file</code> reads a file as input.</li>
+<li><code>a | b</code> sends a\'s output into b. Build a pipeline one stage at a time and look after each.</li>
+<li>The tools: <code>sort</code> (<code>-n</code>, <code>-r</code>), <code>uniq</code> and <code>uniq -c</code> after a sort, <code>cut -d , -f 2</code> for a column, <code>tr</code> to swap characters, <code>head</code> and <code>tail</code> to trim, <code>wc -l</code> to count.</li>
+<li>Error messages are a separate stream: they skip <code>|</code> and <code>&gt;</code>; <code>2&gt; file</code> catches them; <code>2&gt;/dev/null</code> discards them. <code>$?</code> is the last command\'s status, 0 for success.</li>
 </ul></div>`
       ]
     }
@@ -18254,7 +18413,7 @@ window.GUIDE = (function () {
       <tr><td><b>SC 104 The Mathematics of Computing</b><br><span class="g-muted">13 lessons</span></td><td>Grades 10–12, or a strong 9th grader, after Python. Algebra only.</td><td>Logic, sets, proof, number theory, graphs, machines with finite memory, what no program can compute, and how codes work. Most of its exercises are written answers, not programs.</td></tr>
       <tr><td><b>SC 105 Modern C++</b><br><span class="g-muted">8 lessons</span></td><td>Grades 11–12, after SC 103.</td><td>Strings, vectors, classes, algorithms and maps with a real compiler. Needs the one-time download and a web address.</td></tr>
       <tr><td><b>SC 106 Introduction to Java</b><br><span class="g-muted">4 lessons so far</span></td><td>Grades 10–12, after Python or with some experience. The language of AP Computer Science A.</td><td>Read the compiler’s messages, declare typed variables, make decisions, read input, write loops and methods. Checked with the real compiler’s own error messages, in the browser.</td></tr>
-      <tr><td><b>SC 108 The Command Line</b><br><span class="g-muted">2 lessons so far</span></td><td>Grades 7–12. No experience needed; pairs with any course.</td><td>The Unix shell in a practice terminal: where am I, paths and cd; making, copying, moving and removing files, wildcards. Later lessons: looking inside files, pipes, running programs, Windows, scripts.</td></tr>
+      <tr><td><b>SC 108 The Command Line</b><br><span class="g-muted">4 lessons so far</span></td><td>Grades 7–12. No experience needed; pairs with any course.</td><td>The Unix shell in a practice terminal: where am I, paths and cd; making, copying, moving and removing files, wildcards; reading, counting and searching files with cat, wc, grep and find; pipes and redirection. Later lessons: running programs, Windows, scripts.</td></tr>
       <tr><td><b>SC 107 Data Structures and Algorithms</b><br><span class="g-muted">7 lessons so far</span></td><td>Grades 11–12, after Java or C++. The second course of every computer science degree.</td><td>Count the cost of code and name its order of growth; arrays and growing arrays; binary search; selection and insertion sort. Every structure as a figure to step through, code to write and a count to predict.</td></tr>
     </tbody>
   </table>
