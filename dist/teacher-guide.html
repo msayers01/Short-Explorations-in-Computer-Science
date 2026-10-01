@@ -381,12 +381,37 @@ table.fill td.blank input.ans { width: 4.5rem; border: 0; border-bottom: 2px sol
 .play-cap { font-family: var(--sans); font-size: 0.9rem; color: var(--ink-2); margin-bottom: 0.4rem; }
 .play-label { font-weight: 600; color: var(--accent); margin-right: 0.5rem; }
 .stdin-note { font-family: var(--sans); font-size: 0.85rem; color: var(--ink-3); }
-.out { border: 1px solid var(--rule); border-left: 3px solid var(--ink-3); background: var(--paper); margin-top: 0.4rem; }
-.out.has-error { border-left-color: var(--err); }
-.out-text { margin: 0; padding: 0.6rem 0.9rem; font-size: 0.86rem; white-space: pre-wrap; word-break: break-word; max-height: 24rem; overflow: auto; }
-.out .val { color: var(--accent); }
-.out .err { color: var(--err); }
-.out .note { color: var(--ink-3); font-style: italic; }
+/* the output panel is a terminal: dark in both themes, a title bar with three dots and a status pill, a prompt line, a blinking cursor */
+.out { --t-bg: #1a1e26; --t-bar: #262b35; --t-rule: #353b47; --t-fg: #dde1e7; --t-dim: #8b93a1; --t-prompt: #7aa2f7; --t-cmd: #9ece6a; --t-err: #ff8a80; --t-val: #7dd3fc; --t-warn: #ffd866; --t-ok: #8ce99a;
+  border: 1px solid var(--t-rule); border-radius: 6px; background: var(--t-bg); color: var(--t-fg); margin-top: 0.5rem; overflow: hidden; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.22); font-family: var(--mono); }
+.out.has-error { border-color: #5a3034; }
+.term-bar { display: flex; align-items: center; gap: 0.7rem; padding: 0.35rem 0.75rem; background: var(--t-bar); border-bottom: 1px solid var(--t-rule); font-family: var(--sans); font-size: 0.74rem; color: var(--t-dim); user-select: none; }
+.term-dots { display: inline-flex; gap: 6px; }
+.term-dots span { width: 10px; height: 10px; border-radius: 50%; background: #ff5f57; }
+.term-dots span:nth-child(2) { background: #febc2e; } .term-dots span:nth-child(3) { background: #28c840; }
+.term-title { letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+.term-status { margin-left: auto; padding: 0.1rem 0.55rem; border-radius: 999px; background: #313744; font-family: var(--mono); font-size: 0.72rem; color: var(--t-dim); }
+.term-status:empty { display: none; }
+.term-status.running { color: var(--t-warn); }
+.term-status.running::before { content: ""; display: inline-block; width: 0.55em; height: 0.55em; border-radius: 50%; border: 2px solid var(--t-warn); border-right-color: transparent; margin-right: 0.4em; vertical-align: -0.05em; animation: term-spin 0.8s linear infinite; }
+.term-status.ok { color: var(--t-ok); } .term-status.fail { color: var(--t-err); }
+.out-text { margin: 0; padding: 0.7rem 0.95rem 0.8rem; font-size: 0.86rem; line-height: 1.55; white-space: pre-wrap; word-break: break-word; max-height: 24rem; overflow: auto; color: var(--t-fg); scrollbar-width: thin; scrollbar-color: #4a5160 var(--t-bg); }
+.out-text:focus-visible { outline: 2px solid var(--t-prompt); outline-offset: -2px; }
+.out .cmd { color: var(--t-cmd); }
+.out .cmd::before { content: "\276F "; color: var(--t-prompt); font-weight: 700; }
+.out .val { color: var(--t-val); }
+.out .err { color: var(--t-err); }
+.out .note { color: var(--t-dim); font-style: italic; }
+.out .typed { color: var(--t-prompt); }
+.out .goto { color: var(--t-prompt); }
+.term-cursor { display: inline-block; width: 0.55em; height: 1.05em; background: var(--t-fg); vertical-align: text-bottom; margin-left: 1px; animation: term-blink 1s steps(2, start) infinite; }
+@keyframes term-blink { to { visibility: hidden; } }
+@keyframes term-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .term-cursor, .term-status.running::before { animation: none; } }
+.out .inline-input { font: inherit; border: 0; border-bottom: 1px solid var(--t-prompt); background: transparent; color: #fff; caret-color: var(--t-prompt); padding: 0 0.3rem; min-width: 8rem; outline: none; }
+.out .inline-input:focus-visible { outline: none; box-shadow: 0 1px 0 var(--t-prompt); }
+.out .input-line::before { content: "\203A "; color: var(--t-prompt); }
+html.classroom .out-text { font-size: 1rem; }
 .inline-input { font: inherit; border: 0; border-bottom: 1px solid var(--accent); background: var(--accent-soft); color: var(--ink); padding: 0 0.3rem; min-width: 8rem; outline: none; }
 .inline-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .exercise { border: 1px solid var(--rule); border-top: 3px solid var(--accent); padding: 1rem 1.25rem 1.25rem; margin: 2rem 0; background: var(--paper); }

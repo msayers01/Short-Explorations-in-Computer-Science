@@ -384,6 +384,10 @@ with `runtime: 'full'` (SC 105); an exercise inherits `runtime` from its course 
   `connect-src 'self'`; it is the only reason, and it also lets the Python and JSCPP workers ask for this site's own (public) files.
 - **Consent.** Nothing is fetched until the student agrees (`CLANGRUN.allow()`, remembered in localStorage under `se.realcpp`); the box
   is shown in the output panel or the verdict (`fullCpp()` in app.js).
+- **The output panel is drawn as a terminal** (`outputPanel()` in app.js, `.out.term` in style.css): dark in both themes, a title bar with a
+  status pill, a prompt line with the command that "ran" (`COMMANDS` per language), stderr in red, notes dimmed, a blinking cursor while
+  the program runs, and `input()` answered on an inline prompt. `start(cmd)` opens a run and `finish({exit, stopped})` closes it with the
+  status and the elapsed time; `runCell` and the Lab call both. Everything written into it is a text node: sandbox output is never HTML.
 - **Running.** One worker, kept alive: the program is compiled once (about 1–4 s) and executed once per input (milliseconds). Warnings of a
   successful compile come back as a `note`. A run is limited by the page's watchdog (`10 s + 2 s per input`, compile included); a program that
   does not finish ends the worker, and the next run loads the compiler again from the browser's cache (about 2–3 s). Output is capped at 2 MB.
