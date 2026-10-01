@@ -29,7 +29,7 @@ as a second line of defence.
 | 9 | Low | Class roster names travel inside the assignment link | Mitigated (warning) |
 | 10 | Low | Build tool `esbuild` was unpinned (`*`) | Fixed |
 | 11 | Low | CSV export could carry spreadsheet formulas from student names | Fixed earlier (PR 1) |
-| 12 to 17 | Info | Residual risks and design limits | Documented below |
+| 12 to 17 | Info | Residual risks and design limits (13, Google Fonts, is fixed) | Documented below |
 
 ## Findings
 
@@ -105,7 +105,7 @@ assignments, submissions and portfolios are far below both limits. A 60 MB bomb 
 (courses, all three languages, the turtle canvas, steppers, Code Lab, teacher tools with QR codes, downloads) ran with zero violations.
 
 **Residual.** `script-src` needs `'unsafe-eval'` because Skulpt compiles Python to JavaScript with `new Function` (C++ and Scheme do not need it).
-`style-src` needs `'unsafe-inline'` because the page sets inline styles. The Google Fonts stylesheet and font files are allowed. None of this weakens the
+`style-src` needs `'unsafe-inline'` because the page sets inline styles. Nothing may load from any other site (the typefaces are embedded, finding 13). None of this weakens the
 main protection: injected markup cannot run script. The deployed response headers could not be fetched from here; check them once after deploying
 (see "Verifying after deploy").
 
@@ -132,7 +132,7 @@ A student name beginning with `=`, `+`, `-` or `@` would have become a formula w
 ## Informational: residual risks and design limits
 
 12. **Framing / clickjacking.** The site can be framed on purpose: teachers embed it in learning-management systems. Actions with side effects need a click and the destructive ones a second click. To forbid framing, add `frame-ancestors 'none'` to the policy in `build.js`.
-13. **Google Fonts.** Loading the font stylesheet tells Google a visitor's IP address and browser. The stylesheet comes from a third party with no integrity hash, so Google could in principle change what it sends (the CSP limits what styles can load, but not what they contain). Self-hosting the fonts removes both. Not done, because it adds several hundred KB to the page and could not be fetched from here.
+13. **Google Fonts (fixed).** The page used to load its typefaces from Google, which told Google each visitor's IP address and browser, and trusted a third-party stylesheet with no integrity hash. The typefaces (Newsreader, Source Sans 3, IBM Plex Mono, all SIL Open Font License) are now embedded in the page as Latin subsets, from pinned `@fontsource` packages, with their licences in the credits. The page makes no request to any other site (checked in a browser: zero outside requests, zero CSP violations), the CSP no longer allows any other origin, and the page grew by about 0.5 MB. Characters outside Latin (a few mathematical symbols) fall back to the system's fonts.
 14. **Local data is not encrypted.** Progress, files, assignments with hidden tests and the grade book sit in `localStorage`. Anyone using the same browser profile can read them. Teachers should use their own profile or clear the data (the "Reset" links do).
 15. **Content spoofing.** An assignment link shows its author's text under the site's name. Someone could write misleading instructions. The text is always rendered as plain text with simple formatting, never HTML.
 16. **Resource use by programs.** A student program can still use a lot of memory or time (limits: Python 6 s in a run, C++ 4 s, Scheme step and recursion limits). Python tests run without yielding, so a slow program can briefly freeze the page. Finding 3's confirmation means this no longer happens by simply opening a link.
@@ -142,7 +142,7 @@ A student name beginning with `=`, `+`, `-` or `@` would have become a formula w
 
 - All 117 HTML-insertion points (`innerHTML` and the `html:` option of the DOM helper) outside the lesson text. Each takes trusted course
   content, a constant, or text passed through an escape function. The few that concatenate values (figures) concatenate numbers.
-- No `eval`, `new Function`, `document.write`, `postMessage`, cookies, `fetch`, `XMLHttpRequest`, WebSocket or beacon in the site's own code. The only network use is the font stylesheet.
+- No `eval`, `new Function`, `document.write`, `postMessage`, cookies, `fetch`, `XMLHttpRequest`, WebSocket or beacon in the site's own code. The page makes no network requests at all.
 - Every external link uses `rel="noopener"`. No link target comes from user data except `#` anchors.
 - Highlighting and the editor insert program text only through escaped HTML.
 - The saved portfolio page contains no script; payload text in it is shown as text.

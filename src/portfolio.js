@@ -194,10 +194,9 @@
   // ---------- saving: print, a standalone web page, a link ----------
   function download(doc, P) {
     const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');
-    const fonts = [...document.querySelectorAll('link[rel="stylesheet"]')].map(l => '<link rel="stylesheet" href="' + l.href + '">').join('\n');
     const title = P.name ? 'Portfolio of ' + P.name : 'Portfolio';
     const clone = doc.cloneNode(true); clone.querySelectorAll('.pf-check[hidden], .pf-verdict[hidden]').forEach(n => n.remove());
-    const html = '<!DOCTYPE html>\n<html lang="en" data-theme="light">\n<head>\n<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'none\'; style-src \'unsafe-inline\' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>' + A().esc(title) + '</title>\n' + fonts + '\n<style>\n' + css + '\n</style>\n</head>\n<body>\n<main class="pf pf-standalone">\n' + clone.outerHTML + '\n</main>\n</body>\n</html>\n';
+    const html = '<!DOCTYPE html>\n<html lang="en" data-theme="light">\n<head>\n<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'none\'; style-src \'unsafe-inline\'; font-src data:; img-src data:">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>' + A().esc(title) + '</title>\n<style>\n' + css + '\n</style>\n</head>\n<body>\n<main class="pf pf-standalone">\n' + clone.outerHTML + '\n</main>\n</body>\n</html>\n';
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = el('a', { href: url, download: (title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'portfolio') + '.html' });
