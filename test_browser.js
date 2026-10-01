@@ -74,6 +74,17 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('frame: cannot navigate the page', /top navigation blocked/.test(fr) && !/navigated/.test(fr), fr);
   check('frame: no network', /fetch blocked/.test(fr), fr);
 
+  // ---- 3b. the interpreters' own workers have every way of making requests, starting workers or reaching stored data removed (src/lockdown.js)
+  const lockProbe = `try { const have = []; for (const n of ['fetch', 'XMLHttpRequest', 'WebSocket', 'WebTransport', 'EventSource', 'importScripts', 'Worker', 'SharedWorker', 'BroadcastChannel', 'indexedDB', 'caches', 'RTCPeerConnection']) { if (typeof self[n] !== 'undefined') have.push(n); for (let o = self; o; o = Object.getPrototypeOf(o)) if (Object.prototype.hasOwnProperty.call(o, n) && typeof o[n] !== 'undefined') have.push(n + ' (inherited)'); } self.postMessage({ t: 'probe', have }); } catch (e) { self.postMessage({ t: 'probe', error: String(e) }); }`;
+  for (const src of ['py-src', 'cpp-src']) {
+    const res = await page.evaluate(([src, probe]) => new Promise((ok) => {
+      const w = new Worker(URL.createObjectURL(new Blob([document.getElementById(src).textContent + ';\n' + probe], { type: 'text/javascript' })));
+      w.onmessage = (e) => { if (e.data && e.data.t === 'probe') { ok(e.data); w.terminate(); } };
+      setTimeout(() => ok({ error: 'no answer' }), 15000);
+    }), [src, lockProbe]);
+    check(src + ': no request, worker or storage API is left in the sandbox', Array.isArray(res.have) && res.have.length === 0, res);
+  }
+
   // ---- 4. a runaway program cannot freeze the page, and can be stopped
   const t0 = Date.now();
   const running = page.evaluate(() => { window.__r = window.PYRUN.run('while True:\n    pass', { execLimit: 4000 }); return 1; });
@@ -197,9 +208,11 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   const http = require('http');
   const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.gz': 'application/gzip', '.md': 'text/plain' };
   const root = path.join(__dirname, 'dist');
+  let tamper = false;   // when set, the server hands out a changed compiler script
   const server = http.createServer((req, res) => {
     const p = path.join(root, decodeURIComponent(req.url.split('?')[0]).replace(/^\/$/, '/index.html'));
     if (!p.startsWith(root) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); res.end('no'); return; }
+    if (tamper && p.endsWith('toolchain.js')) { const body = Buffer.concat([fs.readFileSync(p), Buffer.from(';self.__tampered = true;')]); res.writeHead(200, { 'Content-Type': 'text/javascript', 'Content-Length': body.length }); res.end(body); return; }
     res.writeHead(200, { 'Content-Type': types[path.extname(p)] || 'application/octet-stream', 'Content-Length': fs.statSync(p).size }); fs.createReadStream(p).pipe(res);
   });
   await new Promise((ok) => server.listen(0, '127.0.0.1', ok));
@@ -285,6 +298,45 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await hp.click('.asg-bar button:has-text("Check")');
   await hp.waitForSelector('.asg-bar .verdict:not([hidden]) .v-title', { timeout: 120000 });
   check('full c++ assignment: the student\'s program is checked on the real compiler', /2 of 2 tests passed|passes every test|Correct|Yes|Exactly|That works/.test(await hp.locator('.asg-bar .verdict').innerText()), await hp.locator('.asg-bar .verdict').innerText());
+  // limits: a program's memory is capped, endless output is cut off while grading too, and a link never starts the download by itself
+  const memProg = '#include <cstdlib>\n#include <cstdio>\nint main(){ long mb = 0; for (int i = 0; i < 400; i++) { volatile char* p = (volatile char*)malloc(8u << 20); if (!p) { printf("NULL after %ld MB\\n", mb); return 0; } for (unsigned k = 0; k < (8u << 20); k += 4096) p[k] = 1; mb += 8; } printf("reached %ld MB\\n", mb); }';
+  const memRes = await hp.evaluate((c) => window.CLANGRUN.run(c), memProg);
+  check('full c++: a program cannot take more than 256 MB of memory (malloc says no)', /NULL after (\d+) MB/.test(memRes.out) && +memRes.out.match(/NULL after (\d+) MB/)[1] <= 256 && +memRes.out.match(/NULL after (\d+) MB/)[1] >= 128, memRes.out);
+  const floodStart = Date.now();
+  const flood = await hp.evaluate(() => window.CLANGRUN.runMany('#include <cstdio>\nint main(){ for(;;) puts("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"); }', ['', '']));
+  check('full c++: endless output is cut off while grading too, and the next run still happens', flood.parts.length === 2 && flood.parts.every((x) => /printed more than it was allowed/.test(x.err || '') && x.all.length <= 2e6), [flood.err, flood.parts.map((x) => [x.all.length, x.err])]);
+  check('full c++: that took seconds, not the whole time allowance', Date.now() - floodStart < 15000, Date.now() - floodStart);
+  tamper = true;
+  const tp = await (await browser.newContext()).newPage(); const tReqs = [];
+  tp.on('request', (rq) => { if (rq.url().includes('/clang/') && !rq.url().endsWith('toolchain.js')) tReqs.push(rq.url()); });
+  await tp.goto(origin + '/index.html#/'); await tp.waitForSelector('#app > *'); await tp.evaluate(() => window.CLANGRUN.allow());
+  const tampered = await tp.evaluate(() => window.CLANGRUN.run('int main() { return 0; }'));
+  check('full c++: a compiler script that is not the one the site was built with is refused, and nothing else is downloaded', /not the one this version of the site expects/.test(tampered.err || '') && tReqs.length === 0, [tampered.err, tReqs]);
+  tamper = false; await tp.close();
+  // a compile that crashes the compiler must never run the previous compile's program (it used to: the old object file was still there)
+  const prevProg = '#include <iostream>\nint main(){ std::cout << "PREVIOUS PROGRAM\\n"; }';
+  const rr = (c) => hp.evaluate((c) => window.CLANGRUN.run(c).then((r) => ({ out: r.out, err: r.err })), c);
+  const s1 = await rr(prevProg), s1b = await rr(prevProg);
+  const sNested = await rr('#include <cstdio>\nint main(){ puts("NEW PROGRAM"); return ' + '('.repeat(200000) + '1' + ')'.repeat(200000) + '; }');
+  const sHuge = await rr('#include <cstdio>\nint a[1<<29];\nint main(){ puts("NEW PROGRAM"); }');
+  const s6 = await rr(prevProg);
+  check('full c++: the same program can be run again straight away', s1.out === 'PREVIOUS PROGRAM\n' && s1b.out === 'PREVIOUS PROGRAM\n', [s1, s1b]);
+  check('full c++: a program that crashes the compiler (too deeply nested) reports that and runs nothing', !!sNested.err && !/PREVIOUS|NEW/.test(sNested.out) && /could not finish|too large/.test(sNested.err), sNested);
+  check('full c++: a program that exhausts the compiler\'s memory reports that and runs nothing', !!sHuge.err && !/PREVIOUS|NEW/.test(sHuge.out), sHuge);
+  check('full c++: after those failures the earlier program still builds and runs', s6.out === 'PREVIOUS PROGRAM\n' && !s6.err, s6);
+  const sGrade = await hp.evaluate(() => window.CLANGRUN.runMany('#include <iostream>\nint main(){ std::cout << "PREVIOUS PROGRAM\\n"; }', ['']).then(() => window.CLANGRUN.runMany('int a[1<<29];\nint main(){ return a[1]; }', ['', ''])).then((r) => ({ err: r.err, parts: r.parts.length })));
+  check('full c++: while grading, a failed build leaves no results at all', !!sGrade.err && sGrade.parts === 0, sGrade);
+  const fresh = await browser.newContext(); const fp = await fresh.newPage(); const freshReqs = [];
+  fp.on('request', (rq) => { if (rq.url().includes('/clang/')) freshReqs.push(rq.url()); });
+  await fp.goto('about:blank'); await fp.goto(aLink); await fp.waitForSelector('.asg-bar');
+  await fp.waitForTimeout(1500);
+  check('full c++ assignment: opening its link downloads nothing', freshReqs.length === 0 && (await fp.evaluate(() => localStorage.getItem('se.realcpp'))) === null, freshReqs);
+  await fp.click('.asg-bar button:has-text("Check")');
+  await fp.waitForSelector('.clang-gate');
+  check('full c++ assignment: Check asks first, and still nothing is downloaded', freshReqs.length === 0, freshReqs);
+  await fp.click('.clang-gate button:has-text("Not now")'); await fp.waitForTimeout(500);
+  check('full c++ assignment: "Not now" downloads nothing and says so', freshReqs.length === 0 && /not downloaded/.test(await fp.locator('.asg-bar .verdict').innerText()), freshReqs);
+  await fresh.close();
   check('full c++: no policy violations, no page errors', hpViolations.length === 0 && hpErrors.length === 0, [hpViolations, hpErrors]);
   await hp.close(); server.close();
 

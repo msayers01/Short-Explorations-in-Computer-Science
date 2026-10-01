@@ -32,7 +32,7 @@ must move between people travels inside a URL.
    - A link that stores something or runs a stranger's program asks the teacher first (`confirmLink`).
    - Packed links are size-limited (`MAX_LINK`, `MAX_UNPACKED`).
    - Python and C++ programs never run in the page. Each runs in a Web Worker that holds only its interpreter (`runner.js`,
-     `pyworker.js`, `cppworker.js`): no DOM, no localStorage, nothing sent anywhere (their only reachable address is this site, `connect-src 'self'`, and its files are public), and the page can end it at any moment (Stop, a watchdog).
+     `pyworker.js`, `cppworker.js`): no DOM, no localStorage, nothing sent anywhere (the policy lets a worker ask only this site for its public files, and `lockdown.js` removes `fetch`, `XMLHttpRequest`, `WebSocket` and `Worker` from the interpreters' workers anyway), and the page can end it at any moment (Stop, a watchdog).
      Python that draws with turtle runs in a sandboxed iframe without `allow-same-origin`. `sandbox.js` also removes Skulpt's
      `document`, `urllib` and other modules that reach out; do not add one back. Nothing the sandboxes send back is trusted: it is
      checked and shown as text. Scheme runs in the page: it is our own interpreter, with no way to name a host object, a step limit and
@@ -384,6 +384,26 @@ with `runtime: 'full'` (SC 105); an exercise inherits `runtime` from its course 
   that reads the test's number from the first line of stdin (so a whole exercise is one compile); compile errors are moved back by the
   lines the harness put before the student's code. Exercises of a full course do not mix call tests with whole-program tests.
 - **Standard.** With Full C++ the Lab shows a C++17 / 20 / 23 picker (`S.cppStd`, default `gnu++20`, saved in the Lab state and in back-ups); the worker accepts only `gnu++11`…`gnu++23`. Checks of exercises and assignments always use the default, so a student's choice cannot change a result.
+- **Security of Full C++** (reviewed once; `test_browser.js` §7b and `test_security.js` §5 keep these true):
+  - *What a program can reach.* It is WebAssembly with only WASI imports on a private in-memory file system that is new for every run (nothing is
+    written from one run, or one program, to the next; there is no host file, socket or environment). It runs in a blob worker, so no DOM,
+    storage or page. Its memory is capped at 256 MB by rewriting the memory section of the module before it runs (`limitMemory` in
+    `clangworker.js`); output is capped at 2 MB in the worker and again in the page; the page's watchdog ends the worker; `std` is checked against
+    a list. Compiler warnings and errors are shown as text.
+  - *The compiler as a target.* Source that makes clang exhaust memory or crash used to leave the build with the PREVIOUS program's object file and
+    run it (found in review: in a teacher's review, one student's crashing source would have been graded as the program compiled before it).
+    Now both output files are emptied before each compile of different source, clang's own `error:` lines count as failure whatever the exit
+    code, and a failed build returns no results. Compiler memory is capped at 1 GB (modules over 1 MB are patched as they are compiled).
+  - *The download.* Only after the student agrees, only from this site. `toolchain.js` is checked against the SHA-256 in `BUILD.clang.sha256`
+    before it is run; the toolchain checks every compiler file it fetches against hashes it carries (so it needs `crypto.subtle`: https or
+    localhost, which `CLANGRUN.unavailable()` says). The compiler packages are pinned, have no install scripts, and `npm audit` is clean;
+    their binaries are third-party builds, trusted as far as those hashes and the lockfile's integrity values go.
+  - *What `connect-src 'self'` allows.* A taken-over sandbox could ask for this site's own public files. The interpreters' workers
+    (`lockdown.js`, run before any program) have `fetch`, `XMLHttpRequest`, `WebSocket`, `Worker`, `indexedDB`, `caches` and the like removed
+    from the global object and its prototypes. Skulpt reads `importScripts` while loading, so for Python the lockdown follows Skulpt.
+  - *Accepted.* A hostile source can still use up to about 1 GB of compiler memory for the 10 or so seconds before the watchdog ends it. A
+    student's program sees the stdin of every test it is run on (it must), and the harness's `main()` is in the same file as the student's
+    code, so a student can read or fake what the checker prints; the checker is not designed against a determined cheat.
 - **Testing.** `node test_course.js modern` uses the same toolchain in node; it takes about a minute (every compile is real). The browser
   test serves `dist/` from a local web server (the compiler cannot load from `file://`).
 - Updating the compiler: bump `@live-codes/clang-wasm` (exact version), rebuild, run `npm test` and the browser test. Its notices are
