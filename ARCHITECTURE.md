@@ -99,6 +99,7 @@ site/
     widgets.js           interactive SVG figures → window.WIDGETS[name](mount, block, course)
     portfolio.js         student portfolio page (#/portfolio) → window.PORTFOLIO
     classroom.js         classroom (projector) mode → window.CLASSROOM
+    tour.js              the guided tour (the Tour button in the top bar) → window.TOUR (§9a)
     ojibwe.js            Ojibwe interface words, their sources, the review page (#/ojibwe) → window.OJIBWE
     about.js             About and credits page (#/about) → window.ABOUT
 ```
@@ -202,6 +203,7 @@ lesson 7 has `ma-13-1/2`, and lessons 8–13 have `ma-7-*` … `ma-12-*`.
 | `shortcourses.lab.v1` | lab.js | `{ lang, files: {python:[…], cpp:[…], java:[…], scheme:[…]}, active: {lang: idx}, fontSize, wrap, panels }`; a file is `{ name, code, ex?: {id, course, lesson}, asg?: assignmentId, asgSeen?, lastCheck? }` |
 | `shortcourses.portfolio.v1` | portfolio.js | `{ name, note, unfinished, tasks, lab: ["<lang>/<file name>", …] }` (name starts as teach's `studentName` if set) |
 | `shortcourses.classroom.v1` | classroom.js | `{ on, scale: index into [1.1, 1.25, 1.4, 1.6, 1.8], spot }` |
+| `shortcourses.tour.v1` | tour.js | `'1'` once the tour has been opened (stops the Tour button's first-visit pulse); not in backups |
 | `shortcourses.teach.v1` | teach.js | `{ teacher, name, studentName, assignments: {id: A}, book: {id: {studentName: entry}}, received: {id: studentCopy} }` |
 | `shortcourses.shell.v1` | terminal.js | `{ v: 1, fs: { v: 1, cwd, root }, history: [lines] }`; `root` holds only `/home` and `/tmp` (`shell.js: fs.toJSON`); the system part (`/bin`, `/etc`, `/dev`) is rebuilt on load. A file is `{ t:'f', d, x?, m, bin? }`, a directory `{ t:'d', m, c: [[name, node], …] }` |
 
@@ -298,6 +300,18 @@ in place when outputs grow). The action for a step: `<details>` → toggle, `.pl
 handled on `document` only when classroom mode is on, never inside input/textarea/select/contenteditable, and never when
 another handler already called `preventDefault` (the Lab's steppers use N/B/arrows). Next past the last step follows
 `.lesson-foot .pager.next`. A link with an exercise id starts the marker at that exercise.
+
+**The tour (`tour.js`).** `TOUR.button()` is the Tour button app.js puts in the top bar (`.top-tools`, with the classroom and
+theme buttons); it pulses until the tour has been opened once. `TOUR.start()` appends three fixed elements to `body`: a
+full-screen `.tour-block` that swallows clicks, a `.tour-spot` whose huge box-shadow dims everything but the target, and the
+`.tour-card` (title, text, dots, Back/Skip/Next). `STEPS` is a list of `{ route, target, title, text, place?, optional? }`:
+`go(i)` sets `location.hash` when the step's route differs from the current one, then `waitFor(target, 4000)` polls for the
+selector (the router renders asynchronously), scrolls it into view (`reveal`: not at all if visible, to the top edge for top-bar
+targets and tall ones, else centred) and places the card below it, above when `place: 'top'` or there is no room, as a
+bottom sheet under 640 px. An `optional` step whose target is missing (the backup section before PORTFOLIO loads, the teacher
+switch) is skipped; any other missing target shows a one-line notice instead of its text. Esc, Skip, ×, Finish or a
+`hashchange` the tour did not cause (`state.navigating` is set around its own) call `end()`, which removes the three elements
+and the listeners. Arrow keys and Enter step. Nothing is saved but the "seen" flag.
 
 ## 9b. Ojibwe words and the clock (`ojibwe.js`)
 

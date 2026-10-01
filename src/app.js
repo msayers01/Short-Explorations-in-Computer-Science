@@ -805,8 +805,10 @@
     return el('nav', { class: 'top' },
       el('a', { class: 'top-name', href: '#/' }, SITE.name),
       el('div', { class: 'top-links' }, COURSES.map(c => el('a', { href: '#/' + c.id, class: course && course.id === c.id ? 'current' : '' }, c.short)), el('a', { href: '#/lab', class: 'lab-link' + (course === 'lab' ? ' current' : '') }, 'Code Lab')),
-      window.CLASSROOM ? window.CLASSROOM.button() : null,
-      el('button', { class: 'theme-btn', title: 'Toggle light/dark', 'aria-label': 'Toggle light/dark', onclick: toggleTheme }, themeIcon()));
+      el('div', { class: 'top-tools' },   // the three small controls sit close together so the links keep their room
+        window.TOUR ? window.TOUR.button() : null,   // a guided tour of the site (src/tour.js)
+        window.CLASSROOM ? window.CLASSROOM.button() : null,
+        el('button', { class: 'theme-btn', title: 'Toggle light/dark', 'aria-label': 'Toggle light/dark', onclick: toggleTheme }, themeIcon())));
   }
   function themeIcon() {
     return el('span', { html: '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 2.5v15A7.5 7.5 0 0 0 10 2.5z" fill="currentColor"/></svg>' });

@@ -229,6 +229,14 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await page.locator('.play').nth(2).scrollIntoViewIfNeeded(); await page.locator('.play').nth(2).locator('.toolbar button:has-text("Run")').click();
   await page.waitForFunction(() => /^(exit|error|stopped)/.test([...document.querySelectorAll('.play .term-status')][2].textContent), null, { timeout: 60000 }).catch(() => { });
   check('scratch lesson 8: the filled star draws and the run finishes', /^exit 0/.test(await page.locator('.play .term-status').nth(2).innerText()) && (await page.locator('.play').nth(2).locator('iframe').count()) === 1, await page.locator('.play .term-status').nth(2).innerText());
+  // ---- the tour (src/tour.js): the button is in the top bar, the card and spotlight follow the steps across pages, Esc ends it
+  await goto('#/'); await page.waitForSelector('.top-tools .tour-btn');
+  await page.click('.tour-btn'); await page.waitForSelector('.tour-card:not(.moving)');
+  check('tour: starts on the home page with a spotlight on the hero', /1 of \d+/i.test(await page.locator('.tour-count').innerText()) && (await page.locator('.tour-spot:not(.hidden)').count()) === 1 && (await page.locator('.tour-btn.pulse').count()) === 0);
+  for (let i = 0; i < 4; i++) { await page.click('.tour-card .btn.primary'); await page.waitForSelector('.tour-card:not(.moving)'); }
+  check('tour: the lesson steps change the route and wait for their target', (await page.evaluate(() => location.hash)) === '#/python/1' && /Inside a lesson/.test(await page.locator('.tour-card h3').innerText()) && (await page.locator('.tour-spot:not(.hidden)').count()) === 1, await page.locator('.tour-card h3').innerText());
+  await page.keyboard.press('Escape');
+  check('tour: Esc ends it and leaves the page as it was', (await page.locator('.tour-card, .tour-spot, .tour-block').count()) === 0 && !(await page.evaluate(() => document.body.classList.contains('tour-on'))) && (await page.locator('.lesson-map').count()) === 1);
   // ---- SC 099: no code; the figures render and the non-code exercises grade
   await goto('#/computer/2'); await page.waitForSelector('.cpu-fig');
   for (let i = 0; i < 4; i++) await page.locator('.fig-tools button:has-text("Step")').first().click();

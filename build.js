@@ -62,6 +62,7 @@ const scripts = [
   'src/javautil.js',
   'src/runner.js',
   'src/app.js',
+  'src/tour.js',       // the guided tour (the Tour button in the top bar)
   'src/shell.js',      // the practice shell and its file system (also loaded by node: test_shell.js)
   'src/shellgrade.js', // the shell course's files and grader (also loaded by node: test_course.js shell)
   'src/terminal.js',   // the Terminal panel of the Code Lab, in front of the shell
