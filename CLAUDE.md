@@ -72,7 +72,9 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 
 ## Current state (October 2026)
 
-- Merged and live: everything above through PR #16 (DSA lessons 1-5, Scratch lessons 1-6 rewritten for ages 10-13 with the quiz). `main` = `22ad9e3`.
+- Merged: everything above through PR #20 (DSA lessons 1-7, Scratch lessons 1-7, quick checks and the lesson map in every lesson, colour-coded
+  block cards, the terminal-style output panel). `main` = `4b61662`. Cloudflare's production build of PR #20 timed out in "Initializing build
+  environment" during a Workers Builds incident on their side (the repo is 3.6 MB; nothing of ours runs in that phase); a later push rebuilds.
 - SC 105 Modern C++ has 8 lessons (string, vector, references, struct, class, algorithms/lambdas, map/set, gradebook project), 15 exercises.
 - SC 107 Data Structures and Algorithms (Java, `src/course_dsa.js`): lessons 1-7 (cost and arrays; searching; simple sorts; merge sort and
   quicksort; linked lists; stacks and queues; recursion), 24 exercises (code and `answer` kinds), figures growth, arrayops, dynarray, sortlab,
