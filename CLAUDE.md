@@ -105,12 +105,15 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   making and moving things; looking inside files; pipes and redirection; running your programs; Windows cmd and PowerShell as a dialect
   switch over the same file system; a first script; a tidy-a-messy-folder project), terminal exercises graded on file-system state plus
   output, `setup lessonN` through the shell's `setup` hook, terminal tasks in teacher assignments.
-- SC 108 The Command Line (`src/course_shell.js`, grades 7-12): lessons 1-2 (where am I: prompt, tree, paths, cd; making and moving things:
-  mkdir, touch, echo >, cp, mv, rm, wildcards), 4 exercises (`sh-<n>-<k>`; kind `shell` graded by `src/shellgrade.js`, plus `answer`), the
-  `fstree` figure, `course.setups` trees `lesson1`/`lesson2`. Lesson examples are terminals (`terminal.js: playBlock`); each has its own
+- SC 108 The Command Line (`src/course_shell.js`, grades 7-12): lessons 1-4 (where am I: prompt, tree, paths, cd; making and moving things:
+  mkdir, touch, echo >, cp, mv, rm, wildcards; looking inside files: cat, head, tail, wc, grep, find, diff, file; pipes and redirection:
+  > >> < | 2> /dev/null $?, sort, uniq -c, cut, tr, McIlroy's word-count pipeline), 8 exercises (`sh-<n>-<k>`; kind `shell` graded by
+  `src/shellgrade.js`, plus `answer`), the `fstree` figure, `course.setups` trees `lesson1`..`lesson4`. Lesson examples are terminals (`terminal.js: playBlock`); each has its own
   files, so an example must not depend on an earlier one; mark examples whose commands fail on purpose with `expectError: true`.
-  Planned next (two lessons per PR): 3 looking inside files (cat, head, tail, wc, grep, find); 4 pipes and redirection; 5 running your
-  programs; 6 Windows cmd and PowerShell (a dialect switch over the same file system); 7 a first script; 8 a project (tidy a messy folder).
+  Planned next (two lessons per PR): 5 running your programs (python, javac/java, g++, < input, > output, exit status; needs the
+  sandboxes, so test_course.js shell will need a Python runner for its exercises); 6 Windows cmd and PowerShell (a dialect switch over the
+  same file system); 7 a first script (variables, for, if, chmod +x, #!); 8 a project (tidy a messy folder). Lesson 3 promises lesson 7
+  says more about regular expressions.
 - Ideas not started: C in the Code Lab (same compiler); lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
   beside the single-page design and needs a policy change); splitting CI (about 4 minutes now); a Java step-through debugger like the C++ memory stepper.
