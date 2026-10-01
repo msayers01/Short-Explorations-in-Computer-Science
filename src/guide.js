@@ -41,6 +41,7 @@ window.GUIDE = (function () {
     <li><b>Work is saved on the device, not in an account.</b> A student who uses the same computer sees their progress next time. A student who switches computers starts fresh there, unless they take their work along (section 9).</li>
     <li><b>Work moves between people as links.</b> Your assignment is a link. A student's submission is a link. Share them the way your class already shares things.</li>
   </ul>
+  <p><b>The first five minutes.</b> The <em>Tour</em> button in the top bar walks a student through the site in twelve short steps: the home page, the parts of a lesson, the Code Lab and the teacher tools. It takes two minutes, and Esc leaves it. Have the class take it on day one.</p>
   <p>If a parent or administrator asks what the site keeps about students, the <a href="#/about">About page</a> answers in plain language.</p>
   <aside class="g-callout"><b>Shared computers.</b> Students who share a machine see each other's progress. Give each student a Code Lab file named after them (section 6), and use "Reset my progress" (bottom of the home page) only when the whole class has finished.</aside>
 </section>

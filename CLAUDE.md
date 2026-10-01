@@ -120,6 +120,10 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   memory; storage, input and output; software), 8 exercises (`cs-<n>-<k>`, all answer/choice/table kinds), figures `parts` (clickable
   diagram), `cpu` (fetch-decode-execute stepper over a 4-instruction program), `bits` (a byte of switches) and the existing `pipeline`.
   No code runs; `test_course.js computer` grades the math-kind exercises only.
+- **The tour** (`src/tour.js`, ARCHITECTURE §9a): the Tour button in the top bar (`.top-tools`, beside the classroom and theme buttons;
+  it pulses until opened once, `shortcourses.tour.v1`) spotlights twelve real elements across `#/`, `#/python/1` and `#/lab`. Steps are
+  `{route, target, title, text, place?, optional?}`; a target that moves or is renamed breaks its step silently (the card says the part is
+  not on the page), so keep the browser check in `test_browser.js` passing. The step texts describe the UI: update them when it changes.
 - Ideas not started: C in the Code Lab (same compiler); lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
   beside the single-page design and needs a policy change); splitting CI (about 4 minutes now); a Java step-through debugger like the C++ memory stepper.
