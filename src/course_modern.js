@@ -2,7 +2,7 @@
 // This course runs on the Full C++ engine (a real compiler; see src/runner.js, CLANGRUN), not on the small interpreter the other C++ course uses.
 window.COURSES = window.COURSES || [];
 window.COURSES.push({
-  id: 'modern', code: 'SC 105', short: 'Modern C++', lang: 'cpp', runtime: 'full',
+  id: 'modern', code: 'SC 105', short: 'Modern C++', lang: 'cpp', runtime: 'full', status: 'developing',
   title: 'Modern C++',
   grades: 'Grades 11–12 · after Introduction to C++',
   audience: `<p><b>Grades 11–12</b>, after <em>Introduction to C++</em> (SC 103), or after any course where you have met types, loops, functions and pointers. This is the C++ that working programmers write today: strings and lists that look after themselves, references instead of most pointers, your own types, and the algorithms and lookups of the standard library. If SC 103 showed you what the machine is doing, this course shows you how to stop doing it by hand.</p><p>Each lesson has two graded exercises, and the last is a larger project that uses everything before it.</p>`,

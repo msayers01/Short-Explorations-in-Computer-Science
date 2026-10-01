@@ -148,14 +148,22 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await goto('#/java/1'); await page.click('.play button:has-text("Run")'); await page.waitForTimeout(2500);
   check('Java lesson example runs', /Hello, world!/.test(await page.locator('.play .out-text').first().innerText()), await page.locator('.play .out-text').first().innerText());
   // graded exercises go through the same sandboxes: every starter fails, every solution passes
-  for (const course of ['python', 'cpp', 'java']) {
+  for (const course of ['scratch', 'python', 'cpp', 'java', 'dsa']) {
     const res = await page.evaluate(async (id) => {
       const c = window.COURSES.find((x) => x.id === id); const ex = []; for (const L of c.lessons) for (const b of L.blocks) if (b.ex && b.ex.solution && b.ex.starter != null && !b.ex.kind) ex.push(b.ex);
       const out = []; for (const e of ex.slice(0, 4)) { e.lang = e.lang || c.lang; const good = await window.__app.grade(e, e.solution), poor = await window.__app.grade(e, e.starter); out.push({ id: e.id, solution: good.passed, starter: poor.passed }); } return out;
     }, course);
     check(course + ' exercises are graded in the sandbox (' + res.length + ' checked)', res.length > 0 && res.every((x) => x.solution === true && x.starter === false), res);
   }
-  for (const h of ['#/', '#/lisp/2', '#/math/1', '#/guide', '#/about', '#/portfolio']) await goto(h);
+  await goto('#/scratch/3');
+  check('Scratch blocks render beside Python', (await page.locator('.sb-stack .sb').count()) >= 3);
+  const turtlePlay = page.locator('.play').filter({ hasText: 'import turtle' }).first();
+  await turtlePlay.locator('button:has-text("Run")').click(); await page.waitForSelector('.play-turtle iframe', { timeout: 15000 }).catch(() => { });
+  check('a lesson example draws with turtle in a sandboxed frame', (await page.locator('.play-turtle iframe').count()) === 1 && (await page.locator('.play-turtle iframe').getAttribute('sandbox')) === 'allow-scripts' && (await page.frameLocator('.play-turtle iframe').locator('canvas').count()) > 0);
+  await goto('#/dsa/1');
+  check('DSA figures render', (await page.locator('.fig-mount svg').count()) >= 3);
+  check('the Under development tag is shown', (await page.locator('.dev-tag').count()) >= 1);
+  for (const h of ['#/', '#/lisp/2', '#/math/1', '#/dsa/2', '#/dsa/3', '#/guide', '#/about', '#/portfolio']) await goto(h);
 
   // ---- 6b. saving and restoring work
   const fs = require('fs');
