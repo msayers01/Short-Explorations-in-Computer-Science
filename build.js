@@ -60,6 +60,8 @@ const scripts = [
   'src/javautil.js',
   'src/runner.js',
   'src/app.js',
+  'src/shell.js',      // the practice shell and its file system (also loaded by node: test_shell.js)
+  'src/terminal.js',   // the Terminal panel of the Code Lab, in front of the shell
   'src/lab.js',
   'src/guide.js',
   'src/qr.js',

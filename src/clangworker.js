@@ -2,7 +2,7 @@
    runner.js downloads the toolchain script from this site, puts self.CLANG_BASE and the script in front of this file, and starts a Web Worker
    from the whole text, so a program can reach nothing but its own memory, and the page ends the worker if the program does not finish.
 
-   Messages from the page: {t:'run', id, code, stdins:[string…], std}   compile once, then run once for each input
+   Messages from the page: {t:'run', id, code, stdins:[string…], std, compileOnly}   compile once, then run once for each input (or, compileOnly, not at all)
    Messages to the page:   {t:'progress', v} (while the toolchain downloads)  {t:'ready'}  {t:'fatal', error}
                            {t:'note', id, text}                       compiler warnings
                            {t:'out', id, text}                        what the program prints, as it prints (only when there is a single input)
@@ -91,6 +91,7 @@
     }
     lastGood = std + '\0' + code;
     if (lines.length) post({ t: 'note', id, text: lines.join('\n').slice(0, 4000) });
+    if (m.compileOnly === true) { post({ t: 'done', id, err: null }); return; }   // g++ in the practice terminal: the program runs later, from ./name
     let art = c.result;
     try {
       const capped = limitMemory(art.bytes, MAX_PAGES);

@@ -705,6 +705,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const saveBtn = el('button', { class: 'btn quiet', title: 'Download this file', onclick: download }, 'Save');
     const tplBtn = el('button', { class: 'btn quiet', onclick: () => togglePanel('tpl') }, 'Templates');
     const refBtn = el('button', { class: 'btn quiet', onclick: () => togglePanel('ref') }, 'Reference');
+    const termBtn = el('button', { class: 'btn quiet', title: 'A command line: practise Unix commands on your own files, and run your programs from it', onclick: () => toggleTerm() }, 'Terminal');
     const findBtn = el('button', { class: 'btn quiet', title: 'Find and replace (Ctrl+F / Ctrl+H)', onclick: () => openFind(false) }, 'Find');
     const fontDown = el('button', { class: 'btn quiet font-btn', title: 'Smaller text', onclick: () => setFont(-1) }, 'A−');
     const fontUp = el('button', { class: 'btn quiet font-btn', title: 'Larger text', onclick: () => setFont(1) }, 'A+');
@@ -725,7 +726,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       endMem(); renderToolbar();
     }
     const fileInput = el('input', { type: 'file', accept: '.py,.cpp,.cc,.cxx,.h,.scm,.ss,.rkt,.txt', hidden: '', onchange: openFiles });
-    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'python' ? stepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, findBtn, tplBtn, refBtn, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
+    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'python' ? stepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, findBtn, tplBtn, refBtn, window.TERMINAL ? termBtn : null, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
     function setFont(d) { S.fontSize = Math.min(24, Math.max(11, S.fontSize + d)); save(); editor.el.style.setProperty('--lab-font', S.fontSize + 'px'); editor.render(); }
 
     // ----- find / replace bar
@@ -772,6 +773,17 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
 
     // ----- output, stdin, turtle, trace, REPL
     const out = outputPanel(); out.el.classList.add('lab-out');
+    // ----- the terminal (src/terminal.js in front of src/shell.js). ~/lab in it mirrors the files here, both ways.
+    function removeLabFile(l, f) { const i = S.files[l].indexOf(f); if (i < 0) return; S.files[l].splice(i, 1); if (!S.files[l].length) S.files[l].push({ name: LANG_INFO[l].first, code: '' }); if (S.active[l] >= S.files[l].length) S.active[l] = S.files[l].length - 1; else if (i < S.active[l]) S.active[l]--; save(); }
+    const term = window.TERMINAL && window.SHELL ? window.TERMINAL.mount({
+      el, armConfirm, isTouch, Runners, isFull, cppStd: () => S.cppStd, stop,
+      labFiles: () => { const all = []; for (const l in LANG_INFO) for (const f of S.files[l]) all.push({ lang: l, name: f.name, code: f.code, set: (c) => { f.code = c; save(); }, remove: () => removeLabFile(l, f) }); return all; },
+      addLabFile: (l, name, code) => { if (!hasLang(l)) return; S.files[l].push({ name: uniqueName(l, name), code }); save(); },
+      labChanged: () => { if (editor.value !== curFile().code) editor.value = curFile().code; renderTabs(); renderStatusBar(); renderExBar(); renderAsgBar(); },
+      openInEditor: (l, name, text, copy) => { if (!hasLang(l)) return; let idx = copy ? -1 : S.files[l].findIndex(f => f.name === name); if (idx < 0) { S.files[l].push({ name: uniqueName(l, name), code: text }); idx = S.files[l].length - 1; } S.active[l] = idx; save(); if (l !== S.lang) switchLang(l); else activate(idx); },
+      onClose: () => toggleTerm(false)
+    }) : null;
+    function toggleTerm(force) { if (!term) return; const show = force != null ? force : term.el.hidden; if (show) term.show(!isTouch()); else term.hide(); termBtn.classList.toggle('on', show); S.panels.term = show; save(); if (show && term.el.scrollIntoView) term.el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
     const stdinTa = el('textarea', { class: 'stdin-ta', rows: 3, placeholder: 'Type each value the program will read, one per line, before pressing Run.', 'aria-label': 'Program input' });
     const stdinBox = el('div', { class: 'stdin-box', hidden: '' }, el('div', { class: 'panel-head' }, el('b', {}, 'Program input'), el('span', { class: 'panel-note' }, 'This program reads input with cin. C++ programs read all of it at once, so give it here.')), stdinTa);
     const turtleMount = el('div', { id: 'lab-turtle', class: 'turtle-mount' });
@@ -1034,18 +1046,20 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
 <li>Every code example and exercise in the courses has an <b>Open in Code Lab</b> button. A file opened from an exercise keeps its link to it: a bar above the editor lets you check your program against the exercise's tests, and passing counts as completing it in the course.</li>
 <li>C++: <b>Step through memory</b> runs the program one line at a time and shows every variable in memory: its type, its address and its value, with arrays drawn cell by cell and pointers showing what they point at. You can step backwards as well as forwards.</li>
 <li>C++: programs that read with <code>cin</code> take their input from the Program input box. C++ and Scheme programs stop themselves after a few seconds if they run too long.</li>
+<li><b>Terminal</b> opens a command line under the output: a practice Unix shell with its own files (saved on this device). Your Code Lab files appear in its <code>lab</code> folder, so <code>python lab/main.py</code> runs the file in the editor; <code>nano</code> edits a file there, <code>edit file.py</code> opens it in the editor above. Type <code>help</code> for the list of commands; <b>Tab</b> completes names, <b>↑ ↓</b> recall commands, <b>Ctrl+C</b> stops a program.</li>
 <li>On a phone or tablet, the <b>Indent</b> and <b>Outdent</b> buttons under the editor stand in for the Tab key, and <b>Wrap</b> keeps long lines on screen.</li></ul>` }));
     const editorArea = el('div', { class: 'lab-editor-area' }, tabs, findBar, editor.el, statusBar);
     const side = el('div', { class: 'lab-side' }, tplBox, refBox);
-    const body = el('div', { class: 'lab-body' }, el('div', { class: 'lab-main' }, teach ? teach.panel : null, asgHost, exBar, toolbar, editorArea, exVerdict, stdinBox, out.el, traceBox, memBox, substBox, turtleBox, replBox), side);
+    const body = el('div', { class: 'lab-body' }, el('div', { class: 'lab-main' }, teach ? teach.panel : null, asgHost, exBar, toolbar, editorArea, exVerdict, stdinBox, out.el, term ? term.el : null, traceBox, memBox, substBox, turtleBox, replBox), side);
     renderTabs(); renderToolbar(); applyWrap(); renderStatusBar(); renderExBar(); renderAsgBar(); engineChanged();
+    if (term && S.panels.term) { term.show(false); termBtn.classList.add('on'); }
     if (pendingStep) {
       const ps = pendingStep; pendingStep = null;
       if (ps.mode === 'mem' && S.lang === 'cpp') { if (ps.stdin != null) { stdinTa.value = ps.stdin; stdinBox.hidden = false; } setTimeout(startMem, 0); }
       if (ps.mode === 'subst' && S.lang === 'scheme') setTimeout(startSubst, 0);
     }
     if (teach && (kind === 'assign' || kind === 'review' || /(^|&)b=/.test(query || ''))) setTimeout(() => teach.handleQuery(kind, query), 0);
-    main.append(head, help, body, el('footer', { class: 'foot' }, el('span', {}, (window.SITE || {}).footer || ''), el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Delete all Code Lab files on this device? Click again to confirm', () => { try { localStorage.removeItem(KEY); } catch (err) { } S = null; location.reload(); }) }, 'Reset the Code Lab')));
+    main.append(head, help, body, el('footer', { class: 'foot' }, el('span', {}, (window.SITE || {}).footer || ''), el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Delete all Code Lab files on this device (and the terminal\'s)? Click again to confirm', () => { try { localStorage.removeItem(KEY); if (window.TERMINAL) localStorage.removeItem(window.TERMINAL.KEY); } catch (err) { } S = null; location.reload(); }) }, 'Reset the Code Lab')));
     setTimeout(() => editor.render(), 0);
     return main;
   }

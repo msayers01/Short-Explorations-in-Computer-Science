@@ -12,7 +12,10 @@ const lab = { lang: 'scheme', files: { python: [{ name: 'main.py', code: 'print(
 const portfolio = { name: 'Ada', note: 'my work', unfinished: true, tasks: false, lab: ['python/main.py'] };
 const asg = { id: 'abcd2345', v: 1, title: 'Sum', lang: 'python', text: 't', starter: 's', tests: [{ k: 'stdin', in: '1 2', expect: '3', hidden: true }, { k: 'stdin', in: '2 2', expect: '4', hidden: false }], hints: ['h'], roster: ['Ann'], author: 'T', due: 'Fri', created: 5 };
 const teach = { teacher: true, name: 'Ms T', studentName: 'Ada', assignments: { abcd2345: asg }, book: { abcd2345: { Ann: { name: 'Ann', at: 10, code: 'print(3)', reviewed: 20, title: 'Sum', claimed: { passed: 1, total: 2 }, result: { passed: 2, total: 2, hiddenPassed: 1, hiddenTotal: 1, results: [{ name: 't', ok: true, expected: '3', got: '3' }], error: null } } } }, received: { zzzz9999: Object.assign({}, asg, { id: 'zzzz9999' }) } };
-const full = () => store({ 'shortcourses.progress.v1': J(progress), 'shortcourses.lab.v1': J(lab), 'shortcourses.portfolio.v1': J(portfolio), 'shortcourses.teach.v1': J(teach) });
+const SHELL = require('./src/shell.js');
+const shellFS = () => { const fs = SHELL.makeFS(null); fs.mkdir('/home/student/notes'); fs.write('/home/student/notes/a.txt', 'alpha'); fs.write('/home/student/run.sh', 'echo hi'); fs.chmod('/home/student/run.sh', true); fs.cwd = '/home/student/notes'; return fs; };
+const shell = { v: 1, fs: shellFS().toJSON(), history: ['ls', 'cat notes/a.txt'] };
+const full = () => store({ 'shortcourses.progress.v1': J(progress), 'shortcourses.lab.v1': J(lab), 'shortcourses.portfolio.v1': J(portfolio), 'shortcourses.teach.v1': J(teach), 'shortcourses.shell.v1': J(shell) });
 
 // ---- a student's file leaves the teacher tools out unless asked
 const s1 = full();
@@ -32,6 +35,7 @@ BACKUP.apply(s2, parsed.data, 'replace');
 check('progress round trip', J(s2.dump('shortcourses.progress.v1')) === J(progress), s2.dump('shortcourses.progress.v1'));
 check('lab round trip', J(s2.dump('shortcourses.lab.v1')) === J(lab), s2.dump('shortcourses.lab.v1'));
 check('portfolio round trip', J(s2.dump('shortcourses.portfolio.v1')) === J(portfolio));
+{ const t = SHELL.makeFS(s2.dump('shortcourses.shell.v1').fs); check('terminal files round trip', t.read('/home/student/notes/a.txt') === 'alpha' && t.stat('/home/student/run.sh').x === true && t.cwd === '/home/student/notes' && parsed.summary.terminal === 2, [t.walk('/home').map((e) => e[0]), parsed.summary.terminal]); check('terminal history is not in the file', !('history' in parsed.data.shell)); }
 check('teacher data round trip', s2.dump('shortcourses.teach.v1').assignments.abcd2345.tests[0].hidden === true && s2.dump('shortcourses.teach.v1').teacher === true && s2.dump('shortcourses.teach.v1').book.abcd2345.Ann.code === 'print(3)');
 const s3 = store(); BACKUP.apply(s3, BACKUP.parse(J(file)).data, 'replace');
 check('a student file restores no teacher data', !s3.dump('shortcourses.teach.v1').assignments && s3.dump('shortcourses.teach.v1').studentName === 'Ada');
@@ -55,6 +59,7 @@ check('merge: one file per exercise (local kept)', ml.files.python.filter((f) =>
 check('merge: files in other languages are added', ml.files.scheme.map((f) => f.name).join() === 'main.scm');
 const mpf = here.dump('shortcourses.portfolio.v1');
 check('merge: portfolio fills the blanks only', mpf.name === 'Ada' && mpf.note === 'local note' && mpf.tasks === true && mpf.unfinished === true, mpf);
+{ const mineFS = SHELL.makeFS(null); mineFS.write('/home/student/mine.txt', 'kept'); mineFS.mkdir('/home/student/notes'); mineFS.write('/home/student/notes/a.txt', 'LOCAL'); const hs = store({ 'shortcourses.shell.v1': J({ v: 1, fs: mineFS.toJSON(), history: ['pwd'] }) }); BACKUP.apply(hs, parsed.data, 'merge'); const got = hs.dump('shortcourses.shell.v1'); const t = SHELL.makeFS(got.fs); check('merge: terminal keeps local files and adds missing ones', t.read('/home/student/notes/a.txt') === 'LOCAL' && t.read('/home/student/mine.txt') === 'kept' && t.read('/home/student/run.sh') === 'echo hi' && t.stat('/home/student/run.sh').x === true && got.history.join() === 'pwd', t.walk('/home').map((e) => e[0])); }
 const mt = here.dump('shortcourses.teach.v1');
 check('merge: assignments are the union', Object.keys(mt.assignments).sort().join() === 'abcd2345,other123' && mt.assignments.other123.title === 'Mine');
 check('merge: submissions and names come across', mt.book.abcd2345.Ann.reviewed === 20 && mt.studentName === 'Ada' && Object.keys(mt.received).join() === 'zzzz9999');
@@ -70,6 +75,10 @@ BACKUP.apply(rep, parsed.data, 'replace');
 check('replace: the file takes the place of what is here', !('py-9-9' in rep.dump('shortcourses.progress.v1').done) && 'py-1-1' in rep.dump('shortcourses.progress.v1').done);
 
 // ---- hostile and broken files
+// a hostile terminal part: bad names and system files are dropped, caps hold
+{ const hostile = J({ app: 'short-explorations-backup', v: 1, saved: 'x', data: { shell: { v: 1, fs: { cwd: '/etc', root: { t: 'd', c: [['home', { t: 'd', c: [['student', { t: 'd', c: [['../x', { t: 'f', d: 'bad' }], ['ok.txt', { t: 'f', d: 'fine', x: 'maybe' }], ['big', { t: 'f', d: 'x'.repeat(300000) }]] }]] }], ['etc', { t: 'd', c: [['passwd', { t: 'f', d: 'root::0:0::/:/bin/sh' }]] }], ['bin', { t: 'd', c: [['ls', { t: 'f', d: 'evil', x: true }]] }]] } } } } });
+  const hp = BACKUP.parse(hostile); const t = SHELL.makeFS(hp.data.shell.fs);
+  check('hostile terminal part is rebuilt', t.list('/home/student').join() === 'ok.txt' && t.stat('/home/student/ok.txt').x === false && t.read('/etc/passwd').startsWith('root:x:0:0:root') && t.stat('/bin/ls').d === '' && hp.summary.terminal === 1, [t.list('/home/student'), hp.summary.terminal]); }
 const fails = (name, text, re) => { try { BACKUP.parse(text); check(name + ' is refused', false, 'it was accepted'); } catch (e) { check(name + ' is refused with a clear message', re.test(e.message), e.message); } };
 fails('not JSON', 'hello', /not valid JSON/);
 fails('JSON of another kind', J([1, 2, 3]), /not made by/);

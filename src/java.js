@@ -1940,6 +1940,7 @@
     let chk;
     try { chk = Checker(parse(String(code))); }
     catch (e) { if (e instanceof CompileError) return { out: '', err: fileNameGuess(code) + ':' + e.line + ': error: ' + e.message, compile: true, line: e.line }; throw e; }
+    if (opts.checkOnly) return { out: '', err: null, exit: 0 };   // javac in the practice terminal: the checks above, nothing run
     R.fileName = chk.fileName; R.classes = chk.classes;
     const I = Interp(R, chk);
     try { I.main(); return { out: R.out, err: null, exit: 0 }; }

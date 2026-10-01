@@ -206,7 +206,8 @@
     cppFull: {
       available: () => !window.CLANGRUN.unavailable(),
       run: (code, opts) => fullCpp((o) => window.CLANGRUN.run(code, o), opts),
-      runMany: (code, stdins, opts) => fullCpp((o) => window.CLANGRUN.runMany(code, stdins, o), opts)
+      runMany: (code, stdins, opts) => fullCpp((o) => window.CLANGRUN.runMany(code, stdins, o), opts),
+      compile: (code, opts) => fullCpp((o) => window.CLANGRUN.compile(code, o), opts)   // the terminal's g++: nothing runs
     }
   };
   async function fullCpp(go, opts) {

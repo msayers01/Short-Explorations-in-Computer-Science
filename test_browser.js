@@ -111,8 +111,9 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await goto('#/lab');
   const setCode = (c) => page.evaluate((c) => { const t = document.querySelector('.lab-editor textarea'); t.value = c; t.dispatchEvent(new Event('input', { bubbles: true })); }, c);
   // the output panel is a terminal: its first line is the command that "ran" (python main.py …), so the program's own output starts on line 2
-  const outText = async () => (await page.locator('.out-text').allInnerTexts()).map((t) => t.replace(/^[^\n]*\n?/, '')).join('|');
-  const outStatus = async () => page.locator('.term-status').last().textContent();
+  // (the terminal panel is drawn like the output panel too, so these look only at output panels)
+  const outText = async () => (await page.locator('.out-text:not(.term-scroll)').allInnerTexts()).map((t) => t.replace(/^[^\n]*\n?/, '')).join('|');
+  const outStatus = async () => page.locator('.out:not(.lab-term) .term-status').last().textContent();
   await setCode('name = input("Name? ")\nprint("Hi", name)'); await page.click('.lab-toolbar button:has-text("Run")');
   await page.waitForSelector('.inline-input'); await page.fill('.inline-input', 'Ada'); await page.press('.inline-input', 'Enter'); await page.waitForTimeout(800);
   check('Lab: input() asks in the output panel', /Hi Ada/.test(await outText()), await outText());
@@ -140,6 +141,46 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await page.click('.lang-btn:has-text("Scheme")'); await page.waitForSelector('.repl-inp');
   await page.fill('.repl-inp', '(* 6 7)'); await page.press('.repl-inp', 'Enter');
   check('Lab: Scheme REPL', /;Value: 42/.test(await page.locator('.repl-log').innerText()));
+
+  // ---- the terminal (src/terminal.js in front of src/shell.js): commands, the ~/lab mirror, programs through the sandboxes, persistence
+  await page.click('.lang-btn:has-text("Python")'); await page.waitForSelector('.lab-editor textarea');
+  await setCode('print("from the lab")');
+  await page.click('.lab-toolbar button:has-text("Terminal")'); await page.waitForSelector('.lab-term:not([hidden])');
+  const term = async (cmd) => { await page.fill('.term-inp', cmd); await page.press('.term-inp', 'Enter'); await page.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 30000 }); return page.locator('.lab-term .term-scroll').innerText(); };
+  const termStatus = () => page.locator('.lab-term .term-status').innerText();
+  let tt = await term('mkdir notes; echo "hello there" > notes/a.txt; cat notes/a.txt | tr a-z A-Z; ls nope');
+  check('terminal: commands, pipes and error text', /HELLO THERE\nls: cannot access 'nope': No such file or directory/.test(tt) && (await termStatus()) === 'exit 2', tt.slice(-200));
+  tt = await term('python lab/main.py');
+  check('terminal: runs the Lab file through the Python sandbox', /python lab\/main\.py\nfrom the lab\n/.test(tt), tt.slice(-200));
+  await page.fill('.term-inp', 'printf \'x = input("N? ")\\nprint("got", x)\\n\' > ask.py; python ask.py'); await page.press('.term-inp', 'Enter');
+  await page.waitForFunction(() => document.querySelector('.lab-term .term-ps1').textContent === 'N? ', null, { timeout: 15000 });
+  await page.fill('.term-inp', 'seven'); await page.press('.term-inp', 'Enter');
+  await page.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 15000 });
+  check('terminal: input() is answered on the command line', /N\? seven\ngot seven/.test(await page.locator('.lab-term .term-scroll').innerText()));
+  tt = await term('printf \'public class Main { public static void main(String[] a) { System.out.println("from java"); } }\\n\' > Main.java; javac Main.java && java Main; printf \'class B { void f() { int x = "s"; } }\\n\' > B.java; javac B.java');
+  check('terminal: javac and java through the Java sandbox, errors name the file', /from java\nB\.java:1: error: incompatible types/.test(tt), tt.slice(-300));
+  tt = await term('printf \'#include <iostream>\\nusing namespace std;\\nint main() { cout << "from c++" << endl; }\\n\' > m.cpp; g++ m.cpp -o m && ./m; printf \'int main() { oops }\\n\' > bad.cpp; g++ bad.cpp -o bad; ls bad');
+  check('terminal: g++ and ./program through the C++ sandbox; a bad program makes no file', /from c\+\+\n/.test(tt) && /Syntax error/.test(tt) && /ls: cannot access 'bad'/.test(tt), tt.slice(-400));
+  tt = await term('echo "print(42)" > lab/fromterm.py; echo "int main() {}" > lab/m2.cpp; ls lab');
+  const labFiles = async () => JSON.parse(await page.evaluate(() => localStorage.getItem('shortcourses.lab.v1'))).files;
+  check('terminal: a new file in ~/lab becomes a Lab file', (await page.locator('.lab-tabs').innerText()).includes('fromterm.py') && (await labFiles()).cpp.some((f) => f.name === 'm2.cpp' && f.code === 'int main() {}\n'), tt.slice(-300));
+  tt = await term('rm lab/m2.cpp; ls lab');
+  check('terminal: rm in ~/lab removes the Lab file, and says so', /removed from the Code Lab too: m2\.cpp/.test(tt) && (await labFiles()).cpp.every((f) => f.name !== 'm2.cpp'), tt.slice(-300));
+  tt = await term('while true; do :; done');
+  check('terminal: a loop that never ends is stopped', /stopped: more than 20000 commands/.test(tt) && (await termStatus()) === 'exit 1', tt.slice(-200));
+  await page.fill('.term-inp', 'nano notes/b.txt'); await page.press('.term-inp', 'Enter'); await page.waitForSelector('.nano-ta');
+  await page.fill('.nano-ta', 'from nano\n'); await page.keyboard.press('Control+s'); await page.keyboard.press('Control+x');
+  await page.waitForFunction(() => !document.querySelector('.nano-ta') && /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 5000 });
+  tt = await term('cat notes/b.txt; edit notes/b.txt; edit ask.py');
+  check('terminal: nano writes the file; edit opens a copy in the Lab', /from nano\n/.test(tt) && /use nano b\.txt/.test(tt) && /opened a copy of ask\.py/.test(tt) && (await page.locator('.lab-tabs .tab.on, .lab-tabs .on').innerText()).includes('ask.py'), tt.slice(-300));
+  await page.reload(); await page.waitForSelector('.lab-term:not([hidden])');
+  tt = await term('cat notes/a.txt; ls -F m');
+  check('terminal: files, the exec bit and the open panel survive a reload', /hello there\nm\*\n/.test(tt), tt.slice(-100));
+  await page.evaluate(() => localStorage.setItem('shortcourses.shell.v1', JSON.stringify({ v: 1, fs: { v: 1, cwd: '/etc', root: { t: 'd', c: [['bin', { t: 'd', c: [['ls', { t: 'f', d: 'evil', x: true }]] }], ['etc', { t: 'd', c: [['passwd', { t: 'f', d: 'hacked' }]] }], ['home', { t: 'd', c: [['student', { t: 'd', c: [['__proto__', { t: 'f', d: 'ok' }], ['a/b', { t: 'f', d: 'bad' }]] }]] }]] } }, history: ['x'] })));
+  await page.reload(); await page.waitForSelector('.lab-term:not([hidden])');
+  tt = await term('cat /etc/passwd | head -1; ls ~; cat ~/__proto__; /bin/ls ~ | wc -l');
+  check('terminal: a hostile saved copy cannot replace the system or plant bad names', /root:x:0:0:root[^\n]*\nlab  __proto__\nok2\n$/.test(tt), tt.slice(-200));
+  await page.click('.lab-term .term-close'); check('terminal: closes', await page.locator('.lab-term').getAttribute('hidden') !== null);
 
   // ---- 6. a graded exercise and a lesson example, under the policy
   await goto('#/python/1');

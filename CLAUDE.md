@@ -15,6 +15,7 @@ not written down there.
     npm test               # all node tests (pretest applies the JSCPP patches); about 2 minutes
     node test_course.js python|lisp|cpp|math|modern|java   # one course; "modern" compiles with the real compiler, about 1.5 minutes
     node test_java.js      # the Java interpreter against what javac/java print (a few seconds)
+    node test_shell.js     # the practice shell: file system, parser, every command, limits, hostile saved copies (a second)
     npm run test:browser   # needs a built dist and Chromium (playwright-core); serves dist over a local http server; about 1.5 minutes
 
 CI (`.github/workflows/ci.yml`) runs install, `npm test`, build, `npm run test:browser` on every PR and push to main. CodeQL also runs.
@@ -95,6 +96,13 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - Courses still being written carry `status: 'developing'` (Scratch to Python, Modern C++, Java, DSA): an "Under development" tag (app.js `devTag`).
 - SC 106 Introduction to Java: the interpreter and the first 4 lessons (Hello Java and types; decisions and Scanner; loops; methods), 8 exercises.
   Planned next: arrays; Strings; ArrayList; classes and objects; inheritance and interfaces; exceptions; HashMap; a project.
+- **The practice terminal** (ARCHITECTURE §9f): `src/shell.js` (a real shell: parser, pipelines, redirections, variables, loops, ~70 commands,
+  virtual file system with caps, saved under `shortcourses.shell.v1`, in backups) and `src/terminal.js` (the Terminal panel in the Code Lab:
+  history, Tab completion, nano, `edit`, the `~/lab` mirror). `g++`/`javac` compile through check-only modes of the sandboxes; `./prog`,
+  `java`, `python`, `scheme` run through the usual runners. Planned next: SC 108 The Command Line (grades 7-12, 8 lessons: paths and `cd`;
+  making and moving things; looking inside files; pipes and redirection; running your programs; Windows cmd and PowerShell as a dialect
+  switch over the same file system; a first script; a tidy-a-messy-folder project), terminal exercises graded on file-system state plus
+  output, `setup lessonN` through the shell's `setup` hook, terminal tasks in teacher assignments.
 - Ideas not started: C in the Code Lab (same compiler); lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
   beside the single-page design and needs a policy change); splitting CI (about 4 minutes now); a Java step-through debugger like the C++ memory stepper.

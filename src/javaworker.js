@@ -2,7 +2,7 @@
    iframe; see runner.js), never into the page, so a program can reach nothing but this interpreter, and a program that does not finish is
    stopped by the page ending the worker.
 
-   Messages from the page: {t:'run', id, code, stdin, maxTimeout}
+   Messages from the page: {t:'run', id, code, stdin, maxTimeout, checkOnly}   (checkOnly: compile as javac would, run nothing)
    Messages to the page:   {t:'ready'} {t:'out', id, text} {t:'done', id, err, exit} */
 (function () {
   'use strict';
@@ -17,7 +17,7 @@
     let buf = '';
     const flush = () => { if (buf) { post({ t: 'out', id, text: buf }); buf = ''; } };
     let r;
-    try { r = JAVA.run(String(msg.code), stdin, { maxMs: msg.maxTimeout || 5000, write: (s) => { buf += s; if (buf.length >= 4096) flush(); } }); }
+    try { r = JAVA.run(String(msg.code), stdin, { maxMs: msg.maxTimeout || 5000, checkOnly: msg.checkOnly === true, write: (s) => { buf += s; if (buf.length >= 4096) flush(); } }); }
     catch (e) { r = { err: 'Internal error in the Java interpreter: ' + (e && e.message ? e.message : String(e)), exit: 1 }; }
     flush(); busy = false;
     post({ t: 'done', id, err: r.err, exit: r.exit });
