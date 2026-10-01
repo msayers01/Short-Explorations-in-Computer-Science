@@ -56,6 +56,7 @@ const scripts = [
   'src/guide.js',
   'src/qr.js',
   'src/teach.js',
+  'src/backup.js',
   'src/widgets.js',
   'src/portfolio.js',
   'src/classroom.js',

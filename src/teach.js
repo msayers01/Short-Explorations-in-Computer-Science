@@ -66,6 +66,21 @@
   }
   const baseUrl = () => location.href.split('#')[0];
 
+  // Anything that arrives in a link or a back-up is checked and coerced here: ids are short plain words (they become object keys),
+  // the language is one we run, and every field has the type the rest of the code expects. Returns null if it is not an assignment.
+  function normalize(a) {
+    if (!a || typeof a !== 'object' || typeof a.id !== 'string' || !ID_RE.test(a.id) || !Object.prototype.hasOwnProperty.call(LANG_LABEL, a.lang)) return null;
+    return { id: a.id, v: 1, title: str(a.title, 200), lang: a.lang, text: str(a.text), starter: str(a.starter, 100000),
+      tests: (Array.isArray(a.tests) ? a.tests : []).filter(t => t && typeof t === 'object').slice(0, 200).map(t => ({ k: t.k === 'call' ? 'call' : 'stdin', in: str(t.in, 5000), expect: str(t.expect, 5000), hidden: !!t.hidden })),
+      hints: strs(a.hints), roster: strs(a.roster, 200), author: str(a.author, 200), due: str(a.due, 200), created: Number.isFinite(a.created) ? a.created : Date.now() };
+  }
+  // The same for a submission link: who, which assignment, the program, and what the student's own check showed.
+  function cleanSub(sub) {
+    if (!sub || typeof sub !== 'object' || typeof sub.a !== 'string' || !ID_RE.test(sub.a) || typeof sub.name !== 'string' || !sub.name.trim() || typeof sub.code !== 'string') throw new Error('this is not a submission link');
+    const num = (x) => (Number.isFinite(x) ? Math.max(0, Math.min(1e6, x)) : 0);
+    return { v: 1, a: sub.a, t: str(sub.t, 200), name: sub.name.trim().slice(0, 120), code: sub.code.slice(0, 200000), at: Number.isFinite(sub.at) ? sub.at : Date.now(), check: sub.check && typeof sub.check === 'object' ? { passed: num(sub.check.passed), total: num(sub.check.total), at: num(sub.check.at) } : null };
+  }
+
   // ---------- assignment model
   function studentCopy(a) { return { v: 1, id: a.id, title: a.title, lang: a.lang, text: a.text, starter: a.starter, tests: (a.tests || []).filter(t => !t.hidden).map(t => ({ k: t.k, in: t.in, expect: t.expect })), hints: a.hints || [], roster: a.roster || [], author: a.author || '', due: a.due || '', created: a.created }; }
   function toEx(a, includeHidden) {
@@ -114,20 +129,6 @@
       const ta = el('textarea', { class: 'teach-paste', rows: 3, placeholder: 'Paste an assignment link, a back-up link, or the JSON of a back-up' });
       panel.append(el('div', { class: 'panel-head' }, el('b', {}, 'Import'), el('span', { class: 'spacer' }), el('button', { class: 'btn quiet tiny', onclick: showList }, 'Back')), el('p', { class: 'muted small teach-p' }, 'Importing an assignment link made on another device gives you an editable copy. Note that a student link does not contain hidden tests; import from a back-up to keep those.'), ta,
         el('div', { class: 'toolbar' }, el('button', { class: 'btn primary tiny', onclick: async () => { try { const s = ta.value.trim(); let obj; if (s.startsWith('{') || s.startsWith('[')) obj = JSON.parse(s); else { const m = s.match(/[?&](a|b)=([^&#\s]+)/); if (!m) throw new Error('That is not an assignment or back-up link.'); obj = await unpack(m[2]); } const items = Array.isArray(obj) ? obj : (obj.assignments ? Object.values(obj.assignments) : [obj]); let n = 0; for (const a of items) { const na = normalize(a); if (!na) continue; T.assignments[na.id] = na; n++; } save(); ctx.status('imported ' + n + ' assignment' + (n === 1 ? '' : 's')); showList(); } catch (e) { ctx.status('could not import: ' + e.message); } } }, 'Import')));
-    }
-    // Anything that arrives in a link or a back-up is checked and coerced here: ids are short plain words (they become object keys),
-    // the language is one we run, and every field has the type the rest of the code expects. Returns null if it is not an assignment.
-    function normalize(a) {
-      if (!a || typeof a !== 'object' || typeof a.id !== 'string' || !ID_RE.test(a.id) || !Object.prototype.hasOwnProperty.call(LANG_LABEL, a.lang)) return null;
-      return { id: a.id, v: 1, title: str(a.title, 200), lang: a.lang, text: str(a.text), starter: str(a.starter, 100000),
-        tests: (Array.isArray(a.tests) ? a.tests : []).filter(t => t && typeof t === 'object').slice(0, 200).map(t => ({ k: t.k === 'call' ? 'call' : 'stdin', in: str(t.in, 5000), expect: str(t.expect, 5000), hidden: !!t.hidden })),
-        hints: strs(a.hints), roster: strs(a.roster, 200), author: str(a.author, 200), due: str(a.due, 200), created: Number.isFinite(a.created) ? a.created : Date.now() };
-    }
-    // The same for a submission link: who, which assignment, the program, and what the student's own check showed.
-    function cleanSub(sub) {
-      if (!sub || typeof sub !== 'object' || typeof sub.a !== 'string' || !ID_RE.test(sub.a) || typeof sub.name !== 'string' || !sub.name.trim() || typeof sub.code !== 'string') throw new Error('this is not a submission link');
-      const num = (x) => (Number.isFinite(x) ? Math.max(0, Math.min(1e6, x)) : 0);
-      return { v: 1, a: sub.a, t: str(sub.t, 200), name: sub.name.trim().slice(0, 120), code: sub.code.slice(0, 200000), at: Number.isFinite(sub.at) ? sub.at : Date.now(), check: sub.check && typeof sub.check === 'object' ? { passed: num(sub.check.passed), total: num(sub.check.total), at: num(sub.check.at) } : null };
     }
     // A link that changes what is stored for the teacher (a submission, a back-up) asks first. Otherwise anyone who can get
     // a link in front of a teacher could overwrite assignments (hidden tests included), replace a student's submission, or make
@@ -368,5 +369,5 @@
     ui.showList = showList;
     return ui;
   }
-  window.TEACH = { mount, pack, unpack, textToHtml, studentCopy, toEx };
+  window.TEACH = { mount, pack, unpack, textToHtml, studentCopy, toEx, normalize, cleanSub, dict, ID_RE };
 })();

@@ -129,6 +129,56 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   }
   for (const h of ['#/', '#/lisp/2', '#/math/1', '#/guide', '#/about', '#/portfolio']) await goto(h);
 
+  // ---- 6b. saving and restoring work
+  const fs = require('fs');
+  await goto('#/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload(); await page.waitForSelector('.backup');
+  await page.click('.backup button:has-text("Save my work")'); await page.waitForTimeout(300);
+  check('backup: saving with nothing saved says so', /nothing saved on this device/.test(await page.locator('.backup-status').innerText()));
+  await page.evaluate(() => {
+    localStorage.setItem('shortcourses.progress.v1', JSON.stringify({ done: { 'py-1-1': 111, 'py-2-1': 222 }, code: { 'py-1-1': 'print("kept")' }, pass: { 'py-1-1': 'print("kept")' } }));
+    localStorage.setItem('shortcourses.lab.v1', JSON.stringify({ lang: 'python', files: { python: [{ name: 'main.py', code: 'print("lab file")' }], cpp: [], scheme: [] }, active: { python: 0 }, fontSize: 15, panels: {} }));
+  });
+  await page.reload(); await page.waitForSelector('.backup');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('.backup button:has-text("Save my work")')]);
+  const saved = fs.readFileSync(await dl.path(), 'utf8'); const savedJson = JSON.parse(saved);
+  check('backup: a file is downloaded with the work in it', /^short-explorations-work-\d{4}-\d\d-\d\d\.json$/.test(dl.suggestedFilename()) && savedJson.app === 'short-explorations-backup' && Object.keys(savedJson.data.progress.done).length === 2 && savedJson.data.lab.files.python[0].code === 'print("lab file")', dl.suggestedFilename());
+  check('backup: the status says what was saved', /2 completed exercises and 1 Code Lab program/.test(await page.locator('.backup-status').innerText()), await page.locator('.backup-status').innerText());
+  // a hostile or wrong file changes nothing and says why
+  await page.setInputFiles('.backup input[type=file]', { name: 'x.json', mimeType: 'application/json', buffer: Buffer.from('{"app":"short-explorations-backup","v":1,"data":{"progress":{"done":{"__proto__":1}}}}') });
+  await page.waitForTimeout(400);
+  check('backup: a file with nothing usable in it is refused', /empty/.test(await page.locator('.backup-status').innerText()), await page.locator('.backup-status').innerText());
+  await page.setInputFiles('.backup input[type=file]', { name: 'x.json', mimeType: 'application/json', buffer: Buffer.from('this is not json') });
+  await page.waitForTimeout(400);
+  check('backup: a file that is not a backup is refused', /not a backup file/.test(await page.locator('.backup-status').innerText()));
+  check('backup: nothing was changed by the refused files', (await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('shortcourses.progress.v1')).done).length)) === 2);
+  // wipe the site's storage (a new computer), then restore
+  await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForSelector('.backup');
+  await page.setInputFiles('.backup input[type=file]', { name: 'work.json', mimeType: 'application/json', buffer: Buffer.from(saved) });
+  await page.waitForSelector('.backup-review:not([hidden])');
+  check('backup: the review says what the file holds', /2 completed exercises, 1 Code Lab program/.test(await page.locator('.backup-review').innerText()), await page.locator('.backup-review').innerText());
+  await Promise.all([page.waitForNavigation({ waitUntil: 'load' }).catch(() => { }), page.click('.backup-review button:has-text("Restore")')]);
+  await page.waitForSelector('.backup'); await page.waitForTimeout(300);
+  const after = await page.evaluate(() => ({ p: JSON.parse(localStorage.getItem('shortcourses.progress.v1')), l: JSON.parse(localStorage.getItem('shortcourses.lab.v1')) }));
+  check('backup: restoring on an empty device brings the work back', after.p.done['py-2-1'] === 222 && after.p.code['py-1-1'] === 'print("kept")' && after.l.files.python[0].code === 'print("lab file")', after);
+  check('backup: the home page shows the restored progress', /completed 2 exercises/.test(await page.locator('main.home').innerText()));
+  // "replace" asks for a second click
+  await page.evaluate(() => localStorage.setItem('shortcourses.progress.v1', JSON.stringify({ done: { 'py-9-9': 1 }, code: {}, pass: {} }))); await page.reload(); await page.waitForSelector('.backup');
+  await page.setInputFiles('.backup input[type=file]', { name: 'work.json', mimeType: 'application/json', buffer: Buffer.from(saved) });
+  await page.waitForSelector('.backup-review:not([hidden])');
+  await page.check('.backup-review input[value=replace]'); await page.click('.backup-review button:has-text("Restore")');
+  check('backup: replacing needs a second click', /Click again/.test(await page.locator('.backup-review button.primary').innerText()) && (await page.evaluate(() => 'py-9-9' in JSON.parse(localStorage.getItem('shortcourses.progress.v1')).done)));
+  await Promise.all([page.waitForNavigation({ waitUntil: 'load' }).catch(() => { }), page.click('.backup-review button.primary')]);
+  await page.waitForSelector('.backup'); await page.waitForTimeout(300);
+  check('backup: after the second click the file has replaced it', await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('shortcourses.progress.v1')).done; return !('py-9-9' in d) && 'py-1-1' in d; }));
+
+  // ---- 6c. a saved portfolio page is small: the embedded typefaces are left out
+  await goto('#/portfolio');
+  const [pdl] = await Promise.all([page.waitForEvent('download'), page.click('button:has-text("Download as a web page")')]);
+  const pf = fs.readFileSync(await pdl.path(), 'utf8');
+  check('saved portfolio page is small (' + Math.round(pf.length / 1024) + ' KB)', pf.length < 200 * 1024 && !/@font-face/.test(pf) && /font-src 'none'/.test(pf) && /script-src 'none'/.test(pf), pf.length);
+
   // ---- 7. a browser that cannot make a worker (or an embedding that forbids it) falls back to a hidden sandboxed iframe
   const fb = await browser.newPage(); const fbViolations = [];
   fb.on('console', (m) => { if (/Content Security Policy|Refused to/i.test(m.text())) fbViolations.push(m.text().slice(0, 160)); });

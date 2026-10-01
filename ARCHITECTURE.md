@@ -68,6 +68,7 @@ site/
     course_math.js       SC 104 (13 lessons)   ─┘
     style.css            design tokens, layout, course accents, every component's styles
     cppstep.js           C++ memory stepper → window.CPPSTEP { trace, render, describe } (uses JSCPP's debugger)
+    backup.js            save my work to a file / restore it (home page, "Your work") → window.BACKUP { collect, parse, apply, panel }
     runner.js            the page's side of the program sandboxes → window.PYRUN, window.CPPRUN (run, trace, cancel; queue, watchdog, limits)
     pyworker.js          the Python runtime that runs inside a worker/iframe: Skulpt, run + step-through protocol (messages in its header)
     cppworker.js         the C++ runtime inside a worker: JSCPP, program runs and memory-stepper traces
@@ -91,7 +92,7 @@ site/
 ```
 
 **Script order in `build.js` matters:** (window.BUILD) → cppstep → scheme → subst → site →
-courses → mathgrade → runner → app → lab → guide → qr → teach → widgets → portfolio → classroom → ojibwe → about. `app.js` runs `route()` on
+courses → mathgrade → runner → app → lab → guide → qr → teach → backup → widgets → portfolio → classroom → ojibwe → about. `app.js` runs `route()` on
 `DOMContentLoaded`, by which time every module has registered its global. `route()` renders the page and then
 dispatches a `routed` event on `document`; classroom.js listens for it to rebuild its bar and steps.
 
@@ -185,6 +186,17 @@ lesson 7 has `ma-13-1/2`, and lessons 8–13 have `ma-7-*` … `ma-12-*`.
 | `shortcourses.teach.v1` | teach.js | `{ teacher, name, studentName, assignments: {id: A}, book: {id: {studentName: entry}}, received: {id: studentCopy} }` |
 
 Bumping a `.vN` suffix is how a breaking layout change is handled (old data is simply ignored).
+
+**The backup file** (`backup.js`) is JSON: `{ app: 'short-explorations-backup', v: 1, saved: ISO date, data: { progress, lab, portfolio, teach } }`,
+each part in the shape of its storage key, but rebuilt through strict checks (types, lengths, ids that are not members of
+`Object.prototype`, dictionaries without a prototype) because a file is untrusted input like a link. `teach` holds only the student side
+(`studentName`, `received`, never with hidden tests) unless the teacher ticks the box, which adds `assignments` (hidden tests included), `book`,
+`teacher` and `name`. Restoring either replaces what is stored or adds what is missing (the device wins when the two differ; the newer
+submission wins in the grade book), and then reloads the page, because the modules keep their state in memory.
+**A new storage key that holds the student's work must be added to `backup.js`** (a `clean…` function that rebuilds it from untrusted
+input, `collect`, `apply`, and a merge rule) and to `test_backup.js`, or it is silently left out of "Save my work to a file". Display
+preferences (`theme`, `classroom`) are deliberately not in the file.
+
 `shortcourses.ojibwe.v1` belonged to an earlier on/off switch for the Ojibwe words; do not reuse the name.
 
 ## 8. Data that travels in links (`teach.js: pack/unpack`)
@@ -375,7 +387,7 @@ wherever the term is used).
 
 1. `npm install`. `npm test` applies the JSCPP patches itself (`scripts/patch-jscpp.js`, idempotent).
 2. `node build.js`, then `npm test`: `test_course.js` for each course (every solution passes, every starter fails,
-   every playground runs), `test_cppstep.js`, `test_subst.js`, `test_app.js`, `test_scheme.js` and `test_security.js`. C++ in both test scripts goes through the site's own
+   every playground runs), `test_cppstep.js`, `test_subst.js`, `test_app.js`, `test_scheme.js`, `test_security.js` and `test_backup.js`. C++ in both test scripts goes through the site's own
    `ensureMainReturns` (`src/cpputil.js`), so programs are graded exactly as on the site.
    `npm run test:browser` (needs a built site and Chromium: `npx playwright-core install chromium`) checks what node cannot: the interpreters
    are not in the page, programs cannot reach it (hostile code is sent into a worker and into a sandboxed iframe), an infinite loop cannot
