@@ -823,3 +823,13 @@ html.classroom .about { padding-bottom: 7rem; }
 
 /* Text boxes in figures never force the page wider than a phone screen. */
 .fig-mount input[type="text"] { max-width: 100%; box-sizing: border-box; }
+
+/* Save my work to a file / restore it (backup.js) */
+.backup { margin-top: 1rem; padding: 0.9rem 1rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper-2); font-family: var(--sans); }
+.backup p { margin: 0 0 0.6rem; }
+.backup .toolbar { margin: 0.4rem 0; }
+.backup-opt { display: block; margin: 0.3rem 0; color: var(--ink-2); }
+.backup-status { min-height: 1.2em; color: var(--ink-2); }
+.backup-status.err { color: var(--err); }
+.backup-review { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid var(--rule); }
+.backup-choice { display: flex; gap: 0.5rem; align-items: baseline; margin: 0.35rem 0; cursor: pointer; }

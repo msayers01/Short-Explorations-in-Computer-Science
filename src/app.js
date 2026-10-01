@@ -634,13 +634,14 @@
       ),
       window.PORTFOLIO ? el('section', { class: 'section' },
         el('h2', {}, 'Your work'),
-        el('div', { class: 'prose' }, el('p', {}, (() => { const n = Object.keys(Progress.load().done).length; return n ? 'You have completed ' + n + ' exercise' + (n === 1 ? '' : 's') + ' on this device. ' : 'Every exercise you complete is saved on this device. '; })(), el('a', { href: '#/portfolio' }, 'Make a portfolio'), ' to print your work, keep it as a web page, or send it to your teacher as a link.'))
+        el('div', { class: 'prose' }, el('p', {}, (() => { const n = Object.keys(Progress.load().done).length; return n ? 'You have completed ' + n + ' exercise' + (n === 1 ? '' : 's') + ' on this device. ' : 'Every exercise you complete is saved on this device. '; })(), el('a', { href: '#/portfolio' }, 'Make a portfolio'), ' to print your work, keep it as a web page, or send it to your teacher as a link.')),
+        window.BACKUP ? window.BACKUP.panel() : null
       ) : document.createDocumentFragment(),
       el('section', { class: 'section' },
         el('h2', {}, 'For teachers'),
         el('div', { class: 'prose' }, el('p', {}, 'Running a class with this site? ', el('a', { href: '#/guide' }, 'Read the guide for teachers'), ': how the lessons are built, a plan for an hour of coding, the Code Lab, and how to set assignments and collect students\u2019 work with nothing to install and no accounts.'))
       ),
-      el('footer', { class: 'foot' }, el('span', {}, SITE.footer), el('span', { class: 'foot-links' }, window.ABOUT ? [el('a', { href: '#/about' }, 'About and credits'), ' \u00b7 '] : null, el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Clear all saved progress and code? Click again to confirm', () => { Progress.reset(); route(); }) }, 'Reset my progress')))
+      el('footer', { class: 'foot' }, el('span', {}, SITE.footer), el('span', { class: 'foot-links' }, window.ABOUT ? [el('a', { href: '#/about' }, 'About and credits'), ' \u00b7 '] : null, el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Clear all saved progress and code? (Save it to a file first if you want it back.) Click again to confirm', () => { Progress.reset(); route(); }) }, 'Reset my progress')))
     );
     return main;
   }
