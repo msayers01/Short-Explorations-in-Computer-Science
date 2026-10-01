@@ -327,6 +327,6 @@
   }
 
   const api = { trace, render, describe, _typeName: typeName };
-  if (typeof window !== 'undefined') window.CPPSTEP = api;
+  if (typeof window !== 'undefined') window.CPPSTEP = api; else if (typeof self !== 'undefined') self.CPPSTEP = api;
   if (typeof module !== 'undefined') module.exports = api;
 })();

@@ -490,7 +490,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
 
     const main = el('main', { class: 'lab' });
     const status = el('span', { class: 'lab-status' });
-    let running = false, stopFlag = false, tracer = null, memTrace = null, memIdx = 0;
+    let running = false, tracer = null, memTrace = null, memIdx = 0, memToken = 0;
 
     // ----- editor
     const editor = LabEditor({ lang: S.lang, onChange: (v) => { curFile().code = v; save(); if (!findBar.hidden && findInp.value) computeMatches(); if (memTrace) endMem('The program changed, so the memory view was closed. Press Step through memory to start again.'); }, onRun: () => run(), onSave: () => download(), onCursor: () => renderStatusBar(), onFind: (withReplace) => openFind(withReplace), onEscape: () => { if (!findBar.hidden) closeFind(); } });
@@ -678,7 +678,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
     const replBox = el('div', { class: 'repl-box', hidden: S.lang !== 'scheme' ? '' : null }, el('div', { class: 'panel-head' }, el('b', {}, 'REPL'), el('span', { class: 'panel-note' }, 'Type an expression and press Enter. Run the file first to load its definitions. ↑ ↓ recall earlier lines.')), repl.el);
 
     // ----- running
-    function setRunning(on) { running = on; runBtn.disabled = on; stopBtn.hidden = !on || S.lang !== 'python'; stepBtn.disabled = on; memBtn.disabled = on; status.textContent = on ? 'running…' : ''; }
+    function setRunning(on) { running = on; runBtn.disabled = on; stopBtn.hidden = !on || S.lang === 'scheme'; stepBtn.disabled = on; memBtn.disabled = on; status.textContent = on ? 'running…' : ''; }
     function explain(lang, err) { const tip = tipFor(lang, err); for (const [re, msg] of EXPLAIN[lang] || []) if (re.test(err)) return msg; return tip; }
     function showError(lang, err) {
       out.error(err);
@@ -690,13 +690,12 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
       if (running) return; if (tracer) tracer.stop(); endMem();
       const lang = S.lang, code = editor.value; out.clear();
       if (lang === 'cpp' && /\bcin\b/.test(code)) { stdinBox.hidden = false; if (!stdinTa.value.trim() && !stdinTa.dataset.warned) { stdinTa.dataset.warned = '1'; out.note('This program reads input with cin. Type the values in the Program input box, one per line, then Run again.'); stdinTa.focus(); return; } }
-      setRunning(true); stopFlag = false;
+      setRunning(true);
       try {
         if (lang === 'python') {
-          const usesTurtle = /\b(import\s+turtle|from\s+turtle\s+import)\b/.test(code);
-          if (usesTurtle) prepTurtle();
+          const usesTurtle = usesTurtleIn(code);
           const t0 = Date.now();
-          const r = await runPython(code, { onOutput: (s) => out.write(s), onInput: (p) => out.ask(p) });
+          const r = await window.PYRUN.run(code, { execLimit: 15000, onOutput: (s) => out.write(s), onInput: (p) => out.ask(p), turtle: usesTurtle ? turtleOptions() : undefined });
           if (r.err) showError('python', r.err); else if (!r.out && !usesTurtle) out.note('(the program finished without printing anything)');
           out.note('finished in ' + ((Date.now() - t0) / 1000).toFixed(2) + ' s');
         } else if (lang === 'scheme') {
@@ -713,64 +712,33 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
       } catch (e) { out.error(String(e && e.message || e)); }
       setRunning(false);
     }
-    function runPython(code, opts) {
-      let outText = '';
-      Sk.configure({
-        output: (s) => { outText += s; if (opts.onOutput) opts.onOutput(s); },
-        read: (x) => { if (Sk.builtinFiles === undefined || Sk.builtinFiles.files[x] === undefined) throw "File not found: '" + x + "'"; return Sk.builtinFiles.files[x]; },
-        __future__: Sk.python3, execLimit: 15000, yieldLimit: 100,
-        inputfun: (p) => opts.onInput ? opts.onInput(p) : '', inputfunTakesPrompt: true, retainglobals: false, debugging: false
-      });
-      const later = (susp) => new Promise((resolve, reject) => setTimeout(() => stopFlag ? reject(new Error('Stopped.')) : resolve(susp.resume()), 0));
-      const handlers = { 'Sk.yield': later, 'Sk.delay': later };
-      return Sk.misceval.asyncToPromise(() => Sk.importMainWithBody('<stdin>', false, code, true), handlers)
-        .then(() => ({ out: outText, err: null }), (e) => ({ out: outText, err: e && e.message === 'Stopped.' ? 'Stopped.' : pyError(e) }));
-    }
-    function pyError(e) { let s = e && e.toString ? e.toString() : String(e); if (e && e.traceback && e.traceback.length) { const tb = e.traceback[0]; if (tb && tb.lineno && !/line \d+/.test(s)) s += ' on line ' + tb.lineno; } return s.replace(/^TimeLimitError: .*$/, 'Time limit exceeded: the program ran for too long. Is there a loop that never ends?'); }
-    function stop() { stopFlag = true; if (tracer) tracer.stop(); }
-    function prepTurtle() { turtleBox.hidden = false; turtleMount.innerHTML = ''; Sk.TurtleGraphics = { target: 'lab-turtle', width: Math.min(560, turtleMount.clientWidth || 560), height: 360 }; }
+    // Python and C++ run in sandboxes (src/runner.js): a Web Worker each, or for turtle drawing a sandboxed iframe. Neither can reach this
+    // page, its storage or the network, and Stop ends them at once, even in a loop that never yields.
+    const usesTurtleIn = (code) => /\b(import\s+turtle|from\s+turtle\s+import)\b/.test(code);
+    function turtleOptions() { turtleBox.hidden = false; turtleMount.textContent = ''; if (turtleBox.scrollIntoView) turtleBox.scrollIntoView({ block: 'nearest' });   // the browser pauses the drawing of a frame that is off screen
+     return { mount: turtleMount, width: Math.min(560, turtleMount.clientWidth || 560), height: 360 }; }
+    function stop() { window.PYRUN.cancel(); window.CPPRUN.cancel(); }
 
     // ----- Python tracer
     function startTrace() {
       if (running) return; if (tracer) tracer.stop();
       const code = editor.value; out.clear(); traceBox.hidden = false; traceVars.innerHTML = ''; traceMsg.textContent = 'starting…';
-      let waiting = null, finished = false, fast = false;
-      const usesTurtle = /\b(import\s+turtle|from\s+turtle\s+import)\b/.test(code); if (usesTurtle) prepTurtle();
-      Sk.configure({
-        output: (s) => out.write(s), read: (x) => { if (Sk.builtinFiles.files[x] === undefined) throw "File not found: '" + x + "'"; return Sk.builtinFiles.files[x]; },
-        __future__: Sk.python3, execLimit: 60000, yieldLimit: 100, inputfun: (p) => out.ask(p), inputfunTakesPrompt: true, retainglobals: false,
-        debugging: true, breakpoints: () => true
-      });
-      const show = (v) => { if (v === undefined) return null; try { if (v.tp$name === 'function' || v.tp$name === 'builtin_function_or_method') return '<function>'; if (v.tp$name === 'module') return '<module>'; if (v.tp$name === 'type') return '<class ' + (v.prototype && v.prototype.tp$name || '?') + '>'; return Sk.builtin.repr(v).v; } catch (e) { return '?'; } };
-      const onPause = (susp) => {
-        let s = susp; const frames = []; while (s) { if (s.$lineno !== undefined) frames.push(s); s = s.child; }
-        const inner = frames[frames.length - 1]; const depth = frames.length;
-        editor.setTrace(inner.$lineno);
-        const vars = [];
-        const src = depth > 1 ? (inner.$tmps || {}) : (inner.$loc || {});
-        for (const k in src) { if (k.startsWith('$') || k.startsWith('__')) continue; const t = show(src[k]); if (t != null) vars.push([k, t]); }
+      const usesTurtle = usesTurtleIn(code);
+      setRunning(true); stepBtn.disabled = true; runBtn.disabled = true; if (!isTouch()) traceBox.focus();
+      const onStep = (st) => {
+        editor.setTrace(st.line);
         traceVars.innerHTML = '';
-        traceVars.append(el('table', { class: 'fill vars' }, el('thead', {}, el('tr', {}, el('th', {}, 'name'), el('th', {}, 'value'))), el('tbody', {}, vars.length ? vars.map(([k, v]) => el('tr', {}, el('td', {}, el('code', {}, k)), el('td', {}, el('code', {}, v)))) : el('tr', {}, el('td', { colspan: 2, class: 'muted' }, 'no variables yet')))));
-        traceMsg.textContent = 'about to run line ' + inner.$lineno + (depth > 1 ? ' (inside a function, depth ' + depth + ')' : '');
+        traceVars.append(el('table', { class: 'fill vars' }, el('thead', {}, el('tr', {}, el('th', {}, 'name'), el('th', {}, 'value'))), el('tbody', {}, st.vars.length ? st.vars.map(([k, v]) => el('tr', {}, el('td', {}, el('code', {}, k)), el('td', {}, el('code', {}, v)))) : el('tr', {}, el('td', { colspan: 2, class: 'muted' }, 'no variables yet')))));
+        traceMsg.textContent = 'about to run line ' + st.line + (st.depth > 1 ? ' (inside a function, depth ' + st.depth + ')' : '');
       };
-      const later = (susp) => new Promise((resolve, reject) => setTimeout(() => stopFlag ? reject(new Error('Stopped.')) : resolve(susp.resume()), 0));
-      const handlers = {
-        'Sk.yield': later, 'Sk.delay': later,
-        'Sk.debug': (susp) => new Promise((resolve, reject) => {
-          if (stopFlag) return reject(new Error('Stopped.'));
-          if (fast) return setTimeout(() => resolve(susp.resume()), 0);
-          onPause(susp); waiting = { resolve, reject, susp };
-        })
-      };
-      stopFlag = false; setRunning(true); stepBtn.disabled = true; runBtn.disabled = true; if (!isTouch()) traceBox.focus();
-      tracer = {
-        next() { if (waiting) { const w = waiting; waiting = null; traceMsg.textContent = 'running line…'; w.resolve(w.susp.resume()); } },
-        finish() { fast = true; editor.setTrace(0); this.next(); },
-        stop() { if (finished) return; stopFlag = true; if (waiting) { const w = waiting; waiting = null; w.reject(new Error('Stopped.')); } }
-      };
-      Sk.misceval.asyncToPromise(() => Sk.importMainWithBody('<stdin>', false, code, true), handlers)
-        .then(() => { traceMsg.textContent = 'finished'; }, (e) => { if (e && e.message === 'Stopped.') traceMsg.textContent = 'stopped'; else { traceMsg.textContent = 'error'; showError('python', pyError(e)); } })
-        .then(() => { finished = true; tracer = null; editor.setTrace(0); setRunning(false); traceNext.disabled = false; });
+      const t = window.PYRUN.trace(code, { onStep, onOutput: (s) => out.write(s), onInput: (p) => out.ask(p), turtle: usesTurtle ? turtleOptions() : undefined });
+      tracer = { next() { traceMsg.textContent = 'running line…'; t.next(); }, finish() { editor.setTrace(0); t.finish(); }, stop() { t.stop(); } };
+      t.done.then((r) => {
+        if (r.err === 'Stopped.') traceMsg.textContent = 'stopped';
+        else if (r.err) { traceMsg.textContent = 'error'; showError('python', r.err); }
+        else traceMsg.textContent = 'finished';
+        tracer = null; editor.setTrace(0); setRunning(false); traceNext.disabled = false;
+      });
     }
 
     // ----- C++ memory stepper (CPPSTEP records the whole run, so stepping can go backwards too)
@@ -793,13 +761,15 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
       if (e.key === 'Enter' || e.key === 'n' || e.key === 'N' || e.key === 'ArrowRight') { e.preventDefault(); memShow(memIdx + 1); }
       else if (e.key === 'b' || e.key === 'B' || e.key === 'ArrowLeft') { e.preventDefault(); memShow(memIdx - 1); }
     });
-    function startMem() {
-      if (running || !window.CPPSTEP) return; if (tracer) tracer.stop();
+    async function startMem() {
+      if (running || !window.CPPSTEP || !window.CPPRUN) return; if (tracer) tracer.stop();
       const code = editor.value;
       if (/\bcin\b/.test(code)) { stdinBox.hidden = false; if (!stdinTa.value.trim()) { out.clear(); out.note('This program reads input with cin. Type the values in the Program input box, one per line, then press Step through memory again.'); stdinTa.focus(); return; } }
-      const A_ = A();
-      memTrace = window.CPPSTEP.trace(code, stdinTa.value, { prepare: A_.ensureMainReturns, errorText: A_.cppErrorText, maxSteps: 1500 });
-      out.clear(); memBox.hidden = false;
+      const token = ++memToken;
+      out.clear(); memBox.hidden = false; memView.innerHTML = ''; memMsg.textContent = 'running the program…'; setRunning(true);
+      let r; try { r = await window.CPPRUN.trace(code, stdinTa.value, { maxSteps: 1500 }); } finally { setRunning(false); }
+      if (token !== memToken) return;   // closed, or the program changed, while it ran
+      memTrace = r.result && Array.isArray(r.result.steps) ? r.result : { steps: [], output: '', error: r.err || 'The program could not be run.' };
       if (!memTrace.steps.length) { memView.innerHTML = ''; memMsg.textContent = 'the program could not start'; memSlider.max = '0'; if (memTrace.error) showError('cpp', memTrace.error); editor.setTrace(0); return; }
       memSlider.max = String(memTrace.steps.length - 1);
       memShow(0);
@@ -825,7 +795,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
     }
     function endMem(msg) {
       if (!memTrace && memBox.hidden) return;
-      memTrace = null; memBox.hidden = true; memView.innerHTML = ''; editor.setTrace(0);
+      memToken++; memTrace = null; memBox.hidden = true; memView.innerHTML = ''; editor.setTrace(0);
       if (msg) status.textContent = msg, setTimeout(() => { if (status.textContent === msg) status.textContent = ''; }, 6000);
     }
 

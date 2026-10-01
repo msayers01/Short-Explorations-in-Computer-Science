@@ -21,13 +21,8 @@ if (course.lang === 'cpp') {
   JSCPP = require('./node_modules/JSCPP/lib/commonjs.js');
   if (!require('fs').readFileSync('./node_modules/JSCPP/lib/defaults.js', 'utf8').includes('integer division by zero')) console.log('WARNING: node_modules/JSCPP is unpatched; run  patch -p0 < patches/jscpp-iostream.patch  so results match the browser bundle.');
 }
-// The site's own ensureMainReturns (app.js), read from the source so the tests run C++ exactly as the site does.
-const ensureMainReturns = (() => {
-  const src = require('fs').readFileSync(__dirname + '/src/app.js', 'utf8');
-  const i = src.indexOf('  function ensureMainReturns('), j = src.indexOf('\n  }\n', i);
-  if (i < 0 || j < 0) throw new Error('ensureMainReturns not found in src/app.js');
-  return new Function(src.slice(i, j + 4) + '\nreturn ensureMainReturns;')();
-})();
+// The site's own ensureMainReturns (src/cpputil.js), so the tests run C++ exactly as the site does.
+const { ensureMainReturns } = require('./src/cpputil.js');
 async function grade(ex, code) {
   const lang = ex.lang || course.lang;
   if (ex.mustContain) for (const r of ex.mustContain) if (!r.re.test(code)) return { passed: false, error: r.msg };

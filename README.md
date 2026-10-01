@@ -53,6 +53,7 @@ add lessons, figures and exercise types.
     test_cppstep.js        checks the C++ memory stepper
     test_subst.js          checks the substitution stepper
     test_security.js       checks the Python sandbox and the size limit on links
+    test_browser.js        browser tests (npm run test:browser): sandboxes, Stop, the Code Lab and the Content Security Policy
     dist/                  the built site
 
 ## Building

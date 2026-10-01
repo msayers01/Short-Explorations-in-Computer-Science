@@ -68,13 +68,8 @@ const H = '#include <iostream>\nusing namespace std;\n\n';
 
 // ---- 2. every C++ example and solution in the course
 const course = window.COURSES.find(c => c.id === 'cpp');
-// The site's own ensureMainReturns (app.js), read from the source so the tests run C++ exactly as the site does.
-const ensureMainReturns = (() => {
-  const src = require('fs').readFileSync(__dirname + '/src/app.js', 'utf8');
-  const i = src.indexOf('  function ensureMainReturns('), j = src.indexOf('\n  }\n', i);
-  if (i < 0 || j < 0) throw new Error('ensureMainReturns not found in src/app.js');
-  return new Function(src.slice(i, j + 4) + '\nreturn ensureMainReturns;')();
-})();
+// The site's own ensureMainReturns (src/cpputil.js), so the tests run C++ exactly as the site does.
+const { ensureMainReturns } = require('./src/cpputil.js');
 const prepare = ensureMainReturns;
 let checked = 0;
 course.lessons.forEach((L, li) => {

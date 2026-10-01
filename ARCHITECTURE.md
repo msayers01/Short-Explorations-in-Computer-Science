@@ -30,8 +30,12 @@ must move between people travels inside a URL.
      `hasLang`/`ID_RE`, and incoming assignments, submissions and back-ups pass through `normalize`/`cleanSub` (teach.js).
    - A link that stores something or runs a stranger's program asks the teacher first (`confirmLink`).
    - Packed links are size-limited (`MAX_LINK`, `MAX_UNPACKED`).
-   - Programs run only in the three interpreters; `sandbox.js` removes Skulpt's `document`, `urllib` and other modules that reach the
-     page or the network. Do not add one back.
+   - Python and C++ programs never run in the page. Each runs in a Web Worker that holds only its interpreter (`runner.js`,
+     `pyworker.js`, `cppworker.js`): no DOM, no localStorage, no network, and the page can end it at any moment (Stop, a watchdog).
+     Python that draws with turtle runs in a sandboxed iframe without `allow-same-origin`. `sandbox.js` also removes Skulpt's
+     `document`, `urllib` and other modules that reach out; do not add one back. Nothing the sandboxes send back is trusted: it is
+     checked and shown as text. Scheme runs in the page: it is our own interpreter, with no way to name a host object, a step limit and
+     no `eval`.
    - `build.js` writes a Content Security Policy (script hashes, no network) into every page and into `dist/_headers`. A new inline
      script needs no change (its hash is computed); a new external resource must be added to the policy deliberately.
 
@@ -47,7 +51,9 @@ site/
   test_course.js         node harness: solutions pass, starters fail, playgrounds run (per course)
   test_cppstep.js        node tests for the C++ memory stepper, including stepping every C++ course program
   test_subst.js          node tests for the substitution stepper: every Lisp playground steps without error and ends at the interpreter's value
-  package.json           npm test runs all four courses; deps: skulpt, JSCPP, esbuild
+  package.json           npm test runs all four courses and the node tests; npm run test:browser the browser tests; deps: skulpt, JSCPP,
+                         esbuild, the typefaces, playwright-core (tests)
+  .github/workflows/ci.yml   runs npm test, the build and the browser tests on every push to main and every pull request
   patches/jscpp-iostream.patch, patches/jscpp-unsigned.patch   applied to node_modules/JSCPP by scripts/patch-jscpp.js
                          (run automatically before `npm test`) and baked into vendor/jscpp.min.js
   vendor/jscpp.min.js    JSCPP bundled by esbuild (see README for the command)
@@ -62,7 +68,12 @@ site/
     course_math.js       SC 104 (13 lessons)   ─┘
     style.css            design tokens, layout, course accents, every component's styles
     cppstep.js           C++ memory stepper → window.CPPSTEP { trace, render, describe } (uses JSCPP's debugger)
-    sandbox.js           removes Skulpt's page- and network-reaching modules (document, urllib, webbrowser, image, ...) → window.SANDBOX
+    runner.js            the page's side of the program sandboxes → window.PYRUN, window.CPPRUN (run, trace, cancel; queue, watchdog, limits)
+    pyworker.js          the Python runtime that runs inside a worker/iframe: Skulpt, run + step-through protocol (messages in its header)
+    cppworker.js         the C++ runtime inside a worker: JSCPP, program runs and memory-stepper traces
+    pyboot.js            the few lines inside the turtle iframe that receive the interpreter by message (its hash is in the CSP)
+    cpputil.js           ensureMainReturns, cppErrorText: used by cppworker.js and the node tests
+    sandbox.js           removes Skulpt's page- and network-reaching modules (document, urllib, webbrowser, image, ...) → SANDBOX
     scheme.js            Scheme interpreter (MIT/SICP dialect) → window.Scheme / module.exports
                          (all c[ad]r up to 4 deep; eval with system-global-environment, always global)
     subst.js             substitution-model stepper over scheme.js ASTs → window.SUBST
@@ -79,8 +90,8 @@ site/
     about.js             About and credits page (#/about) → window.ABOUT
 ```
 
-**Script order in `build.js` matters:** (window.BUILD) → skulpt → skulpt-stdlib → sandbox → jscpp → cppstep → scheme → subst → site →
-courses → mathgrade → app → lab → guide → qr → teach → widgets → portfolio → classroom → ojibwe → about. `app.js` runs `route()` on
+**Script order in `build.js` matters:** (window.BUILD) → cppstep → scheme → subst → site →
+courses → mathgrade → runner → app → lab → guide → qr → teach → widgets → portfolio → classroom → ojibwe → about. `app.js` runs `route()` on
 `DOMContentLoaded`, by which time every module has registered its global. `route()` renders the page and then
 dispatches a `routed` event on `document`; classroom.js listens for it to rebuild its bar and steps.
 
@@ -95,14 +106,14 @@ dispatches a `routed` event on `document`; classroom.js listens for it to rebuil
  ├────────────────────────────────────────────────────────────────────────┤
  │ Grading: grade(ex, code) [code kinds]  ·  MATHGRADE.grade(ex, answers) │
  ├────────────────────────────────────────────────────────────────────────┤
- │ Runners: Runners.python (Skulpt) · Runners.cpp (JSCPP) · Scheme        │
+ │ Runners: Runners.python / .cpp (sandboxed workers) · Scheme (in page)  │
  ├────────────────────────────────────────────────────────────────────────┤
  │ Storage (localStorage): progress · lab files · teacher data · theme    │
  └────────────────────────────────────────────────────────────────────────┘
 ```
 
 `app.js` exposes what other modules need on `window.__app.internal`:
-`{ el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, ensureMainReturns, cppErrorText }`.
+`{ el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById }`.
 `lab.js` reads it through `A()`. Nothing else reaches into app.js internals.
 
 ## 5. Routing (`app.js: route()`)
@@ -195,16 +206,26 @@ button and every Scheme playground not marked `expectError` a "Show the substitu
 - `LabEditor(opts)` — its own editor (not `makeEditor`): history, auto-indent/close, bracket match,
   find marks, autocomplete, current/trace line, `setLang`, `setFind`, `setTrace`, `goToLine`, `pos`.
   Marks are applied to the highlighted DOM by character offset (`markRanges`).
-- Runners: Python via `runPython()` with `yieldLimit` (Stop works through `Sk.yield` handlers;
-  **`killableWhile/killableFor` must stay off — they hang**). Tracer uses `debugging: true` and
-  `Sk.debug` suspensions (`$loc` at module level, `$tmps` inside functions). Turtle sets
-  `Sk.TurtleGraphics.target = 'lab-turtle'`. C++ takes stdin from the Program input box.
+- Runners: Python and C++ run in sandboxes (see constraint 6). `build.js` does not run Skulpt or JSCPP in the page: it puts each
+  interpreter's source, with its worker script, in an inert `<script type="text/plain" id="py-src">` (and `cpp-src`) block, and
+  `runner.js` turns that text into a Blob worker. `PYRUN.run(code, {stdin, execLimit, onOutput, onInput, turtle})` and
+  `CPPRUN.run` return `{out, err}`; `PYRUN.trace` drives the step-through (`next`, `finish`, `stop`); `cancel()` ends the sandbox.
+  The page keeps time itself: a run is ended after `execLimit + 1.5 s` of busy time (waiting for `input()` or a step-through pause
+  does not count) or 8 s of silence, and past 2 MB of output. A run in progress is `active`; runs queue one at a time. The worker is
+  made again after it is ended (turtle runs get 90 s, since a drawing takes as long as its animation, and the browser pauses the
+  animation of a frame that is off screen, so the Lab scrolls the canvas into view). Turtle needs a canvas, so those programs get a fresh sandboxed iframe in the turtle box; the iframe
+  holds only `pyboot.js`, and the interpreter arrives by `postMessage` and is run with `eval` (the CSP allows script by hash, and
+  `'unsafe-eval'` for Skulpt). If a browser cannot make a worker, the same interpreter goes in a hidden sandboxed iframe.
+  **`killableWhile/killableFor` must stay off — they hang.** The tracer runs with `debugging: true` and `Sk.debug` suspensions
+  (`$loc` at module level, `$tmps` inside functions) inside the sandbox and sends each pause as a `step` message. C++ takes stdin
+  from the Program input box.
   Scheme: `makeRepl()` keeps one evaluator; `loadProgram` runs the file into it; each REPL entry resets the step budget.
   The evaluator (scheme.js) keeps its own stack of continuation frames on the heap, so non-tail recursion is limited
   by `MAX_STACK` (200 000 frames, then "maximum recursion depth exceeded"), not by the JS call stack; `do`, named-let
   inits, `letrec` and quasiquote still recurse into `evaluate`. Integers beyond 2^53 are BigInts (`isInt`, `norm`,
   `arith` in scheme.js keep arithmetic exact and fold results back to plain numbers when they fit).
-- Memory stepper (C++): `CPPSTEP.trace(code, stdin, {prepare, errorText, maxSteps, maxMs})` runs the program
+- Memory stepper (C++): `CPPSTEP.trace(code, stdin, {prepare, errorText, maxSteps, maxMs})` runs in the C++ sandbox (`CPPRUN.trace`; the
+  result is plain data and comes back by message, `CPPSTEP.render` draws it in the page) and runs the program
   under JSCPP's debugger (`debug: true`), stopping whenever the line changes, and records every snapshot:
   `{ steps: [{ line, frames: [{ name, global, vars: [{ id, name, type, kind: value|array|pointer, addr,
   bytes, value, cells?, text?, target?: {id, label, addr, gone?}, changed, fresh, unset? }] }], outLen,
@@ -355,7 +376,11 @@ wherever the term is used).
 1. `npm install`. `npm test` applies the JSCPP patches itself (`scripts/patch-jscpp.js`, idempotent).
 2. `node build.js`, then `npm test`: `test_course.js` for each course (every solution passes, every starter fails,
    every playground runs), `test_cppstep.js`, `test_subst.js`, `test_app.js`, `test_scheme.js` and `test_security.js`. C++ in both test scripts goes through the site's own
-   `ensureMainReturns`, read out of `src/app.js`, so programs are graded exactly as on the site.
+   `ensureMainReturns` (`src/cpputil.js`), so programs are graded exactly as on the site.
+   `npm run test:browser` (needs a built site and Chromium: `npx playwright-core install chromium`) checks what node cannot: the interpreters
+   are not in the page, programs cannot reach it (hostile code is sent into a worker and into a sandboxed iframe), an infinite loop cannot
+   freeze the page and Stop ends it, the Lab's input, turtle, step-through and memory view work, graded exercises pass in the sandbox,
+   and there is not one Content Security Policy violation. CI runs both on every push and pull request.
    A linter (ESLint, installed outside the project) with `no-undef`, `no-unused-vars` and the usual correctness rules
    should report nothing.
 3. Check in a browser, or headless with jsdom (installed outside the project so it stays out of the repository):
