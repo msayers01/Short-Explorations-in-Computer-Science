@@ -77,7 +77,11 @@
         return turtleFrame;
       }
       if (shared) return shared;
-      if (cfg.workerOnly) { shared = await workerChannel(); return shared; }   // no fallback: the compiler needs a worker, and says so if it cannot have one
+      if (cfg.workerOnly) {   // no fallback: the compiler needs a worker, and says so if it cannot have one
+        // A download can fail for a moment (a dropped connection, a busy server), so a failed start is tried a second time before it is reported.
+        try { shared = await workerChannel(); } catch (e) { shared = await workerChannel(); }
+        return shared;
+      }
       if (workersWork) { try { shared = await workerChannel(); return shared; } catch (e) { workersWork = false; } }
       shared = await frameChannel(null, null);
       return shared;
