@@ -74,8 +74,8 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 
 - Merged and live: everything above through PR #10 (security review of Full C++). `main` = `a617613`.
 - SC 105 Modern C++ has 8 lessons (string, vector, references, struct, class, algorithms/lambdas, map/set, gradebook project), 15 exercises.
-- SC 106 Introduction to Java: the interpreter and the first 3 lessons (Hello Java and types; decisions and Scanner; loops), 6 exercises.
-  Planned next: methods; arrays; Strings; ArrayList; classes and objects; inheritance and interfaces; exceptions; HashMap; a project.
+- SC 106 Introduction to Java: the interpreter and the first 4 lessons (Hello Java and types; decisions and Scanner; loops; methods), 8 exercises.
+  Planned next: arrays; Strings; ArrayList; classes and objects; inheritance and interfaces; exceptions; HashMap; a project.
 - Ideas not started: C in the Code Lab (same compiler); a Data Structures and Algorithms course on the real compiler; lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
   beside the single-page design and needs a policy change); splitting CI (about 4 minutes now); a Java step-through debugger like the C++ memory stepper.

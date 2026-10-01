@@ -269,7 +269,7 @@
 
     box.append(
       el('p', { class: 'small' }, 'Your work is saved only in this browser. To keep a copy, or to move it to another computer, save it to a file here and restore it there.'),
-      el('div', { class: 'toolbar' }, save, restore, file), teacherRow, status, review);
+      el('div', { class: 'toolbar' }, save, restore, file), ...[teacherRow, status, review].filter(Boolean));   // append() would print a null as text
     return box;
   }
 

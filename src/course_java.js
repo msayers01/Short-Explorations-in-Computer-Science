@@ -527,6 +527,218 @@ public class Main {
 <li>An <code>int</code> wraps around past 2,147,483,647 without warning; use <code>long</code> for big totals and products.</li>
 </ul></div>`
       ]
+    },
+    /* ================================================================== */
+    {
+      title: 'Methods', summary: 'Writing a method once and calling it many times: parameters, return values, void, why a method cannot change your variables, and overloading.',
+      blocks: [
+        `<p>In 1949 the EDSAC at Cambridge University became one of the first computers that stored its program in memory alongside its data. Its users soon noticed that they were writing the same pieces of code over and over: a routine to print a number, a routine to take a square root, a routine to read paper tape. David Wheeler, a research student on the project, worked out how a program could jump into such a routine, let it do its work, and come back to the place it had left, with the routine none the wiser about who had called it. The trick is still called the Wheeler jump. By 1951 Wheeler, Maurice Wilkes and Stanley Gill had published the first textbook of programming, and most of it was about a library of these <em>subroutines</em>, kept on paper tape in a cabinet, that any program could borrow.</p>
+<p>Every language since has had them under some name: subroutines, procedures, functions. Java calls them <em>methods</em>, and you have been using them from the first line you wrote: <code>println</code> is a method, so are <code>nextInt</code> and <code>Math.sqrt</code>, and the program itself lives in one called <code>main</code>. This lesson is about writing your own, and the reason is the one Wheeler saw: a piece of code that does one job, written once, named, and called from wherever it is needed.</p>
+<h2>Defining and calling</h2>
+<p>A method is defined inside the class, beside <code>main</code>, and has four parts: the type of value it hands back, its name, a list of <em>parameters</em> in parentheses, each with a type, and a body in braces. The keyword <code>static</code> in front says the method belongs to the class and can be called directly from <code>main</code>; every method in this lesson is static, and lesson 8 shows the other kind. Calling the method is writing its name with values for the parameters, called <em>arguments</em>. The call is an expression: it stands for the value the method returns.</p>`,
+        { play: `public class Main {
+    static int square(int x) {
+        return x * x;
+    }
+
+    static double average(int a, int b) {
+        return (a + b) / 2.0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(square(7));
+        System.out.println(square(3) + square(4));
+        int n = 12;
+        System.out.println(square(n + 1));
+        System.out.println(average(3, 4));
+        double mean = average(square(2), 10);
+        System.out.println(mean);
+    }
+}`, caption: 'A call can appear anywhere a value can: in println, in a sum, as an argument to another call. The method does not care whether it was given 7, n + 1 or square(2); it receives the value.' },
+        `<p>Read <code>square(n + 1)</code> as a story. Java works out <code>n + 1</code>, which is 13. It starts the method with <code>x</code> set to 13. The body computes <code>169</code> and <code>return</code> hands it back; the call <code>square(n + 1)</code> now stands for 169, and <code>println</code> prints it. Then <code>x</code> ceases to exist.</p>
+<div class="stmt"><p><span class="kind">Rule (return).</span> <code>return value;</code> ends the method at once and hands the value back. A method whose return type is not <code>void</code> must return a value on every path through it; if the compiler can find a way to reach the closing brace without a <code>return</code>, it refuses the program with <em>missing return statement</em>.</p>
+<p><span class="kind">Rule (types).</span> The value returned must match the declared type (or convert to it without loss), and each argument must match its parameter. <code>square(2.5)</code> does not compile: <em>possible lossy conversion from double to int</em>.</p></div>`,
+        { play: `public class Main {
+    static int sign(int n) {
+        if (n > 0) {
+            return 1;
+        } else if (n < 0) {
+            return -1;
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println(sign(5));
+    }
+}`, expectError: true, caption: 'Main.java:8: error: missing return statement. For n equal to 0 neither branch returns, so the method would fall off its end. Add return 0; before the closing brace, or make the last branch a plain else.' },
+        `<h2>Methods that do something: void</h2>
+<p>Not every method hands back a value. One that prints, or draws, or changes a list, has the return type <code>void</code>, "nothing". A <code>void</code> method is called as a statement on its own, not inside an expression, and may end with a bare <code>return;</code> or simply by reaching its closing brace. <code>main</code> is one.</p>`,
+        { play: `public class Main {
+    static void printLine(int length) {
+        for (int i = 0; i < length; i++) {
+            System.out.print("-");
+        }
+        System.out.println();
+    }
+
+    static void printBox(String text) {
+        printLine(text.length() + 4);
+        System.out.println("| " + text + " |");
+        printLine(text.length() + 4);
+    }
+
+    public static void main(String[] args) {
+        printBox("Hello");
+        printBox("EDSAC, 1949");
+    }
+}`, caption: 'printBox calls printLine twice: methods are built out of methods. Try int x = printBox("a"); and read the message: a void method has no value to give.' },
+        `<h2>A method gets copies</h2>
+<p>When you call <code>square(n)</code>, the method's parameter <code>x</code> is a new variable holding a <em>copy</em> of <code>n</code>'s value. Whatever the method does to <code>x</code>, <code>n</code> is untouched. This is called <em>passing by value</em>, and it is how every argument of a primitive type (<code>int</code>, <code>double</code>, <code>char</code>, <code>boolean</code>) is handed over in Java. A method that wants to give the caller a new number returns it; it cannot reach back and change the caller's variable.</p>`,
+        { play: `public class Main {
+    static void addTen(int n) {
+        n = n + 10;
+        System.out.println("inside: " + n);
+    }
+
+    static int plusTen(int n) {
+        return n + 10;
+    }
+
+    public static void main(String[] args) {
+        int score = 5;
+        addTen(score);
+        System.out.println("after addTen: " + score);
+        score = plusTen(score);
+        System.out.println("after plusTen: " + score);
+    }
+}`, caption: 'addTen changes its own copy and the change is lost. plusTen returns the new value, and main stores it: that is the Java way to "change" a number through a method. (Arrays and objects behave differently; lesson 5 explains.)' },
+        `<h2>Each method has its own variables</h2>
+<p>A variable declared inside a method, including its parameters, exists only while that method runs and is invisible to every other method. <code>main</code> cannot see <code>x</code> inside <code>square</code>, and <code>square</code> cannot see <code>n</code> inside <code>main</code>. If two methods need to share a value, one passes it to the other as an argument. This is the point of methods, not a limitation: you can read <code>square</code> on its own and know everything about it.</p>`,
+        { play: `public class Main {
+    static int twice(int value) {
+        int result = value * 2;
+        return result;
+    }
+
+    public static void main(String[] args) {
+        int value = 21;
+        System.out.println(twice(value));
+        System.out.println(result);
+    }
+}`, expectError: true, caption: 'Main.java:9: error: cannot find symbol: variable result. The result inside twice belongs to twice. Note that both methods have a variable called value, and they are two different variables.' },
+        `<h2>Several methods with one name</h2>
+<p>Java lets you define two methods with the same name as long as their parameters differ in number or type. The compiler picks the one whose parameters match the arguments. This is called <em>overloading</em>, and the library uses it everywhere: <code>println</code> is a dozen methods, one for each type it can print, and <code>Math.abs</code> works for <code>int</code> and <code>double</code> alike. Use it when the methods really do the same job for different inputs; two unrelated methods with one name confuse everyone.</p>`,
+        { play: `public class Main {
+    static double area(double radius) {
+        return Math.PI * radius * radius;
+    }
+
+    static double area(double width, double height) {
+        return width * height;
+    }
+
+    static String describe(int n) {
+        return n + " is a whole number";
+    }
+
+    static String describe(double d) {
+        return d + " has a decimal part";
+    }
+
+    public static void main(String[] args) {
+        System.out.printf("%.2f%n", area(1));
+        System.out.println(area(3, 4));
+        System.out.println(describe(7));
+        System.out.println(describe(7.5));
+        System.out.println(describe(7 / 2));
+    }
+}`, caption: 'area(1) matches the one-parameter version; the int 1 widens to double. In the last line the argument is an int, so the first describe runs: overloads are chosen by the types in the call, before anything runs.' },
+        `<h2>A method that calls itself</h2>
+<p>Nothing stops a method from calling itself, provided each call works on a smaller problem and some case stops without calling. The factorial of <code>n</code> is <code>n</code> times the factorial of <code>n − 1</code>, and the factorial of 0 is 1. Written out, that definition <em>is</em> the method. This is <em>recursion</em>; the Lisp course is built on it, and here it is a first look.</p>`,
+        { play: `public class Main {
+    static long factorial(int n) {
+        if (n == 0) {
+            return 1;
+        }
+        return n * factorial(n - 1);
+    }
+
+    static int countDigits(int n) {
+        if (n < 10) {
+            return 1;
+        }
+        return 1 + countDigits(n / 10);
+    }
+
+    public static void main(String[] args) {
+        for (int i = 0; i <= 5; i++) {
+            System.out.println(i + "! = " + factorial(i));
+        }
+        System.out.println(factorial(20));
+        System.out.println(countDigits(4729));
+    }
+}`, caption: 'factorial(3) calls factorial(2), which calls factorial(1), which calls factorial(0); that returns 1 and the results multiply back up. Remove the if and run: StackOverflowError, the method called itself until the machine ran out of room to remember the calls.' },
+        `<h2>Dividing a program into methods</h2>
+<p>The exercises in lesson 3 were each one <code>main</code>. The same work reads better as methods with names, each doing one thing, with <code>main</code> reduced to the story of what happens. Compare this with the vowel counter you wrote; the test for a vowel now has a name, and could be used by any other method.</p>`,
+        { play: `import java.util.Scanner;
+
+public class Main {
+    static boolean isVowel(char c) {
+        c = Character.toLowerCase(c);
+        return c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u';
+    }
+
+    static int countVowels(String text) {
+        int count = 0;
+        for (int i = 0; i < text.length(); i++) {
+            if (isVowel(text.charAt(i))) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public static void main(String[] args) {
+        Scanner in = new Scanner(System.in);
+        String line = in.nextLine();
+        System.out.println("Vowels: " + countVowels(line));
+    }
+}`, stdin: 'Programming in Java is fun', caption: 'Three methods, three jobs: decide about one character, count over a string, talk to the user. A boolean method returns the condition itself; there is no need for if (...) return true; else return false;.' },
+        `<div class="stmt"><p><span class="kind">Rule of thumb.</span> If you can say what a piece of code does in a few words, it can be a method with that name. If a method needs a comment to explain what it returns, rename it, or split it. A method that returns a <code>boolean</code> should read like a question: <code>isVowel</code>, <code>isPrime</code>, <code>hasNext</code>.</p></div>
+<h2>Exercises that ask for a method</h2>
+<p>From now on some exercises ask you to write only a method. The checker supplies the class and a <code>main</code> that calls your method with various arguments and prints the results. Write the method exactly as declared in the task, with the word <code>static</code>, and no <code>main</code> of your own. You can test a method yourself by opening the exercise in the Code Lab and adding a <code>main</code> there; just remove it before checking.</p>`,
+        `<details class="reveal"><summary>Puzzle: what does this print? <code>static int f(int n) { return n + 1; }</code> and in main: <code>int n = 1; f(n); f(n); System.out.println(n);</code></summary><p><code>1</code>. Each call computes 2 and hands it back, but nothing in <code>main</code> catches the value; the parameter <code>n</code> inside <code>f</code> is a copy, and <code>main</code>'s <code>n</code> never changes. To make use of a returned value, store it: <code>n = f(n);</code>.</p></details>`,
+        { aside: `<p><b>Common mistakes in this lesson.</b> Forgetting the return type, or a parameter's type, in the declaration. Writing the type in the call, <code>square(int 7)</code>. A non-<code>void</code> method that can reach its closing brace without returning. Calling a method and ignoring the value it returns, then wondering why nothing changed. Expecting a method to change the variable you passed in; return the new value instead. Putting the "not found" <code>return</code> inside the loop, so a search stops after one try. Forgetting <code>static</code> (the message is <em>non-static method cannot be referenced from a static context</em>). Defining a method inside <code>main</code>, or inside another method: methods live side by side in the class. A recursive method with no base case.</p>` },
+        {
+          ex: {
+            id: 'jv-4-1', title: 'Prime or not',
+            prompt: `<p>Write a method</p><pre class="code">static boolean isPrime(int n)</pre><p>that returns <code>true</code> if <code>n</code> is a prime number and <code>false</code> otherwise. A prime is a whole number greater than 1 whose only divisors are 1 and itself, so 2, 3, 5, 7 and 11 are prime; 1, 0, negative numbers, 4 and 9 are not. Write only the method; the checker supplies <code>main</code>.</p>`,
+            starter: `static boolean isPrime(int n) {\n    // numbers below 2 are not prime; then look for a divisor\n    return false;\n}`,
+            solution: `static boolean isPrime(int n) {\n    if (n < 2) {\n        return false;\n    }\n    for (int d = 2; d * d <= n; d++) {\n        if (n % d == 0) {\n            return false;\n        }\n    }\n    return true;\n}`,
+            hints: ['Deal with the easy case first: if (n < 2) return false;', 'Then try every possible divisor d from 2 upwards: if n % d == 0, you have found one, and the answer is false at once. Only after the loop has tried them all can you return true.', 'It is enough to try d while d * d <= n (or d < n, which is slower but also correct). The return true goes after the loop, not inside it.'],
+            tests: [{ call: 'isPrime(2)', expect: 'true' }, { call: 'isPrime(3)', expect: 'true' }, { call: 'isPrime(4)', expect: 'false' }, { call: 'isPrime(1)', expect: 'false' }, { call: 'isPrime(0)', expect: 'false' }, { call: 'isPrime(-7)', expect: 'false' }, { call: 'isPrime(97)', expect: 'true' }, { call: 'isPrime(91)', expect: 'false' }, { call: 'isPrime(7919)', expect: 'true' }],
+            failTip: 'Check the small cases by hand: 0, 1 and negatives are not prime; 2 is. A return true inside the loop is the usual mistake: the loop can only ever prove the answer is false.'
+          }
+        },
+        {
+          ex: {
+            id: 'jv-4-2', title: 'Greatest common divisor',
+            prompt: `<p>Write a method</p><pre class="code">static int gcd(int a, int b)</pre><p>that returns the greatest common divisor of two whole numbers that are 0 or more, at least one of them positive: the largest number that divides both. For example <code>gcd(12, 18)</code> is 6, <code>gcd(7, 5)</code> is 1 and <code>gcd(0, 9)</code> is 9. Use Euclid's method, which is over two thousand years old and still the best: while <code>b</code> is not 0, replace the pair <code>(a, b)</code> by <code>(b, a % b)</code>; when <code>b</code> reaches 0, <code>a</code> is the answer. Write only the method.</p>`,
+            starter: `static int gcd(int a, int b) {\n    // while b is not 0: the new a is b, the new b is a % b\n    return a;\n}`,
+            solution: `static int gcd(int a, int b) {\n    while (b != 0) {\n        int remainder = a % b;\n        a = b;\n        b = remainder;\n    }\n    return a;\n}`,
+            hints: ['The loop runs while (b != 0). Inside it you need the remainder a % b, but you need it after a has already been overwritten: compute it into a variable first.', 'int remainder = a % b; a = b; b = remainder; Three lines, in that order. Then return a after the loop.', 'Trace gcd(12, 18) on paper: (12, 18) → (18, 12) → (12, 6) → (6, 0) → answer 6. If your trace differs, the order of the three lines is wrong.'],
+            tests: [{ call: 'gcd(12, 18)', expect: '6' }, { call: 'gcd(18, 12)', expect: '6' }, { call: 'gcd(7, 5)', expect: '1' }, { call: 'gcd(0, 9)', expect: '9' }, { call: 'gcd(9, 0)', expect: '9' }, { call: 'gcd(100, 75)', expect: '25' }, { call: 'gcd(1071, 462)', expect: '21' }, { call: 'gcd(13, 13)', expect: '13' }],
+            followup: 'Euclid wrote this as repeated subtraction in the Elements, around 300 BC; the % version is the same idea with the subtractions bundled. It is one of the oldest algorithms still in daily use, inside every program that reduces a fraction or sets up an encryption key.'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li>A method is declared with a return type, a name, typed parameters and a body, beside <code>main</code> in the class, with <code>static</code> for now. A call supplies arguments and stands for the returned value.</li>
+<li><code>return value;</code> ends the method and hands back the value; a non-<code>void</code> method must return on every path. A <code>void</code> method does something instead of returning, and is called as a statement.</li>
+<li>Parameters are copies: a method cannot change the caller's <code>int</code>; it returns a new value, and the caller stores it. Each method's variables are its own.</li>
+<li>Overloading: several methods with one name and different parameters; the compiler picks by the argument types. A method may call itself, if some case stops the recursion.</li>
+<li>Give each job a method with a name that says what it does; a <code>boolean</code> method reads like a question.</li>
+</ul></div>`
+      ]
     }
   ]
 });
