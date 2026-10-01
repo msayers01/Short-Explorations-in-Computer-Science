@@ -85,7 +85,9 @@ site/
     app.js               router, pages, course editor, runners, grader, progress, widgets glue
     lab.js               Code Lab page → window.LAB
     shell.js             the practice shell and its file system → window.SHELL (also required by node tests and backup.js) (§9f)
-    terminal.js          the Terminal panel of the Code Lab, in front of shell.js → window.TERMINAL (§9f)
+    terminal.js          the terminals in front of shell.js: the Code Lab panel, lesson examples and shell exercises → window.TERMINAL (§9f)
+    shellgrade.js        the shell course's setups (file trees) and grader → window.SHELLGRADE; node: test_course.js shell (§9f)
+    course_shell.js      SC 108 The Command Line (lang 'shell': examples and exercises are terminals)
     guide.js             the teacher guide (one HTML string) → window.GUIDE; build.js also writes dist/teacher-guide.html
     qr.js                QR encoder → window.QR
     teach.js             assignments / submissions / grade book → window.TEACH
@@ -508,6 +510,17 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   file there that changed is written back, a new file with a known extension (`.py .cpp .java .scm`) becomes a Lab file, and a mirrored
   file that was `rm`ed is removed from the Lab (said in a note). Removing the whole folder removes nothing from the Lab. The Lab's
   "Reset the Code Lab" also clears the terminal; "Reset files" in the terminal bar clears only the terminal.
+- **The course (SC 108, `course_shell.js`, `lang: 'shell'`).** A lesson example `{ play: 'one command per line', setup, caption, expectError? }`
+  is a listing plus a live terminal (`terminal.js: playBlock`): Run types the lines in one at a time, then the student types; each example has
+  its own file system, built by `shellgrade.js: makeFS` from `setup`, a name in `course.setups` (a tree: keys are paths from the home
+  directory, values the file's text, `null` or a trailing `/` for a directory, a trailing `!` for an executable) or a tree given inline.
+  Examples whose commands fail on purpose say `expectError: true` (test_course.js runs the others and reports a non-zero exit).
+  An exercise `{ kind: 'shell', setup, tests, hints, solution, followup }` is graded by `shellgrade.js: grade(ex, sh)` on the state
+  afterwards: `{exists|file|dir|missing|exec: path}`, `{content: path, expect}`, `{contains: path, text}`, `{cmd, expect}` (run in the
+  home directory, its line dropped from the history), `{ran: /re/, name}` (a typed command), `{cwd}`. The solution is a list of commands;
+  `test_course.js shell` runs it through a fresh shell and the empty history must fail. Progress saves the history as the exercise's
+  "code". `answer`-kind exercises work in a shell lesson too (mathgrade). The `fstree` figure draws a setup's tree with paths.
+  `setup NAME` in the Code Lab's terminal writes a lesson's tree into the home directory (`terminal.js: mount`).
 - **Not there (yet):** job control (`&`), functions, `case`, `[[ ]]`, arrays, `${x:-default}`, here-documents, `awk`, `tar`, `ssh` and
   anything needing a network (those names answer with a sentence saying so), a Windows `cmd`/PowerShell dialect (planned with the course).
 

@@ -182,6 +182,20 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('terminal: a hostile saved copy cannot replace the system or plant bad names', /root:x:0:0:root[^\n]*\nlab  __proto__\nok2\n$/.test(tt), tt.slice(-200));
   await page.click('.lab-term .term-close'); check('terminal: closes', await page.locator('.lab-term').getAttribute('hidden') !== null);
 
+  // ---- the shell course: a lesson example is a live terminal, an exercise is graded on the files afterwards
+  await goto('#/shell/1');
+  await page.locator('.shell-play .toolbar button:has-text("Run")').first().click();
+  await page.waitForFunction(() => /\/home\/student\n/.test(document.querySelector('.shell-play .term-scroll').textContent), null, { timeout: 15000 }).catch(() => { });
+  check('shell lesson: Run types the example into its terminal', /pwd\n\/home\/student\n.*ls\ngarden +letters +README\.txt/s.test(await page.locator('.shell-play .term-scroll').first().innerText()));
+  check('shell lesson: the tree figure names paths', (await page.locator('.fstree button').count()) > 5);
+  await goto('#/shell/2');
+  const exTerm = page.locator('#sh-2-1 .term-inp');
+  for (const cmd of ['mkdir project', 'mkdir project/src project/docs', 'echo "My first project" > project/README.md', 'touch project/src/main.py']) { await exTerm.fill(cmd); await exTerm.press('Enter'); await page.waitForFunction(() => /^exit/.test(document.querySelector('#sh-2-1 .term-status').textContent), null, { timeout: 10000 }); }
+  await page.click('#sh-2-1 .toolbar button:has-text("Check")'); await page.waitForSelector('#sh-2-1 .verdict.pass, #sh-2-1 .verdict.fail', { timeout: 10000 });
+  check('shell lesson: an exercise is graded on the files and marked done', (await page.locator('#sh-2-1 .verdict').getAttribute('class')) === 'verdict pass' && (await page.locator('#sh-2-1.done').count()) === 1 && (await page.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.progress.v1')).done['sh-2-1'] > 0)), await page.locator('#sh-2-1 .verdict').innerText());
+  await page.click('#sh-2-2 .toolbar button:has-text("Check")'); await page.waitForSelector('#sh-2-2 .verdict.fail', { timeout: 10000 });
+  check('shell lesson: an untouched exercise fails with the files named', /desk\/photos\/cat\.jpg exists/.test(await page.locator('#sh-2-2 .verdict').innerText()));
+
   // ---- 6. a graded exercise and a lesson example, under the policy
   await goto('#/python/1');
   await page.click('.play button:has-text("Run")'); await page.waitForTimeout(1500);

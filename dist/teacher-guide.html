@@ -51,6 +51,7 @@
 :root[data-course="java"] { --accent: #a63d2a; --accent-soft: #f9e8e4; }
 :root[data-course="dsa"] { --accent: #7b2d78; --accent-soft: #f3e5f2; }
 :root[data-course="scratch"] { --accent: #c2185b; --accent-soft: #fbe4ec; }
+:root[data-course="shell"] { --accent: #3d4a5c; --accent-soft: #e6e9ef; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
@@ -66,6 +67,7 @@
   :root:not([data-theme="light"])[data-course="java"] { --accent: #f0907e; --accent-ink: #2a0d08; --accent-soft: #3a1f1a; }
   :root:not([data-theme="light"])[data-course="dsa"] { --accent: #dc9fd8; --accent-ink: #26091f; --accent-soft: #341a32; }
   :root:not([data-theme="light"])[data-course="scratch"] { --accent: #f48fb1; --accent-ink: #2a0712; --accent-soft: #3a1a26; }
+  :root:not([data-theme="light"])[data-course="shell"] { --accent: #b9c4d6; --accent-ink: #121620; --accent-soft: #262b36; }
 }
 :root[data-theme="dark"] {
   --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
@@ -562,6 +564,20 @@ html.classroom .out-text, html.classroom .term-input, html.classroom .nano { fon
 .term-input:focus-within { box-shadow: inset 2px 0 0 var(--t-prompt); }
 .out .t-dir { color: var(--t-prompt); font-weight: 600; } .out .t-exe { color: var(--t-ok); } .out .t-hd { color: var(--t-warn); font-weight: 700; }
 .lab-toolbar .btn.on { box-shadow: inset 0 -2px 0 var(--accent); }
+/* shell lessons: a listing of commands with a prompt, the terminal under it, and the directory-tree figure */
+.shell-cmds .sh-ps { color: var(--accent); font-weight: 700; user-select: none; }
+.shell-play .lab-term, .shell-ex .lab-term { margin-top: 0.6rem; }
+.shell-play .toolbar .shell-hint { font-family: var(--sans); font-size: 0.82rem; color: var(--ink-3); }
+.shell-ex .lab-term .term-scroll { max-height: 18rem; }
+.fstree { font-family: var(--mono); font-size: 0.9rem; line-height: 1.6; }
+.fstree ul { list-style: none; margin: 0; padding-left: 1.4rem; border-left: 1px dashed var(--rule); }
+.fstree > ul { padding-left: 0; border-left: 0; }
+.fstree button { font: inherit; border: 0; background: transparent; color: var(--ink); cursor: pointer; padding: 0 0.3rem; border-radius: 3px; }
+.fstree button.dir { color: var(--link); font-weight: 600; } .fstree button.here { background: var(--accent); color: var(--accent-ink); } .fstree button.picked { outline: 2px solid var(--accent); }
+.fstree button:hover { text-decoration: underline; }
+.fstree-info { font-family: var(--sans); font-size: 0.9rem; margin-top: 0.6rem; padding: 0.5rem 0.8rem; border: 1px solid var(--rule); background: var(--paper-2); }
+.fstree-info code { font-size: 0.95em; }
+.fstree-info .fst-row { display: flex; gap: 0.6rem; flex-wrap: wrap; } .fstree-info .fst-k { color: var(--ink-3); min-width: 12rem; }
 /* nano, inside the terminal */
 .nano { display: flex; flex-direction: column; border-top: 1px solid var(--t-rule); font-size: 0.86rem; }
 .nano-top { display: flex; gap: 1rem; background: var(--t-fg); color: var(--t-bg); padding: 0.15rem 0.95rem; font-weight: 600; white-space: pre; }
@@ -1084,6 +1100,7 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
       <tr><td><b>SC 104 The Mathematics of Computing</b><br><span class="g-muted">13 lessons</span></td><td>Grades 10–12, or a strong 9th grader, after Python. Algebra only.</td><td>Logic, sets, proof, number theory, graphs, machines with finite memory, what no program can compute, and how codes work. Most of its exercises are written answers, not programs.</td></tr>
       <tr><td><b>SC 105 Modern C++</b><br><span class="g-muted">8 lessons</span></td><td>Grades 11–12, after SC 103.</td><td>Strings, vectors, classes, algorithms and maps with a real compiler. Needs the one-time download and a web address.</td></tr>
       <tr><td><b>SC 106 Introduction to Java</b><br><span class="g-muted">4 lessons so far</span></td><td>Grades 10–12, after Python or with some experience. The language of AP Computer Science A.</td><td>Read the compiler’s messages, declare typed variables, make decisions, read input, write loops and methods. Checked with the real compiler’s own error messages, in the browser.</td></tr>
+      <tr><td><b>SC 108 The Command Line</b><br><span class="g-muted">2 lessons so far</span></td><td>Grades 7–12. No experience needed; pairs with any course.</td><td>The Unix shell in a practice terminal: where am I, paths and cd; making, copying, moving and removing files, wildcards. Later lessons: looking inside files, pipes, running programs, Windows, scripts.</td></tr>
       <tr><td><b>SC 107 Data Structures and Algorithms</b><br><span class="g-muted">7 lessons so far</span></td><td>Grades 11–12, after Java or C++. The second course of every computer science degree.</td><td>Count the cost of code and name its order of growth; arrays and growing arrays; binary search; selection and insertion sort. Every structure as a figure to step through, code to write and a count to predict.</td></tr>
     </tbody>
   </table>
