@@ -35,6 +35,7 @@
   --err: #b42318;
   --err-soft: #fbeae8;
   --warn: #8a5a00;
+  --k-fig: #0b6e7a; --k-warn: #a35a00; --k-quiz: #6b3fa0; --k-ink: #ffffff;   /* the colours that mark the kinds of block in a lesson */
   --link: #1a4fa3;
   --serif: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
   --sans: 'Source Sans 3', 'Segoe UI', Helvetica, Arial, sans-serif;
@@ -55,6 +56,7 @@
     --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
     --accent: #d6d6d2; --accent-ink: #131313; --accent-soft: #262624; --ok: #4cc06d; --ok-soft: #14301c; --err: #ff7b6e; --err-soft: #3a1a17; --warn: #e0b060; --link: #8fb3ee;
     --hl-k: #d68fd6; --hl-s: #8fd49a; --hl-c: #8f8f8b; --hl-n: #8ab8f5; --hl-b: #9ec4f0; --hl-p: #e0b060;
+    --k-fig: #5fc6d2; --k-warn: #e0b060; --k-quiz: #c9a6ee; --k-ink: #131313;
   }
   :root:not([data-theme="light"])[data-course="python"] { --accent: #e8a640; --accent-ink: #1a1200; --accent-soft: #2e2410; }
   :root:not([data-theme="light"])[data-course="lisp"] { --accent: #b99ae6; --accent-ink: #1a1030; --accent-soft: #2a2138; }
@@ -69,6 +71,7 @@
   --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
   --accent: #d6d6d2; --accent-ink: #131313; --accent-soft: #262624; --ok: #4cc06d; --ok-soft: #14301c; --err: #ff7b6e; --err-soft: #3a1a17; --warn: #e0b060; --link: #8fb3ee;
   --hl-k: #d68fd6; --hl-s: #8fd49a; --hl-c: #8f8f8b; --hl-n: #8ab8f5; --hl-b: #9ec4f0; --hl-p: #e0b060;
+  --k-fig: #5fc6d2; --k-warn: #e0b060; --k-quiz: #c9a6ee; --k-ink: #131313;
 }
 :root[data-theme="dark"][data-course="python"] { --accent: #e8a640; --accent-ink: #1a1200; --accent-soft: #2e2410; }
 :root[data-theme="dark"][data-course="lisp"] { --accent: #b99ae6; --accent-ink: #1a1030; --accent-soft: #2a2138; }
@@ -203,11 +206,32 @@ pre.code.captioned { padding-top: 1.6rem; }
 .onpage li.current a { color: var(--ink); font-weight: 600; border-left-color: var(--accent); box-shadow: none; }
 .onpage li.map-quiz a, .onpage li.map-exercises a { color: var(--accent); }
 .nav-mobile .onpage { display: none; }
-.blk { margin: 1.4rem 0; }
-.blk-tag { font-family: var(--sans); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 0.3rem; }
-.blk-fig .blk-tag, .blk-quiz .blk-tag, .blk-check .blk-tag { color: var(--accent); }
-.blk-ex .blk-tag { margin-bottom: 0.4rem; }
-.blk > .play, .blk > .fig, .blk > .code, .blk > .aside, .blk > .exercise { margin-top: 0; }
+/* every block of a lesson is a card with a coloured rail and a labelled pill, one colour per kind, so a skimming eye can find
+   the examples, the figures, the checks and the exercises without reading */
+.blk { --blk: var(--accent); --blk-ink: var(--accent-ink); --blk-glyph: "\25B6"; margin: 2rem 0; border-left: 4px solid var(--blk); padding: 0 0 0 1rem; }
+.blk-tag { display: inline-flex; align-items: center; gap: 0.45rem; font-family: var(--sans); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--blk-ink); background: var(--blk); padding: 0.32rem 0.65rem 0.3rem; border-radius: 3px; margin: 0 0 0.7rem; }
+.blk-tag::before { content: var(--blk-glyph); font-size: 0.85em; }
+.blk-tag .oj-pair .oj-en { color: inherit; opacity: 0.8; text-transform: none; letter-spacing: 0; }
+.blk-fig { --blk: var(--k-fig); --blk-ink: var(--k-ink); --blk-glyph: "\25C6"; }
+.blk-check { --blk: var(--ok); --blk-ink: var(--k-ink); --blk-glyph: "?"; }
+.blk-aside { --blk: var(--k-warn); --blk-ink: var(--k-ink); --blk-glyph: "!"; }
+.blk-quiz { --blk: var(--k-quiz); --blk-ink: var(--k-ink); --blk-glyph: "\2261"; }
+.blk-code { --blk: var(--ink-3); --blk-ink: var(--paper); --blk-glyph: "{ }"; }
+.blk-ex { --blk-glyph: "\270E"; border-left: none; padding-left: 0; }
+.blk-ex .blk-tag { margin-bottom: 0; border-radius: 3px 3px 0 0; }
+.blk-ex .exercise { margin-top: 0; border-top-color: var(--accent); }
+.blk-ex .ex-label { display: none; }   /* the pill above already says Exercise n */
+.blk > .play, .blk > .fig, .blk > .code, .blk > .aside { margin-top: 0; margin-bottom: 0; }
+.blk > pre.code { border-left: none; }
+.blk > .aside { border-left: none; padding-left: 0; }
+.blk-play .play-label { display: none; }
+.blk .qc { border-left: 1px solid var(--rule); }
+/* sections are numbered and separated by a rule, and the numbers match the lesson map */
+.lesson-body { counter-reset: sec; }
+.lesson-body .prose h2 { counter-increment: sec; display: flex; align-items: baseline; gap: 0.7rem; border-top: 1px solid var(--rule); padding-top: 1.6rem; margin: 3rem 0 0.9rem; }
+.lesson-body .prose h2::before { content: counter(sec); flex: none; font-family: var(--sans); font-size: 0.8rem; font-weight: 700; color: var(--accent-ink); background: var(--accent); border-radius: 999px; min-width: 1.7rem; height: 1.7rem; padding: 0 0.3rem; display: inline-flex; align-items: center; justify-content: center; position: relative; top: -0.15rem; }
+.lesson-body .prose .recap { border-left-width: 4px; }
+.lesson-map li.map-section a { font-weight: 500; }
 /* a quick check: one question, instant feedback, nothing saved */
 .qc { border: 1px solid var(--rule); border-left: 3px solid var(--accent); border-radius: 4px; padding: 0.8rem 1rem 0.7rem; font-family: var(--sans); background: var(--paper); }
 .qc-q { margin: 0 0 0.6rem; font-size: 0.98rem; }
@@ -1021,7 +1045,7 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 
 <section id="g-3">
   <h2>3. Inside a lesson</h2>
-  <p>Every lesson has the same parts in the same order, so students learn the routine once. A map under the lesson title lists the parts and links to them, and a small label over each block says what kind of thing it is (Example, Interactive, Quick check, Exercise), so a student always knows where they are.</p>
+  <p>Every lesson has the same parts in the same order, so students learn the routine once. A map under the lesson title lists the parts and links to them, the sections are numbered, and every block carries a coloured label saying what it is (Example, Interactive, Quick check, Watch out, Quiz, Exercise), each kind in its own colour, so a student skimming the page can find the examples or the exercises at a glance.</p>
   <dl class="g-parts">
     <dt>Explanation</dt><dd>Short paragraphs that state each rule before showing it.</dd>
     <dt>Try it</dt><dd>A small program with a caption saying what to look for and what to change. Press Run, change something, run again. <em>Open in Code Lab</em> is there for students who want to keep going.</dd>

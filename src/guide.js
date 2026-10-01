@@ -68,7 +68,7 @@ window.GUIDE = (function () {
 
 <section id="g-3">
   <h2>3. Inside a lesson</h2>
-  <p>Every lesson has the same parts in the same order, so students learn the routine once. A map under the lesson title lists the parts and links to them, and a small label over each block says what kind of thing it is (Example, Interactive, Quick check, Exercise), so a student always knows where they are.</p>
+  <p>Every lesson has the same parts in the same order, so students learn the routine once. A map under the lesson title lists the parts and links to them, the sections are numbered, and every block carries a coloured label saying what it is (Example, Interactive, Quick check, Watch out, Quiz, Exercise), each kind in its own colour, so a student skimming the page can find the examples or the exercises at a glance.</p>
   <dl class="g-parts">
     <dt>Explanation</dt><dd>Short paragraphs that state each rule before showing it.</dd>
     <dt>Try it</dt><dd>A small program with a caption saying what to look for and what to change. Press Run, change something, run again. <em>Open in Code Lab</em> is there for students who want to keep going.</dd>

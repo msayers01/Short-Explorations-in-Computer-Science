@@ -663,7 +663,7 @@
     return box;
   }
   // Each kind of block gets a small label above it, so a reader can see what the next thing is before reading it.
-  const tagged = (label, node, extraClass) => el('div', { class: 'blk' + (extraClass ? ' ' + extraClass : '') }, el('div', { class: 'blk-tag', 'aria-hidden': 'true' }, label), node);
+  const tagged = (label, node, extraClass) => el('div', { class: 'blk' + (extraClass ? ' ' + extraClass : '') }, el('div', { class: 'blk-tag', 'aria-hidden': 'true' }, ...(Array.isArray(label) ? label : [label])), node);
   const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');   // from textContent: plain text, no tags to strip
   function renderBlocks(blocks, course, lessonIdx, parts) {
     const frag = document.createDocumentFragment(); let playCount = 0, exCount = 0, checkCount = 0, firstEx = true, firstProse = true;
@@ -676,8 +676,8 @@
         const recap = d.querySelector('.recap'); if (recap) { recap.id = 'part-recap'; part('part-recap', 'Recap', 'recap'); }
         frag.append(d);
       }
-      else if (b.check) { checkCount++; frag.append(tagged('Quick check', checkBlock(b), 'blk-check')); }
-      else if (b.play) { playCount++; frag.append(tagged('Example · run it', playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount }), 'blk-play')); }
+      else if (b.check) { checkCount++; frag.append(tagged('Quick check ' + checkCount, checkBlock(b), 'blk-check')); }
+      else if (b.play) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount }), 'blk-play')); }
       else if (b.ex) {
         b.ex.lang = b.ex.lang || course.lang; b.ex.runtime = b.ex.runtime || course.runtime; exCount++;
         const node = window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex, course) : exerciseBlock(b.ex, course, lessonIdx);
@@ -691,7 +691,7 @@
         wrap.append(mount);
         if (b.caption) wrap.append(el('figcaption', { html: b.caption }));
         const quiz = b.fig === 'blockquiz';
-        const t = tagged(quiz ? 'Quiz' : 'Interactive · try it', wrap, quiz ? 'blk-quiz' : 'blk-fig');
+        const t = tagged(quiz ? 'Quiz' : 'Interactive', wrap, quiz ? 'blk-quiz' : 'blk-fig');
         if (quiz) { t.id = 'part-quiz'; part('part-quiz', 'Quiz', 'quiz'); }
         frag.append(t);
         const W = window.WIDGETS && window.WIDGETS[b.fig];
@@ -705,6 +705,8 @@
     return frag;
   }
   // The map of a lesson: its parts in order (story, sections, quiz, exercises, recap) as links, and what it contains.
+  // Sections are numbered, matching the numbers the page puts on the headings.
+  const partTitle = (parts, p) => p.kind === 'section' ? (parts.filter((q) => q.kind === 'section').indexOf(p) + 1) + '. ' + p.title : p.title;
   function lessonMap(parts) {
     const n = parts.counts || {};
     const bits = [];
@@ -713,7 +715,7 @@
     if (n.checks) bits.push(n.checks + ' quick checks');
     if (n.exercises) bits.push(n.exercises + (n.exercises === 1 ? ' exercise' : ' exercises'));
     return el('nav', { class: 'lesson-map', 'aria-label': 'Parts of this lesson' },
-      el('ol', {}, parts.map((p) => el('li', { class: 'map-' + p.kind }, el('a', { href: '#' + p.id, onclick: (e) => { e.preventDefault(); const t = document.getElementById(p.id); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, p.title)))),
+      el('ol', {}, parts.map((p) => el('li', { class: 'map-' + p.kind }, el('a', { href: '#' + p.id, onclick: (e) => { e.preventDefault(); const t = document.getElementById(p.id); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, partTitle(parts, p))))),
       bits.length ? el('p', { class: 'map-counts' }, bits.join(' · ')) : null);
   }
   // The "on this page" list in the side column follows the reader: the part in view is marked.
@@ -878,7 +880,7 @@
       (() => { const m = lessonMinutes(course, L); return m > LONG_LESSON ? el('p', { class: 'lesson-time' }, 'This lesson may take longer than an hour: about ' + about5(m) + ' minutes. Plan for two sessions, or leave the exercises for the next one.') : null; })()));
     const parts = []; const body = renderBlocks(L.blocks, course, idx, parts);
     art.append(lessonMap(parts), body);
-    if (parts.length) { const onPage = el('div', { class: 'onpage' }, el('p', { class: 'onpage-head' }, 'On this page'), el('ol', {}, parts.map((p) => el('li', { class: 'map-' + p.kind }, el('a', { href: '#' + p.id, onclick: (e) => { e.preventDefault(); const t = document.getElementById(p.id); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, p.title))))); nav.append(onPage); setTimeout(() => watchParts(parts, onPage.querySelector('ol')), 0); }
+    if (parts.length) { const onPage = el('div', { class: 'onpage' }, el('p', { class: 'onpage-head' }, 'On this page'), el('ol', {}, parts.map((p) => el('li', { class: 'map-' + p.kind }, el('a', { href: '#' + p.id, onclick: (e) => { e.preventDefault(); const t = document.getElementById(p.id); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, partTitle(parts, p)))))); nav.append(onPage); setTimeout(() => watchParts(parts, onPage.querySelector('ol')), 0); }
     const prev = idx > 0 ? el('a', { class: 'pager prev', href: '#/' + course.id + '/' + idx }, el('span', {}, 'Previous'), course.lessons[idx - 1].title) : el('span');
     const next = idx < course.lessons.length - 1 ? el('a', { class: 'pager next', href: '#/' + course.id + '/' + (idx + 2) }, el('span', {}, 'Next'), course.lessons[idx + 1].title) : el('a', { class: 'pager next', href: '#/' + course.id }, el('span', {}, 'Finished'), 'Back to ' + course.code);
     art.append(el('footer', { class: 'lesson-foot' }, prev, next));

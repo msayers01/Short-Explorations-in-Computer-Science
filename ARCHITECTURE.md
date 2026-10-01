@@ -147,8 +147,9 @@ drives the accent colour through CSS tokens.
 Course: `{ id, code, short, lang, title, grades, audience, tagline, description, outcomes[], lessons[], readingWpm?,
 howItWorks?, textbook?, status? }`. `status: 'developing'` marks a course still being written: app.js shows an "Under development"
 tag on the catalog card, the course page and every lesson's crumb (`devTag`), and the guide says what the tag means.
-Lesson: `{ title, summary, blocks[] }`. Blocks, rendered by `renderBlocks()`, which also labels each block with a small tag (Example, Listing,
-Interactive, Quiz, Quick check, Watch out, Exercise n), gives every `<h2>` an id, and collects the lesson's parts (Story, each section,
+Lesson: `{ title, summary, blocks[] }`. Blocks, rendered by `renderBlocks()`, which also wraps each block in a `.blk` card with a coloured rail
+and a labelled pill, one colour per kind (Example n in the course accent, Interactive teal, Quick check n green, Watch out amber, Quiz purple,
+Exercise n; tokens `--k-fig`, `--k-warn`, `--k-quiz`, `--k-ink` in style.css), numbers every `<h2>` with a CSS counter and gives it an id, and collects the lesson's parts (Story, each section,
 Quiz, Exercises, Recap) for the map under the title (`lessonMap`) and the "On this page" list in the side column, which follows the
 reader with an IntersectionObserver (`watchParts`):
 
