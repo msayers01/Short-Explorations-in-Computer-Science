@@ -1,4 +1,4 @@
-// Emulates app.js grade() for scheme / python / cpp in node.
+// Emulates app.js grade() for scheme / python / cpp / java in node.
 global.window = global;
 const Scheme = require('./src/scheme.js');
 const MG = require('./src/mathgrade.js');
@@ -17,6 +17,8 @@ if (course.lang === 'python') {
     return { out, err };
   };
 }
+// Java: the site's own interpreter (src/java.js) and the same harness the page uses (src/javautil.js).
+const JAVA = course.lang === 'java' ? require('./src/java.js') : null, JAVAUTIL = course.lang === 'java' ? require('./src/javautil.js') : null;
 if (course.lang === 'cpp' && course.runtime !== 'full') {
   JSCPP = require('./node_modules/JSCPP/lib/commonjs.js');
   if (!require('fs').readFileSync('./node_modules/JSCPP/lib/defaults.js', 'utf8').includes('integer division by zero')) console.log('WARNING: node_modules/JSCPP is unpatched; run  patch -p0 < patches/jscpp-iostream.patch  so results match the browser bundle.');
@@ -75,6 +77,14 @@ async function grade(ex, code) {
     if (r.err) return { passed: false, error: CPPFULL.shiftLines(r.err, h.shift) };
     ex.tests.forEach((t, i) => { const p = r.parts[i]; results.push({ name: t.name || t.call || 'io', expected: t.expect, got: p.err ? 'ERR ' + p.err : p.out, ok: !p.err && norm(p.out) === norm(t.expect) }); });
     if (r.warnings && !ex.__warned) { ex.__warned = true; if (code === ex.solution) console.log('   (warnings in the solution of ' + ex.id + ')\n' + r.warnings.split('\n').slice(0, 4).join('\n')); }
+  } else if (lang === 'java') {
+    for (const t of ex.tests) {
+      let src = code, shift = 0;
+      if (t.call !== undefined || t.main !== undefined) { const h = JAVAUTIL.harness(ex, code, t); if (h.error) return { passed: false, error: h.error }; src = h.src; shift = h.shift; }
+      const r = JAVA.run(src, t.stdin || '', { maxMs: 5000 });
+      if (r.err && JAVAUTIL.isCompileError(r.err)) return { passed: false, error: JAVAUTIL.shiftLines(r.err, shift) };
+      results.push({ name: t.name || t.call || 'io', expected: t.expect, got: r.err ? 'ERR ' + JAVAUTIL.shiftLines(r.err, shift) : r.out, ok: !r.err && norm(r.out) === norm(t.expect) });
+    }
   } else if (lang === 'cpp') {
     for (const t of ex.tests) {
       let src = code;
@@ -111,11 +121,16 @@ async function grade(ex, code) {
   }
   // also run playgrounds to make sure they execute without error
   for (const [li, lesson] of course.lessons.entries()) for (const b of lesson.blocks) {
-    if (!b || !b.play || b.expectError) continue;   // expectError: the playground deliberately raises
+    if (!b || !b.play) continue;
+    if (b.expectError) {   // the playground deliberately fails: make sure it does
+      if (course.lang === 'java') { const r = JAVA.run(b.play, b.stdin || '', { maxMs: 6000 }); if (!r.err) console.log('PLAY L' + (li+1) + ' was expected to fail but ran:', b.play.slice(0, 80)); }
+      continue;
+    }
     if (course.lang === 'scheme') { const r = Scheme.runProgram(b.play); if (r.error) console.log('PLAY L' + (li+1) + ' error:', r.error, '\n   ', b.play.slice(0, 60)); }
     else if (course.lang === 'python') { const r = await py(b.play, (b.testStdin || b.stdin || 'Ada\n1990\n5\n')); if (r.err) console.log('PLAY L' + (li+1) + ' error:', r.err, '\n   ', b.play.slice(0, 60)); }
     else if (course.runtime === 'full') { const h = { src: b.play, stdins: [b.stdin || ''] }; const r = await (await full)(h.src, h.stdins); if (r.err) console.log('PLAY L' + (li+1) + ' error:', r.err.split('\n')[0], '\n   ', b.play.slice(0, 80)); else if (r.parts[0].err) console.log('PLAY L' + (li+1) + ' crashed:', r.parts[0].err.slice(0, 80), '\n   ', b.play.slice(0, 80)); else if (!r.parts[0].out.trim()) console.log('PLAY L' + (li+1) + ' printed nothing:', b.play.slice(0, 80)); }
     else if (course.lang === 'cpp') { let out=''; try { JSCPP.run(b.play, b.stdin || '', { stdio: { write: s => out += s }, maxTimeout: 5000, unsigned_overflow: 'warn' }); } catch (e) { console.log('PLAY L' + (li+1) + ' error:', e.message, '\n   ', b.play.slice(0, 80)); } }
+    else if (course.lang === 'java') { const r = JAVA.run(b.play, b.stdin || '', { maxMs: 5000 }); if (r.err) console.log('PLAY L' + (li+1) + ' error:', r.err.split('\n')[0], '\n   ', b.play.slice(0, 80)); else if (!r.out.trim()) console.log('PLAY L' + (li+1) + ' printed nothing:', b.play.slice(0, 80)); }
   }
   console.log(bad ? bad + ' problems' : 'all exercises OK');
 })();

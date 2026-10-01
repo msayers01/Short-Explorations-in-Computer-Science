@@ -5,7 +5,7 @@
    and results collect in a grade book on her device. Exposed as window.TEACH. */
 (function () {
   const KEY = 'shortcourses.teach.v1';
-  const LANG_LABEL = { python: 'Python', cpp: 'C++', scheme: 'Scheme' };
+  const LANG_LABEL = { python: 'Python', cpp: 'C++', java: 'Java', scheme: 'Scheme' };
   let T = null;
   // Assignment ids, student names and the like come from links anyone can craft. They are used as object keys, so every
   // dictionary has no prototype: with a normal object a key of "__proto__" or "constructor" would reach Object.prototype

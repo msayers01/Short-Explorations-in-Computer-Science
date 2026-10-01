@@ -7,7 +7,7 @@
     "build": "node build.js",
     "pretest": "node scripts/patch-jscpp.js",
     "test:browser": "node test_browser.js",
-    "test": "node test_course.js python && node test_course.js lisp && node test_course.js cpp && node test_course.js math && node test_course.js modern && node test_cppstep.js && node test_subst.js && node test_app.js && node test_scheme.js && node test_security.js && node test_backup.js"
+    "test": "node test_course.js python && node test_course.js lisp && node test_course.js cpp && node test_course.js math && node test_course.js modern && node test_course.js java && node test_java.js && node test_cppstep.js && node test_subst.js && node test_app.js && node test_scheme.js && node test_security.js && node test_backup.js"
   },
   "dependencies": {
     "JSCPP": "2.0.9",

@@ -18,7 +18,7 @@
   'use strict';
   const FORMAT = 'short-explorations-backup', VERSION = 1, MAX_FILE = 8 * 1024 * 1024;
   const KEYS = { progress: 'shortcourses.progress.v1', lab: 'shortcourses.lab.v1', portfolio: 'shortcourses.portfolio.v1', teach: 'shortcourses.teach.v1' };
-  const LANGS = ['python', 'cpp', 'scheme'];
+  const LANGS = ['python', 'cpp', 'java', 'scheme'];
   const TEACH = () => (typeof window !== 'undefined' && window.TEACH) || null;
 
   // ---------- small, strict helpers: everything from a file or from storage goes through these ----------

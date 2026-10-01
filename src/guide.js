@@ -10,7 +10,7 @@ window.GUIDE = (function () {
   <nav class="g-toc" aria-label="Contents">
     <a href="#g-1">1. What the site is</a>
     <a href="#g-2">2. Before the first class</a>
-    <a href="#g-3">3. The five courses</a>
+    <a href="#g-3">3. The six courses</a>
     <a href="#g-4">4. Inside a lesson</a>
     <a href="#g-5">5. Leading an hour of coding</a>
     <a href="#g-6">6. The Code Lab</a>
@@ -23,7 +23,7 @@ window.GUIDE = (function () {
 
 <section id="g-1">
   <h2>1. What the site is</h2>
-  <p>This is a single web page that contains four short courses, a code editor, and a set of teacher tools. It runs entirely inside the browser. Nothing is installed on the computer, nobody signs in, and no information about a student is ever sent anywhere. That is a deliberate design choice, and it has three consequences worth knowing from the start.</p>
+  <p>This is a single web page that contains six short courses, a code editor, and a set of teacher tools. It runs entirely inside the browser. Nothing is installed on the computer, nobody signs in, and no information about a student is ever sent anywhere. That is a deliberate design choice, and it has three consequences worth knowing from the start.</p>
   <ul class="g-list">
     <li><b>It works anywhere a browser works.</b> A school laptop, a Chromebook, a phone, a computer with no internet after the page has loaded, even a copy on a USB stick. (The one exception is optional: the course <em>Modern C++</em> and the <em>Full C++</em> choice in the Code Lab use a real compiler that the browser downloads once, about 28 MB, the first time a student uses it. After that it is kept on the device and works offline too. A copy opened as a file from a USB stick cannot use it.)</li>
     <li><b>Progress is saved on the device, not in an account.</b> A student who uses the same computer sees their completed exercises and saved code next time. A student who switches computers starts fresh there. Section 9 explains how to live with this, and section 8 how a student takes their work with them.</li>
@@ -47,8 +47,8 @@ window.GUIDE = (function () {
 </section>
 
 <section id="g-3">
-  <h2>3. The five courses</h2>
-  <p>Each course is a sequence of self-contained lessons; a lesson is designed to fill one class period of 45–60 minutes and can be used on its own. The first three programming courses teach the same core ideas in three different languages; the fourth course uses Python as a laboratory for mathematics; the fifth continues C++ with a real compiler.</p>
+  <h2>3. The six courses</h2>
+  <p>Each course is a sequence of self-contained lessons; a lesson is designed to fill one class period of 45–60 minutes and can be used on its own. The first three programming courses teach the same core ideas in three different languages; the fourth course uses Python as a laboratory for mathematics; the fifth continues C++ with a real compiler; the sixth teaches Java, the language of AP Computer Science A.</p>
   <table class="g-table">
     <thead><tr><th>Course</th><th>Who it is for</th><th>What students do</th></tr></thead>
     <tbody>
@@ -57,6 +57,7 @@ window.GUIDE = (function () {
       <tr><td><b>SC 103 Introduction to C++</b><br><span class="g-muted">11 lessons</span></td><td>Grades 10–12, after Python or with some experience.</td><td>Meet types, pointers and arrays; learn what happens under the hood; finish with a prime-number sieve.</td></tr>
       <tr><td><b>SC 104 The Mathematics of Computing</b><br><span class="g-muted">13 lessons</span></td><td>Grades 10–12 or a strong 9th grader, after Python. Algebra only, no calculus.</td><td>Logic, sets, proof and induction, number theory, graphs, machines with finite memory, patterns and the double vowel spelling of Ojibwe, what no program can compute, and how hard problems and codes work.</td></tr>
     <tr><td><b>SC 105 Modern C++</b><br><span class="g-muted">8 lessons</span></td><td>Grades 11–12, after SC 103.</td><td>Use strings, vectors, structs, classes, algorithms and maps; pass by reference; build a gradebook report; read a real compiler\u2019s warnings. Needs a one-time download of the compiler (about 28 MB) and a web address: it does not run from a file on a USB stick.</td></tr>
+    <tr><td><b>SC 106 Introduction to Java</b><br><span class="g-muted">3 lessons so far</span></td><td>Grades 10–12, after Python or with some experience; the language of AP Computer Science A.</td><td>Read the compiler\u2019s messages, declare typed variables, make decisions, read input with a Scanner, write loops that stop where they should. Programs are checked with the real compiler\u2019s own error messages, in the browser, nothing to install.</td></tr>
     </tbody>
   </table>
   <p>Suggested paths: a one-semester elective is Python followed by the mathematics course; a two-year sequence adds C++ and Lisp; a single Hour of Code event uses Python lesson 1 alone.</p>
@@ -113,7 +114,7 @@ window.GUIDE = (function () {
 
 <section id="g-6">
   <h2>6. The Code Lab</h2>
-  <p>The Code Lab (top bar, or the card on the home page) is a place for students' own programs in any of the three languages. It is deliberately more capable than the boxes inside lessons: files with names, an editor with completion and search, a way to run a program one line at a time, a drawing canvas, and sharing.</p>
+  <p>The Code Lab (top bar, or the card on the home page) is a place for students' own programs in any of the four languages. It is deliberately more capable than the boxes inside lessons: files with names, an editor with completion and search, a way to run a program one line at a time, a drawing canvas, and sharing.</p>
   <dl class="g-parts">
     <dt>Languages and files</dt><dd>The three buttons at the top right switch language. Each language keeps its own files as tabs; <em>+ New</em> makes a file and asks for a name, <em>Rename</em> is under the editor. Files are saved on the device automatically.</dd>
     <dt>Run and Stop</dt><dd><em>Run</em> (or Ctrl+Enter) runs the current file. Programs that ask for input show a box in the output. A Python program stuck in a loop can be stopped with <em>Stop</em>; C++ and Scheme programs stop themselves after a few seconds.</dd>

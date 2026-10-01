@@ -1,10 +1,10 @@
 # Short Explorations in Computer Science
 
-Five free, self-paced courses (Introduction to Python, Introduction to Lisp, Introduction to C++,
-Introduction to the Mathematics of Computing, and Modern C++) with runnable examples and autograded exercises, a Code Lab
+Six free, self-paced courses (Introduction to Python, Introduction to Lisp, Introduction to C++,
+Introduction to the Mathematics of Computing, Modern C++, and Introduction to Java) with runnable examples and autograded exercises, a Code Lab
 sandbox, and tools for teachers: assignments and submissions shared as links, a grade book, student
-portfolios and a classroom (projector) mode. Python, C++ and Scheme all run in the browser, so there is no
-server and no account. For C++ there are two engines: a small teaching interpreter that is part of the page, and a real
+portfolios and a classroom (projector) mode. Python, C++, Java and Scheme all run in the browser, so there is no
+server and no account. Java runs in an interpreter written for this site that checks programs the way javac does. For C++ there are two engines: a small teaching interpreter that is part of the page, and a real
 compiler (Clang built for WebAssembly) that the browser downloads once, on request, for the Modern C++ course and the
 Code Lab's Full C++ option. The build produces one self-contained `index.html` that can be hosted anywhere or
 opened from disk.
@@ -29,6 +29,7 @@ add lessons, figures and exercise types.
     src/course_cpp.js      SC 103 Introduction to C++
     src/course_math.js     SC 104 Introduction to the Mathematics of Computing (uses Python)
     src/course_modern.js   SC 105 Modern C++ (runs on the real compiler)
+    src/course_java.js     SC 106 Introduction to Java (the first lessons; runs on the site's own Java interpreter)
     src/style.css          design tokens, layout and every component's styles
     src/app.js             router, pages, code editor, runners, grader, saved progress
     src/lab.js             the Code Lab (#/lab): files, editor, Python tracer and turtle, Scheme REPL,
@@ -44,6 +45,8 @@ add lessons, figures and exercise types.
     src/scheme.js          Scheme interpreter (MIT Scheme / SICP dialect)
     src/subst.js           substitution-model stepper for Scheme
     src/cppstep.js         C++ memory stepper (frames, addresses, arrays and pointers)
+    src/java.js            the Java interpreter: lexer, parser, javac-style checker, library, interpreter
+    src/javaworker.js      the Java sandbox (a Web Worker); src/javautil.js wraps method exercises for grading
     src/clangworker.js     the Full C++ worker (real Clang, downloaded on demand); src/cppfull.js grades its exercises
     src/qr.js              QR code encoder for sharing links
     vendor/jscpp.min.js    the JSCPP C++ interpreter, bundled for the browser (see below)
@@ -55,6 +58,7 @@ add lessons, figures and exercise types.
     build.js               inlines everything into dist/index.html and writes dist/teacher-guide.html
     test_course.js         checks every exercise and example of a course
     test_cppstep.js        checks the C++ memory stepper
+    test_java.js           checks the Java interpreter against what javac and java print
     test_subst.js          checks the substitution stepper
     test_security.js       checks the Python sandbox and the size limit on links
     test_backup.js         checks saving and restoring work to a file, including hostile files

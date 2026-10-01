@@ -8,7 +8,7 @@ const store = (init) => { const m = new Map(Object.entries(init || {})); return 
 const J = JSON.stringify;
 
 const progress = { done: { 'py-1-1': 1000, 'py-2-1': 2000 }, code: { 'py-1-1': 'print(1)', 'py-3-1': 'draft' }, pass: { 'py-1-1': 'print(1)' } };
-const lab = { lang: 'scheme', files: { python: [{ name: 'main.py', code: 'print("hi")' }, { name: 'ex.py', code: 'x = 1', ex: { id: 'py-1-1', course: 'python', lesson: 1 } }], cpp: [], scheme: [{ name: 'main.scm', code: '(+ 1 2)' }] }, active: { python: 1, cpp: 0, scheme: 0 }, fontSize: 18, wrap: true, panels: { ref: true } };
+const lab = { lang: 'scheme', files: { python: [{ name: 'main.py', code: 'print("hi")' }, { name: 'ex.py', code: 'x = 1', ex: { id: 'py-1-1', course: 'python', lesson: 1 } }], cpp: [], java: [], scheme: [{ name: 'main.scm', code: '(+ 1 2)' }] }, active: { python: 1, cpp: 0, java: 0, scheme: 0 }, fontSize: 18, wrap: true, panels: { ref: true } };
 const portfolio = { name: 'Ada', note: 'my work', unfinished: true, tasks: false, lab: ['python/main.py'] };
 const asg = { id: 'abcd2345', v: 1, title: 'Sum', lang: 'python', text: 't', starter: 's', tests: [{ k: 'stdin', in: '1 2', expect: '3', hidden: true }, { k: 'stdin', in: '2 2', expect: '4', hidden: false }], hints: ['h'], roster: ['Ann'], author: 'T', due: 'Fri', created: 5 };
 const teach = { teacher: true, name: 'Ms T', studentName: 'Ada', assignments: { abcd2345: asg }, book: { abcd2345: { Ann: { name: 'Ann', at: 10, code: 'print(3)', reviewed: 20, title: 'Sum', claimed: { passed: 1, total: 2 }, result: { passed: 2, total: 2, hiddenPassed: 1, hiddenTotal: 1, results: [{ name: 't', ok: true, expected: '3', got: '3' }], error: null } } } }, received: { zzzz9999: Object.assign({}, asg, { id: 'zzzz9999' }) } };

@@ -49,6 +49,12 @@
       keywords: 'int double float char bool void long unsigned short const return if else for while do break continue struct class true false using namespace include new delete sizeof static'.split(' '),
       builtins: 'cout cin endl std main sqrt pow abs strlen'.split(' '),
       tab: '    '
+    },
+    java: {
+      comment: /(?:\/\/.*$|\/\*[\s\S]*?\*\/)/m, string: /(?:"""[\s\S]*?"""|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')/,
+      keywords: 'public private protected static final abstract class interface extends implements new return if else for while do break continue switch case default void int double float long short byte char boolean true false null this super try catch finally throw throws import package instanceof var'.split(' '),
+      builtins: 'System out in println print printf String Math Scanner Integer Double Character Boolean ArrayList HashMap HashSet List Map Set StringBuilder Random Arrays Collections Object main args length'.split(' '),
+      tab: '    '
     }
   };
   const langOf = (lang) => (typeof lang === 'string' && Object.prototype.hasOwnProperty.call(LANGS, lang)) ? LANGS[lang] : LANGS.python;   // not LANGS[lang]: "constructor" is truthy
@@ -159,10 +165,10 @@
         const line = ta.value.slice(ls, s);
         let indent = (line.match(/^\s*/) || [''])[0];
         const trimmed = line.trim();
-        if ((lang === 'python' && trimmed.endsWith(':')) || (lang === 'cpp' && trimmed.endsWith('{')) || (lang === 'scheme' && trimmed.startsWith('(') && (trimmed.split('(').length > trimmed.split(')').length))) indent += L.tab;
+        if ((lang === 'python' && trimmed.endsWith(':')) || ((lang === 'cpp' || lang === 'java') && trimmed.endsWith('{')) || (lang === 'scheme' && trimmed.startsWith('(') && (trimmed.split('(').length > trimmed.split(')').length))) indent += L.tab;
         const insert = '\n' + indent;
         edit(s, ta.selectionEnd, insert, s + insert.length);
-      } else if (lang === 'cpp' && e.key === '}') {
+      } else if ((lang === 'cpp' || lang === 'java') && e.key === '}') {
         // dedent a lone closing brace
         const s = ta.selectionStart, ls = ta.value.lastIndexOf('\n', s - 1) + 1;
         if (/^\s+$/.test(ta.value.slice(ls, s)) && ta.value.slice(ls, s).length >= L.tab.length) {
@@ -194,6 +200,7 @@
       }
     },
     cpp: { run: (code, opts) => window.CPPRUN.run(code, opts) },
+    java: { run: (code, opts) => window.JAVARUN.run(code, opts) },   // the site's own Java interpreter (src/java.js), in a worker like the others
     // Real C++ (Clang built for WebAssembly): see CLANGRUN in runner.js. Its first use downloads about 29 MB, so the student agrees to that first,
     // in a box shown in opts.host (the output panel or the verdict), where its progress is shown too.
     cppFull: {
@@ -278,6 +285,10 @@
       const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: opts.stdin });
       if (r.err) out.error(r.err);
       else if (!r.out) out.note('(the program finished without printing anything)');
+    } else if (lang === 'java') {
+      const r = await Runners.java.run(code, { onOutput: (s) => out.write(s), stdin: opts.stdin });
+      if (r.err) { out.error(r.err); const tip = tipFor('java', r.err); if (tip) out.note('↳ ' + tip); }
+      else if (!r.out) out.note('(the program finished without printing anything)');
     }
   }
 
@@ -314,6 +325,40 @@
       [/Time limit/, 'The loop never ends. Check that the loop variable changes and the condition can become false.'],
       [/overflow/, 'An int cannot hold that value: it overflowed. Use long long for big numbers, or check the arithmetic.'],
       [/input format mismatch/, 'cin tried to read a value of one type but the input had something else (or nothing left).']
+    ],
+    // the Java checker's messages are javac's, so a student can look them up; the tips say what to do about them
+    java: [
+      [/';' expected/, 'A semicolon is missing. The line named is where Java noticed; look at the end of that line and of the one before it.'],
+      [/'\)' expected|'\]' expected/, 'A closing bracket is missing. Count the opening and closing brackets on that line.'],
+      [/reached end of file while parsing/, 'A closing brace } is missing: a method or class was opened and never closed. Check that every { has its }.'],
+      [/class, interface, enum, or record expected/, 'In Java every statement and method lives inside a class. Make sure this code is inside  public class Main { ... }  and that no extra } closed the class early.'],
+      [/cannot find symbol[\s\S]*symbol:\s+variable/, 'A name is used that Java does not know. Check the spelling and the capitals, and that the variable was declared, with a type, before this line and in the same block.'],
+      [/cannot find symbol[\s\S]*symbol:\s+method/, 'No method with that name and those arguments exists. Check the spelling, the number and types of the arguments, and that the method is in this class (or called on the right object).'],
+      [/cannot find symbol[\s\S]*symbol:\s+class/, 'Java does not know a class of that name. Check the spelling, and for library classes such as Scanner or ArrayList add  import java.util.*;  at the top.'],
+      [/possible lossy conversion from (\w+) to (\w+)/, 'A value with a decimal part (or a larger type) is being stored where a smaller type is needed. Use a variable of the larger type, or cast on purpose: (int) x.'],
+      [/incompatible types: (\w+) cannot be converted to boolean/, 'A condition must be true or false. Did you write = (assign) where == (compare) was meant?'],
+      [/incompatible types: String cannot be converted to (int|double|char)/, 'Text is not a number. Convert it: Integer.parseInt(s) or Double.parseDouble(s); and remember that \'A\' is a char while "A" is a String.'],
+      [/incompatible types/, 'A value of one type is being put where another type is needed. Check the types on both sides of the = (or the parameter type the method asks for).'],
+      [/missing return statement/, 'A method that promises a value can reach its closing brace without a return. Every path through it, including after the loop or in the else, must return.'],
+      [/non-static (variable|method) .* cannot be referenced from a static context/, 'main is static, so it can only use static things directly. Either make the method or variable static too, or create an object first and call it on that object.'],
+      [/is already defined in/, 'A variable with this name already exists in this method. Give the new one another name, or reuse the old one without the type.'],
+      [/bad operand type/, 'The operator does not work on those types. For example, + joins a String to anything, but true + 1 and "a" - "b" mean nothing.'],
+      [/cannot be dereferenced/, 'A primitive value (int, double, char, boolean) has no methods. For text use a String; to compare numbers use ==.'],
+      [/has private access in/, 'That field or method is private: only the class that declares it may use it. Add a public method (a getter or setter) to that class, or use one it already has.'],
+      [/cannot be applied to given types/, 'The method exists but was given the wrong number or kinds of arguments. Compare the call with the method\'s parameter list.'],
+      [/is not abstract and does not override abstract method/, 'The class promises (through an interface or an abstract parent) a method it does not provide. Write that method, with exactly that name, parameters and return type, and make it public.'],
+      [/ArithmeticException: \/ by zero/, 'Division by zero: the divisor became 0 here. Check the values before dividing.'],
+      [/ArrayIndexOutOfBoundsException: Index (-?\d+) out of bounds for length (\d+)/, 'The index is past the end of the array. Valid indices run from 0 to length - 1; a loop that goes to <= length goes one too far.'],
+      [/StringIndexOutOfBoundsException/, 'The position is past the end of the string. Valid positions run from 0 to length() - 1.'],
+      [/IndexOutOfBoundsException: Index (-?\d+) out of bounds for length (\d+)/, 'The position is past the end of the list. Valid positions run from 0 to size() - 1.'],
+      [/NullPointerException/, 'A variable that holds no object (null) was used as if it did. Find where it should have been given a value with new, or a result that was never assigned.'],
+      [/NumberFormatException/, 'Integer.parseInt or Double.parseDouble was given text that is not a number. Check what was read, or ask the user again.'],
+      [/InputMismatchException/, 'The Scanner expected a number but the next word of the input was not one. Check what the program reads and what the input contains, in that order.'],
+      [/NoSuchElementException/, 'The program tried to read more input than there was. Check how many values the input holds, or test hasNext() first.'],
+      [/ClassCastException/, 'An object was cast to a type it is not. Check with instanceof before casting.'],
+      [/StackOverflowError/, 'A method kept calling itself without reaching its base case, or the recursion is too deep. Make sure the base case comes first and is reached.'],
+      [/ConcurrentModificationException/, 'A list was changed (add or remove) while a for-each loop was going through it. Collect what to remove first, or use an index loop that counts down.'],
+      [/Time limit/, 'The program ran for too long. Check that every loop changes something that will end it.']
     ],
     // messages from the real compiler (Clang), for the programs that run with Full C++
     cppfull: [
@@ -379,6 +424,15 @@
         const p = r.parts[i] || { out: '', err: 'did not run' };
         results.push({ name: t.name || (t.call !== undefined ? t.call : (t.stdin ? 'input: ' + JSON.stringify(t.stdin) : 'program output')), expected: t.expect, got: p.out, ok: !p.err && norm(p.out) === norm(t.expect), err: p.err, io: t.call === undefined });
       });
+    } else if (lang === 'java') {
+      // A compile error ends the check at once (as javac would); an exception in one test is that test's failure.
+      for (const t of ex.tests) {
+        let src = code, shift = 0;
+        if (t.call !== undefined || t.main !== undefined) { const h = window.JAVAUTIL.harness(ex, code, t); if (h.error) return { passed: false, results, error: h.error }; src = h.src; shift = h.shift; }
+        const r = await Runners.java.run(src, { stdin: t.stdin || '' });
+        if (r.err && window.JAVAUTIL.isCompileError(r.err)) return { passed: false, results, error: window.JAVAUTIL.shiftLines(r.err, shift) };
+        results.push({ name: t.name || (t.call !== undefined ? t.call : (t.stdin ? 'input: ' + JSON.stringify(t.stdin) : 'program output')), expected: t.expect, got: r.out, ok: !r.err && norm(r.out) === norm(t.expect), err: r.err ? window.JAVAUTIL.shiftLines(r.err, shift) : null, io: t.call === undefined });
+      }
     } else if (lang === 'cpp') {
       for (const t of ex.tests) {
         let src = code;
