@@ -92,6 +92,7 @@ site/
     terminal.js          the terminals in front of shell.js: the Code Lab panel, lesson examples and shell exercises → window.TERMINAL (§9f)
     shellgrade.js        the shell course's setups (file trees) and grader → window.SHELLGRADE; node: test_course.js shell (§9f)
     course_shell.js      SC 108 The Command Line (lang 'shell': examples and exercises are terminals)
+    course_computer.js   SC 099 What Is a Computer? (lang 'none': no runnable code; answer/choice/table exercises; figures parts, cpu, bits)
     guide.js             the teacher guide (one HTML string) → window.GUIDE; build.js also writes dist/teacher-guide.html
     qr.js                QR encoder → window.QR
     teach.js             assignments / submissions / grade book → window.TEACH

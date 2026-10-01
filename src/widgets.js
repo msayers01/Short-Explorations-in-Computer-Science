@@ -511,6 +511,79 @@ xs mapped kept result`;
   };
 
   /* ---------- 12. C++ compile pipeline ---------- */
+  /* ---------- SC 099: the parts of a computer, clickable ---------- */
+  W.parts = function (mount) {
+    const P = {
+      input: ['Input devices', 'Keyboard, mouse, touchscreen, microphone, camera. They turn what you do into signals the computer can read. Nothing goes in any other way.'],
+      cpu: ['CPU (processor)', 'The central processing unit carries out instructions, one after another, billions of times a second: arithmetic, comparisons, moving data. It does nothing on its own; it only follows the program it is given.'],
+      ram: ['Memory (RAM)', 'The working memory. The programs that are running and the data they are using sit here, where the CPU can reach them in a few billionths of a second. It is emptied when the power goes off.'],
+      storage: ['Storage (SSD or hard drive)', 'The long-term memory: files, programs and the operating system, kept when the power is off. Slower than RAM but far larger, and it does not forget.'],
+      output: ['Output devices', 'Screen, speakers, printer, the lights on a keyboard. They turn the computer\'s results into something a person can see or hear.'],
+      net: ['Network', 'The connection to other computers: Wi-Fi, Ethernet, mobile data. To a computer, the internet is input and output that happens to come from far away.']
+    };
+    const svg = sv('svg', { viewBox: '0 0 640 300', role: 'img', 'aria-label': 'The parts of a computer' });
+    const box = (key, x, y, w, h, label) => { const g = sv('g', { class: 'parts-box', tabindex: '0', role: 'button', 'data-key': key }); g.append(sv('rect', { x, y, width: w, height: h, rx: 6, fill: 'var(--paper)', stroke: 'var(--ink)', 'stroke-width': 1.4 }), txt(x + w / 2, y + h / 2 + 5, label, { 'text-anchor': 'middle', 'font-size': 14, 'font-weight': 600 })); svg.append(g); return g; };
+    const arrow = (x1, y1, x2, y2, both) => svg.append(sv('path', { d: `M${x1} ${y1} L${x2} ${y2}`, stroke: 'var(--ink-2)', 'stroke-width': 1.5, 'marker-end': 'url(#pt-arr)', 'marker-start': both ? 'url(#pt-arr2)' : null }));
+    svg.append(sv('defs', {}, sv('marker', { id: 'pt-arr', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, sv('path', { d: 'M0 0L10 5L0 10z', fill: 'var(--ink-2)' })), sv('marker', { id: 'pt-arr2', viewBox: '0 0 10 10', refX: 1, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, sv('path', { d: 'M10 0L0 5L10 10z', fill: 'var(--ink-2)' }))));
+    svg.append(sv('rect', { x: 200, y: 20, width: 240, height: 260, rx: 10, fill: 'var(--accent-soft)', stroke: 'var(--rule)' }), txt(320, 42, 'inside the case', { 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-3)' }));
+    box('input', 20, 60, 140, 50, 'Input');
+    box('cpu', 260, 70, 120, 56, 'CPU');
+    box('ram', 260, 150, 120, 50, 'Memory (RAM)');
+    box('storage', 260, 220, 120, 50, 'Storage');
+    box('output', 480, 60, 140, 50, 'Output');
+    box('net', 480, 190, 140, 50, 'Network');
+    arrow(160, 85, 258, 92); arrow(382, 92, 478, 85); arrow(320, 128, 320, 148, true); arrow(320, 202, 320, 218, true); arrow(382, 110, 478, 200, true);
+    const info = el('div', { class: 'fig-note parts-info' }, 'Click a part to read what it does.');
+    svg.querySelectorAll('.parts-box').forEach((g) => { const pick = () => { svg.querySelectorAll('.parts-box').forEach((o) => o.classList.remove('on')); g.classList.add('on'); const [name, text] = P[g.dataset.key]; info.replaceChildren(el('b', {}, name + '. '), text); }; g.addEventListener('click', pick); g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } }); });
+    mount.append(svg, info);
+  };
+
+  /* ---------- SC 099: a tiny CPU running a four-instruction program, one phase at a time ---------- */
+  // memory: 0 LOAD 5 · 1 ADD 6 · 2 STORE 7 · 3 HALT · 5: 3 · 6: 4 · 7: (result). Registers: PC, IR, ACC.
+  W.cpu = function (mount) {
+    const prog = ['LOAD 5', 'ADD 6', 'STORE 7', 'HALT', '', '3', '4', ''];
+    const steps = [];
+    let mem = prog.slice(), pc = 0, acc = 0, ir = '';
+    const snap = (phase, note, hl) => steps.push({ mem: mem.slice(), pc, acc, ir, phase, note, hl });
+    snap('start', 'The program is in memory at addresses 0 to 3, the data at 5 and 6. PC (program counter) points at address 0.', -1);
+    for (;;) {
+      ir = mem[pc]; const at = pc; pc++;
+      snap('fetch', 'Fetch: copy the instruction at address ' + at + ' into IR, and move PC on to ' + pc + '.', at);
+      const [op, a] = ir.split(' ');
+      snap('decode', 'Decode: the instruction is ' + ir + ', so ' + (op === 'LOAD' ? 'copy memory[' + a + '] into ACC' : op === 'ADD' ? 'add memory[' + a + '] to ACC' : op === 'STORE' ? 'copy ACC into memory[' + a + ']' : 'stop') + '.', at);
+      if (op === 'LOAD') acc = +mem[+a]; else if (op === 'ADD') acc += +mem[+a]; else if (op === 'STORE') mem[+a] = String(acc);
+      snap('execute', op === 'HALT' ? 'Execute: HALT. The CPU stops. memory[7] now holds the sum, 7.' : 'Execute: done. ACC is now ' + acc + (op === 'STORE' ? ' and memory[' + a + '] holds ' + mem[+a] : '') + '.', op === 'HALT' ? at : +a);
+      if (op === 'HALT') break;
+    }
+    const regs = el('div', { class: 'cpu-regs' });
+    const memT = el('table', { class: 'fill cpu-mem' });
+    const note = el('p', { class: 'fig-note' });
+    const render = (i) => {
+      const st = steps[i];
+      regs.replaceChildren(...[['PC', st.pc], ['IR', st.ir || '—'], ['ACC', st.acc]].map(([k, v]) => el('div', { class: 'cpu-reg' }, el('span', { class: 'cpu-k' }, k), el('code', {}, String(v)))), el('div', { class: 'cpu-phase ' + st.phase }, st.phase));
+      memT.replaceChildren(el('thead', {}, el('tr', {}, el('th', {}, 'address'), el('th', {}, 'contents'))), el('tbody', {}, st.mem.map((v, a) => el('tr', { class: (a === st.hl ? 'hl' : '') + (a === st.pc ? ' pc' : '') }, el('td', {}, el('code', {}, String(a))), el('td', {}, el('code', {}, v === '' ? '' : v), a === st.pc ? el('span', { class: 'fig-note' }, ' ← PC') : null)))));
+      note.textContent = st.note;
+    };
+    const ctl = stepper(steps.length, render, { interval: 1100 });
+    mount.append(el('div', { class: 'cpu-fig' }, el('div', {}, regs, note), memT), ctl.el);
+  };
+
+  /* ---------- SC 099: one byte, eight switches ---------- */
+  W.bits = function (mount, b) {
+    const n = 8; let bits = Array(n).fill(0);
+    if (typeof b.value === 'number') bits = bits.map((_, i) => (b.value >> (n - 1 - i)) & 1);
+    const row = el('div', { class: 'bits-row' });
+    const out = el('p', { class: 'bits-out' });
+    const render = () => {
+      row.replaceChildren(...bits.map((v, i) => el('button', { class: 'bit' + (v ? ' on' : ''), type: 'button', 'aria-pressed': v ? 'true' : 'false', 'aria-label': 'bit worth ' + (1 << (n - 1 - i)), onclick: () => { bits[i] = 1 - bits[i]; render(); } }, el('span', { class: 'bit-w' }, String(1 << (n - 1 - i))), el('span', { class: 'bit-v' }, String(v)))));
+      const value = bits.reduce((a, v) => a * 2 + v, 0);
+      const terms = bits.map((v, i) => v ? String(1 << (n - 1 - i)) : null).filter(Boolean);
+      out.replaceChildren(el('code', {}, bits.join('')), ' = ' + (terms.length ? terms.join(' + ') + ' = ' : '') , el('b', {}, String(value)), value >= 32 && value < 127 ? el('span', { class: 'fig-note' }, '  (as a character in ASCII: ' + JSON.stringify(String.fromCharCode(value)) + ')') : null);
+    };
+    render();
+    mount.append(row, out, el('p', { class: 'fig-note' }, 'Click a switch to flip it. Each one is worth twice the one to its right; the number is the sum of the ones that are on. Eight switches give 256 different patterns, 0 to 255.'));
+  };
+
   /* ---------- the directory tree of a shell lesson: click a name to see its paths; "go here" moves the marker ---------- */
   // params: tree (the same shape as a lesson's setup, keys as paths from the home directory), cwd ('~' or '~/x'), the home is /home/student
   W.fstree = function (mount, b) {

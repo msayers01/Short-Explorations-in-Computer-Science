@@ -114,6 +114,10 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   sandboxes, so test_course.js shell will need a Python runner for its exercises); 6 Windows cmd and PowerShell (a dialect switch over the
   same file system); 7 a first script (variables, for, if, chmod +x, #!); 8 a project (tidy a messy folder). Lesson 3 promises lesson 7
   says more about regular expressions.
+- SC 099 What Is a Computer? (`src/course_computer.js`, `lang: 'none'`, first in the catalogue): 4 lessons (the parts; the processor and
+  memory; storage, input and output; software), 8 exercises (`cs-<n>-<k>`, all answer/choice/table kinds), figures `parts` (clickable
+  diagram), `cpu` (fetch-decode-execute stepper over a 4-instruction program), `bits` (a byte of switches) and the existing `pipeline`.
+  No code runs; `test_course.js computer` grades the math-kind exercises only.
 - Ideas not started: C in the Code Lab (same compiler); lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
   beside the single-page design and needs a policy change); splitting CI (about 4 minutes now); a Java step-through debugger like the C++ memory stepper.
