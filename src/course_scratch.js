@@ -9,7 +9,7 @@ window.COURSES.push({
   id: 'scratch', code: 'SC 100', short: 'Scratch', lang: 'python', status: 'developing', readingWpm: 110,
   title: 'From Scratch to Python',
   grades: 'Grades 5–8 · after Scratch',
-  audience: `<p><b>Grades 5–8</b>. For anyone who has made a few Scratch projects and wants to see what grown-up programmers type. Can you make a sprite say hello? Keep a score? Use a <em>repeat</em> block? Then you already know most of what this course teaches. The only new part is typing the words instead of dragging the blocks.</p><p>The lessons are short. Most of the programs talk, draw or play. The course is being written: the first six lessons are here.</p>`,
+  audience: `<p><b>Grades 5–8</b>. For anyone who has made a few Scratch projects and wants to see what grown-up programmers type. Can you make a sprite say hello? Keep a score? Use a <em>repeat</em> block? Then you already know most of what this course teaches. The only new part is typing the words instead of dragging the blocks.</p><p>The lessons are short. Most of the programs talk, draw or play. The course is being written: the first seven lessons are here.</p>`,
   affirm: ['You did it!', 'Yes! That works.', 'Nailed it.', 'Perfect. On to the next one.', 'That passes every test. Nice.', 'Exactly right.'],
   tagline: 'The blocks you know, one line of Python each: say, ask, variables, repeat, if, lists, your own blocks, and a sprite that becomes a turtle.',
   description: `<p>In Scratch you build a program by snapping blocks together. In Python you build the same program by typing one line for each block. That is honestly the whole difference. <code>say [Hello!]</code> becomes <code>print("Hello!")</code>. <code>repeat (10)</code> becomes <code>for i in range(10):</code>. <code>move (10) steps</code> becomes <code>t.forward(10)</code>, and the sprite, which Python calls a turtle, moves.</p>
@@ -22,6 +22,7 @@ window.COURSES.push({
     'Use repeat and forever as loops, and make a turtle draw shapes with them',
     'Turn if-then-else into if, elif and else, and Scratch lists into Python lists that count from zero',
     'Make your own blocks with def, give them inputs, and use return to report an answer',
+    'Build a small text adventure game from rooms, a bag, a monster and functions, piece by piece',
     'Type a short program from scratch, without looking at the blocks'
   ],
   howItWorks: `<h3>How to use these pages</h3><p>Every code box has a <b>Run</b> button. That is the green flag. Programs that talk print below the box. Programs that draw get a canvas. Change something and run again, as often as you like. <b>Reset</b> puts the code back.</p><p>Each lesson has a <b>Translate the block</b> quiz and two exercises. <b>Check answer</b> runs your program and compares what it printed with what was expected, letter by letter. <b>Hint</b> helps one step at a time. Your work is saved in this browser.</p>`,
@@ -727,6 +728,185 @@ turtle.done()`, caption: 'A triangle, a square, a pentagon and so on, each in a 
 <li><code>return</code> hands a value back, so your function becomes a reporter block, something Scratch could not do. <code>print</code> shows; <code>return</code> gives.</li>
 <li>Build big things from small functions: a square, then a flower made of squares, then a garden made of flowers.</li>
 <li>You have now met every block in this course as a line of Python. <em>Introduction to Python</em> (SC 101) takes it from here.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      title: 'Project: your own adventure game', summary: 'Everything from the course in one program: rooms with if and elif, a bag that is a list, a monster fight with while and random, and broadcasts that become functions. You build it piece by piece, then make it yours.',
+      blocks: [
+        `<p>In 1976 a programmer called Will Crowther wrote a game for his two daughters. He loved exploring caves, and he had helped map a real one in Kentucky. His game had no pictures at all. It printed <em>You are standing at the end of a road before a small brick building</em>, and waited. You typed <code>go north</code> or <code>take lamp</code>, and it printed what happened next. He called it <em>Adventure</em>. Another programmer, Don Woods, added more rooms and a dragon the next year. Thousands of people played it on university computers, and it started a whole kind of game.</p>
+<p>You are going to write one. Not with the cave, but with your own rooms, your own treasure and your own monster. It uses every block from this course: <code>if</code> for the rooms, a list for your bag, <code>while</code> for the fight, <code>random</code> for the dice, and functions for the places. You build it one piece at a time, and each piece runs on its own.</p>
+<h2>Piece 1: rooms</h2>
+<p>A room is just a variable that says where you are. Each turn the game prints the room, asks which way to go, and changes the variable. In Scratch you might do this with a <code>room</code> variable and a big <code>if-else</code>. Python is the same, with <code>elif</code>.</p>`,
+        { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['variables', 'set [room] to [hall]'], ['control', 'repeat until <(room) = [outside]>', [['sensing', 'ask [Which way?] and wait'], ['control', 'if <<(room) = [hall]> and <(answer) = [north]>> then', [['variables', 'set [room] to [kitchen]']]]]]], python: 'room = "hall"\nwhile room != "outside":\n    way = input("Which way? ")\n    if room == "hall" and way == "north":\n        room = "kitchen"', caption: 'One room, one way out. The real game has several of these ifs in a row. The loop keeps going until the room is "outside": that is how you win.' },
+        { play: `room = "hall"
+while room != "outside":
+    print("You are in the", room + ".")
+    way = input("Which way? ")
+    if room == "hall" and way == "north":
+        room = "kitchen"
+    elif room == "hall" and way == "east":
+        room = "garden"
+    elif room == "kitchen" and way == "south":
+        room = "hall"
+    elif room == "garden" and way == "east":
+        room = "outside"
+    else:
+        print("You can't go that way.")
+print("You escaped!")`, stdin: 'north\nup\nsouth\neast\neast', caption: 'Three rooms and a way out. The typed moves are in the box below: try your own. Each elif is one door. Add a room: a new elif that sets room to it, and another that leads back.' },
+        `<div class="stmt"><p><span class="kind">Rule 1.</span> A game loop is a <code>while</code> loop that asks, decides and repeats. It ends when something changes: the room, the lives, or the word "quit".</p>
+<p><span class="kind">Rule 2.</span> Each door is one <code>elif</code> with two conditions joined by <code>and</code>: where you are, and which way you said. The <code>else</code> at the end catches everything that is not a door.</p></div>
+<h2>Piece 2: a bag</h2>
+<p>A bag is a list. <code>take</code> appends to it, <code>inventory</code> prints it, and a locked door checks it with <code>in</code>. In Scratch this is a list called bag and the <code>contains</code> block.</p>`,
+        { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['control', 'if <(answer) = [take key]> then', [['variables', 'add [key] to [bag]'], ['looks', 'say [Taken.]']]], ['control', 'if <<(answer) = [open door]> and <[bag] contains [key]?>> then', [['looks', 'say [The door swings open!]']]]], python: 'if way == "take key":\n    bag.append("key")\n    print("Taken.")\nif way == "open door" and "key" in bag:\n    print("The door swings open!")', caption: 'The bag starts empty: bag = []. contains is in. The door only opens if the key is in the list, so the order you do things in matters, just like a real adventure.' },
+        `<details class="reveal"><summary>Guess first: in the program below the player types <code>open door</code> before <code>take key</code>. What does the game print the first time?</summary><p><code>It's locked.</code> The key is not in the bag yet, so <code>"key" in bag</code> is False and the elif for the locked door runs. After <code>take key</code>, the same command opens it.</p></details>`,
+        { play: `bag = []
+room = "cellar"
+while room == "cellar":
+    way = input("> ")
+    if way == "look":
+        print("A dusty cellar. A rusty key lies on the floor. A door is to the north.")
+    elif way == "take key" and "key" not in bag:
+        bag.append("key")
+        print("Taken.")
+    elif way == "inventory":
+        print("You carry:", bag)
+    elif way == "open door" and "key" in bag:
+        print("The door swings open!")
+        room = "stairs"
+    elif way == "open door":
+        print("It's locked.")
+    else:
+        print("I don't understand", way)
+print("You climb the stairs.")`, stdin: 'open door\nlook\ntake key\ninventory\nopen door', caption: 'The order of the elifs matters. The "open door with key" line comes before the plain "open door" line, so it gets first go. Swap them and the door never opens. Add a "drop key" command that removes it.' },
+        `<h2>Piece 3: a monster</h2>
+<p>A fight is a loop that goes round until someone runs out of health. Each turn, both sides roll a dice: that is <code>random.randint</code>. In Scratch you would use <code>repeat until</code> and <code>pick random</code>.</p>`,
+        { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['variables', 'set [health] to (10)'], ['variables', 'set [monster] to (6)'], ['control', 'repeat until <<(health) < (1)> or <(monster) < (1)>>', [['variables', 'change [monster] by (pick random (1) to (4)) * (-1)'], ['variables', 'change [health] by (pick random (1) to (3)) * (-1)']]]], python: 'health = 10\nmonster = 6\nwhile health > 0 and monster > 0:\n    monster = monster - random.randint(1, 4)\n    health = health - random.randint(1, 3)', caption: 'repeat until A or B is while not A and not B: keep fighting while both are above zero. Turn the condition round, like lesson 3.' },
+        { play: `import random
+
+health = 10
+monster = 6
+print("A goblin jumps out!")
+while health > 0 and monster > 0:
+    hit = random.randint(1, 4)
+    monster = max(monster - hit, 0)
+    print("You hit the goblin for", hit, "- it has", monster, "left.")
+    if monster > 0:
+        ouch = random.randint(1, 3)
+        health = health - ouch
+        print("The goblin bites you for", ouch, "- you have", health, "left.")
+if health > 0:
+    print("You win!")
+else:
+    print("You were eaten. Game over.")`, caption: 'Run it several times. Sometimes the goblin wins. Change the numbers to make the fight fair, or unfair, and make the dice bigger. The if monster > 0 stops a dead goblin from biting.' },
+        `<h2>Piece 4: broadcasts become functions</h2>
+<p>In a big Scratch game you use <code>broadcast [fight]</code> and a script that starts <code>when I receive [fight]</code>. In Python that script is a function, and the broadcast is calling it. Put the fight in <code>def fight():</code> and the game can call it from any room.</p>`,
+        { fig: 'blocks', stack: [['event', 'when I receive [fight]'], ['looks', 'say [A goblin jumps out!]'], ['control', 'repeat until <(monster) < (1)>', [['variables', 'change [monster] by (-1)']]]], python: 'def fight():\n    print("A goblin jumps out!")\n    monster = 6\n    while monster > 0:\n        monster = monster - 1', caption: 'when I receive is def. broadcast [fight] is fight(). One difference: a variable made inside a function belongs to that function. To change the player’s health from inside fight, the function should return the new health.' },
+        `<h2>Putting it together</h2>
+<p>Here is the whole game: three rooms, a key, a goblin, and a treasure. It is about forty lines, and you have seen every one of them before. Read it top to bottom. Then play it with the moves in the box, then with your own.</p>`,
+        { play: `import random
+
+def fight(health):
+    print("A goblin blocks the way!")
+    monster = 6
+    while health > 0 and monster > 0:
+        monster = monster - random.randint(1, 4)
+        if monster > 0:
+            health = health - random.randint(1, 3)
+    if health > 0:
+        print("The goblin runs away. You have", health, "health left.")
+    return health
+
+bag = []
+health = 10
+room = "hall"
+goblin = True
+print("You wake up in a dark hall. Type: look, north, east, south, west, take key, open chest, quit.")
+while room != "won" and health > 0:
+    way = input("> ")
+    if way == "quit":
+        break
+    elif way == "look":
+        print("You are in the", room + ". Your bag:", bag)
+    elif room == "hall" and way == "north":
+        room = "armoury"
+        print("An armoury. A key glints on a shelf.")
+    elif room == "armoury" and way == "take key" and "key" not in bag:
+        bag.append("key")
+        print("Taken.")
+    elif room == "armoury" and way == "south":
+        room = "hall"
+        print("Back in the hall.")
+    elif room == "hall" and way == "east":
+        if goblin:
+            health = fight(health)
+            goblin = False
+        if health > 0:
+            room = "vault"
+            print("A vault, with a chest in the middle.")
+    elif room == "vault" and way == "west":
+        room = "hall"
+        print("Back in the hall.")
+    elif room == "vault" and way == "open chest" and "key" in bag:
+        print("Gold! You win!")
+        room = "won"
+    elif room == "vault" and way == "open chest":
+        print("The chest is locked.")
+    else:
+        print("You can't do that here.")
+if health <= 0:
+    print("Game over.")`, stdin: 'look\neast\nopen chest\nwest\nnorth\ntake key\nsouth\neast\nopen chest', caption: 'Follow the moves: east to the vault (and a fight), the chest is locked, back for the key, and again. The fight is a function that takes the health in and returns it changed. The goblin variable makes sure you only fight once. Sometimes the goblin wins; run it again. Then change everything: the rooms, the words, the monster, the treasure.' },
+        `<div class="stmt"><p><span class="kind">Rule 3.</span> <code>broadcast</code> is a function call. <code>when I receive</code> is <code>def</code>. A function that changes a number should take it as a parameter and <code>return</code> the new value.</p>
+<p><span class="kind">Rule 4.</span> Build a big program one piece at a time, and run each piece before adding the next. That is how every programmer works, including the ones who wrote Adventure.</p></div>
+<h2>Ideas for your game</h2>
+<ul>
+<li>A map with five rooms, and a <code>map</code> command that prints it.</li>
+<li>A shop: a list of items with prices, and coins you find in rooms.</li>
+<li>A riddle door: the door asks a question and opens if the answer is right.</li>
+<li>Score: +10 for each room you find, printed at the end.</li>
+<li>Draw the map with the turtle when the player wins.</li>
+</ul>
+<details class="reveal"><summary>Puzzle: why does <code>fight</code> take <code>health</code> as a parameter and return it, instead of just changing <code>health</code> inside?</summary><p>Because a variable set inside a function is that function's own. If <code>fight</code> wrote <code>health = health - 2</code> without the parameter, Python would make a new <code>health</code> inside the function, and the game's <code>health</code> would not change. Taking it in and returning it is the clean way. (There is a word, <code>global</code>, that does it the messy way. Introduction to Python explains when not to use it.)</p></details>`,
+        { aside: `<p><b>Mistakes everyone makes in this project.</b> Two <code>elif</code> lines that can both be true, in the wrong order: the first one wins. Forgetting <code>room = …</code> when going through a door, so you stay put. Checking <code>"key" in bag</code> before the key could be taken, which is fine, as long as the locked-door message is there too. Changing a variable inside a function and expecting the outside one to change. A game loop with no way to end: give it a <code>quit</code> command.</p>` },
+        `<h2>Quick quiz</h2>`,
+        { fig: 'blockquiz', items: [
+          { stack: [['event', 'broadcast [fight]']], answer: 'fight()', hint: 'A broadcast is calling the function: its name with brackets.' },
+          { stack: [['event', 'when I receive [fight]']], answer: 'def fight():', hint: 'when I receive is def, with brackets and a colon.' },
+          { stack: [['control', 'if <[bag] contains [key]?> then', []]], answer: 'if "key" in bag:', hint: 'contains is in: if "key" in bag:' },
+          { stack: [['variables', 'set [hit] to (pick random (1) to (6))']], answer: 'hit = random.randint(1, 6)', hint: 'hit = random.randint(1, 6)' },
+          { stack: [['control', 'repeat until <(health) < (1)>', []]], answer: ['while health > 0:', 'while health >= 1:'], hint: 'Turn it round: while health > 0:' }
+        ], caption: 'Five blocks from the project.' },
+        {
+          ex: {
+            id: 'sp-7-1', title: 'The snack machine',
+            prompt: `<p>The machine has three snacks in a list: <code>chips</code>, <code>apple</code> and <code>cookie</code>. Keep asking <code>Snack? </code> until the user types <code>done</code>. If the answer is in the list, print <code>Here is your chips.</code> (with the snack's name) and add it to a list of things bought. If it is not, print <code>No cookie here.</code> (with what they asked for). At the end print <code>You bought 2 snacks.</code> with the right number.</p>`,
+            starter: `snacks = ["chips", "apple", "cookie"]\nbought = []\nwhile True:\n    choice = input("Snack? ")\n    if choice == "done":\n        break\n    # in the list: print Here is your ..., and add it to bought\n    # not in the list: print No ... here.\n\nprint("You bought", len(bought), "snacks.")`,
+            solution: `snacks = ["chips", "apple", "cookie"]\nbought = []\nwhile True:\n    choice = input("Snack? ")\n    if choice == "done":\n        break\n    if choice in snacks:\n        print("Here is your " + choice + ".")\n        bought.append(choice)\n    else:\n        print("No " + choice + " here.")\n\nprint("You bought", len(bought), "snacks.")`,
+            hints: ['if choice in snacks: then print("Here is your " + choice + ".") and bought.append(choice).', 'else: print("No " + choice + " here.") Use + so there is no space before the full stop.'],
+            tests: [{ stdin: 'chips\napple\ndone', expect: 'Here is your chips.\nHere is your apple.\nYou bought 2 snacks.' }, { stdin: 'pizza\ncookie\ndone', expect: 'No pizza here.\nHere is your cookie.\nYou bought 1 snacks.' }, { stdin: 'done', expect: 'You bought 0 snacks.' }, { stdin: 'chips\nchips\nchips\ndone', expect: 'Here is your chips.\nHere is your chips.\nHere is your chips.\nYou bought 3 snacks.' }],
+            failTip: 'If there is a space before the full stop (chips .), you used a comma in print; join the pieces with + instead. Check that done ends the loop before anything is printed for it.',
+            followup: 'Stretch: give each snack a price in a second list, and print the total at the end. (prices[snacks.index(choice)] finds the price.)'
+          }
+        },
+        {
+          ex: {
+            id: 'sp-7-2', title: 'Rock, paper, scissors',
+            prompt: `<p>Write a function <code>winner(a, b)</code> for two players' choices, each <code>"rock"</code>, <code>"paper"</code> or <code>"scissors"</code>. It returns <code>"tie"</code> if they are the same, <code>"player 1"</code> if <code>a</code> beats <code>b</code>, and <code>"player 2"</code> otherwise. Rock beats scissors, scissors beats paper, paper beats rock.</p>`,
+            starter: `def winner(a, b):\n    # same choice: tie\n    # the three ways a wins: return "player 1"\n    # otherwise: player 2\n`,
+            solution: `def winner(a, b):\n    if a == b:\n        return "tie"\n    if (a == "rock" and b == "scissors") or (a == "scissors" and b == "paper") or (a == "paper" and b == "rock"):\n        return "player 1"\n    return "player 2"`,
+            hints: ['if a == b: return "tie"', 'Three ways player 1 wins, joined with or: (a == "rock" and b == "scissors") or (a == "scissors" and b == "paper") or (a == "paper" and b == "rock"). Brackets round each pair keep the and and or apart.', 'If it is not a tie and player 1 did not win, player 2 did: return "player 2" at the end, with no condition.'],
+            tests: [{ call: 'winner("rock", "rock")', expect: "'tie'" }, { call: 'winner("rock", "scissors")', expect: "'player 1'" }, { call: 'winner("scissors", "rock")', expect: "'player 2'" }, { call: 'winner("paper", "rock")', expect: "'player 1'" }, { call: 'winner("scissors", "paper")', expect: "'player 1'" }, { call: 'winner("rock", "paper")', expect: "'player 2'" }, { call: 'winner("paper", "scissors")', expect: "'player 2'" }, { call: 'winner("paper", "paper")', expect: "'tie'" }],
+            failTip: 'None means a case fell through every if without a return. Check the tie first, then the three wins for player 1, then return "player 2" for everything else.',
+            followup: 'Stretch: make it a game. The computer picks with random.choice(["rock", "paper", "scissors"]), you type yours, and the loop keeps score to three wins.'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li>A game is a <code>while</code> loop that asks, decides with <code>if</code>/<code>elif</code>, and repeats until something changes.</li>
+<li>Rooms are a variable; doors are <code>elif</code> lines with <code>and</code>; the bag is a list checked with <code>in</code>; the fight is a loop with <code>random.randint</code>.</li>
+<li><code>broadcast</code> is a function call and <code>when I receive</code> is <code>def</code>. A function that changes a number takes it in and returns it.</li>
+<li>Build one piece, run it, add the next. The order of <code>elif</code> lines matters.</li>
+<li>You have built a real program from nothing but the blocks you already knew. That was the whole course.</li>
 </ul></div>`
       ]
     }

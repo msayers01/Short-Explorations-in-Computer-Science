@@ -1020,17 +1020,21 @@ xs mapped kept result`;
   // A stack of Scratch-style blocks: [[category, text, children?, elseChildren?], ...]. In text, [words] is a text input, (10) a number,
   // <cond> a boolean. Shared by the blocks figure and the translate-the-block quiz.
   function blockStack(stack) {
+    // [words] is a text input, (10) a number, <cond> a boolean. Booleans nest (<<a> and <b>>), and a > inside one is a comparison
+    // when an operand follows it ("(x) > (5)"); otherwise it closes the boolean.
     const inline = (text) => {
-      const out = [];
-      const re = /\[([^\]]*)\]|\(([^()]*)\)|<([^<>]*)>/g; let last = 0, m;
-      while ((m = re.exec(text))) {
-        if (m.index > last) out.push(text.slice(last, m.index));
-        if (m[1] !== undefined) out.push(el('span', { class: 'sb-in sb-text' }, m[1]));
-        else if (m[2] !== undefined) out.push(el('span', { class: 'sb-in sb-num' }, m[2]));
-        else out.push(el('span', { class: 'sb-in sb-bool' }, m[3]));
-        last = m.index + m[0].length;
+      const out = []; let i = 0, plain = '';
+      const flush = () => { if (plain) { out.push(plain); plain = ''; } };
+      const isCompare = (k) => /^ [(\[<]/.test(text.slice(k + 1, k + 3));   // "(x) < (5)": a comparison, not a bracket
+      const closeAt = (from) => { let depth = 0; for (let k = from; k < text.length; k++) { const c = text[k]; if (c === '<' && !isCompare(k)) depth++; else if (c === '>' && !isCompare(k)) { if (depth === 0) return k; depth--; } } return -1; };
+      while (i < text.length) {
+        const c = text[i];
+        if (c === '[') { const j = text.indexOf(']', i); if (j > i) { flush(); out.push(el('span', { class: 'sb-in sb-text' }, text.slice(i + 1, j))); i = j + 1; continue; } }
+        if (c === '(') { const j = text.indexOf(')', i); if (j > i) { flush(); out.push(el('span', { class: 'sb-in sb-num' }, text.slice(i + 1, j))); i = j + 1; continue; } }
+        if (c === '<' && !isCompare(i)) { const j = closeAt(i + 1); if (j > i) { flush(); out.push(el('span', { class: 'sb-in sb-bool' }, inline(text.slice(i + 1, j)))); i = j + 1; continue; } }
+        plain += c; i++;
       }
-      if (last < text.length) out.push(text.slice(last));
+      flush();
       return out;
     };
     const render = (block, first) => {
@@ -1239,6 +1243,97 @@ xs mapped kept result`;
     const insertAt = el('button', { class: 'btn sm', onclick: () => { const i = k(); if (list.length >= maxN || i > list.length) return; if (i === 0) { addFirst.onclick(); return; } steps = walk(i - 1, 'looking for the node before index ' + i); steps.push({ a: list.slice(), cur: i - 1, hops: i - 1, msg: 'Node ' + (i - 1) + ' is the one before the insertion point. The new node’s next becomes this node’s next; then this node’s next becomes the new node.' }); list.splice(i, 0, v()); steps.push({ a: list.slice(), isNew: i, hot: i, hops: i - 1, msg: 'Inserted ' + v() + ' at index ' + i + ': two arrows changed, nothing shifted. The walk cost ' + (i - 1) + ' hop' + (i - 1 === 1 ? '' : 's') + '; the insert itself cost nothing.' }); restart(); } }, 'Insert at index');
     render(0);
     mount.append(el('div', { class: 'fig-scroll' }, svg), el('div', { class: 'fig-tools' }, el('span', {}, 'index'), idx, el('span', {}, 'value'), val, get, insertAt, addFirst, addLast, removeFirst), log, ctl.el);
+  };
+
+  /* ---------- 29. a stack or a ring-buffer queue in an array of 8 cells, one operation at a time (DSA lesson 6) ---------- */
+  W.stackqueue = function (mount, b) {
+    const kind = b.kind === 'queue' ? 'queue' : 'stack', cap = 8, cw = 44, x0 = 40;
+    let cells = new Array(cap).fill(null), top = 0, head = 0, tail = 0, count = 0, nextVal = 1, hot = -1;
+    const svg = sv('svg', { viewBox: '0 0 ' + (x0 * 2 + cap * cw) + ' 120', role: 'img', 'aria-label': kind === 'stack' ? 'A stack in an array' : 'A queue in a ring buffer' });
+    const log = el('div', { class: 'fig-status', role: 'status' });
+    const val = el('input', { type: 'number', value: String(nextVal), 'aria-label': 'value' });
+    function render(msg) {
+      svg.innerHTML = '';
+      for (let i = 0; i < cap; i++) {
+        const x = x0 + i * cw, used = cells[i] !== null;
+        svg.append(sv('rect', { x, y: 30, width: cw, height: 40, fill: i === hot ? 'var(--accent)' : used ? 'var(--accent-soft, var(--paper-2))' : 'var(--paper)', stroke: 'var(--rule)' }));
+        if (used) svg.append(mono(x + cw / 2, 56, String(cells[i]), { 'text-anchor': 'middle', 'font-size': 14, fill: i === hot ? '#fff' : 'var(--ink)' }));
+        svg.append(mono(x + cw / 2, 20, String(i), { 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-3)' }));
+      }
+      const mark = (i, label, y, color) => { const x = x0 + i * cw + cw / 2; svg.append(sv('path', { d: 'M' + x + ' ' + (y - 14) + ' l-5 -8 h10 z', fill: color })); svg.append(mono(x, y, label, { 'text-anchor': 'middle', 'font-size': 12, fill: color, 'font-weight': 'bold' })); };
+      if (kind === 'stack') mark(Math.min(top, cap - 1) , 'top' + (top === cap ? ' (full)' : ''), 100, 'var(--accent)');
+      else if (head === tail) mark(head, 'head, tail', 100, 'var(--accent)');
+      else { mark(head, 'head', 100, 'var(--accent)'); mark(tail, 'tail', 100, 'var(--ok)'); }
+      const n = kind === 'stack' ? top : count;
+      const order = []; if (kind === 'stack') for (let i = top - 1; i >= 0; i--) order.push(cells[i]); else for (let k = 0; k < count; k++) order.push(cells[(head + k) % cap]);
+      log.textContent = msg + '   size ' + n + (order.length ? (kind === 'stack' ? '   top → bottom: ' : '   front → back: ') + order.join(' ') : '');
+    }
+    const v = () => { const x = parseInt(val.value, 10); return Number.isFinite(x) ? x : nextVal; };
+    const add = el('button', { class: 'btn sm primary', onclick: () => {
+      const x = v(); nextVal = x + 1; val.value = String(nextVal);
+      if (kind === 'stack') { if (top === cap) { hot = -1; render('Full. A growing stack would now copy into an array of 16 (lesson 1: doubling), then push.'); return; } cells[top] = x; hot = top; top++; render('push(' + x + '): write at top, then top++. One write: O(1).'); }
+      else { if (count === cap) { hot = -1; render('Full. A growing queue copies the ' + cap + ' items, in order from head, into an array of 16, and resets head to 0.'); return; } cells[tail] = x; hot = tail; const was = tail; tail = (tail + 1) % cap; count++; render('enqueue(' + x + '): write at tail (' + was + '), then tail = (tail + 1) % ' + cap + (tail < was ? ' = ' + tail + ': wrapped round to the start' : '') + '. O(1).'); }
+    } }, kind === 'stack' ? 'Push' : 'Enqueue');
+    const remove = el('button', { class: 'btn sm', onclick: () => {
+      if (kind === 'stack') { if (top === 0) { hot = -1; render('Empty: pop() has nothing to give. A real stack throws here.'); return; } top--; const x = cells[top]; cells[top] = null; hot = -1; render('pop(): top--, return cells[top] = ' + x + '. Nothing else moves: O(1).'); }
+      else { if (count === 0) { hot = -1; render('Empty: dequeue() has nothing to give.'); return; } const x = cells[head]; cells[head] = null; const was = head; head = (head + 1) % cap; count--; hot = -1; render('dequeue(): take cells[head] = ' + x + ' (cell ' + was + '), head = (head + 1) % ' + cap + (head < was ? ' = 0: wrapped' : '') + '. Nothing shifts: O(1).'); }
+    } }, kind === 'stack' ? 'Pop' : 'Dequeue');
+    const peek = el('button', { class: 'btn sm quiet', onclick: () => { if (kind === 'stack') { hot = top > 0 ? top - 1 : -1; render(top ? 'peek(): cells[top − 1] = ' + cells[top - 1] + ', without removing it.' : 'Empty: nothing to peek at.'); } else { hot = count ? head : -1; render(count ? 'peek(): cells[head] = ' + cells[head] + ', the front, without removing it.' : 'Empty: nothing to peek at.'); } } }, 'Peek');
+    const reset = el('button', { class: 'btn sm quiet', onclick: () => { cells.fill(null); top = head = tail = count = 0; nextVal = 1; val.value = '1'; hot = -1; render(kind === 'stack' ? 'Empty stack: top is 0.' : 'Empty queue: head and tail both 0.'); } }, 'Reset');
+    mount.append(svg, el('div', { class: 'fig-tools' }, el('label', {}, 'value ', val), add, remove, peek, reset), log);
+    render(kind === 'stack' ? 'An array of ' + cap + ' cells and an index, top: the number of items, and the cell the next push writes to.' : 'An array of ' + cap + ' cells and two indices. head is the front; tail is where the next item goes. Both move right and wrap round: a ring.');
+  };
+
+  /* ---------- 30. the call stack of a recursive function, frame by frame (DSA lesson 7) ---------- */
+  W.callstack = function (mount, b) {
+    const fn = b.fn === 'fact' ? 'fact' : b.fn === 'sum' ? 'sum' : 'fib';
+    const maxN = fn === 'fib' ? 7 : 8;
+    const nIn = el('input', { type: 'number', value: String(b.n || (fn === 'fib' ? 5 : 4)), min: '0', max: String(maxN), 'aria-label': 'n' });
+    const svg = sv('svg', { viewBox: '0 0 420 ' + 40, role: 'img', 'aria-label': 'The call stack' });
+    const log = el('div', { class: 'fig-status', role: 'status' });
+    const host = el('div');
+    let steps = [], calls = 0;
+    function trace(n) {
+      steps = []; calls = 0; const stack = [];
+      const snap = (msg, extra) => steps.push(Object.assign({ stack: stack.map(f => Object.assign({}, f)), msg, calls }, extra || {}));
+      function fib(n) {
+        calls++; stack.push({ label: 'fib(' + n + ')', note: '' }); snap('Call fib(' + n + '): a new frame on top of the stack. Calls so far: ' + calls + '.');
+        let r;
+        if (n < 2) { r = n; stack[stack.length - 1].note = '= ' + r; snap('fib(' + n + ') is a base case: return ' + r + ' without calling anything.'); }
+        else { stack[stack.length - 1].note = 'needs fib(' + (n - 1) + ')'; const a = fib(n - 1); stack[stack.length - 1].note = 'fib(' + (n - 1) + ') = ' + a + ', needs fib(' + (n - 2) + ')'; snap('Back in fib(' + n + '): fib(' + (n - 1) + ') gave ' + a + '. Now call fib(' + (n - 2) + ').'); const c = fib(n - 2); r = a + c; stack[stack.length - 1].note = '= ' + a + ' + ' + c + ' = ' + r; snap('Back in fib(' + n + '): ' + a + ' + ' + c + ' = ' + r + '. Return it.'); }
+        stack.pop(); return r;
+      }
+      function fact(n) {
+        calls++; stack.push({ label: 'fact(' + n + ')', note: '' }); snap('Call fact(' + n + '): push a frame. Calls so far: ' + calls + '.');
+        let r;
+        if (n <= 1) { r = 1; stack[stack.length - 1].note = '= 1'; snap('fact(' + n + ') is the base case: return 1.'); }
+        else { stack[stack.length - 1].note = 'needs fact(' + (n - 1) + ')'; const a = fact(n - 1); r = n * a; stack[stack.length - 1].note = '= ' + n + ' × ' + a + ' = ' + r; snap('Back in fact(' + n + '): fact(' + (n - 1) + ') gave ' + a + '. ' + n + ' × ' + a + ' = ' + r + '. Return it.'); }
+        stack.pop(); return r;
+      }
+      const arr = [3, 1, 4, 1, 5, 9, 2, 6];
+      function sum(i) {
+        calls++; stack.push({ label: 'sum(a, ' + i + ')', note: '' }); snap('Call sum(a, ' + i + '): the sum of a[' + i + '..]. Calls so far: ' + calls + '.');
+        let r;
+        if (i >= n) { r = 0; stack[stack.length - 1].note = '= 0 (past the end)'; snap('i = ' + i + ' is past the end: the sum of nothing is 0. Base case.'); }
+        else { stack[stack.length - 1].note = 'a[' + i + '] = ' + arr[i] + ' + rest'; const rest = sum(i + 1); r = arr[i] + rest; stack[stack.length - 1].note = '= ' + arr[i] + ' + ' + rest + ' = ' + r; snap('Back in sum(a, ' + i + '): ' + arr[i] + ' + ' + rest + ' = ' + r + '. Return it.'); }
+        stack.pop(); return r;
+      }
+      const result = fn === 'fib' ? fib(n) : fn === 'fact' ? fact(n) : sum(0);
+      snap((fn === 'sum' ? 'sum(a, 0)' : fn + '(' + n + ')') + ' = ' + result + '. The stack is empty again. ' + calls + ' calls in all' + (fn === 'fib' && n >= 4 ? ': fib(' + (n - 2) + ') was computed ' + fibCalls(n - 2, n) + ' times over' : '') + '.', { done: true });
+    }
+    function fibCalls(k, n) { const c = (m) => m < 2 ? 1 : c(m - 1) + c(m - 2); let t = 0; const walk = (m) => { if (m === k) { t++; return; } if (m < 2) return; walk(m - 1); walk(m - 2); }; walk(n); return t; }
+    function render(s) {
+      const st = steps[s]; const h = Math.max(1, st.stack.length) * 34 + 30; svg.setAttribute('viewBox', '0 0 420 ' + h); svg.innerHTML = '';
+      svg.append(mono(8, 16, 'the call stack (top of the stack is at the top)', { 'font-size': 11, fill: 'var(--ink-3)' }));
+      st.stack.forEach((f, i) => { const y = h - 30 - i * 34 - 4; const topMost = i === st.stack.length - 1; svg.append(sv('rect', { x: 8, y, width: 404, height: 30, rx: 4, fill: topMost ? 'var(--accent)' : 'var(--paper-2, var(--paper))', stroke: topMost ? 'var(--accent)' : 'var(--rule)' })); svg.append(mono(18, y + 20, f.label, { 'font-size': 13, 'font-weight': 'bold', fill: topMost ? '#fff' : 'var(--ink)' })); svg.append(mono(130, y + 20, f.note, { 'font-size': 12, fill: topMost ? '#fff' : 'var(--ink-2)' })); });
+      if (!st.stack.length) svg.append(mono(18, h - 14, st.done ? '(empty)' : '', { 'font-size': 12, fill: 'var(--ink-3)' }));
+      log.textContent = st.msg;
+    }
+    let ctl = null;
+    function restart() { let n = parseInt(nIn.value, 10); if (!Number.isFinite(n)) n = 0; n = Math.max(0, Math.min(maxN, n)); nIn.value = String(n); trace(n); if (ctl) ctl.el.remove(); ctl = stepper(steps.length, render, { interval: 900 }); host.replaceChildren(ctl.el); }
+    nIn.addEventListener('change', restart);
+    mount.append(svg, el('div', { class: 'fig-tools' }, el('label', {}, (fn === 'sum' ? 'n (first n of [3, 1, 4, 1, 5, 9, 2, 6]) ' : 'n ') , nIn)), host, log);
+    restart();
   };
 
   /* ---------- 20. splitting double vowel spelling into letters (math lesson 7) ---------- */

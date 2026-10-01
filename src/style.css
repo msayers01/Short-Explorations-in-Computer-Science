@@ -887,6 +887,7 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .sb-empty { visibility: hidden; height: 1rem; }
 .sb-in { display: inline-block; color: #575e75; background: #fff; font-weight: 500; line-height: 1.2; padding: 0.08rem 0.5rem; font-size: 0.82rem; }
 .sb-text { border-radius: 4px; } .sb-num { border-radius: 999px; min-width: 1.6em; text-align: center; } .sb-bool { border-radius: 2px; clip-path: polygon(8% 0, 92% 0, 100% 50%, 92% 100%, 8% 100%, 0 50%); padding: 0.08rem 0.9rem; background: #ffffffcc; }
+.sb-bool .sb-in { margin: 0 0.15em; } .sb-bool .sb-bool { background: #59c05944; }
 .sb-event { background: #ffbf00; color: #4a3600; text-shadow: none; } .sb-looks { background: #9966ff; } .sb-motion { background: #4c97ff; } .sb-control { background: #ffab19; color: #3f2a00; text-shadow: none; }
 .sb-sensing { background: #5cb1d6; } .sb-operators { background: #59c059; } .sb-variables { background: #ff8c1a; } .sb-myblocks { background: #ff6680; } .sb-pen { background: #0fbd8c; } .sb-sound { background: #cf63cf; }
 .sb-control .sb-body, .sb-event .sb-body { background: var(--paper); }

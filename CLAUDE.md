@@ -72,20 +72,24 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 
 ## Current state (October 2026)
 
-- Merged and live: everything above through PR #14 (DSA lessons 1-3, Scratch lessons 1-3, Under development tags). `main` = `a3b8765`.
+- Merged and live: everything above through PR #16 (DSA lessons 1-5, Scratch lessons 1-6 rewritten for ages 10-13 with the quiz). `main` = `22ad9e3`.
 - SC 105 Modern C++ has 8 lessons (string, vector, references, struct, class, algorithms/lambdas, map/set, gradebook project), 15 exercises.
-- SC 107 Data Structures and Algorithms (Java, `src/course_dsa.js`): lessons 1-5 (cost and arrays; searching; simple sorts; merge sort and
-  quicksort; linked lists), 16 exercises (code and `answer` kinds), figures growth, arrayops, dynarray, sortlab, mergeviz, partition, linkedlist.
+- SC 107 Data Structures and Algorithms (Java, `src/course_dsa.js`): lessons 1-7 (cost and arrays; searching; simple sorts; merge sort and
+  quicksort; linked lists; stacks and queues; recursion), 24 exercises (code and `answer` kinds), figures growth, arrayops, dynarray, sortlab,
+  mergeviz, partition, linkedlist, stackqueue, callstack. The interpreter has no `java.util.Stack` (taught as legacy, not run); `ArrayDeque`
+  works as stack, queue and deque. A `\n` inside a Java string in a lesson must be written `\\n` in the template literal.
   Linked-list exercises use `classes: true` with two top-level classes (no nested classes in the interpreter). The interpreter's recursion
-  limit is 1200 frames (`MAX_DEPTH`): keep worst-case quicksort demos at n <= 1000. Planned next: stacks and queues; recursion; hash tables;
-  binary search trees; heaps and priority queues; graphs; a project.
-- SC 100 From Scratch to Python (`src/course_scratch.js`, grades 5-8): lessons 1-6 (say and ask; variables; repeat, forever and the turtle;
-  if/elif/else; lists; functions), 12 exercises, the `blocks` figure (Scratch blocks beside Python; C-blocks take an else child list) and
+  limit is 1200 frames (`MAX_DEPTH`): keep worst-case quicksort demos at n <= 1000 and recursion demos shallower than that. Planned next:
+  hash tables; binary search trees; heaps and priority queues; graphs; a project. (Lesson text already points at hash tables as lesson 8,
+  trees as 9, heaps as 10, graphs as 11.)
+- SC 100 From Scratch to Python (`src/course_scratch.js`, grades 5-8): lessons 1-7 (say and ask; variables; repeat, forever and the turtle;
+  if/elif/else; lists; functions; a text-adventure project), 14 exercises, the `blocks` figure (Scratch blocks beside Python; C-blocks take an else child list) and
   turtle drawing inside lesson playgrounds. Ids `sp-<n>-<k>`. Lesson 6 exercises are `{call, expect}` (repr of the value). Written for
   ages 10-13: prose at Flesch-Kincaid grade 3-4 (measure with a script before adding a lesson; stories under 12 words a sentence), every
   lesson ends with a `blockquiz` figure (translate five blocks) before the exercises, every example that matters has a "Guess first" reveal,
-  every exercise has a `followup` stretch challenge, and `course.affirm` gives the pass messages. Planned next: a drawing project; a text
-  game; then hand over to SC 101.
+  every exercise has a `followup` stretch challenge, and `course.affirm` gives the pass messages. A scripted `stdin` for a game example must
+  end the game, or the loop runs on empty input until the time limit. Planned next: a drawing project (turtle art, with answer-kind checks);
+  then hand over to SC 101.
 - Courses still being written carry `status: 'developing'` (Scratch to Python, Modern C++, Java, DSA): an "Under development" tag (app.js `devTag`).
 - SC 106 Introduction to Java: the interpreter and the first 4 lessons (Hello Java and types; decisions and Scanner; loops; methods), 8 exercises.
   Planned next: arrays; Strings; ArrayList; classes and objects; inheritance and interfaces; exceptions; HashMap; a project.
