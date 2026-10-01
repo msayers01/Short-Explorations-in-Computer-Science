@@ -126,10 +126,10 @@
         if (o.onOutput) o.onOutput(m.text);
         if (r.out.length > MAX_OUT) { dropChannel(r.ch); finish(r, { err: 'The program printed more than it was allowed to, so it was stopped.' }); }
       } else if (m.t === 'note' && typeof m.text === 'string') {
-        r.notes += m.text;
-        if (o.onNote) o.onNote(m.text);
+        r.notes = (r.notes + m.text).slice(0, 20000);
+        if (o.onNote) o.onNote(m.text.slice(0, 20000));
       } else if (m.t === 'part') {
-        if (r.parts.length < 500) r.parts.push({ out: String(m.out == null ? '' : m.out).slice(0, MAX_OUT), all: String(m.all == null ? '' : m.all).slice(0, MAX_OUT), err: typeof m.err === 'string' ? m.err : null, exit: Number(m.exit) || 0 });
+        if (r.parts.length < 500) r.parts.push({ out: String(m.out == null ? '' : m.out).slice(0, MAX_OUT), all: String(m.all == null ? '' : m.all).slice(0, MAX_OUT), err: typeof m.err === 'string' ? m.err.slice(0, 20000) : null, exit: Number(m.exit) || 0 });
       } else if (m.t === 'input') {
         r.waitingInput = true;
         Promise.resolve().then(() => (o.onInput ? o.onInput(String(m.prompt == null ? '' : m.prompt)) : '')).then((v) => v, () => '').then((v) => {
@@ -143,7 +143,7 @@
       } else if (m.t === 'result' && m.trace && typeof m.trace === 'object') {
         r.result = m.trace;
       } else if (m.t === 'done') {
-        finish(r, { err: typeof m.err === 'string' ? m.err : null, result: r.result });
+        finish(r, { err: typeof m.err === 'string' ? m.err.slice(0, 20000) : null, result: r.result });
       }
     }
 
@@ -171,7 +171,11 @@
     const base = new URL(CLANG().path, location.href).href;
     const r = await fetch(base + 'toolchain.js');
     if (!r.ok) throw new Error('the compiler files are not on this site (' + r.status + ')');
-    return 'self.CLANG_BASE=' + JSON.stringify(base) + ';\n' + await r.text() + ';\n' + text('clang-src');
+    // The script is run inside the worker, so it must be exactly the one this build of the site was made with.
+    const bytes = await r.arrayBuffer();
+    const got = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))).map((b) => b.toString(16).padStart(2, '0')).join('');
+    if (got !== CLANG().sha256) throw new Error('the compiler script is not the one this version of the site expects, so it was not run');
+    return 'self.CLANG_BASE=' + JSON.stringify(base) + ';\n' + new TextDecoder().decode(bytes) + ';\n' + text('clang-src');
   }
   const clang = Engine({
     workerOnly: true, source: clangSource, startMs: 40000,
@@ -185,6 +189,7 @@
       if (!CLANG()) return 'this copy of the site does not include it';
       if (location.protocol !== 'http:' && location.protocol !== 'https:') return 'it needs the site to be opened from a web address (not as a file on this computer)';
       if (typeof Worker === 'undefined' || typeof WebAssembly === 'undefined') return 'this browser cannot run it';
+      if (!window.isSecureContext || !(window.crypto && window.crypto.subtle)) return 'it needs the site to be opened with https:// (the compiler files are checked as they arrive, which a plain http:// address does not allow)';
       return null;
     },
     mb: () => (CLANG() ? CLANG().mb : 0),

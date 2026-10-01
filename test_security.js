@@ -57,6 +57,21 @@ const py = async (code) => {
     check('src/' + f + ' escapes names for a RegExp completely', !/\.replace\(\/\[\$\]\/g/.test(fs.readFileSync('src/' + f, 'utf8')));
   }
 
+  // --- 5. Full C++: a program's memory is capped before it runs. (Whether the browser then enforces it is checked by test_browser.js; node runs
+  //        programs differently.) Here: the patch is well formed, adds a maximum, and does not touch anything else.
+  {
+    const { limitMemory, MAX_PAGES } = require('./src/clangworker.js');
+    const T = await import('@live-codes/clang-wasm/toolchain');
+    const tc = await T.createToolchain({});
+    const art = (await tc.lock(() => tc.captureCompilerOutput(() => tc.runtime.compileArtifact('#include <iostream>\nint main() { std::cout << "hi"; }', { language: 'CPP', fileName: 'main.cpp', compileArgs: [...T.CLANG_DRIVER_DEFAULT_ARGS, '-std=gnu++20'] })))).result;
+    const patched = limitMemory(art.bytes, MAX_PAGES);
+    check('memory cap: a real program\'s module can be patched, and the result is valid wasm', patched instanceof Uint8Array && WebAssembly.validate(patched));
+    check('memory cap: patching adds a maximum and nothing else changes size by more than a few bytes', patched.length - art.bytes.length >= 1 && patched.length - art.bytes.length <= 4, patched.length - art.bytes.length);
+    check('memory cap: patching twice changes nothing more', Buffer.compare(Buffer.from(limitMemory(patched, MAX_PAGES)), Buffer.from(patched)) === 0);
+    check('memory cap: a smaller maximum already in the module is kept', limitMemory(patched, 1e5).length === patched.length);
+    check('memory cap: bytes that are not wasm are refused', limitMemory(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]), MAX_PAGES) === null && limitMemory(new Uint8Array(3), MAX_PAGES) === null);
+  }
+
   if (bad) { console.log(bad + ' problems'); process.exit(1); }
   console.log('security OK');
 })();
