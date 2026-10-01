@@ -1,10 +1,10 @@
-// Node tests for pure helpers in src/app.js (syntax highlighting, ensureMainReturns), read from the source like test_course.js does.
+// Node tests for pure helpers: syntax highlighting (read out of src/app.js) and ensureMainReturns (src/cpputil.js).
 const fs = require('fs');
 const src = fs.readFileSync(__dirname + '/src/app.js', 'utf8');
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const slice = (from, to) => { const i = src.indexOf(from), j = src.indexOf(to, i); if (i < 0 || j < 0) throw new Error('not found in src/app.js: ' + from); return src.slice(i, j); };
 const highlight = new Function('esc', slice('  const LANGS', '  window.__highlight') + '\nreturn highlight;')(esc);
-const ensureMainReturns = new Function(slice('  function ensureMainReturns(', '  window.__runners') + '\nreturn ensureMainReturns;')();
+const { ensureMainReturns } = require('./src/cpputil.js');
 let bad = 0;
 const check = (name, got, want) => { if (got !== want) { bad++; console.log('BAD  ' + name + '\n  got:  ' + JSON.stringify(got) + '\n  want: ' + JSON.stringify(want)); } };
 const has = (name, html, frag) => { if (!html.includes(frag)) { bad++; console.log('BAD  ' + name + ': missing ' + frag + '\n  in: ' + html); } };

@@ -20,7 +20,7 @@ const FONTS = [
 const fontFaces = FONTS.map(([family, style, weight, file]) => `@font-face { font-family: '${family}'; font-style: ${style}; font-weight: ${weight}; font-display: swap; src: url(data:font/woff2;base64,${fs.readFileSync('node_modules/' + file).toString('base64')}) format('woff2'); }`).join('\n');
 const sha = (text) => "'sha256-" + crypto.createHash('sha256').update(text, 'utf8').digest('base64') + "'";
 const csp = (hashes, extra) => ["default-src 'none'", "script-src " + hashes.join(' ') + " 'unsafe-eval'", "style-src 'unsafe-inline'",
-  "font-src data:", "img-src data: blob:", "connect-src 'none'", "media-src 'none'", "frame-src 'none'", "worker-src 'none'",
+  "font-src data:", "img-src data: blob:", "connect-src 'none'", "media-src 'none'", "frame-src 'none'", "worker-src blob:",
   "object-src 'none'", "base-uri 'none'", "form-action 'none'"].concat(extra || []).join('; ');
 const headFor = (hashes) => `<!DOCTYPE html>
 <html lang="en">
@@ -40,11 +40,8 @@ ${r('src/style.css')}
 <div id="app"><noscript>These pages need JavaScript to run the code examples.</noscript></div>
 `;
 const scripts = [
-  'node_modules/skulpt/dist/skulpt.min.js',
-  'node_modules/skulpt/dist/skulpt-stdlib.js',
-  'src/sandbox.js',
-  'vendor/jscpp.min.js',
-  'src/cppstep.js',
+  'src/cppstep.js',   // only render() and describe() run in the page; the program is traced in the C++ sandbox
+
   'src/scheme.js',
   'src/subst.js',
   'src/site.js',
@@ -53,6 +50,7 @@ const scripts = [
   'src/course_cpp.js',
   'src/course_math.js',
   'src/mathgrade.js',
+  'src/runner.js',
   'src/app.js',
   'src/lab.js',
   'src/guide.js',
@@ -91,11 +89,19 @@ fs.writeFileSync('THIRD-PARTY-NOTICES.md', '# Third-party notices\n\nThe built s
   + 'following software. Each is used under the licence reproduced here.\n'
   + THIRD_PARTY.map(t => `\n## ${t.name} ${t.version}\n\n${t.url}. ${t.role[0].toUpperCase() + t.role.slice(1)}. Licence: ${t.licence}.`
     + (t.changes ? ' ' + t.changes : '') + '\n\n```\n' + t.text + '\n```\n').join(''));
+// The interpreters are not scripts of this page. Each sits in an inert <script type="text/plain"> block, and src/runner.js builds a
+// Web Worker (or a sandboxed iframe) from its text, so Python and C++ programs run where they can reach nothing of the page.
+const clean = (text) => scriptSafe(text.replace(/\r\n?/g, '\n'));   // the HTML parser turns CR and CRLF into LF, so do it here, and the hashes match
+const pySrc = ['node_modules/skulpt/dist/skulpt.min.js', 'node_modules/skulpt/dist/skulpt-stdlib.js', 'src/sandbox.js', 'src/pyworker.js'].map(r).join(';\n');
+const cppSrc = ['vendor/jscpp.min.js', 'src/cpputil.js', 'src/cppstep.js', 'src/cppworker.js'].map(r).join(';\n');
+const bootSrc = r('src/pyboot.js');
+const dataBlock = (id, text) => `<script type="text/plain" id="${id}">${clean(text)}</script>\n`;
 const inline = [];   // the exact text of every inline script, for the CSP hashes
 const scriptTag = (text) => { inline.push(text); return `<script>${text}</script>\n`; };
 let body = scriptTag(`/* build info and third-party licences (build.js) */\nwindow.BUILD = ${scriptSafe(JSON.stringify(BUILD))};\n`);
 for (const s of scripts) body += scriptTag(`/* ${s} */\n${scriptSafe(r(s))}\n`);
-const indexHashes = inline.map(sha);
+body += dataBlock('py-src', pySrc) + dataBlock('cpp-src', cppSrc) + dataBlock('py-boot', bootSrc);
+const indexHashes = inline.map(sha).concat(sha(clean(bootSrc)));   // the last one is the script inside the sandboxed iframe (see pyboot.js)
 const html = headFor(indexHashes) + body + '</body>\n</html>\n';
 fs.mkdirSync('dist', { recursive: true });
 fs.writeFileSync('dist/index.html', html);

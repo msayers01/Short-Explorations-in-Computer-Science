@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # Every exercise (starters fail, solutions pass), the steppers, the Scheme interpreter, the Python sandbox and the size limit on links.
+      # The JSCPP patches are applied first by the pretest script.
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # The programs run in sandboxes the page cannot be reached from, a runaway program cannot freeze the page, and the whole site works
+      # under its Content Security Policy.
+      - name: Install Chromium
+        run: npx playwright-core install --with-deps chromium
+
+      - name: Browser tests
+        run: npm run test:browser

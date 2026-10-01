@@ -181,28 +181,11 @@
   }
 
   // ---------- runners ----------
+  // Python and C++ programs run in sandboxes (a Web Worker each, src/runner.js), never in this page. Both return {out, err}:
+  // the output so far, and the error in words a student can act on (or null).
   const Runners = {
-    python: {
-      ready: false,
-      init() {
-        if (this.ready) return; this.ready = true;
-      },
-      /** run(code, {stdin, onOutput, onInput}) → Promise<{out, err}> */
-      run(code, opts) {
-        opts = opts || {};
-        const inputs = opts.stdin != null ? String(opts.stdin).split('\n') : null;
-        let out = '';
-        Sk.configure({
-          output: (s) => { out += s; if (opts.onOutput) opts.onOutput(s); },
-          read: (x) => { if (Sk.builtinFiles === undefined || Sk.builtinFiles.files[x] === undefined) throw "File not found: '" + x + "'"; return Sk.builtinFiles.files[x]; },
-          __future__: Sk.python3, execLimit: opts.execLimit || 6000,
-          inputfun: (prompt) => { if (inputs) { const v = inputs.shift(); return v === undefined ? '' : v; } return opts.onInput ? opts.onInput(prompt) : ''; },
-          inputfunTakesPrompt: true, retainglobals: false
-        });
-        return Sk.misceval.asyncToPromise(() => Sk.importMainWithBody('<stdin>', false, code, true))
-          .then(() => ({ out, err: null }), (e) => ({ out, err: pyErrorText(e) }));
-      }
-    },
+    /** run(code, {stdin, execLimit, onOutput, onInput, turtle}) → Promise<{out, err}> */
+    python: { run: (code, opts) => window.PYRUN.run(code, opts) },
     scheme: {
       run(code, opts) {
         opts = opts || {};
@@ -210,53 +193,8 @@
         return Promise.resolve(r);
       }
     },
-    cpp: {
-      run(code, opts) {
-        opts = opts || {};
-        let out = '';
-        const src = ensureMainReturns(code);
-        try {
-          JSCPP.run(src, opts.stdin || '', { stdio: { write: (s) => { out += s; if (opts.onOutput) opts.onOutput(s); } }, maxTimeout: 4000, unsigned_overflow: 'warn' });
-          return Promise.resolve({ out, err: null });
-        } catch (e) {
-          return Promise.resolve({ out, err: cppErrorText(e && e.message ? e.message : String(e)) });
-        }
-      }
-    }
+    cpp: { run: (code, opts) => window.CPPRUN.run(code, opts) }
   };
-  function pyErrorText(e) {
-    let s = e && e.toString ? e.toString() : String(e);
-    if (e && e.traceback && e.traceback.length) { const tb = e.traceback[0]; if (tb && tb.lineno && !/line \d+/.test(s)) s += ' on line ' + tb.lineno; }
-    return s.replace(/^TimeLimitError: .*$/, 'Time limit exceeded: the program ran for too long. Is there a loop that never ends?');
-  }
-  function cppErrorText(m) {
-    if (/Time limit/.test(m)) return 'Time limit exceeded: the program ran for too long. Is there a loop that never ends?';
-    if (/Parsing Failure/.test(m)) {
-      const mm = m.match(/line (\d+) \(column (\d+)\): ([^\n]*)\n[^\n]*\n(Expected[^\n]*)/);
-      if (mm) { const exp = mm[4].replace(/\[[^\]]*\]/g, '').replace(/Expected /, '').split(' or ')[0]; return 'Syntax error near line ' + mm[1] + ': ' + mm[3].trim() + '\n(expected one of ' + exp.slice(0, 80) + '…)'; }
-      return 'Syntax error: ' + m.split('\n').slice(1, 3).join(' ');
-    }
-    return m.replace(/^<position unavailable> /, '').replace(/^(\d+):(\d+) /, 'line $1: ');
-  }
-  function ensureMainReturns(code) {
-    // JSCPP cannot interrupt an empty-condition loop, which would freeze the page: for(;;) means for(;1;)
-    code = code.replace(/\bfor\s*\(\s*;\s*;\s*\)/g, (m, off) => ((code.slice(code.lastIndexOf('\n', off) + 1, off).match(/"/g) || []).length % 2 ? m : 'for(;1;)'));
-    const i = code.search(/\bint\s+main\s*\(/); if (i < 0) return code;
-    const open = code.indexOf('{', i); if (open < 0) return code;
-    let depth = 0, j = open, inStr = null;
-    for (; j < code.length; j++) {
-      const c = code[j];
-      if (inStr) { if (c === '\\') j++; else if (c === inStr) inStr = null; continue; }
-      if (c === '"' || c === "'") { inStr = c; continue; }
-      if (c === '/' && code[j + 1] === '/') { j = code.indexOf('\n', j); if (j < 0) return code; continue; }
-      if (c === '/' && code[j + 1] === '*') { j = code.indexOf('*/', j + 2); if (j < 0) return code; j++; continue; }
-      if (c === '{') depth++; else if (c === '}') { depth--; if (depth === 0) break; }
-    }
-    if (j >= code.length) return code;
-    const body = code.slice(open + 1, j);
-    if (/\breturn\b[^;]*;\s*$/.test(body.replace(/\/\/[^\n]*/g, ''))) return code;
-    return code.slice(0, j) + '\n    return 0;\n' + code.slice(j);
-  }
   window.__runners = Runners;
 
   // ---------- output panel ----------
@@ -783,5 +721,5 @@
   window.addEventListener('hashchange', route);
   document.addEventListener('progress-changed', () => { /* sidebars re-render on next navigation */ });
   document.addEventListener('DOMContentLoaded', route);
-  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, internal: { lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, ensureMainReturns, cppErrorText } };
+  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, internal: { lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById } };
 })();
