@@ -68,11 +68,13 @@ window.GUIDE = (function () {
 
 <section id="g-3">
   <h2>3. Inside a lesson</h2>
-  <p>Every lesson has the same parts in the same order, so students learn the routine once.</p>
+  <p>Every lesson has the same parts in the same order, so students learn the routine once. A map under the lesson title lists the parts and links to them, and a small label over each block says what kind of thing it is (Example, Interactive, Quick check, Exercise), so a student always knows where they are.</p>
   <dl class="g-parts">
     <dt>Explanation</dt><dd>Short paragraphs that state each rule before showing it.</dd>
     <dt>Try it</dt><dd>A small program with a caption saying what to look for and what to change. Press Run, change something, run again. <em>Open in Code Lab</em> is there for students who want to keep going.</dd>
     <dt>Predict, then reveal</dt><dd>A question with a hidden answer. Ask students to commit to a prediction before they open it.</dd>
+    <dt>Quick check</dt><dd>Three per lesson: a one-question multiple choice after an idea, with instant feedback and a one-line reason. Nothing is recorded, so students can answer freely. In class they make good show-of-hands questions.</dd>
+    <dt>Interactive figure</dt><dd>In most lessons: a diagram with Step and Play buttons, or something to drag or type into. Students should use it until they can predict the next step.</dd>
     <dt>Common mistakes</dt><dd>A box near the end listing the errors students make in this lesson. Read it before class: it is the list of things you will be asked about.</dd>
     <dt>Exercises</dt><dd>Two graded tasks. <em>Check answer</em> runs tests and says which passed. <em>Hint</em> gives hints one at a time. <em>Solution</em> shows a worked answer after two attempts. A green checkmark marks completion.</dd>
     <dt>In this lesson</dt><dd>A recap box. It doubles as an exit ticket: ask students to say one line of it back in their own words.</dd>

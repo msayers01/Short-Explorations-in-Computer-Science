@@ -105,6 +105,8 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - Skulpt reads `importScripts` while loading, so `lockdown.js` must come after Skulpt in the Python source (and before JSCPP).
 - `test_browser.js` uses `file://` for most checks and a local http server for Full C++. A copy of the site opened from a file cannot use
   Full C++ (by design: it says so).
-- Lesson text style: each lesson opens with a short true story, then rules in `stmt` boxes, runnable examples (`play`), two graded
-  exercises (`ex`) with hints and tests, then a `recap`. Check facts in the stories; do not invent.
+- Lesson text style: each lesson opens with a short true story, then rules in `stmt` boxes, runnable examples (`play`), three quick
+  checks (`{ check, options, answer, why }`, one after each main idea, never two examples in a row without something between them),
+  two graded exercises (`ex`) with hints and tests, then a `recap`. Check facts in the stories; do not invent. The renderer labels every
+  block and builds a map of the lesson from the `<h2>` headings, so headings should be short and the lesson's parts in the usual order.
 - A function-writing exercise in a Full C++ course: use `prelude` for includes, `main` (or `call`) tests, and `name` on each test.

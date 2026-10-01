@@ -187,6 +187,40 @@ pre.code.captioned { padding-top: 1.6rem; }
 .nav-mobile summary { cursor: pointer; }
 .nav-mobile .lesson-nav { position: static; margin-top: 0.75rem; }
 .lesson-body { min-width: 0; }
+/* the parts of a lesson: a map under the heading, an "on this page" list in the side column, a tag over each block */
+.lesson-map { font-family: var(--sans); font-size: 0.9rem; margin: 0 0 1.6rem; padding: 0.7rem 0 0.6rem; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.lesson-map ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.3rem 0; counter-reset: part; }
+.lesson-map li { display: flex; align-items: center; }
+.lesson-map li + li::before { content: "→"; color: var(--ink-3); margin: 0 0.55rem; }
+.lesson-map a { color: var(--ink-2); text-decoration: none; border-bottom: 1px dotted var(--rule); }
+.lesson-map a:hover { color: var(--ink); border-bottom-color: var(--ink); }
+.lesson-map li.map-quiz a, .lesson-map li.map-exercises a { color: var(--accent); font-weight: 600; }
+.map-counts { margin: 0.45rem 0 0; color: var(--ink-3); font-size: 0.85rem; }
+.onpage { margin-top: 1.4rem; }
+.onpage-head { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); margin: 0 0 0.3rem; }
+.onpage ol { border-top: none; }
+.onpage li a { padding: 0.28rem 0.4rem 0.28rem 0.6rem; font-size: 0.88rem; border-bottom: none; border-left: 2px solid var(--rule-2); display: block; }
+.onpage li.current a { color: var(--ink); font-weight: 600; border-left-color: var(--accent); box-shadow: none; }
+.onpage li.map-quiz a, .onpage li.map-exercises a { color: var(--accent); }
+.nav-mobile .onpage { display: none; }
+.blk { margin: 1.4rem 0; }
+.blk-tag { font-family: var(--sans); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 0.3rem; }
+.blk-fig .blk-tag, .blk-quiz .blk-tag, .blk-check .blk-tag { color: var(--accent); }
+.blk-ex .blk-tag { margin-bottom: 0.4rem; }
+.blk > .play, .blk > .fig, .blk > .code, .blk > .aside, .blk > .exercise { margin-top: 0; }
+/* a quick check: one question, instant feedback, nothing saved */
+.qc { border: 1px solid var(--rule); border-left: 3px solid var(--accent); border-radius: 4px; padding: 0.8rem 1rem 0.7rem; font-family: var(--sans); background: var(--paper); }
+.qc-q { margin: 0 0 0.6rem; font-size: 0.98rem; }
+.qc-opts { display: flex; flex-direction: column; gap: 0.35rem; }
+.qc-opt { display: flex; gap: 0.6rem; align-items: baseline; text-align: left; font: inherit; font-size: 0.93rem; color: var(--ink); background: var(--paper-2); border: 1px solid var(--rule); border-radius: 4px; padding: 0.4rem 0.7rem; cursor: pointer; }
+.qc-opt:hover:not(:disabled) { border-color: var(--ink-3); }
+.qc-opt:disabled { cursor: default; opacity: 0.85; }
+.qc-opt.right { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, var(--paper)); opacity: 1; }
+.qc-opt.wrong { border-color: var(--err); color: var(--ink-3); text-decoration: line-through; }
+.qc-letter { font-weight: 600; color: var(--ink-3); min-width: 1.1em; }
+.qc-opt.right .qc-letter { color: var(--ok); }
+.qc-why { margin: 0.6rem 0 0; font-size: 0.92rem; color: var(--ink-2); }
+.qc.done .qc-why { color: var(--ink); }
 .lesson-head { margin-bottom: 1.5rem; }
 .crumb { font-family: var(--sans); color: var(--ink-3); margin: 0 0 0.4rem; font-size: 0.95rem; }
 .crumb a { color: var(--accent); text-decoration: none; font-weight: 600; }
@@ -987,11 +1021,13 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 
 <section id="g-3">
   <h2>3. Inside a lesson</h2>
-  <p>Every lesson has the same parts in the same order, so students learn the routine once.</p>
+  <p>Every lesson has the same parts in the same order, so students learn the routine once. A map under the lesson title lists the parts and links to them, and a small label over each block says what kind of thing it is (Example, Interactive, Quick check, Exercise), so a student always knows where they are.</p>
   <dl class="g-parts">
     <dt>Explanation</dt><dd>Short paragraphs that state each rule before showing it.</dd>
     <dt>Try it</dt><dd>A small program with a caption saying what to look for and what to change. Press Run, change something, run again. <em>Open in Code Lab</em> is there for students who want to keep going.</dd>
     <dt>Predict, then reveal</dt><dd>A question with a hidden answer. Ask students to commit to a prediction before they open it.</dd>
+    <dt>Quick check</dt><dd>Three per lesson: a one-question multiple choice after an idea, with instant feedback and a one-line reason. Nothing is recorded, so students can answer freely. In class they make good show-of-hands questions.</dd>
+    <dt>Interactive figure</dt><dd>In most lessons: a diagram with Step and Play buttons, or something to drag or type into. Students should use it until they can predict the next step.</dd>
     <dt>Common mistakes</dt><dd>A box near the end listing the errors students make in this lesson. Read it before class: it is the list of things you will be asked about.</dd>
     <dt>Exercises</dt><dd>Two graded tasks. <em>Check answer</em> runs tests and says which passed. <em>Hint</em> gives hints one at a time. <em>Solution</em> shows a worked answer after two attempts. A green checkmark marks completion.</dd>
     <dt>In this lesson</dt><dd>A recap box. It doubles as an exit ticket: ask students to say one line of it back in their own words.</dd>
