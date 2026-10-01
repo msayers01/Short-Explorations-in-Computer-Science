@@ -87,14 +87,16 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   limit is 1200 frames (`MAX_DEPTH`): keep worst-case quicksort demos at n <= 1000 and recursion demos shallower than that. Planned next:
   hash tables; binary search trees; heaps and priority queues; graphs; a project. (Lesson text already points at hash tables as lesson 8,
   trees as 9, heaps as 10, graphs as 11.)
-- SC 100 From Scratch to Python (`src/course_scratch.js`, grades 5-8): lessons 1-7 (say and ask; variables; repeat, forever and the turtle;
-  if/elif/else; lists; functions; a text-adventure project), 14 exercises, the `blocks` figure (Scratch blocks beside Python; C-blocks take an else child list) and
+- SC 100 From Scratch to Python (`src/course_scratch.js`, grades 5-8): lessons 1-9 (say and ask; variables; repeat, forever and the turtle;
+  if/elif/else; lists; functions; a text-adventure project; turtle art: shapes as functions, colour, fill, spirals, a flower, random stars;
+  words and letters: + len [] slices, for letter in word, upper/lower/replace/count/split), 18 exercises, the `blocks` figure (Scratch blocks beside Python; C-blocks take an else child list) and
   turtle drawing inside lesson playgrounds. Ids `sp-<n>-<k>`. Lesson 6 exercises are `{call, expect}` (repr of the value). Written for
   ages 10-13: prose at Flesch-Kincaid grade 3-4 (measure with a script before adding a lesson; stories under 12 words a sentence), every
   lesson ends with a `blockquiz` figure (translate five blocks) before the exercises, every example that matters has a "Guess first" reveal,
   every exercise has a `followup` stretch challenge, and `course.affirm` gives the pass messages. A scripted `stdin` for a game example must
-  end the game, or the loop runs on empty input until the time limit. Planned next: a drawing project (turtle art, with answer-kind checks);
-  then hand over to SC 101.
+  end the game, or the loop runs on empty input until the time limit. Skulpt's turtle supports color (named colours), pensize, begin_fill/
+  end_fill, penup/pendown, goto, speed. Planned next: a dictionaries lesson (a Scratch list of pairs → dict) and a final "what next" lesson
+  handing over to SC 101.
 - Courses still being written carry `status: 'developing'` (Scratch to Python, Modern C++, Java, DSA): an "Under development" tag (app.js `devTag`).
 - SC 106 Introduction to Java: the interpreter and the first 4 lessons (Hello Java and types; decisions and Scanner; loops; methods), 8 exercises.
   Planned next: arrays; Strings; ArrayList; classes and objects; inheritance and interfaces; exceptions; HashMap; a project.
