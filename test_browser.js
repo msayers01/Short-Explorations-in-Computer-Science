@@ -163,7 +163,11 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await goto('#/dsa/1');
   check('DSA figures render', (await page.locator('.fig-mount svg').count()) >= 3);
   check('the Under development tag is shown', (await page.locator('.dev-tag').count()) >= 1);
-  for (const h of ['#/', '#/lisp/2', '#/math/1', '#/dsa/2', '#/dsa/3', '#/guide', '#/about', '#/portfolio']) await goto(h);
+  await goto('#/dsa/5');
+  check('the linked-list figure renders', (await page.locator('.fig-mount svg').count()) >= 1);
+  await goto('#/scratch/4');
+  check('a Scratch if-else block renders with an else arm', (await page.locator('.sb-c .sb-row:has-text("else")').count()) >= 1);
+  for (const h of ['#/', '#/lisp/2', '#/math/1', '#/dsa/2', '#/dsa/3', '#/dsa/4', '#/scratch/5', '#/scratch/6', '#/guide', '#/about', '#/portfolio']) await goto(h);
 
   // ---- 6b. saving and restoring work
   const fs = require('fs');

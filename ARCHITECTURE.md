@@ -472,7 +472,8 @@ in the tests) wraps method-writing exercises in a class with a `main`.
   arrays of elements; math lesson 2), boxptr, hof, pipeline (param `lang: 'java'`), memory, array, sieve, fibtree, graphbfs, dfa, tape (machines: increment, flip, beaver), letters (splits double vowel spelling into letters by longest
   or shortest match; param `sample`; math lesson 7), and for the DSA course: growth (orders of growth, params `show`, `n`), arrayops (get/insert/remove with every
   move shown, param `items`), dynarray (capacity doubling with copy counts), sortlab (algorithm, input shape and size, counters, and a doubling
-  experiment timed in the page; param `algo`); and blocks (From Scratch to Python: a stack of Scratch-style blocks drawn with the palette
+  experiment timed in the page; param `algo`), mergeviz (bottom-up merge sort, every merge step and the comparison count), partition (Lomuto
+  partition with its invariant), linkedlist (nodes and arrows; get, insert, add first/last, remove first, with hop counts; all three take `items`); and blocks (From Scratch to Python: a stack of Scratch-style blocks drawn with the palette
   colours beside highlighted Python; `stack: [[category, text, children?, elseChildren?]]`, `python`, in text `[words]` is a text input, `(10)`
   a number, `<cond>` a boolean).
 - **Turtle in a lesson:** a Python playground whose code imports turtle gets a `.play-turtle` mount and runs with a canvas in the

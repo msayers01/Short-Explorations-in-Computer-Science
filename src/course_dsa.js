@@ -1,12 +1,12 @@
 // Lesson content, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
 // Data Structures and Algorithms, in Java, on the site's own interpreter (src/java.js). Every structure and algorithm is shown three ways:
-// an interactive figure to step through (src/widgets.js: growth, arrayops, dynarray, search, sortlab), code to write, and a cost to count.
+// an interactive figure to step through (src/widgets.js: growth, arrayops, dynarray, search, sortlab, mergeviz, partition, linkedlist), code to write, and a cost to count.
 window.COURSES = window.COURSES || [];
 window.COURSES.push({
   id: 'dsa', code: 'SC 107', short: 'DSA', lang: 'java', status: 'developing',
   title: 'Data Structures and Algorithms',
   grades: 'Grades 11–12 · after Java, or C++ with the Java primer',
-  audience: `<p><b>Grades 11–12</b>, after <em>Introduction to Java</em> (SC 106) or after <em>Introduction to C++</em> and lesson 1 of SC 106. This is the course that every computer science degree puts second: how data is arranged in memory, what each arrangement makes cheap and what it makes expensive, and how to tell, before running anything, how a program's running time will grow with its input. It is the material of technical interviews, of the second AP exam's hardest questions, and of every system that has to stay fast as it grows.</p><p>The code is Java, but every idea transfers unchanged to any language. Each lesson has interactive figures you can step through, code you write, and costs you count. The course is being written: the first three lessons are here.</p>`,
+  audience: `<p><b>Grades 11–12</b>, after <em>Introduction to Java</em> (SC 106) or after <em>Introduction to C++</em> and lesson 1 of SC 106. This is the course that every computer science degree puts second: how data is arranged in memory, what each arrangement makes cheap and what it makes expensive, and how to tell, before running anything, how a program's running time will grow with its input. It is the material of technical interviews, of the second AP exam's hardest questions, and of every system that has to stay fast as it grows.</p><p>The code is Java, but every idea transfers unchanged to any language. Each lesson has interactive figures you can step through, code you write, and costs you count. The course is being written: the first five lessons are here.</p>`,
   tagline: 'How data is arranged, what each arrangement costs, and how to know before you run it: arrays, searching, sorting, and the measure of growth.',
   description: `<p>Two programs can give the same answer and differ in running time by a factor of a billion. The difference is rarely the computer, the language or how neatly the code is written. It is the <em>arrangement</em> of the data and the <em>method</em> that works on it: a data structure and an algorithm. Choosing them is the part of programming that separates a program that works on the test file from one that still works when the file is a million times bigger.</p>
 <p>This course teaches the classical structures (arrays, lists, stacks, queues, hash tables, trees, graphs) and the classical algorithms on them (searching, sorting, traversal), and, more than any one of them, the habit of asking <em>how does the cost grow?</em> and the tools to answer it. Everything is shown three ways: as a picture you can step through one operation at a time, as Java code you write and check, and as a count of steps you can predict and then measure.</p>
@@ -16,6 +16,8 @@ window.COURSES.push({
     'Explain what an array makes cheap (indexing) and expensive (inserting), and why a growing array doubles',
     'Write and prove binary search, and recognise the overflow bug that hid in it for twenty years',
     'Write selection and insertion sort, count their comparisons and moves, and say when each is the right choice',
+    'Write merge sort and quicksort, explain why halving gives n log n, and say what each one guarantees and what it risks',
+    'Build a linked list from nodes, give the cost of each operation, and say when it beats an array (rarely) and why it still matters',
     'Predict a running time from a doubling experiment, and check a prediction by measuring',
     'Choose a structure for a task by the operations the task needs most'
   ],
@@ -609,6 +611,544 @@ public class Main {
 <li>Insertion sort: slide each value left into the sorted prefix. From n − 1 comparisons (sorted input) to n(n−1)/2 (reversed): O(n) best, O(n²) worst, stable, and the right choice for small or nearly sorted arrays.</li>
 <li>The invariant of each sort is also the source of its cost: selection sort cannot stop early, insertion sort can.</li>
 <li>Both are O(n²); doubling the input multiplies the work by four. For large inputs the next lesson's O(n log n) sorts are the only choice.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      title: 'Divide and conquer: merge sort and quicksort', summary: 'Why splitting a problem in half and recursing gives n log n; merge sort, its merge step and its guarantee; quicksort, its partition step and its gamble; the recursion tree that explains both; and which one the library actually runs.',
+      blocks: [
+        `<p>The first sorting program ever written for a stored-program computer was a merge sort. John von Neumann wrote it in 1945 for the EDVAC, a machine that did not yet exist, in a notation he invented for the purpose; Donald Knuth, who later studied the manuscript, described it as the first program written for a computer of that kind. Von Neumann chose merging because it suited a machine that read data from a tape in order: two sorted tapes can be merged into one by reading each from the front and always taking the smaller, and the method never needs to jump back.</p>
+<p>Fourteen years later a young Englishman named Tony Hoare was a visiting student in Moscow, working on machine translation. To translate a Russian sentence his program had to look its words up in a dictionary stored on magnetic tape, and the lookups would go much faster if the words were sorted first. He thought of a way to do it in place: pick one word, move everything smaller before it and everything larger after it, then do the same to each side. He had no computer to try it on, and no language to write it in that could call itself; when he learned Algol 60 the next year and saw that it allowed recursion, he wrote quicksort down in a few lines, and published it in 1961.</p>
+<p>These are the two sorts the world runs, and they share one idea: <em>split the array, sort the pieces, combine</em>. Merge sort splits trivially and does its work combining; quicksort does its work splitting and combines trivially. This lesson is about why that idea turns n² into n log n, and about the price each sort pays for it.</p>
+<h2>Merging two sorted runs</h2>
+<p>Everything in merge sort rests on one step. Given two sorted runs side by side in an array, <code>a[lo..mid−1]</code> and <code>a[mid..hi−1]</code>, produce one sorted run <code>a[lo..hi−1]</code>. Keep a finger on the front of each run; copy the smaller of the two values and advance that finger; when one run is used up, copy the rest of the other. Every value is copied exactly once, so the merge costs <code>hi − lo</code> moves and at most <code>hi − lo − 1</code> comparisons, whatever the values are. It needs a second array to copy into: you cannot merge in place without losing the invariant.</p>`,
+        { play: `import java.util.Arrays;
+
+public class Main {
+    static int comparisons;
+
+    // merge the sorted runs a[lo..mid-1] and a[mid..hi-1], using aux as scratch space
+    static void merge(int[] a, int lo, int mid, int hi, int[] aux) {
+        int i = lo, j = mid, k = lo;
+        while (i < mid && j < hi) {
+            comparisons++;
+            if (a[i] <= a[j]) aux[k++] = a[i++];     // <=, not <: ties take the left value first (stability)
+            else aux[k++] = a[j++];
+        }
+        while (i < mid) aux[k++] = a[i++];
+        while (j < hi) aux[k++] = a[j++];
+        for (k = lo; k < hi; k++) a[k] = aux[k];
+    }
+
+    public static void main(String[] args) {
+        int[] a = {3, 9, 27, 38, 43, 82, 1, 5, 10, 12, 14, 56};
+        merge(a, 0, 6, 12, new int[a.length]);
+        System.out.println(Arrays.toString(a) + "   comparisons: " + comparisons);
+        int[] b = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+        comparisons = 0;
+        merge(b, 0, 6, 12, new int[b.length]);
+        System.out.println(Arrays.toString(b) + "   comparisons: " + comparisons);
+    }
+}`, caption: 'Twelve values merged with 11 comparisons, one fewer than the number of values; when the left run is entirely smaller, 6 comparisons empty it and the rest are copied without looking. The ++ inside the brackets reads the index and then advances it: aux[k++] = a[i++] copies a value and moves both fingers in one line.' },
+        `<h2>Merge sort</h2>
+<p>If merging two sorted halves is cheap, sort each half first. How? By the same method: split it in two, sort the quarters, merge. A run of one value is already sorted, so the splitting stops there. That is the whole algorithm, and it is naturally written as a method that calls itself.</p>`,
+        { play: `import java.util.Arrays;
+
+public class Main {
+    static int comparisons;
+
+    static void merge(int[] a, int lo, int mid, int hi, int[] aux) {
+        int i = lo, j = mid, k = lo;
+        while (i < mid && j < hi) { comparisons++; if (a[i] <= a[j]) aux[k++] = a[i++]; else aux[k++] = a[j++]; }
+        while (i < mid) aux[k++] = a[i++];
+        while (j < hi) aux[k++] = a[j++];
+        for (k = lo; k < hi; k++) a[k] = aux[k];
+    }
+
+    // sort a[lo..hi-1]
+    static void sort(int[] a, int lo, int hi, int[] aux) {
+        if (hi - lo < 2) return;                     // 0 or 1 values: already sorted
+        int mid = (lo + hi) >>> 1;
+        sort(a, lo, mid, aux);
+        sort(a, mid, hi, aux);
+        merge(a, lo, mid, hi, aux);
+    }
+
+    static void mergeSort(int[] a) { sort(a, 0, a.length, new int[a.length]); }
+
+    public static void main(String[] args) {
+        int[] a = {38, 27, 43, 3, 9, 82, 10, 1, 56, 14, 71, 5, 29, 66, 48, 12};
+        mergeSort(a);
+        System.out.println(Arrays.toString(a) + "   comparisons: " + comparisons);
+        for (int n : new int[] {1000, 2000, 4000, 8000}) {
+            int[] b = new int[n];
+            for (int i = 0; i < n; i++) b[i] = (i * 7919) % 10007;
+            comparisons = 0;
+            mergeSort(b);
+            System.out.printf("n = %5d: %6d comparisons, %.2f per value%n", n, comparisons, (double) comparisons / n);
+        }
+    }
+}`, caption: 'Sixteen values in 49 comparisons (n log₂ n is 64; the quadratic sorts need up to 120). Doubling n does not quadruple the count: it a little more than doubles it, and the comparisons per value grow by exactly one each time, which is what log₂ n does.' },
+        `<div class="stmt"><p><span class="kind">Merge sort.</span> Split the array in half, sort each half recursively, merge. A run of fewer than two values is the base case.</p>
+<p><span class="kind">Cost.</span> Every level of the recursion merges a total of <code>n</code> values, and there are <code>⌈log₂ n⌉</code> levels, so the work is <code>n log n</code> comparisons at most, on every input: there is no bad case. It uses <code>n</code> extra cells of memory, and it is stable if the merge takes from the left on ties.</p></div>
+<p>The figure runs merge sort from the bottom up, which is how von Neumann's tapes did it: runs of 1 merge into runs of 2, then 4, then 8. Step through one merge, then let it play. The top-down recursion above does the same merges in a different order.</p>`,
+        { fig: 'mergeviz', caption: 'Sixteen values. The top row is the runs being merged (the two highlighted blocks), the bottom row the merged output being built left to right. Each round halves the number of runs; four rounds for sixteen values, because 2⁴ = 16.' },
+        `<h2>Why n log n: the recursion tree</h2>
+<p>Draw the calls as a tree. At the top, one call on <code>n</code> values; below it two calls on <code>n/2</code> each; below those four on <code>n/4</code>, and so on down to <code>n</code> calls on one value each. The merging done at any one level adds up to <code>n</code> moves, because the runs at that level between them contain every value once. The number of levels is how many times you can halve <code>n</code> before reaching 1, which is <code>log₂ n</code>: 10 levels for a thousand, 20 for a million. Total: <code>n</code> per level × <code>log n</code> levels.</p>
+<p>This is the argument to remember. It applies to any algorithm that splits a problem into halves and does linear work to split or to join: the splitting gives the <code>log</code>, the linear work at each level gives the <code>n</code>. Compare it with lesson 2's binary search, which also halves but does only constant work at each level, and so costs <code>log n</code> with no <code>n</code> in front.</p>
+<h2>Quicksort: doing the work on the way down</h2>
+<p>Hoare's idea turns merge sort inside out. Instead of splitting in the middle and working to combine, choose a <em>pivot</em> value and rearrange the array so that everything less than the pivot is to its left and everything greater is to its right. The pivot is now in its final position. Then sort the left part and the right part recursively, and there is nothing to combine: the two parts are already in the right place relative to each other.</p>
+<p>The rearranging step is called <em>partition</em>. The version below, due to Nico Lomuto, is the simplest to write and to prove: take the last value as the pivot, and walk a finger <code>j</code> along the array, keeping everything before a second finger <code>i</code> less than the pivot. Whenever <code>a[j]</code> is smaller than the pivot, swap it into position <code>i</code> and advance <code>i</code>. At the end, swap the pivot into position <code>i</code>.</p>`,
+        { fig: 'partition', caption: 'Lomuto partition with the last value as pivot. The invariant at every step: cells before i are less than the pivot, cells from i to j − 1 are greater or equal, cells from j on are not yet examined. Watch the invariant hold at every step, then Shuffle and watch it again.' },
+        { play: `import java.util.Arrays;
+
+public class Main {
+    static int comparisons;
+
+    static void swap(int[] a, int i, int j) { int t = a[i]; a[i] = a[j]; a[j] = t; }
+
+    // rearrange a[lo..hi] round the pivot a[hi]; return the pivot's final index
+    static int partition(int[] a, int lo, int hi) {
+        int pivot = a[hi];
+        int i = lo;
+        for (int j = lo; j < hi; j++) {
+            comparisons++;
+            if (a[j] < pivot) { swap(a, i, j); i++; }
+        }
+        swap(a, i, hi);
+        return i;
+    }
+
+    // sort a[lo..hi] (inclusive on both ends this time, as Hoare wrote it)
+    static void sort(int[] a, int lo, int hi) {
+        if (lo >= hi) return;
+        int p = partition(a, lo, hi);
+        sort(a, lo, p - 1);
+        sort(a, p + 1, hi);
+    }
+
+    static void quickSort(int[] a) { sort(a, 0, a.length - 1); }
+
+    public static void main(String[] args) {
+        int[] a = {29, 10, 14, 37, 13, 7, 41, 22, 18, 25};
+        int p = partition(a, 0, a.length - 1);
+        System.out.println("pivot 25 lands at " + p + ": " + Arrays.toString(a));
+        int[] b = {38, 27, 43, 3, 9, 82, 10, 1, 56, 14, 71, 5, 29, 66, 48, 12};
+        comparisons = 0;
+        quickSort(b);
+        System.out.println(Arrays.toString(b) + "   comparisons: " + comparisons);
+    }
+}`, caption: 'After one partition, 25 is at index 6 with the six smaller values left of it and the three larger ones right of it: 25 will never move again. The full sort of the same sixteen values that merge sort did in 49 comparisons here takes 47: about the same comparing, but no copying into a second array, which is why in practice quicksort is usually the faster of the two.' },
+        `<div class="stmt"><p><span class="kind">Quicksort.</span> Partition round a pivot; the pivot is then in its final place; sort the two sides recursively. A part of fewer than two values is the base case.</p>
+<p><span class="kind">Cost.</span> Partition costs <code>n − 1</code> comparisons. If the pivot lands near the middle every time, the recursion tree has <code>log n</code> levels and the sort costs about <code>1.39 n log₂ n</code> comparisons on average. If the pivot is always the smallest or largest value, one side is empty, the tree has <code>n</code> levels, and the cost is <code>n²/2</code>: quadratic. In place, not stable.</p></div>
+<h2>The gamble, and how to hedge it</h2>
+<p>When does the last value make the worst pivot? When the array is already sorted. Then every partition peels off one value, and sorting a sorted array, the easiest possible input, takes <code>n²/2</code> comparisons. Insertion sort does it in <code>n</code>. This is not a theoretical worry: sorted and nearly sorted inputs are the most common inputs there are.</p>`,
+        { play: `public class Main {
+    static int comparisons;
+    static void swap(int[] a, int i, int j) { int t = a[i]; a[i] = a[j]; a[j] = t; }
+
+    static int partition(int[] a, int lo, int hi) {
+        int pivot = a[hi], i = lo;
+        for (int j = lo; j < hi; j++) { comparisons++; if (a[j] < pivot) { swap(a, i, j); i++; } }
+        swap(a, i, hi);
+        return i;
+    }
+
+    static void sort(int[] a, int lo, int hi, boolean middlePivot) {
+        if (lo >= hi) return;
+        if (middlePivot) swap(a, (lo + hi) >>> 1, hi);   // move the middle value to the end, where partition expects the pivot
+        int p = partition(a, lo, hi);
+        sort(a, lo, p - 1, middlePivot);
+        sort(a, p + 1, hi, middlePivot);
+    }
+
+    public static void main(String[] args) {
+        int n = 1000;
+        for (boolean middle : new boolean[] {false, true}) {
+            int[] sorted = new int[n], shuffled = new int[n];
+            for (int i = 0; i < n; i++) { sorted[i] = i; shuffled[i] = (i * 7919) % 1009; }
+            comparisons = 0; sort(shuffled, 0, n - 1, middle);
+            System.out.print((middle ? "middle pivot" : "last pivot  ") + "   shuffled input: " + comparisons + " comparisons");
+            comparisons = 0; sort(sorted, 0, n - 1, middle);
+            System.out.println("   sorted input: " + comparisons);
+        }
+        System.out.println("n log2 n is about " + Math.round(n * Math.log(n) / Math.log(2)) + "; n^2 / 2 is " + n * n / 2);
+    }
+}`, caption: 'With the last value as pivot, sorted input costs n²/2 comparisons: a thousand values take half a million, fifty times the shuffled case, and the recursion goes a thousand calls deep. Taking the middle value as pivot makes sorted input the best case instead. Real implementations choose the pivot at random, or as the median of three samples, so that no fixed input shape can be the bad one.' },
+        `<p>Three fixes are in common use. <em>Random pivot</em>: swap a randomly chosen cell to the end before partitioning; no input is bad in advance, and the quadratic case becomes an event of vanishing probability. <em>Median of three</em>: look at the first, middle and last values and use the middle one; cheap and good on sorted and reverse-sorted input. <em>Introsort</em>: keep a count of the recursion depth and, if it exceeds about <code>2 log₂ n</code>, finish that part with heapsort (a later lesson), which guarantees <code>n log n</code>. C++'s <code>std::sort</code> is an introsort.</p>
+<h2>Which one, and which does the library run?</h2>
+<table class="growth-table"><thead><tr><th></th><th>Merge sort</th><th>Quicksort</th></tr></thead><tbody>
+<tr><td>Worst case</td><td>n log n</td><td>n² (random pivot: with vanishing probability)</td></tr>
+<tr><td>Average</td><td>n log n</td><td>n log n, with a smaller constant</td></tr>
+<tr><td>Extra memory</td><td>n cells</td><td>log n (the recursion stack)</td></tr>
+<tr><td>Stable</td><td>yes</td><td>no</td></tr>
+<tr><td>Works on linked lists and tapes</td><td>yes</td><td>no (needs random access)</td></tr>
+</tbody></table>
+<p>Java's <code>Arrays.sort</code> makes the same choice twice over. For arrays of primitives (<code>int[]</code>, <code>double[]</code>) it uses a quicksort with two pivots, because stability is meaningless for plain numbers and in-place speed wins. For arrays of objects and for <code>Collections.sort</code> it uses TimSort, a merge sort that first looks for runs already in order, because sorting records by one key must not scramble their order by another. When you call the library you are calling one of this lesson's two algorithms, chosen for exactly the reasons in the table.</p>`,
+        { play: `import java.util.Arrays;
+
+public class Main {
+    public static void main(String[] args) {
+        int[] nums = {38, 27, 43, 3, 9, 82, 10};
+        Arrays.sort(nums);                               // a dual-pivot quicksort underneath
+        System.out.println(Arrays.toString(nums));
+
+        String[] words = {"pear", "fig", "banana", "kiwi", "apple", "date"};
+        Arrays.sort(words);                              // TimSort, a merge sort
+        System.out.println(Arrays.toString(words));
+    }
+}`, caption: 'The same method name, two different algorithms, chosen by the type of the array. The documentation of Arrays.sort for Object[] promises that the sort is stable; the one for int[] promises nothing of the kind, because it does not need to.' },
+        `<details class="reveal"><summary>Puzzle: merge sort on 8 values makes how many merges, and how many levels? Quicksort on 8 values whose pivots always land exactly in the middle: how many comparisons in total?</summary><p>Merge sort: 7 merges (4 of size 2, 2 of size 4, 1 of size 8) over 3 levels, since 2³ = 8. Quicksort with perfect pivots: 7 at the top level, then two parts of 3 (2 each), then four parts of 1 (0 each): 7 + 4 = 11 comparisons. Merge sort on the same input makes between 12 and 17; the difference is why quicksort is usually faster when it is lucky, and why it needs help not to be unlucky.</p></details>`,
+        { aside: `<p><b>Common mistakes in this lesson.</b> A merge that uses <code>&lt;</code> instead of <code>&lt;=</code>, which still sorts but is not stable. Forgetting to copy the leftovers of the run that was not used up. A merge sort whose base case is <code>hi − lo &lt; 1</code> instead of <code>&lt; 2</code>, which recurses forever on a run of one. Allocating a new <code>aux</code> array inside every call (correct, but it turns an n log n sort into one that spends most of its time allocating). A quicksort that recurses on <code>lo..p</code> instead of <code>lo..p − 1</code>, which never shrinks when the pivot is the largest value. Choosing the first or last value as pivot in production code.</p>` },
+        {
+          ex: {
+            id: 'ds-4-1', title: 'Merge',
+            prompt: `<p>Write a method</p><pre class="code">static void merge(int[] a, int lo, int mid, int hi, int[] aux)</pre><p>that merges the two sorted runs <code>a[lo..mid−1]</code> and <code>a[mid..hi−1]</code> into one sorted run <code>a[lo..hi−1]</code>, using <code>aux</code> (an array at least as long as <code>a</code>) as scratch space. The merge must be <em>stable</em>: when the two front values are equal, take the one from the left run. Write only the method.</p>`,
+            prelude: 'import java.util.Arrays;',
+            starter: `static void merge(int[] a, int lo, int mid, int hi, int[] aux) {\n    int i = lo, j = mid, k = lo;\n    // while both runs have values left, copy the smaller front value into aux[k]\n    // then copy whatever is left of either run\n    // finally copy aux[lo..hi-1] back into a\n}`,
+            solution: `static void merge(int[] a, int lo, int mid, int hi, int[] aux) {\n    int i = lo, j = mid, k = lo;\n    while (i < mid && j < hi) {\n        if (a[i] <= a[j]) aux[k++] = a[i++];\n        else aux[k++] = a[j++];\n    }\n    while (i < mid) aux[k++] = a[i++];\n    while (j < hi) aux[k++] = a[j++];\n    for (k = lo; k < hi; k++) a[k] = aux[k];\n}`,
+            mustNotContain: [{ re: /Arrays\.sort|Collections\.sort|\.sort\s*\(/, msg: 'Merge the two runs yourself; do not sort.' }],
+            hints: ['while (i < mid && j < hi): compare a[i] with a[j]; copy the smaller into aux[k] and advance k and the finger you took from.', 'Use <= so that on a tie the left value goes first.', 'After the main loop one run may have values left: two more while loops copy them. Then for (k = lo; k < hi; k++) a[k] = aux[k];'],
+            tests: [
+              { setup: '        int[] a = {3, 9, 27, 38, 43, 82, 1, 5, 10, 12, 14, 56}; merge(a, 0, 6, 12, new int[12]);', call: 'Arrays.toString(a)', expect: '[1, 3, 5, 9, 10, 12, 14, 27, 38, 43, 56, 82]', name: 'two runs of six' },
+              { setup: '        int[] a = {1, 2, 3, 7, 8, 9}; merge(a, 0, 3, 6, new int[6]);', call: 'Arrays.toString(a)', expect: '[1, 2, 3, 7, 8, 9]', name: 'left run entirely smaller' },
+              { setup: '        int[] a = {7, 8, 9, 1, 2, 3}; merge(a, 0, 3, 6, new int[6]);', call: 'Arrays.toString(a)', expect: '[1, 2, 3, 7, 8, 9]', name: 'right run entirely smaller' },
+              { setup: '        int[] a = {99, 2, 5, 5, 1, 5, 6, 99}; merge(a, 1, 4, 7, new int[8]);', call: 'Arrays.toString(a)', expect: '[99, 1, 2, 5, 5, 5, 6, 99]', name: 'in the middle of a larger array' },
+              { setup: '        int[] a = {4, 4}; merge(a, 0, 1, 2, new int[2]); int[] b = {5}; merge(b, 0, 1, 1, new int[1]);', call: 'Arrays.toString(a) + " " + Arrays.toString(b)', expect: '[4, 4] [5]', name: 'tiny runs, and an empty right run' },
+              { setup: '        int[] a = {10, 20, 30, 10, 20, 30}; int[] aux = new int[6]; merge(a, 0, 3, 6, aux);', call: 'Arrays.toString(a)', expect: '[10, 10, 20, 20, 30, 30]', name: 'ties' }
+            ],
+            failTip: 'If the result has repeated or missing values, the copy-back loop or a leftover loop is wrong. If the sort of a run of one fails, the loops must cope with an empty right run (j == hi from the start).'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-4-2', title: 'Merge sort',
+            prompt: `<p>Write</p><pre class="code">static void mergeSort(int[] a)</pre><p>that sorts <code>a</code> into increasing order by merge sort. You will want a recursive helper <code>sort(a, lo, hi, aux)</code> and the <code>merge</code> method from the previous exercise; write all of them (the checker supplies only a <code>main</code>). Allocate the scratch array once, in <code>mergeSort</code>, not inside the recursion. Do not call the library's sort.</p>`,
+            prelude: 'import java.util.Arrays;',
+            starter: `static void merge(int[] a, int lo, int mid, int hi, int[] aux) {\n    // from the previous exercise\n}\n\nstatic void sort(int[] a, int lo, int hi, int[] aux) {\n    // base case: fewer than two values\n    // split at the middle, sort both halves, merge\n}\n\nstatic void mergeSort(int[] a) {\n    sort(a, 0, a.length, new int[a.length]);\n}`,
+            solution: `static void merge(int[] a, int lo, int mid, int hi, int[] aux) {\n    int i = lo, j = mid, k = lo;\n    while (i < mid && j < hi) {\n        if (a[i] <= a[j]) aux[k++] = a[i++];\n        else aux[k++] = a[j++];\n    }\n    while (i < mid) aux[k++] = a[i++];\n    while (j < hi) aux[k++] = a[j++];\n    for (k = lo; k < hi; k++) a[k] = aux[k];\n}\n\nstatic void sort(int[] a, int lo, int hi, int[] aux) {\n    if (hi - lo < 2) return;\n    int mid = (lo + hi) >>> 1;\n    sort(a, lo, mid, aux);\n    sort(a, mid, hi, aux);\n    merge(a, lo, mid, hi, aux);\n}\n\nstatic void mergeSort(int[] a) {\n    sort(a, 0, a.length, new int[a.length]);\n}`,
+            mustNotContain: [{ re: /Arrays\.sort|Collections\.sort|\.sort\s*\(/, msg: 'Write the sort yourself; the library’s sort is what you are learning to write.' }],
+            hints: ['if (hi - lo < 2) return; is the base case. A run of one is sorted; a run of none is too.', 'int mid = (lo + hi) >>> 1; then sort(a, lo, mid, aux); sort(a, mid, hi, aux); merge(a, lo, mid, hi, aux);', 'The last test sorts ten thousand values. Merge sort does it in about 130,000 comparisons; a quadratic sort would need fifty million and the checker would time out.'],
+            tests: [
+              { setup: '        int[] a = {38, 27, 43, 3, 9, 82, 10, 1, 56, 14, 71, 5, 29, 66, 48, 12}; mergeSort(a);', call: 'Arrays.toString(a)', expect: '[1, 3, 5, 9, 10, 12, 14, 27, 29, 38, 43, 48, 56, 66, 71, 82]', name: 'sixteen values' },
+              { setup: '        int[] a = {5, 2, 9, 1, 5, 6, 2}; mergeSort(a);', call: 'Arrays.toString(a)', expect: '[1, 2, 2, 5, 5, 6, 9]', name: 'odd length, repeats' },
+              { setup: '        int[] a = {9, 8, 7, 6, 5, 4, 3, 2, 1}; mergeSort(a);', call: 'Arrays.toString(a)', expect: '[1, 2, 3, 4, 5, 6, 7, 8, 9]', name: 'reversed' },
+              { setup: '        int[] a = {4}; mergeSort(a); int[] b = {}; mergeSort(b); int[] c = {2, 1}; mergeSort(c);', call: 'Arrays.toString(a) + " " + Arrays.toString(b) + " " + Arrays.toString(c)', expect: '[4] [] [1, 2]', name: 'one, none, two' },
+              { setup: '        int[] a = {-3, 10, -3, 0, 7, -8, 2147483647, -2147483648}; mergeSort(a);', call: 'Arrays.toString(a)', expect: '[-2147483648, -8, -3, -3, 0, 7, 10, 2147483647]', name: 'negatives and extremes' },
+              { setup: '        int[] a = new int[10000]; for (int i = 0; i < a.length; i++) a[i] = (i * 7919) % 10007; mergeSort(a); boolean ok = true; for (int i = 1; i < a.length; i++) if (a[i - 1] > a[i]) ok = false;', call: 'ok + " " + a[0] + " " + a[9999]', expect: 'true 0 10006', name: 'ten thousand values' }
+            ],
+            failTip: 'If the checker times out, the recursion is not shrinking (base case or mid wrong) or the sort is quadratic. If values go missing, check the merge’s leftover loops and copy-back.'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-4-3', title: 'Partition',
+            prompt: `<p>Write</p><pre class="code">static int partition(int[] a, int lo, int hi)</pre><p>that partitions <code>a[lo..hi]</code> (inclusive) round the pivot <code>a[hi]</code> by Lomuto's method, so that afterwards every value left of the pivot is less than it and every value right of it is greater or equal, and returns the pivot's final index. Write only the method, plus any helper you want.</p>`,
+            prelude: 'import java.util.Arrays;',
+            starter: `static int partition(int[] a, int lo, int hi) {\n    int pivot = a[hi];\n    int i = lo;\n    // for j from lo to hi - 1: if a[j] < pivot, swap a[i] and a[j], then i++\n    // finally swap the pivot into position i and return i\n}`,
+            solution: `static int partition(int[] a, int lo, int hi) {\n    int pivot = a[hi];\n    int i = lo;\n    for (int j = lo; j < hi; j++) {\n        if (a[j] < pivot) {\n            int t = a[i]; a[i] = a[j]; a[j] = t;\n            i++;\n        }\n    }\n    int t = a[i]; a[i] = a[hi]; a[hi] = t;\n    return i;\n}`,
+            mustNotContain: [{ re: /Arrays\.sort|Collections\.sort|\.sort\s*\(/, msg: 'Partition, do not sort: the array should not come out sorted.' }],
+            hints: ['The invariant: a[lo..i-1] < pivot and a[i..j-1] >= pivot. When a[j] < pivot, swapping it with a[i] extends the first part by one.', 'After the loop, a[i] is the first value >= pivot (or hi if there is none): swap it with a[hi], and the pivot sits at i.'],
+            tests: [
+              { setup: '        int[] a = {29, 10, 14, 37, 13, 7, 41, 22, 18, 25}; int p = partition(a, 0, 9);', call: 'p + " " + Arrays.toString(a)', expect: '6 [10, 14, 13, 7, 22, 18, 25, 29, 37, 41]', name: 'the lesson’s example' },
+              { setup: '        int[] a = {5, 1, 4, 2, 3}; int p = partition(a, 0, 4);', call: 'p + " " + Arrays.toString(a)', expect: '2 [1, 2, 3, 5, 4]', name: 'pivot in the middle' },
+              { setup: '        int[] a = {1, 2, 3, 4, 5}; int p = partition(a, 0, 4);', call: 'p + " " + Arrays.toString(a)', expect: '4 [1, 2, 3, 4, 5]', name: 'pivot is the largest' },
+              { setup: '        int[] a = {5, 4, 3, 2, 1}; int p = partition(a, 0, 4);', call: 'p + " " + Arrays.toString(a)', expect: '0 [1, 4, 3, 2, 5]', name: 'pivot is the smallest' },
+              { setup: '        int[] a = {7, 7, 7, 7}; int p = partition(a, 0, 3);', call: 'p + " " + Arrays.toString(a)', expect: '0 [7, 7, 7, 7]', name: 'all equal' },
+              { setup: '        int[] a = {0, 0, 9, 3, 8, 5, 0, 0}; int p = partition(a, 2, 5);', call: 'p + " " + Arrays.toString(a)', expect: '3 [0, 0, 3, 5, 8, 9, 0, 0]', name: 'a slice in the middle' },
+              { setup: '        int[] a = {42}; int p = partition(a, 0, 0);', call: 'p + " " + Arrays.toString(a)', expect: '0 [42]', name: 'one value' }
+            ],
+            failTip: 'The checker compares the exact arrangement, which Lomuto’s method fixes completely: loop j from lo to hi − 1, swap on strictly less than, swap the pivot in last. If the equal-values test returns 3, you used <= in the comparison.'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-4-4', kind: 'answer', title: 'Levels and leaves',
+            prompt: `<p>Use the costs from this lesson: a merge of <code>m</code> values makes at most <code>m − 1</code> comparisons; Lomuto partition of <code>m</code> values makes exactly <code>m − 1</code>. Give whole numbers.</p>`,
+            parts: [
+              { label: '(a) Merge sort on 1024 values: how many levels of merging are there?', answer: '10', width: '6rem', wrong: [{ match: '1024', msg: 'Levels, not calls. Each level halves the run length: how many halvings take 1024 down to 1?' }, { match: '11', msg: 'Runs of 1 need no merge. The merges produce runs of 2, 4, …, 1024: count them.' }] },
+              { label: '(b) Merge sort on 1024 values: the greatest possible total number of comparisons? (n log₂ n minus the ones saved: each merge of m values makes at most m − 1.)', answer: '9217', width: '6rem', wrong: [{ match: '10240', msg: 'That is n log₂ n exactly. Every merge saves at least one comparison, and there are 1023 merges.' }, { match: '1023', msg: 'That is the number of merges, not of comparisons.' }] },
+              { label: '(c) Quicksort with the last value as pivot, on 100 values already in increasing order: total comparisons?', answer: '4950', width: '6rem', wrong: [{ match: '99', msg: 'That is the first partition alone. The pivot is the largest value, so the left part has 99 values and the whole thing happens again.' }, { match: ['10000', '5000'], msg: 'Partitions of 100, 99, …, 2 values cost 99 + 98 + … + 1.' }] },
+              { label: '(d) Quicksort on 1,000,000 values with a random pivot takes 1 second. Merge sort on the same machine takes about 1.4 seconds. About how long would a quadratic sort take, in hours, if a comparison costs the same? (Use n²/2 against 1.39 n log₂ n, round to the nearest hour.)', answer: '5', width: '6rem', wrong: [{ match: ['18000', '17986', '17985'], msg: 'That is the ratio in seconds; the question asks for hours.' }, { match: '4', msg: 'n²/2 = 5 × 10¹¹; 1.39 n log₂ n ≈ 2.77 × 10⁷; the ratio is about 18,000 seconds.' }] }
+            ],
+            hints: ['(a) 2¹⁰ = 1024. (b) 10 levels × 1024 = 10,240, minus one per merge; a merge sort of n values makes n − 1 merges. (c) 99 + 98 + … + 1 = 99 × 100 / 2. (d) Divide n²/2 by 1.39 n log₂ n, then by 3600.'],
+            solution: `<p>(a) <b>10</b>: 1024 = 2¹⁰. (b) <b>9217</b>: 10 × 1024 = 10,240 comparisons if every merge used all of them; each of the 1023 merges saves at least one, so 10,240 − 1023. (c) <b>4950</b>: 99 + 98 + … + 1. (d) <b>5</b> hours: 5 × 10¹¹ / (1.39 × 10⁶ × 20) ≈ 18,000 seconds.</p>`,
+            followup: 'Part (d) is the whole reason this lesson exists: on a million values, the difference between n² and n log n is the difference between a second and an afternoon.'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li>Divide and conquer: split, solve the parts recursively, combine. Halving gives log n levels; linear work per level gives n log n.</li>
+<li>Merge sort: split in the middle, merge sorted halves. n log n on every input, stable, needs n extra cells, works on tapes and linked lists.</li>
+<li>Quicksort: partition round a pivot, recurse on both sides. n log n on average with a smaller constant, in place, not stable, n² if the pivots are bad; random or median-of-three pivots make bad pivots unlikely.</li>
+<li>Lomuto partition keeps the invariant "less than pivot | greater or equal | unseen" and costs n − 1 comparisons.</li>
+<li>Java's <code>Arrays.sort</code> is a quicksort for primitives and a merge sort (TimSort) for objects, for exactly the reasons in the table.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      title: 'Linked lists', summary: 'A structure made of nodes that point to each other; what it makes cheap (changing the front, splicing) and expensive (reaching an index); writing one in Java with two classes; reversing it in place; and why ArrayList still wins most of the time.',
+      blocks: [
+        `<p>In 1956 three researchers, Allen Newell, Herbert Simon and Cliff Shaw, were building a program they called the Logic Theorist, which could prove theorems from Russell and Whitehead's <em>Principia Mathematica</em>. Its data, logical expressions, were not of fixed size: a proof grew and branched as the program worked, and no array laid out in advance could hold it. So in the language they designed for it, IPL, every piece of data was a <em>cell</em> holding a value and the address of the next cell. A list was a chain of cells, and growing it meant making a new cell and changing one address. John McCarthy saw IPL, found it clumsy, and made the idea elegant in Lisp two years later; the linked list has been one of the two basic ways to hold a sequence ever since.</p>
+<p>The other way is the array. The two are opposites, and this lesson is the comparison. An array is one block of memory with its values side by side: reaching cell <code>i</code> is arithmetic, but making room at the front means shifting everything. A linked list is many small blocks joined by addresses: making room anywhere means changing two addresses, but reaching cell <code>i</code> means walking there, because there is no arithmetic that finds it.</p>
+<h2>A node and a chain of them</h2>
+<p>In Java a node is a small class with two fields, the value and a reference to the next node. The last node's <code>next</code> is <code>null</code>. The list itself is just a reference to the first node, called the <em>head</em>; an empty list is a <code>null</code> head.</p>`,
+        { fig: 'linkedlist', caption: 'Each box is a node: a value and the address of the next node. Try Get index 3 and count the hops; then Add first and see that nothing is walked; then Insert at index 2 and watch two arrows change while no value moves.' },
+        { play: `class Node {
+    int value;
+    Node next;
+    Node(int value, Node next) { this.value = value; this.next = next; }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Node head = null;                                  // the empty list
+        head = new Node(9, head);                          // add at the front: new node whose next is the old head
+        head = new Node(3, head);
+        head = new Node(7, head);
+        head = new Node(12, head);
+
+        for (Node cur = head; cur != null; cur = cur.next)  // the walk: every linked-list algorithm has this loop
+            System.out.print(cur.value + " -> ");
+        System.out.println("null");
+
+        int count = 0;
+        for (Node cur = head; cur != null; cur = cur.next) count++;
+        System.out.println("length " + count + ", first " + head.value + ", second " + head.next.value);
+    }
+}`, caption: 'Four addFirst operations build 12 -> 7 -> 3 -> 9; each is O(1) because nothing is walked. The for loop that follows next until null is the one idiom of this lesson: there is no index, only "the current node" and "the next one".' },
+        `<div class="stmt"><p><span class="kind">Singly linked list.</span> Nodes each holding a value and a reference <code>next</code>; a <code>head</code> reference to the first; <code>null</code> marks the end. Optionally a <code>size</code> count and a <code>tail</code> reference to the last node.</p>
+<p><span class="kind">Cheap, O(1).</span> Add or remove at the front. Add at the back, if a tail reference is kept. Insert or remove <em>after a node you are already holding</em>.</p>
+<p><span class="kind">Expensive, O(n).</span> Reach index <code>i</code> (walk <code>i</code> hops). Find a value. Remove a value by searching for it. Anything that says "the i-th".</p></div>
+<h2>The list as a class</h2>
+<p>Nobody passes bare nodes around. The list is wrapped in a class that owns the head and the size, so that the user calls <code>list.addFirst(5)</code> and never sees a <code>Node</code>. The lesson's version below is an <code>IntList</code>; the exercises ask you to finish it.</p>`,
+        { play: `class Node {
+    int value;
+    Node next;
+    Node(int value, Node next) { this.value = value; this.next = next; }
+}
+
+class IntList {
+    private Node head;
+    private int size;
+
+    int size() { return size; }
+
+    void addFirst(int v) { head = new Node(v, head); size++; }
+
+    void addLast(int v) {
+        if (head == null) { head = new Node(v, null); size++; return; }
+        Node cur = head;
+        while (cur.next != null) cur = cur.next;             // walk to the last node: O(n)
+        cur.next = new Node(v, null);
+        size++;
+    }
+
+    int get(int i) {
+        if (i < 0 || i >= size) throw new IndexOutOfBoundsException("Index " + i + " out of bounds for length " + size);
+        Node cur = head;
+        for (int k = 0; k < i; k++) cur = cur.next;         // i hops
+        return cur.value;
+    }
+
+    int removeFirst() {
+        if (head == null) throw new IllegalStateException("empty list");
+        int v = head.value;
+        head = head.next;                                    // the old first node is now unreachable
+        size--;
+        return v;
+    }
+
+    public String toString() {
+        StringBuilder sb = new StringBuilder("[");
+        for (Node cur = head; cur != null; cur = cur.next) {
+            sb.append(cur.value);
+            if (cur.next != null) sb.append(", ");
+        }
+        return sb.append("]").toString();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        IntList list = new IntList();
+        list.addLast(3); list.addLast(9); list.addFirst(7); list.addFirst(12);
+        System.out.println(list + "  size " + list.size());
+        System.out.println("get(2) = " + list.get(2));
+        System.out.println("removed " + list.removeFirst() + ", now " + list);
+        try {
+            list.get(10);
+        } catch (IndexOutOfBoundsException e) {
+            System.out.println("caught: " + e.getMessage());
+        }
+    }
+}`, caption: 'toString walks the list once, so printing is O(n), like printing an array. get(2) walks two hops. The exception message copies the one the Java library uses for ArrayList, so that code written against either behaves the same.' },
+        `<h2>Inserting and removing in the middle</h2>
+<p>Here is the operation that makes linked lists worth having. To insert after a node <code>p</code>: make the new node with <code>next = p.next</code>, then set <code>p.next</code> to the new node. Two assignments, in that order, and no value moves. To remove the node after <code>p</code>: <code>p.next = p.next.next</code>. One assignment. In an array the same operations shift every value to the right of the point, O(n).</p>
+<p>The catch is in the words "a node you are already holding". If you have to find <code>p</code> by walking from the head, the walk is O(n) and the saving is gone. The list wins when the program is already at the right place: an iterator in the middle of a pass, a queue whose ends are both known, a scheduler moving the current task to the back. It loses whenever the program says "the i-th".</p>`,
+        { play: `class Node {
+    int value;
+    Node next;
+    Node(int value, Node next) { this.value = value; this.next = next; }
+}
+
+public class Main {
+    static String show(Node head) {
+        StringBuilder sb = new StringBuilder();
+        for (Node cur = head; cur != null; cur = cur.next) sb.append(cur.value).append(cur.next != null ? " -> " : "");
+        return sb.toString();
+    }
+
+    public static void main(String[] args) {
+        Node head = new Node(1, new Node(2, new Node(3, new Node(4, null))));
+        System.out.println(show(head));
+
+        Node p = head.next;                       // holding the node with 2
+        p.next = new Node(99, p.next);            // insert after it: two arrows change, nothing moves
+        System.out.println(show(head) + "      after inserting 99 after 2");
+
+        p.next = p.next.next;                     // remove the node after p: one arrow changes
+        System.out.println(show(head) + "      after removing the node after 2");
+
+        // remove the node holding 3: we must hold the node BEFORE it, so walk until cur.next.value == 3
+        Node cur = head;
+        while (cur.next != null && cur.next.value != 3) cur = cur.next;
+        if (cur.next != null) cur.next = cur.next.next;
+        System.out.println(show(head) + "      after removing 3");
+    }
+}`, caption: 'The insert and the first removal are O(1) because p was already in hand. The removal of 3 is O(n): the walk has to stop one node early, at the node whose next holds 3, because a singly linked node cannot see backwards. That "one node early" is the source of most linked-list bugs.' },
+        `<h2>Reversing a list in place</h2>
+<p>The classic exercise, asked in interviews for sixty years because it tests whether you can hold three references in your head at once. Walk the list; at each node, point its <code>next</code> backwards at the previous node. You need to remember the next node before you overwrite the arrow to it.</p>`,
+        { play: `class Node {
+    int value;
+    Node next;
+    Node(int value, Node next) { this.value = value; this.next = next; }
+}
+
+public class Main {
+    static Node reverse(Node head) {
+        Node prev = null, cur = head;
+        while (cur != null) {
+            Node after = cur.next;     // remember where to go next, before we lose it
+            cur.next = prev;           // turn the arrow round
+            prev = cur;                // step both references forward
+            cur = after;
+        }
+        return prev;                   // the old last node is the new head
+    }
+
+    static String show(Node head) {
+        StringBuilder sb = new StringBuilder();
+        for (Node cur = head; cur != null; cur = cur.next) sb.append(cur.value).append(cur.next != null ? " -> " : "");
+        return sb.toString();
+    }
+
+    public static void main(String[] args) {
+        Node head = null;
+        for (int v = 5; v >= 1; v--) head = new Node(v, head);
+        System.out.println(show(head));
+        head = reverse(head);
+        System.out.println(show(head));
+        System.out.println(show(reverse(null)) + "(reversing the empty list)");
+        System.out.println(show(reverse(new Node(42, null))) + "   (one node)");
+    }
+}`, caption: 'O(n) time and O(1) extra space: three references and no second list. Trace it by hand on 1 -> 2 -> 3 once, writing prev, cur and after at every line, before you trust it.' },
+        `<h2>Array or list?</h2>
+<table class="growth-table"><thead><tr><th>Operation</th><th>Array / ArrayList</th><th>Linked list</th></tr></thead><tbody>
+<tr><td>Get or set index i</td><td>O(1)</td><td>O(n)</td></tr>
+<tr><td>Add or remove at the back</td><td>O(1) amortised</td><td>O(1) with a tail reference</td></tr>
+<tr><td>Add or remove at the front</td><td>O(n)</td><td>O(1)</td></tr>
+<tr><td>Insert or remove after a node in hand</td><td>O(n)</td><td>O(1)</td></tr>
+<tr><td>Find a value</td><td>O(n), or O(log n) if sorted</td><td>O(n)</td></tr>
+<tr><td>Memory per value</td><td>the value</td><td>the value + a reference + object overhead</td></tr>
+</tbody></table>
+<p>The table says the two are mirror images, and in the 1960s the choice between them was a real one. On a modern machine it mostly is not. An array's values sit together in memory, so the processor's cache fetches the next ones before they are asked for; a list's nodes are scattered, and every hop is a wait for memory, which is a hundred times slower than the arithmetic the array needs. Measured, walking a linked list is several times slower than walking an array of the same length, and inserting at the front of an <code>ArrayList</code> of a few thousand values, O(n) though it is, is often faster than inserting at the front of a <code>LinkedList</code>. The author of Java's <code>LinkedList</code> has said publicly that he never uses it.</p>
+<p>So why learn it? Because the linked node is the atom that trees, hash-table chains, graphs' adjacency lists and every other structure that grows and branches are built from, in the lessons to come. The list is the simplest thing you can make from nodes and references, and everything you learn about following <code>next</code> until <code>null</code> you will use again on <code>left</code> and <code>right</code>.</p>`,
+        { play: `import java.util.LinkedList;
+import java.util.ArrayList;
+
+public class Main {
+    public static void main(String[] args) {
+        LinkedList<String> queue = new LinkedList<>();     // the library's list: doubly linked, with head and tail
+        queue.addLast("Ada"); queue.addLast("Grace"); queue.addLast("Linus");
+        queue.addFirst("Urgent");
+        System.out.println(queue);
+        System.out.println("served " + queue.removeFirst() + ", then " + queue.removeFirst());
+        System.out.println(queue + "  size " + queue.size());
+
+        ArrayList<Integer> a = new ArrayList<>();
+        LinkedList<Integer> l = new LinkedList<>();
+        for (int i = 0; i < 5; i++) { a.add(0, i); l.addFirst(i); }   // add at the front: O(n) shifts for one, O(1) for the other
+        System.out.println(a + " " + l + "  same contents, different costs");
+    }
+}`, caption: 'java.util.LinkedList is doubly linked (each node also points back) with a tail reference, so both ends are O(1): it is Java’s default queue and deque when you need a list interface too. get(i) on it is still a walk.' },
+        `<details class="reveal"><summary>Puzzle: a singly linked list of n nodes. What is the cost of (a) removing the last node, (b) removing the last node when a tail reference is kept, (c) checking whether the list has a cycle (some node's next points back to an earlier node)?</summary><p>(a) O(n): you must find the node before the last, and only a walk from the head can. (b) Still O(n): the tail reference finds the last node, but not the one before it, which is what must change; a <em>doubly</em> linked list fixes this. (c) O(n) with O(1) space, by Floyd's tortoise and hare: one reference hops one node at a time, another two at a time; if there is a cycle they meet, if not the hare reaches null.</p></details>`,
+        { aside: `<p><b>Common mistakes in this lesson.</b> Following <code>cur.next</code> when <code>cur</code> may be <code>null</code>: a NullPointerException, usually on the empty list or at the last node. Walking to the node you want to remove instead of the node before it. Overwriting <code>cur.next</code> before saving it, in reverse. Forgetting to update <code>size</code>. Treating the empty list as a special case everywhere instead of writing the code so that <code>head == null</code> just works (the <code>addFirst</code> one-liner does). Reaching for <code>LinkedList</code> because the task mentions a list: measure first.</p>` },
+        {
+          ex: {
+            id: 'ds-5-1', title: 'addLast and get',
+            prompt: `<p>Complete the two classes below. <code>Node</code> is finished. In <code>IntList</code>, <code>addFirst</code>, <code>size</code> and <code>toString</code> are finished; write <code>addLast(int v)</code>, which adds a node at the end and increases the size, and <code>get(int i)</code>, which returns the value at index <code>i</code> after walking to it, and throws <code>IndexOutOfBoundsException</code> with the message <code>Index i out of bounds for length n</code> (with the numbers filled in) when <code>i</code> is out of range. Write only the classes; the checker supplies its own <code>main</code>.</p>`,
+            classes: true,
+            starter: `class Node {\n    int value;\n    Node next;\n    Node(int value, Node next) { this.value = value; this.next = next; }\n}\n\nclass IntList {\n    private Node head;\n    private int size;\n\n    int size() { return size; }\n\n    void addFirst(int v) { head = new Node(v, head); size++; }\n\n    void addLast(int v) {\n        // empty list: the new node becomes the head\n        // otherwise walk to the last node and hang the new node on it\n    }\n\n    int get(int i) {\n        // check the range, walk i hops, return the value\n    }\n\n    public String toString() {\n        StringBuilder sb = new StringBuilder("[");\n        for (Node cur = head; cur != null; cur = cur.next) {\n            sb.append(cur.value);\n            if (cur.next != null) sb.append(", ");\n        }\n        return sb.append("]").toString();\n    }\n}`,
+            solution: `class Node {\n    int value;\n    Node next;\n    Node(int value, Node next) { this.value = value; this.next = next; }\n}\n\nclass IntList {\n    private Node head;\n    private int size;\n\n    int size() { return size; }\n\n    void addFirst(int v) { head = new Node(v, head); size++; }\n\n    void addLast(int v) {\n        if (head == null) { head = new Node(v, null); size++; return; }\n        Node cur = head;\n        while (cur.next != null) cur = cur.next;\n        cur.next = new Node(v, null);\n        size++;\n    }\n\n    int get(int i) {\n        if (i < 0 || i >= size) throw new IndexOutOfBoundsException("Index " + i + " out of bounds for length " + size);\n        Node cur = head;\n        for (int k = 0; k < i; k++) cur = cur.next;\n        return cur.value;\n    }\n\n    public String toString() {\n        StringBuilder sb = new StringBuilder("[");\n        for (Node cur = head; cur != null; cur = cur.next) {\n            sb.append(cur.value);\n            if (cur.next != null) sb.append(", ");\n        }\n        return sb.append("]").toString();\n    }\n}`,
+            mustNotContain: [{ re: /java\.util|ArrayList|LinkedList|int\s*\[\s*\]/, msg: 'Build the list from Node objects only: no arrays and no library lists.' }],
+            hints: ['addLast: if head is null, the list is empty and the new node is the head. Otherwise Node cur = head; while (cur.next != null) cur = cur.next; then cur.next = new Node(v, null). Either way, size++.', 'get: if (i < 0 || i >= size) throw new IndexOutOfBoundsException("Index " + i + " out of bounds for length " + size); then walk: Node cur = head; for (int k = 0; k < i; k++) cur = cur.next; return cur.value;'],
+            tests: [
+              { name: 'addLast builds in order', main: '        IntList list = new IntList();\n        list.addLast(3); list.addLast(9); list.addLast(27);\n        System.out.println(list + " " + list.size());', expect: '[3, 9, 27] 3' },
+              { name: 'mixed addFirst and addLast', main: '        IntList list = new IntList();\n        list.addLast(5); list.addFirst(1); list.addLast(8); list.addFirst(0);\n        System.out.println(list + " " + list.size());', expect: '[0, 1, 5, 8] 4' },
+              { name: 'get walks to each index', main: '        IntList list = new IntList();\n        for (int v = 10; v <= 50; v += 10) list.addLast(v);\n        System.out.println(list.get(0) + " " + list.get(2) + " " + list.get(4));', expect: '10 30 50' },
+              { name: 'get out of range', main: '        IntList list = new IntList();\n        list.addLast(1); list.addLast(2);\n        try { list.get(2); } catch (IndexOutOfBoundsException e) { System.out.println(e.getMessage()); }\n        try { list.get(-1); } catch (IndexOutOfBoundsException e) { System.out.println(e.getMessage()); }', expect: 'Index 2 out of bounds for length 2\nIndex -1 out of bounds for length 2' },
+              { name: 'get on the empty list', main: '        IntList list = new IntList();\n        try { System.out.println(list.get(0)); } catch (IndexOutOfBoundsException e) { System.out.println(e.getMessage()); }\n        list.addLast(7);\n        System.out.println(list.get(0) + " " + list);', expect: 'Index 0 out of bounds for length 0\n7 [7]' },
+              { name: 'a thousand addLast calls', main: '        IntList list = new IntList();\n        for (int v = 0; v < 1000; v++) list.addLast(v);\n        System.out.println(list.size() + " " + list.get(999) + " " + list.get(500));', expect: '1000 999 500' }
+            ],
+            failTip: 'A NullPointerException in addLast means the empty list was not handled before the walk. Check that size++ happens in both branches of addLast, and that get checks the range before walking.'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-5-2', title: 'remove and reverse',
+            prompt: `<p>Add two methods to <code>IntList</code> (the finished class from the lesson is given). <code>boolean remove(int v)</code> removes the <em>first</em> node holding <code>v</code>, reduces the size, and returns <code>true</code>; if no node holds <code>v</code> it changes nothing and returns <code>false</code>. <code>void reverse()</code> reverses the list in place, using the three-reference method from the lesson and no second list. Write only the classes.</p>`,
+            classes: true,
+            starter: `class Node {\n    int value;\n    Node next;\n    Node(int value, Node next) { this.value = value; this.next = next; }\n}\n\nclass IntList {\n    private Node head;\n    private int size;\n\n    int size() { return size; }\n    void addFirst(int v) { head = new Node(v, head); size++; }\n    void addLast(int v) {\n        if (head == null) { head = new Node(v, null); size++; return; }\n        Node cur = head;\n        while (cur.next != null) cur = cur.next;\n        cur.next = new Node(v, null);\n        size++;\n    }\n\n    boolean remove(int v) {\n        // the first node is a special case: head moves\n        // otherwise walk until cur.next holds v, then unlink cur.next\n        return false;\n    }\n\n    void reverse() {\n        // prev, cur, after\n    }\n\n    public String toString() {\n        StringBuilder sb = new StringBuilder("[");\n        for (Node cur = head; cur != null; cur = cur.next) {\n            sb.append(cur.value);\n            if (cur.next != null) sb.append(", ");\n        }\n        return sb.append("]").toString();\n    }\n}`,
+            solution: `class Node {\n    int value;\n    Node next;\n    Node(int value, Node next) { this.value = value; this.next = next; }\n}\n\nclass IntList {\n    private Node head;\n    private int size;\n\n    int size() { return size; }\n    void addFirst(int v) { head = new Node(v, head); size++; }\n    void addLast(int v) {\n        if (head == null) { head = new Node(v, null); size++; return; }\n        Node cur = head;\n        while (cur.next != null) cur = cur.next;\n        cur.next = new Node(v, null);\n        size++;\n    }\n\n    boolean remove(int v) {\n        if (head == null) return false;\n        if (head.value == v) { head = head.next; size--; return true; }\n        Node cur = head;\n        while (cur.next != null && cur.next.value != v) cur = cur.next;\n        if (cur.next == null) return false;\n        cur.next = cur.next.next;\n        size--;\n        return true;\n    }\n\n    void reverse() {\n        Node prev = null, cur = head;\n        while (cur != null) {\n            Node after = cur.next;\n            cur.next = prev;\n            prev = cur;\n            cur = after;\n        }\n        head = prev;\n    }\n\n    public String toString() {\n        StringBuilder sb = new StringBuilder("[");\n        for (Node cur = head; cur != null; cur = cur.next) {\n            sb.append(cur.value);\n            if (cur.next != null) sb.append(", ");\n        }\n        return sb.append("]").toString();\n    }\n}`,
+            mustNotContain: [{ re: /java\.util|ArrayList|LinkedList|int\s*\[\s*\]|new\s+IntList/, msg: 'Work on the nodes in place: no arrays, no library lists, no second IntList.' }],
+            hints: ['remove: if the list is empty, return false. If head.value == v, move head to head.next, size--, return true. Otherwise walk with while (cur.next != null && cur.next.value != v); if cur.next is null the value is absent; else cur.next = cur.next.next.', 'reverse: Node prev = null, cur = head; while (cur != null) { Node after = cur.next; cur.next = prev; prev = cur; cur = after; } head = prev;', 'The size does not change in reverse. It goes down by one on a successful remove only.'],
+            tests: [
+              { name: 'remove from the middle', main: '        IntList list = new IntList();\n        for (int v : new int[] {1, 2, 3, 4, 5}) list.addLast(v);\n        System.out.println(list.remove(3) + " " + list + " " + list.size());', expect: 'true [1, 2, 4, 5] 4' },
+              { name: 'remove the first and the last', main: '        IntList list = new IntList();\n        for (int v : new int[] {1, 2, 3, 4, 5}) list.addLast(v);\n        list.remove(1); list.remove(5);\n        System.out.println(list + " " + list.size());', expect: '[2, 3, 4] 3' },
+              { name: 'remove an absent value', main: '        IntList list = new IntList();\n        list.addLast(1); list.addLast(2);\n        System.out.println(list.remove(9) + " " + list + " " + list.size());\n        IntList empty = new IntList();\n        System.out.println(empty.remove(1) + " " + empty + " " + empty.size());', expect: 'false [1, 2] 2\nfalse [] 0' },
+              { name: 'remove only the first occurrence', main: '        IntList list = new IntList();\n        for (int v : new int[] {7, 3, 7, 7}) list.addLast(v);\n        list.remove(7);\n        System.out.println(list + " " + list.size());\n        list.remove(7); list.remove(7); list.remove(7);\n        System.out.println(list + " " + list.size());', expect: '[3, 7, 7] 3\n[3] 1' },
+              { name: 'reverse', main: '        IntList list = new IntList();\n        for (int v = 1; v <= 5; v++) list.addLast(v);\n        list.reverse();\n        System.out.println(list + " " + list.size());\n        list.addLast(0);\n        System.out.println(list);', expect: '[5, 4, 3, 2, 1] 5\n[5, 4, 3, 2, 1, 0]' },
+              { name: 'reverse the empty list and a single node', main: '        IntList list = new IntList();\n        list.reverse();\n        System.out.println(list + " " + list.size());\n        list.addFirst(42); list.reverse();\n        System.out.println(list + " " + list.size());', expect: '[] 0\n[42] 1' },
+              { name: 'reverse twice is the identity', main: '        IntList list = new IntList();\n        for (int v : new int[] {8, 6, 7, 5, 3, 0, 9}) list.addLast(v);\n        list.reverse(); list.reverse();\n        System.out.println(list);', expect: '[8, 6, 7, 5, 3, 0, 9]' }
+            ],
+            failTip: 'If the list prints [5] after reverse, the arrows were turned round but head still points at the old first node: set head = prev at the end. If addLast after reverse loops forever, a node still points at itself: check the order of the four lines in the loop.'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-5-3', kind: 'answer', title: 'Hops and shifts',
+            prompt: `<p>An <code>ArrayList</code> and a singly linked list (head reference only, no tail) each hold the same 1,000 values. Count the work of each operation as the number of values shifted (array) or nodes hopped past (list), using the costs in this lesson. Give whole numbers.</p>`,
+            parts: [
+              { label: '(a) Read the value at index 700. Array shifts?', answer: '0', width: '6rem', wrong: [{ match: '700', msg: 'An array reaches index 700 by arithmetic: no values are shifted or visited.' }] },
+              { label: '(b) Read the value at index 700. List hops?', answer: '700', width: '6rem', wrong: [{ match: '0', msg: 'There is no arithmetic that finds node 700; the list walks from the head.' }, { match: '1000', msg: 'The walk stops when it reaches index 700.' }] },
+              { label: '(c) Insert a value at the front. Array shifts?', answer: '1000', width: '6rem', wrong: [{ match: ['0', '1'], msg: 'Every existing value moves one cell to the right to make room at index 0.' }] },
+              { label: '(d) Insert a value at the front. List hops?', answer: '0', width: '6rem', wrong: [{ match: '1000', msg: 'addFirst makes a node whose next is the old head and points head at it: nothing is walked.' }] },
+              { label: '(e) Add a value at the back. List hops (no tail reference)?', answer: '999', width: '6rem', wrong: [{ match: '1000', msg: 'The walk starts at the head (index 0) and hops to index 999: 999 hops.' }, { match: '0', msg: 'That is the cost with a tail reference. Without one, the last node must be found by walking.' }] },
+              { label: '(f) Remove the value at index 500 (you hold no reference into the list). Array shifts, and list hops? Give the sum of the two numbers.', answer: '998', width: '6rem', wrong: [{ match: '1000', msg: 'Array: the 499 values after index 500 shift left. List: walk to the node before index 500, 499 hops. 499 + 499.' }, { match: ['999', '1001'], msg: 'Array: values at indices 501 to 999 shift: 499. List: walk to index 499, the node before: 499 hops.' }] }
+            ],
+            hints: ['Array: indexing is free; inserting or removing at index i shifts the values after i. List: reaching index i costs i hops; changing arrows is free once you are there; removing index i needs the node at i − 1.'],
+            solution: `<p>(a) <b>0</b>: arithmetic. (b) <b>700</b> hops. (c) <b>1000</b>: every value shifts right. (d) <b>0</b>. (e) <b>999</b>: from index 0 to index 999. (f) <b>998</b>: the array shifts the 499 values at indices 501–999; the list hops 499 times to reach the node at index 499, whose <code>next</code> is unlinked.</p>`,
+            followup: 'Parts (a) and (d) are the two zeros, and they are on opposite sides. Every choice between an array and a list comes down to which zero the program needs more often.'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li>A linked list is nodes holding a value and <code>next</code>; <code>head</code> points at the first; <code>null</code> ends it. Every algorithm on it is the walk <code>for (cur = head; cur != null; cur = cur.next)</code>.</li>
+<li>O(1): add or remove at the front, insert or remove after a node in hand, add at the back with a tail. O(n): anything that says "index i" or "find".</li>
+<li>To remove a node you must hold the one before it; to reverse you need three references, prev, cur and after, and must save <code>after</code> before turning the arrow.</li>
+<li>On modern hardware the array's contiguity wins most races; <code>ArrayList</code> is the default and <code>LinkedList</code> the exception, used for queues and deques.</li>
+<li>The node-and-reference idea is the atom of trees, hash chains and graphs: this lesson is the first time you follow a reference until <code>null</code>, not the last.</li>
 </ul></div>`
       ]
     }

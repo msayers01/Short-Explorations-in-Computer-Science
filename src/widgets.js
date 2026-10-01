@@ -1050,6 +1050,141 @@ xs mapped kept result`;
       el('div', { class: 'sb-col' }, el('div', { class: 'sb-head' }, b.rightLabel || 'In Python'), code)));
   };
 
+  /* ---------- 26. merge sort, bottom up: runs doubling in size, every merge step shown (DSA lesson 4) ---------- */
+  W.mergeviz = function (mount, b) {
+    let arr = (b.items || [38, 27, 43, 3, 9, 82, 10, 1, 56, 14, 71, 5, 29, 66, 48, 12]).slice();
+    const n = arr.length, cw = 36, x0 = 10;
+    const svg = sv('svg', { viewBox: '0 0 ' + (x0 * 2 + n * cw) + ' 150', role: 'img', 'aria-label': 'Merge sort' });
+    const log = el('div', { class: 'fig-status', role: 'status' });
+    let steps = [];
+    function compute() {
+      steps = []; let a = arr.slice(); let cmp = 0;
+      steps.push({ a: a.slice(), width: 1, msg: 'Every single value is a sorted run of length 1. Merge neighbouring runs, doubling the run length each round.', cmp });
+      for (let width = 1; width < n; width *= 2) {
+        const out = a.slice();
+        for (let lo = 0; lo < n; lo += 2 * width) {
+          const mid = Math.min(lo + width, n), hi = Math.min(lo + 2 * width, n);
+          if (mid >= hi) continue;
+          let i = lo, j = mid, k = lo;
+          steps.push({ a: a.slice(), out: null, width, run: [lo, mid, hi], msg: 'Merge the runs ' + lo + '…' + (mid - 1) + ' and ' + mid + '…' + (hi - 1) + ': take the smaller front value each time.', cmp });
+          while (i < mid && j < hi) { cmp++; const takeLeft = a[i] <= a[j]; const v = takeLeft ? a[i] : a[j]; out[k] = v; steps.push({ a: a.slice(), out: out.slice(), width, run: [lo, mid, hi], i, j, k, msg: a[i] + (takeLeft ? ' ≤ ' : ' > ') + a[j] + ': take ' + v + ' from the ' + (takeLeft ? 'left' : 'right') + ' run.', cmp }); if (takeLeft) i++; else j++; k++; }
+          while (i < mid) { out[k] = a[i]; steps.push({ a: a.slice(), out: out.slice(), width, run: [lo, mid, hi], i, k, msg: 'The right run is used up: copy ' + a[i] + ' across, no comparison needed.', cmp }); i++; k++; }
+          while (j < hi) { out[k] = a[j]; steps.push({ a: a.slice(), out: out.slice(), width, run: [lo, mid, hi], j, k, msg: 'The left run is used up: copy ' + a[j] + ' across, no comparison needed.', cmp }); j++; k++; }
+        }
+        a = out;
+        steps.push({ a: a.slice(), width: width * 2, msg: 'Runs of length ' + Math.min(width * 2, n) + ' are now sorted. Comparisons so far: ' + cmp + '.', cmp });
+      }
+      steps.push({ a: a.slice(), width: n, done: true, msg: 'Sorted, with ' + cmp + ' comparisons: about n log₂ n = ' + n + ' × ' + Math.log2(n) + ' = ' + (n * Math.log2(n)) + ' at most, against n²/2 = ' + (n * n / 2) + ' for the quadratic sorts.', cmp });
+    }
+    function render(s) {
+      const st = steps[s]; svg.innerHTML = '';
+      const row = (vals, y, hot, label) => {
+        svg.append(txt(x0, y - 6, label, { 'font-size': 11, fill: 'var(--ink-2)' }));
+        vals.forEach((v, k) => {
+          const x = x0 + k * cw; const inRun = st.run && k >= st.run[0] && k < st.run[2];
+          const side = st.run ? (k < st.run[1] ? 'L' : 'R') : null;
+          let fill = 'var(--paper)'; if (st.done) fill = 'var(--ok-soft)'; else if (inRun) fill = side === 'L' ? 'var(--accent-soft)' : 'var(--paper-2)';
+          if (hot !== undefined && hot === k) fill = 'var(--accent)';
+          svg.append(sv('rect', { x, y, width: cw - 3, height: 30, fill, stroke: inRun ? 'var(--ink)' : 'var(--rule)' }));
+          if (v !== undefined && v !== null) svg.append(mono(x + cw / 2 - 1, y + 20, String(v), { 'text-anchor': 'middle', 'font-size': 12, fill: hot === k ? 'var(--accent-ink)' : 'var(--ink)' }));
+          if (!st.done && st.width < n && k % st.width === 0 && k > 0) svg.append(sv('line', { x1: x - 1.5, y1: y - 4, x2: x - 1.5, y2: y + 34, stroke: 'var(--accent)', 'stroke-width': 2 }));
+        });
+      };
+      if (st.out) {
+        const top = st.a.map((v, k) => ((st.i !== undefined && k === st.i) || (st.j !== undefined && k === st.j) ? v : (k >= st.run[0] && k < st.run[2] ? v : v)));
+        row(top, 24, st.i !== undefined && st.j !== undefined ? (st.a[st.i] <= st.a[st.j] ? st.i : st.j) : (st.i !== undefined ? st.i : st.j), 'the two runs being merged (left shaded)');
+        const outVals = st.out.map((v, k) => (k >= st.run[0] && k < st.run[2] && k <= st.k ? v : (k >= st.run[0] && k < st.run[2] ? null : v)));
+        row(outVals, 96, st.k, 'the merged run being built');
+      } else row(st.a, 60, undefined, st.done ? 'sorted' : 'runs of length ' + Math.min(st.width, n));
+      log.textContent = st.msg;
+    }
+    compute();
+    let ctl = stepper(steps.length, render, { interval: 650 });
+    const shuffle = el('button', { class: 'btn sm', onclick: () => { for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } compute(); ctl.stop(); const old = ctl.el; ctl = stepper(steps.length, render, { interval: 650 }); old.replaceWith(ctl.el); } }, 'Shuffle');
+    mount.append(el('div', { class: 'fig-scroll' }, svg), log, ctl.el, el('div', { class: 'fig-tools' }, shuffle));
+  };
+
+  /* ---------- 27. quicksort's partition (Lomuto), one comparison at a time (DSA lesson 4) ---------- */
+  W.partition = function (mount, b) {
+    let arr = (b.items || [29, 10, 14, 37, 13, 7, 41, 22, 18, 25]).slice();
+    const n = arr.length, cw = 48, x0 = 10, H = 120;
+    const svg = sv('svg', { viewBox: '0 0 ' + (x0 * 2 + n * cw) + ' ' + (H + 60), role: 'img', 'aria-label': 'Partition' });
+    const log = el('div', { class: 'fig-status', role: 'status' });
+    let steps = [];
+    function compute() {
+      steps = []; const a = arr.slice(); const pivot = a[n - 1]; let i = 0, cmp = 0;
+      steps.push({ a: a.slice(), i, j: null, pivot, msg: 'The pivot is the last value, ' + pivot + '. Walk j across the rest; i marks where the next small value goes.', cmp });
+      for (let j = 0; j < n - 1; j++) {
+        cmp++;
+        if (a[j] < pivot) { [a[i], a[j]] = [a[j], a[i]]; steps.push({ a: a.slice(), i, j, pivot, swap: true, msg: a[j] === a[i] ? a[i] + ' < ' + pivot + ': it is already at position i, so just move i on.' : a[i] + ' < ' + pivot + ': swap it into position i, then move i on.', cmp }); i++; }
+        else steps.push({ a: a.slice(), i, j, pivot, msg: a[j] + ' ≥ ' + pivot + ': leave it, it belongs on the right.', cmp });
+      }
+      [a[i], a[n - 1]] = [a[n - 1], a[i]];
+      steps.push({ a: a.slice(), i, j: null, pivot, done: true, msg: 'Finally swap the pivot into position i = ' + i + '. Everything left of it is smaller, everything right is at least as big: the pivot is in its final place after ' + cmp + ' comparisons. Quicksort now sorts the two sides the same way.', cmp });
+    }
+    const max = Math.max(...arr);
+    function render(s) {
+      const st = steps[s]; svg.innerHTML = '';
+      st.a.forEach((v, k) => {
+        const x = x0 + k * cw, h = (v / max) * H;
+        const isPivot = st.done ? k === st.i : k === n - 1;
+        const small = st.done ? k < st.i : k < st.i;
+        const fill = isPivot ? 'var(--accent)' : (st.j === k ? 'var(--hl-p)' : small ? 'var(--ok-soft)' : (st.j !== null && st.j !== undefined && k < st.j && !st.done) ? 'var(--paper-2)' : 'var(--accent-soft)');
+        svg.append(sv('rect', { x: x + 4, y: H - h + 5, width: cw - 8, height: h, fill, stroke: st.j === k || isPivot ? 'var(--ink)' : 'var(--rule)' }));
+        svg.append(mono(x + cw / 2, H + 22, String(v), { 'text-anchor': 'middle', 'font-size': 12, fill: 'var(--ink-2)' }));
+      });
+      if (!st.done) { svg.append(txt(x0 + st.i * cw + cw / 2, H + 44, 'i', { 'text-anchor': 'middle', 'font-size': 12, fill: 'var(--ok)', 'font-weight': 700 })); if (st.j !== null && st.j !== undefined) svg.append(txt(x0 + st.j * cw + cw / 2, H + 56, 'j', { 'text-anchor': 'middle', 'font-size': 12, fill: 'var(--hl-p)', 'font-weight': 700 })); svg.append(txt(x0 + (n - 1) * cw + cw / 2, H + 44, 'pivot', { 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--accent)', 'font-weight': 700 })); }
+      else { svg.append(txt(x0 + st.i * cw + cw / 2, H + 44, 'pivot, final', { 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--accent)', 'font-weight': 700 })); if (st.i > 0) svg.append(txt(x0 + 4, H + 56, '← smaller', { 'font-size': 11, fill: 'var(--ok)' })); if (st.i < n - 1) svg.append(txt(x0 + n * cw - 4, H + 56, 'larger or equal →', { 'font-size': 11, fill: 'var(--ink-2)', 'text-anchor': 'end' })); }
+      log.textContent = st.msg + '   comparisons: ' + st.cmp;
+    }
+    compute();
+    let ctl = stepper(steps.length, render, { interval: 800 });
+    const shuffle = el('button', { class: 'btn sm', onclick: () => { for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } compute(); ctl.stop(); const old = ctl.el; ctl = stepper(steps.length, render, { interval: 800 }); old.replaceWith(ctl.el); } }, 'Shuffle');
+    mount.append(el('div', { class: 'fig-scroll' }, svg), log, ctl.el, el('div', { class: 'fig-tools' }, shuffle));
+  };
+
+  /* ---------- 28. a linked list: nodes with a value and a next arrow, operations with hops counted (DSA lesson 5) ---------- */
+  W.linkedlist = function (mount, b) {
+    let list = (b.items || [12, 7, 3, 9]).slice();
+    const maxN = 8, bw = 68, gap = 28, x0 = 54;
+    const svg = sv('svg', { viewBox: '0 0 ' + (x0 + maxN * (bw + gap) + 20) + ' 130', role: 'img', 'aria-label': 'A linked list' });
+    const idx = el('input', { type: 'number', value: '2', min: '0', max: '7', 'aria-label': 'index' });
+    const val = el('input', { type: 'number', value: '21', 'aria-label': 'value' });
+    const log = el('div', { class: 'fig-status', role: 'status' });
+    let steps = [{ a: list.slice(), msg: 'Four nodes. Each holds a value and the address of the next node; head holds the address of the first; the last node’s next is null. The nodes can be anywhere in memory: only the arrows connect them.', hops: 0 }];
+    function render(s) {
+      const st = steps[s]; svg.innerHTML = '';
+      svg.setAttribute('viewBox', '0 0 ' + (x0 + Math.max(st.a.length, 4) * (bw + gap) + 20) + ' 130');   // few nodes: draw them larger
+      svg.prepend(sv('defs', {}, sv('marker', { id: 'll-arr', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, sv('path', { d: 'M0 0L10 5L0 10z', fill: 'var(--ink)' }))));
+      svg.append(mono(8, 62, 'head', { 'font-size': 12, fill: 'var(--ink-2)' }));
+      const nodes = st.a; const X = (k) => x0 + k * (bw + gap);
+      if (!nodes.length) svg.append(mono(x0, 62, 'null', { 'font-size': 12, fill: 'var(--ink-3)' }));
+      else svg.append(sv('path', { d: 'M38 58 H' + (X(0) - 2), stroke: 'var(--ink)', 'stroke-width': 1.5, 'marker-end': 'url(#ll-arr)' }));
+      nodes.forEach((v, k) => {
+        const x = X(k), hot = st.hot === k, nu = st.isNew === k;
+        svg.append(sv('rect', { x, y: 40, width: bw * 0.6, height: 36, fill: hot ? 'var(--accent)' : nu ? 'var(--ok-soft)' : 'var(--paper)', stroke: 'var(--ink)' }));
+        svg.append(sv('rect', { x: x + bw * 0.6, y: 40, width: bw * 0.4, height: 36, fill: hot ? 'var(--accent-soft)' : 'var(--paper-2)', stroke: 'var(--ink)' }));
+        svg.append(mono(x + bw * 0.3, 63, String(v), { 'text-anchor': 'middle', 'font-size': 13, fill: hot ? 'var(--accent-ink)' : 'var(--ink)' }));
+        svg.append(mono(x + bw * 0.8, 63, k < nodes.length - 1 ? '•' : '∅', { 'text-anchor': 'middle', 'font-size': 13, fill: 'var(--ink-2)' }));
+        if (k < nodes.length - 1) svg.append(sv('path', { d: 'M' + (x + bw * 0.8) + ' 58 H' + (X(k + 1) - 2), stroke: 'var(--ink)', 'stroke-width': 1.5, 'marker-end': 'url(#ll-arr)' }));
+        svg.append(mono(x + bw * 0.3, 30, 'index ' + k, { 'text-anchor': 'middle', 'font-size': 10, fill: 'var(--ink-3)' }));
+        if (st.cur === k) svg.append(txt(x + bw * 0.3, 100, 'current', { 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--accent)', 'font-weight': 700 }));
+      });
+      log.textContent = st.msg + (st.hops !== undefined ? '   hops: ' + st.hops : '');
+    }
+    let ctl = stepper(steps.length, render, { interval: 700 });
+    const restart = () => { ctl.stop(); const old = ctl.el; ctl = stepper(steps.length, render, { interval: 700 }); old.replaceWith(ctl.el); };
+    const k = () => Math.max(0, +idx.value || 0), v = () => +val.value || 0;
+    const walk = (target, what) => { const out = []; for (let c = 0; c < target; c++) out.push({ a: list.slice(), cur: c, hops: c, msg: 'At node ' + c + '; follow its next arrow (' + what + ').' }); return out; };
+    const addFirst = el('button', { class: 'btn sm', onclick: () => { if (list.length >= maxN) return; list.unshift(v()); steps = [{ a: list.slice(), isNew: 0, hot: 0, hops: 0, msg: 'Add ' + v() + ' at the front: make a node whose next is the old head, and point head at it. No walking: O(1) however long the list is.' }]; restart(); } }, 'Add first');
+    const addLast = el('button', { class: 'btn sm', onclick: () => { if (list.length >= maxN) return; steps = walk(list.length - 1, 'looking for the last node'); if (list.length) steps.push({ a: list.slice(), cur: list.length - 1, hops: list.length - 1, msg: 'This node’s next is null: it is the last. Point it at the new node.' }); list.push(v()); steps.push({ a: list.slice(), isNew: list.length - 1, hot: list.length - 1, hops: Math.max(0, list.length - 2), msg: 'Added ' + v() + ' at the end after walking the whole list: O(n). (Keeping a tail pointer makes this O(1); the Java LinkedList does.)' }); restart(); } }, 'Add last');
+    const removeFirst = el('button', { class: 'btn sm', onclick: () => { if (!list.length) return; const gone = list.shift(); steps = [{ a: list.slice(), hot: 0, hops: 0, msg: 'Remove the first: point head at the second node. ' + gone + ' is no longer reachable and the garbage collector reclaims it. O(1).' }]; restart(); } }, 'Remove first');
+    const get = el('button', { class: 'btn sm', onclick: () => { const i = k(); if (i >= list.length) { steps = [{ a: list.slice(), msg: 'Index ' + i + ' does not exist: the list has ' + list.length + ' nodes. (A list cannot jump to an index; it walks.)', hops: 0 }]; restart(); return; } steps = walk(i, 'counting'); steps.push({ a: list.slice(), hot: i, cur: i, hops: i, msg: 'Index ' + i + ' holds ' + list[i] + ', found after ' + i + ' hop' + (i === 1 ? '' : 's') + '. An array would have gone straight there.' }); restart(); } }, 'Get index');
+    const insertAt = el('button', { class: 'btn sm', onclick: () => { const i = k(); if (list.length >= maxN || i > list.length) return; if (i === 0) { addFirst.onclick(); return; } steps = walk(i - 1, 'looking for the node before index ' + i); steps.push({ a: list.slice(), cur: i - 1, hops: i - 1, msg: 'Node ' + (i - 1) + ' is the one before the insertion point. The new node’s next becomes this node’s next; then this node’s next becomes the new node.' }); list.splice(i, 0, v()); steps.push({ a: list.slice(), isNew: i, hot: i, hops: i - 1, msg: 'Inserted ' + v() + ' at index ' + i + ': two arrows changed, nothing shifted. The walk cost ' + (i - 1) + ' hop' + (i - 1 === 1 ? '' : 's') + '; the insert itself cost nothing.' }); restart(); } }, 'Insert at index');
+    render(0);
+    mount.append(el('div', { class: 'fig-scroll' }, svg), el('div', { class: 'fig-tools' }, el('span', {}, 'index'), idx, el('span', {}, 'value'), val, get, insertAt, addFirst, addLast, removeFirst), log, ctl.el);
+  };
+
   /* ---------- 20. splitting double vowel spelling into letters (math lesson 7) ---------- */
   W.letters = function (mount, b) {
     const CHARS = "abcdeghijkmnopstwyz'";             // the characters the system writes with (c only in ch)
