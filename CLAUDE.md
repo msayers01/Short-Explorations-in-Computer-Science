@@ -81,8 +81,11 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   binary search trees; heaps and priority queues; graphs; a project.
 - SC 100 From Scratch to Python (`src/course_scratch.js`, grades 5-8): lessons 1-6 (say and ask; variables; repeat, forever and the turtle;
   if/elif/else; lists; functions), 12 exercises, the `blocks` figure (Scratch blocks beside Python; C-blocks take an else child list) and
-  turtle drawing inside lesson playgrounds. Ids `sp-<n>-<k>`. Lesson 6 exercises are `{call, expect}` (repr of the value). Planned next:
-  a drawing project; a text game; then hand over to SC 101.
+  turtle drawing inside lesson playgrounds. Ids `sp-<n>-<k>`. Lesson 6 exercises are `{call, expect}` (repr of the value). Written for
+  ages 10-13: prose at Flesch-Kincaid grade 3-4 (measure with a script before adding a lesson; stories under 12 words a sentence), every
+  lesson ends with a `blockquiz` figure (translate five blocks) before the exercises, every example that matters has a "Guess first" reveal,
+  every exercise has a `followup` stretch challenge, and `course.affirm` gives the pass messages. Planned next: a drawing project; a text
+  game; then hand over to SC 101.
 - Courses still being written carry `status: 'developing'` (Scratch to Python, Modern C++, Java, DSA): an "Under development" tag (app.js `devTag`).
 - SC 106 Introduction to Java: the interpreter and the first 4 lessons (Hello Java and types; decisions and Scanner; loops; methods), 8 exercises.
   Planned next: arrays; Strings; ArrayList; classes and objects; inheritance and interfaces; exceptions; HashMap; a project.

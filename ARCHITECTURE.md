@@ -159,6 +159,7 @@ Lesson: `{ title, summary, blocks[] }`. Blocks, rendered by `renderBlocks()`:
 | `{ ex: {...} }` | exercise (code kind or math kind, see below) |
 
 Code exercise: `{ id, title, prompt, starter, solution, hints[], tests[], mustContain[], mustNotContain[], followup, failTip, sampleStdin, prelude }`.
+A course may carry `affirm: [...]`, its own words for the title of a passed exercise (From Scratch to Python does); otherwise app.js's list is used.
 Tests: Python `{call, expect}` (repr) or `{stdin, expect}`; Scheme `{call, expect}`; C++ and Java `{stdin, expect}`,
 `{setup, call, expect}` (checker supplies main) or `{name, main, expect}`; Java also `ex.classes: true` (see §9e).
 
@@ -475,7 +476,9 @@ in the tests) wraps method-writing exercises in a class with a `main`.
   experiment timed in the page; param `algo`), mergeviz (bottom-up merge sort, every merge step and the comparison count), partition (Lomuto
   partition with its invariant), linkedlist (nodes and arrows; get, insert, add first/last, remove first, with hop counts; all three take `items`); and blocks (From Scratch to Python: a stack of Scratch-style blocks drawn with the palette
   colours beside highlighted Python; `stack: [[category, text, children?, elseChildren?]]`, `python`, in text `[words]` is a text input, `(10)`
-  a number, `<cond>` a boolean).
+  a number, `<cond>` a boolean), and blockquiz (the same blocks as a quiz: `items: [{stack, answer | [answers], hint}]`; the typed line is
+  compared with spaces outside quotes removed and single quotes read as double; capitals and colons are not forgiven; two-line answers are
+  typed one after the other).
 - **Turtle in a lesson:** a Python playground whose code imports turtle gets a `.play-turtle` mount and runs with a canvas in the
   sandboxed frame, as the Lab does (`runCell`, `usesTurtle` in app.js). `test_course.js` skips those examples in node (no canvas); the
   browser test runs one.
