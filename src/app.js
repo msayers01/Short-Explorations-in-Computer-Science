@@ -664,7 +664,7 @@
   }
   // Each kind of block gets a small label above it, so a reader can see what the next thing is before reading it.
   const tagged = (label, node, extraClass) => el('div', { class: 'blk' + (extraClass ? ' ' + extraClass : '') }, el('div', { class: 'blk-tag', 'aria-hidden': 'true' }, label), node);
-  const slug = (s) => s.toLowerCase().replace(/<[^>]+>/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');   // from textContent: plain text, no tags to strip
   function renderBlocks(blocks, course, lessonIdx, parts) {
     const frag = document.createDocumentFragment(); let playCount = 0, exCount = 0, checkCount = 0, firstEx = true, firstProse = true;
     const part = (id, title, kind) => { if (parts) parts.push({ id, title, kind }); };
