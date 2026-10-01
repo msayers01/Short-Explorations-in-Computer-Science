@@ -35,7 +35,9 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 
 ## Design constraints (the ones that bite)
 
-- **Content Security Policy** is written by `build.js` into every page and `dist/_headers`: inline scripts allowed by hash only,
+- **Content Security Policy** is written by `build.js` into every page and `dist/_headers`: inline scripts allowed by hash only (all of
+  `src/*.js` is ONE inline script, so the policy is three hashes; Cloudflare refuses a `_headers` line over 2000 characters, and build.js
+  now fails rather than write one),
   `connect-src 'self'` (only for the Full C++ download), `worker-src blob:`, no other origin. A new inline script needs nothing (its hash is
   computed); a new external resource must be added deliberately. Fonts are embedded as data URIs.
 - **Student code never runs in the page.** Python (Skulpt) and C++ (JSCPP) run in Web Workers built from inert `<script type="text/plain">`
@@ -103,6 +105,12 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   making and moving things; looking inside files; pipes and redirection; running your programs; Windows cmd and PowerShell as a dialect
   switch over the same file system; a first script; a tidy-a-messy-folder project), terminal exercises graded on file-system state plus
   output, `setup lessonN` through the shell's `setup` hook, terminal tasks in teacher assignments.
+- SC 108 The Command Line (`src/course_shell.js`, grades 7-12): lessons 1-2 (where am I: prompt, tree, paths, cd; making and moving things:
+  mkdir, touch, echo >, cp, mv, rm, wildcards), 4 exercises (`sh-<n>-<k>`; kind `shell` graded by `src/shellgrade.js`, plus `answer`), the
+  `fstree` figure, `course.setups` trees `lesson1`/`lesson2`. Lesson examples are terminals (`terminal.js: playBlock`); each has its own
+  files, so an example must not depend on an earlier one; mark examples whose commands fail on purpose with `expectError: true`.
+  Planned next (two lessons per PR): 3 looking inside files (cat, head, tail, wc, grep, find); 4 pipes and redirection; 5 running your
+  programs; 6 Windows cmd and PowerShell (a dialect switch over the same file system); 7 a first script; 8 a project (tidy a messy folder).
 - Ideas not started: C in the Code Lab (same compiler); lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
   beside the single-page design and needs a policy change); splitting CI (about 4 minutes now); a Java step-through debugger like the C++ memory stepper.

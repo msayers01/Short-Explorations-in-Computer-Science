@@ -1,9 +1,11 @@
-/* The Terminal panel of the Code Lab: a prompt in front of the practice shell (src/shell.js), drawn like the output panel.
-   Registered as window.TERMINAL; src/lab.js mounts it with { el, armConfirm, isTouch, Runners, isFull, cppStd, labFiles, labChanged, openInEditor }.
-
-   What lives where: the shell's file system is saved under shortcourses.shell.v1 (only /home and /tmp; the system part is rebuilt).
-   ~/lab mirrors the Code Lab's files: before every command the Lab's files are written into it, and after the command any file in it that
-   changed, appeared or was removed is written back to the Lab (new files only for extensions the Lab knows: .py .cpp .java .scm).
+/* Terminals in front of the practice shell (src/shell.js), drawn like the output panel.
+   Registered as window.TERMINAL:
+     mount(ctx)                    the Code Lab's Terminal panel (src/lab.js mounts it with { el, armConfirm, isTouch, Runners, isFull, cppStd, stop,
+                                   labFiles, addLabFile, labChanged, openInEditor, onClose }). Its file system is saved under shortcourses.shell.v1
+                                   (only /home and /tmp; the system part is rebuilt), and ~/lab mirrors the Code Lab's files both ways.
+     playBlock(b, course)          a lesson example in a shell course: the commands as a listing, Run types them into a live terminal below
+     exerciseBlock(ex, course, i)  an exercise of kind 'shell': a terminal over the exercise's setup, graded by src/shellgrade.js
+   Every terminal is a makePanel(): one <input> is the command line, and while a program asks for input the same line answers it.
    Programs run through the same sandboxes as the Run button (Runners / PYRUN / CLANGRUN); their text comes back here as text only. */
 (function () {
   'use strict';
@@ -12,29 +14,31 @@
   const EXT = { '.py': 'python', '.cpp': 'cpp', '.cc': 'cpp', '.cxx': 'cpp', '.h': 'cpp', '.java': 'java', '.scm': 'scheme', '.ss': 'scheme', '.rkt': 'scheme' };
   const langOf = (name) => { const m = name.match(/\.\w+$/); return m && Object.prototype.hasOwnProperty.call(EXT, m[0].toLowerCase()) ? EXT[m[0].toLowerCase()] : null; };
   const MAX_SCROLLBACK = 300000;   // characters kept on screen
+  const A = () => window.__app.internal;
 
-  function mount(ctx) {
-    const { el } = ctx;
+  /* ---------------- the panel ----------------
+     o: { fs, title, hooks: {edit?, setup?}, armConfirm, isFull?, cppStd?, stop?, before?(), after?(), onReset?() → fs, resetTitle, onClose?, persist?: key, history?: [] } */
+  function makePanel(o) {
+    const { el } = window.__h;
     const SHELL = window.SHELL;
-    let saved = null; try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { saved = null; }
-    let fs = SHELL.makeFS(saved && saved.fs);
-    const hooks = { fs, run, compile, nano, edit, cancel: () => { if (ctx.stop) ctx.stop(); } };
+    let fs = o.fs;
+    const hooks = Object.assign({ fs, run, compile, nano, cancel: () => { if (o.stop) o.stop(); } }, o.hooks || {});
     let sh = SHELL.makeShell(hooks);
-    if (saved && Array.isArray(saved.history)) sh.history = saved.history.filter((s) => typeof s === 'string' && s.length < 2000).slice(-SHELL.LIMITS.history);
-    // saved at once after every command (a reload a moment later must find the files)
-    const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ v: 1, fs: fs.toJSON(), history: sh.history })); } catch (e) { /* storage full or off: the session still works */ } };
+    if (Array.isArray(o.history)) sh.history = o.history.filter((s) => typeof s === 'string' && s.length < 2000).slice(-SHELL.LIMITS.history);
+    const save = () => { if (!o.persist) return; try { localStorage.setItem(o.persist, JSON.stringify({ v: 1, fs: fs.toJSON(), history: sh.history })); } catch (e) { /* storage full or off: the session still works */ } };
 
-    // ----- the panel
     const box = el('div', { class: 'out term lab-term', hidden: '' });
     const status = el('span', { class: 'term-status', role: 'status' });
-    const resetBtn = el('button', { class: 'linklike term-reset', title: 'Forget every file and folder made in this terminal (the Code Lab files stay)', onclick: (e) => ctx.armConfirm(e.currentTarget, 'Delete all terminal files? Click again to confirm', reset) }, 'Reset files');
-    const closeBtn = el('button', { class: 'linklike term-close', title: 'Close the terminal', onclick: () => { if (ctx.onClose) ctx.onClose(); } }, '×');
-    const bar = el('div', { class: 'term-bar' }, el('span', { class: 'term-dots', 'aria-hidden': 'true' }, el('span'), el('span'), el('span')), el('span', { class: 'term-title' }, 'Terminal'), status, resetBtn, closeBtn);
+    const resetBtn = o.onReset ? el('button', { class: 'linklike term-reset', title: o.resetTitle || 'Start again from the files this terminal began with', onclick: (e) => o.armConfirm(e.currentTarget, 'Reset the files? Click again to confirm', () => api.reset()) }, 'Reset files') : null;
+    const closeBtn = o.onClose ? el('button', { class: 'linklike term-close', title: 'Close the terminal', onclick: () => o.onClose() }, '×') : null;
+    const bar = el('div', { class: 'term-bar' }, el('span', { class: 'term-dots', 'aria-hidden': 'true' }, el('span'), el('span'), el('span')), el('span', { class: 'term-title' }, o.title || 'Terminal'), status, resetBtn, closeBtn);
     const pre = el('pre', { class: 'out-text term-scroll', 'aria-live': 'polite', 'aria-label': 'Terminal output' });
     const ps1 = el('span', { class: 'term-ps1' });
     const inp = el('input', { class: 'term-inp', type: 'text', 'aria-label': 'Command line', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', placeholder: 'type a command, for example: help' });
-    const inputRow = el('div', { class: 'term-input' }, ps1, inp);
-    box.append(bar, pre, inputRow);
+    const tabBtn = el('button', { class: 'term-tab', type: 'button', title: 'Complete the name (Tab)', 'aria-label': 'Complete the name', onmousedown: (e) => e.preventDefault(), onclick: () => complete() }, '⇥');
+    const ac = el('ul', { class: 'term-ac', role: 'listbox', hidden: '' });   // the list of completions when several fit
+    const inputRow = el('div', { class: 'term-input' }, ps1, inp, tabBtn);
+    box.append(bar, pre, inputRow, ac);
     box.addEventListener('click', (e) => { if (e.target === pre || e.target === inputRow || e.target === box) inp.focus(); });
 
     // writing: text is batched into one node per class run, and the scrollback is trimmed from the top
@@ -56,17 +60,18 @@
     const io = { out: write, err: (s) => write(s, 'err'), ask, clear: () => { flush(); pre.textContent = ''; shown = 0; }, tty: true, cols: 80 };
     const measure = () => { try { const probe = el('span', { style: 'position:absolute;visibility:hidden;white-space:pre' }, 'MMMMMMMMMM'); pre.append(probe); const w = probe.getBoundingClientRect().width / 10; probe.remove(); if (w > 0) io.cols = Math.max(20, Math.floor((pre.clientWidth - 30) / w)); } catch (e) { /* keep 80 */ } };
     async function runLine(text) {
-      if (running) return;
-      running = true; shown = 0; inp.value = ''; inp.disabled = false; setStatus('running', 'running'); measure();
+      if (running) return 0;
+      running = true; shown = 0; inp.value = ''; setStatus('running', 'running'); measure();
       line(sh.prompt() + text, 'cmd');
-      syncIn();
+      if (o.before) { try { o.before(fs); } catch (e) { /* a broken mirror must never stop a command */ } }
       let exit = 0;
       try { exit = await sh.exec(text, io); } catch (e) { write('bash: ' + (e && e.message || e) + '\n', 'err'); exit = 1; }
       flush();
-      syncOut();
+      if (o.after) { try { o.after(fs, line); } catch (e) { /* as above */ } }
       running = false; asking = null; inp.placeholder = ''; setPrompt();
       setStatus(exit ? 'fail' : 'ok', 'exit ' + exit);
       save();
+      return exit;
     }
     function onEnter() {
       const v = inp.value;
@@ -74,9 +79,38 @@
       if (running) return;
       runLine(v);
     }
+    // ----- Tab completion. One fit: it is filled in. Several: the longest common start is filled in, and the fits are listed under the line
+    // (arrows choose, Tab or Enter accepts, Esc closes, typing goes on). Touch screens have the ⇥ button for it.
+    let acItems = [], acStart = 0, acTail = '', acSel = -1;
+    const acClose = () => { ac.hidden = true; ac.replaceChildren(); acItems = []; acSel = -1; };
+    const acAccept = (i) => { const it = acItems[i]; if (!it) return; inp.value = inp.value.slice(0, acStart) + it.value + acTail; inp.selectionStart = inp.selectionEnd = acStart + it.value.length; acClose(); inp.focus(); };
+    const acMove = (d) => { if (!acItems.length) return; acSel = (acSel + d + acItems.length) % acItems.length; [...ac.children].forEach((li, i) => { li.classList.toggle('on', i === acSel); li.setAttribute('aria-selected', i === acSel ? 'true' : 'false'); }); const cur = ac.children[acSel]; if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest' }); };
+    function complete() {
+      const head = inp.value.slice(0, inp.selectionStart), tail = inp.value.slice(inp.selectionStart);
+      const c = sh.complete(head);
+      if (!c.items.length) { acClose(); return; }
+      if (c.items.length === 1) { inp.value = head.slice(0, c.start) + c.items[0] + tail; inp.selectionStart = inp.selectionEnd = c.start + c.items[0].length; acClose(); return; }
+      let common = c.items[0]; for (const it of c.items) { let k = 0; while (k < common.length && k < it.length && common[k] === it[k]) k++; common = common.slice(0, k); }
+      const word = head.slice(c.start);
+      let newHead = head;
+      if (common.length > word.length) { newHead = head.slice(0, c.start) + common; inp.value = newHead + tail; inp.selectionStart = inp.selectionEnd = newHead.length; }
+      acItems = c.items.map((value, i) => ({ value, label: (c.display || c.items)[i] })); acStart = c.start; acTail = tail; acSel = -1;
+      ac.replaceChildren(...acItems.map((it, i) => el('li', { role: 'option', 'aria-selected': 'false', class: /\/$/.test(it.label) ? 't-dir' : '', onmousedown: (e) => e.preventDefault(), onclick: () => acAccept(i) }, it.label)));
+      ac.hidden = false;
+    }
+    inp.addEventListener('input', () => { if (!ac.hidden) { const head = inp.value.slice(0, inp.selectionStart); const word = head.slice(acStart); const keep = acItems.filter((it) => it.value.startsWith(word)); if (!keep.length || word.length < 1) acClose(); else { acItems = keep; acSel = -1; ac.replaceChildren(...acItems.map((it, i) => el('li', { role: 'option', 'aria-selected': 'false', class: /\/$/.test(it.label) ? 't-dir' : '', onmousedown: (e) => e.preventDefault(), onclick: () => acAccept(i) }, it.label))); } } });
+    inp.addEventListener('blur', () => setTimeout(acClose, 150));
     let hIdx = -1, hDraft = '';
     inp.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); hIdx = -1; onEnter(); return; }
+      // the completion list first: its arrows, Enter, Tab and Esc are not the history's or the command line's
+      if (!ac.hidden && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Escape' || ((e.key === 'Enter' || e.key === 'Tab') && acSel >= 0))) {
+        e.preventDefault();
+        if (e.key === 'Escape') acClose();
+        else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') acMove(e.key === 'ArrowDown' ? 1 : -1);
+        else acAccept(acSel);
+        return;
+      }
+      if (e.key === 'Enter') { e.preventDefault(); hIdx = -1; acClose(); onEnter(); return; }
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         if (running) return; e.preventDefault();
         const h = sh.history; if (!h.length) return;
@@ -86,120 +120,219 @@
         requestAnimationFrame(() => { inp.selectionStart = inp.selectionEnd = inp.value.length; });
         return;
       }
-      if (e.key === 'Tab') {
-        e.preventDefault(); if (running) return;
-        const head = inp.value.slice(0, inp.selectionStart), tail = inp.value.slice(inp.selectionStart);
-        const c = sh.complete(head);
-        if (!c.items.length) return;
-        if (c.items.length === 1) { inp.value = head.slice(0, c.start) + c.items[0] + tail; inp.selectionStart = inp.selectionEnd = c.start + c.items[0].length; return; }
-        let common = c.items[0]; for (const it of c.items) { let k = 0; while (k < common.length && k < it.length && common[k] === it[k]) k++; common = common.slice(0, k); }
-        const word = head.slice(c.start);
-        if (common.length > word.length) { inp.value = head.slice(0, c.start) + common + tail; inp.selectionStart = inp.selectionEnd = c.start + common.length; return; }
-        line(sh.prompt() + inp.value, 'cmd'); line(c.items.map((s) => s.trim()).join('  '));
-        return;
-      }
+      if (e.key === 'Tab') { e.preventDefault(); if (!running) complete(); return; }
       if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) { e.preventDefault(); if (running) { sh.cancel(); if (asking) { const a = asking; asking = null; a.resolve(''); } } else { line(sh.prompt() + inp.value + '^C', 'cmd'); inp.value = ''; } return; }
       if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); io.clear(); return; }
       if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); inp.value = ''; return; }
     });
 
-    // ----- ~/lab: the Code Lab's files, seen from the terminal
-    let mirrored = new Set();   // names mirrored into ~/lab by the last syncIn
-    function syncIn() {
-      try {
-        if (!fs.isDir(LAB_DIR)) { if (fs.exists(LAB_DIR)) fs.unlink(LAB_DIR); fs.mkdir(LAB_DIR, true); }
-        const files = ctx.labFiles(), names = new Set();
-        for (const f of files) {
-          if (!fs.validName(f.name) || names.has(f.name)) continue; names.add(f.name);
-          const p = LAB_DIR + '/' + f.name, n = fs.stat(p);
-          if (n && n.t === 'd') continue;
-          if (!n || n.d !== f.code) { try { fs.write(p, f.code); } catch (e) { /* over the limits: the Lab file is simply not shown here */ } }
-        }
-        for (const name of mirrored) if (!names.has(name) && fs.isFile(LAB_DIR + '/' + name)) { try { fs.unlink(LAB_DIR + '/' + name); } catch (e) { /* ignore */ } }
-        mirrored = names;
-      } catch (e) { /* a broken mirror must never stop a command */ }
-    }
-    function syncOut() {
-      try {
-        if (!fs.isDir(LAB_DIR)) return;   // the whole folder was removed: the Lab keeps its files, and the next command brings the folder back
-        const files = ctx.labFiles(); let changed = false; const removed = [];
-        const byName = new Map(); for (const f of files) if (!byName.has(f.name)) byName.set(f.name, f);
-        for (const name of fs.list(LAB_DIR)) {
-          const n = fs.stat(LAB_DIR + '/' + name); if (n.t !== 'f' || n.bin) continue;
-          const f = byName.get(name);
-          if (f) { if (f.code !== n.d) { f.set(n.d); changed = true; } }
-          else if (langOf(name)) { ctx.addLabFile(langOf(name), name, n.d); changed = true; mirrored.add(name); }
-        }
-        for (const name of mirrored) if (!fs.exists(LAB_DIR + '/' + name) && byName.has(name)) { byName.get(name).remove(); removed.push(name); changed = true; }
-        if (removed.length) line('(removed from the Code Lab too: ' + removed.join(', ') + ')', 'note');
-        if (changed) ctx.labChanged();
-      } catch (e) { /* as above */ }
-    }
-
-    // ----- hooks for the shell
-    const R = () => ctx.Runners;
-    async function run(lang, src, o) {
-      const onOutput = (s) => o.onOutput(String(s));
-      if (lang === 'python') { const r = await window.PYRUN.run(src, { stdin: o.stdin == null ? null : o.stdin, execLimit: 15000, onOutput, onInput: o.onInput ? (p) => o.onInput(p) : undefined }); return { err: r.err, exit: r.err ? (/^Stopped/.test(r.err) ? 130 : 1) : 0 }; }
-      if (lang === 'java') { const r = await R().java.run(src, { stdin: o.stdin == null ? '' : o.stdin, onOutput }); return { err: r.err, exit: r.err ? 1 : (r.exit || 0) }; }
+    // ----- hooks for the shell: programs through the site's sandboxes
+    const R = () => A().Runners;
+    async function run(lang, src, p) {
+      const onOutput = (s) => p.onOutput(String(s));
+      if (lang === 'python') { const r = await window.PYRUN.run(src, { stdin: p.stdin == null ? null : p.stdin, execLimit: 15000, onOutput, onInput: p.onInput ? (q) => p.onInput(q) : undefined }); return { err: r.err, exit: r.err ? (/^Stopped/.test(r.err) ? 130 : 1) : 0 }; }
+      if (lang === 'java') { const r = await R().java.run(src, { stdin: p.stdin == null ? '' : p.stdin, onOutput }); return { err: r.err, exit: r.err ? 1 : (r.exit || 0) }; }
       if (lang === 'scheme') { const r = await R().scheme.run(src, { onOutput }); return { err: r.error ? ';' + String(r.error).replace(/^;/, '') : null, exit: r.error ? 1 : 0 }; }
       if (lang === 'cpp') {
-        if (o.std) { const r = await R().cppFull.run(src, { stdin: o.stdin == null ? '' : o.stdin, std: o.std, onOutput, onNote: (s) => write(s + '\n', 'note'), host: box }); return { err: r.err, exit: r.err ? 1 : (r.exit || 0) }; }
-        const r = await R().cpp.run(src, { stdin: o.stdin == null ? '' : o.stdin, onOutput }); return { err: r.err, exit: r.err ? 1 : 0 };
+        if (p.std) { const r = await R().cppFull.run(src, { stdin: p.stdin == null ? '' : p.stdin, std: p.std, onOutput, onNote: (s) => write(s + '\n', 'note'), host: box }); return { err: r.err, exit: r.err ? 1 : (r.exit || 0) }; }
+        const r = await R().cpp.run(src, { stdin: p.stdin == null ? '' : p.stdin, onOutput }); return { err: r.err, exit: r.err ? 1 : 0 };
       }
       return { err: lang + ': no way to run this here', exit: 126 };
     }
     const stdOf = (s) => { const m = String(s || '').match(/(11|14|17|20|23)$/); return m ? 'gnu++' + m[1] : 'gnu++20'; };
-    async function compile(lang, src, o) {
+    async function compile(lang, src, p) {
       if (lang === 'java') { const r = await window.JAVARUN.check(src); return { err: r.err }; }
       if (lang === 'cpp') {
-        const wantFull = ctx.isFull() || !!o.std;
-        if (wantFull && R().cppFull.available()) { const std = o.std ? stdOf(o.std) : (ctx.cppStd() || 'gnu++20'); const r = await R().cppFull.compile(src, { std, host: box }); if (r.notes) write(r.notes + '\n', 'note'); return { err: r.err, std: r.err ? undefined : std }; }
-        if (wantFull && o.std) write('(Full C++ is not available here, so the teaching compiler was used; -std was ignored)\n', 'note');
+        const wantFull = (o.isFull && o.isFull()) || !!p.std;
+        if (wantFull && R().cppFull.available()) { const std = p.std ? stdOf(p.std) : ((o.cppStd && o.cppStd()) || 'gnu++20'); const r = await R().cppFull.compile(src, { std, host: box }); if (r.notes) write(r.notes + '\n', 'note'); return { err: r.err, std: r.err ? undefined : std }; }
+        if (wantFull && p.std) write('(Full C++ is not available here, so the teaching compiler was used; -std was ignored)\n', 'note');
         const r = await window.CPPRUN.check(src); return { err: r.err };
       }
       return { err: null };
     }
-    // nano: a small editor inside the panel; resolves with the new text, or null when the student leaves without saving
-    function nano(title, text) {
+    // nano: a small editor inside the panel. write(text) saves the file at once (and returns an error message, or null); the promise resolves
+    // when the student leaves. Keys work wherever the focus is while nano is open: Ctrl+S or Ctrl+O save, Ctrl+X leaves, and when there are
+    // unsaved changes the "Save modified buffer?" question takes Y, N or Ctrl+C, as the real nano does. The buttons do the same by mouse.
+    function nano(title, text, write) {
       return new Promise((resolve) => {
         flush(); inputRow.hidden = true;
-        const ta = el('textarea', { class: 'nano-ta', 'aria-label': 'Editing ' + title, spellcheck: 'false', autocapitalize: 'off' });
-        ta.value = text; let dirty = false, savedText = text;
+        const ta = el('textarea', { class: 'nano-ta', 'aria-label': 'Editing ' + title, spellcheck: 'false', autocapitalize: 'off', autocomplete: 'off' });
+        ta.value = text; let dirty = false, mode = 'edit';
         const msg = el('div', { class: 'nano-msg' });
-        const keys = (pairs) => el('div', { class: 'nano-keys' }, pairs.map(([k, label, fn]) => el('button', { class: 'nano-key', onclick: fn }, el('b', {}, k), ' ' + label)));
-        const close = (value) => { ui.remove(); inputRow.hidden = false; inp.focus(); resolve(value); };
-        const doSave = () => { savedText = ta.value; dirty = false; msg.textContent = '[ Wrote ' + ta.value.split('\n').length + ' lines ]'; head.textContent = title; };
-        const doExit = () => {
-          if (!dirty) { close(savedText === text ? null : savedText); return; }
-          msg.textContent = 'Save modified buffer?'; msg.className = 'nano-msg nano-ask';
-          bottom.replaceChildren(keys([[' Y', 'Yes', () => { doSave(); close(savedText); }], [' N', 'No', () => close(savedText === text ? null : savedText)], ['^C', 'Cancel', () => { msg.textContent = ''; msg.className = 'nano-msg'; bottom.replaceChildren(mainKeys()); ta.focus(); }]]));
-        };
-        const mainKeys = () => keys([['^S', 'Save', doSave], ['^X', 'Exit', doExit]]);
         const head = el('div', { class: 'nano-head' }, title);
-        const bottom = el('div', { class: 'nano-bottom' }, mainKeys());
+        const bottom = el('div', { class: 'nano-bottom' });
         const ui = el('div', { class: 'nano' }, el('div', { class: 'nano-top' }, el('span', { class: 'nano-brand' }, 'nano'), head), ta, msg, bottom);
-        ta.addEventListener('input', () => { if (!dirty) { dirty = true; head.textContent = title + '  Modified'; } });
-        ta.addEventListener('keydown', (e) => {
-          if (e.ctrlKey && (e.key === 's' || e.key === 'S' || e.key === 'o' || e.key === 'O')) { e.preventDefault(); doSave(); }
-          else if (e.ctrlKey && (e.key === 'x' || e.key === 'X')) { e.preventDefault(); doExit(); }
-          else if (e.key === 'Tab') { e.preventDefault(); const s = ta.selectionStart; ta.value = ta.value.slice(0, s) + '    ' + ta.value.slice(ta.selectionEnd); ta.selectionStart = ta.selectionEnd = s + 4; ta.dispatchEvent(new Event('input')); }
-          else if (e.key === 'Enter') { const s = ta.selectionStart, lineStart = ta.value.lastIndexOf('\n', s - 1) + 1, indent = (ta.value.slice(lineStart, s).match(/^[ \t]*/) || [''])[0]; if (indent) { e.preventDefault(); ta.value = ta.value.slice(0, s) + '\n' + indent + ta.value.slice(ta.selectionEnd); ta.selectionStart = ta.selectionEnd = s + 1 + indent.length; ta.dispatchEvent(new Event('input')); } }
-        });
+        // the buttons must not take the focus away from the text: Ctrl+S after a click would otherwise reach the browser, not nano
+        const keys = (pairs) => el('div', { class: 'nano-keys' }, pairs.map(([k, label, fn]) => el('button', { class: 'nano-key', type: 'button', onmousedown: (e) => e.preventDefault(), onclick: () => { fn(); ta.focus(); } }, el('b', {}, k), ' ' + label)));
+        const say = (t, ask) => { msg.textContent = t; msg.className = 'nano-msg' + (ask ? ' nano-ask' : ''); };
+        const lineCount = (t) => (t === '' ? 0 : t.replace(/\n$/, '').split('\n').length);
+        const close = () => { document.removeEventListener('keydown', onKey, true); ui.remove(); inputRow.hidden = false; inp.focus(); resolve(null); };
+        const doSave = () => {
+          let t = ta.value; if (t !== '' && !t.endsWith('\n')) { t += '\n'; ta.value = t; }   // nano ends a file with a newline, as every Unix tool expects
+          const err = write ? write(t) : null;
+          if (err) { say('[ Error writing ' + title + ': ' + err + ' ]'); return false; }
+          dirty = false; head.textContent = title; say('[ Wrote ' + lineCount(t) + ' line' + (lineCount(t) === 1 ? '' : 's') + ' ]'); return true;
+        };
+        const askKeys = () => keys([[' Y', 'Yes', () => { if (doSave()) close(); }], [' N', 'No', () => close()], ['^C', 'Cancel', () => cancelAsk()]]);
+        const mainKeys = () => keys([['^S', 'Save', () => doSave()], ['^X', 'Exit', () => doExit()], ['^G', 'Help', () => say('Ctrl+S saves. Ctrl+X leaves; with unsaved changes it asks: Y saves and leaves, N leaves without saving, Ctrl+C stays.')]]);
+        const cancelAsk = () => { mode = 'edit'; ta.readOnly = false; say(''); bottom.replaceChildren(mainKeys()); ta.focus(); };
+        const doExit = () => {
+          if (!dirty) { close(); return; }
+          mode = 'ask'; ta.readOnly = true; say('Save modified buffer?  (Y)es  (N)o  Ctrl+C to cancel', true); bottom.replaceChildren(askKeys()); ta.focus();
+          if (bottom.scrollIntoView) bottom.scrollIntoView({ block: 'nearest' });
+        };
+        // one handler for every key, on the document while nano is open, so the focus does not matter
+        const onKey = (e) => {
+          if (!ui.isConnected) return;
+          const k = e.key, ctrl = e.ctrlKey || e.metaKey;
+          if (mode === 'ask') {
+            if (k === 'y' || k === 'Y') { e.preventDefault(); if (doSave()) close(); }
+            else if (k === 'n' || k === 'N') { e.preventDefault(); close(); }
+            else if ((ctrl && (k === 'c' || k === 'C')) || k === 'Escape') { e.preventDefault(); cancelAsk(); }
+            else if (k.length === 1 || k === 'Enter' || k === 'Tab' || k === 'Backspace') e.preventDefault();   // the text does not change while the question is open
+            return;
+          }
+          if (ctrl && (k === 's' || k === 'S' || k === 'o' || k === 'O')) { e.preventDefault(); doSave(); ta.focus(); }
+          else if (ctrl && (k === 'x' || k === 'X')) { e.preventDefault(); doExit(); }
+          else if (ctrl && (k === 'g' || k === 'G')) { e.preventDefault(); say('Ctrl+S saves. Ctrl+X leaves; with unsaved changes it asks: Y saves and leaves, N leaves without saving, Ctrl+C stays.'); }
+          else if (e.target === ta && k === 'Tab') { e.preventDefault(); const s = ta.selectionStart; ta.value = ta.value.slice(0, s) + '    ' + ta.value.slice(ta.selectionEnd); ta.selectionStart = ta.selectionEnd = s + 4; ta.dispatchEvent(new Event('input')); }
+          else if (e.target === ta && k === 'Enter' && !ctrl) { const s = ta.selectionStart, lineStart = ta.value.lastIndexOf('\n', s - 1) + 1, indent = (ta.value.slice(lineStart, s).match(/^[ \t]*/) || [''])[0]; if (indent) { e.preventDefault(); ta.value = ta.value.slice(0, s) + '\n' + indent + ta.value.slice(ta.selectionEnd); ta.selectionStart = ta.selectionEnd = s + 1 + indent.length; ta.dispatchEvent(new Event('input')); } }
+        };
+        ta.addEventListener('input', () => { if (!dirty) { dirty = true; head.textContent = title + '  Modified'; } if (mode === 'edit' && /^\[ Wrote/.test(msg.textContent)) say(''); });
+        document.addEventListener('keydown', onKey, true);
+        bottom.append(mainKeys());
         box.insertBefore(ui, inputRow); ta.focus();
       });
     }
-    function edit(abs, text) {
+
+    const api = {
+      el: box, io,
+      show(focus) { box.hidden = false; setPrompt(); if (focus) inp.focus(); },
+      hide() { box.hidden = true; },
+      focus: () => inp.focus(),
+      note: (s) => line(s, 'note'),
+      clear: () => io.clear(),
+      shell: () => sh, fs: () => fs, running: () => running,
+      /** run a line as if it had been typed → Promise<exit> */
+      exec: (text) => runLine(text),
+      /** start again: a new file system (from onReset), the history kept */
+      reset() { const next = o.onReset ? o.onReset() : fs; if (!next) return; fs = next; hooks.fs = fs; const hist = sh.history; sh = SHELL.makeShell(hooks); sh.history = hist; io.clear(); setStatus('', ''); setPrompt(); if (o.afterReset) o.afterReset(api); save(); }
+    };
+    setPrompt();
+    return api;
+  }
+
+  /* ---------------- the Code Lab's terminal ---------------- */
+  function mount(ctx) {
+    const SHELL = window.SHELL;
+    let saved = null; try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { saved = null; }
+    let mirrored = new Set();   // names mirrored into ~/lab by the last syncIn
+    function syncIn(fs) {
+      if (!fs.isDir(LAB_DIR)) { if (fs.exists(LAB_DIR)) fs.unlink(LAB_DIR); fs.mkdir(LAB_DIR, true); }
+      const files = ctx.labFiles(), names = new Set();
+      for (const f of files) {
+        if (!fs.validName(f.name) || names.has(f.name)) continue; names.add(f.name);
+        const p = LAB_DIR + '/' + f.name, n = fs.stat(p);
+        if (n && n.t === 'd') continue;
+        if (!n || n.d !== f.code) { try { fs.write(p, f.code); } catch (e) { /* over the limits: the Lab file is simply not shown here */ } }
+      }
+      for (const name of mirrored) if (!names.has(name) && fs.isFile(LAB_DIR + '/' + name)) { try { fs.unlink(LAB_DIR + '/' + name); } catch (e) { /* ignore */ } }
+      mirrored = names;
+    }
+    function syncOut(fs, line) {
+      if (!fs.isDir(LAB_DIR)) return;   // the whole folder was removed: the Lab keeps its files, and the next command brings the folder back
+      const files = ctx.labFiles(); let changed = false; const removed = [];
+      const byName = new Map(); for (const f of files) if (!byName.has(f.name)) byName.set(f.name, f);
+      for (const name of fs.list(LAB_DIR)) {
+        const n = fs.stat(LAB_DIR + '/' + name); if (n.t !== 'f' || n.bin) continue;
+        const f = byName.get(name);
+        if (f) { if (f.code !== n.d) { f.set(n.d); changed = true; } }
+        else if (langOf(name)) { ctx.addLabFile(langOf(name), name, n.d); changed = true; mirrored.add(name); }
+      }
+      for (const name of mirrored) if (!fs.exists(LAB_DIR + '/' + name) && byName.has(name)) { byName.get(name).remove(); removed.push(name); changed = true; }
+      if (removed.length) line('(removed from the Code Lab too: ' + removed.join(', ') + ')', 'note');
+      if (changed) ctx.labChanged();
+    }
+    const edit = (abs, text) => {
       const name = abs.split('/').pop(), lang = langOf(name);
       if (!lang) return 'edit works for .py, .cpp, .java and .scm files; for ' + name + ' use nano ' + name;
       if (abs.startsWith(LAB_DIR + '/') && !abs.slice(LAB_DIR.length + 1).includes('/')) { ctx.openInEditor(lang, name, text, false); return 'opened ' + name + ' in the editor above (it is a Code Lab file: lab/' + name + ')'; }
       ctx.openInEditor(lang, name, text, true); return 'opened a copy of ' + name + ' in the editor above, as lab/' + name;
-    }
-
-    function reset() { try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ } fs = SHELL.makeFS(null); hooks.fs = fs; const hist = sh.history; sh = SHELL.makeShell(hooks); sh.history = hist; mirrored = new Set(); io.clear(); line('(every file made in this terminal was removed; the Code Lab files are still in ~/lab)', 'note'); setPrompt(); }
-    function show(focus) { box.hidden = false; if (!pre.textContent) { line(fs.read('/etc/motd').trim(), 'note'); line('Your Code Lab files are in the folder lab: try  ls lab  and  python lab/' + (ctx.labFiles()[0] || { name: 'main.py' }).name, 'note'); } setPrompt(); if (focus) inp.focus(); }
-    setPrompt();
-    return { el: box, show, hide: () => { box.hidden = true; }, focus: () => inp.focus(), shell: () => sh, fs: () => fs, running: () => running };
+    };
+    // setup NAME: the files of a lesson, into the home directory (src/shellgrade.js finds the lesson)
+    const setup = (name, sh) => { const SG = window.SHELLGRADE; if (!SG) return null; const tree = SG.setupFor(name); if (!tree) return null; SG.populate(sh.fs, tree); sh.fs.cwd = SHELL.HOME; return 'the files for ' + name + ' are in your home directory now (you are there: ls to see them)'; };
+    const panel = makePanel({
+      fs: SHELL.makeFS(saved && saved.fs), history: saved && saved.history, persist: KEY, armConfirm: ctx.armConfirm, isFull: ctx.isFull, cppStd: ctx.cppStd, stop: ctx.stop,
+      hooks: { edit, setup }, before: syncIn, after: syncOut, onClose: ctx.onClose,
+      onReset: () => { try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ } mirrored = new Set(); return SHELL.makeFS(null); },
+      resetTitle: 'Forget every file and folder made in this terminal (the Code Lab files stay)',
+      afterReset: (p) => p.note('(every file made in this terminal was removed; the Code Lab files are still in ~/lab)')
+    });
+    const show = panel.show;
+    panel.show = (focus) => { if (!panel.el.querySelector('.term-scroll').textContent) { panel.note(panel.fs().read('/etc/motd').trim()); panel.note('Your Code Lab files are in the folder lab: try  ls lab  and  python lab/' + (ctx.labFiles()[0] || { name: 'main.py' }).name); } show(focus); };
+    return panel;
   }
-  window.TERMINAL = { mount, KEY };
+
+  /* ---------------- shell lessons ----------------
+     An example: { play: 'commands, one per line', setup: 'lesson1' | tree, caption }. The commands are a listing; Run types them into the terminal
+     below, one at a time; the student can then type their own. Reset rebuilds the files. */
+  function lessonPanel(setup, course, extra) {
+    const SG = window.SHELLGRADE;
+    const make = () => SG.makeFS(setup, course);
+    return makePanel(Object.assign({ fs: make(), armConfirm: A().armConfirm, title: 'Terminal', onReset: make, hooks: { setup: (name, sh) => { const tree = SG.setupFor(name, course); if (!tree) return null; SG.populate(sh.fs, tree); return 'the files are back'; } } }, extra || {}));
+  }
+  function playBlock(b, course) {
+    const { el } = window.__h;
+    const { highlight } = A();
+    const box = el('div', { class: 'play shell-play' });
+    if (b.caption) box.append(el('div', { class: 'play-cap' }, el('span', { class: 'play-label' }, A().lbl('tryIt')), el('span', { html: b.caption })));
+    const lines = String(b.play).split('\n').filter((l) => l.trim() !== '');
+    const listing = el('pre', { class: 'code shell-cmds' }, el('code', { html: lines.map((l) => '<span class="sh-ps">$</span> ' + highlight(l, 'shell').replace(/\n$/, '')).join('\n') }));
+    const panel = lessonPanel(b.setup, course);
+    let busy = false;
+    const runBtn = el('button', { class: 'btn primary', onclick: async () => { if (busy) return; busy = true; runBtn.disabled = true; panel.show(false); for (const l of lines) await panel.exec(l); busy = false; runBtn.disabled = false; if (!(window.matchMedia && matchMedia('(hover: none)').matches)) panel.focus(); } }, 'Run');
+    const resetBtn = el('button', { class: 'btn quiet', onclick: () => { panel.reset(); panel.hide(); } }, 'Reset');
+    box.append(listing, el('div', { class: 'toolbar' }, runBtn, resetBtn, el('span', { class: 'shell-hint' }, 'Run types these into the terminal; then type your own.')), panel.el);
+    return box;
+  }
+  /* An exercise: { id, title, prompt, setup, tests: [...], hints, solution: 'commands', followup }. Check grades the terminal's files and history. */
+  function exerciseBlock(ex, course, lessonIdx) {
+    const { el } = window.__h;
+    const I = A(); const { Progress, renderVerdict, armConfirm, highlight, lbl } = I;
+    const affirm = (course && Array.isArray(course.affirm) && course.affirm.length) ? course.affirm : null;
+    const done = Progress.isDone(ex.id);
+    const box = el('section', { class: 'exercise shell-ex' + (done ? ' done' : ''), id: ex.id });
+    box.append(el('header', { class: 'ex-head' }, el('h3', {}, el('span', { class: 'ex-label' }, 'Exercise'), ' ', ex.title), el('span', { class: 'ex-check', title: 'Completed' }, I.checkSVG())), el('div', { class: 'prose', html: ex.prompt }));
+    const panel = lessonPanel(ex.setup, course);
+    panel.show(false);
+    const verdict = el('div', { class: 'verdict', hidden: '', role: 'status' });
+    let attempts = 0;
+    const checkBtn = el('button', { class: 'btn primary', onclick: async () => {
+      if (panel.running()) return;
+      checkBtn.disabled = true; checkBtn.textContent = 'Checking…'; attempts++; verdict.hidden = false; verdict.innerHTML = '';
+      try {
+        const r = await window.SHELLGRADE.grade(ex, panel.shell());
+        renderVerdict(verdict, r, ex, attempts, affirm);
+        if (r.passed) { box.classList.add('done'); Progress.markDone(ex.id, panel.shell().history.join('\n')); document.dispatchEvent(new CustomEvent('progress-changed')); }
+      } catch (e) { verdict.className = 'verdict fail'; verdict.append(el('p', { class: 'v-title' }, 'The checker failed unexpectedly: ' + (e && e.message || e))); }
+      checkBtn.disabled = false; checkBtn.replaceChildren(lbl('check'));
+    } }, lbl('check'));
+    const resetBtn = el('button', { class: 'btn quiet', onclick: () => armConfirm(resetBtn, 'Start the files again?', () => { resetBtn.classList.remove('armed'); panel.reset(); verdict.hidden = true; }) }, 'Reset');
+    let hintIdx = 0;
+    const hintBox = el('div', { class: 'hints' });
+    const hintBtn = el('button', { class: 'btn quiet', onclick: () => {
+      if (hintIdx < ex.hints.length) { hintBox.appendChild(el('p', { class: 'hint' }, el('b', {}, 'Hint ' + (hintIdx + 1) + '. '), el('span', { html: ex.hints[hintIdx] }))); hintIdx++; }
+      hintBtn.textContent = hintIdx < ex.hints.length ? 'Hint (' + (ex.hints.length - hintIdx) + ' left)' : 'No more hints'; hintBtn.disabled = hintIdx >= ex.hints.length;
+    } }, ex.hints && ex.hints.length ? 'Hint (' + ex.hints.length + ')' : 'No hints');
+    if (!ex.hints || !ex.hints.length) hintBtn.disabled = true;
+    const solBox = el('div', { class: 'solution', hidden: '' });
+    const solBtn = el('button', { class: 'btn quiet', onclick: () => {
+      const show = () => { solBtn.classList.remove('armed'); solBox.hidden = !solBox.hidden; if (!solBox.hidden && !solBox.childNodes.length) solBox.append(el('p', {}, el('b', {}, 'One solution. '), 'Compare it with what you typed; there are usually several ways.'), el('pre', { class: 'code shell-cmds' }, el('code', { html: String(ex.solution).split('\n').filter((l) => l.trim()).map((l) => '<span class="sh-ps">$</span> ' + highlight(l, 'shell').replace(/\n$/, '')).join('\n') }))); };
+      if (attempts < 2 && solBox.hidden) armConfirm(solBtn, 'Show before trying twice?', show); else show();
+    } }, 'Solution');
+    box.append(panel.el, el('div', { class: 'toolbar' }, checkBtn, resetBtn, el('span', { class: 'spacer' }), hintBtn, solBtn), verdict, hintBox, solBox);
+    return box;
+  }
+
+  window.TERMINAL = { mount, makePanel, playBlock, exerciseBlock, KEY };
 })();

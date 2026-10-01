@@ -32,12 +32,15 @@ add lessons, figures and exercise types.
     src/course_modern.js   SC 105 Modern C++ (runs on the real compiler)
     src/course_java.js     SC 106 Introduction to Java (the first lessons; runs on the site's own Java interpreter)
     src/course_dsa.js      SC 107 Data Structures and Algorithms (the first lessons; Java, with interactive figures)
+    src/course_shell.js    SC 108 The Command Line (the first lessons; taught in the practice terminal)
     src/style.css          design tokens, layout and every component's styles
     src/app.js             router, pages, code editor, runners, grader, saved progress
     src/lab.js             the Code Lab (#/lab): files, editor, Python tracer and turtle, Scheme REPL,
                            templates, quick reference, share links, open and save, the Terminal panel
     src/shell.js           the practice shell: a Unix-style command line with its own file system (no eval, no DOM)
-    src/terminal.js        the Terminal panel in front of it: prompt, history, Tab completion, nano, the ~/lab mirror
+    src/terminal.js        the terminals in front of it: the Code Lab panel (history, Tab completion, nano, the ~/lab mirror)
+                           and the lesson terminals of the shell course (examples and graded exercises)
+    src/shellgrade.js      the shell course's file setups and its grader (file-system state and command output)
     src/teach.js           assignments, submissions and grade book, carried in links
     src/portfolio.js       the student portfolio (#/portfolio)
     src/classroom.js       classroom (projector) mode

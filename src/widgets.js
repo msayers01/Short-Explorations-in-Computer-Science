@@ -511,6 +511,43 @@ xs mapped kept result`;
   };
 
   /* ---------- 12. C++ compile pipeline ---------- */
+  /* ---------- the directory tree of a shell lesson: click a name to see its paths; "go here" moves the marker ---------- */
+  // params: tree (the same shape as a lesson's setup, keys as paths from the home directory), cwd ('~' or '~/x'), the home is /home/student
+  W.fstree = function (mount, b) {
+    const HOME = '/home/student';
+    const nodes = new Map([['/', { name: '/', dir: true, kids: [] }]]);
+    const add = (abs, dir) => { if (nodes.has(abs)) return nodes.get(abs); const parent = add(abs.slice(0, abs.lastIndexOf('/')) || '/', true); const n = { name: abs.slice(abs.lastIndexOf('/') + 1), abs, dir, kids: [] }; nodes.set(abs, n); parent.kids.push(n); return n; };
+    nodes.get('/').abs = '/';
+    for (const p of ['/bin', '/etc', '/tmp', HOME]) add(p, true);
+    for (const key of Object.keys(b.tree || {})) { const dir = key.endsWith('/') || b.tree[key] === null; const abs = HOME + '/' + key.replace(/[!/]+$/, ''); add(abs, dir); }
+    const order = (a, c) => (a.dir === c.dir ? a.name.localeCompare(c.name) : a.dir ? -1 : 1);
+    let cwd = b.cwd && b.cwd !== '~' ? HOME + b.cwd.slice(1) : HOME, picked = null;
+    const info = el('div', { class: 'fstree-info' });
+    const rel = (from, to) => {   // the relative path from one directory to a node
+      const f = from.split('/').filter(Boolean), t = to.split('/').filter(Boolean); let i = 0;
+      while (i < f.length && i < t.length && f[i] === t[i]) i++;
+      const parts = f.slice(i).map(() => '..').concat(t.slice(i)); return parts.length ? parts.join('/') : '.';
+    };
+    const tilde = (abs) => abs === HOME ? '~' : abs.startsWith(HOME + '/') ? '~' + abs.slice(HOME.length) : abs;
+    const draw = () => {
+      mount.querySelectorAll('.fstree').forEach((e) => e.remove());
+      const li = (n) => { const btn = el('button', { class: (n.dir ? 'dir' : '') + (n.abs === cwd ? ' here' : '') + (n.abs === picked ? ' picked' : ''), onclick: () => { picked = n.abs; show(n); draw(); } }, n.name + (n.dir && n.abs !== '/' ? '/' : '')); return el('li', {}, btn, n.abs === cwd ? el('span', { class: 'fig-note' }, ' ← you are here') : null, n.kids.length ? el('ul', {}, n.kids.sort(order).map(li)) : null); };
+      mount.prepend(el('div', { class: 'fstree' }, el('ul', {}, li(nodes.get('/')))));
+    };
+    const show = (n) => {
+      const from = cwd;   // where the reader is when they click: "go here" reports the cd from there
+      info.replaceChildren(
+        el('div', { class: 'fst-row' }, el('span', { class: 'fst-k' }, n.dir ? 'directory' : 'file'), el('code', {}, n.name)),
+        el('div', { class: 'fst-row' }, el('span', { class: 'fst-k' }, 'absolute path'), el('code', {}, n.abs)),
+        n.abs.startsWith(HOME) ? el('div', { class: 'fst-row' }, el('span', { class: 'fst-k' }, 'from home, with ~'), el('code', {}, tilde(n.abs))) : null,
+        el('div', { class: 'fst-row' }, el('span', { class: 'fst-k' }, 'from where you are (' + tilde(cwd) + ')'), el('code', {}, rel(cwd, n.abs))),
+        n.dir && n.abs !== cwd ? el('div', { class: 'fst-row' }, el('button', { class: 'btn sm', onclick: () => { cwd = n.abs; picked = null; info.replaceChildren(el('div', { class: 'fst-row' }, el('span', { class: 'fst-k' }, 'you moved:'), el('code', {}, 'cd ' + rel(from, n.abs)), el('span', {}, ' and now pwd prints '), el('code', {}, n.abs))); draw(); } }, 'go here (cd)')) : null);
+    };
+    info.textContent = 'Click a name to see its paths.';
+    mount.append(info);
+    draw();
+  };
+
   W.pipeline = function (mount, b) {
     const svg = sv('svg', { viewBox: '0 0 640 130', role: 'img', 'aria-label': 'From source code to a running program' });
     // param lang: 'java' draws javac, bytecode and the JVM instead of a native compiler

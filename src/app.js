@@ -55,6 +55,12 @@
       keywords: 'public private protected static final abstract class interface extends implements new return if else for while do break continue switch case default void int double float long short byte char boolean true false null this super try catch finally throw throws import package instanceof var'.split(' '),
       builtins: 'System out in println print printf String Math Scanner Integer Double Character Boolean ArrayList HashMap HashSet List Map Set StringBuilder Random Arrays Collections Object main args length'.split(' '),
       tab: '    '
+    },
+    shell: {   // the practice terminal's language (src/shell.js)
+      comment: /#.*$/m, string: /(?:"(?:[^"\\\n]|\\.)*"|'[^'\n]*')/,
+      keywords: 'if then elif else fi for in do done while until function case esac'.split(' '),
+      builtins: 'pwd cd ls mkdir rmdir touch rm cp mv chmod tree find cat less more tac head tail wc grep sort uniq cut tr sed rev nl diff tee xargs echo printf seq date cal whoami hostname file history clear exit true false export unset env which type test read source bash sh python python3 javac java g++ clang++ scheme nano edit setup man help sudo git'.split(' '),
+      tab: '    '
     }
   };
   const langOf = (lang) => (typeof lang === 'string' && Object.prototype.hasOwnProperty.call(LANGS, lang)) ? LANGS[lang] : LANGS.python;   // not LANGS[lang]: "constructor" is truthy
@@ -706,10 +712,11 @@
         frag.append(d);
       }
       else if (b.check) { checkCount++; frag.append(tagged('Quick check ' + checkCount, checkBlock(b), 'blk-check')); }
+      else if (b.play && (b.lang || course.lang) === 'shell' && window.TERMINAL) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], window.TERMINAL.playBlock(b, course), 'blk-play')); }
       else if (b.play) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount }), 'blk-play')); }
       else if (b.ex) {
         b.ex.lang = b.ex.lang || course.lang; b.ex.runtime = b.ex.runtime || course.runtime; exCount++;
-        const node = window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex, course) : exerciseBlock(b.ex, course, lessonIdx);
+        const node = window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex, course) : b.ex.kind === 'shell' && window.TERMINAL ? window.TERMINAL.exerciseBlock(b.ex, course, lessonIdx) : exerciseBlock(b.ex, course, lessonIdx);
         const wrap = tagged('Exercise ' + exCount, node, 'blk-ex');
         if (firstEx) { firstEx = false; wrap.id = 'part-exercises'; part('part-exercises', 'Exercises', 'exercises'); }
         frag.append(wrap);
@@ -939,5 +946,5 @@
   window.addEventListener('hashchange', route);
   document.addEventListener('progress-changed', () => { /* sidebars re-render on next navigation */ });
   document.addEventListener('DOMContentLoaded', route);
-  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById } };
+  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, checkSVG, lbl } };
 })();

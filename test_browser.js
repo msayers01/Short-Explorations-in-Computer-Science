@@ -166,11 +166,38 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('terminal: a new file in ~/lab becomes a Lab file', (await page.locator('.lab-tabs').innerText()).includes('fromterm.py') && (await labFiles()).cpp.some((f) => f.name === 'm2.cpp' && f.code === 'int main() {}\n'), tt.slice(-300));
   tt = await term('rm lab/m2.cpp; ls lab');
   check('terminal: rm in ~/lab removes the Lab file, and says so', /removed from the Code Lab too: m2\.cpp/.test(tt) && (await labFiles()).cpp.every((f) => f.name !== 'm2.cpp'), tt.slice(-300));
+  // Tab completion: one fit is filled in; several show a list that the arrow keys and Enter choose from; cd offers directories only
+  await page.fill('.term-inp', 'cat no'); await page.keyboard.press('Tab');
+  check('terminal: Tab completes a file name', (await page.locator('.term-inp').inputValue()) === 'cat notes/' && (await page.locator('.term-ac').isHidden()), await page.locator('.term-inp').inputValue());
+  await page.fill('.term-inp', 'cd '); await page.keyboard.press('Tab');
+  const acText = await page.locator('.term-ac').innerText();
+  check('terminal: Tab lists several fits, directories only after cd', !(await page.locator('.term-ac').isHidden()) && /lab\/\s+notes\//.test(acText) && !/ask\.py/.test(acText), acText);
+  await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter');
+  check('terminal: a listed fit can be chosen with the keyboard', (await page.locator('.term-inp').inputValue()) === 'cd notes/' && (await page.locator('.term-ac').isHidden()), await page.locator('.term-inp').inputValue());
+  await page.fill('.term-inp', 'ec'); await page.keyboard.press('Tab');
+  check('terminal: Tab completes a command', (await page.locator('.term-inp').inputValue()) === 'echo ');
+  await page.fill('.term-inp', '');
   tt = await term('while true; do :; done');
   check('terminal: a loop that never ends is stopped', /stopped: more than 20000 commands/.test(tt) && (await termStatus()) === 'exit 1', tt.slice(-200));
   await page.fill('.term-inp', 'nano notes/b.txt'); await page.press('.term-inp', 'Enter'); await page.waitForSelector('.nano-ta');
-  await page.fill('.nano-ta', 'from nano\n'); await page.keyboard.press('Control+s'); await page.keyboard.press('Control+x');
+  await page.fill('.nano-ta', 'from nano\n'); await page.keyboard.press('Control+s');
+  check('terminal: nano says what it wrote', /\[ Wrote 1 line \]/.test(await page.locator('.nano-msg').innerText()), await page.locator('.nano-msg').innerText());
+  await page.keyboard.press('Control+x');
   await page.waitForFunction(() => !document.querySelector('.nano-ta') && /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 5000 });
+  // leaving with unsaved changes: Y saves, N does not, Ctrl+C stays; the buttons do the same without stealing the focus
+  await page.fill('.term-inp', 'nano notes/c.txt'); await page.press('.term-inp', 'Enter'); await page.waitForSelector('.nano-ta');
+  await page.type('.nano-ta', 'kept'); await page.keyboard.press('Control+x'); await page.waitForSelector('.nano-msg.nano-ask');
+  await page.keyboard.press('Control+c'); check('terminal: nano Ctrl+C cancels the question', (await page.locator('.nano-msg.nano-ask').count()) === 0 && (await page.locator('.nano-ta').inputValue()) === 'kept');
+  await page.keyboard.press('Control+x'); await page.waitForSelector('.nano-msg.nano-ask'); await page.keyboard.press('y');
+  await page.waitForFunction(() => !document.querySelector('.nano-ta') && /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 5000 });
+  await page.fill('.term-inp', 'nano notes/d.txt'); await page.press('.term-inp', 'Enter'); await page.waitForSelector('.nano-ta');
+  await page.type('.nano-ta', 'lost'); await page.keyboard.press('Control+x'); await page.waitForSelector('.nano-msg.nano-ask'); await page.keyboard.press('n');
+  await page.waitForFunction(() => !document.querySelector('.nano-ta') && /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 5000 });
+  await page.fill('.term-inp', 'nano notes/e.txt'); await page.press('.term-inp', 'Enter'); await page.waitForSelector('.nano-ta');
+  await page.type('.nano-ta', 'by button'); await page.click('.nano-key:has-text("Save")'); await page.keyboard.press('Control+x');
+  await page.waitForFunction(() => !document.querySelector('.nano-ta') && /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 5000 });
+  tt = await term('cat notes/c.txt; ls notes; cat notes/e.txt');
+  check('terminal: nano Y saves, N does not, and the Save button keeps the keyboard in nano', /kept\na\.txt  b\.txt  c\.txt  e\.txt\nby button\n$/.test(tt), tt.slice(-200));
   tt = await term('cat notes/b.txt; edit notes/b.txt; edit ask.py');
   check('terminal: nano writes the file; edit opens a copy in the Lab', /from nano\n/.test(tt) && /use nano b\.txt/.test(tt) && /opened a copy of ask\.py/.test(tt) && (await page.locator('.lab-tabs .tab.on, .lab-tabs .on').innerText()).includes('ask.py'), tt.slice(-300));
   await page.reload(); await page.waitForSelector('.lab-term:not([hidden])');
@@ -181,6 +208,22 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   tt = await term('cat /etc/passwd | head -1; ls ~; cat ~/__proto__; /bin/ls ~ | wc -l');
   check('terminal: a hostile saved copy cannot replace the system or plant bad names', /root:x:0:0:root[^\n]*\nlab  __proto__\nok2\n$/.test(tt), tt.slice(-200));
   await page.click('.lab-term .term-close'); check('terminal: closes', await page.locator('.lab-term').getAttribute('hidden') !== null);
+
+  // ---- the shell course: a lesson example is a live terminal, an exercise is graded on the files afterwards
+  await goto('#/shell/1');
+  await page.locator('.shell-play .toolbar button:has-text("Run")').first().click();
+  await page.waitForFunction(() => /\/home\/student\n/.test(document.querySelector('.shell-play .term-scroll').textContent), null, { timeout: 15000 }).catch(() => { });
+  check('shell lesson: Run types the example into its terminal', /pwd\n\/home\/student\n.*ls\ngarden +letters +README\.txt/s.test(await page.locator('.shell-play .term-scroll').first().innerText()));
+  check('shell lesson: the tree figure names paths', (await page.locator('.fstree button').count()) > 5);
+  await page.locator('.shell-play .term-inp').first().fill('cat gar'); await page.locator('.shell-play .term-inp').first().press('Tab');
+  check('shell lesson: Tab completes in a lesson terminal', (await page.locator('.shell-play .term-inp').first().inputValue()) === 'cat garden/');
+  await goto('#/shell/2');
+  const exTerm = page.locator('#sh-2-1 .term-inp');
+  for (const cmd of ['mkdir project', 'mkdir project/src project/docs', 'echo "My first project" > project/README.md', 'touch project/src/main.py']) { await exTerm.fill(cmd); await exTerm.press('Enter'); await page.waitForFunction(() => /^exit/.test(document.querySelector('#sh-2-1 .term-status').textContent), null, { timeout: 10000 }); }
+  await page.click('#sh-2-1 .toolbar button:has-text("Check")'); await page.waitForSelector('#sh-2-1 .verdict.pass, #sh-2-1 .verdict.fail', { timeout: 10000 });
+  check('shell lesson: an exercise is graded on the files and marked done', (await page.locator('#sh-2-1 .verdict').getAttribute('class')) === 'verdict pass' && (await page.locator('#sh-2-1.done').count()) === 1 && (await page.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.progress.v1')).done['sh-2-1'] > 0)), await page.locator('#sh-2-1 .verdict').innerText());
+  await page.click('#sh-2-2 .toolbar button:has-text("Check")'); await page.waitForSelector('#sh-2-2 .verdict.fail', { timeout: 10000 });
+  check('shell lesson: an untouched exercise fails with the files named', /desk\/photos\/cat\.jpg exists/.test(await page.locator('#sh-2-2 .verdict').innerText()));
 
   // ---- 6. a graded exercise and a lesson example, under the policy
   await goto('#/python/1');

@@ -26,6 +26,9 @@ if (course.lang === 'cpp' && course.runtime !== 'full') {
 // Real C++ (Clang built for WebAssembly), for the courses that say runtime: 'full'. The toolchain is the same one the browser downloads.
 // Each program is compiled once and run once for each test, using the same harness the page uses (src/cppfull.js).
 const CPPFULL = require('./src/cppfull.js');
+// The shell course: exercises are graded on the state of a practice shell after the solution's commands ran (src/shellgrade.js).
+const SHELL = course.lang === 'shell' ? require('./src/shell.js') : null, SG = course.lang === 'shell' ? require('./src/shellgrade.js') : null;
+async function shellRun(setup, commands) { const fs = SG.makeFS(setup, course, { now: () => 1759330000000 }); const sh = SHELL.makeShell({ fs }); const errs = []; for (const line of String(commands || '').split('\n')) { if (!line.trim()) continue; let err = ''; const exit = await sh.exec(line, { out: () => { }, err: (t) => { err += t; }, tty: true }); if (exit) errs.push(line + ' → exit ' + exit + ' ' + err.trim()); } return { sh, errs }; }
 let full = null;
 if (course.runtime === 'full') {
   full = (async () => {
@@ -52,6 +55,12 @@ async function grade(ex, code) {
   if (ex.mustContain) for (const r of ex.mustContain) if (!r.re.test(code)) return { passed: false, error: r.msg };
   if (ex.mustNotContain) for (const r of ex.mustNotContain) if (r.re.test(code)) return { passed: false, error: r.msg };
   const results = [];
+  if (lang === 'shell') {
+    const { sh, errs } = await shellRun(ex.setup, code);
+    const r = await SG.grade(ex, sh);
+    if (errs.length && code === ex.solution) console.log('   (a command in the solution of ' + ex.id + ' failed: ' + errs.join('; ') + ')');
+    return r;
+  }
   if (lang === 'scheme') {
     const r = Scheme.runProgram(code);
     if (r.error) return { passed: false, error: r.error };
@@ -126,6 +135,7 @@ async function grade(ex, code) {
       if (course.lang === 'java') { const r = JAVA.run(b.play, b.stdin || '', { maxMs: 6000 }); if (!r.err) console.log('PLAY L' + (li+1) + ' was expected to fail but ran:', b.play.slice(0, 80)); }
       continue;
     }
+    if (course.lang === 'shell') { if (b.expectError) continue;   /* some commands fail on purpose */ const { errs } = await shellRun(b.setup, b.play); if (errs.length) console.log('PLAY L' + (li+1) + ' a command failed:', errs.join('; ')); continue; }
     if (course.lang === 'scheme') { const r = Scheme.runProgram(b.play); if (r.error) console.log('PLAY L' + (li+1) + ' error:', r.error, '\n   ', b.play.slice(0, 60)); }
     else if (course.lang === 'python') { if (/\bimport\s+turtle\b/.test(b.play)) continue;   /* turtle needs a canvas: the browser test runs those */ const r = await py(b.play, (b.testStdin || b.stdin || 'Ada\n1990\n5\n')); if (r.err) console.log('PLAY L' + (li+1) + ' error:', r.err, '\n   ', b.play.slice(0, 60)); }
     else if (course.runtime === 'full') { const h = { src: b.play, stdins: [b.stdin || ''] }; const r = await (await full)(h.src, h.stdins); if (r.err) console.log('PLAY L' + (li+1) + ' error:', r.err.split('\n')[0], '\n   ', b.play.slice(0, 80)); else if (r.parts[0].err) console.log('PLAY L' + (li+1) + ' crashed:', r.parts[0].err.slice(0, 80), '\n   ', b.play.slice(0, 80)); else if (!r.parts[0].out.trim()) console.log('PLAY L' + (li+1) + ' printed nothing:', b.play.slice(0, 80)); }

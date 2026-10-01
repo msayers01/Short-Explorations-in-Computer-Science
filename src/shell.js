@@ -626,20 +626,34 @@
       return sh.lastExit;
     };
 
-    // ----- tab completion: the first word from the commands, later words from the files
+    // ----- tab completion: the first word from the commands, later words from the files (only directories after cd and rmdir).
+    // Returns { start, items, display }: the items replace the line from `start`; each ends in a space (a file) or a slash (a directory),
+    // with spaces and quotes in names escaped; display holds the bare names for a list.
     sh.complete = (line) => {
-      const m = line.match(/(?:^|[\s|;&()<>])([^\s|;&()<>]*)$/);
-      const word = m ? m[1] : line, start = line.length - word.length;
+      const m = line.match(/(?:^|[\s|;&()<>])((?:[^\s|;&()<>\\]|\\.)*)$/);
+      let word = m ? m[1] : line, start = line.length - word.length;
+      let quote = '';
+      if (word[0] === '"' || word[0] === "'") { quote = word[0]; word = word.slice(1); }
+      word = word.replace(/\\(.)/g, '$1');
       const before = line.slice(0, start).trim();
-      const atCommand = before === '' || /(?:^|[|;&(]|&&|\|\|)\s*$/.test(before) || /\b(sudo|man|help|which|type)\s*$/.test(before);
-      let items = [];
-      if (atCommand && !word.includes('/')) items = Object.keys(COMMANDS).filter((c) => c.startsWith(word)).sort().map((c) => c + ' ');
+      const atCommand = before === '' || /(?:^|[|;&(]|&&|\|\|)\s*$/.test(before) || /\b(sudo|man|help|which|type|xargs)\s*$/.test(before);
+      const cmdWord = (before.match(/(?:^|[|;&(]|&&|\|\|)\s*([^\s|;&()<>]+)[^|;&()]*$/) || [])[1];
+      const dirsOnly = cmdWord === 'cd' || cmdWord === 'rmdir';
+      const esc = (n) => quote ? n : n.replace(/([ "'\\$`()&|;<>*?[\]{}#~!])/g, '\\$1');
+      let items = [], display = [];
+      if (atCommand && !word.includes('/')) { display = Object.keys(COMMANDS).filter((c) => c.startsWith(word)).sort(); items = display.map((c) => c + ' '); }
       else {
+        if (word === '.' || word === '..') return { start, items: [word + '/'], display: [word + '/'] };
         const slash = word.lastIndexOf('/'); const dirPart = slash >= 0 ? word.slice(0, slash + 1) : '', namePart = word.slice(slash + 1);
         const dir = fs.resolve(dirPart === '' ? '.' : dirPart);
-        if (fs.isDir(dir)) for (const n of fs.list(dir)) { if (!n.startsWith(namePart) || (n.startsWith('.') && !namePart.startsWith('.'))) continue; items.push(dirPart + n + (fs.isDir(dir === '/' ? '/' + n : dir + '/' + n) ? '/' : ' ')); }
+        if (fs.isDir(dir)) for (const n of fs.list(dir)) {
+          if (!n.startsWith(namePart) || (n.startsWith('.') && !namePart.startsWith('.'))) continue;
+          const isDir = fs.isDir(dir === '/' ? '/' + n : dir + '/' + n);
+          if (dirsOnly && !isDir) continue;
+          display.push(n + (isDir ? '/' : '')); items.push(quote + dirPart + esc(n) + (isDir ? '/' : quote + ' '));
+        }
       }
-      return { start, items };
+      return { start, items, display };
     };
     sh.tilde = tilde;
     sh.exec_words = (words, ctx, io) => runWords(words, ctx, io);
@@ -1235,16 +1249,18 @@
   const opts_compile = (sh, lang, src, o) => sh.hooks.compile ? sh.hooks.compile(lang, src, o) : Promise.resolve({ err: null });
 
   // ----- editors
-  def('nano', { cat: 'run', use: 'nano file', desc: 'Open a file in a small editor inside the terminal. Ctrl+S saves, Ctrl+X leaves (as in the real nano: ^O writes out, ^X exits).', ex: ['nano notes.txt', 'nano hello.py'],
+  def('nano', { cat: 'run', use: 'nano file', desc: 'Open a file in a small editor inside the terminal. Ctrl+S (or Ctrl+O) saves, Ctrl+X leaves; leaving with unsaved changes asks "Save modified buffer?": Y saves, N throws the changes away, Ctrl+C stays. A saved file ends with a newline, as in the real nano.', ex: ['nano notes.txt', 'nano hello.py'],
     async run(args, io, sh) {
       if (!sh.hooks.nano) { io.err('nano: no editor is available here\n'); return 1; }
       if (!args.length) { io.err('nano: give the name of a file to edit: nano notes.txt\n'); return 1; }
       const abs = sh.fs.resolve(args[0]), n = sh.fs.stat(abs);
       if (n && n.t === 'd') { io.err('nano: ' + args[0] + ': Is a directory\n'); return 1; }
       if (n && n.bin) { io.err('nano: ' + args[0] + ' is a compiled program, not text\n'); return 1; }
-      const text = await sh.hooks.nano(sh.tilde(abs), n ? n.d : '');
+      // the editor saves through write() as the student goes; a hook may instead return the final text (the node tests do)
+      const write = (t) => { try { sh.fs.write(abs, String(t)); return null; } catch (e) { if (!(e instanceof FsError)) throw e; return e.message; } };
+      const text = await sh.hooks.nano(sh.tilde(abs), n ? n.d : '', write);
       if (text === null || text === undefined) return 0;
-      try { sh.fs.write(abs, text); } catch (e) { if (!(e instanceof FsError)) throw e; io.err('nano: ' + args[0] + ': ' + e.message + '\n'); return 1; }
+      const err = write(text); if (err) { io.err('nano: ' + args[0] + ': ' + err + '\n'); return 1; }
       return 0;
     } });
   def('vi vim emacs', { cat: 'run', use: 'vi file', desc: 'Not installed here. nano is.', ex: [], run(args, io) { io.err('bash: ' + this.name + ': command not found (use nano ' + (args[0] || 'file') + ')\n'); return 127; } });
