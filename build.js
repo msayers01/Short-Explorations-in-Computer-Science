@@ -47,6 +47,7 @@ const scripts = [
   'src/scheme.js',
   'src/subst.js',
   'src/site.js',
+  'src/course_scratch.js',
   'src/course_python.js',
   'src/course_lisp.js',
   'src/course_cpp.js',

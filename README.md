@@ -1,6 +1,6 @@
 # Short Explorations in Computer Science
 
-Seven free, self-paced courses (Introduction to Python, Introduction to Lisp, Introduction to C++,
+Eight free, self-paced courses (From Scratch to Python, Introduction to Python, Introduction to Lisp, Introduction to C++,
 Introduction to the Mathematics of Computing, Modern C++, Introduction to Java, and Data Structures and Algorithms) with runnable examples and autograded exercises, a Code Lab
 sandbox, and tools for teachers: assignments and submissions shared as links, a grade book, student
 portfolios and a classroom (projector) mode. Python, C++, Java and Scheme all run in the browser, so there is no
@@ -24,6 +24,7 @@ add lessons, figures and exercise types.
 ## Layout
 
     src/site.js            site name, home and About page text, contact links, licence, source link
+    src/course_scratch.js  SC 100 From Scratch to Python: the blocks beside the lines, for students coming from Scratch
     src/course_python.js   SC 101 Introduction to Python: lessons, examples, exercises and their tests
     src/course_lisp.js     SC 102 Introduction to Lisp
     src/course_cpp.js      SC 103 Introduction to C++

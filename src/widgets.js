@@ -1014,6 +1014,42 @@ xs mapped kept result`;
     mount.append(el('div', { class: 'fig-tools' }, algoSel, shapeSel, sizeSel, el('button', { class: 'btn sm', onclick: rebuild }, 'New input')), svg, log, ctl.el, el('div', { class: 'fig-tools' }, measure), expo);
   };
 
+  /* ---------- 25. Scratch blocks beside Python (From Scratch to Python) ----------
+     block: [category, text, children?, elseChildren?]; in text, [words] is a text input, (10) a number or reporter, <cond> a boolean.
+     categories: event looks motion control sensing operators variables myblocks pen sound */
+  W.blocks = function (mount, b) {
+    const inline = (text) => {
+      const out = [];
+      const re = /\[([^\]]*)\]|\(([^()]*)\)|<([^<>]*)>/g; let last = 0, m;
+      while ((m = re.exec(text))) {
+        if (m.index > last) out.push(text.slice(last, m.index));
+        if (m[1] !== undefined) out.push(el('span', { class: 'sb-in sb-text' }, m[1]));
+        else if (m[2] !== undefined) out.push(el('span', { class: 'sb-in sb-num' }, m[2]));
+        else out.push(el('span', { class: 'sb-in sb-bool' }, m[3]));
+        last = m.index + m[0].length;
+      }
+      if (last < text.length) out.push(text.slice(last));
+      return out;
+    };
+    const render = (block, first) => {
+      const [cat, text, kids, elseKids] = block;
+      if (kids) {
+        const c = el('div', { class: 'sb sb-c sb-' + cat });
+        c.append(el('div', { class: 'sb-row' }, inline(text)), el('div', { class: 'sb-body' }, (kids.length ? kids : [['empty', '']]).map(k => render(k))));
+        if (elseKids) c.append(el('div', { class: 'sb-row' }, 'else'), el('div', { class: 'sb-body' }, (elseKids.length ? elseKids : [['empty', '']]).map(k => render(k))));
+        c.append(el('div', { class: 'sb-cap' }));
+        return c;
+      }
+      return el('div', { class: 'sb sb-' + cat + (first && cat === 'event' ? ' sb-hat' : '') }, el('div', { class: 'sb-row' }, inline(text)));
+    };
+    const stack = el('div', { class: 'sb-stack' }, (b.stack || []).map((blk, i) => render(blk, i === 0)));
+    const code = el('pre', { class: 'code sb-py' }, el('code', { html: window.__highlight ? window.__highlight(b.python || '', 'python') : esc(b.python || '') }));
+    mount.append(el('div', { class: 'sb-pair' },
+      el('div', { class: 'sb-col' }, el('div', { class: 'sb-head' }, b.leftLabel || 'In Scratch'), stack),
+      el('div', { class: 'sb-arrow', 'aria-hidden': 'true' }, '→'),
+      el('div', { class: 'sb-col' }, el('div', { class: 'sb-head' }, b.rightLabel || 'In Python'), code)));
+  };
+
   /* ---------- 20. splitting double vowel spelling into letters (math lesson 7) ---------- */
   W.letters = function (mount, b) {
     const CHARS = "abcdeghijkmnopstwyz'";             // the characters the system writes with (c only in ch)

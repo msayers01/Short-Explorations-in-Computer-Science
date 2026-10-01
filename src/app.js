@@ -261,13 +261,17 @@
     return api;
   }
 
+  const usesTurtle = (code) => /\b(import\s+turtle|from\s+turtle\s+import)\b/.test(code);
   async function runCell(lang, code, out, opts) {
     opts = opts || {};
     out.clear();
     if (lang === 'python') {
-      const r = await Runners.python.run(code, { onOutput: (s) => out.write(s), onInput: (p) => out.ask(p) });
+      // a program that draws gets a canvas in a sandboxed frame (src/runner.js), shown where opts.turtleMount is
+      const turtle = opts.turtleMount && usesTurtle(code) ? (opts.turtleMount.hidden = false, { mount: opts.turtleMount, width: Math.min(480, opts.turtleMount.clientWidth || 480), height: 320 }) : undefined;
+      if (opts.turtleMount && !turtle) { opts.turtleMount.hidden = true; opts.turtleMount.textContent = ''; }
+      const r = await Runners.python.run(code, { onOutput: (s) => out.write(s), onInput: (p) => out.ask(p), stdin: opts.stdin, turtle });
       if (r.err) out.error(r.err);
-      else if (!r.out) out.note('(the program finished without printing anything)');
+      else if (!r.out && !turtle) out.note('(the program finished without printing anything)');
     } else if (lang === 'scheme') {
       const r = await Runners.scheme.run(code, { onOutput: (s) => out.write(s) });
       for (const res of r.results) {
@@ -630,12 +634,13 @@
     if (b.caption) box.append(el('div', { class: 'play-cap' }, el('span', { class: 'play-label' }, lbl('tryIt')), el('span', { html: b.caption })));
     const editor = makeEditor(b.lang, b.code);
     const out = outputPanel();
-    const runBtn = el('button', { class: 'btn primary', onclick: () => runCell(b.lang, editor.value, out, { stdin: b.stdin, runtime: b.runtime }) }, 'Run');
+    const turtleMount = b.lang === 'python' && usesTurtle(b.code) ? el('div', { class: 'play-turtle', hidden: '' }) : null;
+    const runBtn = el('button', { class: 'btn primary', onclick: () => runCell(b.lang, editor.value, out, { stdin: b.stdin, runtime: b.runtime, turtleMount }) }, 'Run');
     const resetBtn = el('button', { class: 'btn quiet', onclick: () => { editor.value = b.code; out.hide(); } }, 'Reset');
     const labBtn = window.LAB ? el('button', { class: 'btn quiet lab-open', title: 'Copy this code into the Code Lab', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, runtime: b.runtime }) }, 'Open in Code Lab') : null;
     const substBtn = window.LAB && window.SUBST && (b.lang === 'lisp' || b.lang === 'scheme') && !b.expectError ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and watch each expression being rewritten, one step of the substitution model at a time', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, subst: true }) }, 'Show the substitution') : null;
     const memBtn = window.LAB && window.CPPSTEP && b.lang === 'cpp' && b.runtime !== 'full' ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and run it one line at a time, watching every variable, address and pointer', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, step: true, stdin: b.stdin }) }, 'Step through memory') : null;
-    box.append(editor.el, el('div', { class: 'toolbar' }, runBtn, resetBtn, b.stdin != null ? el('span', { class: 'stdin-note' }, 'input provided: ', el('code', {}, JSON.stringify(b.stdin))) : null, el('span', { class: 'spacer' }), memBtn, substBtn, labBtn), out.el);
+    box.append(editor.el, el('div', { class: 'toolbar' }, runBtn, resetBtn, b.stdin != null ? el('span', { class: 'stdin-note' }, 'input provided: ', el('code', {}, JSON.stringify(b.stdin))) : null, el('span', { class: 'spacer' }), memBtn, substBtn, labBtn), ...[turtleMount, out.el].filter(Boolean));   // append() prints a null as text
     return box;
   }
 
