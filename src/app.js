@@ -51,8 +51,9 @@
       tab: '    '
     }
   };
+  const langOf = (lang) => (typeof lang === 'string' && Object.prototype.hasOwnProperty.call(LANGS, lang)) ? LANGS[lang] : LANGS.python;   // not LANGS[lang]: "constructor" is truthy
   function highlight(code, lang) {
-    const L = LANGS[lang] || LANGS.python;
+    const L = langOf(lang);
     const re = new RegExp('(' + L.comment.source + ')|(' + L.string.source + ')|(#\\s*include\\s*<[^>]*>)|(\\b\\d+(?:\\.\\d+)?\\b)|([A-Za-z_][A-Za-z0-9_!?*<>=\\-+/]*)', 'gm');
     let out = '', last = 0, m;
     while ((m = re.exec(code))) {
@@ -93,7 +94,7 @@
     const pre = el('pre', { class: 'hl', 'aria-hidden': 'true' }, el('code'));
     const ta = el('textarea', { spellcheck: 'false', autocapitalize: 'off', autocomplete: 'off', 'aria-label': 'Code editor' });
     wrap.append(pre, ta);
-    const L = LANGS[lang] || LANGS.python;
+    const L = langOf(lang);
     const render = () => {
       const h = highlight(ta.value, lang);
       $('code', pre).innerHTML = toLines(h.endsWith('\n') ? h.slice(0, -1) : h);

@@ -81,7 +81,7 @@
         h('p', {}, 'Nothing you do leaves your computer unless you send it yourself. There are no accounts, no tracking and no advertising. The web host sees that the page was downloaded, as with any website, but the page itself never sends anything back.'),
         h('p', {}, 'What you do is saved in this browser only: your progress and your code in the lessons, your Code Lab files, your portfolio settings, a teacher\u2019s assignments and grade book, and display choices such as light or dark. Another computer, or another browser on this one, starts empty. \u201cReset my progress\u201d on the home page clears the lessons; clearing the browser\u2019s site data clears everything.'),
         h('p', {}, 'The links the site makes (a shared program, an assignment, a submission, a portfolio) carry their contents inside the link itself. Anyone who has a link can read what is in it, so share them the way you would share the work itself.'),
-        h('p', {}, 'One request does go out: the typefaces are loaded from Google Fonts, as on most websites. That request tells Google your network address and that a page asked for these fonts; it carries nothing you write.')),
+        h('p', {}, 'The page makes no requests to any other site: the typefaces are part of the page itself, so no one else, not even a font provider, learns that you opened it.')),
 
       licenceSection(),
 
@@ -99,7 +99,7 @@
         h('h3', {}, 'Software'),
         ...softwareList(),
         h('h3', {}, 'Typefaces'),
-        h('p', {}, 'Newsreader (Production Type), Source Sans 3 (Adobe) and IBM Plex Mono (IBM), served by Google Fonts under the ', ext(OFL, 'SIL Open Font License'), '.'),
+        h('p', {}, 'Newsreader (Production Type), Source Sans 3 (Adobe) and IBM Plex Mono (IBM), built into the page under the ', ext(OFL, 'SIL Open Font License'), '.'),
         h('h3', {}, 'Names'),
         h('p', {}, 'Hour of Code is a trademark of Code.org, and Python of the Python Software Foundation. QR Code is a registered trademark of DENSO WAVE INCORPORATED. None of these organisations is connected with this site.')),
 
