@@ -24,7 +24,7 @@ must move between people travels inside a URL.
 5. **Accessible prose first.** Courses are written for students and teachers with no CS background:
    definitions before examples, one idea per code block, predict-then-reveal, "Common mistakes", recap.
 6. **Everything that arrives in a link or from storage is hostile.** Links are written by strangers and are opened by teachers
-   and students. Rules, each one backed by `SECURITY-AUDIT.md` and by `test_security.js` / `tools/security/`:
+   and students. Rules, with `test_security.js` as their regression test:
    - Never put such text in the page with `innerHTML`/`html:` unless it went through `esc()`; use `textContent` or the `el()` helper's children.
    - Ids, names and language names from links are only used as keys of dictionaries without a prototype (`Object.create(null)`), checked with
      `hasLang`/`ID_RE`, and incoming assignments, submissions and back-ups pass through `normalize`/`cleanSub` (teach.js).
