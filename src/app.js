@@ -415,7 +415,7 @@
     box.append(head, el('div', { class: 'prose', html: ex.prompt }));
     const editor = makeEditor(ex.lang, saved != null ? saved : ex.starter, (v) => Progress.setCode(ex.id, v));
     const out = outputPanel();
-    const verdict = el('div', { class: 'verdict', hidden: '' });
+    const verdict = el('div', { class: 'verdict', hidden: '', role: 'status' });
     let attempts = 0;
     const runBtn = el('button', { class: 'btn', onclick: () => { runCell(ex.lang, editor.value, out, { stdin: ex.sampleStdin }); } }, 'Run');
     const checkBtn = el('button', { class: 'btn primary', onclick: async () => {
@@ -496,7 +496,7 @@
       t.append(tb); form.append(el('div', { class: 'table-wrap' }, t));
     }
     const readAnswers = () => ex.kind === 'choice' ? inputs[0]() : read();
-    const verdict = el('div', { class: 'verdict', hidden: '' });
+    const verdict = el('div', { class: 'verdict', hidden: '', role: 'status' });
     let attempts = 0;
     const checkBtn = el('button', { class: 'btn primary', onclick: () => {
       attempts++; verdict.hidden = false; verdict.innerHTML = '';

@@ -172,7 +172,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
 (number? 3)   (string? "s")   (equal? '(1 2) '(1 2))</code></pre>
 <h4>Output</h4>
 <pre><code>(display "text")   (newline)   (error "message" value)</code></pre>
-<p class="ref-note">This is an MIT-Scheme-style dialect written for this site. The value of each top-level expression is printed as <code>;Value:</code>. Numbers are floating point, so <code>(/ 1 3)</code> shows <code>.333333333333</code>. Type expressions in the REPL below the output to try things one at a time.</p>`
+<p class="ref-note">This is an MIT-Scheme-style dialect written for this site. The value of each top-level expression is printed as <code>;Value:</code>. Decimals are floating point, so <code>(/ 1 3)</code> shows <code>.333333333333</code>; whole numbers stay exact however big (<code>(expt 2 100)</code>). Type expressions in the REPL below the output to try things one at a time.</p>`
   };
 
   /* ---------------- extra error explanations ---------------- */
@@ -560,7 +560,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
 
     // ----- exercise bar (a file opened from a course exercise can be checked here)
     const exBar = el('div', { class: 'ex-bar', hidden: '' });
-    const exVerdict = el('div', { class: 'verdict', hidden: '' });
+    const exVerdict = el('div', { class: 'verdict', hidden: '', role: 'status' });
     let exAttempts = 0;
     function renderExBar() {
       const f = curFile(); exBar.innerHTML = ''; exVerdict.hidden = true; exAttempts = 0;

@@ -38,5 +38,16 @@ check('brace in a char', ensureMainReturns("int main() {\n  char c = '{';\n}"), 
 check('for(;;) cannot hang', ensureMainReturns('int main() {\n  for (;;) { break; }\n  return 0;\n}'), 'int main() {\n  for(;1;) { break; }\n  return 0;\n}');
 check('for(;;) inside a string is left alone', ensureMainReturns('int main() {\n  cout << "for(;;)";\n  return 0;\n}'), 'int main() {\n  cout << "for(;;)";\n  return 0;\n}');
 
+// patched JSCPP: unsigned integers wrap around the way C++ does
+const JSCPP = require('./node_modules/JSCPP/lib/commonjs.js');
+const runCpp = (body) => { let out = ''; try { JSCPP.run('#include <iostream>\nusing namespace std;\nint main() {' + body + ' return 0; }', '', { stdio: { write: (t) => { out += t; } }, unsigned_overflow: 'warn' }); } catch (e) { out += 'ERR ' + e.message.split('\n')[0]; } return out.trim(); };
+const quiet = console.error; console.error = () => { };   // JSCPP warns about the wrap on stderr
+check('unsigned int 0 - 1', runCpp('unsigned int u = 0; u--; cout << u;'), '4294967295');
+check('unsigned int = -1', runCpp('unsigned int u = -1; cout << u;'), '4294967295');
+check('unsigned int max + 2', runCpp('unsigned int a = 4294967295; a = a + 2; cout << a;'), '1');
+check('unsigned char 250 + 10', runCpp('unsigned char c = 250; c = c + 10; cout << (int)c;'), '4');
+check('unsigned short 65535 + 1', runCpp('unsigned short s = 65535; s++; cout << s;'), '0');
+console.error = quiet;
+
 if (bad) { console.log(bad + ' problems'); process.exit(1); }
 console.log('app helpers OK');

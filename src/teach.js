@@ -137,7 +137,7 @@
         hints: f.hints.value.split('\n').map(s => s.trim()).filter(Boolean), roster: f.roster.value.split('\n').map(s => s.trim()).filter(Boolean),
         tests: rows.map(r => ({ k: r.kind.value, in: r.inp.value.replace(/\r/g, ''), expect: r.exp.value.replace(/\r/g, ''), hidden: r.hid.checked })).filter(t => t.in !== '' || t.expect !== '')
       });
-      const tryOut = el('div', { class: 'verdict', hidden: '' });
+      const tryOut = el('div', { class: 'verdict', hidden: '', role: 'status' });
       const saveBtn = el('button', { class: 'btn primary', onclick: () => { const na = collect(); if (!na.title) { f.title.focus(); ctx.status('give the assignment a title'); return; } T.assignments[a.id] = na; T.name = na.author; save(); ctx.status('saved'); shareAssignment(a.id); } }, 'Save');
       const tryBtn = el('button', { class: 'btn', title: 'Run these tests on the code in the editor (write your own solution there first)', onclick: async () => { const na = collect(); tryOut.hidden = false; tryOut.innerHTML = ''; const r = await ctx.grade(toEx(na, true), ctx.editor.value); ctx.renderVerdict(tryOut, r, toEx(na, true), 1); } }, 'Run tests on the editor code');
       panel.append(el('div', { class: 'panel-head' }, el('b', {}, id ? 'Edit assignment' : 'New assignment'), el('span', { class: 'spacer' }), el('button', { class: 'btn quiet tiny', onclick: showList }, 'Back to the list')),
@@ -166,7 +166,7 @@
       const ex = toEx(a, false);
       const instr = el('div', { class: 'prose ex-prompt', html: textToHtml(a.text) + (a.hints && a.hints.length ? '' : '') });
       instr.hidden = !!file.asgSeen;
-      const verdict = el('div', { class: 'verdict', hidden: '' }); let attempts = 0, hintIdx = 0;
+      const verdict = el('div', { class: 'verdict', hidden: '', role: 'status' }); let attempts = 0, hintIdx = 0;
       const hintBox = el('div', { class: 'hints' });
       const check = el('button', { class: 'btn primary', onclick: async () => { if (!ex.tests.length) { verdict.hidden = false; verdict.className = 'verdict'; verdict.textContent = 'This assignment has no visible tests; run your program and read the task carefully, then submit.'; return; } check.disabled = true; attempts++; verdict.hidden = false; verdict.innerHTML = ''; const r = await ctx.grade(ex, ctx.editor.value); ctx.renderVerdict(verdict, r, ex, attempts); file.lastCheck = { passed: r.results ? r.results.filter(x => x.ok).length : 0, total: r.results ? r.results.length : 0, at: Date.now() }; ctx.save(); check.disabled = false; } }, 'Check');
       const hintBtn = el('button', { class: 'btn quiet', onclick: () => { if (hintIdx < a.hints.length) hintBox.append(el('p', { class: 'hint' }, el('b', {}, 'Hint ' + (hintIdx + 1) + '. '), a.hints[hintIdx++])); hintBtn.textContent = hintIdx < a.hints.length ? 'Hint (' + (a.hints.length - hintIdx) + ' left)' : 'No more hints'; hintBtn.disabled = hintIdx >= a.hints.length; } }, a.hints.length ? 'Hint (' + a.hints.length + ')' : 'No hints');

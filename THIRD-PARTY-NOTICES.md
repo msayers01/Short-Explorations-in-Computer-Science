@@ -46,7 +46,7 @@ per:
 
 ## JSCPP 2.0.9
 
-https://github.com/felixhao28/JSCPP. Runs the C++ programs. Licence: MIT. Changed for this site: C++-style printing of decimals, integer division that truncates, a clear division-by-zero error, a repeatable srand, and a correct strcmp (patches/jscpp-iostream.patch).
+https://github.com/felixhao28/JSCPP. Runs the C++ programs. Licence: MIT. Changed for this site: C++-style printing of decimals, integer division that truncates, a clear division-by-zero error, a repeatable srand, a correct strcmp (patches/jscpp-iostream.patch), and correct wrap-around of unsigned integers (patches/jscpp-unsigned.patch).
 
 ```
 The MIT License (MIT)

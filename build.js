@@ -55,7 +55,7 @@ const licenceText = (name, file) => {
 const THIRD_PARTY = [
   { name: 'Skulpt', pkg: 'skulpt', file: 'LICENSE', url: 'https://skulpt.org/', role: 'runs the Python programs' },
   { name: 'JSCPP', pkg: 'JSCPP', file: 'LICENSE', url: 'https://github.com/felixhao28/JSCPP', role: 'runs the C++ programs',
-    changes: 'Changed for this site: C++-style printing of decimals, integer division that truncates, a clear division-by-zero error, a repeatable srand, and a correct strcmp (patches/jscpp-iostream.patch).' },
+    changes: 'Changed for this site: C++-style printing of decimals, integer division that truncates, a clear division-by-zero error, a repeatable srand, a correct strcmp (patches/jscpp-iostream.patch), and correct wrap-around of unsigned integers (patches/jscpp-unsigned.patch).' },
   { name: 'Lodash', pkg: 'lodash', file: 'LICENSE', url: 'https://lodash.com/', role: 'part of the JSCPP bundle' },
   { name: 'printf', pkg: 'printf', file: 'LICENSE', url: 'https://github.com/adaltas/node-printf', role: 'part of the JSCPP bundle' },
   { name: 'pegjs-util', pkg: 'pegjs-util', file: null, url: 'https://github.com/rse/pegjs-util', role: 'part of the JSCPP bundle' },

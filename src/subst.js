@@ -28,11 +28,11 @@
     const without2 = (m, names) => new Map([...m].filter(([k]) => !names.includes(k)));
     const isLambdaForm = (x) => x instanceof Pair && x.car === S.lambda;
     const globalProc = (s) => { try { const v = G.lookup(s); return (v instanceof Lambda || v instanceof Primitive) ? v : null; } catch (e) { return null; } };
-    const isValue = (x) => typeof x === 'number' || typeof x === 'boolean' || typeof x === 'string' || x instanceof Datum || x === NIL || isLambdaForm(x) || (x instanceof Sym && !!globalProc(x));
+    const isValue = (x) => typeof x === 'number' || typeof x === 'bigint' || typeof x === 'boolean' || typeof x === 'string' || x instanceof Datum || x === NIL || isLambdaForm(x) || (x instanceof Sym && !!globalProc(x));
 
     // expression -> raw Scheme value (for handing to primitives / the interpreter)
     const toRaw = (x) => x instanceof Datum ? x.v : (x instanceof Sym ? G.lookup(x) : (isLambdaForm(x) ? it.evaluate(x, G) : x));
-    const fromRaw = (v) => (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string' || v === NIL) ? v : new Datum(v);
+    const fromRaw = (v) => (typeof v === 'number' || typeof v === 'bigint' || typeof v === 'boolean' || typeof v === 'string' || v === NIL) ? v : new Datum(v);
     // expression with Datums turned back into quoted data, so the interpreter can evaluate it
     const toEvalable = (x) => x instanceof Datum ? (x.v instanceof Pair || x.v instanceof Sym || x.v === NIL ? list([S.quote, x.v]) : x.v) : (x instanceof Pair ? new Pair(toEvalable(x.car), toEvalable(x.cdr)) : x);
 

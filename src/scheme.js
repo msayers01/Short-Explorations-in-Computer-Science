@@ -40,6 +40,13 @@
       const c = src[i];
       if (/\s/.test(c)) { i++; continue; }
       if (c === ';') { while (i < n && src[i] !== '\n') i++; continue; }
+      if (c === '#' && src[i + 1] === '|') {   // block comment, which may nest
+        let depth = 1; i += 2;
+        while (i < n && depth) { if (src[i] === '|' && src[i + 1] === '#') { depth--; i += 2; } else if (src[i] === '#' && src[i + 1] === '|') { depth++; i += 2; } else i++; }
+        if (depth) throw new SchemeError('Unterminated block comment');
+        continue;
+      }
+      if (c === '#' && src[i + 1] === ';') { toks.push('#;'); i += 2; continue; }   // comments out the next datum
       if (c === ',' && src[i + 1] === '@') { toks.push(',@'); i += 2; continue; }
       if (c === '(' || c === ')' || c === '\'' || c === '`' || c === ',') { toks.push(c); i++; continue; }
       if (c === '[' || c === ']') { toks.push(c === '[' ? '(' : ')'); i++; continue; }
@@ -59,11 +66,13 @@
     function read() {
       if (pos >= toks.length) throw new SchemeError('Unexpected end of input — missing a closing parenthesis?');
       const t = toks[pos++];
+      if (t === '#;') { read(); return read(); }
       if (typeof t === 'object') return t.str;
       if (t === '(') {
         const items = []; let tail = NIL;
         while (true) {
           if (pos >= toks.length) throw new SchemeError('Unexpected end of input — missing a closing parenthesis?');
+          if (toks[pos] === '#;') { pos++; read(); continue; }
           if (toks[pos] === ')') { pos++; break; }
           if (toks[pos] === '.') { pos++; tail = read(); if (toks[pos] !== ')') throw new SchemeError('Bad dotted list'); pos++; break; }
           items.push(read());
@@ -75,8 +84,9 @@
       if (t === '`') return list(S.quasi, read());
       if (t === ',') return list(S.unquote, read());
       if (t === ',@') return list(S.splice, read());
-      if (t === '#t' || t === '#true' || t === 'true') return true;
-      if (t === '#f' || t === '#false' || t === 'false') return false;
+      if (t === '#t' || t === '#T' || t === '#true' || t === 'true') return true;
+      if (t === '#f' || t === '#F' || t === '#false' || t === 'false') return false;
+      if (/^[-+]?\d+$/.test(t)) { const n = parseFloat(t); return Number.isSafeInteger(n) ? n : BigInt(t); }   // integers too big for a double stay exact
       if (/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(t)) return parseFloat(t);
       if (/^[-+]?\d+\/\d+$/.test(t)) { const [a, b] = t.split('/'); return parseFloat(a) / parseFloat(b); }
       return sym(t);
@@ -88,16 +98,17 @@
 
   // ---------- printer ----------
   function fmtNum(x) {
-    if (Number.isInteger(x)) return String(x);
+    if (typeof x === 'bigint' || Number.isInteger(x)) return String(x).replace('e+', 'e');   // MIT Scheme writes 1e21, not 1e+21
     if (!isFinite(x)) return x > 0 ? '+inf' : x < 0 ? '-inf' : 'nan';
     const intDigits = Math.floor(Math.abs(x)).toString().length;
     let s = String(parseFloat(x.toPrecision(Math.max(12, intDigits + 1))));   // 12 significant digits, but never fewer than the whole part plus one decimal
+    s = s.replace('e+', 'e');
     if (s.startsWith('0.')) s = s.slice(1); else if (s.startsWith('-0.')) s = '-' + s.slice(2);
     if (!/[.e]/.test(s)) s += '.';
     return s;
   }
   function write(x, display) {
-    if (typeof x === 'number') return fmtNum(x);
+    if (typeof x === 'number' || typeof x === 'bigint') return fmtNum(x);
     if (typeof x === 'boolean') return x ? '#t' : '#f';
     if (typeof x === 'string') return display ? x : JSON.stringify(x);
     if (x instanceof Sym) return x.name;
@@ -126,7 +137,17 @@
   }
 
   // ---------- evaluator (with tail calls) ----------
-  const num = (x, who) => { if (typeof x !== 'number') throw new SchemeError('The object ' + write(x) + ', passed as an argument to ' + who + ', is not the correct type.'); return x; };
+  // Numbers are JS doubles, except that an integer too big for a double is a BigInt, so (fact 25) and (expt 2 100) are exact.
+  // Results that fit in a double go back to being plain numbers.
+  const MAXS = BigInt(Number.MAX_SAFE_INTEGER);
+  const isInt = (x) => typeof x === 'bigint' || Number.isSafeInteger(x);
+  const norm = (b) => (b >= -MAXS && b <= MAXS) ? Number(b) : b;
+  const arith = (big, flt) => (a, b) => {
+    if (typeof a === 'number' && typeof b === 'number') { const r = flt(a, b); if (!(Number.isSafeInteger(a) && Number.isSafeInteger(b)) || Number.isSafeInteger(r)) return r; return norm(big(BigInt(a), BigInt(b))); }
+    return isInt(a) && isInt(b) ? norm(big(BigInt(a), BigInt(b))) : flt(Number(a), Number(b));
+  };
+  const add = arith((x, y) => x + y, (x, y) => x + y), sub = arith((x, y) => x - y, (x, y) => x - y), mul = arith((x, y) => x * y, (x, y) => x * y);
+  const num = (x, who) => { if (typeof x !== 'number' && typeof x !== 'bigint') throw new SchemeError('The object ' + write(x) + ', passed as an argument to ' + who + ', is not the correct type.'); return x; };
   const pair = (x, who) => { if (!(x instanceof Pair)) throw new SchemeError('The object ' + write(x) + ', passed as the first argument to ' + who + ', is not the correct type.'); return x; };
 
   function makeEvaluator(opts) {
@@ -136,129 +157,187 @@
     const out = (s) => { output.push(s); if (opts.onOutput) opts.onOutput(s); };
     let depth = 0;
 
+    // The evaluator keeps its own stack of continuation frames on the heap, so a deeply recursive Scheme program
+    // (the non-tail recursion in the lessons: (+ 1 (f (- n 1))) ...) is limited by MAX_STACK, not by the JS call stack.
+    // Tail positions reuse the current frame, so tail calls take constant space. do, named-let inits, letrec and
+    // quasiquote still recurse into evaluate(); they are never what makes a program deep.
+    const F = { IF: 1, SEQ: 2, DEF: 3, SET: 4, APP: 5, COND: 6, ARROW: 7, AND: 8, OR: 9, WHEN: 10, LET: 11, LETSTAR: 12 };
+    const MAX_STACK = 200000;
+    const ill = (x) => new SchemeError('Ill-formed special form: ' + write(x));
+
     function evaluate(x, env) {
-      while (true) {
-        if (++steps > limit) throw new SchemeError(';Aborting!: program ran for too long (is there an infinite loop?)');
-        if (x instanceof Sym) return env.lookup(x);
-        if (!(x instanceof Pair)) return x === NIL ? (() => { throw new SchemeError('Combination must have at least one subexpression: ()'); })() : x;
-        const op = x.car;
-        if (op instanceof Sym) {
-          switch (op) {
-            case S.quote: return x.cdr.car;
-            case S.if: {
-              if (!(x.cdr instanceof Pair && x.cdr.cdr instanceof Pair)) throw new SchemeError('Ill-formed special form: ' + write(x));
-              const t = evaluate(x.cdr.car, env);
-              if (t !== false) x = x.cdr.cdr.car;
-              else if (x.cdr.cdr.cdr instanceof Pair) x = x.cdr.cdr.cdr.car;
-              else return UNSPEC;
-              continue;
-            }
-            case S.define: {
-              const target = x.cdr.car;
-              if (target instanceof Pair) { // (define (f . args) body...)
-                const name = target.car;
-                const lam = makeLambda(target.cdr, x.cdr.cdr, env, name.name);
-                env.define(name, lam); return sym(name.name);
-              }
-              if (!(target instanceof Sym)) throw new SchemeError('Variable required in this context: ' + write(target));
-              const v = x.cdr.cdr instanceof Pair ? evaluate(x.cdr.cdr.car, env) : UNSPEC;
-              if (v instanceof Lambda && !v.name) v.name = target.name;
-              env.define(target, v); return sym(target.name);
-            }
-            case S.set: { if (!(x.cdr instanceof Pair && x.cdr.cdr instanceof Pair)) throw new SchemeError('Ill-formed special form: ' + write(x)); env.set(x.cdr.car, evaluate(x.cdr.cdr.car, env)); return UNSPEC; }
-            case S.lambda: return makeLambda(x.cdr.car, x.cdr.cdr, env, null);
-            case S.begin: {
-              let b = x.cdr; if (b === NIL) return UNSPEC;
-              while (b.cdr !== NIL) { evaluate(b.car, env); b = b.cdr; }
-              x = b.car; continue;
-            }
-            case S.cond: {
-              let c = x.cdr, matched = false;
-              while (c instanceof Pair) {
-                const clause = c.car;
-                if (!(clause instanceof Pair)) throw new SchemeError('Ill-formed special form: ' + write(x));
-                if (clause.car === S.else) { matched = true; }
-                else {
-                  const t = evaluate(clause.car, env);
-                  if (t !== false) {
-                    if (clause.cdr instanceof Pair && clause.cdr.car === S.arrow) { const f = evaluate(clause.cdr.cdr.car, env); return apply(f, [t]); }
-                    if (clause.cdr === NIL) return t;
-                    matched = true;
-                  }
+      const stack = []; let val;
+      main: for (;;) {
+        // ---- EVAL: x in env. Either leaves a value in val (break step), or sets x/env to something still to evaluate (continue main).
+        step: {
+          if (++steps > limit) throw new SchemeError(';Aborting!: program ran for too long (is there an infinite loop?)');
+          if (stack.length > MAX_STACK) throw new SchemeError(';Aborting!: maximum recursion depth exceeded');
+          if (x instanceof Sym) { val = env.lookup(x); break step; }
+          if (!(x instanceof Pair)) { if (x === NIL) throw new SchemeError('Combination must have at least one subexpression: ()'); val = x; break step; }
+          const op = x.car;
+          if (op instanceof Sym) {
+            switch (op) {
+              case S.quote: val = x.cdr.car; break step;
+              case S.if:
+                if (!(x.cdr instanceof Pair && x.cdr.cdr instanceof Pair)) throw ill(x);
+                stack.push({ k: F.IF, x, env }); x = x.cdr.car; continue main;
+              case S.define: {
+                const target = x.cdr.car;
+                if (target instanceof Pair) { // (define (f . args) body...)
+                  const name = target.car;
+                  env.define(name, makeLambda(target.cdr, x.cdr.cdr, env, name.name)); val = sym(name.name); break step;
                 }
-                if (matched) {
-                  let b = clause.cdr; if (b === NIL) return UNSPEC;
-                  while (b.cdr !== NIL) { evaluate(b.car, env); b = b.cdr; }
-                  x = b.car; break;
+                if (!(target instanceof Sym)) throw new SchemeError('Variable required in this context: ' + write(target));
+                if (!(x.cdr.cdr instanceof Pair)) { env.define(target, UNSPEC); val = sym(target.name); break step; }
+                stack.push({ k: F.DEF, target, env }); x = x.cdr.cdr.car; continue main;
+              }
+              case S.set:
+                if (!(x.cdr instanceof Pair && x.cdr.cdr instanceof Pair)) throw ill(x);
+                stack.push({ k: F.SET, target: x.cdr.car, env }); x = x.cdr.cdr.car; continue main;
+              case S.lambda: val = makeLambda(x.cdr.car, x.cdr.cdr, env, null); break step;
+              case S.begin: {
+                const b = x.cdr; if (b === NIL) { val = UNSPEC; break step; }
+                if (b.cdr !== NIL) stack.push({ k: F.SEQ, rest: b.cdr, env });
+                x = b.car; continue main;
+              }
+              case S.cond: stack.push({ k: F.COND, c: x.cdr, x, env, fresh: true }); val = undefined; break step;
+              case S.and: {
+                const c = x.cdr; if (c === NIL) { val = true; break step; }
+                if (c.cdr !== NIL) stack.push({ k: F.AND, rest: c.cdr, env });
+                x = c.car; continue main;
+              }
+              case S.or: {
+                const c = x.cdr; if (c === NIL) { val = false; break step; }
+                if (c.cdr !== NIL) stack.push({ k: F.OR, rest: c.cdr, env });
+                x = c.car; continue main;
+              }
+              case S.when: case S.unless:
+                stack.push({ k: F.WHEN, when: op === S.when, x, env }); x = x.cdr.car; continue main;
+              case S.let: {
+                if (x.cdr.car instanceof Sym) { // named let
+                  const name = x.cdr.car, bindings = arr(x.cdr.cdr.car), body = x.cdr.cdr.cdr;
+                  const ne = new Env(env);
+                  const lam = makeLambda(list(...bindings.map(b => b.car)), body, ne, name.name);
+                  ne.define(name, lam);
+                  const args = bindings.map(b => evaluate(b.cdr.car, env));
+                  const r = bindArgs(lam, args); x = r.body; env = r.env; continue main;
+                }
+                stack.push({ k: F.LET, binds: arr(x.cdr.car), i: 0, vals: [], env, body: x.cdr.cdr, fresh: true }); val = undefined; break step;
+              }
+              case S.letstar:
+                stack.push({ k: F.LETSTAR, binds: arr(x.cdr.car), i: 0, e: env, body: x.cdr.cdr, fresh: true }); val = undefined; break step;
+              case S.letrec: {
+                const bindings = arr(x.cdr.car);
+                const ne = new Env(env);
+                for (const b of bindings) ne.define(b.car, evaluate(b.cdr.car, ne));
+                env = ne; x = new Pair(S.begin, x.cdr.cdr); continue main;
+              }
+              case S.quasi: val = quasi(x.cdr.car, env); break step;
+              case S.do: {
+                const specs = arr(x.cdr.car), test = x.cdr.cdr.car, body = x.cdr.cdr.cdr;
+                let ne = new Env(env);
+                for (const s of specs) ne.define(s.car, evaluate(s.cdr.car, env));
+                while (evaluate(test.car, ne) === false) {
+                  for (let b = body; b instanceof Pair; b = b.cdr) evaluate(b.car, ne);
+                  const ne2 = new Env(env);
+                  for (const s of specs) ne2.define(s.car, s.cdr.cdr instanceof Pair ? evaluate(s.cdr.cdr.car, ne) : ne.lookup(s.car));
+                  ne = ne2;
+                }
+                val = UNSPEC; for (let b = test.cdr; b instanceof Pair; b = b.cdr) val = evaluate(b.car, ne);
+                break step;
+              }
+            }
+          }
+          // application: operator first, then the operands left to right
+          stack.push({ k: F.APP, vals: [], rest: x.cdr, env });
+          x = op; continue main;
+        }
+        // ---- RETURN: hand val to the frame on top of the stack, until one needs another expression evaluated.
+        ret: for (;;) {
+          if (!stack.length) return val;
+          const f = stack.pop();
+          switch (f.k) {
+            case F.IF: {
+              const xx = f.x;
+              if (val !== false) x = xx.cdr.cdr.car;
+              else if (xx.cdr.cdr.cdr instanceof Pair) x = xx.cdr.cdr.cdr.car;
+              else { val = UNSPEC; continue ret; }
+              env = f.env; continue main;
+            }
+            case F.SEQ: {
+              const r = f.rest;
+              if (r.cdr !== NIL) { f.rest = r.cdr; stack.push(f); }
+              x = r.car; env = f.env; continue main;
+            }
+            case F.DEF: {
+              if (val instanceof Lambda && !val.name) val.name = f.target.name;
+              f.env.define(f.target, val); val = sym(f.target.name); continue ret;
+            }
+            case F.SET: { f.env.set(f.target, val); val = UNSPEC; continue ret; }
+            case F.APP: {
+              f.vals.push(val);
+              if (f.rest instanceof Pair) { x = f.rest.car; f.rest = f.rest.cdr; env = f.env; stack.push(f); continue main; }
+              const fn = f.vals[0], args = f.vals.slice(1);
+              if (fn instanceof Lambda) { const r = bindArgs(fn, args); x = r.body; env = r.env; continue main; }
+              if (fn instanceof Primitive) { val = callPrim(fn, args); continue ret; }
+              throw new SchemeError('The object ' + write(fn) + ' is not applicable.');
+            }
+            case F.COND: {
+              let c = f.c;
+              if (!f.fresh) {   // val is the value of the test of clause c.car
+                const clause = c.car;
+                if (val !== false) {
+                  if (clause.cdr instanceof Pair && clause.cdr.car === S.arrow) { stack.push({ k: F.ARROW, t: val }); x = clause.cdr.cdr.car; env = f.env; continue main; }
+                  if (clause.cdr === NIL) continue ret;   // (cond (test)) is the test value
+                  x = new Pair(S.begin, clause.cdr); env = f.env; continue main;
                 }
                 c = c.cdr;
               }
-              if (!matched) return UNSPEC;
-              continue;
-            }
-            case S.and: {
-              let c = x.cdr; if (c === NIL) return true;
-              while (c.cdr !== NIL) { if (evaluate(c.car, env) === false) return false; c = c.cdr; }
-              x = c.car; continue;
-            }
-            case S.or: {
-              let c = x.cdr; if (c === NIL) return false;
-              while (c.cdr !== NIL) { const v = evaluate(c.car, env); if (v !== false) return v; c = c.cdr; }
-              x = c.car; continue;
-            }
-            case S.when: case S.unless: {
-              const t = evaluate(x.cdr.car, env);
-              if ((t !== false) === (op === S.when)) { x = new Pair(S.begin, x.cdr.cdr); continue; }
-              return UNSPEC;
-            }
-            case S.let: {
-              if (x.cdr.car instanceof Sym) { // named let
-                const name = x.cdr.car, bindings = arr(x.cdr.cdr.car), body = x.cdr.cdr.cdr;
-                const ne = new Env(env);
-                const lam = makeLambda(list(...bindings.map(b => b.car)), body, ne, name.name);
-                ne.define(name, lam);
-                const args = bindings.map(b => evaluate(b.cdr.car, env));
-                const r = bindArgs(lam, args); x = r.body; env = r.env; continue;
+              while (c instanceof Pair) {
+                const clause = c.car;
+                if (!(clause instanceof Pair)) throw ill(f.x);
+                if (clause.car === S.else) { if (clause.cdr === NIL) { val = UNSPEC; continue ret; } x = new Pair(S.begin, clause.cdr); env = f.env; continue main; }
+                f.c = c; f.fresh = false; stack.push(f); x = clause.car; env = f.env; continue main;
               }
-              const bindings = arr(x.cdr.car);
-              const ne = new Env(env);
-              for (const b of bindings) { if (b instanceof Pair) ne.define(b.car, evaluate(b.cdr.car, env)); else ne.define(b, UNSPEC); }
-              env = ne; x = new Pair(S.begin, x.cdr.cdr); continue;
+              val = UNSPEC; continue ret;
             }
-            case S.letstar: {
-              let e = env;
-              for (const b of arr(x.cdr.car)) { const ne = new Env(e); ne.define(b.car, evaluate(b.cdr.car, e)); e = ne; }
-              env = new Env(e); x = new Pair(S.begin, x.cdr.cdr); continue;
+            case F.ARROW: { val = apply(val, [f.t]); continue ret; }
+            case F.AND: {
+              if (val === false) continue ret;
+              const r = f.rest;
+              if (r.cdr !== NIL) { f.rest = r.cdr; stack.push(f); }
+              x = r.car; env = f.env; continue main;
             }
-            case S.letrec: {
-              const bindings = arr(x.cdr.car);
-              const ne = new Env(env);
-              for (const b of bindings) ne.define(b.car, evaluate(b.cdr.car, ne));
-              env = ne; x = new Pair(S.begin, x.cdr.cdr); continue;
+            case F.OR: {
+              if (val !== false) continue ret;
+              const r = f.rest;
+              if (r.cdr !== NIL) { f.rest = r.cdr; stack.push(f); }
+              x = r.car; env = f.env; continue main;
             }
-            case S.quasi: return quasi(x.cdr.car, env);
-            case S.do: {
-              const specs = arr(x.cdr.car), test = x.cdr.cdr.car, body = x.cdr.cdr.cdr;
-              let ne = new Env(env);
-              for (const s of specs) ne.define(s.car, evaluate(s.cdr.car, env));
-              while (evaluate(test.car, ne) === false) {
-                for (let b = body; b instanceof Pair; b = b.cdr) evaluate(b.car, ne);
-                const ne2 = new Env(env);
-                for (const s of specs) ne2.define(s.car, s.cdr.cdr instanceof Pair ? evaluate(s.cdr.cdr.car, ne) : ne.lookup(s.car));
-                ne = ne2;
+            case F.WHEN: {
+              if ((val !== false) === f.when) { x = new Pair(S.begin, f.x.cdr.cdr); env = f.env; continue main; }
+              val = UNSPEC; continue ret;
+            }
+            case F.LET: {   // inits are evaluated in the outer environment, then bound together
+              if (!f.fresh) f.vals[f.i++] = val;
+              f.fresh = false;
+              while (f.i < f.binds.length) {
+                const b = f.binds[f.i];
+                if (b instanceof Pair) { stack.push(f); x = b.cdr.car; env = f.env; continue main; }
+                f.vals[f.i++] = UNSPEC;
               }
-              let r = UNSPEC; for (let b = test.cdr; b instanceof Pair; b = b.cdr) r = evaluate(b.car, ne);
-              return r;
+              const ne = new Env(f.env);
+              f.binds.forEach((b, i) => ne.define(b instanceof Pair ? b.car : b, f.vals[i]));
+              env = ne; x = new Pair(S.begin, f.body); continue main;
+            }
+            case F.LETSTAR: {   // each binding gets its own frame, so closures keep the value they saw
+              if (!f.fresh) { const ne = new Env(f.e); const b = f.binds[f.i++]; ne.define(b.car, val); f.e = ne; }
+              f.fresh = false;
+              if (f.i < f.binds.length) { stack.push(f); x = f.binds[f.i].cdr.car; env = f.e; continue main; }
+              env = new Env(f.e); x = new Pair(S.begin, f.body); continue main;
             }
           }
         }
-        // application
-        const f = evaluate(op, env);
-        const args = []; let a = x.cdr;
-        while (a instanceof Pair) { args.push(evaluate(a.car, env)); a = a.cdr; }
-        if (f instanceof Lambda) { const r = bindArgs(f, args); x = r.body; env = r.env; continue; }
-        if (f instanceof Primitive) return callPrim(f, args);
-        throw new SchemeError('The object ' + write(f) + ' is not applicable.');
       }
     }
     function quasi(x, env) {
@@ -300,32 +379,45 @@
     const G = new Env(null);
     const def = (name, fn, min, max) => G.define(sym(name), new Primitive(name, fn, min === undefined ? 0 : min, max === undefined ? -1 : max));
     const numFold = (name, f, init) => def(name, (a) => { let r = a.length ? num(a[0], name) : init; for (let i = 1; i < a.length; i++) r = f(r, num(a[i], name)); return r; }, 0);
-    numFold('+', (a, b) => a + b, 0); numFold('*', (a, b) => a * b, 1);
-    def('-', (a) => { if (a.length === 1) return -num(a[0], '-'); let r = num(a[0], '-'); for (let i = 1; i < a.length; i++) r -= num(a[i], '-'); return r; }, 1);
-    def('/', (a) => { if (a.length === 1) { if (a[0] === 0) throw new SchemeError('Division by zero signalled by /.'); return 1 / num(a[0], '/'); } let r = num(a[0], '/'); for (let i = 1; i < a.length; i++) { if (num(a[i], '/') === 0) throw new SchemeError('Division by zero signalled by /.'); r /= a[i]; } return r; }, 1);
+    numFold('+', add, 0); numFold('*', mul, 1);
+    def('-', (a) => { if (a.length === 1) return sub(0, num(a[0], '-')); let r = num(a[0], '-'); for (let i = 1; i < a.length; i++) r = sub(r, num(a[i], '-')); return r; }, 1);
+    const div = (r, d) => { if (d == 0) throw new SchemeError('Division by zero signalled by /.'); return (typeof r === 'bigint' || typeof d === 'bigint') && isInt(r) && isInt(d) && BigInt(r) % BigInt(d) === 0n ? norm(BigInt(r) / BigInt(d)) : Number(r) / Number(d); };
+    def('/', (a) => { if (a.length === 1) return div(1, num(a[0], '/')); let r = num(a[0], '/'); for (let i = 1; i < a.length; i++) r = div(r, num(a[i], '/')); return r; }, 1);
     const cmp = (name, f) => def(name, (a) => { for (let i = 0; i + 1 < a.length; i++) if (!f(num(a[i], name), num(a[i + 1], name))) return false; return true; }, 1);
-    cmp('=', (a, b) => a === b); cmp('<', (a, b) => a < b); cmp('>', (a, b) => a > b); cmp('<=', (a, b) => a <= b); cmp('>=', (a, b) => a >= b);
-    const intdiv = (name, a, b) => { num(a, name); num(b, name); if (b === 0) throw new SchemeError('Division by zero signalled by ' + name + '.'); };
-    def('quotient', ([a, b]) => { intdiv('quotient', a, b); return Math.trunc(a / b); }, 2, 2);
-    def('remainder', ([a, b]) => { intdiv('remainder', a, b); return a % b; }, 2, 2);
-    def('modulo', ([a, b]) => { intdiv('modulo', a, b); return ((a % b) + b) % b; }, 2, 2);
-    def('abs', ([a]) => Math.abs(num(a, 'abs')), 1, 1);
-    def('min', (a) => Math.min(...a.map(x => num(x, 'min'))), 1); def('max', (a) => Math.max(...a.map(x => num(x, 'max'))), 1);
-    def('expt', ([a, b]) => Math.pow(num(a, 'expt'), num(b, 'expt')), 2, 2);
-    def('sqrt', ([a]) => Math.sqrt(num(a, 'sqrt')), 1, 1); def('exp', ([a]) => Math.exp(num(a, 'exp')), 1, 1);
-    def('log', ([a]) => Math.log(num(a, 'log')), 1, 1); def('sin', ([a]) => Math.sin(num(a, 'sin')), 1, 1); def('cos', ([a]) => Math.cos(num(a, 'cos')), 1, 1);
-    def('atan', (a) => a.length === 2 ? Math.atan2(num(a[0], 'atan'), num(a[1], 'atan')) : Math.atan(num(a[0], 'atan')), 1, 2);
-    def('floor', ([a]) => Math.floor(num(a, 'floor')), 1, 1); def('ceiling', ([a]) => Math.ceil(num(a, 'ceiling')), 1, 1);
-    def('round', ([a]) => { num(a, 'round'); const r = Math.round(a); return (Math.abs(a % 1) === 0.5 && r % 2 !== 0) ? r - 1 : r; }, 1, 1);
-    def('truncate', ([a]) => Math.trunc(num(a, 'truncate')), 1, 1);
-    def('gcd', (a) => { const g = (x, y) => y ? g(y, x % y) : Math.abs(x); return a.reduce((acc, v) => g(acc, num(v, 'gcd')), 0); }, 0);
-    def('square', ([a]) => num(a, 'square') * a, 1, 1); def('cube', ([a]) => num(a, 'cube') * a * a, 1, 1);
-    def('1+', ([a]) => num(a, '1+') + 1, 1, 1); def('-1+', ([a]) => num(a, '-1+') - 1, 1, 1); def('1-', ([a]) => num(a, '1-') - 1, 1, 1);
-    def('random', ([a]) => Number.isInteger(num(a, 'random')) ? Math.floor(Math.random() * a) : Math.random() * a, 1, 1);
-    def('exact->inexact', ([a]) => num(a, 'exact->inexact'), 1, 1); def('inexact->exact', ([a]) => num(a, 'inexact->exact'), 1, 1); def('exact', ([a]) => a, 1, 1); def('inexact', ([a]) => a, 1, 1);
-    def('number?', ([a]) => typeof a === 'number', 1, 1); def('integer?', ([a]) => Number.isInteger(a), 1, 1); def('real?', ([a]) => typeof a === 'number', 1, 1);
-    def('zero?', ([a]) => num(a, 'zero?') === 0, 1, 1); def('positive?', ([a]) => num(a, 'positive?') > 0, 1, 1); def('negative?', ([a]) => num(a, 'negative?') < 0, 1, 1);
-    def('even?', ([a]) => num(a, 'even?') % 2 === 0, 1, 1); def('odd?', ([a]) => num(a, 'odd?') % 2 !== 0, 1, 1);
+    cmp('=', (a, b) => a == b); cmp('<', (a, b) => a < b); cmp('>', (a, b) => a > b); cmp('<=', (a, b) => a <= b); cmp('>=', (a, b) => a >= b);
+    const parseBigRadix = (s, radix) => { const neg = s[0] === '-'; let r = 0n; for (const ch of s.replace(/^[-+]/, '').toLowerCase()) r = r * BigInt(radix) + BigInt(parseInt(ch, radix)); return neg ? -r : r; };
+    const intdiv = (name, a, b) => { num(a, name); num(b, name); if (b == 0) throw new SchemeError('Division by zero signalled by ' + name + '.'); };
+    const bigOp = (a, b, big, flt) => (isInt(a) && isInt(b) && (typeof a === 'bigint' || typeof b === 'bigint')) ? norm(big(BigInt(a), BigInt(b))) : flt(Number(a), Number(b));
+    def('quotient', ([a, b]) => { intdiv('quotient', a, b); return bigOp(a, b, (x, y) => x / y, (x, y) => Math.trunc(x / y)); }, 2, 2);
+    def('remainder', ([a, b]) => { intdiv('remainder', a, b); return bigOp(a, b, (x, y) => x % y, (x, y) => x % y); }, 2, 2);
+    def('modulo', ([a, b]) => { intdiv('modulo', a, b); return bigOp(a, b, (x, y) => ((x % y) + y) % y, (x, y) => ((x % y) + y) % y); }, 2, 2);
+    def('abs', ([a]) => { num(a, 'abs'); return typeof a === 'bigint' ? (a < 0n ? -a : a) : Math.abs(a); }, 1, 1);
+    const pick = (name, better) => def(name, (a) => { let r = num(a[0], name); for (let i = 1; i < a.length; i++) if (better(num(a[i], name), r)) r = a[i]; return r; }, 1);
+    pick('min', (x, y) => x < y); pick('max', (x, y) => x > y);
+    def('expt', ([a, b]) => {
+      num(a, 'expt'); num(b, 'expt');
+      if (isInt(a) && isInt(b) && b >= 0) {
+        const f = Math.pow(Number(a), Number(b)); if (Number.isSafeInteger(f)) return f;
+        if (Number(b) * Math.log2(Math.abs(Number(a)) || 1) <= 2e5) return norm(BigInt(a) ** BigInt(b));   // exact, unless absurdly large
+        return f;
+      }
+      return Math.pow(Number(a), Number(b));
+    }, 2, 2);
+    def('sqrt', ([a]) => Math.sqrt(Number(num(a, 'sqrt'))), 1, 1); def('exp', ([a]) => Math.exp(Number(num(a, 'exp'))), 1, 1);
+    def('log', ([a]) => Math.log(Number(num(a, 'log'))), 1, 1); def('sin', ([a]) => Math.sin(Number(num(a, 'sin'))), 1, 1); def('cos', ([a]) => Math.cos(Number(num(a, 'cos'))), 1, 1);
+    def('atan', (a) => a.length === 2 ? Math.atan2(Number(num(a[0], 'atan')), Number(num(a[1], 'atan'))) : Math.atan(Number(num(a[0], 'atan'))), 1, 2);
+    const whole = (name, f) => def(name, ([a]) => typeof num(a, name) === 'bigint' ? a : f(a), 1, 1);   // a BigInt is already a whole number
+    whole('floor', Math.floor); whole('ceiling', Math.ceil); whole('truncate', Math.trunc);
+    whole('round', (a) => { const r = Math.round(a); return (Math.abs(a % 1) === 0.5 && r % 2 !== 0) ? r - 1 : r; });
+    def('gcd', (a) => { const g = (x, y) => y == 0 ? (x < 0 ? -x : x) : g(y, bigOp(x, y, (p, q) => p % q, (p, q) => p % q)); return a.reduce((acc, v) => g(acc, num(v, 'gcd')), 0); }, 0);
+    def('square', ([a]) => mul(num(a, 'square'), a), 1, 1); def('cube', ([a]) => mul(mul(num(a, 'cube'), a), a), 1, 1);
+    def('1+', ([a]) => add(num(a, '1+'), 1), 1, 1); def('-1+', ([a]) => sub(num(a, '-1+'), 1), 1, 1); def('1-', ([a]) => sub(num(a, '1-'), 1), 1, 1);
+    def('random', ([a]) => { num(a, 'random'); if (a <= 0) throw new SchemeError('The object ' + write(a) + ', passed as the first argument to random, is not in the correct range.'); return isInt(a) ? (typeof a === 'bigint' ? norm(BigInt(Math.floor(Math.random() * Number(a)))) : Math.floor(Math.random() * a)) : Math.random() * a; }, 1, 1);
+    def('exact->inexact', ([a]) => Number(num(a, 'exact->inexact')), 1, 1); def('inexact->exact', ([a]) => num(a, 'inexact->exact'), 1, 1); def('exact', ([a]) => a, 1, 1); def('inexact', ([a]) => typeof a === 'bigint' ? Number(a) : a, 1, 1);
+    def('number?', ([a]) => typeof a === 'number' || typeof a === 'bigint', 1, 1); def('integer?', ([a]) => typeof a === 'bigint' || Number.isInteger(a), 1, 1); def('real?', ([a]) => typeof a === 'number' || typeof a === 'bigint', 1, 1);
+    def('zero?', ([a]) => num(a, 'zero?') == 0, 1, 1); def('positive?', ([a]) => num(a, 'positive?') > 0, 1, 1); def('negative?', ([a]) => num(a, 'negative?') < 0, 1, 1);
+    const parity = (a, who) => typeof num(a, who) === 'bigint' ? a % 2n : a % 2;
+    def('even?', ([a]) => parity(a, 'even?') == 0, 1, 1); def('odd?', ([a]) => parity(a, 'odd?') != 0, 1, 1);
     def('not', ([a]) => a === false, 1, 1);
     def('eq?', ([a, b]) => a === b || (typeof a === 'number' && a === b) || (typeof a === 'string' && a === b), 2, 2);
     def('eqv?', ([a, b]) => a === b, 2, 2);
@@ -352,6 +444,13 @@
     def('memq', ([x, l]) => { let p = l; while (p instanceof Pair) { if (p.car === x) return p; p = p.cdr; } return false; }, 2, 2);
     def('assoc', ([x, l]) => { let p = l; while (p instanceof Pair) { if (p.car instanceof Pair && equal(p.car.car, x)) return p.car; p = p.cdr; } return false; }, 2, 2);
     def('assq', ([x, l]) => { let p = l; while (p instanceof Pair) { if (p.car instanceof Pair && p.car.car === x) return p.car; p = p.cdr; } return false; }, 2, 2);
+    def('list-copy', ([l]) => fromArr(arr(l)), 1, 1);
+    def('sort', ([seq, less]) => {   // (sort list <): stable merge sort, as in MIT Scheme
+      const xs = arr(seq);
+      const merge = (a, b) => { const out = []; let i = 0, j = 0; while (i < a.length && j < b.length) { if (apply(less, [b[j], a[i]]) !== false) out.push(b[j++]); else out.push(a[i++]); } while (i < a.length) out.push(a[i++]); while (j < b.length) out.push(b[j++]); return out; };
+      const msort = (v) => v.length < 2 ? v : merge(msort(v.slice(0, v.length >> 1)), msort(v.slice(v.length >> 1)));
+      return fromArr(msort(xs));
+    }, 2, 2);
     def('last-pair', ([l]) => { let p = pair(l, 'last-pair'); while (p.cdr instanceof Pair) p = p.cdr; return p; }, 1, 1);
     const mem = (name, eq) => def(name, ([x, l]) => { let p = l; while (p instanceof Pair) { if (eq(p.car, x)) return p; p = p.cdr; } return false; }, 2, 2);
     mem('memq', (a, b) => a === b); mem('memv', (a, b) => a === b); mem('member', equal);
@@ -374,11 +473,12 @@
     def('newline', () => { out('\n'); return UNSPEC; }, 0, 1);
     def('write-line', ([x]) => { out(write(x, false) + '\n'); return UNSPEC; }, 1, 2);
     def('error', (a) => { throw new SchemeError(a.map((x, i) => write(x, i === 0)).join(' ')); }, 1);
-    def('number->string', ([n, radix]) => radix && radix !== 10 && Number.isInteger(num(n, 'number->string')) ? n.toString(radix) : fmtNum(num(n, 'number->string')), 1, 2);
+    def('number->string', ([n, radix]) => radix && radix !== 10 && (typeof num(n, 'number->string') === 'bigint' || Number.isInteger(n)) ? n.toString(radix) : fmtNum(num(n, 'number->string')), 1, 2);
     def('string->number', ([s, radix]) => {
       if (typeof s !== 'string') throw new SchemeError('The object ' + write(s) + ', passed as the first argument to string->number, is not the correct type.');
       s = s.trim();
-      if (radix && radix !== 10) { const ok = new RegExp('^[-+]?[' + '0123456789abcdefghijklmnopqrstuvwxyz'.slice(0, radix) + ']+$', 'i').test(s); return ok ? parseInt(s, radix) : false; }
+      if (radix && radix !== 10) { const ok = new RegExp('^[-+]?[' + '0123456789abcdefghijklmnopqrstuvwxyz'.slice(0, radix) + ']+$', 'i').test(s); return ok ? (s.length > 10 ? norm(parseBigRadix(s, radix)) : parseInt(s, radix)) : false; }
+      if (/^[-+]?\d+$/.test(s)) { const n = parseFloat(s); return Number.isSafeInteger(n) ? n : BigInt(s); }
       if (/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(s)) return parseFloat(s);
       if (/^[-+]?\d+\/\d+$/.test(s)) { const [a, b] = s.split('/'); return parseFloat(a) / parseFloat(b); }
       return false;

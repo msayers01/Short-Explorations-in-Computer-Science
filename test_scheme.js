@@ -26,6 +26,38 @@ errs('(-)', /at least 1 argument\./);
 check('(/ 1234567890123 10)', '123456789012.3');
 check('(/ 1 3)', '.333333333333');
 
+// big integers stay exact; results that fit in a double go back to plain numbers
+check('(define (fact n) (if (= n 0) 1 (* n (fact (- n 1))))) (fact 25)', '15511210043330985984000000');
+check('(expt 2 100)', '1267650600228229401496703205376');
+check('(+ 9007199254740992 1)', '9007199254740993');
+check('12345678901234567890', '12345678901234567890');
+check('(- (expt 2 100) (expt 2 100))', '0');
+check('(= (* 99999999999 99999999999) 9999999999800000000001)', '#t');
+check('(quotient (expt 10 30) (expt 10 28))', '100');
+check('(remainder (+ (expt 10 30) 7) 10)', '7');
+check('(modulo (- (expt 10 30)) 7)', '6');
+check('(/ (expt 10 30) (expt 10 28))', '100');
+check('(/ (expt 10 30) 3)', '3.333333333333333e29');
+check('(even? (expt 2 100))', '#t');
+check('(< (expt 2 100) (expt 2 101))', '#t');
+check('(max 1 (expt 2 70) 3)', '1180591620717411303424');
+check('(gcd (expt 2 80) (expt 6 40))', '1099511627776');
+check('(number->string (expt 2 70))', '"1180591620717411303424"');
+check('(exact->inexact (expt 2 70))', '1.1805916207174113e21');
+check('(sqrt (expt 10 40))', '100000000000000000000');
+check('(* 1.5 (expt 2 70))', '1.770887431076117e21');
+check('(define (f n) (if (= n 0) 0 (+ 1 (f (- n 1))))) (f 50000)', '50000');
+errs('(define (f n) (+ 1 (f n))) (f 1)', /maximum recursion depth/);
+
+// reader extras and a few more procedures
+check('(+ 1 #| a #| nested |# comment |# 2)', '3');
+check('(list 1 #;(ignored thing) 2)', '(1 2)');
+check('#;(skipped) 5', '5');
+check('(list #T #F)', '(#t #f)');
+check('(sort (list 3 1 2) <)', '(1 2 3)');
+check("(sort (list '(b . 1) '(a . 1) '(c . 0)) (lambda (x y) (< (cdr x) (cdr y))))", "((c . 0) (b . 1) (a . 1))");
+check('(let ((a (list 1 2))) (eq? a (list-copy a)))', '#f');
+
 // the REPL-style use: one evaluator, many forms, each with a fresh budget
 const it = Scheme.makeEvaluator({ stepLimit: 2000 });
 for (const f of Scheme.parseAll('(define (loop n) (if (= n 0) 0 (loop (- n 1))))')) it.evaluate(f, it.G);
