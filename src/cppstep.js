@@ -88,7 +88,7 @@
       else if (isParam) k = 'pointer';                                  // an array parameter is really a pointer
       else {
         const text = declLine != null ? (lines[declLine - 1] || '') : code;
-        const esc = name.replace(/[$]/g, '\\$&');
+        const esc = name.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');   // every character that means something in a pattern, so a name is only ever matched as itself
         if (new RegExp('\\*\\s*' + esc + '\\b').test(text) && !new RegExp('\\b' + esc + '\\s*\\[').test(text)) k = 'pointer';
         else if (new RegExp('\\b' + esc + '\\s*\\[').test(text)) k = 'array';
         else k = owners.has(v.v.target) ? 'pointer' : 'array';

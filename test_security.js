@@ -52,6 +52,11 @@ const py = async (code) => {
     check(f + ' loads no stylesheet or font from another site', !/<link[^>]+(stylesheet|preconnect)/i.test(html) && !/fonts\.(googleapis|gstatic)/.test(html));
   }
 
+  // --- 4. a name put into a regular expression is escaped completely (CodeQL: incomplete escaping), not just for one character
+  for (const f of fs.readdirSync('src').filter((n) => n.endsWith('.js'))) {
+    check('src/' + f + ' escapes names for a RegExp completely', !/\.replace\(\/\[\$\]\/g/.test(fs.readFileSync('src/' + f, 'utf8')));
+  }
+
   if (bad) { console.log(bad + ' problems'); process.exit(1); }
   console.log('security OK');
 })();
