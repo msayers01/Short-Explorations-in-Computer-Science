@@ -1693,7 +1693,7 @@
       if (from.k === 'prim') { const kind = (to.k === 'class' && UNBOX[to.n]) || from.n; if (kind !== from.n) v = primConv(v, from.n, kind); switch (kind) { case 'double': return new JBox('D', v); case 'float': return new JBox('F', v); case 'char': return new JBox('C', v); default: return v; } }
       return v;
     }
-    const cce = (v, to) => { const a = qualified(runtimeClassName(v)), b = qualified(typeStr(to).replace(/<.*/, '')); const where = (n) => (/^java\./.test(n) ? n + ' is in module java.base of loader \'bootstrap\'' : n + ' is in unnamed module of loader \'app\''); throwJ(R, 'ClassCastException', 'class ' + a + ' cannot be cast to class ' + b + ' (' + (where(a).split(' is in ')[1] === where(b).split(' is in ')[1] ? a + ' and ' + b + ' are in ' + where(a).split(' is in ')[1] : where(a) + '; ' + where(b)) + ')'); };
+    const cce = (v, to) => { const a = qualified(runtimeClassName(v)), b = qualified(to.k === 'class' ? to.n : typeStr(to)); const where = (n) => (/^java\./.test(n) ? n + ' is in module java.base of loader \'bootstrap\'' : n + ' is in unnamed module of loader \'app\''); throwJ(R, 'ClassCastException', 'class ' + a + ' cannot be cast to class ' + b + ' (' + (where(a).split(' is in ')[1] === where(b).split(' is in ')[1] ? a + ' and ' + b + ' are in ' + where(a).split(' is in ')[1] : where(a) + '; ' + where(b)) + ')'); };
     function ensureInit(c) {
       if (c.lib || c.initialized) return; c.initialized = true;
       const p = classOf(c.ext); if (p) ensureInit(p);
