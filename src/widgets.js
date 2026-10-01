@@ -511,9 +511,12 @@ xs mapped kept result`;
   };
 
   /* ---------- 12. C++ compile pipeline ---------- */
-  W.pipeline = function (mount) {
+  W.pipeline = function (mount, b) {
     const svg = sv('svg', { viewBox: '0 0 640 130', role: 'img', 'aria-label': 'From source code to a running program' });
-    const stages = [['hello.cpp', 'source code', 'text you write'], ['compiler', 'g++ / clang++', 'checks types, translates'], ['a.out', 'machine code', 'CPU instructions'], ['CPU', 'runs it', 'Hello, world!']];
+    // param lang: 'java' draws javac, bytecode and the JVM instead of a native compiler
+    const stages = b && b.lang === 'java'
+      ? [['Hello.java', 'source code', 'text you write'], ['javac', 'the compiler', 'checks types, translates'], ['Hello.class', 'bytecode', 'instructions for the JVM'], ['JVM', 'runs it', 'Hello, world!']]
+      : [['hello.cpp', 'source code', 'text you write'], ['compiler', 'g++ / clang++', 'checks types, translates'], ['a.out', 'machine code', 'CPU instructions'], ['CPU', 'runs it', 'Hello, world!']];
     stages.forEach(([a, b, c], i) => {
       const x = 15 + i * 160;
       svg.append(sv('rect', { x, y: 25, width: 130, height: 76, rx: 4, fill: i === 1 ? 'var(--accent)' : 'var(--paper)', stroke: i === 1 ? 'var(--accent)' : 'var(--ink)', 'stroke-width': 1.3 }));

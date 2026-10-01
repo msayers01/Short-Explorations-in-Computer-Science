@@ -9,8 +9,8 @@
   const A = () => window.__app.internal;
   const el = (...a) => A().el(...a);
   const baseUrl = () => location.href.split('#')[0];
-  const LANG_NAME = { python: 'Python', cpp: 'C++', scheme: 'Scheme', lisp: 'Scheme' };
-  const LANG_EXT = { python: 'py', cpp: 'cpp', scheme: 'scm', lisp: 'scm' };
+  const LANG_NAME = { python: 'Python', cpp: 'C++', java: 'Java', scheme: 'Scheme', lisp: 'Scheme' };
+  const LANG_EXT = { python: 'py', cpp: 'cpp', java: 'java', scheme: 'scm', lisp: 'scm' };
 
   // ---------- settings (this device) ----------
   let S = null;
@@ -273,7 +273,7 @@
       return;
     }
     P.items = P.items.filter(it => it && typeof it.id === 'string');
-    P.lab = (Array.isArray(P.lab) ? P.lab : []).filter(f => f && typeof f.code === 'string' && (f.lang === 'python' || f.lang === 'cpp' || f.lang === 'scheme'));
+    P.lab = (Array.isArray(P.lab) ? P.lab : []).filter(f => f && typeof f.code === 'string' && (f.lang === 'python' || f.lang === 'cpp' || f.lang === 'java' || f.lang === 'scheme'));
     let doc;
     try { doc = renderDoc(P, { own: false }); }
     catch (e) { main.innerHTML = ''; main.append(el('header', { class: 'pf-intro' }, el('h1', {}, 'This portfolio link did not open'), el('p', { class: 'lead' }, 'The link opened, but its contents are not a portfolio this site can show.'))); return; }

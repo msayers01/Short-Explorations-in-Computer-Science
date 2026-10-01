@@ -1,5 +1,5 @@
-/* The page's side of the program sandboxes. Student programs (Python and C++) never run in the page. Each runs in a Web Worker that
-   holds only its interpreter (src/pyworker.js, src/cppworker.js): no DOM, no localStorage, and no way to send anything out (the Content
+/* The page's side of the program sandboxes. Student programs (Python, C++ and Java) never run in the page. Each runs in a Web Worker that
+   holds only its interpreter (src/pyworker.js, src/cppworker.js, src/javaworker.js): no DOM, no localStorage, and no way to send anything out (the Content
    Security Policy is inherited: the only address a worker may ask for anything at is this site itself, whose files are public), and the page can end it at any moment. Python programs that draw with turtle need a canvas, so they run in a sandboxed
    iframe (no allow-same-origin: its origin is opaque, so it cannot touch this page) with the same interpreter. Where a browser cannot
    make a worker, the same interpreter is loaded into a hidden sandboxed iframe instead.
@@ -9,6 +9,7 @@
    window.PYRUN.run(code, {stdin, execLimit, turtle:{mount,width,height}, onOutput, onInput}) → Promise<{out, err}>
    window.PYRUN.trace(code, {…, onStep}) → {done, next(), finish(), stop()}        window.PYRUN.cancel()
    window.CPPRUN.run(code, {stdin, onOutput}) → Promise<{out, err}>      window.CPPRUN.trace(code, stdin) → Promise<{trace, err}>
+   window.JAVARUN.run(code, {stdin, onOutput}) → Promise<{out, err}>     (the site's own Java interpreter, src/java.js)
    window.CLANGRUN.run(code, {stdin, std, onOutput, onNote}) → Promise<{out, err, exit, notes}>   (real C++; see below: downloaded on demand)
    window.CLANGRUN.runMany(code, [stdin…]) → Promise<{err, parts:[{out, all, err, exit}]}>        compile once, run once for each input */
 (function () {
@@ -157,6 +158,7 @@
 
   const py = Engine({ srcId: 'py-src', timeoutMessage: 'Time limit exceeded: the program ran for too long. Is there a loop that never ends?' });
   const cpp = Engine({ srcId: 'cpp-src', timeoutMessage: 'Time limit exceeded: the program ran for too long. Is there a loop that never ends?' });
+  const java = Engine({ srcId: 'java-src', timeoutMessage: 'Time limit exceeded: the program ran for too long. Is there a loop that never ends?' });
 
   // Real C++ (Clang built for WebAssembly, src/clangworker.js). Unlike the others it is not in the page: its files (about 29 MB, from dist/clang/) are
   // downloaded the first time they are needed, and the browser keeps them. A student agrees to that first (CLANGRUN.allow); nothing is fetched before.
@@ -218,6 +220,10 @@
       return { done, next: () => py.resume({ t: 'next' }), finish: () => py.fast(), stop: () => py.cancel() };
     },
     cancel: () => py.cancel()
+  };
+  window.JAVARUN = {
+    run: (code, opts) => { opts = opts || {}; return java.run({ t: 'run', totalMs: 8000, idleMs: 8000, opts, payload: { code: String(code), stdin: opts.stdin == null ? '' : String(opts.stdin), maxTimeout: 5000 } }); },
+    cancel: () => java.cancel()
   };
   window.CPPRUN = {
     run: (code, opts) => { opts = opts || {}; return cpp.run({ t: 'run', totalMs: 7000, idleMs: 7000, opts, payload: { code: String(code), stdin: opts.stdin == null ? '' : String(opts.stdin), maxTimeout: 4000 } }); },

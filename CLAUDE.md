@@ -1,6 +1,6 @@
 # Context for working on this repository
 
-Short Explorations in Computer Science: free, self-paced courses (Python, Lisp, C++, the mathematics of computing, Modern C++), a Code Lab,
+Short Explorations in Computer Science: free, self-paced courses (Python, Lisp, C++, the mathematics of computing, Modern C++, Java), a Code Lab,
 and tools for teachers. **No backend, no accounts**: the built site is one `dist/index.html` (plus `dist/clang/<version>/`, see below).
 Everything a user makes lives in `localStorage`; anything that moves between people travels inside a URL. Hosted on Cloudflare Workers static
 assets. The owner is Michael Sayers; this repository is, in practice, used by the owner and Claude only.
@@ -13,7 +13,8 @@ not written down there.
     npm install
     npm run build          # dist/index.html, dist/teacher-guide.html, dist/_headers, dist/clang/<ver>/ (28 MB, git-ignored)
     npm test               # all node tests (pretest applies the JSCPP patches); about 2 minutes
-    node test_course.js python|lisp|cpp|math|modern   # one course; "modern" compiles with the real compiler, about 1.5 minutes
+    node test_course.js python|lisp|cpp|math|modern|java   # one course; "modern" compiles with the real compiler, about 1.5 minutes
+    node test_java.js      # the Java interpreter against what javac/java print (a few seconds)
     npm run test:browser   # needs a built dist and Chromium (playwright-core); serves dist over a local http server; about 1.5 minutes
 
 CI (`.github/workflows/ci.yml`) runs install, `npm test`, build, `npm run test:browser` on every PR and push to main. CodeQL also runs.
@@ -46,6 +47,17 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - Build nodes with `el()`; the DOM's `append` prints `null`/`false` as text.
 - JSCPP is patched (`patches/*.patch`, applied to node_modules by `scripts/patch-jscpp.js`, baked into `vendor/jscpp.min.js`).
 
+## Java (ARCHITECTURE §9e)
+
+- The site's own interpreter, `src/java.js` (lexer, parser, javac-style checker, library table, interpreter), in a worker like JSCPP
+  (`src/javaworker.js`, data block `java-src`), `JAVARUN` in `runner.js`, harness for method exercises in `src/javautil.js`.
+- Error messages are javac's words; outputs match real Java (number formatting, HashMap order, Random sequence, stack traces). When adding
+  a lesson example, make sure its expected output is what a real JVM would print, not what seems reasonable.
+- Not covered: user generics, lambdas, nested classes, enums, records, streams, files, threads, checked-exception analysis; `==` on
+  Strings compares text (so that trap is taught with a listing, not a runnable example).
+- Exercises: whole programs with `{stdin, expect}`; methods with `{call, expect}` (the student writes only the `static` method; `prelude`
+  for imports); whole classes with `ex.classes: true` and `{main, expect}`. Ids are `jv-<n>-<k>`.
+
 ## Two C++ engines (ARCHITECTURE §9d)
 
 - **Teaching**: JSCPP, in the bundle, offline, the only one the memory stepper understands (SC 103).
@@ -62,9 +74,11 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 
 - Merged and live: everything above through PR #10 (security review of Full C++). `main` = `a617613`.
 - SC 105 Modern C++ has 8 lessons (string, vector, references, struct, class, algorithms/lambdas, map/set, gradebook project), 15 exercises.
-- Ideas not started: C in the Code Lab (same compiler); SC 106 Data Structures and Algorithms on the real compiler; lessons 9-10 of SC 105
+- SC 106 Introduction to Java: the interpreter and the first 3 lessons (Hello Java and types; decisions and Scanner; loops), 6 exercises.
+  Planned next: methods; arrays; Strings; ArrayList; classes and objects; inheritance and interfaces; exceptions; HashMap; a project.
+- Ideas not started: C in the Code Lab (same compiler); a Data Structures and Algorithms course on the real compiler; lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
-  beside the single-page design and needs a policy change); splitting CI (about 4 minutes now); Java (largest audience gap, hard).
+  beside the single-page design and needs a policy change); splitting CI (about 4 minutes now); a Java step-through debugger like the C++ memory stepper.
 - Not verified: Full C++ on low-end devices (needs about 84 MB plus the program), and on the production URL since the security-review merge.
 
 ## Gotchas

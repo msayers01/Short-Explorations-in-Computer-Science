@@ -52,8 +52,10 @@ const scripts = [
   'src/course_cpp.js',
   'src/course_math.js',
   'src/course_modern.js',
+  'src/course_java.js',
   'src/mathgrade.js',
   'src/cppfull.js',
+  'src/javautil.js',
   'src/runner.js',
   'src/app.js',
   'src/lab.js',
@@ -114,11 +116,12 @@ fs.writeFileSync('THIRD-PARTY-NOTICES.md', '# Third-party notices\n\nThe built s
   + THIRD_PARTY.map(t => `\n## ${t.name} ${t.version}\n\n${t.url}. ${t.role[0].toUpperCase() + t.role.slice(1)}. Licence: ${t.licence}.`
     + (t.changes ? ' ' + t.changes : '') + '\n\n```\n' + t.text + '\n```\n').join(''));
 // The interpreters are not scripts of this page. Each sits in an inert <script type="text/plain"> block, and src/runner.js builds a
-// Web Worker (or a sandboxed iframe) from its text, so Python and C++ programs run where they can reach nothing of the page.
+// Web Worker (or a sandboxed iframe) from its text, so Python, C++ and Java programs run where they can reach nothing of the page.
 const clean = (text) => scriptSafe(text.replace(/\r\n?/g, '\n'));   // the HTML parser turns CR and CRLF into LF, so do it here, and the hashes match
 // (Skulpt looks at importScripts to learn what kind of place it is running in, so for Python the lockdown comes just after Skulpt loads.)
 const pySrc = ['node_modules/skulpt/dist/skulpt.min.js', 'node_modules/skulpt/dist/skulpt-stdlib.js', 'src/lockdown.js', 'src/sandbox.js', 'src/pyworker.js'].map(r).join(';\n');
 const cppSrc = ['src/lockdown.js', 'vendor/jscpp.min.js', 'src/cpputil.js', 'src/cppstep.js', 'src/cppworker.js'].map(r).join(';\n');
+const javaSrc = ['src/lockdown.js', 'src/java.js', 'src/javaworker.js'].map(r).join(';\n');   // the site's own Java interpreter
 const bootSrc = r('src/pyboot.js');
 const clangSrc = r('src/clangworker.js');   // the toolchain itself is downloaded (see CLANG_DIR); only this glue is in the page
 const dataBlock = (id, text) => `<script type="text/plain" id="${id}">${clean(text)}</script>\n`;
@@ -126,7 +129,7 @@ const inline = [];   // the exact text of every inline script, for the CSP hashe
 const scriptTag = (text) => { inline.push(text); return `<script>${text}</script>\n`; };
 let body = scriptTag(`/* build info and third-party licences (build.js) */\nwindow.BUILD = ${scriptSafe(JSON.stringify(BUILD))};\n`);
 for (const s of scripts) body += scriptTag(`/* ${s} */\n${scriptSafe(r(s))}\n`);
-body += dataBlock('py-src', pySrc) + dataBlock('cpp-src', cppSrc) + dataBlock('py-boot', bootSrc) + dataBlock('clang-src', clangSrc);
+body += dataBlock('py-src', pySrc) + dataBlock('cpp-src', cppSrc) + dataBlock('java-src', javaSrc) + dataBlock('py-boot', bootSrc) + dataBlock('clang-src', clangSrc);
 const indexHashes = inline.map(sha).concat(sha(clean(bootSrc)));   // the last one is the script inside the sandboxed iframe (see pyboot.js)
 const html = headFor(indexHashes) + body + '</body>\n</html>\n';
 fs.mkdirSync('dist', { recursive: true });

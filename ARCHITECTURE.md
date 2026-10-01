@@ -110,7 +110,7 @@ dispatches a `routed` event on `document`; classroom.js listens for it to rebuil
  ├────────────────────────────────────────────────────────────────────────┤
  │ Grading: grade(ex, code) [code kinds]  ·  MATHGRADE.grade(ex, answers) │
  ├────────────────────────────────────────────────────────────────────────┤
- │ Runners: Runners.python / .cpp (sandboxed workers) · Scheme (in page)  │
+ │ Runners: .python / .cpp / .java (sandboxed workers) · Scheme (in page) │
  ├────────────────────────────────────────────────────────────────────────┤
  │ Storage (localStorage): progress · lab files · teacher data · theme    │
  └────────────────────────────────────────────────────────────────────────┘
@@ -158,8 +158,8 @@ Lesson: `{ title, summary, blocks[] }`. Blocks, rendered by `renderBlocks()`:
 | `{ ex: {...} }` | exercise (code kind or math kind, see below) |
 
 Code exercise: `{ id, title, prompt, starter, solution, hints[], tests[], mustContain[], mustNotContain[], followup, failTip, sampleStdin, prelude }`.
-Tests: Python `{call, expect}` (repr) or `{stdin, expect}`; Scheme `{call, expect}`; C++ `{stdin, expect}`,
-`{setup, call, expect}` (checker supplies main) or `{name, main, expect}`.
+Tests: Python `{call, expect}` (repr) or `{stdin, expect}`; Scheme `{call, expect}`; C++ and Java `{stdin, expect}`,
+`{setup, call, expect}` (checker supplies main) or `{name, main, expect}`; Java also `ex.classes: true` (see §9e).
 
 Math exercise (`kind`): `'answer'` (`parts[{label, answer, re, wrong[{match,msg}], exact}]`; `exact: true` compares as text, for digit strings such as `01`; table blank cells accept `exact` too), `'choice'`
 (`options[{text, ok, why}]`, `multi`), `'table'` (`head`, `rows` with `{a, why}` blank cells); `solution` is HTML.
@@ -171,7 +171,7 @@ figure, 1 per predict-then-reveal box, 10 per code exercise and 12 per non-code 
 lesson's title. The programming lessons come out at 40–70 minutes (only Lisp lesson 2 is marked), the mathematics
 lessons at 55–90 (eight of thirteen marked). Adjust the rates here, not per lesson.
 
-Exercise ids are `<py|ls|cp|ma>-<n>-<k>` and are permanent: they are the keys for progress, portfolio links and Lab
+Exercise ids are `<py|ls|cp|ma|mc|jv>-<n>-<k>` and are permanent: they are the keys for progress, portfolio links and Lab
 files, and nothing reads a lesson number out of them (the Lab, the portfolio and the router find an exercise by id and
 work out its lesson from where it is now). A lesson inserted mid-course takes the next unused `<n>` and later lessons
 keep their ids, so `<n>` matches the lesson's position only up to the first insertion. In the mathematics course,
@@ -183,7 +183,7 @@ lesson 7 has `ma-13-1/2`, and lessons 8–13 have `ma-7-*` … `ma-12-*`.
 |---|---|---|
 | `shortcourses.progress.v1` | app.js `Progress` | `{ done: {exId: timestamp}, code: {exId: savedCode or JSON answers}, pass: {exId: the code/answers that passed} }`; `markDone(id, code)` fills `pass` (for records without `pass`, the portfolio falls back to `code`, then to a Lab copy). A math exercise's answers are saved as `JSON.stringify` of one entry per input; a choice exercise therefore saves `[[indices]]` |
 | `shortcourses.theme` | app.js | `'light'` / `'dark'` |
-| `shortcourses.lab.v1` | lab.js | `{ lang, files: {python:[…], cpp:[…], scheme:[…]}, active: {lang: idx}, fontSize, wrap, panels }`; a file is `{ name, code, ex?: {id, course, lesson}, asg?: assignmentId, asgSeen?, lastCheck? }` |
+| `shortcourses.lab.v1` | lab.js | `{ lang, files: {python:[…], cpp:[…], java:[…], scheme:[…]}, active: {lang: idx}, fontSize, wrap, panels }`; a file is `{ name, code, ex?: {id, course, lesson}, asg?: assignmentId, asgSeen?, lastCheck? }` |
 | `shortcourses.portfolio.v1` | portfolio.js | `{ name, note, unfinished, tasks, lab: ["<lang>/<file name>", …] }` (name starts as teach's `studentName` if set) |
 | `shortcourses.classroom.v1` | classroom.js | `{ on, scale: index into [1.1, 1.25, 1.4, 1.6, 1.8], spot }` |
 | `shortcourses.teach.v1` | teach.js | `{ teacher, name, studentName, assignments: {id: A}, book: {id: {studentName: entry}}, received: {id: studentCopy} }` |
@@ -409,6 +409,55 @@ with `runtime: 'full'` (SC 105); an exercise inherits `runtime` from its course 
 - Updating the compiler: bump `@live-codes/clang-wasm` (exact version), rebuild, run `npm test` and the browser test. Its notices are
   appended to `THIRD-PARTY-NOTICES.md` by `build.js`.
 
+## 9e. Java (the site's own interpreter)
+
+Java has no compiler small enough to put in the page and no JVM that runs in a browser without another origin or tens of megabytes
+of class files, so the site has its own: `src/java.js`, a lexer, parser, type checker and tree-walking interpreter for the part of Java an
+introductory course uses. It runs in a Web Worker like JSCPP (`src/javaworker.js`, data block `java-src`, behind `lockdown.js`), is reached
+through `JAVARUN.run(code, {stdin, onOutput})` in `runner.js`, and is also loaded by node for the tests. `src/javautil.js` (in the page and
+in the tests) wraps method-writing exercises in a class with a `main`.
+
+- **What it checks.** The checker resolves every name, types every expression, picks overloads (JLS 15.12 phases: no boxing, boxing,
+  varargs), inserts the conversions Java applies (widening, boxing, int→long as BigInt), checks access (`private`), static context,
+  abstract-method implementation, overriding, missing `return` (JLS 14.22, simplified) and definite assignment (JLS 16, simplified), and
+  reports errors **in javac's words** (`Main.java:4: error: ';' expected`, `incompatible types: possible lossy conversion from double to
+  int`, `cannot find symbol` with symbol/location lines, `variable x might not have been initialized`), sometimes with a hint line in
+  parentheses that javac does not give. The file name in the message is the public class's (`Hello.java`), as javac would require.
+- **What it runs like.** `int` arithmetic is 32-bit (`|0`, `Math.imul`), `long` is a BigInt wrapped with `asIntN(64)`, `double` prints as
+  `Double.toString` does (`1.0E7`, `0.1 + 0.2`), `float` is rounded with `Math.fround`, `char` is a number whose static type decides how it
+  prints, strings hash as `String.hashCode`. `HashMap`/`HashSet` iterate in the real bucket order (hash spread, table of 16 doubling at
+  3/4), so a printed map matches real Java; `TreeMap`/`TreeSet` sort. `Random` is Java's 48-bit LCG bit for bit (`new Random(42).nextInt()`
+  is -1170105035). `Integer == Integer` is true only for -128..127, as in Java. Uncaught exceptions print `Exception in thread "main"
+  java.lang.ArithmeticException: / by zero` with a stack trace of `at Main.divide(Main.java:2)` lines; `NullPointerException` carries the
+  helpful message (`Cannot invoke "String.length()" because "name" is null`). A for-each that modifies its `ArrayList` throws
+  `ConcurrentModificationException` with Java's exact quirk (removing the second-to-last element ends the loop silently).
+- **Values.** Primitives are JS numbers/booleans/BigInt; a `double`, `float` or `char` stored in a reference-typed slot (`Object`, a type
+  parameter) is boxed in a `JBox` so it still prints as what it was; objects are `JObj {cls, f}` (a field that hides a parent's field gets
+  its own key), arrays `JArr {et, a}`, lists `JList`, maps `JMap` (bucket model), sets `JSet`, `StringBuilder` `JSB`.
+- **Library.** Defined in a table (`def(name, {ctors, methods, statics, fields})`) with javac-style signatures (`'substring(int,int)'`,
+  `'add(E)'`, `'sort(List<T>)'`): String, StringBuilder, the boxed types, Math, System (`out`, `err`, `in`, `exit`, `arraycopy`),
+  PrintStream (`print`/`println` overloads, `printf`/`format` with `%d %s %f %e %x %c %b %n`, flags, width, precision, grouping, and
+  `IllegalFormatConversionException` when the types disagree), Scanner (on `System.in` or a String; the `nextInt`/`nextLine` trap behaves as
+  in Java), Random, Arrays, Collections, ArrayList/LinkedList/List, HashMap/TreeMap/Map/Map.Entry, HashSet/TreeSet/Set, Iterable,
+  Comparable, Object, Class (`getSimpleName`), and the exception hierarchy as real classes a program can extend.
+- **Not covered** (the parser says so in plain words): generics in user classes, lambdas and method references, nested/anonymous/local
+  classes, enums, records, interfaces with default-method bodies on user classes are fine but `switch` patterns are not, try-with-resources,
+  streams, threads, files, checked-exception analysis (`throws` is parsed and ignored). `==` between two Strings compares the text (Java
+  compares references), so lesson 2 shows that trap as a listing, not a runnable example. Recursion deeper than about 1200 calls is a
+  `StackOverflowError` (real Java allows about ten times more).
+- **Limits and safety.** The worker's watchdog is 8 s and the interpreter's own `maxMs` 5 s (checked every 1024 steps); output is capped
+  at 2 MB in the interpreter and the page; arrays over 50 million elements are an `OutOfMemoryError`. The interpreter never evaluates
+  JavaScript text and is behind `lockdown.js` like the others. Speed: about 2 million simple loop iterations a second in Chromium
+  (a sieve to 10^6 takes about 2 s), much faster than JSCPP and far slower than the JVM.
+- **Grading.** `grade(ex, code)` runs each test through `JAVARUN`; a compile error ends the check at once with the error (as javac would),
+  a runtime exception is one test's failure. Tests are `{stdin, expect}` for whole programs, `{call, expect}` / `{setup, call, expect}` /
+  `{name, main, expect}` for method exercises (`javautil.js` supplies `public class Main` and `main`; `ex.prelude` for imports), and with
+  `ex.classes: true` the student's whole classes are tested by a `class Check` put in front of them. Line numbers in messages are shifted
+  back to the student's lines.
+- **Testing.** `node test_java.js` checks the interpreter against outputs of real javac/java (expected strings were written from Java's
+  documented behaviour, not run against a JVM here); `node test_course.js java` grades the course; the browser test runs Java in the worker,
+  checks the lockdown and the Lab.
+
 ## 10. Adding things — recipes
 
 - **A lesson:** add a lesson object in `course_X.js` with new ids `xx-<n>-1/2`, `<n>` being the next number
@@ -433,6 +482,7 @@ with `runtime: 'full'` (SC 105); an exercise inherits `runtime` from its course 
 - **A bundled library:** add it to `scripts` and to `THIRD_PARTY` in `build.js` (name, package, LICENSE file, url,
   role, and `changes` if patched); check it appears on `#/about` with its full licence text.
 - **A new route:** handle it in `renderRoute()` and, if it opens the Lab, pass `kind` to `LAB.page`.
+- **A Java library method:** add a signature and a function to the class's table in `src/java.js` (`def(...)`): `'name(paramTypes)': [returnType, (receiver, args, R, m) => ...]`; `E`, `K`, `V` are the class's type parameters, `T` is inferred from the arguments, `R` is the runtime (`throwJ(R, 'IllegalArgumentException', msg)`, `dstr(v, R)` for Java's string of a value). Add a line to `test_java.js`.
 - **A runtime change (JSCPP):** edit node_modules, rebuild `vendor/jscpp.min.js` with the esbuild
   command in the README, and record the diff in a file under `patches/` (add it to `PATCHES` in
   `scripts/patch-jscpp.js` with a marker line that only the patched file contains).

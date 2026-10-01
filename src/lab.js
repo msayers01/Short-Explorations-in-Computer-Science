@@ -1,4 +1,4 @@
-/* Code Lab: a browser-only sandbox for Python, C++ and Scheme.
+/* Code Lab: a browser-only sandbox for Python, C++, Java and Scheme.
    Registered as window.LAB; app.js routes #/lab here and passes its internals. */
 (function () {
   const A = () => window.__app.internal;   // shared helpers from app.js
@@ -6,6 +6,7 @@
   const LANG_INFO = {
     python: { label: 'Python', ext: '.py', accent: 'python', first: 'main.py' },
     cpp: { label: 'C++', ext: '.cpp', accent: 'cpp', first: 'main.cpp' },
+    java: { label: 'Java', ext: '.java', accent: 'java', first: 'Main.java' },
     scheme: { label: 'Scheme', ext: '.scm', accent: 'lisp', first: 'main.scm' }
   };
   // Language names arrive in links (?l=...) and from storage. A plain `LANG_INFO[x]` is truthy for "constructor" and "__proto__",
@@ -35,6 +36,17 @@
       { name: 'Array', code: '#include <iostream>\nusing namespace std;\n\nint main() {\n    int scores[5] = {70, 85, 92, 60, 78};\n    int best = scores[0];\n    for (int i = 1; i < 5; i++) {\n        if (scores[i] > best) best = scores[i];\n    }\n    cout << "Best score: " << best << endl;\n    return 0;\n}\n' },
       { name: 'Characters', code: '#include <iostream>\nusing namespace std;\n\nint main() {\n    char word[] = "hello";\n    for (int i = 0; word[i] != 0; i++) {\n        char c = word[i];\n        if (c >= \'a\' && c <= \'z\') c = c - \'a\' + \'A\';\n        cout << c;\n    }\n    cout << endl;\n    return 0;\n}\n' },
       { name: 'Recursion', code: '#include <iostream>\nusing namespace std;\n\nlong factorial(int n) {\n    if (n == 0) return 1;\n    return n * factorial(n - 1);\n}\n\nint main() {\n    for (int n = 0; n < 8; n++) cout << n << " " << factorial(n) << endl;\n    return 0;\n}\n' }
+    ],
+    java: [
+      { name: 'Hello', code: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello from the Code Lab!");\n    }\n}\n' },
+      { name: 'Input and arithmetic', code: 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        System.out.print("Enter two whole numbers: ");\n        int a = in.nextInt();\n        int b = in.nextInt();\n        System.out.println(a + " + " + b + " = " + (a + b));\n        System.out.println(a + " / " + b + " = " + a / b + " remainder " + a % b);\n    }\n}\n' },
+      { name: 'Loop and total', code: 'public class Main {\n    public static void main(String[] args) {\n        int total = 0;\n        for (int n = 1; n <= 10; n++) {\n            total = total + n;\n            System.out.println(n + " " + total);\n        }\n    }\n}\n' },
+      { name: 'Method', code: 'public class Main {\n    static int area(int width, int height) {\n        return width * height;\n    }\n\n    public static void main(String[] args) {\n        for (int w = 1; w <= 3; w++) {\n            System.out.println(w + " " + area(w, 5));\n        }\n    }\n}\n' },
+      { name: 'Array', code: 'public class Main {\n    public static void main(String[] args) {\n        int[] scores = {70, 85, 92, 60, 78};\n        int best = scores[0];\n        for (int i = 1; i < scores.length; i++) {\n            if (scores[i] > best) best = scores[i];\n        }\n        System.out.println("Best score: " + best);\n    }\n}\n' },
+      { name: 'ArrayList and HashMap', code: 'import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        ArrayList<String> names = new ArrayList<>();\n        names.add("Ada");\n        names.add("Grace");\n        names.add("Linus");\n        Collections.sort(names);\n        System.out.println(names + " has " + names.size() + " names");\n\n        HashMap<String, Integer> counts = new HashMap<>();\n        for (String word : "the cat and the hat and the bat".split(" ")) {\n            counts.put(word, counts.getOrDefault(word, 0) + 1);\n        }\n        for (String word : new TreeMap<>(counts).keySet()) {\n            System.out.println(word + " " + counts.get(word));\n        }\n    }\n}\n' },
+      { name: 'Class', code: 'class Counter {\n    private int count = 0;\n\n    void click() {\n        count++;\n    }\n\n    int value() {\n        return count;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Counter c = new Counter();\n        for (int i = 0; i < 5; i++) c.click();\n        System.out.println("clicks: " + c.value());\n    }\n}\n' },
+      { name: 'Recursion', code: 'public class Main {\n    static long factorial(int n) {\n        if (n == 0) return 1;\n        return n * factorial(n - 1);\n    }\n\n    public static void main(String[] args) {\n        for (int n = 0; n < 8; n++) System.out.println(n + " " + factorial(n));\n    }\n}\n' },
+      { name: 'Random simulation', code: 'import java.util.Random;\n\npublic class Main {\n    public static void main(String[] args) {\n        Random dice = new Random();\n        int rolls = 1000;\n        int sixes = 0;\n        for (int i = 0; i < rolls; i++) {\n            if (dice.nextInt(6) + 1 == 6) sixes++;\n        }\n        System.out.printf("%d sixes in %d rolls: about %.3f%n", sixes, rolls, (double) sixes / rolls);\n    }\n}\n' }
     ],
     scheme: [
       { name: 'Hello', code: '(display "Hello from the Code Lab!")\n(newline)\n' },
@@ -141,6 +153,66 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
 #include &lt;cstdlib&gt;   srand(1); rand() % 6 + 1
 #include &lt;cstring&gt;   strlen(s)  strcmp(a, b)</code></pre>
 <p class="ref-note">This C++ runs in your browser (JSCPP). Not supported: <code>std::string</code>, <code>vector</code>, classes and structs, references (<code>int&amp;</code>). Overflow and out-of-range array indices are reported as errors. Keep loops under about 50 000 steps.</p>`,
+    java: `<h3>Java quick reference</h3>
+<h4>A program</h4>
+<pre><code>import java.util.*;          // Scanner, ArrayList, HashMap ...
+
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello");
+    }
+}</code></pre>
+<h4>Output and input</h4>
+<pre><code>System.out.println("x = " + x);    System.out.print("no newline");
+System.out.printf("%d %.2f %s%n", n, d, s);
+Scanner in = new Scanner(System.in);
+int n = in.nextInt();   double d = in.nextDouble();
+String word = in.next();   String line = in.nextLine();</code></pre>
+<h4>Types</h4>
+<pre><code>int n = 7;  long big = 10000000000L;  double x = 2.5;
+char c = 'A';  boolean ok = true;  String s = "text";
+7 / 2 = 3   7 % 2 = 1   7 / 2.0 = 3.5   (int) 3.9 = 3
+Integer.parseInt("42")   Double.parseDouble("2.5")   Integer.MAX_VALUE</code></pre>
+<h4>Decisions and loops</h4>
+<pre><code>if (a &gt; b &amp;&amp; !done) { ... } else if (a == b) { ... } else { ... }
+while (n &gt; 0) { n--; }       do { ... } while (cond);
+for (int i = 0; i &lt; 10; i++) { ... }
+for (int v : values) { ... }           // every element
+switch (day) { case 1 -&gt; ...; case 6, 7 -&gt; ...; default -&gt; ...; }
+x = cond ? a : b;   break;   continue;</code></pre>
+<h4>Methods</h4>
+<pre><code>static int square(int x) { return x * x; }
+static void greet(String name) { System.out.println("Hi " + name); }</code></pre>
+<h4>Strings</h4>
+<pre><code>s.length()  s.charAt(i)  s.substring(a, b)  s.indexOf("x")  s.contains("x")
+s.equals(t)  s.equalsIgnoreCase(t)  s.compareTo(t)  s.toUpperCase()  s.trim()
+s.split(" ")  s.replace('a', 'b')  String.valueOf(n)  "" + n
+StringBuilder sb = new StringBuilder();  sb.append(x);  sb.toString()</code></pre>
+<h4>Arrays and collections</h4>
+<pre><code>int[] a = new int[5];   int[] b = {1, 2, 3};   a.length   int[][] grid = new int[3][4];
+Arrays.toString(a)   Arrays.sort(a)   Arrays.fill(a, 0)
+ArrayList&lt;Integer&gt; xs = new ArrayList&lt;&gt;();  xs.add(5);  xs.get(0);  xs.size();  xs.remove(0);  xs.contains(5)
+HashMap&lt;String, Integer&gt; m = new HashMap&lt;&gt;();  m.put(k, v);  m.get(k);  m.getOrDefault(k, 0);  m.containsKey(k);  m.keySet()
+HashSet&lt;String&gt; seen = new HashSet&lt;&gt;();  seen.add(x);  seen.contains(x)
+Collections.sort(xs)   Collections.max(xs)</code></pre>
+<h4>Classes</h4>
+<pre><code>class Point {
+    private int x, y;                      // fields
+    Point(int x, int y) { this.x = x; this.y = y; }   // constructor
+    int getX() { return x; }
+    public String toString() { return "(" + x + ", " + y + ")"; }
+}
+Point p = new Point(1, 2);   p.getX();   System.out.println(p);
+class Dog extends Animal { ... super(name); ... @Override public String sound() { ... } }
+interface Shape { double area(); }</code></pre>
+<h4>Errors</h4>
+<pre><code>try { int n = Integer.parseInt(s); }
+catch (NumberFormatException e) { System.out.println("not a number: " + e.getMessage()); }
+finally { ... }
+throw new IllegalArgumentException("must be positive");
+Math.sqrt(x)  Math.pow(a, b)  Math.abs(x)  Math.max(a, b)  Math.round(x)  Math.random()
+Random r = new Random();  r.nextInt(6) + 1</code></pre>
+<p class="ref-note">This Java runs in your browser, in an interpreter written for this site. It checks programs the way <code>javac</code> does (the same error messages) and covers the language an introductory course uses: classes, inheritance, interfaces, arrays, strings, <code>ArrayList</code>, <code>HashMap</code>, <code>HashSet</code>, <code>Scanner</code>, <code>Random</code>, exceptions. Not available: generics in your own classes, lambdas, nested classes, enums, files and threads. A program is stopped after about 5 seconds, and recursion deeper than about a thousand calls stops with a <code>StackOverflowError</code>.</p>`,
     scheme: `<h3>Scheme quick reference</h3>
 <h4>Expressions</h4>
 <pre><code>(+ 1 2)   (* 3 4)   (- 10 3)   (/ 1 3)   (quotient 7 2)   (remainder 7 2)
@@ -198,6 +270,13 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
       [/uninitialized|uninitialised/, 'A variable was read before it was given a value. Initialise it: int total = 0;'],
       [/Syntax error/, 'C++ could not read the program. Check for a missing semicolon at the end of the previous statement, unmatched braces or parentheses, and a missing #include or using namespace std;'],
       [/undefined|not defined|is not declared/, 'A name was used that was never declared. Declare variables with a type (int x = 0;), and define functions before main, or add an #include.']
+    ],
+    java: [
+      [/'else' without 'if'/, 'An else has no if to belong to. Usually a semicolon or an extra } between the if-block and the else.'],
+      [/not a statement/, 'This line is an expression on its own, not an instruction. A method call needs parentheses (println(x), not println), and a value alone does nothing.'],
+      [/illegal start of expression/, 'Java could not start reading an expression here. Common causes: a stray keyword such as public inside a method, or a missing ) or } just before.'],
+      [/unclosed string literal/, 'A string is missing its closing quote on this line.'],
+      [/can't find main/, 'Every Java program starts in  public static void main(String[] args) . Add that method to your class.']
     ],
     scheme: [
       [/Unbound variable/, 'A name was used that has no definition. Check the spelling, or define it first with (define ...).'],
@@ -420,12 +499,12 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
         e.preventDefault();
         const ls = v.lastIndexOf('\n', s - 1) + 1, line = v.slice(ls, s);
         let indent = (line.match(/^\s*/) || [''])[0]; const trimmed = line.trim();
-        const opens = (lang === 'python' && trimmed.endsWith(':')) || (lang === 'cpp' && trimmed.endsWith('{')) || (lang === 'scheme' && (trimmed.split('(').length > trimmed.split(')').length));
+        const opens = (lang === 'python' && trimmed.endsWith(':')) || ((lang === 'cpp' || lang === 'java') && trimmed.endsWith('{')) || (lang === 'scheme' && (trimmed.split('(').length > trimmed.split(')').length));
         if (opens) indent += L.tab;
         // C++: Enter between { and } puts } on its own line
-        if (lang === 'cpp' && trimmed.endsWith('{') && v[t] === '}') { const ins = '\n' + indent + '\n' + indent.slice(L.tab.length); edit(s, t, ins, s + 1 + indent.length); return; }
+        if ((lang === 'cpp' || lang === 'java') && trimmed.endsWith('{') && v[t] === '}') { const ins = '\n' + indent + '\n' + indent.slice(L.tab.length); edit(s, t, ins, s + 1 + indent.length); return; }
         const ins = '\n' + indent; edit(s, t, ins, s + ins.length);
-      } else if (lang === 'cpp' && e.key === '}' && s === t) {
+      } else if ((lang === 'cpp' || lang === 'java') && e.key === '}' && s === t) {
         const ls = v.lastIndexOf('\n', s - 1) + 1;
         if (v[s] === '}') { e.preventDefault(); ta.selectionStart = ta.selectionEnd = s + 1; render(); }
         else if (/^\s+$/.test(v.slice(ls, s)) && v.slice(ls, s).length >= L.tab.length) { e.preventDefault(); edit(ls, t, v.slice(ls, s).slice(L.tab.length) + '}', s - L.tab.length + 1); }
@@ -467,7 +546,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       else { if (le >= v.length) return; let ne = v.indexOf('\n', le + 1); if (ne < 0) ne = v.length; const next = v.slice(le + 1, ne); edit(ls, ne, next + '\n' + block, s + next.length + 1, t + next.length + 1); }
     }
     function toggleComment() {
-      const v = ta.value, s = ta.selectionStart, t = ta.selectionEnd, mark = lang === 'python' ? '# ' : lang === 'cpp' ? '// ' : '; ';
+      const v = ta.value, s = ta.selectionStart, t = ta.selectionEnd, mark = lang === 'python' ? '# ' : (lang === 'cpp' || lang === 'java') ? '// ' : '; ';
       const [ls, le] = lineSpan(v, s, t);
       const lines = v.slice(ls, le).split('\n'); const all = lines.every(l => l.trim() === '' || l.trimStart().startsWith(mark.trim()));
       const out = lines.map(l => { if (l.trim() === '') return l; const ind = l.match(/^\s*/)[0]; return all ? ind + l.slice(ind.length).replace(new RegExp('^' + mark.trim().replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&') + ' ?'), '') : ind + mark + l.slice(ind.length); }).join('\n');
@@ -601,7 +680,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
         el('div', { class: 'ex-bar-text' }, el('span', { class: 'ex-label' }, 'Exercise'), ' ', el('b', {}, ex.title), el('span', { class: 'ex-bar-where' }, ' · ' + course.code + ', Lesson ' + (lessonIdx + 1) + ': ' + lesson.title + (A().Progress.isDone(ex.id) ? ' · completed ✓' : ''))),
         el('div', { class: 'toolbar' }, check, el('a', { class: 'btn quiet', href: '#/' + course.id + '/' + (lessonIdx + 1) + '/' + ex.id }, 'Open the lesson'), el('button', { class: 'btn quiet', onclick: () => { prompt.hidden = !prompt.hidden; } }, 'Show the task')),
         prompt);
-      if (ex.sampleStdin && S.lang === 'cpp') { stdinBox.hidden = false; if (!stdinTa.value) stdinTa.value = ex.sampleStdin; }
+      if (ex.sampleStdin && (S.lang === 'cpp' || S.lang === 'java')) { stdinBox.hidden = false; if (!stdinTa.value) stdinTa.value = ex.sampleStdin; }
     }
     // ----- teacher / assignment tools (src/teach.js)
     const asgHost = el('div');
@@ -713,14 +792,15 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     function explain(lang, err) { const tip = tipFor(lang, err); for (const [re, msg] of EXPLAIN[lang] || []) if (re.test(err)) return msg; return tip; }
     function showError(lang, err) {
       out.error(err);
-      const m = err.match(/line (\d+)/i) || err.match(/main\.cpp:(\d+):\d+/);
+      const m = err.match(/line (\d+)/i) || err.match(/main\.cpp:(\d+):\d+/) || err.match(/\.java:(\d+)/);
       if (m) { const pre = out.el.querySelector('.out-text'); pre.append(el('button', { class: 'linklike goto', onclick: () => editor.goToLine(+m[1]) }, '→ go to line ' + m[1]), '\n'); }
       const ex = explain(lang, err); if (ex) out.note('↳ ' + ex);
     }
     async function run() {
       if (running) return; if (tracer) tracer.stop(); endMem();
       const lang = S.lang, code = editor.value; out.clear();
-      if (lang === 'cpp' && /\bcin\b/.test(code)) { stdinBox.hidden = false; if (!stdinTa.value.trim() && !stdinTa.dataset.warned) { stdinTa.dataset.warned = '1'; out.note('This program reads input with cin. Type the values in the Program input box, one per line, then Run again.'); stdinTa.focus(); return; } }
+      const reads = lang === 'cpp' ? /\bcin\b/.test(code) : lang === 'java' ? /\bScanner\b/.test(code) : false;
+      if (reads) { stdinBox.hidden = false; if (!stdinTa.value.trim() && !stdinTa.dataset.warned) { stdinTa.dataset.warned = '1'; out.note('This program reads input with ' + (lang === 'java' ? 'a Scanner' : 'cin') + '. Type the values in the Program input box, one per line, then Run again.'); stdinTa.focus(); return; } }
       setRunning(true);
       try {
         if (lang === 'python') {
@@ -743,16 +823,21 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
         } else if (lang === 'cpp') {
           const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: stdinTa.value });
           if (r.err) showError('cpp', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
+        } else if (lang === 'java') {
+          const t0 = Date.now();
+          const r = await Runners.java.run(code, { onOutput: (s) => out.write(s), stdin: stdinTa.value });
+          if (r.err) showError('java', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
+          if (!r.err) out.note('finished in ' + ((Date.now() - t0) / 1000).toFixed(2) + ' s');
         }
       } catch (e) { out.error(String(e && e.message || e)); }
       setRunning(false);
     }
-    // Python and C++ run in sandboxes (src/runner.js): a Web Worker each, or for turtle drawing a sandboxed iframe. Neither can reach this
+    // Python, C++ and Java run in sandboxes (src/runner.js): a Web Worker each, or for turtle drawing a sandboxed iframe. Neither can reach this
     // page, its storage or the network, and Stop ends them at once, even in a loop that never yields.
     const usesTurtleIn = (code) => /\b(import\s+turtle|from\s+turtle\s+import)\b/.test(code);
     function turtleOptions() { turtleBox.hidden = false; turtleMount.textContent = ''; if (turtleBox.scrollIntoView) turtleBox.scrollIntoView({ block: 'nearest' });   // the browser pauses the drawing of a frame that is off screen
      return { mount: turtleMount, width: Math.min(560, turtleMount.clientWidth || 560), height: 360 }; }
-    function stop() { window.PYRUN.cancel(); window.CPPRUN.cancel(); window.CLANGRUN.cancel(); }
+    function stop() { window.PYRUN.cancel(); window.CPPRUN.cancel(); window.JAVARUN.cancel(); window.CLANGRUN.cancel(); }
 
     // ----- Python tracer
     function startTrace() {
@@ -925,7 +1010,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       let last = -1;
       files.forEach((file) => file.text().then((text) => {
         const ext = (file.name.match(/\.\w+$/) || [''])[0].toLowerCase();
-        const l = ext === '.py' ? 'python' : ['.cpp', '.cc', '.cxx', '.h'].includes(ext) ? 'cpp' : ['.scm', '.ss', '.rkt'].includes(ext) ? 'scheme' : S.lang;
+        const l = ext === '.py' ? 'python' : ['.cpp', '.cc', '.cxx', '.h'].includes(ext) ? 'cpp' : ext === '.java' ? 'java' : ['.scm', '.ss', '.rkt'].includes(ext) ? 'scheme' : S.lang;
         S.files[l].push({ name: uniqueName(l, file.name), code: text }); last = S.files[l].length - 1;
         if (l !== S.lang) { S.active[l] = last; switchLang(l); } else activate(last);
       }));

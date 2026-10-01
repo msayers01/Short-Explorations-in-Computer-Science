@@ -17,10 +17,11 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   const goto = async (hash) => { await page.goto(SITE + hash); await page.reload(); await page.waitForSelector('#app > *'); };
   const py = (code, opts) => page.evaluate(([c, o]) => window.PYRUN.run(c, o), [code, opts || {}]);
   const cpp = (code, opts) => page.evaluate(([c, o]) => window.CPPRUN.run(c, o), [code, opts || {}]);
+  const java = (code, opts) => page.evaluate(([c, o]) => window.JAVARUN.run(c, o), [code, opts || {}]);
 
   // ---- 1. the interpreters are not in the page
   await goto('#/lab');
-  check('no Skulpt or JSCPP in the page', (await page.evaluate(() => [typeof Sk, typeof JSCPP])).join() === 'undefined,undefined');
+  check('no Skulpt, JSCPP or the Java interpreter in the page', (await page.evaluate(() => [typeof Sk, typeof JSCPP, typeof JAVA])).join() === 'undefined,undefined,undefined');
   check('CSP is in the page', (await page.locator('meta[http-equiv="Content-Security-Policy"]').count()) === 1);
 
   // ---- 2. programs run, and are confined
@@ -34,6 +35,9 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   }
   r = await cpp('#include <iostream>\nusing namespace std;\nint main() { cout << 6 * 7 << endl; }'); check('c++ runs', r.out === '42\n' && !r.err, r);
   r = await cpp('#include <iostream>\nusing namespace std;\nint main() { int x = 1 / 0; }'); check('c++ error text', /division by zero/i.test(r.err || ''), r);
+  r = await java('import java.util.Scanner;\npublic class Main { public static void main(String[] args) { Scanner in = new Scanner(System.in); int n = in.nextInt(); System.out.println("Twice " + n + " is " + 2 * n); } }', { stdin: '21' }); check('java runs, with input', r.out === 'Twice 21 is 42\n' && !r.err, r);
+  r = await java('public class Main { public static void main(String[] args) { int x = "a"; } }'); check('java compile error text', /Main\.java:1: error: incompatible types: String cannot be converted to int/.test(r.err || ''), r);
+  r = await java('public class Main { public static void main(String[] args) { int[] a = new int[2]; a[2] = 1; } }'); check('java exception text', /ArrayIndexOutOfBoundsException: Index 2 out of bounds for length 2/.test(r.err || ''), r);
 
   // ---- 3. even an interpreter that was fully compromised could not reach the page
   // The sandboxes run whatever they are sent, so send them hostile JavaScript directly, built the way runner.js builds them.
@@ -76,7 +80,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
 
   // ---- 3b. the interpreters' own workers have every way of making requests, starting workers or reaching stored data removed (src/lockdown.js)
   const lockProbe = `try { const have = []; for (const n of ['fetch', 'XMLHttpRequest', 'WebSocket', 'WebTransport', 'EventSource', 'importScripts', 'Worker', 'SharedWorker', 'BroadcastChannel', 'indexedDB', 'caches', 'RTCPeerConnection']) { if (typeof self[n] !== 'undefined') have.push(n); for (let o = self; o; o = Object.getPrototypeOf(o)) if (Object.prototype.hasOwnProperty.call(o, n) && typeof o[n] !== 'undefined') have.push(n + ' (inherited)'); } self.postMessage({ t: 'probe', have }); } catch (e) { self.postMessage({ t: 'probe', error: String(e) }); }`;
-  for (const src of ['py-src', 'cpp-src']) {
+  for (const src of ['py-src', 'cpp-src', 'java-src']) {
     const res = await page.evaluate(([src, probe]) => new Promise((ok) => {
       const w = new Worker(URL.createObjectURL(new Blob([document.getElementById(src).textContent + ';\n' + probe], { type: 'text/javascript' })));
       w.onmessage = (e) => { if (e.data && e.data.t === 'probe') { ok(e.data); w.terminate(); } };
@@ -100,6 +104,8 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   r = await py('while True:\n    print("x" * 1000)', { execLimit: 20000 });
   check('a print flood is stopped', /more than it was allowed/.test(r.err || ''), r.err);
   r = await cpp('#include <iostream>\nusing namespace std;\nint main() { for (;;) { } }'); check('a c++ infinite loop ends', /Time limit exceeded/.test(r.err || ''), r);
+  r = await java('public class Main { public static void main(String[] args) { while (true) { } } }'); check('a java infinite loop ends', /Time limit exceeded/.test(r.err || ''), r);
+  r = await java('public class Main { public static void main(String[] args) { System.out.println("fine"); } }'); check('java works after the loop was ended', r.out === 'fine\n', r);
 
   // ---- 5. the Code Lab, end to end, under the policy
   await goto('#/lab');
@@ -118,6 +124,15 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await setCode('#include <iostream>\nusing namespace std;\nint main() { int a = 3; int *p = &a; cout << *p << endl; return 0; }');
   await page.click('.lab-toolbar button:has-text("Run")'); await page.waitForTimeout(1500);
   check('Lab: C++ runs', /^3/.test((await outText()).trim()), await outText());
+  await page.click('.lang-btn:has-text("Java")'); await page.waitForSelector('.lab-editor textarea');
+  await setCode('public class Main {\n    public static void main(String[] args) {\n        System.out.println("Lab " + (6 * 7));\n    }\n}');
+  await page.click('.lab-toolbar button:has-text("Run")'); await page.waitForFunction(() => /finished in/.test(document.querySelector('.out-text').textContent), null, { timeout: 15000 }).catch(() => { });
+  check('Lab: Java runs', /Lab 42/.test(await outText()), await outText());
+  await setCode('public class Main {\n    public static void main(String[] args) {\n        int x = 5\n    }\n}');
+  await page.click('.lab-toolbar button:has-text("Run")'); await page.waitForTimeout(1500);
+  check('Lab: a Java compile error names its line and gets a tip', /Main\.java:3: error: ';' expected/.test(await outText()) && (await page.locator('.out-text .goto').count()) === 1, await outText());
+  await page.click('.lang-btn:has-text("C++")'); await page.waitForSelector('.lab-editor textarea');
+  await setCode('#include <iostream>\nusing namespace std;\nint main() { int a = 3; int *p = &a; cout << *p << endl; return 0; }');
   await page.click('.lab-toolbar button:has-text("Step through memory")'); await page.waitForSelector('.mem-view', { timeout: 10000 }); await page.waitForTimeout(400);
   check('Lab: memory stepper shows the program', /step 1 of/.test(await page.locator('.mem-box .panel-head .panel-note').innerText()));
   await page.click('.lang-btn:has-text("Scheme")'); await page.waitForSelector('.repl-inp');
@@ -130,8 +145,10 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('lesson example runs', (await page.locator('.play .out-text').first().innerText()).length > 0);
   await goto('#/cpp/2'); await page.click('.play button:has-text("Run")'); await page.waitForTimeout(1500);
   check('C++ lesson example runs', (await page.locator('.play .out-text').first().innerText()).length > 0);
+  await goto('#/java/1'); await page.click('.play button:has-text("Run")'); await page.waitForTimeout(2500);
+  check('Java lesson example runs', /Hello, world!/.test(await page.locator('.play .out-text').first().innerText()), await page.locator('.play .out-text').first().innerText());
   // graded exercises go through the same sandboxes: every starter fails, every solution passes
-  for (const course of ['python', 'cpp']) {
+  for (const course of ['python', 'cpp', 'java']) {
     const res = await page.evaluate(async (id) => {
       const c = window.COURSES.find((x) => x.id === id); const ex = []; for (const L of c.lessons) for (const b of L.blocks) if (b.ex && b.ex.solution && b.ex.starter != null && !b.ex.kind) ex.push(b.ex);
       const out = []; for (const e of ex.slice(0, 4)) { e.lang = e.lang || c.lang; const good = await window.__app.grade(e, e.solution), poor = await window.__app.grade(e, e.starter); out.push({ id: e.id, solution: good.passed, starter: poor.passed }); } return out;
