@@ -236,25 +236,46 @@
   window.__runners = Runners;
 
   // ---------- output panel ----------
+  // The output panel is drawn as a terminal: a title bar with a status pill, a prompt line with the command that "ran", the program's
+  // output (stderr in red, notes dimmed), a blinking cursor while the program runs, and input() answered on an inline prompt.
+  // Everything written into it is text: output from a sandbox is never interpreted as HTML.
+  const COMMANDS = { python: 'python main.py', scheme: 'scheme main.scm', cpp: 'g++ main.cpp -o main && ./main', cppfull: 'clang++ -std=c++20 main.cpp -o main && ./main', java: 'javac Main.java && java Main' };
   function outputPanel() {
-    const box = el('div', { class: 'out', hidden: '' });
-    const pre = el('pre', { class: 'out-text' });
-    box.append(pre);
+    const box = el('div', { class: 'out term', hidden: '' });
+    const status = el('span', { class: 'term-status', role: 'status' });
+    const bar = el('div', { class: 'term-bar' }, el('span', { class: 'term-dots', 'aria-hidden': 'true' }, el('span'), el('span'), el('span')), el('span', { class: 'term-title' }, 'Output'), status);
+    const pre = el('pre', { class: 'out-text', tabindex: '0', 'aria-label': 'Program output' });
+    const cursor = el('span', { class: 'term-cursor', 'aria-hidden': 'true' });
+    box.append(bar, pre);
+    let t0 = 0;
+    const put = (node) => { if (cursor.parentNode === pre) pre.insertBefore(node, cursor); else pre.appendChild(node); box.hidden = false; pre.scrollTop = pre.scrollHeight; };
+    const line = (cls, s) => { put(el('span', { class: cls }, s)); put(document.createTextNode('\n')); };
+    const setStatus = (cls, text) => { status.className = 'term-status' + (cls ? ' ' + cls : ''); status.textContent = text; };
     const api = {
       el: box,
-      clear() { pre.textContent = ''; box.hidden = false; box.classList.remove('has-error'); },
-      write(s) { pre.appendChild(document.createTextNode(s)); box.hidden = false; },
-      value(s) { pre.appendChild(el('span', { class: 'val' }, s)); pre.appendChild(document.createTextNode('\n')); box.hidden = false; },
-      error(s) { pre.appendChild(el('span', { class: 'err' }, s)); pre.appendChild(document.createTextNode('\n')); box.hidden = false; box.classList.add('has-error'); },
-      note(s) { pre.appendChild(el('span', { class: 'note' }, s)); pre.appendChild(document.createTextNode('\n')); box.hidden = false; },
-      hide() { box.hidden = true; },
+      clear() { pre.textContent = ''; box.hidden = false; box.classList.remove('has-error'); setStatus('', ''); },
+      /** a run begins: the prompt line names the command, the status says running, the cursor blinks */
+      start(cmd) { api.clear(); t0 = Date.now(); if (cmd) line('cmd', cmd); pre.appendChild(cursor); setStatus('running', 'running'); },
+      /** a run ends: the cursor stops and the status pill says how it went */
+      finish(info) {
+        info = info || {}; if (cursor.parentNode === pre) pre.removeChild(cursor);
+        const secs = t0 ? ((Date.now() - t0) / 1000).toFixed(2) + ' s' : '';
+        if (info.stopped) setStatus('fail', 'stopped' + (secs ? ' \u00b7 ' + secs : ''));
+        else if (box.classList.contains('has-error')) setStatus('fail', 'error' + (secs ? ' \u00b7 ' + secs : ''));
+        else setStatus('ok', 'exit ' + (info.exit || 0) + (secs ? ' \u00b7 ' + secs : ''));
+      },
+      write(s) { put(document.createTextNode(s)); },
+      value(s) { line('val', s); },
+      error(s) { line('err', s); box.classList.add('has-error'); },
+      note(s) { line('note', s); },
+      hide() { box.hidden = true; if (cursor.parentNode === pre) pre.removeChild(cursor); },
       /** inline input() prompt; returns a promise resolved with the typed line */
       ask(prompt) {
         return new Promise((resolve) => {
-          const inp = el('input', { class: 'inline-input', type: 'text', 'aria-label': 'Program input' });
-          const line = el('span', { class: 'input-line' }, prompt || '', inp);
-          pre.appendChild(line); box.hidden = false; inp.focus();
-          inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const v = inp.value; line.replaceWith(document.createTextNode((prompt || '') + v + '\n')); resolve(v); } });
+          const inp = el('input', { class: 'inline-input', type: 'text', 'aria-label': 'Program input', autocomplete: 'off', spellcheck: 'false' });
+          const row = el('span', { class: 'input-line' }, prompt || '', inp);
+          put(row); inp.focus();
+          inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const v = inp.value; row.replaceWith(el('span', {}, prompt || '', el('span', { class: 'typed' }, v), '\n')); resolve(v); } });
         });
       }
     };
@@ -264,7 +285,12 @@
   const usesTurtle = (code) => /\b(import\s+turtle|from\s+turtle\s+import)\b/.test(code);
   async function runCell(lang, code, out, opts) {
     opts = opts || {};
-    out.clear();
+    out.start(COMMANDS[lang === 'cpp' && opts.runtime === 'full' ? 'cppfull' : lang] || '');
+    let exit = 0;
+    try { exit = await runCellBody(lang, code, out, opts); } catch (e) { out.error(String(e && e.message || e)); }
+    out.finish({ exit });
+  }
+  async function runCellBody(lang, code, out, opts) {
     if (lang === 'python') {
       // a program that draws gets a canvas in a sandboxed frame (src/runner.js), shown where opts.turtleMount is
       const turtle = opts.turtleMount && usesTurtle(code) ? (opts.turtleMount.hidden = false, { mount: opts.turtleMount, width: Math.min(480, opts.turtleMount.clientWidth || 480), height: 320 }) : undefined;
@@ -285,6 +311,7 @@
       if (r.err) { out.error(r.err); const tip = tipFor('cppfull', r.err); if (tip) out.note('↳ ' + tip); }
       else if (!r.out) out.note('(the program finished without printing anything)');
       if (r.exit) out.note('(the program ended with status ' + r.exit + ')');
+      return r.exit || 0;
     } else if (lang === 'cpp') {
       const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: opts.stdin });
       if (r.err) out.error(r.err);
@@ -294,6 +321,7 @@
       if (r.err) { out.error(r.err); const tip = tipFor('java', r.err); if (tip) out.note('↳ ' + tip); }
       else if (!r.out) out.note('(the program finished without printing anything)');
     }
+    return 0;
   }
 
   // ---------- grading ----------
@@ -910,5 +938,5 @@
   window.addEventListener('hashchange', route);
   document.addEventListener('progress-changed', () => { /* sidebars re-render on next navigation */ });
   document.addEventListener('DOMContentLoaded', route);
-  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, internal: { lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById } };
+  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById } };
 })();

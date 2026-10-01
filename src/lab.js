@@ -798,17 +798,17 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     }
     async function run() {
       if (running) return; if (tracer) tracer.stop(); endMem();
-      const lang = S.lang, code = editor.value; out.clear();
+      const lang = S.lang, code = editor.value; out.start((window.__app.COMMANDS || {})[lang === 'cpp' && isFull() ? 'cppfull' : lang] || '');
+      let exit = 0, stopped = false;
       const reads = lang === 'cpp' ? /\bcin\b/.test(code) : lang === 'java' ? /\bScanner\b/.test(code) : false;
       if (reads) { stdinBox.hidden = false; if (!stdinTa.value.trim() && !stdinTa.dataset.warned) { stdinTa.dataset.warned = '1'; out.note('This program reads input with ' + (lang === 'java' ? 'a Scanner' : 'cin') + '. Type the values in the Program input box, one per line, then Run again.'); stdinTa.focus(); return; } }
       setRunning(true);
       try {
         if (lang === 'python') {
           const usesTurtle = usesTurtleIn(code);
-          const t0 = Date.now();
           const r = await window.PYRUN.run(code, { execLimit: 15000, onOutput: (s) => out.write(s), onInput: (p) => out.ask(p), turtle: usesTurtle ? turtleOptions() : undefined });
           if (r.err) showError('python', r.err); else if (!r.out && !usesTurtle) out.note('(the program finished without printing anything)');
-          out.note('finished in ' + ((Date.now() - t0) / 1000).toFixed(2) + ' s');
+          stopped = /stopped|cancel/i.test(r.err || '') && !r.out;
         } else if (lang === 'scheme') {
           repl.reset();
           const r = repl.loadProgram(code, (s) => out.write(s));
@@ -820,16 +820,16 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
           const r = await Runners.cppFull.run(code, { onOutput: (s) => out.write(s), onNote: (s) => out.note(s), stdin: stdinTa.value, std: S.cppStd, host: out.el });
           if (r.err) showError('cppfull', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
           if (r.exit) out.note('(the program ended with status ' + r.exit + ')');
+          exit = r.exit || 0;
         } else if (lang === 'cpp') {
           const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: stdinTa.value });
           if (r.err) showError('cpp', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
         } else if (lang === 'java') {
-          const t0 = Date.now();
           const r = await Runners.java.run(code, { onOutput: (s) => out.write(s), stdin: stdinTa.value });
           if (r.err) showError('java', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
-          if (!r.err) out.note('finished in ' + ((Date.now() - t0) / 1000).toFixed(2) + ' s');
         }
       } catch (e) { out.error(String(e && e.message || e)); }
+      out.finish({ exit, stopped });
       setRunning(false);
     }
     // Python, C++ and Java run in sandboxes (src/runner.js): a Web Worker each, or for turtle drawing a sandboxed iframe. Neither can reach this

@@ -110,12 +110,14 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   // ---- 5. the Code Lab, end to end, under the policy
   await goto('#/lab');
   const setCode = (c) => page.evaluate((c) => { const t = document.querySelector('.lab-editor textarea'); t.value = c; t.dispatchEvent(new Event('input', { bubbles: true })); }, c);
-  const outText = async () => (await page.locator('.out-text').allInnerTexts()).join('|');
+  // the output panel is a terminal: its first line is the command that "ran" (python main.py …), so the program's own output starts on line 2
+  const outText = async () => (await page.locator('.out-text').allInnerTexts()).map((t) => t.replace(/^[^\n]*\n?/, '')).join('|');
+  const outStatus = async () => page.locator('.term-status').last().textContent();
   await setCode('name = input("Name? ")\nprint("Hi", name)'); await page.click('.lab-toolbar button:has-text("Run")');
   await page.waitForSelector('.inline-input'); await page.fill('.inline-input', 'Ada'); await page.press('.inline-input', 'Enter'); await page.waitForTimeout(800);
   check('Lab: input() asks in the output panel', /Hi Ada/.test(await outText()), await outText());
-  await setCode('import turtle\nt = turtle.Turtle()\nt.forward(50)\nturtle.done()\nprint("drawn")'); await page.click('.lab-toolbar button:has-text("Run")'); await page.waitForFunction(() => /finished in/.test(document.querySelector('.out-text').textContent), null, { timeout: 15000 }).catch(() => { });
-  check('Lab: turtle draws in a sandboxed frame and the run finishes', (await page.locator('#lab-turtle iframe').getAttribute('sandbox')) === 'allow-scripts' && (await page.frameLocator('#lab-turtle iframe').locator('canvas').count()) > 0 && /drawn[\s\S]*finished in/.test(await outText()), await outText());
+  await setCode('import turtle\nt = turtle.Turtle()\nt.forward(50)\nturtle.done()\nprint("drawn")'); await page.click('.lab-toolbar button:has-text("Run")'); await page.waitForFunction(() => /^(exit|error|stopped)/.test(document.querySelector('.lab-out .term-status').textContent), null, { timeout: 15000 }).catch(() => { });
+  check('Lab: turtle draws in a sandboxed frame and the run finishes', (await page.locator('#lab-turtle iframe').getAttribute('sandbox')) === 'allow-scripts' && (await page.frameLocator('#lab-turtle iframe').locator('canvas').count()) > 0 && /drawn/.test(await outText()) && /^exit 0/.test(await outStatus()), await outText());
   await setCode('x = 1\ny = x + 1'); await page.click('.lab-toolbar button:has-text("Step through")'); await page.waitForSelector('.trace-vars table', { timeout: 8000 });
   await page.keyboard.press('Enter'); await page.waitForTimeout(300); await page.keyboard.press('Enter'); await page.waitForTimeout(300);
   check('Lab: step-through shows variables', /x\s+1/.test(await page.locator('.trace-vars').innerText()), await page.locator('.trace-vars').innerText());
@@ -126,7 +128,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('Lab: C++ runs', /^3/.test((await outText()).trim()), await outText());
   await page.click('.lang-btn:has-text("Java")'); await page.waitForSelector('.lab-editor textarea');
   await setCode('public class Main {\n    public static void main(String[] args) {\n        System.out.println("Lab " + (6 * 7));\n    }\n}');
-  await page.click('.lab-toolbar button:has-text("Run")'); await page.waitForFunction(() => /finished in/.test(document.querySelector('.out-text').textContent), null, { timeout: 15000 }).catch(() => { });
+  await page.click('.lab-toolbar button:has-text("Run")'); await page.waitForFunction(() => /^(exit|error|stopped)/.test(document.querySelector('.lab-out .term-status').textContent), null, { timeout: 15000 }).catch(() => { });
   check('Lab: Java runs', /Lab 42/.test(await outText()), await outText());
   await setCode('public class Main {\n    public static void main(String[] args) {\n        int x = 5\n    }\n}');
   await page.click('.lab-toolbar button:has-text("Run")'); await page.waitForTimeout(1500);
