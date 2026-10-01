@@ -224,6 +224,15 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('shell lesson: an exercise is graded on the files and marked done', (await page.locator('#sh-2-1 .verdict').getAttribute('class')) === 'verdict pass' && (await page.locator('#sh-2-1.done').count()) === 1 && (await page.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.progress.v1')).done['sh-2-1'] > 0)), await page.locator('#sh-2-1 .verdict').innerText());
   await page.click('#sh-2-2 .toolbar button:has-text("Check")'); await page.waitForSelector('#sh-2-2 .verdict.fail', { timeout: 10000 });
   check('shell lesson: an untouched exercise fails with the files named', /desk\/photos\/cat\.jpg exists/.test(await page.locator('#sh-2-2 .verdict').innerText()));
+  // ---- SC 099: no code; the figures render and the non-code exercises grade
+  await goto('#/computer/2'); await page.waitForSelector('.cpu-fig');
+  for (let i = 0; i < 4; i++) await page.locator('.fig-tools button:has-text("Step")').first().click();
+  check('computer course: the CPU figure steps through fetch, decode, execute', /fetch|decode|execute/i.test(await page.locator('.cpu-phase').innerText()) && /Fetch|Decode|Execute/.test(await page.locator('.cpu-fig p.fig-note').innerText()));
+  await page.locator('.bit').nth(4).click();
+  check('computer course: the byte figure adds up its switches', /= 64 \+ 8 \+ 1 = 73/.test(await page.locator('.bits-out').innerText()), await page.locator('.bits-out').innerText());
+  for (const [i, v] of ['7', '129', '00000101', '32', '3000000000'].entries()) await page.locator('#cs-2-1 input.ans').nth(i).fill(v);
+  await page.click('#cs-2-1 .toolbar button:has-text("Check")'); await page.waitForSelector('#cs-2-1 .verdict.pass, #cs-2-1 .verdict.fail');
+  check('computer course: an answer exercise grades', (await page.locator('#cs-2-1 .verdict').getAttribute('class')) === 'verdict pass', await page.locator('#cs-2-1 .verdict').innerText());
   await goto('#/shell/4');
   const pipeTerm = page.locator('#sh-4-1 .term-inp');
   await pipeTerm.fill('tr -s " " "\\n" < speech.txt | sort | uniq -c | sort -rn | head -n 3 > top.txt'); await pipeTerm.press('Enter'); await page.waitForFunction(() => /^exit/.test(document.querySelector('#sh-4-1 .term-status').textContent), null, { timeout: 10000 });

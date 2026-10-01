@@ -24,6 +24,7 @@ add lessons, figures and exercise types.
 ## Layout
 
     src/site.js            site name, home and About page text, contact links, licence, source link
+    src/course_computer.js SC 099 What Is a Computer?: the parts, the CPU, memory and storage, bits and bytes, software (no code)
     src/course_scratch.js  SC 100 From Scratch to Python: the blocks beside the lines, for students coming from Scratch
     src/course_python.js   SC 101 Introduction to Python: lessons, examples, exercises and their tests
     src/course_lisp.js     SC 102 Introduction to Lisp

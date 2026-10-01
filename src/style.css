@@ -35,6 +35,7 @@
 :root[data-course="dsa"] { --accent: #7b2d78; --accent-soft: #f3e5f2; }
 :root[data-course="scratch"] { --accent: #c2185b; --accent-soft: #fbe4ec; }
 :root[data-course="shell"] { --accent: #3d4a5c; --accent-soft: #e6e9ef; }
+:root[data-course="computer"] { --accent: #8a5a10; --accent-soft: #f6ecd9; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
@@ -51,6 +52,7 @@
   :root:not([data-theme="light"])[data-course="dsa"] { --accent: #dc9fd8; --accent-ink: #26091f; --accent-soft: #341a32; }
   :root:not([data-theme="light"])[data-course="scratch"] { --accent: #f48fb1; --accent-ink: #2a0712; --accent-soft: #3a1a26; }
   :root:not([data-theme="light"])[data-course="shell"] { --accent: #b9c4d6; --accent-ink: #121620; --accent-soft: #262b36; }
+  :root:not([data-theme="light"])[data-course="computer"] { --accent: #e0b060; --accent-ink: #1e1400; --accent-soft: #332810; }
 }
 :root[data-theme="dark"] {
   --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
@@ -568,6 +570,21 @@ html.classroom .out-text, html.classroom .term-input, html.classroom .nano { fon
 .fstree-info { font-family: var(--sans); font-size: 0.9rem; margin-top: 0.6rem; padding: 0.5rem 0.8rem; border: 1px solid var(--rule); background: var(--paper-2); }
 .fstree-info code { font-size: 0.95em; }
 .fstree-info .fst-row { display: flex; gap: 0.6rem; flex-wrap: wrap; } .fstree-info .fst-k { color: var(--ink-3); min-width: 12rem; }
+/* SC 099 figures: the parts of a computer, the tiny CPU, the byte of switches */
+.parts-box { cursor: pointer; } .parts-box:hover rect, .parts-box:focus-visible rect { stroke: var(--accent); stroke-width: 2; } .parts-box.on rect { fill: var(--accent); stroke: var(--accent); } .parts-box.on text { fill: var(--accent-ink); }
+.parts-info { min-height: 3em; margin-top: 0.4rem; font-size: 0.92rem; }
+.cpu-fig { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
+.cpu-regs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
+.cpu-reg { border: 1px solid var(--rule); background: var(--paper-2); padding: 0.3rem 0.6rem; font-family: var(--sans); font-size: 0.85rem; } .cpu-reg .cpu-k { color: var(--ink-3); margin-right: 0.4rem; } .cpu-reg code { font-size: 1rem; }
+.cpu-phase { align-self: center; padding: 0.2rem 0.6rem; border-radius: 999px; font-family: var(--sans); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; background: var(--rule); }
+.cpu-phase.fetch { background: var(--k-fig); color: #fff; } .cpu-phase.decode { background: var(--k-warn); color: #000; } .cpu-phase.execute { background: var(--accent); color: var(--accent-ink); }
+.cpu-mem tr.hl td { background: var(--accent-soft); } .cpu-mem tr.pc td:first-child { font-weight: 700; }
+@media (max-width: 640px) { .cpu-fig { grid-template-columns: 1fr; } }
+.bits-row { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.bit { display: flex; flex-direction: column; align-items: center; min-width: 3rem; padding: 0.35rem 0.4rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper-2); font: inherit; cursor: pointer; }
+.bit .bit-w { font-family: var(--sans); font-size: 0.75rem; color: var(--ink-3); } .bit .bit-v { font-family: var(--mono); font-size: 1.3rem; font-weight: 700; }
+.bit.on { background: var(--accent); border-color: var(--accent); } .bit.on .bit-w, .bit.on .bit-v { color: var(--accent-ink); }
+.bits-out { font-family: var(--mono); font-size: 0.95rem; margin: 0.6rem 0 0.2rem; }
 /* nano, inside the terminal */
 .nano { display: flex; flex-direction: column; border-top: 1px solid var(--t-rule); font-size: 0.86rem; }
 .nano-top { display: flex; gap: 1rem; background: var(--t-fg); color: var(--t-bg); padding: 0.15rem 0.95rem; font-weight: 600; white-space: pre; }

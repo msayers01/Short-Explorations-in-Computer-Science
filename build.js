@@ -47,6 +47,7 @@ const scripts = [
   'src/scheme.js',
   'src/subst.js',
   'src/site.js',
+  'src/course_computer.js',   // SC 099, first in the catalogue: what a computer is
   'src/course_scratch.js',
   'src/course_python.js',
   'src/course_lisp.js',
