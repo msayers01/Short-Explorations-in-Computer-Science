@@ -1,18 +1,38 @@
 // Builds dist/index.html (every style and script inlined into one file) and dist/teacher-guide.html.
 const fs = require('fs');
+const crypto = require('crypto');
 const r = p => fs.readFileSync(p, 'utf8');
 const scriptSafe = s => s.replace(/<\/script/gi, '<\\/script');
-const head = `<!DOCTYPE html>
+// Content Security Policy. Every inline script is allowed by its hash, so a <script> or an onerror= handler that gets into the page
+// by any route does not run; nothing may load from, or be sent to, any other origin: the typefaces are embedded in the page, so the page makes no requests at all.
+// 'unsafe-eval' is there because Skulpt and JSCPP compile programs with new Function(). Inline styles are needed by the page itself.
+// The typefaces (SIL Open Font License, from the @fontsource packages) are embedded as data: URIs, Latin subsets only, so the
+// page needs nothing from any other site. Characters outside Latin (some mathematical symbols) fall back to the system's fonts.
+const FONTS = [
+  ['Newsreader', 'normal', '200 800', '@fontsource-variable/newsreader/files/newsreader-latin-opsz-normal.woff2'],
+  ['Newsreader', 'italic', '200 800', '@fontsource-variable/newsreader/files/newsreader-latin-opsz-italic.woff2'],
+  ['Source Sans 3', 'normal', '200 900', '@fontsource-variable/source-sans-3/files/source-sans-3-latin-wght-normal.woff2'],
+  ['Source Sans 3', 'italic', '200 900', '@fontsource-variable/source-sans-3/files/source-sans-3-latin-wght-italic.woff2'],
+  ['IBM Plex Mono', 'normal', '400', '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2'],
+  ['IBM Plex Mono', 'normal', '500', '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2'],
+  ['IBM Plex Mono', 'italic', '400', '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-italic.woff2']
+];
+const fontFaces = FONTS.map(([family, style, weight, file]) => `@font-face { font-family: '${family}'; font-style: ${style}; font-weight: ${weight}; font-display: swap; src: url(data:font/woff2;base64,${fs.readFileSync('node_modules/' + file).toString('base64')}) format('woff2'); }`).join('\n');
+const sha = (text) => "'sha256-" + crypto.createHash('sha256').update(text, 'utf8').digest('base64') + "'";
+const csp = (hashes, extra) => ["default-src 'none'", "script-src " + hashes.join(' ') + " 'unsafe-eval'", "style-src 'unsafe-inline'",
+  "font-src data:", "img-src data: blob:", "connect-src 'none'", "media-src 'none'", "frame-src 'none'", "worker-src 'none'",
+  "object-src 'none'", "base-uri 'none'", "form-action 'none'"].concat(extra || []).join('; ');
+const headFor = (hashes) => `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
+<meta http-equiv="Content-Security-Policy" content="${csp(hashes)}">
+<meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <style>
+${fontFaces}
 ${r('src/style.css')}
 </style>
 </head>
@@ -22,6 +42,7 @@ ${r('src/style.css')}
 const scripts = [
   'node_modules/skulpt/dist/skulpt.min.js',
   'node_modules/skulpt/dist/skulpt-stdlib.js',
+  'src/sandbox.js',
   'vendor/jscpp.min.js',
   'src/cppstep.js',
   'src/scheme.js',
@@ -59,6 +80,9 @@ const THIRD_PARTY = [
   { name: 'Lodash', pkg: 'lodash', file: 'LICENSE', url: 'https://lodash.com/', role: 'part of the JSCPP bundle' },
   { name: 'printf', pkg: 'printf', file: 'LICENSE', url: 'https://github.com/adaltas/node-printf', role: 'part of the JSCPP bundle' },
   { name: 'pegjs-util', pkg: 'pegjs-util', file: null, url: 'https://github.com/rse/pegjs-util', role: 'part of the JSCPP bundle' },
+  { name: 'Newsreader', pkg: '@fontsource-variable/newsreader', file: 'LICENSE', url: 'https://github.com/productiontype/Newsreader', role: 'is the typeface for text and headings' },
+  { name: 'Source Sans 3', pkg: '@fontsource-variable/source-sans-3', file: 'LICENSE', url: 'https://github.com/adobe-fonts/source-sans', role: 'is the typeface for labels and buttons' },
+  { name: 'IBM Plex Mono', pkg: '@fontsource/ibm-plex-mono', file: 'LICENSE', url: 'https://github.com/IBM/plex', role: 'is the typeface for code' },
   { name: 'PEG.js', pkg: 'pegjs', file: 'LICENSE', url: 'https://pegjs.org/', role: 'generated the C++ parser inside JSCPP' }
 ].map(t => { const j = pkg(t.pkg); return { name: t.name, version: j.version, licence: j.license, url: t.url, role: t.role, changes: t.changes || '', text: licenceText(t.pkg, t.file) }; });
 const BUILD = { date: new Date().toISOString().slice(0, 10), thirdParty: THIRD_PARTY };
@@ -67,18 +91,31 @@ fs.writeFileSync('THIRD-PARTY-NOTICES.md', '# Third-party notices\n\nThe built s
   + 'following software. Each is used under the licence reproduced here.\n'
   + THIRD_PARTY.map(t => `\n## ${t.name} ${t.version}\n\n${t.url}. ${t.role[0].toUpperCase() + t.role.slice(1)}. Licence: ${t.licence}.`
     + (t.changes ? ' ' + t.changes : '') + '\n\n```\n' + t.text + '\n```\n').join(''));
-let body = `<script>/* build info and third-party licences (build.js) */\nwindow.BUILD = ${scriptSafe(JSON.stringify(BUILD))};\n</script>\n`;
-for (const s of scripts) body += `<script>/* ${s} */\n${scriptSafe(r(s))}\n</script>\n`;
-const html = head + body + '</body>\n</html>\n';
+const inline = [];   // the exact text of every inline script, for the CSP hashes
+const scriptTag = (text) => { inline.push(text); return `<script>${text}</script>\n`; };
+let body = scriptTag(`/* build info and third-party licences (build.js) */\nwindow.BUILD = ${scriptSafe(JSON.stringify(BUILD))};\n`);
+for (const s of scripts) body += scriptTag(`/* ${s} */\n${scriptSafe(r(s))}\n`);
+const indexHashes = inline.map(sha);
+const html = headFor(indexHashes) + body + '</body>\n</html>\n';
 fs.mkdirSync('dist', { recursive: true });
 fs.writeFileSync('dist/index.html', html);
 console.log('wrote dist/index.html', (html.length / 1024 / 1024).toFixed(2), 'MB');
 // Standalone, printable teacher guide (same content and styles, no scripts).
 const guideSrc = r('src/guide.js'); const gm = guideSrc.match(/const html = `([\s\S]*?)`;/);
+const guideScript = "document.getElementById('g-print').addEventListener('click', function () { window.print(); });";
+const guideHashes = [sha(guideScript)];
 if (gm) {
-  const guide = head.replace('<title>Short Explorations in Computer Science</title>', '<title>A guide for teachers — Short Explorations in Computer Science</title>')
-    .replace('<div id="app"><noscript>These pages need JavaScript to run the code examples.</noscript></div>', '<main class="guide"><div class="g-tools"><button class="btn quiet tiny" onclick="window.print()">Print or save as PDF</button></div>' + gm[1].replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16))).replace(/href="#\/([a-z]+)"/g, 'href="index.html#/$1"') + '</main>')
-    + '</body>\n</html>\n';
+  const guide = headFor(guideHashes).replace('<title>Short Explorations in Computer Science</title>', '<title>A guide for teachers — Short Explorations in Computer Science</title>')
+    .replace('<div id="app"><noscript>These pages need JavaScript to run the code examples.</noscript></div>', '<main class="guide"><div class="g-tools"><button class="btn quiet tiny" id="g-print">Print or save as PDF</button></div>' + gm[1].replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16))).replace(/href="#\/([a-z]+)"/g, 'href="index.html#/$1"') + '</main>')
+    + '<script>' + guideScript + '</script>\n</body>\n</html>\n';
   fs.writeFileSync('dist/teacher-guide.html', guide);
   console.log('wrote dist/teacher-guide.html', (guide.length / 1024).toFixed(0), 'KB');
 }
+
+// Response headers for hosts that read a _headers file (Cloudflare Workers static assets and Pages). The same policy as the <meta>
+// tags in the pages, plus the headers a <meta> cannot carry. The site is allowed to be framed, because teachers embed it in
+// learning-management systems; to forbid that, add "frame-ancestors 'none'" to the policy below (csp's second argument).
+const common = ['X-Content-Type-Options: nosniff', 'Referrer-Policy: no-referrer', 'Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()'];
+const rule = (paths, hashes) => paths.map(p => p + '\n').join('') + ['Content-Security-Policy: ' + csp(hashes)].concat(common).map(h => '  ' + h + '\n').join('') + '\n';
+fs.writeFileSync('dist/_headers', '# Written by build.js. Do not edit.\n' + rule(['/', '/index.html'], indexHashes) + rule(['/teacher-guide', '/teacher-guide.html'], guideHashes));
+console.log('wrote dist/_headers');

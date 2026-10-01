@@ -9,13 +9,13 @@ A single self-contained `index.html` (about 2.6 MB) containing four interactive 
 C++, mathematics of computing) with autograded exercises, a full sandbox editor ("Code Lab"), and a
 serverless assignment system for teachers. Three language runtimes run in the browser: Skulpt (Python),
 JSCPP (C++), and a Scheme interpreter written for the site. There is no backend, no account, no network
-dependency beyond Google Fonts; everything the user creates lives in `localStorage`, and everything that
+dependency at all (the typefaces are embedded); everything the user creates lives in `localStorage`, and everything that
 must move between people travels inside a URL.
 
 ## 2. Design constraints (do not break these)
 
 1. **One file, works from disk.** `node build.js` inlines every script and style into `dist/index.html`.
-   Nothing may fetch from the network at runtime except the font stylesheet. No CDN scripts.
+   Nothing may fetch from the network at runtime: the typefaces are embedded as data: URIs by `build.js`. No CDN scripts.
 2. **No server, ever.** Sharing = data in the URL hash (`#/route?key=<packed>`). Persistence = `localStorage`.
    Anything "sent to the teacher" is a link the student copies themselves.
 3. **The teacher's copy is authoritative.** Hidden tests and grading always run from the teacher's stored
@@ -23,6 +23,17 @@ must move between people travels inside a URL.
 4. **Every exercise is testable in node.** `node test_course.js <course>` must pass before publishing.
 5. **Accessible prose first.** Courses are written for students and teachers with no CS background:
    definitions before examples, one idea per code block, predict-then-reveal, "Common mistakes", recap.
+6. **Everything that arrives in a link or from storage is hostile.** Links are written by strangers and are opened by teachers
+   and students. Rules, each one backed by `SECURITY-AUDIT.md` and by `test_security.js` / `tools/security/`:
+   - Never put such text in the page with `innerHTML`/`html:` unless it went through `esc()`; use `textContent` or the `el()` helper's children.
+   - Ids, names and language names from links are only used as keys of dictionaries without a prototype (`Object.create(null)`), checked with
+     `hasLang`/`ID_RE`, and incoming assignments, submissions and back-ups pass through `normalize`/`cleanSub` (teach.js).
+   - A link that stores something or runs a stranger's program asks the teacher first (`confirmLink`).
+   - Packed links are size-limited (`MAX_LINK`, `MAX_UNPACKED`).
+   - Programs run only in the three interpreters; `sandbox.js` removes Skulpt's `document`, `urllib` and other modules that reach the
+     page or the network. Do not add one back.
+   - `build.js` writes a Content Security Policy (script hashes, no network) into every page and into `dist/_headers`. A new inline
+     script needs no change (its hash is computed); a new external resource must be added to the policy deliberately.
 
 ## 3. Repository layout
 
@@ -51,6 +62,7 @@ site/
     course_math.js       SC 104 (13 lessons)   ─┘
     style.css            design tokens, layout, course accents, every component's styles
     cppstep.js           C++ memory stepper → window.CPPSTEP { trace, render, describe } (uses JSCPP's debugger)
+    sandbox.js           removes Skulpt's page- and network-reaching modules (document, urllib, webbrowser, image, ...) → window.SANDBOX
     scheme.js            Scheme interpreter (MIT/SICP dialect) → window.Scheme / module.exports
                          (all c[ad]r up to 4 deep; eval with system-global-environment, always global)
     subst.js             substitution-model stepper over scheme.js ASTs → window.SUBST
@@ -67,7 +79,7 @@ site/
     about.js             About and credits page (#/about) → window.ABOUT
 ```
 
-**Script order in `build.js` matters:** (window.BUILD) → skulpt → skulpt-stdlib → jscpp → cppstep → scheme → subst → site →
+**Script order in `build.js` matters:** (window.BUILD) → skulpt → skulpt-stdlib → sandbox → jscpp → cppstep → scheme → subst → site →
 courses → mathgrade → app → lab → guide → qr → teach → widgets → portfolio → classroom → ojibwe → about. `app.js` runs `route()` on
 `DOMContentLoaded`, by which time every module has registered its global. `route()` renders the page and then
 dispatches a `routed` event on `document`; classroom.js listens for it to rebuild its bar and steps.
@@ -282,8 +294,7 @@ any licence, but ojibwe.js carries BY-NC-SA.
 ## 9c. About and credits (`about.js`)
 
 `ABOUT.page()` renders `#/about`: `SITE.about` (the author's own words), `SITE.contact` if any, "What the site keeps
-about you" (plain-language privacy: localStorage only, links carry their contents, Google Fonts is the one outside
-request), "Using and sharing" (the licence), "Credits" (Ojibwe sources, SICP, software, typefaces, trademarks) and a
+about you" (plain-language privacy: localStorage only, links carry their contents, the page makes no outside request), "Using and sharing" (the licence), "Credits" (Ojibwe sources, SICP, software, typefaces, trademarks) and a
 footer with `SITE.footer`, the build date and `SITE.sourceUrl` when set. Linked from the home footer, the `#/ojibwe`
 credit, and the guide (sections 1 and 10).
 
@@ -343,7 +354,7 @@ wherever the term is used).
 
 1. `npm install`. `npm test` applies the JSCPP patches itself (`scripts/patch-jscpp.js`, idempotent).
 2. `node build.js`, then `npm test`: `test_course.js` for each course (every solution passes, every starter fails,
-   every playground runs), `test_cppstep.js` and `test_subst.js`. C++ in both test scripts goes through the site's own
+   every playground runs), `test_cppstep.js`, `test_subst.js`, `test_app.js`, `test_scheme.js` and `test_security.js`. C++ in both test scripts goes through the site's own
    `ensureMainReturns`, read out of `src/app.js`, so programs are graded exactly as on the site.
    A linter (ESLint, installed outside the project) with `no-undef`, `no-unused-vars` and the usual correctness rules
    should report nothing.
