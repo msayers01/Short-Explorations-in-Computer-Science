@@ -741,7 +741,7 @@
           el('a', { class: 'cat-code', href: '#/lab' }, 'LAB'),
           el('div', { class: 'cat-body' },
             el('a', { class: 'cat-title', href: '#/lab' }, 'Code Lab: a sandbox for your own programs'),
-            el('p', { class: 'cat-desc' }, 'A full editor for Python, C++ and Scheme that runs entirely in your browser: nothing to install, nothing to sign up for. Files, templates, a quick reference, a step-through tracer for Python, a turtle canvas, and a Scheme REPL.'),
+            el('p', { class: 'cat-desc' }, 'A full editor for Python, C++, Java and Scheme that runs entirely in your browser: nothing to install, nothing to sign up for. Files, templates, a quick reference, a step-through tracer for Python, a turtle canvas, and a Scheme REPL.'),
             el('p', { class: 'cat-meta' }, 'Your files are saved on this device. Share a program with a link.'))))
       ),
       window.PORTFOLIO ? el('section', { class: 'section' },
