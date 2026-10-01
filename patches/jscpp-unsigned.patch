@@ -1,0 +1,20 @@
+--- node_modules/JSCPP/lib/rt.js	1985-10-26 08:15:00.000000000 +0000
++++ node_modules/JSCPP/lib/rt.js	2026-09-30 00:00:00.000000000 +0000
+@@ -569,7 +569,7 @@
+         value = this.booleanToNumber(value);
+         if (this.isUnsignedType(type)) {
+             const limit = this.config.limits[type.name];
+-            const period = limit.max - limit.min;
++            const period = limit.max - limit.min + 1;   // the number of values, so 4294967295 + 1 wraps to 0
+             if (value < limit.min) {
+                 value += period * Math.ceil((limit.min - value) / period);
+             }
+@@ -705,7 +705,7 @@
+                     }
+                     else if (value.v < 0) {
+                         const { bytes } = this.config.limits[type.name];
+-                        let newValue = this.booleanToNumber(value.v) & ((1 << (8 * bytes)) - 1);
++                        let newValue = bytes >= 4 ? this.booleanToNumber(value.v) >>> 0 : this.booleanToNumber(value.v) & ((1 << (8 * bytes)) - 1);   // 1 << 32 is 1 in JS
+                         if (this.inrange(type, newValue, `cannot cast negative value ${newValue} to ` + this.makeTypeString(type))) {
+                             newValue = this.ensureUnsigned(type, newValue);
+                             return this.val(type, newValue);

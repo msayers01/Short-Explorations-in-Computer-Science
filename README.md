@@ -45,7 +45,9 @@ add lessons, figures and exercise types.
     vendor/jscpp.min.js    the JSCPP C++ interpreter, bundled for the browser (see below)
     stubs/                 shims used when bundling JSCPP
     patches/               changes to JSCPP: C++-style printing of decimals, truncating integer division,
-                           a clear division-by-zero error, a repeatable srand, and a correct strcmp
+                           a clear division-by-zero error, a repeatable srand, a correct strcmp, and
+                           correct wrap-around of unsigned integers
+    scripts/patch-jscpp.js applies those patches to node_modules (run automatically before npm test)
     build.js               inlines everything into dist/index.html and writes dist/teacher-guide.html
     test_course.js         checks every exercise and example of a course
     test_cppstep.js        checks the C++ memory stepper
@@ -55,11 +57,10 @@ add lessons, figures and exercise types.
 ## Building
 
     npm install
-    patch -p0 < patches/jscpp-iostream.patch    # once, after npm install
     node build.js                               # writes dist/index.html and dist/teacher-guide.html
 
 The patched JSCPP is already bundled in `vendor/jscpp.min.js`; the patch also has to be applied to
-`node_modules` for the C++ tests. To rebuild the bundle after changing JSCPP:
+`node_modules` for the C++ tests; `npm test` does that for you (`scripts/patch-jscpp.js`). To rebuild the bundle after changing JSCPP:
 
     npx esbuild node_modules/JSCPP/lib/commonjs.js --bundle --minify --format=iife \
       --global-name=JSCPP --platform=browser \

@@ -303,6 +303,7 @@ table.fill td.blank input.ans { width: 4.5rem; border: 0; border-bottom: 2px sol
 .out .err { color: var(--err); }
 .out .note { color: var(--ink-3); font-style: italic; }
 .inline-input { font: inherit; border: 0; border-bottom: 1px solid var(--accent); background: var(--accent-soft); color: var(--ink); padding: 0 0.3rem; min-width: 8rem; outline: none; }
+.inline-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .exercise { border: 1px solid var(--rule); border-top: 3px solid var(--accent); padding: 1rem 1.25rem 1.25rem; margin: 2rem 0; background: var(--paper); }
 .ex-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.5rem; }
 .ex-head h3 { font-size: 1.15rem; margin: 0; font-weight: 600; }
@@ -448,6 +449,7 @@ table.vars td, table.vars th { text-align: left; } table.vars code { font-size: 
 .repl-line { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.4rem 0.8rem; border-top: 1px solid var(--rule); background: var(--code-bg); }
 .repl-prompt { color: var(--accent); white-space: nowrap; padding-top: 0.25rem; }
 .repl-inp { flex: 1; font: inherit; border: 0; background: transparent; color: var(--ink); padding: 0.25rem 0; resize: none; outline: none; min-height: 1.5em; }
+.repl-line:focus-within { box-shadow: inset 2px 0 0 var(--accent); }
 .btn.tiny { padding: 0.15rem 0.5rem; font-size: 0.8rem; }
 .name-form { display: inline-flex; align-items: center; gap: 0.3rem; margin: 0.15rem 0; }
 .lab-statusbar { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; padding: 0.3rem 0.6rem; border: 1px solid var(--rule); border-top: 0; background: var(--paper-2); font-family: var(--sans); font-size: 0.8rem; color: var(--ink-3); }
@@ -829,6 +831,9 @@ html.classroom .about { padding-bottom: 7rem; }
 /* Lessons estimated to take longer than an hour (app.js lessonMinutes) */
 .lessons .l-long { display: block; margin-top: 0.2rem; font-family: var(--sans); font-size: 0.82rem; color: var(--accent); }
 .lesson-time { font-family: var(--sans); font-size: 0.9rem; color: var(--ink-2); border-left: 3px solid var(--accent); padding: 0.2rem 0 0.2rem 0.7rem; margin: 0.8rem 0 0; }
+
+/* Text boxes in figures never force the page wider than a phone screen. */
+.fig-mount input[type="text"] { max-width: 100%; box-sizing: border-box; }
 
 </style>
 </head>
