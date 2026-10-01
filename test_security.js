@@ -41,6 +41,17 @@ const py = async (code) => {
   let junk = false; try { await TEACH.unpack('zAAAA'); } catch (e) { junk = true; }
   check('garbage link is an error, not a hang', junk);
 
+  // --- 3. the built pages are self-contained: no outside origin in the policy, no <link>, no remote URL in a stylesheet
+  const fs = require('fs');
+  for (const f of ['dist/index.html', 'dist/teacher-guide.html', 'dist/_headers']) {
+    if (!fs.existsSync(f)) continue;
+    const html = fs.readFileSync(f, 'utf8');
+    const policy = (html.match(/Content-Security-Policy[^\n>]*/g) || []).join(' ');
+    check(f + ' has a Content-Security-Policy', /default-src 'none'/.test(policy));
+    check(f + ' policy names no other site', !/https?:\/\//.test(policy), policy.match(/https?:\/\/[^\s;"']+/));
+    check(f + ' loads no stylesheet or font from another site', !/<link[^>]+(stylesheet|preconnect)/i.test(html) && !/fonts\.(googleapis|gstatic)/.test(html));
+  }
+
   if (bad) { console.log(bad + ' problems'); process.exit(1); }
   console.log('security OK');
 })();

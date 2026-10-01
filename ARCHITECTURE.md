@@ -9,13 +9,13 @@ A single self-contained `index.html` (about 2.6 MB) containing four interactive 
 C++, mathematics of computing) with autograded exercises, a full sandbox editor ("Code Lab"), and a
 serverless assignment system for teachers. Three language runtimes run in the browser: Skulpt (Python),
 JSCPP (C++), and a Scheme interpreter written for the site. There is no backend, no account, no network
-dependency beyond Google Fonts; everything the user creates lives in `localStorage`, and everything that
+dependency at all (the typefaces are embedded); everything the user creates lives in `localStorage`, and everything that
 must move between people travels inside a URL.
 
 ## 2. Design constraints (do not break these)
 
 1. **One file, works from disk.** `node build.js` inlines every script and style into `dist/index.html`.
-   Nothing may fetch from the network at runtime except the font stylesheet. No CDN scripts.
+   Nothing may fetch from the network at runtime: the typefaces are embedded as data: URIs by `build.js`. No CDN scripts.
 2. **No server, ever.** Sharing = data in the URL hash (`#/route?key=<packed>`). Persistence = `localStorage`.
    Anything "sent to the teacher" is a link the student copies themselves.
 3. **The teacher's copy is authoritative.** Hidden tests and grading always run from the teacher's stored
@@ -294,8 +294,7 @@ any licence, but ojibwe.js carries BY-NC-SA.
 ## 9c. About and credits (`about.js`)
 
 `ABOUT.page()` renders `#/about`: `SITE.about` (the author's own words), `SITE.contact` if any, "What the site keeps
-about you" (plain-language privacy: localStorage only, links carry their contents, Google Fonts is the one outside
-request), "Using and sharing" (the licence), "Credits" (Ojibwe sources, SICP, software, typefaces, trademarks) and a
+about you" (plain-language privacy: localStorage only, links carry their contents, the page makes no outside request), "Using and sharing" (the licence), "Credits" (Ojibwe sources, SICP, software, typefaces, trademarks) and a
 footer with `SITE.footer`, the build date and `SITE.sourceUrl` when set. Linked from the home footer, the `#/ojibwe`
 credit, and the guide (sections 1 and 10).
 

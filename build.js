@@ -4,11 +4,23 @@ const crypto = require('crypto');
 const r = p => fs.readFileSync(p, 'utf8');
 const scriptSafe = s => s.replace(/<\/script/gi, '<\\/script');
 // Content Security Policy. Every inline script is allowed by its hash, so a <script> or an onerror= handler that gets into the page
-// by any route does not run; nothing may load from, or be sent to, any other origin except the Google Fonts stylesheet and font files.
+// by any route does not run; nothing may load from, or be sent to, any other origin: the typefaces are embedded in the page, so the page makes no requests at all.
 // 'unsafe-eval' is there because Skulpt and JSCPP compile programs with new Function(). Inline styles are needed by the page itself.
+// The typefaces (SIL Open Font License, from the @fontsource packages) are embedded as data: URIs, Latin subsets only, so the
+// page needs nothing from any other site. Characters outside Latin (some mathematical symbols) fall back to the system's fonts.
+const FONTS = [
+  ['Newsreader', 'normal', '200 800', '@fontsource-variable/newsreader/files/newsreader-latin-opsz-normal.woff2'],
+  ['Newsreader', 'italic', '200 800', '@fontsource-variable/newsreader/files/newsreader-latin-opsz-italic.woff2'],
+  ['Source Sans 3', 'normal', '200 900', '@fontsource-variable/source-sans-3/files/source-sans-3-latin-wght-normal.woff2'],
+  ['Source Sans 3', 'italic', '200 900', '@fontsource-variable/source-sans-3/files/source-sans-3-latin-wght-italic.woff2'],
+  ['IBM Plex Mono', 'normal', '400', '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2'],
+  ['IBM Plex Mono', 'normal', '500', '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2'],
+  ['IBM Plex Mono', 'italic', '400', '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-italic.woff2']
+];
+const fontFaces = FONTS.map(([family, style, weight, file]) => `@font-face { font-family: '${family}'; font-style: ${style}; font-weight: ${weight}; font-display: swap; src: url(data:font/woff2;base64,${fs.readFileSync('node_modules/' + file).toString('base64')}) format('woff2'); }`).join('\n');
 const sha = (text) => "'sha256-" + crypto.createHash('sha256').update(text, 'utf8').digest('base64') + "'";
-const csp = (hashes, extra) => ["default-src 'none'", "script-src " + hashes.join(' ') + " 'unsafe-eval'", "style-src 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src https://fonts.gstatic.com", "img-src data: blob:", "connect-src 'none'", "media-src 'none'", "frame-src 'none'", "worker-src 'none'",
+const csp = (hashes, extra) => ["default-src 'none'", "script-src " + hashes.join(' ') + " 'unsafe-eval'", "style-src 'unsafe-inline'",
+  "font-src data:", "img-src data: blob:", "connect-src 'none'", "media-src 'none'", "frame-src 'none'", "worker-src 'none'",
   "object-src 'none'", "base-uri 'none'", "form-action 'none'"].concat(extra || []).join('; ');
 const headFor = (hashes) => `<!DOCTYPE html>
 <html lang="en">
@@ -19,10 +31,8 @@ const headFor = (hashes) => `<!DOCTYPE html>
 <meta http-equiv="Content-Security-Policy" content="${csp(hashes)}">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <style>
+${fontFaces}
 ${r('src/style.css')}
 </style>
 </head>
@@ -70,6 +80,9 @@ const THIRD_PARTY = [
   { name: 'Lodash', pkg: 'lodash', file: 'LICENSE', url: 'https://lodash.com/', role: 'part of the JSCPP bundle' },
   { name: 'printf', pkg: 'printf', file: 'LICENSE', url: 'https://github.com/adaltas/node-printf', role: 'part of the JSCPP bundle' },
   { name: 'pegjs-util', pkg: 'pegjs-util', file: null, url: 'https://github.com/rse/pegjs-util', role: 'part of the JSCPP bundle' },
+  { name: 'Newsreader', pkg: '@fontsource-variable/newsreader', file: 'LICENSE', url: 'https://github.com/productiontype/Newsreader', role: 'is the typeface for text and headings' },
+  { name: 'Source Sans 3', pkg: '@fontsource-variable/source-sans-3', file: 'LICENSE', url: 'https://github.com/adobe-fonts/source-sans', role: 'is the typeface for labels and buttons' },
+  { name: 'IBM Plex Mono', pkg: '@fontsource/ibm-plex-mono', file: 'LICENSE', url: 'https://github.com/IBM/plex', role: 'is the typeface for code' },
   { name: 'PEG.js', pkg: 'pegjs', file: 'LICENSE', url: 'https://pegjs.org/', role: 'generated the C++ parser inside JSCPP' }
 ].map(t => { const j = pkg(t.pkg); return { name: t.name, version: j.version, licence: j.license, url: t.url, role: t.role, changes: t.changes || '', text: licenceText(t.pkg, t.file) }; });
 const BUILD = { date: new Date().toISOString().slice(0, 10), thirdParty: THIRD_PARTY };
