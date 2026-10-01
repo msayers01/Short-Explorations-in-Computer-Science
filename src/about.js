@@ -113,7 +113,7 @@
     return main;
   }
   // In-page links without touching the hash (the hash is the route).
-  function jump(id) { return (e) => { e.preventDefault(); const t = document.getElementById(id); if (t && t.scrollIntoView) t.scrollIntoView({ behavior: 'smooth' }); }; }
+  function jump(id) { return (e) => { e.preventDefault(); const t = document.getElementById(id); if (t && t.scrollIntoView) { t.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); t.setAttribute('tabindex', '-1'); t.focus({ preventScroll: true }); } }; }
 
   window.ABOUT = { page };
 })();

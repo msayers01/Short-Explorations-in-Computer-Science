@@ -134,7 +134,7 @@
     doc.append(el('div', { class: 'table-wrap' }, el('table', { class: 'pf-summary' },
       el('thead', {}, el('tr', {}, el('th', {}, 'Course'), el('th', {}), el('th', { class: 'pf-num' }, 'Exercises completed'))),
       el('tbody', {}, rows, P.lab && P.lab.length ? el('tr', {}, el('td', { class: 'pf-code-cell' }, 'LAB'), el('td', {}, 'Programs from the Code Lab'), el('td', { class: 'pf-num' }, String(P.lab.length))) : null))));
-    doc.append(el('div', { class: 'pf-verdict', hidden: '' }));
+    doc.append(el('div', { class: 'pf-verdict', hidden: '', role: 'status' }));
     if (!known.length && !(P.lab && P.lab.length)) doc.append(el('p', { class: 'pf-none' }, opts.own ? 'Nothing here yet. Every exercise you complete in a course is added to this page automatically; so are Code Lab programs you tick above.' : 'This portfolio has no work in it.'));
     // courses
     for (const c of window.COURSES) {
@@ -184,7 +184,7 @@
     const v = doc.querySelector('.pf-verdict'); v.hidden = false; v.innerHTML = '';
     v.className = 'pf-verdict ' + (claimedBad.length ? 'bad' : 'ok');
     const nDone = items.filter(it => it.done).length;
-    v.append(...[el('p', {}, el('b', {}, pass + ' of ' + nDone + ' completed exercise' + (nDone === 1 ? '' : 's') + ' pass' + (pass === 1 && nDone === 1 ? 'es' : '') + ' when checked on this computer.'), ' ',
+    v.append(...[el('p', {}, el('b', {}, nDone === 1 ? (pass ? 'The completed exercise passes' : 'The completed exercise does not pass') + ' when checked on this computer.' : pass + ' of ' + nDone + ' completed exercises pass when checked on this computer.'), ' ',
       claimedBad.length ? 'Marked completed but not passing here: ' : (nDone ? 'Every exercise marked completed passes.' : '')),
       claimedBad.length ? el('ul', {}, claimedBad.map(it => el('li', {}, el('a', { href: '#pf-' + it.id, onclick: (e) => { e.preventDefault(); const t = document.getElementById('pf-' + it.id); if (t) t.scrollIntoView({ block: 'start' }); } }, INDEX[it.id].course.code + ', Lesson ' + (INDEX[it.id].lessonIdx + 1) + ': ' + INDEX[it.id].ex.title)))) : null].filter(Boolean));
     status.textContent = 'Checked ' + fmtDate(Date.now()) + '.';
@@ -199,8 +199,9 @@
     const clone = doc.cloneNode(true); clone.querySelectorAll('.pf-check[hidden], .pf-verdict[hidden]').forEach(n => n.remove());
     const html = '<!DOCTYPE html>\n<html lang="en" data-theme="light">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>' + A().esc(title) + '</title>\n' + fonts + '\n<style>\n' + css + '\n</style>\n</head>\n<body>\n<main class="pf pf-standalone">\n' + clone.outerHTML + '\n</main>\n</body>\n</html>\n';
     const blob = new Blob([html], { type: 'text/html' });
-    const a = el('a', { href: URL.createObjectURL(blob), download: (title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'portfolio') + '.html' });
-    document.body.append(a); a.click(); a.remove();
+    const url = URL.createObjectURL(blob);
+    const a = el('a', { href: url, download: (title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'portfolio') + '.html' });
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
   function linkBox(link) {
     const inp = el('input', { class: 'find-inp teach-link', readonly: '', value: link, 'aria-label': 'Portfolio link' });
@@ -270,9 +271,12 @@
         typeof DecompressionStream === 'undefined' ? el('p', {}, 'This browser also cannot read compressed links. Open it in a current Chrome, Edge, Firefox or Safari.') : null));
       return;
     }
-    P.lab = P.lab || [];
-    const doc = renderDoc(P, { own: false });
-    const status = el('span', { class: 'muted small' });
+    P.items = P.items.filter(it => it && typeof it.id === 'string');
+    P.lab = (Array.isArray(P.lab) ? P.lab : []).filter(f => f && typeof f.code === 'string' && (f.lang === 'python' || f.lang === 'cpp' || f.lang === 'scheme'));
+    let doc;
+    try { doc = renderDoc(P, { own: false }); }
+    catch (e) { main.innerHTML = ''; main.append(el('header', { class: 'pf-intro' }, el('h1', {}, 'This portfolio link did not open'), el('p', { class: 'lead' }, 'The link opened, but its contents are not a portfolio this site can show.'))); return; }
+    const status = el('span', { class: 'muted small', role: 'status' });
     const check = el('button', { class: 'btn primary', onclick: () => checkAll(P, doc, check, status) }, 'Check every exercise on this computer');
     main.innerHTML = '';
     main.append(

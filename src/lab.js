@@ -172,7 +172,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
 (number? 3)   (string? "s")   (equal? '(1 2) '(1 2))</code></pre>
 <h4>Output</h4>
 <pre><code>(display "text")   (newline)   (error "message" value)</code></pre>
-<p class="ref-note">This is an MIT-Scheme-style dialect written for this site. The value of each top-level expression is printed as <code>;Value:</code>. Numbers are floating point, so <code>(/ 1 3)</code> shows <code>.333333333333</code>. Type expressions in the REPL below the output to try things one at a time.</p>`
+<p class="ref-note">This is an MIT-Scheme-style dialect written for this site. The value of each top-level expression is printed as <code>;Value:</code>. Decimals are floating point, so <code>(/ 1 3)</code> shows <code>.333333333333</code>; whole numbers stay exact however big (<code>(expt 2 100)</code>). Type expressions in the REPL below the output to try things one at a time.</p>`
   };
 
   /* ---------------- extra error explanations ---------------- */
@@ -298,7 +298,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
       const c = v[i], fwd = OPEN.includes(c);
       const other = fwd ? CLOSE[OPEN.indexOf(c)] : OPEN[CLOSE.indexOf(c)];
       let depth = 0, inStr = null;
-      if (fwd) { for (let j = i; j < v.length; j++) { const ch = v[j]; if (inStr) { if (ch === '\\') j++; else if (ch === inStr) inStr = null; continue; } if ((ch === '"' || ch === "'") && j !== i) { inStr = ch; continue; } if (ch === c) depth++; else if (ch === other) { depth--; if (!depth) return [i, j]; } } }
+      if (fwd) { for (let j = i; j < v.length; j++) { const ch = v[j]; if (inStr) { if (ch === '\\') j++; else if (ch === inStr) inStr = null; continue; } if ((ch === '"' || (ch === "'" && lang !== 'scheme')) && j !== i) { inStr = ch; continue; } if (ch === c) depth++; else if (ch === other) { depth--; if (!depth) return [i, j]; } } }
       else { for (let j = i; j >= 0; j--) { const ch = v[j]; if (ch === c) depth++; else if (ch === other) { depth--; if (!depth) return [j, i]; } } }
       return null;
     }
@@ -327,7 +327,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
       if (wordCache) return wordCache;
       const set = new Set([...L.keywords, ...L.builtins]);
       const re = lang === 'scheme' ? /[A-Za-z_][A-Za-z0-9_!?*<>=\-+\/]*/g : /[A-Za-z_][A-Za-z0-9_]*/g;
-      const v = ta.value.replace(L.comment, '').replace(new RegExp(L.string.source, 'g'), '');
+      const v = ta.value.replace(new RegExp(L.comment.source, 'gm'), '').replace(new RegExp(L.string.source, 'g'), '');
       let m; while ((m = re.exec(v))) if (m[0].length > 1) set.add(m[0]);
       return (wordCache = [...set]);
     };
@@ -420,27 +420,33 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
         e.preventDefault(); edit(s - 1, s + 1, '', s - 1);
       }
     });
+    // Start and end of the whole lines covered by the selection [s, t]. A caret at column 0 covers its own line;
+    // a selection that ends at column 0 does not include the line it ends in.
+    function lineSpan(v, s, t) {
+      const ls = v.lastIndexOf('\n', s - 1) + 1; let le = v.indexOf('\n', t > s ? t - 1 : t); if (le < 0) le = v.length;
+      return [ls, le];
+    }
     function indentBlock(add) {
       const v = ta.value, s = ta.selectionStart, t = ta.selectionEnd;
-      const ls = v.lastIndexOf('\n', s - 1) + 1; let le = v.indexOf('\n', t - 1); if (le < 0) le = v.length;
+      const [ls, le] = lineSpan(v, s, t);
       const lines = v.slice(ls, le).split('\n').map(l => add ? L.tab + l : (l.startsWith(L.tab) ? l.slice(L.tab.length) : l.replace(/^\s{1,3}/, '')));
       const text = lines.join('\n'); edit(ls, le, text, ls, ls + text.length);
     }
     function duplicateLine() {
       const v = ta.value, s = ta.selectionStart, t = ta.selectionEnd;
-      const ls = v.lastIndexOf('\n', s - 1) + 1; let le = v.indexOf('\n', t - 1); if (le < 0) le = v.length;
+      const [ls, le] = lineSpan(v, s, t);
       const text = v.slice(ls, le); edit(le, le, '\n' + text, s + text.length + 1, t + text.length + 1);
     }
     function moveLines(dir) {
       const v = ta.value, s = ta.selectionStart, t = ta.selectionEnd;
-      const ls = v.lastIndexOf('\n', s - 1) + 1; let le = v.indexOf('\n', t - 1); if (le < 0) le = v.length;
+      const [ls, le] = lineSpan(v, s, t);
       const block = v.slice(ls, le);
       if (dir < 0) { if (ls === 0) return; const ps = v.lastIndexOf('\n', ls - 2) + 1; const prev = v.slice(ps, ls - 1); edit(ps, le, block + '\n' + prev, s - prev.length - 1, t - prev.length - 1); }
       else { if (le >= v.length) return; let ne = v.indexOf('\n', le + 1); if (ne < 0) ne = v.length; const next = v.slice(le + 1, ne); edit(ls, ne, next + '\n' + block, s + next.length + 1, t + next.length + 1); }
     }
     function toggleComment() {
       const v = ta.value, s = ta.selectionStart, t = ta.selectionEnd, mark = lang === 'python' ? '# ' : lang === 'cpp' ? '// ' : '; ';
-      const ls = v.lastIndexOf('\n', s - 1) + 1; let le = v.indexOf('\n', t - 1); if (le < 0) le = v.length;
+      const [ls, le] = lineSpan(v, s, t);
       const lines = v.slice(ls, le).split('\n'); const all = lines.every(l => l.trim() === '' || l.trimStart().startsWith(mark.trim()));
       const out = lines.map(l => { if (l.trim() === '') return l; const ind = l.match(/^\s*/)[0]; return all ? ind + l.slice(ind.length).replace(new RegExp('^' + mark.trim().replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&') + ' ?'), '') : ind + mark + l.slice(ind.length); }).join('\n');
       edit(ls, le, out, ls, ls + out.length);
@@ -480,7 +486,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
     let running = false, stopFlag = false, tracer = null, memTrace = null, memIdx = 0;
 
     // ----- editor
-    const editor = LabEditor({ lang: S.lang, onChange: (v) => { curFile().code = v; save(); if (memTrace) endMem('The program changed, so the memory view was closed. Press Step through memory to start again.'); }, onRun: () => run(), onSave: () => download(), onCursor: () => renderStatusBar(), onFind: (withReplace) => openFind(withReplace), onEscape: () => { if (!findBar.hidden) closeFind(); } });
+    const editor = LabEditor({ lang: S.lang, onChange: (v) => { curFile().code = v; save(); if (!findBar.hidden && findInp.value) computeMatches(); if (memTrace) endMem('The program changed, so the memory view was closed. Press Step through memory to start again.'); }, onRun: () => run(), onSave: () => download(), onCursor: () => renderStatusBar(), onFind: (withReplace) => openFind(withReplace), onEscape: () => { if (!findBar.hidden) closeFind(); } });
     editor.value = curFile().code;
     editor.el.style.setProperty('--lab-font', S.fontSize + 'px');
 
@@ -554,7 +560,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
 
     // ----- exercise bar (a file opened from a course exercise can be checked here)
     const exBar = el('div', { class: 'ex-bar', hidden: '' });
-    const exVerdict = el('div', { class: 'verdict', hidden: '' });
+    const exVerdict = el('div', { class: 'verdict', hidden: '', role: 'status' });
     let exAttempts = 0;
     function renderExBar() {
       const f = curFile(); exBar.innerHTML = ''; exVerdict.hidden = true; exAttempts = 0;
@@ -689,7 +695,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
         } else if (lang === 'scheme') {
           repl.reset();
           const r = repl.loadProgram(code, (s) => out.write(s));
-          for (const res of r.results) out.value(';Value: ' + res.text);
+          for (const res of r.results) out.value(res.text === '' ? ';Unspecified return value' : ';Value: ' + res.text);
           if (r.error) showError('scheme', ';' + r.error.replace(/^;/, ''));
           out.note(r.error ? 'stopped; definitions before the error are available in the REPL' : 'definitions loaded into the REPL');
           if (!isTouch()) repl.focus();
@@ -863,6 +869,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
         log.append(el('span', { class: 'repl-in' }, '1 ]=> ' + text + '\n'));
         try {
           const forms = Scheme.parseAll(text);
+          it.reset();   // every entry gets a fresh step budget; otherwise a long session ends with "ran for too long" for everything
           for (const f of forms) { const v = it.evaluate(f, it.G); const t = Scheme.write(v); log.append(el('span', { class: 'val' }, t === '' ? ';Unspecified return value' : ';Value: ' + t), '\n'); }
         } catch (e) { const msg = e instanceof RangeError ? ';Aborting!: maximum recursion depth exceeded' : (e instanceof Scheme.SchemeError ? e.message : 'Internal error: ' + e.message); log.append(el('span', { class: 'err' }, ';' + msg.replace(/^;/, '')), '\n'); const ex = explain('scheme', msg); if (ex) log.append(el('span', { class: 'note' }, '↳ ' + ex), '\n'); }
         log.scrollTop = log.scrollHeight;
@@ -882,7 +889,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
         loadProgram(code, onOutput) {
           fresh(); sink = onOutput;
           let error = null; const results = [];
-          try { for (const f of Scheme.parseAll(code)) { const v = it.evaluate(f, it.G); results.push({ text: Scheme.write(v) || '(unspecified)' }); } }
+          try { for (const f of Scheme.parseAll(code)) { const v = it.evaluate(f, it.G); results.push({ text: Scheme.write(v) }); } }
           catch (e) { error = e instanceof RangeError ? 'Aborting!: maximum recursion depth exceeded' : (e instanceof Scheme.SchemeError ? e.message : 'Internal error: ' + e.message); }
           sink = null;
           return { results, error };

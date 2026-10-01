@@ -237,7 +237,7 @@ window.GUIDE = (function () {
     main.addEventListener('click', (e) => {
       const a = e.target.closest('a[href^="#g-"]'); if (!a) return;
       e.preventDefault();
-      const t = document.getElementById(a.getAttribute('href').slice(1)); if (t) t.scrollIntoView({ behavior: 'smooth' });
+      const t = document.getElementById(a.getAttribute('href').slice(1)); if (t) { t.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); t.setAttribute('tabindex', '-1'); t.focus({ preventScroll: true }); }
     });
     return main;
   }

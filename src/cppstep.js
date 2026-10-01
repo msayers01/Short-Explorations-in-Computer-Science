@@ -46,7 +46,7 @@
     const n = t && t.name;
     if (n === 'char' || n === 'signed char' || n === 'unsigned char') return charText(v);
     if (n === 'bool') return v ? 'true' : 'false';
-    if (n === 'float' || n === 'double' || n === 'long double') return String(Number(v.toPrecision(12)));
+    if (n === 'float' || n === 'double' || n === 'long double') return String(Number(v.toPrecision(15)));
     return String(v);
   }
   function defaultErrorText(m) {
@@ -138,7 +138,7 @@
           if (kind === 'array') registerArray(x.name, v.v.target, addr, t);
           f.vars.push(entry);
         }
-        if (!f.global) cur = p;
+        if (f.global) cur = Math.max(cur, align(p, 16)); else cur = p;   // stacks start above the globals, however many there are
       }
       // 3. values
       const values = new Map();

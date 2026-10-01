@@ -37,7 +37,8 @@ site/
   test_cppstep.js        node tests for the C++ memory stepper, including stepping every C++ course program
   test_subst.js          node tests for the substitution stepper: every Lisp playground steps without error and ends at the interpreter's value
   package.json           npm test runs all four courses; deps: skulpt, JSCPP, esbuild
-  patches/jscpp-iostream.patch   applied to node_modules/JSCPP and baked into vendor/jscpp.min.js
+  patches/jscpp-iostream.patch, patches/jscpp-unsigned.patch   applied to node_modules/JSCPP by scripts/patch-jscpp.js
+                         (run automatically before `npm test`) and baked into vendor/jscpp.min.js
   vendor/jscpp.min.js    JSCPP bundled by esbuild (see README for the command)
   stubs/                 stream/util shims for the JSCPP bundle
   dist/index.html        the built site (the only deployed file)
@@ -186,7 +187,11 @@ button and every Scheme playground not marked `expectError` a "Show the substitu
   **`killableWhile/killableFor` must stay off — they hang**). Tracer uses `debugging: true` and
   `Sk.debug` suspensions (`$loc` at module level, `$tmps` inside functions). Turtle sets
   `Sk.TurtleGraphics.target = 'lab-turtle'`. C++ takes stdin from the Program input box.
-  Scheme: `makeRepl()` keeps one evaluator; `loadProgram` runs the file into it.
+  Scheme: `makeRepl()` keeps one evaluator; `loadProgram` runs the file into it; each REPL entry resets the step budget.
+  The evaluator (scheme.js) keeps its own stack of continuation frames on the heap, so non-tail recursion is limited
+  by `MAX_STACK` (200 000 frames, then "maximum recursion depth exceeded"), not by the JS call stack; `do`, named-let
+  inits, `letrec` and quasiquote still recurse into `evaluate`. Integers beyond 2^53 are BigInts (`isInt`, `norm`,
+  `arith` in scheme.js keep arithmetic exact and fold results back to plain numbers when they fit).
 - Memory stepper (C++): `CPPSTEP.trace(code, stdin, {prepare, errorText, maxSteps, maxMs})` runs the program
   under JSCPP's debugger (`debug: true`), stopping whenever the line changes, and records every snapshot:
   `{ steps: [{ line, frames: [{ name, global, vars: [{ id, name, type, kind: value|array|pointer, addr,
@@ -331,11 +336,12 @@ wherever the term is used).
   role, and `changes` if patched); check it appears on `#/about` with its full licence text.
 - **A new route:** handle it in `renderRoute()` and, if it opens the Lab, pass `kind` to `LAB.page`.
 - **A runtime change (JSCPP):** edit node_modules, rebuild `vendor/jscpp.min.js` with the esbuild
-  command in the README, append the diff to `patches/jscpp-iostream.patch`.
+  command in the README, and record the diff in a file under `patches/` (add it to `PATCHES` in
+  `scripts/patch-jscpp.js` with a marker line that only the patched file contains).
 
 ## 11. Testing and release
 
-1. `npm install`, then `patch -p0 < patches/jscpp-iostream.patch` (once).
+1. `npm install`. `npm test` applies the JSCPP patches itself (`scripts/patch-jscpp.js`, idempotent).
 2. `node build.js`, then `npm test`: `test_course.js` for each course (every solution passes, every starter fails,
    every playground runs), `test_cppstep.js` and `test_subst.js`. C++ in both test scripts goes through the site's own
    `ensureMainReturns`, read out of `src/app.js`, so programs are graded exactly as on the site.
@@ -365,11 +371,11 @@ wherever the term is used).
      jump in time (sleep) the right time appears as soon as the tab is visible.
    - About: all three sections render; every `THIRD_PARTY` entry is listed with its full licence text; the licence
      wording follows `SITE.licence`; the source link shows only when `SITE.sourceUrl` is set.
-4. Deploy `dist/index.html` (any static host; it also works opened from disk).
+4. Deploy `dist/index.html` (any static host; it also works opened from disk). For Cloudflare Workers, `wrangler.jsonc` serves `dist/` as static assets: set the build command to `npm run build` and the deploy command to `npx wrangler deploy` (`npx wrangler preview` for non-production branches).
 
 ## 12. Known limits and sharp edges
 
-- Skulpt prints floats to 15 digits; `(/ 1 3)` in Scheme prints `.333333333333`; JSCPP lacks
+- Skulpt prints floats to 15 digits; `(/ 1 3)` in Scheme prints `.333333333333` (12 significant digits; whole numbers are exact at any size, as BigInts); JSCPP lacks
   `std::string`, `vector`, classes, references. Write examples that avoid these.
 - Downloads (Save, CSV, the portfolio web page) do nothing inside sandboxed frames that block them; they work
   when the page is opened directly.
