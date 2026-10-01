@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Zi4R0Ub6aEd8fOR1gIxbZVLS8njeH9fjTku8c/kxEwY=' 'sha256-ehkYrV500ocS150gmcPVphoHfBIojf/7b+gLIkzPJUM=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Zi4R0Ub6aEd8fOR1gIxbZVLS8njeH9fjTku8c/kxEwY=' 'sha256-JAfcS++bcN5a4x2rUM4ordEdmwKb4gp7T08FWZNkgY8=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -3429,6 +3429,260 @@ if health <= 0:
 <li><code>broadcast</code> is a function call and <code>when I receive</code> is <code>def</code>. A function that changes a number takes it in and returns it.</li>
 <li>Build one piece, run it, add the next. The order of <code>elif</code> lines matters.</li>
 <li>You have built a real program from nothing but the blocks you already knew. That was the whole course.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      title: 'Project: turtle art', summary: 'Shapes become functions, colours and fills make them pretty, and loops turn one shape into a flower, a spiral and a sky full of stars.',
+      blocks: [
+        `<p>In 1969 a teacher called Seymour Papert built a robot for kids. It was a little round machine on wheels. It had a pen underneath. Kids typed <code>FORWARD 50</code> and it rolled forward and drew a line. They typed <code>RIGHT 90</code> and it turned. The kids called it the turtle. Papert's language was called Logo. He said kids should teach the computer, not the other way round. Scratch was made by his students, years later, with the same idea.</p>
+<p>Your turtle is the same turtle, on a screen. In lesson 3 you drew squares and stars with <code>repeat</code>. Now you have functions. That changes everything. A shape becomes one word. One word, repeated and turned, becomes art.</p>
+<h2>A shape is a function</h2>
+<p>You know how to draw a square: four times, move and turn. Put that inside a <code>def</code> and the square gets a name. Then you can draw ten of them with one loop.</p>`,
+        { fig: 'blocks', stack: [['myblocks', 'define square'], ['control', 'repeat (4)', [['motion', 'move (80) steps'], ['motion', 'turn right (90) degrees']]]], python: 'def square():\n    for i in range(4):\n        t.forward(80)\n        t.right(90)', caption: 'A define block becomes def. The turtle is called t, like in lesson 3. Call square() and you get a square wherever the turtle is.' },
+        { play: `import turtle
+t = turtle.Turtle()
+t.speed(0)
+
+def square():
+    for i in range(4):
+        t.forward(80)
+        t.right(90)
+
+for i in range(12):
+    square()
+    t.right(30)
+turtle.done()`, caption: 'Twelve squares, each turned 30 degrees more than the last. 12 × 30 = 360, so they go all the way round. Try 36 squares turning 10 degrees. Try 6 turning 60.' },
+        `<details class="reveal"><summary>Guess first: what if the loop says <code>range(4)</code> and <code>t.right(90)</code>?</summary><p>Four squares, each a quarter turn round. They make a bigger square with a cross in it. 4 × 90 = 360 again. The rule: the number of shapes times the turn should be 360, or the pattern will not close.</p></details>
+<div class="stmt"><p><span class="kind">Rule 1.</span> A shape is a function. Write it once, call it many times.</p>
+<p><span class="kind">Rule 2.</span> To go round in a circle of shapes, make <em>repeats × turn = 360</em>. 12 × 30, 36 × 10, 8 × 45.</p></div>
+<p>Give the function an input, and one function draws every size. In Scratch that is a define block with an input bubble.</p>`,
+        { fig: 'blocks', stack: [['myblocks', 'define polygon (sides) (size)'], ['control', 'repeat (sides)', [['motion', 'move (size) steps'], ['motion', 'turn right ((360) / (sides)) degrees']]]], python: 'def polygon(sides, size):\n    for i in range(sides):\n        t.forward(size)\n        t.right(360 / sides)', caption: 'Any shape with straight sides. The turn is 360 divided by the number of sides: 90 for a square, 120 for a triangle, 60 for a hexagon. polygon(3, 100) is a triangle; polygon(8, 40) is an octagon.' },
+        { play: `import turtle
+t = turtle.Turtle()
+t.speed(0)
+
+def polygon(sides, size):
+    for i in range(sides):
+        t.forward(size)
+        t.right(360 / sides)
+
+polygon(3, 100)
+polygon(4, 100)
+polygon(5, 100)
+polygon(6, 100)
+polygon(8, 100)
+turtle.done()`, caption: 'Five shapes from one function, all starting at the same corner. Add polygon(40, 10): forty tiny sides look like a circle.' },
+        { check: 'The turtle draws a shape with 10 sides. How many degrees does it turn at each corner?', options: ['10', '36', '90'], answer: 1, why: '360 ÷ 10 = 36. All the turns together always add up to 360, one full circle, whatever the shape.' },
+        `<h2>Colour and fill</h2>
+<p>A turtle has a pen, and the pen has a colour. <code>t.color("red")</code> sets it. Lots of colour names work: <code>"blue"</code>, <code>"orange"</code>, <code>"purple"</code>, <code>"gold"</code>, <code>"hotpink"</code>. <code>t.pensize(3)</code> makes the line thicker. And a shape can be filled in: say <code>t.begin_fill()</code> before you draw it and <code>t.end_fill()</code> after.</p>`,
+        { fig: 'blocks', stack: [['pen', 'set pen color to [blue]'], ['pen', 'set pen size to (3)'], ['looks', 'say [fill the next shape]']], python: 't.color("blue")\nt.pensize(3)\nt.begin_fill()\nsquare()\nt.end_fill()', caption: 'Scratch has no fill block, so there is nothing to translate for begin_fill: it is new. The fill is the pen colour too.' },
+        { play: `import turtle
+t = turtle.Turtle()
+t.speed(0)
+
+def star(size):
+    for i in range(5):
+        t.forward(size)
+        t.right(144)
+
+t.color("gold")
+t.begin_fill()
+star(150)
+t.end_fill()
+turtle.done()`, caption: 'A gold star, filled in. A five-point star turns 144 degrees at each point: 5 × 144 = 720, two full turns, which is why the lines cross. Change the colour. Try star(60) three times with a turn between them.' },
+        `<p>Colours can live in a list, and a loop can go through them. Here is a spiral that changes colour as it grows. Each line is a little longer than the last, and each one is the next colour.</p>`,
+        { play: `import turtle
+t = turtle.Turtle()
+t.speed(0)
+colours = ["red", "orange", "gold", "green", "blue", "purple"]
+
+for i in range(60):
+    t.color(colours[i % 6])
+    t.forward(i * 3)
+    t.right(59)
+turtle.done()`, caption: 'i % 6 is the remainder when i is divided by 6: 0, 1, 2, 3, 4, 5, 0, 1 … so the colours go round and round. i * 3 makes each line longer. Change 59 to 90, to 120, to 61. Each gives a different spiral.' },
+        { check: 'In <code>colours[i % 6]</code>, what is <code>i % 6</code> when i is 13?', options: ['2', '1', '13'], answer: 1, why: '13 = 2 × 6 + 1, so the remainder is 1 and the colour is colours[1], orange. The % trick keeps a number inside the list, however big i gets.' },
+        `<h2>A flower, and some randomness</h2>
+<p>Put the two rules together. A petal is a function. A flower is a loop that draws petals round in a circle. Pick the colours with <code>random.choice</code> and no two flowers are the same.</p>`,
+        { play: `import turtle
+import random
+t = turtle.Turtle()
+t.speed(0)
+
+def petal(size):
+    for i in range(2):
+        t.forward(size)
+        t.right(60)
+        t.forward(size)
+        t.right(120)
+
+colours = ["hotpink", "orange", "gold", "violet"]
+for i in range(12):
+    t.color(random.choice(colours))
+    t.begin_fill()
+    petal(70)
+    t.end_fill()
+    t.right(30)
+turtle.done()`, caption: 'A petal is two sides at 60 degrees, twice. Twelve petals, 30 degrees apart, and a random colour each. Run it again: different colours. Change 12 and 30 to 8 and 45, or 18 and 20.' },
+        `<details class="reveal"><summary>Guess first: how could you draw stars all over the screen, in different places?</summary><p>Lift the pen with <code>t.penup()</code>, go somewhere with <code>t.goto(x, y)</code>, put the pen down with <code>t.pendown()</code>, and draw. For random places, <code>random.randint(-200, 200)</code> for x and y. The next program does it.</p></details>`,
+        { play: `import turtle
+import random
+t = turtle.Turtle()
+t.speed(0)
+
+def star(size):
+    for i in range(5):
+        t.forward(size)
+        t.right(144)
+
+for i in range(15):
+    t.penup()
+    t.goto(random.randint(-220, 220), random.randint(-150, 150))
+    t.pendown()
+    t.color(random.choice(["gold", "orange", "yellow", "hotpink"]))
+    t.begin_fill()
+    star(random.randint(10, 40))
+    t.end_fill()
+turtle.done()`, caption: 'Fifteen stars, random places, random sizes, random colours. goto(x, y) uses the middle of the screen as (0, 0). Make the sky: more stars, smaller sizes, and one big one.' },
+        { check: 'Why does the program say <code>t.penup()</code> before <code>t.goto()</code>?', options: ['So the turtle moves faster', 'So it does not draw a line on the way to the next star', 'goto does not work with the pen down'], answer: 1, why: 'With the pen down, every move draws. penup lifts the pen, goto moves, pendown puts it back for the star.' },
+        { fig: 'blockquiz', items: [
+          { stack: [['myblocks', 'define hexagon']], answer: 'def hexagon():', hint: 'def, the name, brackets, a colon.' },
+          { stack: [['myblocks', 'hexagon']], answer: 'hexagon()', hint: 'Calling a block is its name with brackets.' },
+          { stack: [['motion', 'turn right ((360) / (6)) degrees']], answer: ['t.right(360 / 6)', 't.right(60)', 't.right(360/6)'], hint: 't.right(360 / 6)' },
+          { stack: [['pen', 'set pen color to [green]']], answer: ['t.color("green")', "t.color('green')"], hint: 't.color("green")' },
+          { stack: [['pen', 'pen up']], answer: 't.penup()', hint: 't.penup(), one word, with brackets.' }
+        ], caption: 'Five blocks from this lesson.' },
+        {
+          ex: {
+            id: 'sp-8-1', title: 'The turning block',
+            prompt: `<p>Write a function <code>turn(sides)</code> that returns the number of degrees the turtle turns at each corner of a shape with that many sides. It is 360 divided by the number of sides. Use <code>/</code>, so the answer is a decimal number like <code>90.0</code>.</p>`,
+            starter: `def turn(sides):\n    # return 360 divided by sides\n`,
+            solution: `def turn(sides):\n    return 360 / sides`,
+            hints: ['return 360 / sides', 'The / sign always gives a decimal: 360 / 4 is 90.0, not 90. That is what the tests expect.'],
+            tests: [{ call: 'turn(4)', expect: '90.0' }, { call: 'turn(3)', expect: '120.0' }, { call: 'turn(6)', expect: '60.0' }, { call: 'turn(8)', expect: '45.0' }, { call: 'turn(5)', expect: '72.0' }, { call: 'turn(10)', expect: '36.0' }],
+            failTip: 'None means the function printed instead of returning, or has no return. If you got 90 instead of 90.0, you used // instead of /.',
+            followup: 'Stretch: in the Code Lab, use your turn() inside polygon(): t.right(turn(sides)). Then draw a 7-sided shape, which has a turn nobody can do in their head.'
+          }
+        },
+        {
+          ex: {
+            id: 'sp-8-2', kind: 'answer', title: 'Measure the drawing',
+            prompt: `<p>Work these out from the rules in this lesson. You can test your answers in any turtle box above.</p>`,
+            parts: [
+              { label: '(a) You want 9 squares going round in a full circle. How many degrees between each one?', answer: '40', width: '6rem', wrong: [{ match: '9', msg: 'That is the number of squares. The turn is 360 divided by it.' }, { match: '36', msg: 'That would be for 10 squares. 360 ÷ 9.' }] },
+              { label: '(b) A star turns 144 degrees at each of its 5 points. How many degrees in total, all the way round?', answer: '720', width: '6rem', wrong: [{ match: '360', msg: 'That is one full turn. A five-point star does more: 5 × 144.' }, { match: '144', msg: 'That is one turn. There are five of them.' }] },
+              { label: '(c) The spiral program draws <code>t.forward(i * 3)</code> for i from 0 to 59. How long is the very last line?', answer: '177', width: '6rem', wrong: [{ match: '180', msg: 'Close. range(60) stops at 59, not 60, so the last i is 59. 59 × 3.' }, { match: '60', msg: 'That is the number of lines. The length of the last one is i × 3 with i = 59.' }] },
+              { label: '(d) To draw a hexagon (6 sides), how many degrees does the turtle turn at each corner?', answer: '60', width: '6rem', wrong: [{ match: '120', msg: 'That is for a triangle. 360 ÷ 6.' }] }
+            ],
+            hints: ['Repeats × turn = 360 for shapes going round in a circle. Sides × turn = 360 for the corners of one shape.', 'range(60) gives 0 up to 59. The last line is 59 × 3.'],
+            solution: '<p>(a) 360 ÷ 9 = 40. (b) 5 × 144 = 720, two full turns, which is why a star crosses itself. (c) The last i is 59, so 59 × 3 = 177. (d) 360 ÷ 6 = 60.</p>',
+            followup: 'Stretch: a 7-point star turns 360 × 3 ÷ 7 degrees at each point (three full turns in seven). Work it out, then draw it. It is not a whole number, and the turtle does not mind.'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li>A shape is a <code>def</code>. Give it inputs for size and sides, and one function draws them all.</li>
+<li>Shapes go round in a circle when <em>repeats × turn = 360</em>. A shape's corners add up to 360 too, so each turn is <code>360 / sides</code>.</li>
+<li><code>t.color("gold")</code>, <code>t.pensize(3)</code>, <code>t.begin_fill()</code> and <code>t.end_fill()</code> make it pretty. A list of colours and <code>i % 6</code> cycle through them.</li>
+<li><code>t.penup()</code>, <code>t.goto(x, y)</code>, <code>t.pendown()</code> move without drawing. <code>random.choice</code> and <code>random.randint</code> make every run different.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      title: 'Words and letters', summary: 'join, letter of and length of become +, square brackets and len; a loop can go through a word one letter at a time; and words can be shouted, reversed and searched.',
+      blocks: [
+        `<p>In 1966 a programmer called Joseph Weizenbaum wrote a program that talked. You typed a sentence. It found a word in it, turned your sentence around, and asked a question. Type <em>I feel sad</em> and it said <em>Why do you feel sad?</em> He called it ELIZA. Some people thought it understood them. It did not understand a thing. It only played with words: cutting them, joining them, swapping them. That is what this lesson is about.</p>
+<p>In Scratch, words live in the green operators blocks: <code>join</code>, <code>letter of</code>, <code>length of</code>. Python has all three, and a few more. A word in Python is called a <em>string</em>: a string of letters.</p>
+<h2>Join, length, letter</h2>`,
+        { fig: 'blocks', stack: [['variables', 'set [word] to [turtle]'], ['looks', 'say (join (word) [s])'], ['looks', 'say (length of (word))'], ['looks', 'say (letter (1) of (word))']], python: 'word = "turtle"\nprint(word + "s")\nprint(len(word))\nprint(word[0])', caption: 'join is +. length of is len(). letter 1 of is word[0]: Python counts letters from 0, just like lists in lesson 5. So letter 1 is [0], letter 2 is [1], and the last letter is [-1].' },
+        { play: `word = "turtle"
+print(word + "s")
+print(len(word))
+print(word[0])
+print(word[1])
+print(word[-1])
+print(word[0] + word[-1])`, caption: 'Six letters, numbered 0 to 5. word[-1] is a shortcut for the last one. Change word to your name and run again.' },
+        `<details class="reveal"><summary>Guess first: what does <code>word[6]</code> do when word is "turtle"?</summary><p>An error: <code>string index out of range</code>. The letters are numbered 0 to 5, so there is no letter 6. Just like asking for item 7 of a list with 6 things in it.</p></details>
+<div class="stmt"><p><span class="kind">Rule 1.</span> A string is a row of letters in quotes. <code>+</code> joins two strings. <code>len(word)</code> counts the letters.</p>
+<p><span class="kind">Rule 2.</span> <code>word[0]</code> is the first letter, <code>word[1]</code> the second, <code>word[-1]</code> the last. Counting starts at 0.</p></div>
+<p>You can take a slice: more than one letter at once. <code>word[0:3]</code> is letters 0, 1 and 2: it stops <em>before</em> 3. <code>word[2:]</code> is from letter 2 to the end.</p>`,
+        { play: `word = "butterfly"
+print(word[0:6])
+print(word[6:])
+print(word[3:6])
+print(word.upper())
+print(word.lower())
+print("fly" in word)`, caption: 'A slice is [start:stop], stopping before stop. .upper() shouts, .lower() whispers. in asks whether a smaller string is inside: True or False. That is the contains block.' },
+        { check: '<code>word = "python"</code>. What is <code>word[1:4]</code>?', options: ['<code>"pyt"</code>', '<code>"yth"</code>', '<code>"ytho"</code>'], answer: 1, why: 'Letters 1, 2 and 3: y, t, h. The slice stops before 4. Letter 0, p, is left out.' },
+        `<h2>A loop through the letters</h2>
+<p>A string is like a list of letters, so <code>for</code> can walk through it. In Scratch you would need a counter and <code>letter (i) of</code>. Python just says <code>for letter in word</code>.</p>`,
+        { fig: 'blocks', stack: [['variables', 'set [i] to (1)'], ['control', 'repeat (length of (word))', [['looks', 'say (letter (i) of (word))'], ['variables', 'change [i] by (1)']]]], python: 'for letter in word:\n    print(letter)', caption: 'Four Scratch blocks become two lines. The loop hands you one letter at a time, so you never need the counter.' },
+        { play: `word = "rainbow"
+for letter in word:
+    print(letter, letter.upper())
+
+count = 0
+for letter in word:
+    if letter in "aeiou":
+        count = count + 1
+print("vowels:", count)
+
+backwards = ""
+for letter in word:
+    backwards = letter + backwards
+print(backwards)`, caption: 'Three loops. The first prints each letter twice. The second counts vowels: letter in "aeiou" is True for a, e, i, o, u. The third builds the word backwards by putting each new letter in front. (There is a shortcut: word[::-1]. Try it.)' },
+        `<details class="reveal"><summary>Guess first: in the backwards loop, what is <code>backwards</code> after the first three letters?</summary><p><code>"iar"</code>. Start with "". Add r in front: "r". Add a in front: "ar". Add i in front: "iar". Each letter goes to the front, so the word turns round.</p></details>`,
+        { check: 'Which line is True when the word has a letter z in it?', options: ['<code>"z" in word</code>', '<code>word == "z"</code>', '<code>len(word) == "z"</code>'], answer: 0, why: 'in looks for one string inside another. word == "z" is only True if the whole word is z.' },
+        `<h2>Playing with words</h2>
+<p>A few more tools, and you can build ELIZA's tricks. <code>.replace(old, new)</code> swaps every old for new. <code>.count(x)</code> counts how often x appears. <code>.split()</code> cuts a sentence into a list of words at the spaces. And <code>*</code> with a number repeats a string.</p>`,
+        { play: `line = "I feel sad today"
+print(line.replace("I feel", "Why do you feel") + "?")
+print(line.count("a"))
+words = line.split()
+print(words)
+print(len(words), "words")
+print("ha" * 5)
+print("-" * 20)`, caption: 'ELIZA\'s best trick is the first line: swap "I feel" for "Why do you feel" and add a question mark. split() turns a sentence into a list, so everything from lesson 5 works on it. "-" * 20 draws a line.' },
+        `<details class="reveal"><summary>Guess first: what is <code>"abc" * 3</code>? And <code>"abc" + 3</code>?</summary><p><code>"abcabcabc"</code>: a string times a number repeats it. <code>"abc" + 3</code> is an error: you cannot join a string and a number. Turn the number into a string first: <code>"abc" + str(3)</code> is "abc3". That is why lesson 2 had str().</p></details>`,
+        { check: 'What does <code>"hello world".split()</code> give?', options: ['<code>"helloworld"</code>', '<code>["hello", "world"]</code>', '<code>11</code>'], answer: 1, why: 'split() cuts at the spaces and gives a list of the pieces. Two words, so a list of two strings.' },
+        { fig: 'blockquiz', items: [
+          { stack: [['looks', 'say (join [Hi ] (name))']], answer: ['print("Hi " + name)', "print('Hi ' + name)"], hint: 'join is +: print("Hi " + name)' },
+          { stack: [['looks', 'say (length of (word))']], answer: 'print(len(word))', hint: 'length of is len()' },
+          { stack: [['looks', 'say (letter (1) of (word))']], answer: 'print(word[0])', hint: 'Letter 1 is word[0]: counting starts at 0.' },
+          { stack: [['control', 'if <(word) contains [e]?> then', []]], answer: ['if "e" in word:', "if 'e' in word:"], hint: 'contains is in: if "e" in word:' },
+          { stack: [['variables', 'set [word] to (letter (3) of (word))']], answer: 'word = word[2]', hint: 'Letter 3 is word[2].' }
+        ], caption: 'Five blocks from this lesson.' },
+        {
+          ex: {
+            id: 'sp-9-1', title: 'Shout it',
+            prompt: `<p>Write a function <code>shout(word)</code> that returns the word in capital letters with three exclamation marks after it. <code>shout("hello")</code> returns <code>"HELLO!!!"</code>.</p>`,
+            starter: `def shout(word):\n    # capitals, then "!!!"\n`,
+            solution: `def shout(word):\n    return word.upper() + "!!!"`,
+            hints: ['word.upper() gives the capitals.', 'return word.upper() + "!!!"'],
+            tests: [{ call: 'shout("hello")', expect: "'HELLO!!!'" }, { call: 'shout("go team")', expect: "'GO TEAM!!!'" }, { call: 'shout("Python")', expect: "'PYTHON!!!'" }, { call: 'shout("")', expect: "'!!!'" }],
+            failTip: 'None means the function printed instead of returning. Check it is .upper() with brackets, and that there are exactly three exclamation marks.',
+            followup: 'Stretch: write whisper(word) that returns the word in lowercase with "..." after it, and a function that returns a word with its first letter in capitals (word[0].upper() + word[1:]).'
+          }
+        },
+        {
+          ex: {
+            id: 'sp-9-2', title: 'Count the vowels',
+            prompt: `<p>Write a function <code>vowels(word)</code> that returns how many vowels (a, e, i, o, u) are in the word. Capital letters count too: <code>vowels("Apple")</code> is 2. Use a loop and <code>in</code>.</p>`,
+            starter: `def vowels(word):\n    count = 0\n    # for each letter: if it is a vowel, add 1 to count\n    return count`,
+            solution: `def vowels(word):\n    count = 0\n    for letter in word.lower():\n        if letter in "aeiou":\n            count = count + 1\n    return count`,
+            hints: ['for letter in word: then if letter in "aeiou": count = count + 1', 'Capitals: loop over word.lower() so that A counts as a.'],
+            tests: [{ call: 'vowels("rainbow")', expect: '3' }, { call: 'vowels("Apple")', expect: '2' }, { call: 'vowels("rhythm")', expect: '0' }, { call: 'vowels("AEIOU")', expect: '5' }, { call: 'vowels("")', expect: '0' }, { call: 'vowels("queue")', expect: '4' }],
+            failTip: 'If Apple gives 1, capitals are not counted: loop over word.lower(). If everything gives 0, check the if is inside the loop and the return is after it.',
+            followup: 'Stretch: write a program that asks for a sentence and prints it in Pig Latin: each word with its first letter moved to the end, plus "ay". "hello world" becomes "ellohay orldway".'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li>A string is letters in quotes. <code>+</code> joins, <code>*</code> repeats, <code>len()</code> counts.</li>
+<li><code>word[0]</code> is the first letter and <code>word[-1]</code> the last; <code>word[1:4]</code> is a slice that stops before 4.</li>
+<li><code>for letter in word</code> walks through the letters. <code>"a" in word</code> is the contains block.</li>
+<li><code>.upper()</code>, <code>.lower()</code>, <code>.replace()</code>, <code>.count()</code> and <code>.split()</code> are the tools ELIZA was made of.</li>
 </ul></div>`
       ]
     }
@@ -18685,7 +18939,7 @@ window.GUIDE = (function () {
     <thead><tr><th>Course</th><th>Who it is for</th><th>What students do</th></tr></thead>
     <tbody>
       <tr><td><b>SC 099 What Is a Computer?</b><br><span class="g-muted">4 lessons</span></td><td>Grades 6–12. Start here, before any coding.</td><td>The parts of a computer and what each does; the CPU's fetch-decode-execute cycle; memory against storage; bits, bytes and binary; what the operating system, a compiler and an interpreter do. No code; interactive figures and short graded exercises.</td></tr>
-      <tr><td><b>SC 100 From Scratch to Python</b><br><span class="g-muted">7 lessons so far</span></td><td>Grades 5–8, after Scratch. For a class moving from blocks to text.</td><td>See every block they know beside the Python line that does the same; make the sprite a turtle; say, ask, variables, repeat and forever, all with short programs that draw and talk.</td></tr>
+      <tr><td><b>SC 100 From Scratch to Python</b><br><span class="g-muted">9 lessons so far</span></td><td>Grades 5–8, after Scratch. For a class moving from blocks to text.</td><td>See every block they know beside the Python line that does the same; make the sprite a turtle; say, ask, variables, repeat and forever, if, lists and functions; build a text adventure, turtle art and word games, all with short programs that draw and talk.</td></tr>
       <tr><td><b>SC 101 Introduction to Python</b><br><span class="g-muted">13 lessons</span></td><td>Grades 8–12. No experience needed. Start here.</td><td>Write programs that decide, repeat and keep lists; find and fix bugs; run a random simulation; build a working cipher.</td></tr>
       <tr><td><b>SC 102 Introduction to Lisp</b><br><span class="g-muted">11 lessons</span></td><td>Grades 11–12, or a strong 10th grader, after Python.</td><td>Think in expressions and recursion, watch a language evaluate code step by step, and build a program that differentiates algebra.</td></tr>
       <tr><td><b>SC 103 Introduction to C++</b><br><span class="g-muted">11 lessons</span></td><td>Grades 10–12, after Python or with some experience.</td><td>Meet types, pointers and arrays; see what happens under the hood; finish with a prime-number sieve.</td></tr>

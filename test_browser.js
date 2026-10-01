@@ -224,6 +224,11 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('shell lesson: an exercise is graded on the files and marked done', (await page.locator('#sh-2-1 .verdict').getAttribute('class')) === 'verdict pass' && (await page.locator('#sh-2-1.done').count()) === 1 && (await page.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.progress.v1')).done['sh-2-1'] > 0)), await page.locator('#sh-2-1 .verdict').innerText());
   await page.click('#sh-2-2 .toolbar button:has-text("Check")'); await page.waitForSelector('#sh-2-2 .verdict.fail', { timeout: 10000 });
   check('shell lesson: an untouched exercise fails with the files named', /desk\/photos\/cat\.jpg exists/.test(await page.locator('#sh-2-2 .verdict').innerText()));
+  // ---- Scratch lesson 8: a turtle example with fill and colour draws in its sandboxed frame and finishes
+  await goto('#/scratch/8'); await page.waitForSelector('.play');
+  await page.locator('.play').nth(2).scrollIntoViewIfNeeded(); await page.locator('.play').nth(2).locator('.toolbar button:has-text("Run")').click();
+  await page.waitForFunction(() => /^(exit|error|stopped)/.test([...document.querySelectorAll('.play .term-status')][2].textContent), null, { timeout: 60000 }).catch(() => { });
+  check('scratch lesson 8: the filled star draws and the run finishes', /^exit 0/.test(await page.locator('.play .term-status').nth(2).innerText()) && (await page.locator('.play').nth(2).locator('iframe').count()) === 1, await page.locator('.play .term-status').nth(2).innerText());
   // ---- SC 099: no code; the figures render and the non-code exercises grade
   await goto('#/computer/2'); await page.waitForSelector('.cpu-fig');
   for (let i = 0; i < 4; i++) await page.locator('.fig-tools button:has-text("Step")').first().click();
