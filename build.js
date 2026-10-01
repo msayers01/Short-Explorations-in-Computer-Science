@@ -134,7 +134,10 @@ const dataBlock = (id, text) => `<script type="text/plain" id="${id}">${clean(te
 const inline = [];   // the exact text of every inline script, for the CSP hashes
 const scriptTag = (text) => { inline.push(text); return `<script>${text}</script>\n`; };
 let body = scriptTag(`/* build info and third-party licences (build.js) */\nwindow.BUILD = ${scriptSafe(JSON.stringify(BUILD))};\n`);
-for (const s of scripts) body += scriptTag(`/* ${s} */\n${scriptSafe(r(s))}\n`);
+// All of the site's own scripts go into ONE inline <script>, so the policy carries one hash for them. (One hash per file put the
+// Content-Security-Policy line of dist/_headers past the 2000 characters Cloudflare allows for a line of that file, and the deploy failed.)
+// The files are joined with a semicolon between them, so a file that ends in `})()` cannot call the next file's opening parenthesis.
+body += scriptTag(scripts.map((s) => `/* ${s} */\n${scriptSafe(r(s))}\n`).join(';\n'));
 body += dataBlock('py-src', pySrc) + dataBlock('cpp-src', cppSrc) + dataBlock('java-src', javaSrc) + dataBlock('py-boot', bootSrc) + dataBlock('clang-src', clangSrc);
 const indexHashes = inline.map(sha).concat(sha(clean(bootSrc)));   // the last one is the script inside the sandboxed iframe (see pyboot.js)
 const html = headFor(indexHashes) + body + '</body>\n</html>\n';
@@ -159,5 +162,8 @@ if (gm) {
 const common = ['X-Content-Type-Options: nosniff', 'Referrer-Policy: no-referrer', 'Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()'];
 const rule = (paths, hashes) => paths.map(p => p + '\n').join('') + ['Content-Security-Policy: ' + csp(hashes)].concat(common).map(h => '  ' + h + '\n').join('') + '\n';
 const immutable = '/' + CLANG_DIR + '*\n  Cache-Control: public, max-age=31536000, immutable\n  X-Content-Type-Options: nosniff\n\n';
-fs.writeFileSync('dist/_headers', '# Written by build.js. Do not edit.\n' + immutable + rule(['/', '/index.html'], indexHashes) + rule(['/teacher-guide', '/teacher-guide.html'], guideHashes));
+const headersText = '# Written by build.js. Do not edit.\n' + immutable + rule(['/', '/index.html'], indexHashes) + rule(['/teacher-guide', '/teacher-guide.html'], guideHashes);
+const longLine = headersText.split('\n').findIndex((l) => l.length > 2000);
+if (longLine >= 0) throw new Error('dist/_headers line ' + (longLine + 1) + ' is ' + headersText.split('\n')[longLine].length + ' characters; Cloudflare refuses lines over 2000');
+fs.writeFileSync('dist/_headers', headersText);
 console.log('wrote dist/_headers');

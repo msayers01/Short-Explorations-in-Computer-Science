@@ -40,6 +40,10 @@ must move between people travels inside a URL.
    - `build.js` writes a Content Security Policy (script hashes; `connect-src 'self'`, which exists only for the Full C++ download) into every page and into `dist/_headers`. A new inline
      script needs no change (its hash is computed); a new external resource must be added to the policy deliberately.
 
+The site's own scripts are concatenated into one inline `<script>` (joined with `;`), so the policy carries one hash for them, one for the
+build-info script and one for the sandboxed frame's boot script. One hash per file once pushed the policy line of `dist/_headers` past the
+2000 characters Cloudflare allows for a line of that file and the deploy failed; `build.js` now throws if any line would exceed it.
+
 ## 3. Repository layout
 
 ```

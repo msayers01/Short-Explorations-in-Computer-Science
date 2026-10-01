@@ -35,7 +35,9 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 
 ## Design constraints (the ones that bite)
 
-- **Content Security Policy** is written by `build.js` into every page and `dist/_headers`: inline scripts allowed by hash only,
+- **Content Security Policy** is written by `build.js` into every page and `dist/_headers`: inline scripts allowed by hash only (all of
+  `src/*.js` is ONE inline script, so the policy is three hashes; Cloudflare refuses a `_headers` line over 2000 characters, and build.js
+  now fails rather than write one),
   `connect-src 'self'` (only for the Full C++ download), `worker-src blob:`, no other origin. A new inline script needs nothing (its hash is
   computed); a new external resource must be added deliberately. Fonts are embedded as data URIs.
 - **Student code never runs in the page.** Python (Skulpt) and C++ (JSCPP) run in Web Workers built from inert `<script type="text/plain">`

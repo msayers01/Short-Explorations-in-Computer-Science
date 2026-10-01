@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Zi4R0Ub6aEd8fOR1gIxbZVLS8njeH9fjTku8c/kxEwY=' 'sha256-Ym3nROATy2YtiCYxk9RUMxIKCuOfjnYtlS8UjhXJXdY=' 'sha256-zOgI6X6q/9H9WKNTTCCk0DXAV6ifBfz8G2x8FPnFv3c=' 'sha256-s93xwhOzUGRoTpnX7qK0b85eDck1P4yrKWiT7fMGSBY=' 'sha256-AQ9E3BHzJ11gOMGfGsE2Mm01LLbDXGOXGLfGk0Qae0E=' 'sha256-rhGcJyL5bcWRtiywXb2g5Tdk6EH5rBYo+8lQ84Or7lI=' 'sha256-1i/0ugDvrRrPYSif2FUwvec084Jq0zSA2as+P6CCN40=' 'sha256-wXLmg/3Lwn4kQJ+ldmTUo1ByZdaxxw/Y5/VPktMbhZY=' 'sha256-ZXnlDmC9LRVNL0239WmifGDg7kJKv+nVpjM8XyYqkkY=' 'sha256-JUi8hVfB3Mv7n7nCuxw2hXwxOKz2MYen3w90CptxIR4=' 'sha256-+7XRzUICJ1rvAco4dA61EGCcURUVeMViuDRoDmcn3D8=' 'sha256-o6sVvFahZ7+XLHhwZJoqu0GonhZaUF+1ytQUQr97mxI=' 'sha256-NLzgmltQt9D0jyuCMqFNZHnHLZl2zn0M4o1I2kbYijk=' 'sha256-QuPJGTZvKnqp/d0V3UTEkcdEEHmkSsHIejPja+gcr2I=' 'sha256-p88eMpQIZvuT+PmiHHM9CMN6x/5PHg5sfIONgjTNknw=' 'sha256-D8QWOHBPdFcfihghRxIo0BDdRl0FR6qszYJGizvxH+Y=' 'sha256-jxoq71o2afEhqdy+wmDmxcnAM4SRXha1QyTzHKQu2Dk=' 'sha256-UVxer6kR9ikJuM2VB+R6zWUmOUA8vSyyCOUUJbwGrn8=' 'sha256-tZd+DcAeIqBTWn9tBuDGR7OzUNKoh3Qio214j8qtvec=' 'sha256-voVBDtm9dWefQtvGthtsEkjA3wxRDXKu/JK3Mcw+oI8=' 'sha256-5C01U4O1n8sgQImKApzExeVnnptA+c3lHyYp5IsEzV0=' 'sha256-IG/oDpg8pRhH3uryteZOPBu4ZlB75HH2mWG00zDVe5I=' 'sha256-lowm326EbJAN/uJdZ8ZejstUt/3llDP5AjVbf9LuyKc=' 'sha256-MXjVePXTNZlOqgPO9kyP5KOsgVU/27o/EmXQW2R1/ZA=' 'sha256-KF/FTkQyrvsixuKUWR3qUYGBSx/rfndqJPg/XkM/ofg=' 'sha256-7oYFp4OFk3L/EXb4QFu4rEAYng0qSDYubqyHRgveOns=' 'sha256-ZVsaq9UO022OGQBKgTawob2INPI7tYtFK3GwP/lK0kA=' 'sha256-KKk9KC1USpHQ5u0yK+SwvuvJJdSr5OwAz8LhQBS3Cpc=' 'sha256-rpIzMzXdgMFZfm1yGafniNjJpAUGxL/hfuTrPxQRl9E=' 'sha256-xinIAtfcjOX3GmWhVGH8+7jvhJjhAN6ez8D4NRouZzM=' 'sha256-/MEihuVGAze8eS6cHOf1p5eeIaKvXShPHYKXN9ScLKk=' 'sha256-LunzTh02xD2eSBG2iyD2O6vKmUVdEjIPZsz70JgfTWs=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Zi4R0Ub6aEd8fOR1gIxbZVLS8njeH9fjTku8c/kxEwY=' 'sha256-vxxw2ERl9sAPYxhDQT0ARGwv6OFyfV5NfNqEbzWWnzY=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -1389,8 +1389,8 @@ window.BUILD = {"date":"2026-10-01","thirdParty":[{"name":"Skulpt","version":"1.
   if (typeof module !== 'undefined') module.exports = api;
 })();
 
-</script>
-<script>/* src/scheme.js */
+;
+/* src/scheme.js */
 /* A small Scheme in the SICP dialect. Exposed as window.Scheme (browser) or module.exports (node). */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -1920,8 +1920,8 @@ window.BUILD = {"date":"2026-10-01","thirdParty":[{"name":"Skulpt","version":"1.
   return { makeEvaluator, runProgram, write, parseAll, Pair, NIL, UNSPEC, Sym, sym, list, Lambda, Primitive, SchemeError, tokenize };
 });
 
-</script>
-<script>/* src/subst.js */
+;
+/* src/subst.js */
 /* The substitution model of evaluation (SICP §1.1.5), as a small-step rewriter for the
    site's Scheme. Given a program, it registers the defines with a real interpreter and
    then reduces every other top-level expression one step at a time, producing a list of
@@ -2185,8 +2185,8 @@ window.BUILD = {"date":"2026-10-01","thirdParty":[{"name":"Skulpt","version":"1.
   return { create, Datum };
 });
 
-</script>
-<script>/* src/site.js */
+;
+/* src/site.js */
 /* Site-wide settings and text. Fields marked (html) may contain HTML. */
 window.SITE = {
   /* Shown in the top bar, the page title and the home page. */
@@ -2226,8 +2226,8 @@ window.SITE = {
   footer: '© 2026 Michael Sayers. Free to use, adapt and share under open licences.'
 };
 
-</script>
-<script>/* src/course_scratch.js */
+;
+/* src/course_scratch.js */
 // Lesson content, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
 // From Scratch to Python: for students who know Scratch. Every idea is introduced as the block they know, drawn beside the Python
 // that does the same (widgets.js: blocks), and the sprite becomes a turtle. Python runs in Skulpt; examples that draw run in a
@@ -3157,8 +3157,8 @@ if health <= 0:
   ]
 });
 
-</script>
-<script>/* src/course_python.js */
+;
+/* src/course_python.js */
 // Lesson content, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
 window.COURSES = window.COURSES || [];
 window.COURSES.push({
@@ -4959,8 +4959,8 @@ print("most common letter:", best, "  so the shift is probably", guess)`, captio
   ]
 });
 
-</script>
-<script>/* src/course_lisp.js */
+;
+/* src/course_lisp.js */
 // Lesson content, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
 window.COURSES = window.COURSES || [];
 window.COURSES.push({
@@ -6532,8 +6532,8 @@ d
   ]
 });
 
-</script>
-<script>/* src/course_cpp.js */
+;
+/* src/course_cpp.js */
 // Lesson content, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
 window.COURSES = window.COURSES || [];
 window.COURSES.push({
@@ -8547,8 +8547,8 @@ int main() {
   ]
 });
 
-</script>
-<script>/* src/course_math.js */
+;
+/* src/course_math.js */
 // Lesson content, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
 window.COURSES = window.COURSES || [];
 window.COURSES.push({
@@ -10298,8 +10298,8 @@ print("and reads the message:", pow(locked, inverse(e, m2), n))`, caption: 'No e
   ]
 });
 
-</script>
-<script>/* src/course_modern.js */
+;
+/* src/course_modern.js */
 // Lesson content, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
 // This course runs on the Full C++ engine (a real compiler; see src/runner.js, CLANGRUN), not on the small interpreter the other C++ course uses.
 window.COURSES = window.COURSES || [];
@@ -11341,8 +11341,8 @@ int main() {
   ]
 });
 
-</script>
-<script>/* src/course_java.js */
+;
+/* src/course_java.js */
 // Lesson content, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
 // This course runs on the site's own Java interpreter (src/java.js): it checks programs the way javac does and runs them like the JVM.
 window.COURSES = window.COURSES || [];
@@ -12100,8 +12100,8 @@ public class Main {
   ]
 });
 
-</script>
-<script>/* src/course_dsa.js */
+;
+/* src/course_dsa.js */
 // Lesson content, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
 // Data Structures and Algorithms, in Java, on the site's own interpreter (src/java.js). Every structure and algorithm is shown three ways:
 // an interactive figure to step through (src/widgets.js: growth, arrayops, dynarray, search, sortlab, mergeviz, partition, linkedlist, stackqueue, callstack), code to write, and a cost to count.
@@ -13774,8 +13774,8 @@ public class Main {
   ]
 });
 
-</script>
-<script>/* src/course_shell.js */
+;
+/* src/course_shell.js */
 // Lesson content, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
 // The Command Line: a course on the Unix shell, taught in the practice terminal (src/shell.js, src/terminal.js). Every example is a
 // live terminal over the files named by its setup (course.setups below; src/shellgrade.js builds them), and exercises of kind 'shell'
@@ -13992,8 +13992,8 @@ ls`, setup: 'lesson2', caption: '<code>echo *.tmp</code> is the way to see what 
   ]
 });
 
-</script>
-<script>/* src/mathgrade.js */
+;
+/* src/mathgrade.js */
 // Grader for the non-code exercise kinds used by the mathematics course.
 // Shared by app.js (browser) and test_course.js (node); no DOM here.
 //
@@ -14091,8 +14091,8 @@ ls`, setup: 'lesson2', caption: '<code>echo *.tmp</code> is the way to see what 
   if (typeof module !== 'undefined') module.exports = api;
 })();
 
-</script>
-<script>/* src/cppfull.js */
+;
+/* src/cppfull.js */
 /* How an exercise written for Full C++ (real Clang; see runner.js CLANGRUN) is turned into programs to run. The page's grade() and test_course.js
    both use this, so the tests check exactly what a student's program meets.
 
@@ -14122,8 +14122,8 @@ ls`, setup: 'lesson2', caption: '<code>echo *.tmp</code> is the way to see what 
   if (typeof module !== 'undefined') module.exports = api;
 })();
 
-</script>
-<script>/* src/javautil.js */
+;
+/* src/javautil.js */
 /* Helpers for grading Java exercises, needed by the page (app.js) and by the node tests, not by the sandbox that runs the program.
    Exposed as window.JAVAUTIL (browser) or module.exports (node).
 
@@ -14157,8 +14157,8 @@ ls`, setup: 'lesson2', caption: '<code>echo *.tmp</code> is the way to see what 
   return { harness, shiftLines, isCompileError };
 });
 
-</script>
-<script>/* src/runner.js */
+;
+/* src/runner.js */
 /* The page's side of the program sandboxes. Student programs (Python, C++ and Java) never run in the page. Each runs in a Web Worker that
    holds only its interpreter (src/pyworker.js, src/cppworker.js, src/javaworker.js): no DOM, no localStorage, and no way to send anything out (the Content
    Security Policy is inherited: the only address a worker may ask for anything at is this site itself, whose files are public), and the page can end it at any moment. Python programs that draw with turtle need a canvas, so they run in a sandboxed
@@ -14398,8 +14398,8 @@ ls`, setup: 'lesson2', caption: '<code>echo *.tmp</code> is the way to see what 
   };
 })();
 
-</script>
-<script>/* src/app.js */
+;
+/* src/app.js */
 /* The core of the site: router, pages, code editor, language runners, grading and saved progress. */
 (function () {
   'use strict';
@@ -15351,8 +15351,8 @@ ls`, setup: 'lesson2', caption: '<code>echo *.tmp</code> is the way to see what 
   window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, checkSVG, lbl } };
 })();
 
-</script>
-<script>/* src/shell.js */
+;
+/* src/shell.js */
 /* A small Unix-style shell with a virtual file system, for practising the command line.
 
    Nothing here touches the real computer: the file system is a tree in memory (saved to localStorage by the Code Lab), every command is
@@ -16672,8 +16672,8 @@ ls`, setup: 'lesson2', caption: '<code>echo *.tmp</code> is the way to see what 
   return { makeFS, makeShell, parse, tokenize, arith, braceExpand, globToRegExp, COMMANDS, LIMITS, HOME, USER, HOST };
 });
 
-</script>
-<script>/* src/shellgrade.js */
+;
+/* src/shellgrade.js */
 /* The shell course's files and grader (SC 108). Loaded in the page (window.SHELLGRADE) and in node (test_course.js).
    A lesson names the files its examples and exercises start from: course.setups = { lesson1: tree, … }. A tree is an object whose keys are
    paths from the home directory and whose values are the text of a file (null for an empty directory; a key ending in / is a directory,
@@ -16759,8 +16759,8 @@ ls`, setup: 'lesson2', caption: '<code>echo *.tmp</code> is the way to see what 
   return { setupFor, populate, makeFS, grade, norm };
 });
 
-</script>
-<script>/* src/terminal.js */
+;
+/* src/terminal.js */
 /* Terminals in front of the practice shell (src/shell.js), drawn like the output panel.
    Registered as window.TERMINAL:
      mount(ctx)                    the Code Lab's Terminal panel (src/lab.js mounts it with { el, armConfirm, isTouch, Runners, isFull, cppStd, stop,
@@ -17100,8 +17100,8 @@ ls`, setup: 'lesson2', caption: '<code>echo *.tmp</code> is the way to see what 
   window.TERMINAL = { mount, makePanel, playBlock, exerciseBlock, KEY };
 })();
 
-</script>
-<script>/* src/lab.js */
+;
+/* src/lab.js */
 /* Code Lab: a browser-only sandbox for Python, C++, Java and Scheme.
    Registered as window.LAB; app.js routes #/lab here and passes its internals. */
 (function () {
@@ -18192,8 +18192,8 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
   window.LAB = { page, openCode, TEMPLATES, REFERENCE };
 })();
 
-</script>
-<script>/* src/guide.js */
+;
+/* src/guide.js */
 /* The teacher guide, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
    One HTML string, rendered at #/guide inside the site and written by build.js as dist/teacher-guide.html for
    printing. Keep it in plain language; its readers are teachers who have never programmed. */
@@ -18447,8 +18447,8 @@ window.GUIDE = (function () {
   return { html, page };
 })();
 
-</script>
-<script>/* src/qr.js */
+;
+/* src/qr.js */
 /* A small QR code encoder: byte mode, versions 1-40, error-correction L or M, all 8 masks.
    qr.encode(text, {ec}) -> {size, get(x,y)}; qr.svg(text, {ec, scale}) -> SVG string.
    Exposed as window.QR (browser) or module.exports (node). */
@@ -18572,8 +18572,8 @@ window.GUIDE = (function () {
   return { encode, svg };
 });
 
-</script>
-<script>/* src/teach.js */
+;
+/* src/teach.js */
 /* Assignments without a server. A teacher builds an assignment in the Code Lab and shares a link
    (or QR code) that carries the whole assignment. A student opens it, works, checks, and submits:
    the submission is itself a link that carries the code. The teacher opens submissions in her own
@@ -18957,8 +18957,8 @@ window.GUIDE = (function () {
   window.TEACH = { mount, pack, unpack, textToHtml, studentCopy, toEx, normalize, cleanSub, dict, ID_RE };
 })();
 
-</script>
-<script>/* src/backup.js */
+;
+/* src/backup.js */
 /* Saving a person's work to a file and restoring it. Progress is kept only in the browser, so without this it is lost when the
    site's data is cleared, and cannot move to another computer. The file holds: exercise progress and the code that passed, the Code Lab's
    files, the terminal's files, the portfolio settings, and (student side of teach.js) the student's name and the assignments they received. A teacher can also
@@ -19259,8 +19259,8 @@ window.GUIDE = (function () {
   return { collect, parse, apply, panel, hasTeacherData, summarize, FORMAT, VERSION };
 });
 
-</script>
-<script>/* src/widgets.js */
+;
+/* src/widgets.js */
 /* Interactive figures used in the lessons: window.WIDGETS[name](mount, block, course). */
 (function () {
   'use strict';
@@ -20715,8 +20715,8 @@ xs mapped kept result`;
   };
 })();
 
-</script>
-<script>/* src/portfolio.js */
+;
+/* src/portfolio.js */
 /* Student portfolio (#/portfolio): everything a student has completed on this device, as one
    document they can print, download as a web page, or send to a teacher as a link.
    A received link (#/portfolio?p=<packed>) is shown read-only, and the teacher can re-run every
@@ -21012,8 +21012,8 @@ xs mapped kept result`;
   window.PORTFOLIO = { page, collect, renderDoc, exerciseIndex, checkAll };
 })();
 
-</script>
-<script>/* src/classroom.js */
+;
+/* src/classroom.js */
 /* Classroom (projector) mode. A switch in the top bar makes every page readable from the back of a
    room: larger type, stronger contrast, the lesson list hidden, the lesson using the whole width.
    On a lesson page the teacher then moves through the lesson one step at a time (a paragraph, a
@@ -21238,8 +21238,8 @@ xs mapped kept result`;
   window.CLASSROOM = { button, toggle, isOn: () => !!S.on };
 })();
 
-</script>
-<script>/* src/ojibwe.js */
+;
+/* src/ojibwe.js */
 /* Ojibwe words in the interface, the clock on the home page, and the page that lists every word with its source
    (#/ojibwe).
 
@@ -21486,8 +21486,8 @@ xs mapped kept result`;
   window.OJIBWE = { label, text, page, clock, timeWords, clockProgram, WORDS, LESSON_WORDS, CANDIDATES, DAYS, HOURS, PARTS };
 })();
 
-</script>
-<script>/* src/about.js */
+;
+/* src/about.js */
 /* About and credits (#/about).
 
    Who made the site, what it keeps about a visitor, what people may do with it (the licence), and credit for
