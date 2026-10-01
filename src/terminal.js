@@ -35,8 +35,10 @@
     const pre = el('pre', { class: 'out-text term-scroll', 'aria-live': 'polite', 'aria-label': 'Terminal output' });
     const ps1 = el('span', { class: 'term-ps1' });
     const inp = el('input', { class: 'term-inp', type: 'text', 'aria-label': 'Command line', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', placeholder: 'type a command, for example: help' });
-    const inputRow = el('div', { class: 'term-input' }, ps1, inp);
-    box.append(bar, pre, inputRow);
+    const tabBtn = el('button', { class: 'term-tab', type: 'button', title: 'Complete the name (Tab)', 'aria-label': 'Complete the name', onmousedown: (e) => e.preventDefault(), onclick: () => complete() }, '⇥');
+    const ac = el('ul', { class: 'term-ac', role: 'listbox', hidden: '' });   // the list of completions when several fit
+    const inputRow = el('div', { class: 'term-input' }, ps1, inp, tabBtn);
+    box.append(bar, pre, inputRow, ac);
     box.addEventListener('click', (e) => { if (e.target === pre || e.target === inputRow || e.target === box) inp.focus(); });
 
     // writing: text is batched into one node per class run, and the scrollback is trimmed from the top
@@ -77,9 +79,38 @@
       if (running) return;
       runLine(v);
     }
+    // ----- Tab completion. One fit: it is filled in. Several: the longest common start is filled in, and the fits are listed under the line
+    // (arrows choose, Tab or Enter accepts, Esc closes, typing goes on). Touch screens have the ⇥ button for it.
+    let acItems = [], acStart = 0, acTail = '', acSel = -1;
+    const acClose = () => { ac.hidden = true; ac.replaceChildren(); acItems = []; acSel = -1; };
+    const acAccept = (i) => { const it = acItems[i]; if (!it) return; inp.value = inp.value.slice(0, acStart) + it.value + acTail; inp.selectionStart = inp.selectionEnd = acStart + it.value.length; acClose(); inp.focus(); };
+    const acMove = (d) => { if (!acItems.length) return; acSel = (acSel + d + acItems.length) % acItems.length; [...ac.children].forEach((li, i) => { li.classList.toggle('on', i === acSel); li.setAttribute('aria-selected', i === acSel ? 'true' : 'false'); }); const cur = ac.children[acSel]; if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest' }); };
+    function complete() {
+      const head = inp.value.slice(0, inp.selectionStart), tail = inp.value.slice(inp.selectionStart);
+      const c = sh.complete(head);
+      if (!c.items.length) { acClose(); return; }
+      if (c.items.length === 1) { inp.value = head.slice(0, c.start) + c.items[0] + tail; inp.selectionStart = inp.selectionEnd = c.start + c.items[0].length; acClose(); return; }
+      let common = c.items[0]; for (const it of c.items) { let k = 0; while (k < common.length && k < it.length && common[k] === it[k]) k++; common = common.slice(0, k); }
+      const word = head.slice(c.start);
+      let newHead = head;
+      if (common.length > word.length) { newHead = head.slice(0, c.start) + common; inp.value = newHead + tail; inp.selectionStart = inp.selectionEnd = newHead.length; }
+      acItems = c.items.map((value, i) => ({ value, label: (c.display || c.items)[i] })); acStart = c.start; acTail = tail; acSel = -1;
+      ac.replaceChildren(...acItems.map((it, i) => el('li', { role: 'option', 'aria-selected': 'false', class: /\/$/.test(it.label) ? 't-dir' : '', onmousedown: (e) => e.preventDefault(), onclick: () => acAccept(i) }, it.label)));
+      ac.hidden = false;
+    }
+    inp.addEventListener('input', () => { if (!ac.hidden) { const head = inp.value.slice(0, inp.selectionStart); const word = head.slice(acStart); const keep = acItems.filter((it) => it.value.startsWith(word)); if (!keep.length || word.length < 1) acClose(); else { acItems = keep; acSel = -1; ac.replaceChildren(...acItems.map((it, i) => el('li', { role: 'option', 'aria-selected': 'false', class: /\/$/.test(it.label) ? 't-dir' : '', onmousedown: (e) => e.preventDefault(), onclick: () => acAccept(i) }, it.label))); } } });
+    inp.addEventListener('blur', () => setTimeout(acClose, 150));
     let hIdx = -1, hDraft = '';
     inp.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); hIdx = -1; onEnter(); return; }
+      // the completion list first: its arrows, Enter, Tab and Esc are not the history's or the command line's
+      if (!ac.hidden && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Escape' || ((e.key === 'Enter' || e.key === 'Tab') && acSel >= 0))) {
+        e.preventDefault();
+        if (e.key === 'Escape') acClose();
+        else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') acMove(e.key === 'ArrowDown' ? 1 : -1);
+        else acAccept(acSel);
+        return;
+      }
+      if (e.key === 'Enter') { e.preventDefault(); hIdx = -1; acClose(); onEnter(); return; }
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         if (running) return; e.preventDefault();
         const h = sh.history; if (!h.length) return;
@@ -89,18 +120,7 @@
         requestAnimationFrame(() => { inp.selectionStart = inp.selectionEnd = inp.value.length; });
         return;
       }
-      if (e.key === 'Tab') {
-        e.preventDefault(); if (running) return;
-        const head = inp.value.slice(0, inp.selectionStart), tail = inp.value.slice(inp.selectionStart);
-        const c = sh.complete(head);
-        if (!c.items.length) return;
-        if (c.items.length === 1) { inp.value = head.slice(0, c.start) + c.items[0] + tail; inp.selectionStart = inp.selectionEnd = c.start + c.items[0].length; return; }
-        let common = c.items[0]; for (const it of c.items) { let k = 0; while (k < common.length && k < it.length && common[k] === it[k]) k++; common = common.slice(0, k); }
-        const word = head.slice(c.start);
-        if (common.length > word.length) { inp.value = head.slice(0, c.start) + common + tail; inp.selectionStart = inp.selectionEnd = c.start + common.length; return; }
-        line(sh.prompt() + inp.value, 'cmd'); line(c.items.map((s) => s.trim()).join('  '));
-        return;
-      }
+      if (e.key === 'Tab') { e.preventDefault(); if (!running) complete(); return; }
       if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) { e.preventDefault(); if (running) { sh.cancel(); if (asking) { const a = asking; asking = null; a.resolve(''); } } else { line(sh.prompt() + inp.value + '^C', 'cmd'); inp.value = ''; } return; }
       if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); io.clear(); return; }
       if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); inp.value = ''; return; }
@@ -130,32 +150,57 @@
       }
       return { err: null };
     }
-    // nano: a small editor inside the panel; resolves with the new text, or null when the student leaves without saving
-    function nano(title, text) {
+    // nano: a small editor inside the panel. write(text) saves the file at once (and returns an error message, or null); the promise resolves
+    // when the student leaves. Keys work wherever the focus is while nano is open: Ctrl+S or Ctrl+O save, Ctrl+X leaves, and when there are
+    // unsaved changes the "Save modified buffer?" question takes Y, N or Ctrl+C, as the real nano does. The buttons do the same by mouse.
+    function nano(title, text, write) {
       return new Promise((resolve) => {
         flush(); inputRow.hidden = true;
-        const ta = el('textarea', { class: 'nano-ta', 'aria-label': 'Editing ' + title, spellcheck: 'false', autocapitalize: 'off' });
-        ta.value = text; let dirty = false, savedText = text;
+        const ta = el('textarea', { class: 'nano-ta', 'aria-label': 'Editing ' + title, spellcheck: 'false', autocapitalize: 'off', autocomplete: 'off' });
+        ta.value = text; let dirty = false, mode = 'edit';
         const msg = el('div', { class: 'nano-msg' });
-        const keys = (pairs) => el('div', { class: 'nano-keys' }, pairs.map(([k, label, fn]) => el('button', { class: 'nano-key', onclick: fn }, el('b', {}, k), ' ' + label)));
-        const close = (value) => { ui.remove(); inputRow.hidden = false; inp.focus(); resolve(value); };
-        const doSave = () => { savedText = ta.value; dirty = false; msg.textContent = '[ Wrote ' + ta.value.split('\n').length + ' lines ]'; head.textContent = title; };
-        const doExit = () => {
-          if (!dirty) { close(savedText === text ? null : savedText); return; }
-          msg.textContent = 'Save modified buffer?'; msg.className = 'nano-msg nano-ask';
-          bottom.replaceChildren(keys([[' Y', 'Yes', () => { doSave(); close(savedText); }], [' N', 'No', () => close(savedText === text ? null : savedText)], ['^C', 'Cancel', () => { msg.textContent = ''; msg.className = 'nano-msg'; bottom.replaceChildren(mainKeys()); ta.focus(); }]]));
-        };
-        const mainKeys = () => keys([['^S', 'Save', doSave], ['^X', 'Exit', doExit]]);
         const head = el('div', { class: 'nano-head' }, title);
-        const bottom = el('div', { class: 'nano-bottom' }, mainKeys());
+        const bottom = el('div', { class: 'nano-bottom' });
         const ui = el('div', { class: 'nano' }, el('div', { class: 'nano-top' }, el('span', { class: 'nano-brand' }, 'nano'), head), ta, msg, bottom);
-        ta.addEventListener('input', () => { if (!dirty) { dirty = true; head.textContent = title + '  Modified'; } });
-        ta.addEventListener('keydown', (e) => {
-          if (e.ctrlKey && (e.key === 's' || e.key === 'S' || e.key === 'o' || e.key === 'O')) { e.preventDefault(); doSave(); }
-          else if (e.ctrlKey && (e.key === 'x' || e.key === 'X')) { e.preventDefault(); doExit(); }
-          else if (e.key === 'Tab') { e.preventDefault(); const s = ta.selectionStart; ta.value = ta.value.slice(0, s) + '    ' + ta.value.slice(ta.selectionEnd); ta.selectionStart = ta.selectionEnd = s + 4; ta.dispatchEvent(new Event('input')); }
-          else if (e.key === 'Enter') { const s = ta.selectionStart, lineStart = ta.value.lastIndexOf('\n', s - 1) + 1, indent = (ta.value.slice(lineStart, s).match(/^[ \t]*/) || [''])[0]; if (indent) { e.preventDefault(); ta.value = ta.value.slice(0, s) + '\n' + indent + ta.value.slice(ta.selectionEnd); ta.selectionStart = ta.selectionEnd = s + 1 + indent.length; ta.dispatchEvent(new Event('input')); } }
-        });
+        // the buttons must not take the focus away from the text: Ctrl+S after a click would otherwise reach the browser, not nano
+        const keys = (pairs) => el('div', { class: 'nano-keys' }, pairs.map(([k, label, fn]) => el('button', { class: 'nano-key', type: 'button', onmousedown: (e) => e.preventDefault(), onclick: () => { fn(); ta.focus(); } }, el('b', {}, k), ' ' + label)));
+        const say = (t, ask) => { msg.textContent = t; msg.className = 'nano-msg' + (ask ? ' nano-ask' : ''); };
+        const lineCount = (t) => (t === '' ? 0 : t.replace(/\n$/, '').split('\n').length);
+        const close = () => { document.removeEventListener('keydown', onKey, true); ui.remove(); inputRow.hidden = false; inp.focus(); resolve(null); };
+        const doSave = () => {
+          let t = ta.value; if (t !== '' && !t.endsWith('\n')) { t += '\n'; ta.value = t; }   // nano ends a file with a newline, as every Unix tool expects
+          const err = write ? write(t) : null;
+          if (err) { say('[ Error writing ' + title + ': ' + err + ' ]'); return false; }
+          dirty = false; head.textContent = title; say('[ Wrote ' + lineCount(t) + ' line' + (lineCount(t) === 1 ? '' : 's') + ' ]'); return true;
+        };
+        const askKeys = () => keys([[' Y', 'Yes', () => { if (doSave()) close(); }], [' N', 'No', () => close()], ['^C', 'Cancel', () => cancelAsk()]]);
+        const mainKeys = () => keys([['^S', 'Save', () => doSave()], ['^X', 'Exit', () => doExit()], ['^G', 'Help', () => say('Ctrl+S saves. Ctrl+X leaves; with unsaved changes it asks: Y saves and leaves, N leaves without saving, Ctrl+C stays.')]]);
+        const cancelAsk = () => { mode = 'edit'; ta.readOnly = false; say(''); bottom.replaceChildren(mainKeys()); ta.focus(); };
+        const doExit = () => {
+          if (!dirty) { close(); return; }
+          mode = 'ask'; ta.readOnly = true; say('Save modified buffer?  (Y)es  (N)o  Ctrl+C to cancel', true); bottom.replaceChildren(askKeys()); ta.focus();
+          if (bottom.scrollIntoView) bottom.scrollIntoView({ block: 'nearest' });
+        };
+        // one handler for every key, on the document while nano is open, so the focus does not matter
+        const onKey = (e) => {
+          if (!ui.isConnected) return;
+          const k = e.key, ctrl = e.ctrlKey || e.metaKey;
+          if (mode === 'ask') {
+            if (k === 'y' || k === 'Y') { e.preventDefault(); if (doSave()) close(); }
+            else if (k === 'n' || k === 'N') { e.preventDefault(); close(); }
+            else if ((ctrl && (k === 'c' || k === 'C')) || k === 'Escape') { e.preventDefault(); cancelAsk(); }
+            else if (k.length === 1 || k === 'Enter' || k === 'Tab' || k === 'Backspace') e.preventDefault();   // the text does not change while the question is open
+            return;
+          }
+          if (ctrl && (k === 's' || k === 'S' || k === 'o' || k === 'O')) { e.preventDefault(); doSave(); ta.focus(); }
+          else if (ctrl && (k === 'x' || k === 'X')) { e.preventDefault(); doExit(); }
+          else if (ctrl && (k === 'g' || k === 'G')) { e.preventDefault(); say('Ctrl+S saves. Ctrl+X leaves; with unsaved changes it asks: Y saves and leaves, N leaves without saving, Ctrl+C stays.'); }
+          else if (e.target === ta && k === 'Tab') { e.preventDefault(); const s = ta.selectionStart; ta.value = ta.value.slice(0, s) + '    ' + ta.value.slice(ta.selectionEnd); ta.selectionStart = ta.selectionEnd = s + 4; ta.dispatchEvent(new Event('input')); }
+          else if (e.target === ta && k === 'Enter' && !ctrl) { const s = ta.selectionStart, lineStart = ta.value.lastIndexOf('\n', s - 1) + 1, indent = (ta.value.slice(lineStart, s).match(/^[ \t]*/) || [''])[0]; if (indent) { e.preventDefault(); ta.value = ta.value.slice(0, s) + '\n' + indent + ta.value.slice(ta.selectionEnd); ta.selectionStart = ta.selectionEnd = s + 1 + indent.length; ta.dispatchEvent(new Event('input')); } }
+        };
+        ta.addEventListener('input', () => { if (!dirty) { dirty = true; head.textContent = title + '  Modified'; } if (mode === 'edit' && /^\[ Wrote/.test(msg.textContent)) say(''); });
+        document.addEventListener('keydown', onKey, true);
+        bottom.append(mainKeys());
         box.insertBefore(ui, inputRow); ta.focus();
       });
     }

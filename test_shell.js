@@ -323,6 +323,14 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('tab completion dirs', { out: sh.complete('cd ma').items.join(','), exit: 0 }, 'many/');
     eq('tab completion after pipe', { out: sh.complete('ls | wc').items.join(','), exit: 0 }, 'wc ');
     eq('tab completion in a dir', { out: sh.complete('ls many/f1').items.length > 10, exit: 0 }, true);
+    check('tab completion: cd lists no files', sh.complete('cd ').items.every((i) => i.endsWith('/')), true);
+    eq('tab completion: ..', { out: sh.complete('cd ..').items.join(','), exit: 0 }, '../');
+    await run('rm -r many; touch "my file.txt"; mkdir "odd dir"');   // (many held the 500 files of the cap test)
+    eq('tab completion escapes spaces', { out: sh.complete('cat my').items.join(','), exit: 0 }, 'my\\ file.txt ');
+    eq('tab completion inside quotes', { out: sh.complete('cat "my').items.join(','), exit: 0 }, '"my file.txt" ');
+    eq('tab completion after an escaped space', { out: sh.complete('cat my\\ fi').items.join(','), exit: 0 }, 'my\\ file.txt ');
+    eq('tab completion display is bare', { out: sh.complete('ls od').display.join(','), exit: 0 }, 'odd dir/');
+    await run('rm "my file.txt"; rmdir "odd dir"');
   }
 
   // ---- programs, through the hooks
@@ -355,6 +363,10 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('scheme', await run('echo "(display 1)" > f.scm; scheme f.scm'), 'scheme:(display 1)\n');
     eq('nano', await run('nano note.txt; cat note.txt'), 'edited\n');
     eq('nano dir', await run('mkdir dd; nano dd'), 'nano: dd: Is a directory\n', 1);
+    const { run: runW } = fresh({ nano: async (p, text, write) => { write(text + 'first\n'); write(text + 'first\nsecond\n'); return null; } });
+    eq('nano saves through write() as it goes', await runW('echo start > w.txt; nano w.txt; cat w.txt'), 'start\nfirst\nsecond\n');
+    let writeErr = null; const { run: runE } = fresh({ nano: async (p, text, write) => { writeErr = write('x'.repeat(300000)); return null; } });
+    eq('nano: a write that fails is reported to the editor, not written', await runE('nano big.txt; ls big.txt'), "ls: cannot access 'big.txt': No such file or directory\n", 2); check('nano write error text', writeErr, 'File too large');
     eq('edit', await run('edit note.txt'), 'opened /home/student/note.txt\n');
     eq('setup', await run('setup lesson2; setup nope'), 'made files\nsetup: there is no "nope" to set up\n', 1);
     const { run: run2 } = fresh();

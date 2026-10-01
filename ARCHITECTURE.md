@@ -502,9 +502,15 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   into a pipe or capture, 256 KB into a file, 10 000 keyboard lines for a command reading stdin at the terminal, Ctrl+C cancels (`^C`,
   status 130) and also cancels the running sandbox.
 - **The panel** (`terminal.js`) reuses the output panel's look. One `<input>` is the command line; while a program asks for input the
-  same line answers it. Arrow keys recall history, Tab completes commands and paths (`sh.complete`), Ctrl+L clears. `nano file` opens a
-  textarea with nano's bottom bar inside the panel (Ctrl+S / Ctrl+X); `edit file.py` opens the file in the Lab editor above (a file in
-  `~/lab` directly, anything else as a copy in `~/lab`). Output is batched into text nodes; the scrollback is trimmed at 300 K characters.
+  same line answers it. Arrow keys recall history, Ctrl+L clears. Tab completes (`sh.complete`: commands at the start of a line and after
+  `sudo`/`man`/`xargs`, otherwise paths, directories only after `cd`/`rmdir`, quotes and escaped spaces understood, names escaped on the
+  way back): one fit is filled in; several fill in the common start and open a list under the line (arrows, Enter or Tab, Esc, click;
+  typing narrows it); touch screens get a ⇥ button. `nano file` opens a textarea with nano's bottom bar inside the panel: Ctrl+S or
+  Ctrl+O save (the file is written at once, through the command's `write` callback, and ends with a newline as nano's do), Ctrl+X leaves,
+  and with unsaved changes asks "Save modified buffer?" (Y, N, Ctrl+C or Esc, or the buttons); the keys are handled on the document
+  while nano is open and the buttons do not take the focus, so they work wherever the focus is. `edit file.py` opens the file in the
+  Lab editor above (a file in `~/lab` directly, anything else as a copy in `~/lab`). Output is batched into text nodes; the scrollback
+  is trimmed at 300 K characters.
   Everything shown is text: a class name on a span for colour (directories, programs, headings), never HTML.
 - **`~/lab` mirrors the Code Lab's files.** Before each command the Lab's files are written into `~/lab` (the Lab wins); after it, a
   file there that changed is written back, a new file with a known extension (`.py .cpp .java .scm`) becomes a Lab file, and a mirrored

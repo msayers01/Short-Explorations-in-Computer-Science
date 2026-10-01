@@ -545,6 +545,13 @@ html.classroom .out-text, html.classroom .term-input, html.classroom .nano { fon
 .term-inp { flex: 1; min-width: 4rem; font: inherit; border: 0; background: transparent; color: var(--t-fg); caret-color: var(--t-prompt); outline: none; padding: 0; }
 .term-inp::placeholder { color: var(--t-dim); opacity: 0.7; font-style: italic; }
 .term-input:focus-within { box-shadow: inset 2px 0 0 var(--t-prompt); }
+.term-tab { display: none; font: inherit; border: 1px solid var(--t-rule); border-radius: 4px; background: var(--t-bar); color: var(--t-fg); padding: 0 0.5rem; cursor: pointer; }
+@media (hover: none) { .term-tab { display: inline-block; } }
+.term-ac { list-style: none; margin: 0; padding: 0.25rem 0; max-height: 10rem; overflow: auto; background: var(--t-bar); border-top: 1px solid var(--t-rule); font-family: var(--mono); font-size: 0.86rem; display: flex; flex-wrap: wrap; gap: 0 0.2rem; }
+.term-ac[hidden] { display: none; }
+.term-ac li { padding: 0.15rem 0.7rem; cursor: pointer; color: var(--t-fg); border-radius: 3px; }
+.term-ac li.t-dir { color: var(--t-prompt); font-weight: 600; }
+.term-ac li.on, .term-ac li:hover { background: var(--t-prompt); color: var(--t-bg); }
 .out .t-dir { color: var(--t-prompt); font-weight: 600; } .out .t-exe { color: var(--t-ok); } .out .t-hd { color: var(--t-warn); font-weight: 700; }
 .lab-toolbar .btn.on { box-shadow: inset 0 -2px 0 var(--accent); }
 /* shell lessons: a listing of commands with a prompt, the terminal under it, and the directory-tree figure */
