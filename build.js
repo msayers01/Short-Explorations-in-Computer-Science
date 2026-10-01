@@ -53,6 +53,7 @@ const scripts = [
   'src/course_math.js',
   'src/course_modern.js',
   'src/course_java.js',
+  'src/course_dsa.js',
   'src/mathgrade.js',
   'src/cppfull.js',
   'src/javautil.js',

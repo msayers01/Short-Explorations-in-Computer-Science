@@ -689,6 +689,8 @@
     return Math.round(w / (course.readingWpm || 130) + t);
   }
   const about5 = (m) => Math.round(m / 5) * 5;
+  // courses still being written carry status: 'developing'; the tag says so wherever the course is named
+  const devTag = (course, small) => (course.status === 'developing' ? el('span', { class: 'dev-tag' + (small ? ' sm' : ''), title: 'This course is being written: more lessons are on the way, and what is here may change.' }, 'Under development') : null);
   function courseProgress(course) { const ids = course.lessons.flatMap(exerciseIds); return { done: ids.filter(id => Progress.isDone(id)).length, total: ids.length }; }
 
   function topBar(course) {
@@ -729,7 +731,7 @@
           return el('li', { 'data-course': c.id },
             el('a', { class: 'cat-code', href: '#/' + c.id }, c.code),
             el('div', { class: 'cat-body' },
-              el('a', { class: 'cat-title', href: '#/' + c.id }, c.title),
+              el('a', { class: 'cat-title', href: '#/' + c.id }, c.title), devTag(c, true),
               el('p', { class: 'cat-desc' }, c.tagline),
               c.grades ? el('p', { class: 'cat-grades' }, c.grades) : null,
               el('p', { class: 'cat-meta' }, c.lessons.length + ' lessons · ' + p.total + ' graded exercises' + (p.done ? ' · ' + p.done + ' completed' : ''))));
@@ -765,7 +767,7 @@
       el('header', { class: 'course-head' },
         el('div', { class: 'course-code' }, course.code),
         el('div', {},
-          el('h1', {}, course.title),
+          el('h1', {}, course.title, devTag(course)),
           el('p', { class: 'tagline' }, course.tagline))),
       el('div', { class: 'course-grid' },
         el('div', { class: 'course-main' },
@@ -802,7 +804,7 @@
       })));
     const mobileNav = el('details', { class: 'nav-mobile' }, el('summary', {}, lbl('lesson', ' ' + (idx + 1)), ' of ' + course.lessons.length + ' — ' + L.title), nav.cloneNode(true));
     const art = el('article', { class: 'lesson-body' });
-    art.append(el('header', { class: 'lesson-head' }, el('p', { class: 'crumb' }, el('a', { href: '#/' + course.id }, course.code), ' · ', lbl('lesson', ' ' + (idx + 1))), el('h1', {}, L.title), el('p', { class: 'lead' }, L.summary),
+    art.append(el('header', { class: 'lesson-head' }, el('p', { class: 'crumb' }, el('a', { href: '#/' + course.id }, course.code), ' · ', lbl('lesson', ' ' + (idx + 1)), devTag(course, true)), el('h1', {}, L.title), el('p', { class: 'lead' }, L.summary),
       (() => { const m = lessonMinutes(course, L); return m > LONG_LESSON ? el('p', { class: 'lesson-time' }, 'This lesson may take longer than an hour: about ' + about5(m) + ' minutes. Plan for two sessions, or leave the exercises for the next one.') : null; })()));
     art.append(renderBlocks(L.blocks, course, idx));
     const prev = idx > 0 ? el('a', { class: 'pager prev', href: '#/' + course.id + '/' + idx }, el('span', {}, 'Previous'), course.lessons[idx - 1].title) : el('span');

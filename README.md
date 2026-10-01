@@ -1,7 +1,7 @@
 # Short Explorations in Computer Science
 
-Six free, self-paced courses (Introduction to Python, Introduction to Lisp, Introduction to C++,
-Introduction to the Mathematics of Computing, Modern C++, and Introduction to Java) with runnable examples and autograded exercises, a Code Lab
+Seven free, self-paced courses (Introduction to Python, Introduction to Lisp, Introduction to C++,
+Introduction to the Mathematics of Computing, Modern C++, Introduction to Java, and Data Structures and Algorithms) with runnable examples and autograded exercises, a Code Lab
 sandbox, and tools for teachers: assignments and submissions shared as links, a grade book, student
 portfolios and a classroom (projector) mode. Python, C++, Java and Scheme all run in the browser, so there is no
 server and no account. Java runs in an interpreter written for this site that checks programs the way javac does. For C++ there are two engines: a small teaching interpreter that is part of the page, and a real
@@ -30,6 +30,7 @@ add lessons, figures and exercise types.
     src/course_math.js     SC 104 Introduction to the Mathematics of Computing (uses Python)
     src/course_modern.js   SC 105 Modern C++ (runs on the real compiler)
     src/course_java.js     SC 106 Introduction to Java (the first lessons; runs on the site's own Java interpreter)
+    src/course_dsa.js      SC 107 Data Structures and Algorithms (the first lessons; Java, with interactive figures)
     src/style.css          design tokens, layout and every component's styles
     src/app.js             router, pages, code editor, runners, grader, saved progress
     src/lab.js             the Code Lab (#/lab): files, editor, Python tracer and turtle, Scheme REPL,

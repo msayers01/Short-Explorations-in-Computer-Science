@@ -145,7 +145,8 @@ drives the accent colour through CSS tokens.
 ## 6. Content model (courses)
 
 Course: `{ id, code, short, lang, title, grades, audience, tagline, description, outcomes[], lessons[], readingWpm?,
-howItWorks?, textbook? }`.
+howItWorks?, textbook?, status? }`. `status: 'developing'` marks a course still being written: app.js shows an "Under development"
+tag on the catalog card, the course page and every lesson's crumb (`devTag`), and the guide says what the tag means.
 Lesson: `{ title, summary, blocks[] }`. Blocks, rendered by `renderBlocks()`:
 
 | Block | Renders |
@@ -171,7 +172,7 @@ figure, 1 per predict-then-reveal box, 10 per code exercise and 12 per non-code 
 lesson's title. The programming lessons come out at 40–70 minutes (only Lisp lesson 2 is marked), the mathematics
 lessons at 55–90 (eight of thirteen marked). Adjust the rates here, not per lesson.
 
-Exercise ids are `<py|ls|cp|ma|mc|jv>-<n>-<k>` and are permanent: they are the keys for progress, portfolio links and Lab
+Exercise ids are `<py|ls|cp|ma|mc|jv|ds>-<n>-<k>` and are permanent: they are the keys for progress, portfolio links and Lab
 files, and nothing reads a lesson number out of them (the Lab, the portfolio and the router find an exercise by id and
 work out its lesson from where it is now). A lesson inserted mid-course takes the next unused `<n>` and later lessons
 keep their ids, so `<n>` matches the lesson's position only up to the first insertion. In the mathematics course,
@@ -467,9 +468,11 @@ in the tests) wraps method-writing exercises in a class with a `main`.
 - **A math exercise kind:** extend `mathgrade.js` (`grade`, `reference`, `empty`), the renderer in
   `app.js: mathExerciseBlock`, and the README table.
 - **A widget:** `window.WIDGETS.name = (mount, block, course) => {…}` in `widgets.js`; use `{ fig: 'name' }`.
-  Current widgets: names, trace, indexer, search, sort, caesar, evaltree, subst, venn (params `a`, `b`:
-  arrays of elements; math lesson 2), boxptr, hof, pipeline, memory, array, sieve, fibtree, graphbfs, dfa, tape (machines: increment, flip, beaver), letters (splits double vowel spelling into letters by longest
-  or shortest match; param `sample`; math lesson 7).
+  Current widgets: names, trace, indexer, search (param `items`), sort, caesar, evaltree, subst, venn (params `a`, `b`:
+  arrays of elements; math lesson 2), boxptr, hof, pipeline (param `lang: 'java'`), memory, array, sieve, fibtree, graphbfs, dfa, tape (machines: increment, flip, beaver), letters (splits double vowel spelling into letters by longest
+  or shortest match; param `sample`; math lesson 7), and for the DSA course: growth (orders of growth, params `show`, `n`), arrayops (get/insert/remove with every
+  move shown, param `items`), dynarray (capacity doubling with copy counts), sortlab (algorithm, input shape and size, counters, and a doubling
+  experiment timed in the page; param `algo`).
 - **A Lab feature:** put UI in `lab.js: page()`; if it needs app internals, add them to
   `window.__app.internal`; if it is teacher-facing, put it in `teach.js` behind `T.teacher`.
 - **The teacher guide:** edit the HTML string in `guide.js`; sections are `<section id="g-n">`; styles are the `.g-*` rules in style.css (print rules at the end). Rebuild to refresh both copies.

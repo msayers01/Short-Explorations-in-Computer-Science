@@ -12,7 +12,7 @@ window.SITE = {
 
   /* Introduction to the course catalogue on the home page. (html) */
   coursesIntro: `<p>Free, self-paced and not for credit. Each course is a handful of lessons with code you run and change on the page, and exercises that check your answer as you go.</p>
-<p><b>New to programming? Start with Python.</b> Then <b>C++</b> shows what the machine is doing underneath, <b>Lisp</b> looks at programs the way a mathematician does, and <b>Java</b> is the language of AP Computer Science A and of Android. <b>Modern C++</b> continues C++ with a real compiler. <b>Mathematics of Computing</b> asks what a computer can and cannot do, with Python as its laboratory.</p>
+<p><b>New to programming? Start with Python.</b> Then <b>C++</b> shows what the machine is doing underneath, <b>Lisp</b> looks at programs the way a mathematician does, and <b>Java</b> is the language of AP Computer Science A and of Android. <b>Modern C++</b> continues C++ with a real compiler, and <b>Data Structures and Algorithms</b> is the course every degree puts second. <b>Mathematics of Computing</b> asks what a computer can and cannot do, with Python as its laboratory.</p>
 <p>A programming lesson is one <b>Hour of Code</b>: 45–60 minutes, nothing to install. Mathematics lessons run longer and say so in their list.</p>`,
 
   /* Shown on every course page. (html) */

@@ -48,6 +48,7 @@
 :root[data-course="math"] { --accent: #1f6e4a; --accent-soft: #e4f2ea; }
 :root[data-course="modern"] { --accent: #0e6b77; --accent-soft: #e0f1f3; }
 :root[data-course="java"] { --accent: #a63d2a; --accent-soft: #f9e8e4; }
+:root[data-course="dsa"] { --accent: #7b2d78; --accent-soft: #f3e5f2; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
@@ -60,6 +61,7 @@
   :root:not([data-theme="light"])[data-course="math"] { --accent: #6fcf97; --accent-ink: #072415; --accent-soft: #14301c; }
   :root:not([data-theme="light"])[data-course="modern"] { --accent: #5cc9d6; --accent-ink: #04222a; --accent-soft: #11313a; }
   :root:not([data-theme="light"])[data-course="java"] { --accent: #f0907e; --accent-ink: #2a0d08; --accent-soft: #3a1f1a; }
+  :root:not([data-theme="light"])[data-course="dsa"] { --accent: #dc9fd8; --accent-ink: #26091f; --accent-soft: #341a32; }
 }
 :root[data-theme="dark"] {
   --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
@@ -72,6 +74,7 @@
 :root[data-theme="dark"][data-course="math"] { --accent: #6fcf97; --accent-ink: #072415; --accent-soft: #14301c; }
 :root[data-theme="dark"][data-course="modern"] { --accent: #5cc9d6; --accent-ink: #04222a; --accent-soft: #11313a; }
 :root[data-theme="dark"][data-course="java"] { --accent: #f0907e; --accent-ink: #2a0d08; --accent-soft: #3a1f1a; }
+:root[data-theme="dark"][data-course="dsa"] { --accent: #dc9fd8; --accent-ink: #26091f; --accent-soft: #341a32; }
 
 *, *::before, *::after { box-sizing: inherit; }
 html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
@@ -116,12 +119,14 @@ pre.code.captioned { padding-top: 1.6rem; }
 .catalog li[data-course="math"] .cat-code { color: #1f6e4a; box-shadow: inset 0 -2px 0 #1f6e4a; }
 .catalog li[data-course="modern"] .cat-code { color: #0e6b77; box-shadow: inset 0 -2px 0 #0e6b77; }
 .catalog li[data-course="java"] .cat-code { color: #a63d2a; box-shadow: inset 0 -2px 0 #a63d2a; }
+.catalog li[data-course="dsa"] .cat-code { color: #7b2d78; box-shadow: inset 0 -2px 0 #7b2d78; }
 :root[data-theme="dark"] .catalog li[data-course="python"] .cat-code { color: #e8a640; box-shadow: inset 0 -2px 0 #e8a640; }
 :root[data-theme="dark"] .catalog li[data-course="lisp"] .cat-code { color: #b99ae6; box-shadow: inset 0 -2px 0 #b99ae6; }
 :root[data-theme="dark"] .catalog li[data-course="cpp"] .cat-code { color: #7fb0f0; box-shadow: inset 0 -2px 0 #7fb0f0; }
 :root[data-theme="dark"] .catalog li[data-course="math"] .cat-code { color: #6fcf97; box-shadow: inset 0 -2px 0 #6fcf97; }
 :root[data-theme="dark"] .catalog li[data-course="modern"] .cat-code { color: #5cc9d6; box-shadow: inset 0 -2px 0 #5cc9d6; }
 :root[data-theme="dark"] .catalog li[data-course="java"] .cat-code { color: #f0907e; box-shadow: inset 0 -2px 0 #f0907e; }
+:root[data-theme="dark"] .catalog li[data-course="dsa"] .cat-code { color: #dc9fd8; box-shadow: inset 0 -2px 0 #dc9fd8; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .catalog li[data-course="python"] .cat-code { color: #e8a640; box-shadow: inset 0 -2px 0 #e8a640; }
   :root:not([data-theme="light"]) .catalog li[data-course="lisp"] .cat-code { color: #b99ae6; box-shadow: inset 0 -2px 0 #b99ae6; }
@@ -866,6 +871,14 @@ html.classroom .about { padding-bottom: 7rem; }
 .clang-gate p { margin: 0 0 .6rem; }
 .clang-status { margin: .4rem 0 0; font-style: italic; opacity: .85; }
 
+/* "Under development": courses still being written (course.status) */
+.dev-tag { display: inline-block; vertical-align: middle; margin-left: 0.6rem; padding: 0.18rem 0.6rem; border-radius: 999px; font-family: var(--sans); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #5a3d00; background: #ffe39a; border: 1px solid #e8c766; white-space: nowrap; }
+.dev-tag.sm { font-size: 0.64rem; padding: 0.12rem 0.5rem; margin-left: 0.5rem; }
+h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .dev-tag { color: #ffe39a; background: #4a3708; border-color: #7a5c14; } }
+:root[data-theme="dark"] .dev-tag { color: #ffe39a; background: #4a3708; border-color: #7a5c14; }
+.growth-table td .muted { color: var(--ink-3); font-size: 0.8em; }
+
 </style>
 </head>
 <body>
@@ -924,8 +937,10 @@ html.classroom .about { padding-bottom: 7rem; }
       <tr><td><b>SC 104 The Mathematics of Computing</b><br><span class="g-muted">13 lessons</span></td><td>Grades 10–12, or a strong 9th grader, after Python. Algebra only.</td><td>Logic, sets, proof, number theory, graphs, machines with finite memory, what no program can compute, and how codes work. Most of its exercises are written answers, not programs.</td></tr>
       <tr><td><b>SC 105 Modern C++</b><br><span class="g-muted">8 lessons</span></td><td>Grades 11–12, after SC 103.</td><td>Strings, vectors, classes, algorithms and maps with a real compiler. Needs the one-time download and a web address.</td></tr>
       <tr><td><b>SC 106 Introduction to Java</b><br><span class="g-muted">4 lessons so far</span></td><td>Grades 10–12, after Python or with some experience. The language of AP Computer Science A.</td><td>Read the compiler’s messages, declare typed variables, make decisions, read input, write loops and methods. Checked with the real compiler’s own error messages, in the browser.</td></tr>
+      <tr><td><b>SC 107 Data Structures and Algorithms</b><br><span class="g-muted">3 lessons so far</span></td><td>Grades 11–12, after Java or C++. The second course of every computer science degree.</td><td>Count the cost of code and name its order of growth; arrays and growing arrays; binary search; selection and insertion sort. Every structure as a figure to step through, code to write and a count to predict.</td></tr>
     </tbody>
   </table>
+  <p>Courses marked <b>Under development</b> on the site (Modern C++, Java, Data Structures and Algorithms) are being written: their lessons are complete and checked, but more are coming and details may change.</p>
   <p><b>Suggested paths.</b> A one-semester elective: Python, then the mathematics course. A two-year sequence adds C++, Java and Lisp. A single Hour of Code event: Python lesson 1 alone.</p>
   <p><b>Lesson length.</b> Programming lessons take 45–60 minutes. Mathematics lessons take 60–90, because proofs are read slowly. Any lesson likely to run past an hour is marked "Longer than an hour" in its course list, with an estimate; split it over two periods.</p>
 </section>

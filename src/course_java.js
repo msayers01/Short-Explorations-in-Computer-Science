@@ -2,7 +2,7 @@
 // This course runs on the site's own Java interpreter (src/java.js): it checks programs the way javac does and runs them like the JVM.
 window.COURSES = window.COURSES || [];
 window.COURSES.push({
-  id: 'java', code: 'SC 106', short: 'Java', lang: 'java',
+  id: 'java', code: 'SC 106', short: 'Java', lang: 'java', status: 'developing',
   title: 'Introduction to Java',
   grades: 'Grades 10–12 · after Python, or with some experience',
   audience: `<p><b>Grades 10–12</b>, after the Python course or a semester of any language. Java is the language of the AP Computer Science A exam, of Android apps, and of much of the software that runs banks, airlines and large web sites. It is also the language most university first-year courses use. Expect the ceremony of a typed, compiled language, and in return a compiler that catches a whole class of mistakes before your program runs.</p><p>Each lesson is a self-contained Hour of Code activity. The course is being written: the first three lessons are here, and more follow.</p>`,

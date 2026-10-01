@@ -822,6 +822,198 @@ xs mapped kept result`;
     mount.append(el('div', { class: 'fig-scroll' }, svg), tools, rulebox, log, ctl.el, el('div', { class: 'fig-status', role: 'status' }, m.what));
   };
 
+  /* ---------- 21. orders of growth (DSA lesson 1): curves and a table of step counts ---------- */
+  W.growth = function (mount, b) {
+    const FUNS = [
+      { key: '1', label: '1', f: () => 1 }, { key: 'log', label: 'log n', f: (n) => (n < 2 ? 1 : Math.log2(n)) }, { key: 'n', label: 'n', f: (n) => n },
+      { key: 'nlog', label: 'n log n', f: (n) => (n < 2 ? 1 : n * Math.log2(n)) }, { key: 'n2', label: 'n²', f: (n) => n * n }, { key: 'exp', label: '2ⁿ', f: (n) => Math.pow(2, n) }
+    ];
+    const on = new Set(b.show ? b.show.split(' ') : ['1', 'log', 'n', 'nlog', 'n2']);
+    let nmax = b.n || 32;
+    const W0 = 640, H0 = 300, L = 54, R = 16, T = 14, B = 34;
+    const svg = sv('svg', { viewBox: '0 0 ' + W0 + ' ' + H0, role: 'img', 'aria-label': 'Orders of growth' });
+    const COLORS = { '1': 'var(--ink-3)', log: 'var(--ok)', n: 'var(--accent)', nlog: 'var(--hl-p)', n2: 'var(--err)', exp: 'var(--hl-k)' };
+    function render() {
+      svg.innerHTML = '';
+      const sel = FUNS.filter(f => on.has(f.key));
+      const ymax = Math.max(10, ...sel.map(f => Math.min(f.f(nmax), 1e6)));
+      const X = (n) => L + (n / nmax) * (W0 - L - R), Y = (v) => T + (1 - Math.min(v, ymax) / ymax) * (H0 - T - B);
+      svg.append(sv('line', { x1: L, y1: Y(0), x2: W0 - R, y2: Y(0), stroke: 'var(--ink-2)' }), sv('line', { x1: L, y1: T, x2: L, y2: Y(0), stroke: 'var(--ink-2)' }));
+      for (let k = 0; k <= 4; k++) { const v = (ymax * k) / 4; svg.append(txt(L - 6, Y(v) + 4, v >= 1e5 ? v.toExponential(0).replace('e+', 'e') : String(Math.round(v)), { 'text-anchor': 'end', 'font-size': 11, fill: 'var(--ink-3)' }), sv('line', { x1: L, y1: Y(v), x2: W0 - R, y2: Y(v), stroke: 'var(--rule)', 'stroke-dasharray': '2 4' })); }
+      for (let n = 0; n <= nmax; n += nmax / 4) svg.append(txt(X(n), H0 - B + 16, String(Math.round(n)), { 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-3)' }));
+      svg.append(txt(W0 - R, H0 - 4, 'n (size of the input)', { 'text-anchor': 'end', 'font-size': 11, fill: 'var(--ink-2)' }), txt(L + 4, T + 10, 'steps', { 'font-size': 11, fill: 'var(--ink-2)' }));
+      const labels = [];
+      for (const f of sel) {
+        const pts = []; for (let n = 1; n <= nmax; n += nmax / 128) { const v = f.f(n); if (v > ymax * 1.05) { pts.push(X(n) + ',' + (T - 2)); break; } pts.push(X(n) + ',' + Y(v)); }
+        svg.append(sv('polyline', { points: pts.join(' '), fill: 'none', stroke: COLORS[f.key], 'stroke-width': 2.2 }));
+        const last = pts[pts.length - 1].split(','); labels.push({ f, x: Math.min(+last[0] + 4, W0 - 34), y: Math.max(+last[1], T + 10) });
+      }
+      // labels of curves that end close together are spread apart so that each can be read
+      labels.sort((a, b) => b.y - a.y); let floor = Y(0) + 4;
+      for (const l of labels) { l.y = Math.min(l.y, floor - 13); floor = l.y; svg.append(txt(l.x, l.y + 4, l.f.label, { 'font-size': 12, fill: COLORS[l.f.key], 'font-weight': 600 })); }
+    }
+    const fmt = (v) => (v < 1e6 ? Math.round(v).toLocaleString('en-US') : v === Infinity ? '∞' : v.toExponential(1).replace('e+', ' × 10^'));
+    const time = (v) => { const s = v / 1e9; if (s < 1e-6) return 'under a microsecond'; if (s < 1e-3) return Math.round(s * 1e6) + ' µs'; if (s < 1) return Math.round(s * 1e3) + ' ms'; if (s < 60) return s.toFixed(1) + ' s'; if (s < 3600) return (s / 60).toFixed(1) + ' min'; if (s < 86400) return (s / 3600).toFixed(1) + ' hours'; if (s < 3.15e7) return (s / 86400).toFixed(1) + ' days'; if (s < 3.15e7 * 1e4) return Math.round(s / 3.15e7).toLocaleString('en-US') + ' years'; if (s < 3.15e7 * 1.4e10) return (s / 3.15e7).toExponential(1).replace('e+', ' × 10^') + ' years'; return 'longer than the universe has existed'; };
+    const NS = [10, 100, 1000, 1e6, 1e9];
+    const table = el('table', { class: 'small growth-table' });
+    function renderTable() {
+      table.innerHTML = '';
+      table.append(el('tr', {}, el('th', {}, 'steps'), NS.map(n => el('th', {}, 'n = ' + fmt(n)))));
+      for (const f of FUNS) if (on.has(f.key)) table.append(el('tr', {}, el('td', {}, el('b', {}, f.label)), NS.map(n => { const v = f.f(n); return el('td', { title: 'about ' + time(v) + ' at a billion steps a second' }, fmt(v), el('span', { class: 'muted' }, ' ' + (v >= 1e9 ? time(v) : ''))); })));
+    }
+    const boxes = el('div', { class: 'fig-tools' }, FUNS.map(f => el('label', {}, el('input', { type: 'checkbox', checked: on.has(f.key) ? '' : null, onchange: (e) => { if (e.target.checked) on.add(f.key); else on.delete(f.key); render(); renderTable(); } }), ' ', f.label)));
+    const slider = el('input', { type: 'range', min: '8', max: '256', step: '8', value: String(nmax), 'aria-label': 'largest n', oninput: (e) => { nmax = +e.target.value; nlabel.textContent = 'n up to ' + nmax; render(); } });
+    const nlabel = el('span', { class: 'fig-note' }, 'n up to ' + nmax);
+    render(); renderTable();
+    mount.append(svg, boxes, el('div', { class: 'fig-tools' }, el('span', {}, 'range'), slider, nlabel), el('div', { class: 'tbl-wrap' }, table), el('p', { class: 'fig-status' }, 'Hover a cell for how long that many steps take at a billion a second.'));
+  };
+
+  /* ---------- 22. operations on an array: get, insert, remove, with every move shown (DSA lesson 1) ---------- */
+  W.arrayops = function (mount, b) {
+    const cap = 8; let a = (b.items || [12, 7, 3, 9, 15, 4]).slice(); let n = a.length;
+    const cw = 56, x0 = 14, base = 1000;
+    const svg = sv('svg', { viewBox: '0 0 ' + (x0 * 2 + cap * cw) + ' 128', role: 'img', 'aria-label': 'An array in memory' });
+    const idx = el('input', { type: 'number', value: '2', min: '0', max: String(cap - 1), 'aria-label': 'index' });
+    const val = el('input', { type: 'number', value: '21', 'aria-label': 'value' });
+    const log = el('div', { class: 'fig-status', role: 'status' });
+    let steps = [{ a: a.slice(), n, msg: 'Six values in an array with room for eight. Each cell is 4 bytes, so cell i lives at address ' + base + ' + 4·i.' }];
+    function render(i) {
+      const s = steps[i]; svg.innerHTML = '';
+      for (let k = 0; k < cap; k++) {
+        const x = x0 + k * cw, used = k < s.n;
+        const hot = s.hot === k, from = s.from === k;
+        svg.append(sv('rect', { x, y: 34, width: cw - 4, height: 44, fill: hot ? 'var(--accent)' : from ? 'var(--accent-soft)' : used ? 'var(--paper)' : 'var(--paper-2)', stroke: used || hot ? 'var(--ink)' : 'var(--rule)', 'stroke-dasharray': used || hot ? null : '3 3' }));
+        if (k < s.n || (hot && s.a[k] !== undefined)) svg.append(mono(x + cw / 2 - 2, 62, String(s.a[k]), { 'text-anchor': 'middle', 'font-size': 14, fill: hot ? 'var(--accent-ink)' : 'var(--ink)' }));
+        svg.append(mono(x + cw / 2 - 2, 24, String(k), { 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-3)' }));
+        svg.append(mono(x + cw / 2 - 2, 96, String(base + 4 * k), { 'text-anchor': 'middle', 'font-size': 10, fill: 'var(--ink-3)' }));
+      }
+      if (s.from !== undefined && s.hot !== undefined) { const fx = x0 + s.from * cw + cw / 2 - 2, tx = x0 + s.hot * cw + cw / 2 - 2; svg.append(sv('path', { d: `M${fx} 112 C ${fx} 124, ${tx} 124, ${tx} 112`, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 1.5, 'marker-end': 'url(#ao-arr)' })); }
+      svg.prepend(sv('defs', {}, sv('marker', { id: 'ao-arr', viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, sv('path', { d: 'M0 0L10 5L0 10z', fill: 'var(--accent)' }))));
+      log.textContent = s.msg + (s.moves !== undefined ? '   moves so far: ' + s.moves : '');
+    }
+    let ctl = stepper(steps.length, render, { interval: 700 });
+    const restart = () => { ctl.stop(); const old = ctl.el; ctl = stepper(steps.length, render, { interval: 700 }); old.replaceWith(ctl.el); };
+    const k = () => Math.max(0, Math.min(+idx.value || 0, cap - 1));
+    const get = el('button', { class: 'btn sm', onclick: () => { const i = k(); steps = i < n ? [{ a: a.slice(), n, hot: i, msg: 'a[' + i + ']: the address is ' + base + ' + 4·' + i + ' = ' + (base + 4 * i) + '. One step, whichever cell it is: ' + a[i] + '.', moves: 0 }] : [{ a: a.slice(), n, msg: 'Index ' + i + ' is past the end (' + n + ' values): ArrayIndexOutOfBoundsException.' }]; restart(); } }, 'Get');
+    const ins = el('button', { class: 'btn sm', onclick: () => {
+      const i = Math.min(k(), n), v = +val.value || 0; steps = [];
+      if (n >= cap) { steps.push({ a: a.slice(), n, msg: 'The array is full: there is no cell to shift into. A fixed array cannot grow; see the next figure.' }); restart(); return; }
+      steps.push({ a: a.slice(), n, msg: 'Insert ' + v + ' at index ' + i + ': every value from index ' + i + ' onward must move one cell to the right, starting from the end.', moves: 0 });
+      const w = a.slice(); let moves = 0;
+      for (let j = n - 1; j >= i; j--) { w[j + 1] = w[j]; moves++; steps.push({ a: w.slice(), n: n + 1, hot: j + 1, from: j, msg: 'Move a[' + j + '] = ' + w[j] + ' to a[' + (j + 1) + '].', moves }); }
+      w[i] = v; steps.push({ a: w.slice(), n: n + 1, hot: i, msg: 'Now cell ' + i + ' is free: write ' + v + '. ' + moves + ' move' + (moves === 1 ? '' : 's') + ' for an insert at index ' + i + ' of ' + n + ' values.', moves });
+      a = w; n++; restart();
+    } }, 'Insert');
+    const rem = el('button', { class: 'btn sm', onclick: () => {
+      const i = k(); steps = [];
+      if (i >= n) { steps.push({ a: a.slice(), n, msg: 'Index ' + i + ' is past the end (' + n + ' values).' }); restart(); return; }
+      steps.push({ a: a.slice(), n, hot: i, msg: 'Remove a[' + i + '] = ' + a[i] + ': every value after it moves one cell to the left, so no gap is left.', moves: 0 });
+      const w = a.slice(); let moves = 0;
+      for (let j = i; j < n - 1; j++) { w[j] = w[j + 1]; moves++; steps.push({ a: w.slice(), n, hot: j, from: j + 1, msg: 'Move a[' + (j + 1) + '] = ' + w[j] + ' to a[' + j + '].', moves }); }
+      steps.push({ a: w.slice(), n: n - 1, msg: 'Done: ' + (n - 1) + ' values, ' + moves + ' move' + (moves === 1 ? '' : 's') + '. Removing the last value costs 0 moves; removing the first costs n − 1.', moves });
+      a = w; n--; restart();
+    } }, 'Remove');
+    render(0);
+    mount.append(el('div', { class: 'fig-scroll' }, svg), el('div', { class: 'fig-tools' }, el('span', {}, 'index'), idx, el('span', {}, 'value'), val, get, ins, rem), log, ctl.el);
+  };
+
+  /* ---------- 23. a growing array: capacity doubling and the copies it costs (DSA lesson 1) ---------- */
+  W.dynarray = function (mount, b) {
+    let cap = 4, n = 0, appends = 0, copies = 0, grows = 0, a = [];
+    const cw = 30, x0 = 10, maxCells = 32;
+    const svg = sv('svg', { viewBox: '0 0 ' + (x0 * 2 + maxCells * cw) + ' 150', role: 'img', 'aria-label': 'A growing array' });
+    const log = el('div', { class: 'fig-status', role: 'status' });
+    let steps = [{ a: [], cap, n, msg: 'Start: capacity 4, nothing stored. Append values and watch what happens when the array is full.' }];
+    function row(y, arr, c, used, label, hot) {
+      svg.append(txt(x0, y - 6, label, { 'font-size': 11, fill: 'var(--ink-2)' }));
+      for (let k = 0; k < c; k++) { const x = x0 + k * cw; svg.append(sv('rect', { x, y, width: cw - 3, height: 30, fill: hot === k ? 'var(--accent)' : k < used ? 'var(--accent-soft)' : 'var(--paper-2)', stroke: k < used ? 'var(--ink)' : 'var(--rule)', 'stroke-dasharray': k < used ? null : '3 3' })); if (k < used) svg.append(mono(x + cw / 2 - 1, y + 20, String(arr[k]), { 'text-anchor': 'middle', 'font-size': 11, fill: hot === k ? 'var(--accent-ink)' : 'var(--ink)' })); }
+    }
+    function render(i) {
+      const s = steps[i]; svg.innerHTML = ''; svg.setAttribute('viewBox', '0 0 ' + (x0 * 2 + Math.max(8, s.cap) * cw) + ' 150');   // the view grows with the array
+      if (s.old) { row(26, s.old, s.oldCap, s.oldCap, 'old array (capacity ' + s.oldCap + ')', s.hotOld); row(96, s.a, s.cap, s.n, 'new array (capacity ' + s.cap + ')', s.hot); }
+      else row(60, s.a, s.cap, s.n, 'capacity ' + s.cap + ', ' + s.n + ' stored', s.hot);
+      log.textContent = s.msg + '   appends: ' + (s.appends === undefined ? appends : s.appends) + ' · copies: ' + (s.copies === undefined ? copies : s.copies) + ' · grows: ' + (s.grows === undefined ? grows : s.grows);
+    }
+    let ctl = stepper(steps.length, render, { interval: 450 });
+    const restart = () => { ctl.stop(); const old = ctl.el; ctl = stepper(steps.length, render, { interval: 450 }); old.replaceWith(ctl.el); ctl.set(steps.length - 1); };
+    function append(count) {
+      steps = [];
+      for (let t = 0; t < count; t++) {
+        if (cap >= maxCells && n >= cap) { steps.push({ a: a.slice(), cap, n, msg: 'The figure stops at ' + maxCells + ' cells; the pattern continues.' }); break; }
+        appends++; const v = appends;
+        if (n === cap) {
+          const old = a.slice(), oldCap = cap; cap *= 2; grows++; const w = [];
+          steps.push({ a: [], old, oldCap, cap, n: 0, msg: 'Full (' + n + ' of ' + oldCap + '). Make a new array twice as big and copy everything across: ' + n + ' copies.', appends, copies, grows });
+          for (let k = 0; k < n; k++) { w[k] = old[k]; copies++; steps.push({ a: w.slice(), old, oldCap, cap, n: k + 1, hot: k, hotOld: k, msg: 'Copy old[' + k + '] into the new array.', appends, copies, grows }); }
+          a = w;
+        }
+        a[n] = v; n++;
+        steps.push({ a: a.slice(), cap, n, hot: n - 1, msg: 'Append ' + v + ' into cell ' + (n - 1) + ': one step, since there was room.', appends, copies, grows });
+      }
+      restart();
+    }
+    const reset = el('button', { class: 'btn sm quiet', onclick: () => { cap = 4; n = 0; appends = 0; copies = 0; grows = 0; a = []; steps = [{ a: [], cap, n, msg: 'Reset.' }]; restart(); } }, 'Reset');
+    render(0);
+    mount.append(el('div', { class: 'fig-scroll' }, svg), el('div', { class: 'fig-tools' }, el('button', { class: 'btn sm primary', onclick: () => append(1) }, 'Append one'), el('button', { class: 'btn sm', onclick: () => append(8) }, 'Append eight'), reset), log, ctl.el);
+  };
+
+  /* ---------- 24. sorting laboratory: algorithm, input shape, counters, and a doubling experiment (DSA lesson 3) ---------- */
+  W.sortlab = function (mount, b) {
+    const algoSel = el('select', { 'aria-label': 'algorithm' }, [['selection', 'selection sort'], ['insertion', 'insertion sort'], ['bubble', 'bubble sort']].map(([v, t]) => el('option', { value: v, selected: v === (b.algo || 'insertion') ? '' : null }, t)));
+    const shapeSel = el('select', { 'aria-label': 'input' }, [['random', 'random'], ['sorted', 'already sorted'], ['reversed', 'reversed'], ['nearly', 'nearly sorted']].map(([v, t]) => el('option', { value: v }, t)));
+    const sizeSel = el('select', { 'aria-label': 'size' }, ['8', '12', '16'].map(v => el('option', { value: v, selected: v === '12' ? '' : null }, v + ' values')));
+    const log = el('div', { class: 'fig-status', role: 'status' });
+    let arr = [], steps = [];
+    function makeInput() {
+      const n = +sizeSel.value; arr = [];
+      for (let i = 0; i < n; i++) arr.push(i + 1);
+      const shuffle = () => { for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } };
+      if (shapeSel.value === 'random') shuffle(); else if (shapeSel.value === 'reversed') arr.reverse(); else if (shapeSel.value === 'nearly') { for (let t = 0; t < 2; t++) { const i = Math.floor(Math.random() * (n - 1)); [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]; } }
+    }
+    // the same three algorithms, with every comparison and move counted
+    function run(algo, a, record) {
+      let cmp = 0, moves = 0; const n = a.length; const R = !!record; const rec = (o) => { record(Object.assign({ a: a.slice(), cmp, moves }, o)); };
+      if (algo === 'selection') {
+        R && rec({ msg: 'Selection sort: find the smallest of the unsorted part, swap it to the front, repeat.' });
+        for (let i = 0; i < n - 1; i++) { let m = i; for (let j = i + 1; j < n; j++) { cmp++; R && rec({ cmp2: [m, j], sortedTo: i, msg: 'Is a[' + j + '] = ' + a[j] + ' smaller than the smallest so far, ' + a[m] + '?' }); if (a[j] < a[m]) m = j; } if (m !== i) { [a[i], a[m]] = [a[m], a[i]]; moves += 3; R && rec({ swap: [i, m], sortedTo: i + 1, msg: 'Swap ' + a[m] + ' and ' + a[i] + ' (one swap = 3 moves).' }); } else R && rec({ sortedTo: i + 1, msg: a[i] + ' is already in place.' }); }
+        R && rec({ sortedTo: n, msg: 'Sorted.' });
+      } else if (algo === 'insertion') {
+        R && rec({ msg: 'Insertion sort: take the next value and slide it left until it is in order.' });
+        for (let i = 1; i < n; i++) { const v = a[i]; let j = i; R && rec({ cmp2: [i], sortedTo: i, msg: 'Take a[' + i + '] = ' + v + '.' }); while (j > 0) { cmp++; if (a[j - 1] > v) { a[j] = a[j - 1]; moves++; j--; R && rec({ cmp2: [j, j + 1], sortedTo: i + 1, msg: a[j + 1] + ' > ' + v + ': shift it right.' }); } else { R && rec({ cmp2: [j - 1], sortedTo: i + 1, msg: a[j - 1] + ' ≤ ' + v + ': stop here.' }); break; } } a[j] = v; moves++; R && rec({ swap: [j], sortedTo: i + 1, msg: 'Put ' + v + ' in cell ' + j + '. The first ' + (i + 1) + ' values are sorted.' }); }
+        R && rec({ sortedTo: n, msg: 'Sorted.' });
+      } else {
+        R && rec({ msg: 'Bubble sort: compare neighbours, swap when out of order, until a pass makes no swap.' });
+        for (let i = 0; i < n - 1; i++) { let swapped = false; for (let j = 0; j < n - 1 - i; j++) { cmp++; R && rec({ cmp2: [j, j + 1], sortedFrom: n - i, msg: 'Compare ' + a[j] + ' and ' + a[j + 1] + '.' }); if (a[j] > a[j + 1]) { [a[j], a[j + 1]] = [a[j + 1], a[j]]; moves += 3; swapped = true; R && rec({ swap: [j, j + 1], sortedFrom: n - i, msg: 'Out of order: swap.' }); } } R && rec({ sortedFrom: n - i - 1, msg: 'End of pass ' + (i + 1) + '.' }); if (!swapped) break; }
+        R && rec({ sortedFrom: 0, msg: 'Sorted.' });
+      }
+      return { cmp, moves };
+    }
+    const cw = 36, x0 = 10, H = 140;
+    const svg = sv('svg', { viewBox: '0 0 ' + (x0 * 2 + 16 * cw) + ' ' + (H + 30), role: 'img', 'aria-label': 'Sorting' });
+    function render(i) {
+      const s = steps[i]; svg.innerHTML = ''; const n = s.a.length, max = Math.max(...s.a); const w = (16 * cw) / n;
+      s.a.forEach((v, k) => { const x = x0 + k * w, h = (v / max) * H; const sorted = (s.sortedFrom !== undefined && k >= s.sortedFrom) || (s.sortedTo !== undefined && k < s.sortedTo); const active = (s.cmp2 && s.cmp2.includes(k)) || (s.swap && s.swap.includes(k)); const fill = s.swap && s.swap.includes(k) ? 'var(--ok)' : active ? 'var(--accent)' : sorted ? 'var(--ink-3)' : 'var(--accent-soft)'; svg.append(sv('rect', { x: x + 3, y: H - h + 5, width: w - 6, height: h, fill, stroke: active ? 'var(--ink)' : 'var(--rule)' })); svg.append(mono(x + w / 2, H + 22, String(v), { 'text-anchor': 'middle', 'font-size': 11, fill: active ? 'var(--ink)' : 'var(--ink-2)' })); });
+      log.textContent = s.msg + '   comparisons: ' + s.cmp + ' · moves: ' + s.moves;
+    }
+    let ctl = null;
+    function rebuild() { makeInput(); steps = []; run(algoSel.value, arr.slice(), (st) => steps.push(st)); if (ctl) ctl.stop(); const old = ctl && ctl.el; ctl = stepper(steps.length, render, { interval: 500 }); if (old) old.replaceWith(ctl.el); }
+    // the doubling experiment: the same algorithm on random inputs of n, 2n, 4n, 8n, timed here in the page (not in the Java sandbox)
+    const expo = el('div', { class: 'tbl-wrap' });
+    const measure = el('button', { class: 'btn sm', onclick: () => {
+      const algo = algoSel.value; const rows = []; let prev = null;
+      for (const n of [1000, 2000, 4000, 8000]) {
+        const a = []; for (let i = 0; i < n; i++) a.push(Math.floor(Math.random() * 1e6));
+        const t0 = performance.now(); const c = run(algo, a, null); const ms = performance.now() - t0;
+        rows.push([n, c.cmp, ms, prev ? c.cmp / prev : null]); prev = c.cmp;
+      }
+      const t = el('table', { class: 'small' }, el('tr', {}, ['n', 'comparisons', 'time (ms)', 'ratio to the row above'].map(h => el('th', {}, h))), rows.map(r => el('tr', {}, el('td', {}, r[0].toLocaleString('en-US')), el('td', {}, r[1].toLocaleString('en-US')), el('td', {}, r[2].toFixed(1)), el('td', {}, r[3] ? r[3].toFixed(2) : '—'))));
+      expo.innerHTML = ''; expo.append(t, el('p', { class: 'fig-status' }, 'Doubling n multiplies the comparisons by about 4: the signature of n². (The times are this computer’s, in JavaScript; they are noisy for small n but the ratio tells the same story.)'));
+    } }, 'Run the doubling experiment');
+    rebuild();
+    for (const sel of [algoSel, shapeSel, sizeSel]) sel.addEventListener('change', rebuild);
+    mount.append(el('div', { class: 'fig-tools' }, algoSel, shapeSel, sizeSel, el('button', { class: 'btn sm', onclick: rebuild }, 'New input')), svg, log, ctl.el, el('div', { class: 'fig-tools' }, measure), expo);
+  };
+
   /* ---------- 20. splitting double vowel spelling into letters (math lesson 7) ---------- */
   W.letters = function (mount, b) {
     const CHARS = "abcdeghijkmnopstwyz'";             // the characters the system writes with (c only in ch)

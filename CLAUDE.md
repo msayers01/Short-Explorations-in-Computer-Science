@@ -74,9 +74,13 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 
 - Merged and live: everything above through PR #10 (security review of Full C++). `main` = `a617613`.
 - SC 105 Modern C++ has 8 lessons (string, vector, references, struct, class, algorithms/lambdas, map/set, gradebook project), 15 exercises.
+- SC 107 Data Structures and Algorithms (Java, `src/course_dsa.js`): lessons 1-3 (cost and arrays; searching; simple sorts), 9 exercises (code
+  and `answer` kinds), with four new figures (growth, arrayops, dynarray, sortlab). Planned next: merge sort and quicksort; linked lists; stacks
+  and queues; recursion; hash tables; binary search trees; heaps and priority queues; graphs; a project. Lessons that need classes explain them.
+- Courses still being written carry `status: 'developing'` (Modern C++, Java, DSA): an "Under development" tag (app.js `devTag`).
 - SC 106 Introduction to Java: the interpreter and the first 4 lessons (Hello Java and types; decisions and Scanner; loops; methods), 8 exercises.
   Planned next: arrays; Strings; ArrayList; classes and objects; inheritance and interfaces; exceptions; HashMap; a project.
-- Ideas not started: C in the Code Lab (same compiler); a Data Structures and Algorithms course on the real compiler; lessons 9-10 of SC 105
+- Ideas not started: C in the Code Lab (same compiler); lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
   beside the single-page design and needs a policy change); splitting CI (about 4 minutes now); a Java step-through debugger like the C++ memory stepper.
 - Not verified: Full C++ on low-end devices (needs about 84 MB plus the program), and on the production URL since the security-review merge.
