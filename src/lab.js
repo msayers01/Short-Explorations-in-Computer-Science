@@ -8,6 +8,9 @@
     cpp: { label: 'C++', ext: '.cpp', accent: 'cpp', first: 'main.cpp' },
     scheme: { label: 'Scheme', ext: '.scm', accent: 'lisp', first: 'main.scm' }
   };
+  // Language names arrive in links (?l=...) and from storage. A plain `LANG_INFO[x]` is truthy for "constructor" and "__proto__",
+  // so always ask this instead.
+  const hasLang = (l) => typeof l === 'string' && Object.prototype.hasOwnProperty.call(LANG_INFO, l);
   const PAIRS = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" };
   const OPEN = '([{', CLOSE = ')]}';
 
@@ -211,7 +214,11 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
   function load() {
     if (S) return S;
     try { S = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { S = null; }
-    if (!S || !S.files) S = { lang: 'python', files: {}, active: {}, fontSize: 15, panels: {} };
+    if (!S || typeof S !== 'object' || !S.files || typeof S.files !== 'object') S = { lang: 'python', files: {}, active: {}, fontSize: 15, panels: {} };
+    if (!hasLang(S.lang)) S.lang = 'python';   // a bad value stored here would break the Code Lab on every visit
+    if (!S.active || typeof S.active !== 'object') S.active = {};
+    if (!Number.isFinite(S.fontSize)) S.fontSize = 15;
+    for (const l in LANG_INFO) { if (!Array.isArray(S.files[l])) S.files[l] = []; S.files[l] = S.files[l].filter(f => f && typeof f.name === 'string' && typeof f.code === 'string'); }
     for (const l in LANG_INFO) {
       if (!S.files[l] || !S.files[l].length) S.files[l] = [{ name: LANG_INFO[l].first, code: TEMPLATES[l][0].code }];
       if (S.active[l] == null || S.active[l] >= S.files[l].length) S.active[l] = 0;
@@ -229,7 +236,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
     if (!query) return null;
     const q = new URLSearchParams(query);
     if (!q.get('c')) return null;
-    try { return { lang: LANG_INFO[q.get('l')] ? q.get('l') : 'python', code: b64d(q.get('c')), name: q.get('n') || '' }; } catch (e) { return null; }
+    try { return { lang: hasLang(q.get('l')) ? q.get('l') : 'python', code: b64d(q.get('c')), name: q.get('n') || '' }; } catch (e) { return null; }
   }
 
   /* ---------------- the editor ---------------- */
@@ -587,8 +594,8 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
       el, S, save, editor, armConfirm, isTouch, grade: (ex, code) => A().grade(ex, code), renderVerdict: (v, r, ex, n) => A().renderVerdict(v, r, ex, n),
       status: (t) => { status.textContent = t; setTimeout(() => { if (status.textContent === t) status.textContent = ''; }, 6000); },
       renderToolbar: () => renderToolbar(),
-      openAssignmentFile: (a) => { const l = a.lang; if (!LANG_INFO[l]) return; let idx = S.files[l].findIndex(f => f.asg === a.id); if (idx < 0) { S.files[l].push({ name: uniqueName(l, (a.title || 'assignment').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + LANG_INFO[l].ext), code: a.starter || '', asg: a.id }); idx = S.files[l].length - 1; } S.active[l] = idx; save(); if (l !== S.lang) switchLang(l); else activate(idx); },
-      openReviewFile: (l, name, code) => { if (!LANG_INFO[l]) l = S.lang; S.files[l].push({ name: uniqueName(l, name.replace(/[^a-z0-9_-]+/gi, '_') + LANG_INFO[l].ext), code }); S.active[l] = S.files[l].length - 1; save(); if (l !== S.lang) switchLang(l); else activate(S.active[l]); }
+      openAssignmentFile: (a) => { const l = a.lang; if (!hasLang(l)) return; let idx = S.files[l].findIndex(f => f.asg === a.id); if (idx < 0) { S.files[l].push({ name: uniqueName(l, (a.title || 'assignment').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + LANG_INFO[l].ext), code: a.starter || '', asg: a.id }); idx = S.files[l].length - 1; } S.active[l] = idx; save(); if (l !== S.lang) switchLang(l); else activate(idx); },
+      openReviewFile: (l, name, code) => { if (!hasLang(l)) l = S.lang; S.files[l].push({ name: uniqueName(l, name.replace(/[^a-z0-9_-]+/gi, '_') + LANG_INFO[l].ext), code }); S.active[l] = S.files[l].length - 1; save(); if (l !== S.lang) switchLang(l); else activate(S.active[l]); }
     };
     const teach = window.TEACH ? window.TEACH.mount(ctx) : null;
     function renderAsgBar() { asgHost.innerHTML = ''; if (!teach) return; const bar = teach.assignmentBar(curFile()); if (bar) asgHost.append(bar); }
@@ -959,7 +966,7 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
   function openCode(o) {
     load();
     pendingStep = o.step ? { mode: 'mem', stdin: o.stdin } : (o.subst ? { mode: 'subst' } : null);
-    const l = o.lang === 'lisp' ? 'scheme' : o.lang; if (!LANG_INFO[l]) return;
+    const l = o.lang === 'lisp' ? 'scheme' : o.lang; if (!hasLang(l)) return;
     const files = S.files[l];
     let idx = -1;
     if (o.ex) idx = files.findIndex(f => f.ex && f.ex.id === o.ex.id);   // one file per exercise: reopen it (keeping the student's Lab edits) rather than duplicate

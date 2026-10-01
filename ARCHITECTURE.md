@@ -23,6 +23,17 @@ must move between people travels inside a URL.
 4. **Every exercise is testable in node.** `node test_course.js <course>` must pass before publishing.
 5. **Accessible prose first.** Courses are written for students and teachers with no CS background:
    definitions before examples, one idea per code block, predict-then-reveal, "Common mistakes", recap.
+6. **Everything that arrives in a link or from storage is hostile.** Links are written by strangers and are opened by teachers
+   and students. Rules, each one backed by `SECURITY-AUDIT.md` and by `test_security.js` / `tools/security/`:
+   - Never put such text in the page with `innerHTML`/`html:` unless it went through `esc()`; use `textContent` or the `el()` helper's children.
+   - Ids, names and language names from links are only used as keys of dictionaries without a prototype (`Object.create(null)`), checked with
+     `hasLang`/`ID_RE`, and incoming assignments, submissions and back-ups pass through `normalize`/`cleanSub` (teach.js).
+   - A link that stores something or runs a stranger's program asks the teacher first (`confirmLink`).
+   - Packed links are size-limited (`MAX_LINK`, `MAX_UNPACKED`).
+   - Programs run only in the three interpreters; `sandbox.js` removes Skulpt's `document`, `urllib` and other modules that reach the
+     page or the network. Do not add one back.
+   - `build.js` writes a Content Security Policy (script hashes, no network) into every page and into `dist/_headers`. A new inline
+     script needs no change (its hash is computed); a new external resource must be added to the policy deliberately.
 
 ## 3. Repository layout
 
@@ -51,6 +62,7 @@ site/
     course_math.js       SC 104 (13 lessons)   ─┘
     style.css            design tokens, layout, course accents, every component's styles
     cppstep.js           C++ memory stepper → window.CPPSTEP { trace, render, describe } (uses JSCPP's debugger)
+    sandbox.js           removes Skulpt's page- and network-reaching modules (document, urllib, webbrowser, image, ...) → window.SANDBOX
     scheme.js            Scheme interpreter (MIT/SICP dialect) → window.Scheme / module.exports
                          (all c[ad]r up to 4 deep; eval with system-global-environment, always global)
     subst.js             substitution-model stepper over scheme.js ASTs → window.SUBST
@@ -67,7 +79,7 @@ site/
     about.js             About and credits page (#/about) → window.ABOUT
 ```
 
-**Script order in `build.js` matters:** (window.BUILD) → skulpt → skulpt-stdlib → jscpp → cppstep → scheme → subst → site →
+**Script order in `build.js` matters:** (window.BUILD) → skulpt → skulpt-stdlib → sandbox → jscpp → cppstep → scheme → subst → site →
 courses → mathgrade → app → lab → guide → qr → teach → widgets → portfolio → classroom → ojibwe → about. `app.js` runs `route()` on
 `DOMContentLoaded`, by which time every module has registered its global. `route()` renders the page and then
 dispatches a `routed` event on `document`; classroom.js listens for it to rebuild its bar and steps.
@@ -343,7 +355,7 @@ wherever the term is used).
 
 1. `npm install`. `npm test` applies the JSCPP patches itself (`scripts/patch-jscpp.js`, idempotent).
 2. `node build.js`, then `npm test`: `test_course.js` for each course (every solution passes, every starter fails,
-   every playground runs), `test_cppstep.js` and `test_subst.js`. C++ in both test scripts goes through the site's own
+   every playground runs), `test_cppstep.js`, `test_subst.js`, `test_app.js`, `test_scheme.js` and `test_security.js`. C++ in both test scripts goes through the site's own
    `ensureMainReturns`, read out of `src/app.js`, so programs are graded exactly as on the site.
    A linter (ESLint, installed outside the project) with `no-undef`, `no-unused-vars` and the usual correctness rules
    should report nothing.

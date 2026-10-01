@@ -1,0 +1,15 @@
+# Written by build.js. Do not edit.
+/
+/index.html
+  Content-Security-Policy: default-src 'none'; script-src 'sha256-+NIlL/7d8Kz2LcK0l/e0RSbP028eUdzjJu+ZTBCQpIA=' 'sha256-TDKgVfL4eWEDokAtPqXz4S1x31QGf8a02WBKqZo3rrc=' 'sha256-5yrjDNVGHnFPMoVKGWJCvGZ7XXMDJqhEIj/RVn4mJ84=' 'sha256-7czVFvAyZrIkBN4zHiky2ShmLpsEdqnHMy8ijd2QZc8=' 'sha256-pXjaGTEKzusa7nLCDvL2ANH55OkkXCCnFA5/Ai0JFQw=' 'sha256-OP25hIqud5NZcP/GJWqGU4/I/xEnm78Ox6u1TUK+DHI=' 'sha256-zOgI6X6q/9H9WKNTTCCk0DXAV6ifBfz8G2x8FPnFv3c=' 'sha256-s93xwhOzUGRoTpnX7qK0b85eDck1P4yrKWiT7fMGSBY=' 'sha256-uHVCL5wFBN30rIcP2q6cEkZ8izFPHVnxYNPoSWbt89Y=' 'sha256-eWWHTJcVBPhZidGr/P2HnnrvCQyjVzyEClshFCCWqFs=' 'sha256-4kpLoQDKhAGG9hykP783G9f8sWEuj8qia/Mjs+zKl/0=' 'sha256-ZgjpSm5XWGkVKVr8EV2/Zikg7RpOh/JdgL/W7xAa4Ns=' 'sha256-EIsgl7Ompn7/cA9l6p9vMoKdjvYWCUlig52miG6QSvg=' 'sha256-p88eMpQIZvuT+PmiHHM9CMN6x/5PHg5sfIONgjTNknw=' 'sha256-uNpC9TNosozF1NBc2RBsHkXESnTxHmiMrazFqtOMmNQ=' 'sha256-pUJckq5oSVnd/Xxp9A8J6qIM6eRZoyik+IaIkkNLseI=' 'sha256-5+RgHP4Z0eWOewHboFLS9lf0W+4uIHX+vxAyX1Tj6Ss=' 'sha256-KF/FTkQyrvsixuKUWR3qUYGBSx/rfndqJPg/XkM/ofg=' 'sha256-8OiY0I6YrZJvqafCNQ54opSsY8cvrEeKEuT6HBcTn/U=' 'sha256-NJKSum4S5tPFzMZ1yfVaL/xKMAPGnw/G9trXyTW9heM=' 'sha256-dYG4zZbFeLCAXudaXaiSkJD8dEzrs5exVcoyXhZNE5w=' 'sha256-xinIAtfcjOX3GmWhVGH8+7jvhJjhAN6ez8D4NRouZzM=' 'sha256-/MEihuVGAze8eS6cHOf1p5eeIaKvXShPHYKXN9ScLKk=' 'sha256-qQ8cgvG5zsuRUjYA0MovpYUTWkx+lnPoJrkkGxo5UKE=' 'unsafe-eval'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data: blob:; connect-src 'none'; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()
+
+/teacher-guide
+/teacher-guide.html
+  Content-Security-Policy: default-src 'none'; script-src 'sha256-yJPYz7bv/uJQ0VUrAuTHlDYf61lh7fI4VqKtunGMU8o=' 'unsafe-eval'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data: blob:; connect-src 'none'; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()
+

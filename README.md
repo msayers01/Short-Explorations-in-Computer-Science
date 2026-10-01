@@ -52,6 +52,7 @@ add lessons, figures and exercise types.
     test_course.js         checks every exercise and example of a course
     test_cppstep.js        checks the C++ memory stepper
     test_subst.js          checks the substitution stepper
+    test_security.js       checks the Python sandbox and the size limit on links; see SECURITY-AUDIT.md
     dist/                  the built site
 
 ## Building

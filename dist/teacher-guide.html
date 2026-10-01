@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-yJPYz7bv/uJQ0VUrAuTHlDYf61lh7fI4VqKtunGMU8o=' 'unsafe-eval'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data: blob:; connect-src 'none'; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <title>A guide for teachers — Short Explorations in Computer Science</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -838,7 +840,7 @@ html.classroom .about { padding-bottom: 7rem; }
 </style>
 </head>
 <body>
-<main class="guide"><div class="g-tools"><button class="btn quiet tiny" onclick="window.print()">Print or save as PDF</button></div>
+<main class="guide"><div class="g-tools"><button class="btn quiet tiny" id="g-print">Print or save as PDF</button></div>
 <header class="g-hero">
   <p class="g-kicker">Short Explorations in Computer Science</p>
   <h1>A guide for teachers</h1>
@@ -1063,5 +1065,6 @@ html.classroom .about { padding-bottom: 7rem; }
   <p>Courses, site and this guide written and built by Michael Sayers. This guide and the courses are shared under the Creative Commons Attribution-ShareAlike 4.0 licence (CC BY-SA 4.0): use, adapt and share them, crediting the author and sharing changes the same way.</p>
 </footer>
 </main>
+<script>document.getElementById('g-print').addEventListener('click', function () { window.print(); });</script>
 </body>
 </html>
