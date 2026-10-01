@@ -259,6 +259,32 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('full c++: an exercise of the course is graded on the real compiler (solution passes, starter fails)', graded.runtime === 'full' && graded.good === 'true:7' && graded.bad === false, graded);
   check('full c++: a compile error in an exercise is reported with the student\'s own line numbers', /main\.cpp:\d+:\d+: error/.test(graded.broken || '') && /main\.cpp:1:/.test(graded.broken || ''), graded.broken);
   check('full c++: an exercise that supplies main() refuses the student\'s own', /write only the function/.test(graded.hasMain || ''), graded.hasMain);
+  // the language standard: C++17 refuses what C++20 allows, C++23 reports its own version
+  await hp.goto(origin + '/index.html#/lab'); await hp.reload(); await hp.waitForSelector('.lab-editor-area textarea');
+  check('full c++: the standard picker is offered with Full C++ (C++20 by default)', (await hp.locator('select.std-sel').count()) === 1 && (await hp.locator('select.std-sel').inputValue()) === 'gnu++20');
+  const fmt = '#include <iostream>\n#include <format>\nint main() { std::cout << std::format("v{}", __cplusplus) << std::endl; }\n';
+  await setHpCode(fmt); await hp.click('.lab-toolbar button:has-text("Run")');
+  await hp.waitForFunction(() => /v\d+/.test(document.querySelector('.lab-out .out-text').textContent), null, { timeout: 90000 });
+  check('full c++: C++20 is the default standard', /v202002/.test(await hpOut()), await hpOut());
+  await hp.selectOption('select.std-sel', 'gnu++23'); await hp.click('.lab-toolbar button:has-text("Run")');
+  await hp.waitForFunction(() => /v202302/.test(document.querySelector('.lab-out .out-text').textContent), null, { timeout: 90000 });
+  check('full c++: C++23 can be chosen', true);
+  await hp.selectOption('select.std-sel', 'gnu++17'); await hp.click('.lab-toolbar button:has-text("Run")');
+  await hp.waitForFunction(() => /error/.test(document.querySelector('.lab-out .out-text').textContent), null, { timeout: 90000 });
+  check('full c++: C++17 does not have std::format', /no member named 'format'/.test(await hpOut()), await hpOut());
+  check('full c++: the chosen standard is remembered', (await hp.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.lab.v1')).cppStd)) === 'gnu++17');
+  await hp.selectOption('select.std-sel', 'gnu++20');
+  // a teacher's assignment can ask for Full C++; the student's copy carries that, and the Lab then insists on it
+  const aLink = await hp.evaluate(async () => {
+    const a = { v: 1, id: 'wordsfull', title: 'Count the letters', lang: 'cpp', runtime: 'full', text: 'Print how many letters the word has.', starter: '#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    string w;\n    cin >> w;\n    // your code\n}\n', tests: [{ k: 'stdin', in: 'hello', expect: '5' }, { k: 'stdin', in: 'a', expect: '1' }], hints: [], roster: [], author: 'Ms T', due: '', created: 1 };
+    return location.href.split('#')[0] + '#/assign?a=' + await window.TEACH.pack(window.TEACH.studentCopy(window.TEACH.normalize(a)));
+  });
+  await hp.goto('about:blank'); await hp.goto(aLink); await hp.waitForSelector('.asg-bar');
+  check('full c++ assignment: the bar says Full C++ and the engine is fixed', /Full C\+\+/.test(await hp.locator('.asg-bar').innerText()) && (await hp.locator('button:has-text("Engine: Full C++")').isDisabled()), await hp.locator('.asg-bar').innerText());
+  await setHpCode('#include <iostream>\n#include <string>\nusing namespace std;\nint main() { string w; cin >> w; cout << w.size() << endl; }\n');
+  await hp.click('.asg-bar button:has-text("Check")');
+  await hp.waitForSelector('.asg-bar .verdict:not([hidden]) .v-title', { timeout: 120000 });
+  check('full c++ assignment: the student\'s program is checked on the real compiler', /2 of 2 tests passed|passes every test|Correct|Yes|Exactly|That works/.test(await hp.locator('.asg-bar .verdict').innerText()), await hp.locator('.asg-bar .verdict').innerText());
   check('full c++: no policy violations, no page errors', hpViolations.length === 0 && hpErrors.length === 0, [hpViolations, hpErrors]);
   await hp.close(); server.close();
 

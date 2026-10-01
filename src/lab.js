@@ -219,6 +219,9 @@ int&amp; r = x;                      // a reference: another name for x
 struct Point { int x, y; };      class Counter { ... };</code></pre>
 <p class="ref-note">Full C++ is a real compiler (Clang 22) running in your browser, in 32-bit mode: <code>long</code> and pointers are 4 bytes, <code>long long</code> is 8. Exceptions (<code>try</code>, <code>throw</code>) and threads are not available. Compiler warnings are shown above the output. The compiler is downloaded the first time you use it (about 28 MB), and only this engine needs the internet.</p>`);
 
+  // The language standards Full C++ can compile for; the second is the default.
+  const STANDARDS = [['gnu++17', 'C++17'], ['gnu++20', 'C++20'], ['gnu++23', 'C++23']];
+
   /* ---------------- state ---------------- */
   let S = null;
   function load() {
@@ -235,6 +238,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     }
     if (!S.panels) S.panels = {};
     S.fullCpp = S.fullCpp === true;
+    if (!STANDARDS.some(s => s[0] === S.cppStd)) S.cppStd = STANDARDS[1][0];
     return S;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
@@ -602,7 +606,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     // ----- teacher / assignment tools (src/teach.js)
     const asgHost = el('div');
     const ctx = {
-      el, S, save, editor, armConfirm, isTouch, grade: (ex, code) => A().grade(ex, code), renderVerdict: (v, r, ex, n) => A().renderVerdict(v, r, ex, n),
+      el, S, save, editor, armConfirm, isTouch, grade: (ex, code, host) => A().grade(ex, code, host), renderVerdict: (v, r, ex, n) => A().renderVerdict(v, r, ex, n),
       status: (t) => { status.textContent = t; setTimeout(() => { if (status.textContent === t) status.textContent = ''; }, 6000); },
       renderToolbar: () => renderToolbar(),
       openAssignmentFile: (a) => { const l = a.lang; if (!hasLang(l)) return; let idx = S.files[l].findIndex(f => f.asg === a.id); if (idx < 0) { S.files[l].push({ name: uniqueName(l, (a.title || 'assignment').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + LANG_INFO[l].ext), code: a.starter || '', asg: a.id }); idx = S.files[l].length - 1; } S.active[l] = idx; save(); if (l !== S.lang) switchLang(l); else activate(idx); },
@@ -627,20 +631,22 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const fontUp = el('button', { class: 'btn quiet font-btn', title: 'Larger text', onclick: () => setFont(1) }, 'A+');
     // C++ has two engines: the teaching one (JSCPP; step-through memory, always available, works offline) and Full C++ (Clang; the whole language and library,
     // downloaded the first time). An exercise from a Full C++ course always uses Full C++.
-    const exFull = () => { const f = curFile(); const found = f.ex && findExercise(f.ex.id); return !!(found && found.ex.runtime === 'full'); };
+    const exFull = () => { const f = curFile(); const found = f.ex && findExercise(f.ex.id); return !!(found && found.ex.runtime === 'full') || (!!teach && teach.assignmentRuntime(f) === 'full'); };
     const isFull = () => S.lang === 'cpp' && (exFull() || S.fullCpp === true);
+    const stdSel = el('select', { class: 'teach-select std-sel', 'aria-label': 'Language standard', title: 'Which version of C++ the compiler accepts. C++20 is the default; checks on exercises always use it.', onchange: () => { S.cppStd = stdSel.value; save(); } }, STANDARDS.map(([v, label]) => el('option', { value: v }, label)));
+    stdSel.value = S.cppStd;
     const engineBtn = el('button', { class: 'btn quiet', onclick: () => { S.fullCpp = !S.fullCpp; save(); engineChanged(); } });
     function engineChanged() {
       if (S.lang !== 'cpp') return;
       const why = window.CLANGRUN.unavailable(), forced = exFull();
       engineBtn.textContent = isFull() ? 'Engine: Full C++' : 'Engine: Teaching';
       engineBtn.disabled = forced || (!isFull() && !!why);
-      engineBtn.title = forced ? 'This exercise is written for Full C++' : (!isFull() && why ? 'Full C++ is not available here: ' + why : isFull() ? 'Full C++ is a real compiler: all of the language and the standard library. Click to go back to the teaching engine, which can step through memory and works offline.' : 'The teaching engine covers the basics of C++ and can step through memory. Click for Full C++, a real compiler with strings, vectors, classes and the rest of the library (downloads about ' + window.CLANGRUN.mb() + ' MB the first time).');
+      engineBtn.title = forced ? 'This exercise or assignment is written for Full C++' : (!isFull() && why ? 'Full C++ is not available here: ' + why : isFull() ? 'Full C++ is a real compiler: all of the language and the standard library. Click to go back to the teaching engine, which can step through memory and works offline.' : 'The teaching engine covers the basics of C++ and can step through memory. Click for Full C++, a real compiler with strings, vectors, classes and the rest of the library (downloads about ' + window.CLANGRUN.mb() + ' MB the first time).');
       refBody.innerHTML = REFERENCE[isFull() ? 'cppfull' : 'cpp'];
       endMem(); renderToolbar();
     }
     const fileInput = el('input', { type: 'file', accept: '.py,.cpp,.cc,.cxx,.h,.scm,.ss,.rkt,.txt', hidden: '', onchange: openFiles });
-    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'python' ? stepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, findBtn, tplBtn, refBtn, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
+    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'python' ? stepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, findBtn, tplBtn, refBtn, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
     function setFont(d) { S.fontSize = Math.min(24, Math.max(11, S.fontSize + d)); save(); editor.el.style.setProperty('--lab-font', S.fontSize + 'px'); editor.render(); }
 
     // ----- find / replace bar
@@ -731,7 +737,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
           out.note(r.error ? 'stopped; definitions before the error are available in the REPL' : 'definitions loaded into the REPL');
           if (!isTouch()) repl.focus();
         } else if (lang === 'cpp' && isFull()) {
-          const r = await Runners.cppFull.run(code, { onOutput: (s) => out.write(s), onNote: (s) => out.note(s), stdin: stdinTa.value, host: out.el });
+          const r = await Runners.cppFull.run(code, { onOutput: (s) => out.write(s), onNote: (s) => out.note(s), stdin: stdinTa.value, std: S.cppStd, host: out.el });
           if (r.err) showError('cppfull', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
           if (r.exit) out.note('(the program ended with status ' + r.exit + ')');
         } else if (lang === 'cpp') {
