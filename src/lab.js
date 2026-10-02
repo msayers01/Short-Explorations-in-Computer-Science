@@ -613,8 +613,10 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     function renderTabs() {
       tabs.innerHTML = '';
       S.files[S.lang].forEach((f, i) => {
-        const b = el('button', { class: 'tab' + (i === S.active[S.lang] ? ' on' : ''), role: 'tab', title: 'Double-click to rename', onclick: () => activate(i), ondblclick: () => rename(i) }, f.name);
-        if (S.files[S.lang].length > 1) b.append(el('span', { class: 'tab-x', title: 'Close', onclick: (e) => { e.stopPropagation(); closeFile(i, b); } }, '×'));
+        const many = S.files[S.lang].length > 1;
+        const b = el('button', { class: 'tab' + (i === S.active[S.lang] ? ' on' : ''), role: 'tab', 'aria-selected': i === S.active[S.lang] ? 'true' : 'false', title: 'Double-click to rename' + (many ? '; Delete closes' : ''), onclick: () => activate(i), ondblclick: () => rename(i),
+          onkeydown: (e) => { if (many && e.key === 'Delete') { e.preventDefault(); closeFile(i, b); } } }, f.name);
+        if (many) b.append(el('span', { class: 'tab-x', title: 'Close', 'aria-hidden': 'true', onclick: (e) => { e.stopPropagation(); closeFile(i, b); } }, '×'));
         tabs.append(b);
       });
       tabs.append(el('button', { class: 'tab add', title: 'New file', 'aria-label': 'New file', onclick: newFile }, '+ New'));
@@ -656,7 +658,8 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       const f = S.files[S.lang][i];
       if (f.code.trim() && !btn.dataset.armed) { btn.dataset.armed = '1'; btn.classList.add('armed'); btn.lastChild.textContent = 'close?'; setTimeout(() => { delete btn.dataset.armed; btn.classList.remove('armed'); if (btn.lastChild) btn.lastChild.textContent = '×'; }, 3000); return; }
       S.files[S.lang].splice(i, 1); if (S.active[S.lang] >= S.files[S.lang].length) S.active[S.lang] = S.files[S.lang].length - 1; else if (i < S.active[S.lang]) S.active[S.lang]--;
-      save(); editor.value = curFile().code; renderTabs();
+      if (tracer) tracer.stop(); endMem();
+      save(); editor.value = curFile().code; renderTabs(); renderStatusBar(); engineChanged(); renderExBar(); renderAsgBar();
     }
 
     // ----- exercise bar (a file opened from a course exercise can be checked here)
@@ -670,10 +673,12 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       const { ex, course, lessonIdx, lesson } = found; exBar.hidden = false;
       const check = el('button', { class: 'btn primary', onclick: async () => {
         check.disabled = true; check.textContent = 'Checking…'; exAttempts++; exVerdict.hidden = false; exVerdict.innerHTML = '';
-        const r = await A().grade(ex, editor.value, exVerdict);
-        A().renderVerdict(exVerdict, r, ex, exAttempts);
-        if (r.passed) { A().Progress.markDone(ex.id, editor.value); A().Progress.setCode(ex.id, editor.value); document.dispatchEvent(new CustomEvent('progress-changed')); }
-        check.disabled = false; check.textContent = 'Check against the exercise';
+        try {
+          const r = await A().grade(ex, editor.value, exVerdict);
+          A().renderVerdict(exVerdict, r, ex, exAttempts);
+          if (r.passed) { A().Progress.markDone(ex.id, editor.value); A().Progress.setCode(ex.id, editor.value); document.dispatchEvent(new CustomEvent('progress-changed')); }
+        } catch (e) { exVerdict.textContent = 'The checker stopped with an error: ' + (e && e.message ? e.message : String(e)); }
+        finally { check.disabled = false; check.textContent = 'Check against the exercise'; }
       } }, 'Check against the exercise');
       const prompt = el('div', { class: 'prose ex-prompt', hidden: '', html: ex.prompt });
       exBar.append(
@@ -688,6 +693,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       el, S, save, editor, armConfirm, isTouch, grade: (ex, code, host) => A().grade(ex, code, host), renderVerdict: (v, r, ex, n) => A().renderVerdict(v, r, ex, n),
       status: (t) => { status.textContent = t; setTimeout(() => { if (status.textContent === t) status.textContent = ''; }, 6000); },
       renderToolbar: () => renderToolbar(),
+      setCode: (v) => { editor.value = v; curFile().code = v; save(); },   // the editor's setter does not report a change, so save here
       openAssignmentFile: (a) => { const l = a.lang; if (!hasLang(l)) return; let idx = S.files[l].findIndex(f => f.asg === a.id); if (idx < 0) { S.files[l].push({ name: uniqueName(l, (a.title || 'assignment').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + LANG_INFO[l].ext), code: a.starter || '', asg: a.id }); idx = S.files[l].length - 1; } S.active[l] = idx; save(); if (l !== S.lang) switchLang(l); else activate(idx); },
       openReviewFile: (l, name, code) => { if (!hasLang(l)) l = S.lang; S.files[l].push({ name: uniqueName(l, name.replace(/[^a-z0-9_-]+/gi, '_') + LANG_INFO[l].ext), code }); S.active[l] = S.files[l].length - 1; save(); if (l !== S.lang) switchLang(l); else activate(S.active[l]); }
     };
@@ -725,7 +731,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       refBody.innerHTML = REFERENCE[isFull() ? 'cppfull' : 'cpp'];
       endMem(); renderToolbar();
     }
-    const fileInput = el('input', { type: 'file', accept: '.py,.cpp,.cc,.cxx,.h,.scm,.ss,.rkt,.txt', hidden: '', onchange: openFiles });
+    const fileInput = el('input', { type: 'file', accept: '.py,.cpp,.cc,.cxx,.h,.java,.scm,.ss,.rkt,.txt', hidden: '', onchange: openFiles });
     function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'python' ? stepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, findBtn, tplBtn, refBtn, window.TERMINAL ? termBtn : null, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
     function setFont(d) { S.fontSize = Math.min(24, Math.max(11, S.fontSize + d)); save(); editor.el.style.setProperty('--lab-font', S.fontSize + 'px'); editor.render(); }
 
