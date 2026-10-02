@@ -1191,6 +1191,37 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .course-code .head-icons .lang-icon { height: 2rem; max-width: 6rem; }
 .lang-btn .tab-icon { height: 1.05rem; margin-right: 0.4rem; vertical-align: -0.2em; }
 
+/* ---------- spaced review (#/today) and the skills map (src/review.js) ---------- */
+.today-link { display: inline-flex; align-items: center; gap: 0.35rem; }
+.today-badge { font-size: 0.72rem; font-weight: 700; line-height: 1; min-width: 1.35em; padding: 0.18rem 0.35rem; border-radius: 999px; background: var(--accent); color: var(--accent-ink, var(--paper)); text-align: center; font-variant-numeric: tabular-nums; }
+.today { max-width: 44rem; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; font-family: var(--sans); }
+.today-head h1 { margin: 0 0 0.4rem; }
+.today-head .lead { color: var(--ink-2); margin: 0 0 1.5rem; }
+.today-count { color: var(--ink-3); margin: 0 0 0.5rem; }
+.today-stage .toolbar { margin-top: 0.8rem; }
+.today-done { border: 1px solid var(--rule); border-radius: 4px; padding: 1rem 1.2rem; background: var(--paper-2); }
+.today-big { font-size: 1.15rem; font-weight: 600; margin: 0 0 0.4rem; }
+.today-skills { margin-top: 2.5rem; }
+.today-skills h2 { margin-bottom: 0.3rem; }
+.review-panel { margin: 1.5rem 0 0.5rem; padding: 1rem 1.2rem; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper-2); font-family: var(--sans); }
+.review-panel h2 { margin: 0 0 0.5rem; font-size: 1.15rem; }
+.review-panel p { margin: 0 0 0.6rem; }
+.skills-map { margin-top: 0.8rem; }
+.skills-map h3 { margin: 1.2rem 0 0.2rem; font-size: 1rem; }
+.sk-sum { color: var(--ink-3); margin: 0 0 0.4rem; }
+.skills { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: 0.35rem; }
+.sk a { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 0.5rem; padding: 0.35rem 0.55rem; border: 1px solid var(--rule); border-left-width: 4px; border-radius: 3px; text-decoration: none; color: var(--ink); background: var(--paper); font-size: 0.85rem; line-height: 1.25; }
+.sk a:hover { border-color: var(--ink-3); }
+.sk-num { grid-row: span 2; font-weight: 700; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.sk-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-state { font-size: 0.75rem; color: var(--ink-3); }
+.sk-practising a { border-left-color: var(--warn, #b7791f); }
+.sk-secure a { border-left-color: var(--ok); }
+.sk-secure .sk-state { color: var(--ok); font-weight: 600; }
+.sk-none a { border-left-color: var(--rule); }
+.recap-return { margin: 0.6rem 0 0; color: var(--ink-2); }
+.review-panel .btn { text-decoration: none; }
+
 </style>
 </head>
 <body>
@@ -1271,7 +1302,8 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
     <dt>Try it</dt><dd>A small program with a caption saying what to look for and what to change. Press Run, change something, run again. <em>Open in Code Lab</em> is there for students who want to keep going.</dd>
     <dt>Predict</dt><dd>In the key example of each idea, a box asks what the program will print before it runs. The first run lays the guess beside the real output, line by line, and only then shows the explanation. Guessing first, even wrongly, is what makes the answer stick (the PRIMM approach: predict, run, investigate, modify, make). Students can choose <em>Run without guessing</em>; in classroom mode the box is skipped, so the class can guess aloud.</dd>
     <dt>Predict, then reveal</dt><dd>A question with a hidden answer. Ask students to commit to a prediction before they open it.</dd>
-    <dt>Quick check</dt><dd>Three per lesson: a one-question multiple choice after an idea. Students pick an answer and then say how sure they are (Sure, Think so, Guessing); that button checks it, with a one-line reason. A confident wrong answer and a lucky guess each get their own message, because noticing those is how students learn what they really know. Nothing is recorded, so students can answer freely. In classroom mode one tap checks, for show-of-hands questions.</dd>
+    <dt>Quick check</dt><dd>Three per lesson: a one-question multiple choice after an idea. Students pick an answer and then say how sure they are (Sure, Think so, Guessing); that button checks it, with a one-line reason. A confident wrong answer and a lucky guess each get their own message, because noticing those is how students learn what they really know. The first answer goes into the student's review on their own device (below); no score is kept and nothing is sent anywhere, so students can answer freely. In classroom mode one tap checks, for show-of-hands questions, and nothing goes into the review of the computer at the front.</dd>
+    <dt>Today's review</dt><dd>Every quick check a student answers comes back on the <a href="index.html#/today">Review</a> page a day later, then after 3, 10, 30 and 90 days as long as they keep getting it right, and after a day again when they miss it. At most ten questions a day, mixed across lessons and courses, with the options shuffled. Remembering something after a gap is what makes it last, so a five-minute review at the start of class pays off. Each course page also shows a <b>skills map</b>: a lesson is <i>secure</i> once its exercises are done and its quick checks have been answered right at two reviews, days apart. The review is kept in the browser and goes into "Save my work to a file".</dd>
     <dt>Interactive figure</dt><dd>In most lessons: a diagram with Step and Play buttons, or something to drag or type into. Students should use it until they can predict the next step.</dd>
     <dt>Common mistakes</dt><dd>A box near the end listing the errors students make in this lesson. Read it before class: it is the list of things you will be asked about.</dd>
     <dt>Exercises</dt><dd>Two graded tasks. <em>Check answer</em> runs tests and says which passed. <em>Hint</em> gives hints one at a time. <em>Solution</em> shows a worked answer after two attempts. A green checkmark marks completion.</dd>

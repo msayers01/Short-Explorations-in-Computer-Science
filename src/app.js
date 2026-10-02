@@ -742,16 +742,20 @@
   // well, and a lucky guess that turns out right is still worth reading the reason for (metacognition; the hypercorrection effect).
   // After the first answer the remaining options check at once, and in classroom mode (the class answers aloud) so does the first.
   const SURE = [['sure', 'Sure'], ['think', 'Think so'], ['guess', 'Guessing']];
-  function checkBlock(b) {
+  // hooks.onFirstAnswer(correct, sure) hears the first answer (review.js schedules it); hooks.onRight() hears when it is answered right.
+  function checkBlock(b, hooks) {
+    hooks = hooks || {};
     const box = el('div', { class: 'qc', role: 'group', 'aria-label': 'Quick check' });
     const why = el('p', { class: 'qc-why', role: 'status', hidden: '' });
     const opts = el('div', { class: 'qc-opts' });
     let chosen = -1, answered = false;
     const judge = (i, sure) => {
       chosen = -1; conf.hidden = true; btns.forEach((x) => x.classList.remove('chosen'));
+      if (!answered && hooks.onFirstAnswer) { try { hooks.onFirstAnswer(i === b.answer, sure); } catch (e) { console.error(e); } }
       if (i === b.answer) {
         box.classList.add('done'); btns[i].classList.add('right'); btns.forEach((x) => { x.disabled = true; x.removeAttribute('aria-pressed'); });
         why.innerHTML = (sure === 'guess' ? '<b>Yes, though you were guessing.</b> Read why, so that next time you know it: ' : '<b>Yes.</b> ') + (b.why || '');
+        if (hooks.onRight) setTimeout(hooks.onRight, 0);
       } else {
         btns[i].classList.add('wrong'); btns[i].disabled = true; btns[i].removeAttribute('aria-pressed');
         why.innerHTML = (sure === 'sure' ? '<b>Not that one, and you were sure.</b> That makes it the one most worth working out. ' : '<b>Not that one.</b> ') + (b.wrong && b.wrong[i] ? b.wrong[i] : 'Try another.');
@@ -814,10 +818,10 @@
         const d = el('div', { class: 'prose', html: b });
         if (firstProse) { firstProse = false; const first = d.firstElementChild; if (first && first.tagName === 'P') { d.id = 'part-story'; part('part-story', 'Story', 'story'); } }
         d.querySelectorAll('h2').forEach((h) => { if (!h.id) h.id = 'sec-' + slug(h.textContent); part(h.id, h.textContent, 'section'); });
-        const recap = d.querySelector('.recap'); if (recap) { recap.id = 'part-recap'; part('part-recap', 'Recap', 'recap'); }
+        const recap = d.querySelector('.recap'); if (recap) { recap.id = 'part-recap'; part('part-recap', 'Recap', 'recap'); if (window.REVIEW && blocks.some((x) => x && x.check)) recap.append(el('p', { class: 'recap-return small' }, 'Coming back: the quick checks you answered in this lesson return in ', el('a', { href: '#/today' }, 'Today\u2019s review'), ' tomorrow, then after 3, 10, 30 and 90 days.')); }
         frag.append(d);
       }
-      else if (b.check) { checkCount++; frag.append(tagged('Quick check ' + checkCount, checkBlock(b), 'blk-check')); }
+      else if (b.check) { checkCount++; frag.append(tagged('Quick check ' + checkCount, checkBlock(b, { onFirstAnswer: (ok, sure) => window.REVIEW && window.REVIEW.fromLesson(course, b, ok, sure) }), 'blk-check')); }
       else if (b.play && (b.lang || course.lang) === 'shell' && window.TERMINAL) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], window.TERMINAL.playBlock(b, course), 'blk-play')); }
       else if (b.play) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, predict: b.predict, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount }), 'blk-play')); }
       else if (b.ex) {
@@ -918,7 +922,8 @@
         el('a', { href: '#/courses', class: 'courses-link' + (course === 'courses' || (course && course.id) ? ' current' : '') }, 'Courses'),
         window.ALGOS ? el('a', { href: '#/algorithms', class: 'algos-link' + (course === 'algorithms' ? ' current' : '') }, 'Algorithms') : null,
         window.APPLIED ? el('a', { href: '#/real-world', class: 'applied-link' + (course === 'applied' ? ' current' : '') }, 'Real world') : null,
-        el('a', { href: '#/lab', class: 'lab-link' + (course === 'lab' ? ' current' : '') }, 'Code Lab')),
+        el('a', { href: '#/lab', class: 'lab-link' + (course === 'lab' ? ' current' : '') }, 'Code Lab'),
+        window.REVIEW ? window.REVIEW.topLink(course === 'today') : null),   // appears once there is something to review (src/review.js)
       el('div', { class: 'top-tools' },   // the three small controls sit close together so the links keep their room
         window.TOUR ? window.TOUR.button() : null,   // a guided tour of the site (src/tour.js)
         window.CLASSROOM ? window.CLASSROOM.button() : null,
@@ -1035,7 +1040,7 @@
         el('h2', {}, 'For teachers'),
         el('div', { class: 'prose' }, el('p', {}, 'Running a class with this site? ', el('a', { href: '#/guide' }, 'Read the guide for teachers'), ': how the lessons are built, a plan for an hour of coding, the Code Lab, and how to set assignments and collect students\u2019 work with nothing to install and no accounts.'))
       ),
-      el('footer', { class: 'foot' }, el('span', {}, SITE.footer), el('span', { class: 'foot-links' }, window.ABOUT ? [el('a', { href: '#/about' }, 'About and credits'), ' \u00b7 '] : null, el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Clear all saved progress and code? (Save it to a file first if you want it back.) Click again to confirm', () => { Progress.reset(); route(); }) }, 'Reset my progress')))
+      el('footer', { class: 'foot' }, el('span', {}, SITE.footer), el('span', { class: 'foot-links' }, window.ABOUT ? [el('a', { href: '#/about' }, 'About and credits'), ' \u00b7 '] : null, el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Clear all saved progress and code? (Save it to a file first if you want it back.) Click again to confirm', () => { Progress.reset(); if (window.REVIEW) window.REVIEW.reset(); route(); }) }, 'Reset my progress')))
     );
     return main;
   }
@@ -1052,6 +1057,7 @@
       el('div', { class: 'course-grid' },
         el('div', { class: 'course-main' },
           el('div', { class: 'prose', html: course.description }),
+          window.REVIEW ? window.REVIEW.coursePanel(course) : null,
           el('h2', {}, lbl('lessons')),
           el('ol', { class: 'lessons' }, course.lessons.map((L, i) => {
             const ids = exerciseIds(L); const d = ids.filter(id => Progress.isDone(id)).length;
@@ -1106,6 +1112,7 @@
     if (parts[0] === 'ojibwe' && window.OJIBWE) { document.documentElement.setAttribute('data-course', ''); document.title = 'Ojibwemowin — ' + SITE.name; app.append(topBar('ojibwe'), window.OJIBWE.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'about' && window.ABOUT) { document.documentElement.setAttribute('data-course', ''); document.title = 'About and credits — ' + SITE.name; app.append(topBar('about'), window.ABOUT.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'portfolio' && window.PORTFOLIO) { document.documentElement.setAttribute('data-course', ''); document.title = 'Portfolio — ' + SITE.name; app.append(topBar('portfolio'), window.PORTFOLIO.page(query)); window.scrollTo(0, 0); return; }
+    if (parts[0] === 'today' && window.REVIEW) { document.documentElement.setAttribute('data-course', ''); document.title = 'Today\u2019s review — ' + SITE.name; app.append(topBar('today'), window.REVIEW.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'courses') { document.documentElement.setAttribute('data-course', ''); document.title = 'Courses — ' + SITE.name; app.append(topBar('courses'), coursesPage()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'algorithms' && window.ALGOS) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('algorithms'), window.ALGOS.page(parts[1])); window.scrollTo(0, 0); return; }
     if (parts[0] === 'real-world' && window.APPLIED) { document.documentElement.setAttribute('data-course', ''); document.title = 'Where it is used — ' + SITE.name; app.append(topBar('applied'), window.APPLIED.page(parts[1])); if (parts[1]) { const t = document.getElementById(parts[1]); if (t && t.scrollIntoView) { t.scrollIntoView(); return; } } window.scrollTo(0, 0); return; }
@@ -1121,5 +1128,5 @@
   window.addEventListener('hashchange', route);
   document.addEventListener('progress-changed', () => { /* sidebars re-render on next navigation */ });
   document.addEventListener('DOMContentLoaded', route);
-  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { langIcon, lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, checkSVG, lbl } };
+  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { checkBlock, langIcon, lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, checkSVG, lbl } };
 })();

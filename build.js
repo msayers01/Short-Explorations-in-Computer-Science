@@ -71,6 +71,7 @@ const scripts = [
   'src/qr.js',
   'src/teach.js',
   'src/backup.js',
+  'src/review.js',     // spaced review (#/today) and the skills map
   'src/widgets.js',
   'src/portfolio.js',
   'src/classroom.js',

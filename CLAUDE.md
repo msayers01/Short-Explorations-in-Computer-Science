@@ -168,7 +168,9 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   a quick check, at most 450 words without something to do, examples of at most 25 lines (`long: true` for a whole class), two exercises
   with two or more hints and a `followup`. Put `standard: 1` on a new lesson (or course) and the linter enforces it; `node test_lessons.js
   --standard` reports the gaps of every lesson (SC 106 lessons 5-8 are the first to meet it). Quick checks ask Sure / Think so / Guessing
-  before marking. Still to build from the same review, in order: the spaced review queue and skills map; tracing and Parsons exercise
-  kinds; diagnostic feedback (whitespace-visible diffs, hand-written notes for common errors); exit codes and a class table for teachers;
+  before marking. **Spaced review** (`src/review.js`, ARCHITECTURE §9i): every quick check answered in a lesson comes back on `#/today`
+  after 1, 3, 10, 30, 90 days (key `shortcourses.review.v1`, in backups); the skills map shows each lesson as not started / practising /
+  secure on the course page and `#/today`. `#/review` was already the Lab's teacher route, hence `#/today`. Still to build from the same
+  review, in order: tracing and Parsons exercise kinds; diagnostic feedback (whitespace-visible diffs, hand-written notes for common errors); exit codes and a class table for teachers;
   a display panel and read-aloud; then SC 109 How Machines Learn.
 - A function-writing exercise in a Full C++ course: use `prelude` for includes, `main` (or `call`) tests, and `name` on each test.

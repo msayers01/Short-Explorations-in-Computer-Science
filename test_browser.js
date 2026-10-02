@@ -352,6 +352,26 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   const qcFirst = await qc.locator('.qc-why').textContent();
   await qc.locator('.qc-opt').nth(1).click();
   check('a quick check asks how sure before marking, marks a confident wrong option, then the right one with an explanation', qcWaits && /Not that one, and you were sure/.test(qcFirst) && (await qc.locator('.qc-opt.right').count()) === 1 && /Yes\./.test(await qc.locator('.qc-why').textContent()), qcFirst);
+  // the spaced review: that answer joined the review; made due, it comes back on #/today, and the course page shows the skills map
+  const rv = await page.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.review.v1') || 'null'));
+  const rvIds = rv ? Object.keys(rv.items) : [];
+  check('a quick check answered in a lesson joins the review, due tomorrow', rvIds.length === 1 && /^scratch:/.test(rvIds[0]) && rv.items[rvIds[0]].box === 0 && rv.items[rvIds[0]].due > Date.now() + 20 * 3600 * 1000, rv);
+  await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('shortcourses.review.v1')); for (const k in d.items) d.items[k].due = 0; localStorage.setItem('shortcourses.review.v1', JSON.stringify(d)); });
+  await goto('#/today');
+  const badge = await page.locator('.top .today-link .today-badge').textContent().catch(() => '');
+  const tq = page.locator('.today-stage .qc');
+  for (let i = 0; i < 6 && !(await tq.evaluate((n) => n.classList.contains('done'))); i++) {
+    const opt = tq.locator('.qc-opt:not([disabled])').first(); await opt.click();
+    if (await tq.locator('.qc-sure').isVisible()) await tq.locator('.qc-sure-btn:has-text("Sure")').click();
+  }
+  await page.locator('.today-next').click();
+  const doneText = await page.locator('.today-done').textContent().catch(() => '');
+  const rvAfter = await page.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.review.v1')));
+  const it = rvAfter.items[rvIds[0]];
+  check('#/today asks the due question, reschedules it, and says what comes next', badge === '1' && /Done for today: [01] of 1/.test(doneText) && it.n === 2 && it.due > Date.now(), { badge, doneText, it });
+  await goto('#/scratch');
+  check('the course page shows the skills map once a course is started', (await page.locator('.review-panel .skills li').count()) === (await page.locator('ol.lessons > li').count()) && (await page.locator('.review-panel .sk-practising').count()) >= 1);
+  await goto('#/scratch/4');
   check('the lesson map lists the parts and the side column follows the page', (await page.locator('.lesson-map li').count()) >= 4 && (await page.locator('.onpage li').count()) >= 4);
   const quiz = page.locator('.bq').first();
   await quiz.locator('.bq-input').fill('if score > 100'); await quiz.locator('button:has-text("Check")').click();

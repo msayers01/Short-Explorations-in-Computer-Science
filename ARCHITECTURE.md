@@ -100,6 +100,7 @@ site/
     qr.js                QR encoder → window.QR
     teach.js             assignments / submissions / grade book → window.TEACH
     widgets.js           interactive SVG figures → window.WIDGETS[name](mount, block, course)
+    review.js            spaced review (#/today) and the skills map → window.REVIEW (node: test_review.js)
     portfolio.js         student portfolio page (#/portfolio) → window.PORTFOLIO
     classroom.js         classroom (projector) mode → window.CLASSROOM
     tour.js              the guided tour (the Tour button in the top bar) → window.TOUR (§9a)
@@ -146,7 +147,7 @@ Hash routes; a `?query` after the path is split off first.
 | `#/courses` | every course in groups (`COURSE_GROUPS` in app.js; a course in no group is listed under "More courses"), with a search box |
 | `#/algorithms`, `#/algorithms/<demo-id>` | Algorithms in motion: the index of demos, or one demo (§9g) |
 | `#/real-world`, `#/real-world/<topic-id>` | where the ideas of the courses are used, scrolled to a topic (§9g) |
-| `#/<course>` | course page (audience, outcomes, lesson list with progress) |
+| `#/<course>` | course page (audience, outcomes, "Your skills" once started (§9i), lesson list with progress) |
 | `#/<course>/<n>` | lesson n (1-based) |
 | `#/<course>/<n>/<exercise-id>` | lesson n, scrolled to that exercise |
 | `#/guide` | the teacher guide (printable; `dist/teacher-guide.html` is the standalone copy) |
@@ -155,6 +156,7 @@ Hash routes; a `?query` after the path is split off first.
 | `#/review?s=` | Code Lab, teacher side: reviews the submission, opens the grade book |
 | `#/ojibwe` | every Ojibwe word with its source, the days and hours of the clock, and words still needed; printable |
 | `#/about` | About and credits: who made it, what it keeps about a visitor, the licence, credits and full third-party licence texts |
+| `#/today` | Today's review: due quick checks, one at a time, and the skills map of every started course (§9i) |
 | `#/portfolio` | the student's portfolio (settings, print, download, make a link) |
 | `#/portfolio?p=` | a received portfolio, read-only, with "Check every exercise on this computer" |
 
@@ -213,6 +215,7 @@ lesson 7 has `ma-13-1/2`, and lessons 8–13 have `ma-7-*` … `ma-12-*`.
 | `shortcourses.lab.v1` | lab.js | `{ lang, files: {python:[…], cpp:[…], java:[…], scheme:[…]}, active: {lang: idx}, fontSize, wrap, panels }`; a file is `{ name, code, ex?: {id, course, lesson}, asg?: assignmentId, asgSeen?, lastCheck? }` |
 | `shortcourses.portfolio.v1` | portfolio.js | `{ name, note, unfinished, tasks, lab: ["<lang>/<file name>", …] }` (name starts as teach's `studentName` if set) |
 | `shortcourses.classroom.v1` | classroom.js | `{ on, scale: index into [1.1, 1.25, 1.4, 1.6, 1.8], spot }` |
+| `shortcourses.review.v1` | review.js | `{ v: 1, items: { id: { box 0-4, due, n, miss, last } } }`; id = `<course id>:<FNV-1a hash of the question and options, base 36>`; in the backup file (merge: the copy answered last wins) |
 | `shortcourses.tour.v1` | tour.js | `'1'` once the tour has been opened (stops the Tour button's first-visit pulse); not in backups |
 | `shortcourses.teach.v1` | teach.js | `{ teacher, name, studentName, assignments: {id: A}, book: {id: {studentName: entry}}, received: {id: studentCopy} }` |
 | `shortcourses.shell.v1` | terminal.js | `{ v: 1, fs: { v: 1, cwd, root }, history: [lines] }`; `root` holds only `/home` and `/tmp` (`shell.js: fs.toJSON`); the system part (`/bin`, `/etc`, `/dev`) is rebuilt on load. A file is `{ t:'f', d, x?, m, bin? }`, a directory `{ t:'d', m, c: [[name, node], …] }` |
@@ -589,6 +592,20 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   mobile), a search box, contents, and a by-course index for teachers. Lesson links are labelled from `window.COURSES` at page time and a
   link to a missing lesson is left out; `test_browser.js` checks every link resolves. Every example names a real system or event: check it
   before adding one, and keep the two that describe this site true when the site changes.
+
+## 9i. Spaced review and the skills map (`review.js`)
+
+Every quick check a student answers in a lesson (`app.js: renderBlocks` passes `onFirstAnswer` to `checkBlock`) joins the review with
+its first answer only, so re-reading a lesson does not reset it; classroom mode records nothing. The schedule is a Leitner box: after an
+answer the item comes back in `GAPS = [1, 3, 10, 30, 90]` days, one box further for a right answer marked Sure or Think so, the same box
+for a right Guessing, box 0 for a miss (a meta-analysis found expanding gaps no better than equal ones, so the exact gaps matter less
+than that reviews happen). `#/today` shows at most `PER_DAY = 10` items due by the end of today, the most overdue first, then shuffled
+so lessons and courses mix, each with its options in a new order (`wrong[]` and `answer` follow). An item whose question no longer exists
+(edited text gives a new id) is ignored. The skills map is per lesson: *secure* = every exercise done and every quick check at box 2 or
+higher (right at the 1- and 3-day reviews), *practising* = something done, else *not started*. It is on the course page (only once the
+course is started) and on `#/today`. The top bar shows **Review** with the number due once there is anything to review. Lesson recaps say
+when their checks come back. Pure parts (`next`, `itemId`, `clean`, `merge`, `dueIds`) are tested in node by `test_review.js`, which
+also checks that all quick checks on the site have distinct ids; `test_backup.js` covers the backup file; `test_browser.js` the loop.
 
 ## 9h. Pictures in lessons (`img/`, `scripts/fetch-image.js`, `app.js: photoBlock`)
 

@@ -46,6 +46,7 @@ add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is w
     src/teach.js           assignments, submissions and grade book, carried in links
     src/portfolio.js       the student portfolio (#/portfolio)
     src/classroom.js       classroom (projector) mode
+    src/review.js          spaced review (#/today) and the skills map
     src/tour.js            the guided tour behind the Tour button in the top bar
     src/guide.js           the guide for teachers (#/guide; also built to dist/teacher-guide.html)
     src/about.js           About and credits (#/about)

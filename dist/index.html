@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Aut+He3DoDXhKvmsNNfisNoXm6qtYR0UnmsZ4kTyj7g=' 'sha256-zbvoq8lLEKxxkT8idwR6C0VM3DXpzbDvqEBAy/xxU08=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Aut+He3DoDXhKvmsNNfisNoXm6qtYR0UnmsZ4kTyj7g=' 'sha256-6h9pLehQW3AkQDUxJJ2mS8KTggmXWqRMS6cVDo5sR68=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -1190,6 +1190,37 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .course-code .head-icons { display: flex; margin-top: 0.5rem; justify-content: flex-start; }
 .course-code .head-icons .lang-icon { height: 2rem; max-width: 6rem; }
 .lang-btn .tab-icon { height: 1.05rem; margin-right: 0.4rem; vertical-align: -0.2em; }
+
+/* ---------- spaced review (#/today) and the skills map (src/review.js) ---------- */
+.today-link { display: inline-flex; align-items: center; gap: 0.35rem; }
+.today-badge { font-size: 0.72rem; font-weight: 700; line-height: 1; min-width: 1.35em; padding: 0.18rem 0.35rem; border-radius: 999px; background: var(--accent); color: var(--accent-ink, var(--paper)); text-align: center; font-variant-numeric: tabular-nums; }
+.today { max-width: 44rem; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; font-family: var(--sans); }
+.today-head h1 { margin: 0 0 0.4rem; }
+.today-head .lead { color: var(--ink-2); margin: 0 0 1.5rem; }
+.today-count { color: var(--ink-3); margin: 0 0 0.5rem; }
+.today-stage .toolbar { margin-top: 0.8rem; }
+.today-done { border: 1px solid var(--rule); border-radius: 4px; padding: 1rem 1.2rem; background: var(--paper-2); }
+.today-big { font-size: 1.15rem; font-weight: 600; margin: 0 0 0.4rem; }
+.today-skills { margin-top: 2.5rem; }
+.today-skills h2 { margin-bottom: 0.3rem; }
+.review-panel { margin: 1.5rem 0 0.5rem; padding: 1rem 1.2rem; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper-2); font-family: var(--sans); }
+.review-panel h2 { margin: 0 0 0.5rem; font-size: 1.15rem; }
+.review-panel p { margin: 0 0 0.6rem; }
+.skills-map { margin-top: 0.8rem; }
+.skills-map h3 { margin: 1.2rem 0 0.2rem; font-size: 1rem; }
+.sk-sum { color: var(--ink-3); margin: 0 0 0.4rem; }
+.skills { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: 0.35rem; }
+.sk a { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 0.5rem; padding: 0.35rem 0.55rem; border: 1px solid var(--rule); border-left-width: 4px; border-radius: 3px; text-decoration: none; color: var(--ink); background: var(--paper); font-size: 0.85rem; line-height: 1.25; }
+.sk a:hover { border-color: var(--ink-3); }
+.sk-num { grid-row: span 2; font-weight: 700; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.sk-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-state { font-size: 0.75rem; color: var(--ink-3); }
+.sk-practising a { border-left-color: var(--warn, #b7791f); }
+.sk-secure a { border-left-color: var(--ok); }
+.sk-secure .sk-state { color: var(--ok); font-weight: 600; }
+.sk-none a { border-left-color: var(--rule); }
+.recap-return { margin: 0.6rem 0 0; color: var(--ink-2); }
+.review-panel .btn { text-decoration: none; }
 
 </style>
 </head>
@@ -16943,16 +16974,20 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
   // well, and a lucky guess that turns out right is still worth reading the reason for (metacognition; the hypercorrection effect).
   // After the first answer the remaining options check at once, and in classroom mode (the class answers aloud) so does the first.
   const SURE = [['sure', 'Sure'], ['think', 'Think so'], ['guess', 'Guessing']];
-  function checkBlock(b) {
+  // hooks.onFirstAnswer(correct, sure) hears the first answer (review.js schedules it); hooks.onRight() hears when it is answered right.
+  function checkBlock(b, hooks) {
+    hooks = hooks || {};
     const box = el('div', { class: 'qc', role: 'group', 'aria-label': 'Quick check' });
     const why = el('p', { class: 'qc-why', role: 'status', hidden: '' });
     const opts = el('div', { class: 'qc-opts' });
     let chosen = -1, answered = false;
     const judge = (i, sure) => {
       chosen = -1; conf.hidden = true; btns.forEach((x) => x.classList.remove('chosen'));
+      if (!answered && hooks.onFirstAnswer) { try { hooks.onFirstAnswer(i === b.answer, sure); } catch (e) { console.error(e); } }
       if (i === b.answer) {
         box.classList.add('done'); btns[i].classList.add('right'); btns.forEach((x) => { x.disabled = true; x.removeAttribute('aria-pressed'); });
         why.innerHTML = (sure === 'guess' ? '<b>Yes, though you were guessing.</b> Read why, so that next time you know it: ' : '<b>Yes.</b> ') + (b.why || '');
+        if (hooks.onRight) setTimeout(hooks.onRight, 0);
       } else {
         btns[i].classList.add('wrong'); btns[i].disabled = true; btns[i].removeAttribute('aria-pressed');
         why.innerHTML = (sure === 'sure' ? '<b>Not that one, and you were sure.</b> That makes it the one most worth working out. ' : '<b>Not that one.</b> ') + (b.wrong && b.wrong[i] ? b.wrong[i] : 'Try another.');
@@ -17015,10 +17050,10 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
         const d = el('div', { class: 'prose', html: b });
         if (firstProse) { firstProse = false; const first = d.firstElementChild; if (first && first.tagName === 'P') { d.id = 'part-story'; part('part-story', 'Story', 'story'); } }
         d.querySelectorAll('h2').forEach((h) => { if (!h.id) h.id = 'sec-' + slug(h.textContent); part(h.id, h.textContent, 'section'); });
-        const recap = d.querySelector('.recap'); if (recap) { recap.id = 'part-recap'; part('part-recap', 'Recap', 'recap'); }
+        const recap = d.querySelector('.recap'); if (recap) { recap.id = 'part-recap'; part('part-recap', 'Recap', 'recap'); if (window.REVIEW && blocks.some((x) => x && x.check)) recap.append(el('p', { class: 'recap-return small' }, 'Coming back: the quick checks you answered in this lesson return in ', el('a', { href: '#/today' }, 'Today\u2019s review'), ' tomorrow, then after 3, 10, 30 and 90 days.')); }
         frag.append(d);
       }
-      else if (b.check) { checkCount++; frag.append(tagged('Quick check ' + checkCount, checkBlock(b), 'blk-check')); }
+      else if (b.check) { checkCount++; frag.append(tagged('Quick check ' + checkCount, checkBlock(b, { onFirstAnswer: (ok, sure) => window.REVIEW && window.REVIEW.fromLesson(course, b, ok, sure) }), 'blk-check')); }
       else if (b.play && (b.lang || course.lang) === 'shell' && window.TERMINAL) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], window.TERMINAL.playBlock(b, course), 'blk-play')); }
       else if (b.play) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, predict: b.predict, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount }), 'blk-play')); }
       else if (b.ex) {
@@ -17119,7 +17154,8 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
         el('a', { href: '#/courses', class: 'courses-link' + (course === 'courses' || (course && course.id) ? ' current' : '') }, 'Courses'),
         window.ALGOS ? el('a', { href: '#/algorithms', class: 'algos-link' + (course === 'algorithms' ? ' current' : '') }, 'Algorithms') : null,
         window.APPLIED ? el('a', { href: '#/real-world', class: 'applied-link' + (course === 'applied' ? ' current' : '') }, 'Real world') : null,
-        el('a', { href: '#/lab', class: 'lab-link' + (course === 'lab' ? ' current' : '') }, 'Code Lab')),
+        el('a', { href: '#/lab', class: 'lab-link' + (course === 'lab' ? ' current' : '') }, 'Code Lab'),
+        window.REVIEW ? window.REVIEW.topLink(course === 'today') : null),   // appears once there is something to review (src/review.js)
       el('div', { class: 'top-tools' },   // the three small controls sit close together so the links keep their room
         window.TOUR ? window.TOUR.button() : null,   // a guided tour of the site (src/tour.js)
         window.CLASSROOM ? window.CLASSROOM.button() : null,
@@ -17236,7 +17272,7 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
         el('h2', {}, 'For teachers'),
         el('div', { class: 'prose' }, el('p', {}, 'Running a class with this site? ', el('a', { href: '#/guide' }, 'Read the guide for teachers'), ': how the lessons are built, a plan for an hour of coding, the Code Lab, and how to set assignments and collect students\u2019 work with nothing to install and no accounts.'))
       ),
-      el('footer', { class: 'foot' }, el('span', {}, SITE.footer), el('span', { class: 'foot-links' }, window.ABOUT ? [el('a', { href: '#/about' }, 'About and credits'), ' \u00b7 '] : null, el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Clear all saved progress and code? (Save it to a file first if you want it back.) Click again to confirm', () => { Progress.reset(); route(); }) }, 'Reset my progress')))
+      el('footer', { class: 'foot' }, el('span', {}, SITE.footer), el('span', { class: 'foot-links' }, window.ABOUT ? [el('a', { href: '#/about' }, 'About and credits'), ' \u00b7 '] : null, el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Clear all saved progress and code? (Save it to a file first if you want it back.) Click again to confirm', () => { Progress.reset(); if (window.REVIEW) window.REVIEW.reset(); route(); }) }, 'Reset my progress')))
     );
     return main;
   }
@@ -17253,6 +17289,7 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
       el('div', { class: 'course-grid' },
         el('div', { class: 'course-main' },
           el('div', { class: 'prose', html: course.description }),
+          window.REVIEW ? window.REVIEW.coursePanel(course) : null,
           el('h2', {}, lbl('lessons')),
           el('ol', { class: 'lessons' }, course.lessons.map((L, i) => {
             const ids = exerciseIds(L); const d = ids.filter(id => Progress.isDone(id)).length;
@@ -17307,6 +17344,7 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
     if (parts[0] === 'ojibwe' && window.OJIBWE) { document.documentElement.setAttribute('data-course', ''); document.title = 'Ojibwemowin — ' + SITE.name; app.append(topBar('ojibwe'), window.OJIBWE.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'about' && window.ABOUT) { document.documentElement.setAttribute('data-course', ''); document.title = 'About and credits — ' + SITE.name; app.append(topBar('about'), window.ABOUT.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'portfolio' && window.PORTFOLIO) { document.documentElement.setAttribute('data-course', ''); document.title = 'Portfolio — ' + SITE.name; app.append(topBar('portfolio'), window.PORTFOLIO.page(query)); window.scrollTo(0, 0); return; }
+    if (parts[0] === 'today' && window.REVIEW) { document.documentElement.setAttribute('data-course', ''); document.title = 'Today\u2019s review — ' + SITE.name; app.append(topBar('today'), window.REVIEW.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'courses') { document.documentElement.setAttribute('data-course', ''); document.title = 'Courses — ' + SITE.name; app.append(topBar('courses'), coursesPage()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'algorithms' && window.ALGOS) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('algorithms'), window.ALGOS.page(parts[1])); window.scrollTo(0, 0); return; }
     if (parts[0] === 'real-world' && window.APPLIED) { document.documentElement.setAttribute('data-course', ''); document.title = 'Where it is used — ' + SITE.name; app.append(topBar('applied'), window.APPLIED.page(parts[1])); if (parts[1]) { const t = document.getElementById(parts[1]); if (t && t.scrollIntoView) { t.scrollIntoView(); return; } } window.scrollTo(0, 0); return; }
@@ -17322,7 +17360,7 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
   window.addEventListener('hashchange', route);
   document.addEventListener('progress-changed', () => { /* sidebars re-render on next navigation */ });
   document.addEventListener('DOMContentLoaded', route);
-  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { langIcon, lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, checkSVG, lbl } };
+  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { checkBlock, langIcon, lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, checkSVG, lbl } };
 })();
 
 ;
@@ -17338,11 +17376,11 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
   const STEPS = [
     { route: '#/', target: '.hero', title: 'Welcome', text: 'Everything on this site runs in your browser: nothing to install, no account, nothing sent anywhere. Your progress is saved on this device. This tour takes two minutes; press Esc to leave it at any time.' },
     { route: '#/', target: '.catalog li', title: 'The courses', text: 'The courses come in three groups: start here, programming languages, and computer science. SC 099 is for anyone who has never programmed; SC 100 follows Scratch; SC 101 is the usual start. Each card says how many lessons and graded exercises the course has, and how many you have completed.' },
-    { route: '#/', target: '.top-links', title: 'The top bar', text: 'From any page: Courses lists every course by group, with a search box; Algorithms shows searching, sorting, mazes and game search in motion; Real world says where each idea is used in software, security and engineering; and the Code Lab. The circle at the right switches between light and dark.', place: 'bottom' },
+    { route: '#/', target: '.top-links', title: 'The top bar', text: 'From any page: Courses lists every course by group, with a search box; Algorithms shows searching, sorting, mazes and game search in motion; Real world says where each idea is used in software, security and engineering; and the Code Lab. Once you have answered a few quick checks, Review appears too, with the number of questions due today. The circle at the right switches between light and dark.', place: 'bottom' },
     { route: '#/', target: '.backup', title: 'Your work', text: 'Exercises you pass and programs you write stay on this device. Save them to a file here to keep them safe or carry them to another computer, and restore them from the file later.', optional: true },
     { route: '#/python/1', target: '.lesson-map', title: 'Inside a lesson', text: 'Every lesson has the same parts: a short true story, numbered sections, runnable examples, quick checks, graded exercises and a recap. This map jumps to any of them, and the list on the side follows you as you read.' },
     { route: '#/python/1', target: '.blk-play', title: 'Examples run here', text: 'Press Run and the program runs in the page. Change something and run again; Reset puts it back. Open in Code Lab copies it into your own workspace.', place: 'top' },
-    { route: '#/python/1', target: '.blk-check', title: 'Quick checks', text: 'One question after each idea. Pick an answer, then say how sure you are: that button checks it. Being sure and wrong is the most useful result of all. Nothing is recorded, so answer freely.', place: 'top' },
+    { route: '#/python/1', target: '.blk-check', title: 'Quick checks', text: 'One question after each idea. Pick an answer, then say how sure you are: that button checks it. Being sure and wrong is the most useful result of all. Your first answer comes back in Review tomorrow, then after longer gaps; no score is kept.', place: 'top' },
     { route: '#/python/1', target: '.blk-ex', title: 'Exercises', text: 'Check answer runs your program against tests and shows which passed. Hints help one at a time; Solution is there when you are stuck (it asks you to try twice first). A passed exercise is ticked in the course and counts on the home page.', place: 'top' },
     { route: '#/lab', target: '.lab-langs', title: 'The Code Lab', text: 'Your own programs, in Python, C++, Java or Scheme. Files live in tabs and are saved as you type. Share link puts a whole program inside a link you can send to anyone.' },
     { route: '#/lab', target: '.lab-toolbar', title: 'The tools', text: 'Run, and Stop if it gets stuck. Step through runs a Python program a line at a time; C++ has Step through memory. Templates give you a start, Reference is a one-page cheat sheet, and Terminal opens a practice command line with your files in it.', place: 'bottom' },
@@ -20611,7 +20649,8 @@ window.GUIDE = (function () {
     <dt>Try it</dt><dd>A small program with a caption saying what to look for and what to change. Press Run, change something, run again. <em>Open in Code Lab</em> is there for students who want to keep going.</dd>
     <dt>Predict</dt><dd>In the key example of each idea, a box asks what the program will print before it runs. The first run lays the guess beside the real output, line by line, and only then shows the explanation. Guessing first, even wrongly, is what makes the answer stick (the PRIMM approach: predict, run, investigate, modify, make). Students can choose <em>Run without guessing</em>; in classroom mode the box is skipped, so the class can guess aloud.</dd>
     <dt>Predict, then reveal</dt><dd>A question with a hidden answer. Ask students to commit to a prediction before they open it.</dd>
-    <dt>Quick check</dt><dd>Three per lesson: a one-question multiple choice after an idea. Students pick an answer and then say how sure they are (Sure, Think so, Guessing); that button checks it, with a one-line reason. A confident wrong answer and a lucky guess each get their own message, because noticing those is how students learn what they really know. Nothing is recorded, so students can answer freely. In classroom mode one tap checks, for show-of-hands questions.</dd>
+    <dt>Quick check</dt><dd>Three per lesson: a one-question multiple choice after an idea. Students pick an answer and then say how sure they are (Sure, Think so, Guessing); that button checks it, with a one-line reason. A confident wrong answer and a lucky guess each get their own message, because noticing those is how students learn what they really know. The first answer goes into the student's review on their own device (below); no score is kept and nothing is sent anywhere, so students can answer freely. In classroom mode one tap checks, for show-of-hands questions, and nothing goes into the review of the computer at the front.</dd>
+    <dt>Today's review</dt><dd>Every quick check a student answers comes back on the <a href="#/today">Review</a> page a day later, then after 3, 10, 30 and 90 days as long as they keep getting it right, and after a day again when they miss it. At most ten questions a day, mixed across lessons and courses, with the options shuffled. Remembering something after a gap is what makes it last, so a five-minute review at the start of class pays off. Each course page also shows a <b>skills map</b>: a lesson is <i>secure</i> once its exercises are done and its quick checks have been answered right at two reviews, days apart. The review is kept in the browser and goes into "Save my work to a file".</dd>
     <dt>Interactive figure</dt><dd>In most lessons: a diagram with Step and Play buttons, or something to drag or type into. Students should use it until they can predict the next step.</dd>
     <dt>Common mistakes</dt><dd>A box near the end listing the errors students make in this lesson. Read it before class: it is the list of things you will be asked about.</dd>
     <dt>Exercises</dt><dd>Two graded tasks. <em>Check answer</em> runs tests and says which passed. <em>Hint</em> gives hints one at a time. <em>Solution</em> shows a worked answer after two attempts. A green checkmark marks completion.</dd>
@@ -21302,7 +21341,7 @@ window.GUIDE = (function () {
 /* src/backup.js */
 /* Saving a person's work to a file and restoring it. Progress is kept only in the browser, so without this it is lost when the
    site's data is cleared, and cannot move to another computer. The file holds: exercise progress and the code that passed, the Code Lab's
-   files, the terminal's files, the portfolio settings, and (student side of teach.js) the student's name and the assignments they received. A teacher can also
+   files, the terminal's files, the review schedule (review.js), the portfolio settings, and (student side of teach.js) the student's name and the assignments they received. A teacher can also
    include the teacher tools' data: assignments with their hidden tests, and the grade book. That is off unless asked for.
 
    A backup file is untrusted input, like a link: anyone can hand someone a file. parse() checks and rebuilds every part of it (types,
@@ -21319,11 +21358,13 @@ window.GUIDE = (function () {
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
   const FORMAT = 'short-explorations-backup', VERSION = 1, MAX_FILE = 8 * 1024 * 1024;
-  const KEYS = { progress: 'shortcourses.progress.v1', lab: 'shortcourses.lab.v1', portfolio: 'shortcourses.portfolio.v1', teach: 'shortcourses.teach.v1', shell: 'shortcourses.shell.v1' };
+  const KEYS = { progress: 'shortcourses.progress.v1', lab: 'shortcourses.lab.v1', portfolio: 'shortcourses.portfolio.v1', teach: 'shortcourses.teach.v1', shell: 'shortcourses.shell.v1', review: 'shortcourses.review.v1' };
   const LANGS = ['python', 'cpp', 'java', 'scheme'];
   const TEACH = () => (typeof window !== 'undefined' && window.TEACH) || null;
   // the terminal's file system: shell.js checks and caps everything it loads, so it is the sanitizer here (in node the module is required)
   const SHELL = () => (typeof window !== 'undefined' && window.SHELL) || (typeof require === 'function' ? require('./shell.js') : null);
+  // the review schedule: review.js cleans it (ids, bounded numbers, no prototype)
+  const REVIEW = () => (typeof window !== 'undefined' && window.REVIEW) || (typeof require === 'function' ? require('./review.js') : null);
 
   // ---------- small, strict helpers: everything from a file or from storage goes through these ----------
   const isObj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
@@ -21429,12 +21470,14 @@ window.GUIDE = (function () {
     const pf = cleanPortfolio(raw.portfolio); if (pf) out.portfolio = pf;
     const shl = cleanShell(raw.shell); if (shl) out.shell = shl;
     const th = cleanTeach(raw.teach, withTeacher); if (th) out.teach = th;
+    if (isObj(raw.review) && REVIEW()) { const rv = REVIEW().clean(raw.review); if (keys(rv.items).length) out.review = rv; }
     return out;
   }
 
   function summarize(data) {
-    const s = { exercises: 0, programs: 0, portfolio: false, received: 0, assignments: 0, submissions: 0, hasTeacher: false, terminal: 0 };
+    const s = { exercises: 0, programs: 0, portfolio: false, received: 0, assignments: 0, submissions: 0, hasTeacher: false, terminal: 0, reviews: 0 };
     if (data.progress) s.exercises = keys(data.progress.done).length;
+    if (data.review) s.reviews = keys(data.review.items).length;
     if (data.shell) { const S = SHELL(); if (S) s.terminal = S.makeFS(data.shell.fs).usage().files; }
     if (data.lab) s.programs = LANGS.reduce((n, l) => n + data.lab.files[l].filter((f) => !f.ex || f.code.trim()).length, 0);
     if (data.portfolio) s.portfolio = !!(data.portfolio.name || data.portfolio.note || data.portfolio.lab.length);
@@ -21448,7 +21491,7 @@ window.GUIDE = (function () {
   // ---------- making and reading the file ----------
   function collect(storage, opts) {
     opts = opts || {};
-    const raw = { progress: read(storage, KEYS.progress), lab: read(storage, KEYS.lab), portfolio: read(storage, KEYS.portfolio), teach: read(storage, KEYS.teach), shell: read(storage, KEYS.shell) };
+    const raw = { progress: read(storage, KEYS.progress), lab: read(storage, KEYS.lab), portfolio: read(storage, KEYS.portfolio), teach: read(storage, KEYS.teach), shell: read(storage, KEYS.shell), review: read(storage, KEYS.review) };
     const data = sanitize(raw, !!opts.teacher);
     return { app: FORMAT, v: VERSION, saved: new Date().toISOString(), data };
   }
@@ -21464,7 +21507,7 @@ window.GUIDE = (function () {
     if (!isObj(o.data)) throw new Error('This backup file has no saved work in it.');
     const data = sanitize(o.data, true);
     const summary = summarize(data);
-    if (!summary.exercises && !summary.programs && !summary.portfolio && !summary.received && !summary.assignments && !summary.submissions && !summary.terminal && !(data.progress && keys(data.progress.code).length)) throw new Error('This backup file is empty: there is no saved work in it.');
+    if (!summary.exercises && !summary.programs && !summary.portfolio && !summary.received && !summary.assignments && !summary.submissions && !summary.terminal && !summary.reviews && !(data.progress && keys(data.progress.code).length)) throw new Error('This backup file is empty: there is no saved work in it.');
     return { saved: typeof o.saved === 'string' ? o.saved.slice(0, 40) : '', data, summary };
   }
 
@@ -21518,6 +21561,7 @@ window.GUIDE = (function () {
       write(storage, KEYS.lab, merge && mine ? mergeLab(mine, data.lab) : data.lab);
     }
     if (data.portfolio) { const mine = cleanPortfolio(read(storage, KEYS.portfolio)); write(storage, KEYS.portfolio, merge && mine ? mergePortfolio(mine, data.portfolio) : data.portfolio); }
+    if (data.review) { const mine = read(storage, KEYS.review); write(storage, KEYS.review, merge && mine ? REVIEW().merge(mine, data.review) : data.review); }
     if (data.shell) { const raw = read(storage, KEYS.shell), mine = cleanShell(raw); const next = merge && mine ? mergeShell(mine, data.shell) : data.shell; if (raw && Array.isArray(raw.history)) next.history = raw.history; write(storage, KEYS.shell, next); }
     if (data.teach) {
       const raw = read(storage, KEYS.teach) || {}, mine = cleanTeach(raw, true) || { studentName: '', received: dict() };
@@ -21551,12 +21595,12 @@ window.GUIDE = (function () {
     const save = el('button', { class: 'btn', onclick: () => {
       const content = collect(storage, { teacher: !!(teacherRow && teacherChk.checked) });
       const s = summarize(content.data);
-      if (!s.exercises && !s.programs && !s.portfolio && !s.received && !s.assignments && !s.terminal && !(content.data.progress && keys(content.data.progress.code).length)) { note('There is nothing saved on this device yet, so there is nothing to put in a file.'); return; }
+      if (!s.exercises && !s.programs && !s.portfolio && !s.received && !s.assignments && !s.terminal && !s.reviews && !(content.data.progress && keys(content.data.progress.code).length)) { note('There is nothing saved on this device yet, so there is nothing to put in a file.'); return; }
       const blob = new Blob([JSON.stringify(content, null, 1)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = el('a', { href: url, download: 'short-explorations-work-' + content.saved.slice(0, 10) + '.json' });
       document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
-      note('Saved: ' + s.exercises + ' completed exercise' + (s.exercises === 1 ? '' : 's') + ' and ' + s.programs + ' Code Lab program' + (s.programs === 1 ? '' : 's') + (s.terminal ? ', ' + s.terminal + ' terminal file' + (s.terminal === 1 ? '' : 's') : '') + (s.hasTeacher ? ', and the teacher tools' : '') + '. Keep the file somewhere safe; it holds your code and your name.');
+      note('Saved: ' + s.exercises + ' completed exercise' + (s.exercises === 1 ? '' : 's') + ' and ' + s.programs + ' Code Lab program' + (s.programs === 1 ? '' : 's') + (s.terminal ? ', ' + s.terminal + ' terminal file' + (s.terminal === 1 ? '' : 's') : '') + (s.reviews ? ', ' + s.reviews + ' review question' + (s.reviews === 1 ? '' : 's') : '') + (s.hasTeacher ? ', and the teacher tools' : '') + '. Keep the file somewhere safe; it holds your code and your name.');
     } }, 'Save my work to a file');
     const restore = el('button', { class: 'btn', onclick: () => file.click() }, 'Restore from a file…');
 
@@ -21571,6 +21615,7 @@ window.GUIDE = (function () {
       const s = parsed.summary, when = parsed.saved && !isNaN(Date.parse(parsed.saved)) ? new Date(parsed.saved).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'an unknown time';
       const items = [s.exercises + ' completed exercise' + (s.exercises === 1 ? '' : 's'), s.programs + ' Code Lab program' + (s.programs === 1 ? '' : 's')];
       if (s.terminal) items.push(s.terminal + ' terminal file' + (s.terminal === 1 ? '' : 's'));
+      if (s.reviews) items.push(s.reviews + ' review question' + (s.reviews === 1 ? '' : 's'));
       if (s.received) items.push(s.received + ' assignment' + (s.received === 1 ? '' : 's') + ' received');
       if (s.portfolio) items.push('portfolio settings');
       if (s.hasTeacher) items.push('teacher tools: ' + s.assignments + ' assignment' + (s.assignments === 1 ? '' : 's') + ', ' + s.submissions + ' submission' + (s.submissions === 1 ? '' : 's'));
@@ -21598,6 +21643,191 @@ window.GUIDE = (function () {
   }
 
   return { collect, parse, apply, panel, hasTeacherData, summarize, FORMAT, VERSION };
+});
+
+;
+/* src/review.js */
+/* Spaced review and the skills map. Every quick check a student answers in a lesson joins their review; it comes back on the #/today
+   page after 1 day, then after 3, 10, 30 and 90 days as long as it is answered right, and back to 1 day after a miss. A right answer
+   marked "Guessing" stays at the same gap. Up to ten items a day, the most overdue first, mixed across lessons and courses, with the
+   options in a new order each time. Spaced retrieval is the best-supported way to make learning last (LESSON_STANDARD.md §5): this is
+   that, with nothing more than localStorage.
+
+   An item's id is the course id and a hash of the question and its options, so it survives lessons being reordered; editing a question
+   makes a new item, and the old one, which no longer matches any question, is never shown (and is dropped when the data is cleaned).
+
+   A lesson is "secure" in the skills map when every exercise is done and every quick check has been answered right at least twice more,
+   days apart (box 2 or higher: right at the 1-day and the 3-day review); "practising" when something has been done; "not yet" otherwise.
+
+   Storage: shortcourses.review.v1 = { v: 1, items: { id: { box, due, n, miss, last } } }. In the backup file (backup.js uses clean()).
+   Exposed as window.REVIEW (browser) and module.exports (node tests: the scheduling and cleaning need no page). */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.REVIEW = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+  const KEY = 'shortcourses.review.v1';
+  const GAPS = [1, 3, 10, 30, 90];   // days until the next review, by box
+  const SECURE_BOX = 2;
+  const PER_DAY = 10;
+  const DAY = 86400000;
+  const MAX_ITEMS = 5000;
+  const ID_RE = /^[a-z0-9]{1,20}:[0-9a-z]{1,8}$/;
+
+  // ---------- pure parts (node tests use these) ----------
+  function hash(s) { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36); }
+  const itemId = (courseId, b) => courseId + ':' + hash(String(b.check) + '\u0001' + (b.options || []).map(String).join('\u0001'));
+  /** The state after an answer. sure: 'sure' | 'think' | 'guess' | null. */
+  function next(item, correct, sure, now) {
+    const box = item ? item.box : -1;
+    const b = !correct ? 0 : sure === 'guess' ? Math.max(0, box) : Math.min(GAPS.length - 1, box + 1);
+    return { box: b, due: now + GAPS[b] * DAY, n: (item ? item.n : 0) + 1, miss: (item ? item.miss : 0) + (correct ? 0 : 1), last: now };
+  }
+  const isObj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+  const int = (x, lo, hi) => (Number.isFinite(x) ? Math.max(lo, Math.min(hi, Math.round(x))) : lo);
+  /** Raw data (from storage or a backup file: untrusted) → clean data. Ids are checked, numbers bounded, the dictionary has no prototype. */
+  function clean(raw) {
+    const items = Object.create(null);
+    if (isObj(raw) && isObj(raw.items)) for (const id of Object.keys(raw.items).slice(0, MAX_ITEMS)) {
+      const it = raw.items[id];
+      if (!ID_RE.test(id) || (id in Object.prototype) || !isObj(it)) continue;
+      items[id] = { box: int(it.box, 0, GAPS.length - 1), due: int(it.due, 0, 1e15), n: int(it.n, 0, 1e6), miss: int(it.miss, 0, 1e6), last: int(it.last, 0, 1e15) };
+    }
+    return { v: 1, items };
+  }
+  /** Two copies of the review → one: for each item, the copy answered last wins. */
+  function merge(mine, theirs) {
+    const out = clean(theirs);
+    for (const [id, it] of Object.entries(clean(mine).items)) if (!out.items[id] || it.last >= out.items[id].last) out.items[id] = it;
+    return out;
+  }
+  const endOfToday = (now) => { const d = new Date(now); d.setHours(0, 0, 0, 0); return d.getTime() + DAY; };
+  /** The items due by the end of today (only those whose question still exists), most overdue first. */
+  function dueIds(data, known, now) {
+    const by = endOfToday(now);
+    return Object.keys(data.items).filter((id) => known(id) && data.items[id].due < by).sort((a, b) => data.items[a].due - data.items[b].due);
+  }
+
+  // ---------- storage ----------
+  let data = null;
+  function load() {
+    if (data) return data;
+    try { data = clean(JSON.parse(localStorage.getItem(KEY) || 'null')); } catch (e) { data = clean(null); }
+    return data;
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(load())); } catch (e) { /* storage unavailable */ } }
+
+  // ---------- the questions: every quick check of every course, by id ----------
+  let index = null;
+  function buildIndex() {
+    if (index) return index;
+    index = new Map();
+    for (const c of (typeof window !== 'undefined' && window.COURSES) || []) c.lessons.forEach((L, li) => (L.blocks || []).forEach((b) => { if (b && b.check) index.set(itemId(c.id, b), { course: c, lesson: li, block: b }); }));
+    return index;
+  }
+  const known = (id) => buildIndex().has(id);
+  const classroom = () => !!(window.CLASSROOM && window.CLASSROOM.isOn && window.CLASSROOM.isOn());
+
+  /** A quick check answered in a lesson. Only the first answer to a question counts: re-reading a lesson does not reset its schedule. */
+  function fromLesson(course, b, correct, sure) {
+    if (classroom()) return;   // a teacher's projector is not a student's memory
+    const id = itemId(course.id, b), d = load();
+    if (d.items[id]) return;
+    d.items[id] = next(null, correct, sure, Date.now()); save(); changed();
+  }
+  function answer(id, correct, sure) { const d = load(); d.items[id] = next(d.items[id], correct, sure, Date.now()); save(); changed(); }
+  const changed = () => { try { document.dispatchEvent(new CustomEvent('review-changed')); } catch (e) { /* not in a page */ } };
+  const count = () => Object.keys(load().items).filter(known).length;
+  const dueCount = () => Math.min(PER_DAY, dueIds(load(), known, Date.now()).length);
+
+  /** not yet / practising / secure, for one lesson. */
+  function lessonStatus(course, L) {
+    const P = window.__app.internal.Progress;
+    const checks = (L.blocks || []).filter((b) => b && b.check).map((b) => load().items[itemId(course.id, b)]);
+    const exs = (L.blocks || []).filter((b) => b && b.ex).map((b) => P.isDone(b.ex.id));
+    if (!checks.some(Boolean) && !exs.some(Boolean)) return 'none';
+    if (exs.every(Boolean) && checks.every((it) => it && it.box >= SECURE_BOX)) return 'secure';
+    return 'practising';
+  }
+  const STATUS = { none: 'Not started', practising: 'Practising', secure: 'Secure' };
+
+  // ---------- the page parts ----------
+  const el = (...a) => window.__app.internal.el(...a);
+  /** The skills map of one course: one square per lesson, coloured by status, each a link to the lesson. */
+  function skillsMap(course, opts) {
+    opts = opts || {};
+    const st = course.lessons.map((L) => lessonStatus(course, L));
+    const n = (k) => st.filter((s) => s === k).length;
+    const list = el('ol', { class: 'skills' }, course.lessons.map((L, i) => el('li', { class: 'sk sk-' + st[i] },
+      el('a', { href: '#/' + course.id + '/' + (i + 1), title: (i + 1) + '. ' + L.title + ': ' + STATUS[st[i]] }, el('span', { class: 'sk-num' }, String(i + 1)), el('span', { class: 'sk-title' }, L.title), el('span', { class: 'sk-state' }, STATUS[st[i]])))));
+    return el('div', { class: 'skills-map' + (opts.compact ? ' compact' : '') },
+      opts.title ? el('h3', {}, opts.title) : null,
+      el('p', { class: 'sk-sum small' }, n('secure') + ' secure · ' + n('practising') + ' practising · ' + n('none') + ' not started'), list);
+  }
+  /** For the course page: what is due in this course, and the map. Nothing if the student has not started the course. */
+  function coursePanel(course) {
+    const mine = Object.keys(load().items).filter((id) => id.startsWith(course.id + ':') && known(id));
+    const exDone = course.lessons.some((L) => (L.blocks || []).some((b) => b && b.ex && window.__app.internal.Progress.isDone(b.ex.id)));
+    if (!mine.length && !exDone) return null;
+    const due = dueIds(load(), (id) => id.startsWith(course.id + ':') && known(id), Date.now()).length;
+    return el('section', { class: 'review-panel' },
+      el('h2', {}, 'Your skills'),
+      due ? el('p', {}, el('a', { class: 'btn primary', href: '#/today' }, 'Review now'), ' ', due + (due === 1 ? ' question from this course is' : ' questions from this course are') + ' due today.') : el('p', { class: 'small muted' }, mine.length ? 'Nothing from this course is due today. Questions come back after 1, 3, 10, 30 and 90 days.' : 'Answer the quick checks in the lessons, and they will come back here for review on later days.'),
+      skillsMap(course, { compact: true }));
+  }
+  /** The top-bar link: shown once there is anything to review, with the number due today. */
+  function topLink(current) {
+    if (!count()) return null;
+    const due = dueCount();
+    return el('a', { href: '#/today', class: 'today-link' + (current ? ' current' : ''), 'aria-label': due ? 'Review: ' + due + ' due today' : 'Review' }, 'Review', due ? el('span', { class: 'today-badge', 'aria-hidden': 'true' }, String(due)) : null);
+  }
+
+  const shuffle = (xs) => { for (let i = xs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [xs[i], xs[j]] = [xs[j], xs[i]]; } return xs; };
+  /** The question with its options in a new order (wrong[] and answer follow them), so a position is never what is remembered. */
+  function shuffled(b) {
+    const order = shuffle((b.options || []).map((o, i) => i));
+    return Object.assign({}, b, { options: order.map((i) => b.options[i]), wrong: b.wrong ? order.map((i) => b.wrong[i]) : undefined, answer: order.indexOf(b.answer) });
+  }
+  function whenText(ms) { const days = Math.round((ms - Date.now()) / DAY); return days <= 1 ? 'tomorrow' : 'in ' + days + ' days'; }
+
+  /** #/today */
+  function page() {
+    const I = window.__app.internal;
+    const main = el('main', { class: 'today' });
+    const ids = shuffle(dueIds(load(), known, Date.now()).slice(0, PER_DAY));   // most overdue first, then mixed
+    const stage = el('div', { class: 'today-stage' });
+    main.append(el('header', { class: 'today-head' }, el('h1', {}, 'Today’s review'),
+      el('p', { class: 'lead' }, 'Questions from lessons you have done, coming back after a gap. Remembering something after a few days is what makes it stick, so these are meant to feel a little hard.')));
+    let k = 0, right = 0;
+    const finish = () => {
+      const d = load(), upcoming = Object.keys(d.items).filter(known).map((id) => d.items[id].due).filter((t) => t >= endOfToday(Date.now())).sort((a, b) => a - b);
+      const nextDue = upcoming[0], nextN = nextDue ? upcoming.filter((t) => endOfToday(t) === endOfToday(nextDue)).length : 0;
+      stage.replaceChildren(el('div', { class: 'today-done' },
+        el('p', { class: 'today-big' }, ids.length ? 'Done for today: ' + right + ' of ' + ids.length + ' right first time.' : count() ? 'Nothing is due today.' : 'Nothing to review yet.'),
+        el('p', {}, !count() ? 'Every quick check you answer in a lesson comes back here a day later, then after longer and longer gaps.' : nextDue ? 'Next review ' + whenText(nextDue) + ': ' + nextN + (nextN === 1 ? ' question.' : ' questions.') : ''),
+        ids.length && right < ids.length ? el('p', { class: 'small muted' }, 'The ones you missed come back tomorrow.') : null));
+    };
+    const show = () => {
+      if (k >= ids.length) { finish(); return; }
+      const id = ids[k], ref = buildIndex().get(id), L = ref.course.lessons[ref.lesson];
+      const nextBtn = el('button', { class: 'btn primary today-next', hidden: '' }, k + 1 < ids.length ? 'Next question' : 'Finish');
+      const box = I.checkBlock(shuffled(ref.block), { onFirstAnswer: (correct, sure) => { if (correct) right++; answer(id, correct, sure); }, onRight: () => { nextBtn.hidden = false; nextBtn.focus(); } });
+      nextBtn.addEventListener('click', () => { k++; show(); });
+      stage.replaceChildren(
+        el('p', { class: 'today-count small' }, 'Question ' + (k + 1) + ' of ' + ids.length + ' · from ', el('a', { href: '#/' + ref.course.id + '/' + (ref.lesson + 1) }, ref.course.code + ' lesson ' + (ref.lesson + 1) + ', ' + L.title)),
+        box, el('div', { class: 'toolbar' }, nextBtn));
+      const first = box.querySelector('.qc-opt'); if (first) first.focus();
+    };
+    main.append(stage);
+    show();
+    const started = (window.COURSES || []).filter((c) => Object.keys(load().items).some((id) => id.startsWith(c.id + ':')) || c.lessons.some((L) => (L.blocks || []).some((b) => b && b.ex && I.Progress.isDone(b.ex.id))));
+    if (started.length) main.append(el('section', { class: 'today-skills' }, el('h2', {}, 'Your skills'),
+      el('p', { class: 'small muted' }, 'A lesson is secure when its exercises are done and its quick checks have been answered right at two reviews, days apart.'),
+      ...started.map((c) => skillsMap(c, { title: c.code + ' ' + c.title, compact: true }))));
+    return main;
+  }
+
+  return { KEY, GAPS, PER_DAY, SECURE_BOX, itemId, hash, next, clean, merge, dueIds, endOfToday, load, fromLesson, answer, count, dueCount, lessonStatus, skillsMap, coursePanel, topLink, page, reset: () => { data = clean(null); save(); changed(); }, _reset: () => { data = null; index = null; } };
 });
 
 ;
@@ -24002,7 +24232,7 @@ xs mapped kept result`;
 
       section('ab-privacy', 'What the site keeps about you',
         h('p', {}, 'Nothing you do leaves your computer unless you send it yourself. There are no accounts, no tracking and no advertising. The web host sees that the page was downloaded, as with any website, but the page itself never sends anything back.'),
-        h('p', {}, 'What you do is saved in this browser only: your progress and your code in the lessons, your Code Lab files, your portfolio settings, a teacher\u2019s assignments and grade book, and display choices such as light or dark. Another computer, or another browser on this one, starts empty, unless you use \u201cSave my work to a file\u201d on the home page and restore the file there (the file holds your code and your name, so keep it private). \u201cReset my progress\u201d on the home page clears the lessons; clearing the browser\u2019s site data clears everything.'),
+        h('p', {}, 'What you do is saved in this browser only: your progress and your code in the lessons, which quick checks you answered and when they come back for review, your Code Lab files, your portfolio settings, a teacher\u2019s assignments and grade book, and display choices such as light or dark. Another computer, or another browser on this one, starts empty, unless you use \u201cSave my work to a file\u201d on the home page and restore the file there (the file holds your code and your name, so keep it private). \u201cReset my progress\u201d on the home page clears the lessons; clearing the browser\u2019s site data clears everything.'),
         h('p', {}, 'The links the site makes (a shared program, an assignment, a submission, a portfolio) carry their contents inside the link itself. Anyone who has a link can read what is in it, so share them the way you would share the work itself.'),
         h('p', {}, 'The page makes no requests to any other site: the typefaces are part of the page itself, so no one else, not even a font provider, learns that you opened it. The one thing the page ever fetches is the real C++ compiler (about ' + ((window.BUILD && window.BUILD.clang && window.BUILD.clang.mb) || 28) + ' MB), and only from this same site, only after you agree, and only when you choose Full C++ or the Modern C++ course. It is stored by your browser so it is downloaded once. The pictures in the lessons also come from this same site, one at a time as you scroll to them; the people and archives credited below do not see that you looked.')),
 
