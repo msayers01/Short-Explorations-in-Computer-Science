@@ -106,7 +106,10 @@ async function javaPart() {
     }
     if (c.timedOut) { if (ours.err) { n++; continue; } /* a program that never ends: ours must stop it with a limit */ report('java', c.id, 'timed out on the JVM', 'finished: ' + JSON.stringify((ours.out || '').slice(-80))); n++; continue; }
     if (ours.err && /took too long|stopped after/i.test(ours.err)) { report('java', c.id, 'finished on the JVM', 'ours timed out: ' + ours.err.split('\n')[0]); n++; continue; }
-    const fmt = (r) => r.out + (r.err ? '\n[stderr]\n' + r.err : '') + '\n[exit ' + (r.exit || 0) + ']';
+    // Object's own toString prints the class and an identity hash code, which differs from run to run on the JVM too (an array prints as
+    // [I@1b6d3586): compare the class, not the number
+    const idHash = (t) => t.replace(/(\[*[A-Za-z_$][\w.$]*)@[0-9a-f]{1,8}\b/g, '$1@<hash>');
+    const fmt = (r) => idHash(r.out + (r.err ? '\n[stderr]\n' + r.err : '') + '\n[exit ' + (r.exit || 0) + ']');
     report('java', c.id, fmt(c.real), fmt({ out: ours.out || '', err: (ours.err || '').replace(/\n$/, ''), exit: ours.exit || (ours.err ? 1 : 0) }));
     // the course's expected answer is what the real JVM prints, not only what our interpreter prints
     if (c.expect !== undefined) { const norm = (s) => String(s).replace(/\r/g, '').split('\n').map((l) => l.replace(/\s+$/, '')).join('\n').trim(); if (norm(c.real.out) !== norm(c.expect)) report('java', c.id + ' (expected answer)', norm(c.real.out), norm(c.expect)); }
