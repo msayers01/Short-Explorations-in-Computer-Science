@@ -13,7 +13,7 @@ not written down there.
     npm install
     npm run build          # dist/index.html, dist/teacher-guide.html, dist/_headers, dist/clang/<ver>/ (28 MB, git-ignored)
     npm test               # all node tests (pretest applies the JSCPP patches); about 2 minutes
-    node test_course.js python|lisp|cpp|math|modern|java   # one course; "modern" compiles with the real compiler, about 1.5 minutes
+    node test_course.js python|lisp|cpp|math|modern|java|ml   # one course; "modern" compiles with the real compiler, about 1.5 minutes
     node test_java.js      # the Java interpreter against what javac/java print (a few seconds)
     node test_shell.js     # the practice shell: file system, parser, every command, limits, hostile saved copies (a second)
     node test_lessons.js   # the lesson linter (part of npm test); --update records new exercise ids in lint/exercise-ids.txt
@@ -82,7 +82,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 
 ## Current state (October 2026)
 
-- Merged: everything below through PR #27. `main` = `361036a`. PRs #21-#26: the practice terminal, SC 108 lessons 1-4, the one-inline-script
+- Merged: everything below through PR #35 (`main` = `aea174b`), except SC 109, which is on the working branch. PRs #21-#26: the practice terminal, SC 108 lessons 1-4, the one-inline-script
   build, SC 099, Scratch lessons 8-9, the tour. PR #27 was a bug sweep (four reviews: shell against bash, Java against javac/java 21, the
   app and Scheme, course text): see its commit messages. Bugs it found but left: Java `switch` with `yield`, `%1$s`, TreeSet/TreeMap with
   a comparator; shell `${s/a/b}` and other unlisted `${...}` forms (they report "bad substitution"); Scheme character literals.
@@ -174,5 +174,18 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   (graded by mathgrade.js; `test_course.js` runs the program and checks every value) and `kind: 'parsons'` (`src/parsons.js`; with
   `tests` the built program is run). First uses: py-4-3, py-4-4, jv-3-3, jv-5-3. Still to build from the same
   review, in order: diagnostic feedback (whitespace-visible diffs, hand-written notes for common errors); exit codes and a class table for teachers;
-  a display panel and read-aloud; then SC 109 How Machines Learn.
+  a display panel and read-aloud.
+- **SC 109 How Machines Learn** (`src/course_ml.js`, Python, grades 9-12 after SC 101 up to Dictionaries, `standard: 1`): the first course
+  written to LESSON_STANDARD.md from lesson 1. Unit one: 1 rules or examples (Paul Graham's *A Plan for Spam*, 2002: a hand-written rule,
+  word counts, scoring), 2 nearest neighbours (Fix and Hodges, 1951: distance, 1-NN, k-NN), 3 is it any good? (Google Flu Trends, 2013:
+  test sets, accuracy, the confusion table, overfitting), 4 Checkpoint one (`checkpoint: true`: eight mixed checks, a choice and a code
+  exercise). 11 exercises `ml-<n>-<k>` (two Parsons, one trace), 12 named skills (`course.skills`; every check and exercise has `skill`),
+  figure `knn` (drag the new fruit, choose k; `test: true` adds six test fruit and the training/test scores). Data stay tiny (Skulpt is slow);
+  never print a dict in a predict example or a test (Skulpt's key order may differ): print values or `sorted(d.items())`. Planned, from the
+  playbook: unit two (5 a perceptron, Rosenblatt 1958; 6 gradient descent; 7 decision trees by information gain), unit three (8 words as
+  numbers and Shannon's 1948 text generator; 9 a next-character model and temperature; 10 Checkpoint two), 11 who does it fail? (Gender
+  Shades, 2018), 12 project: your own model and a model card. Lesson 4's recap promises lesson 5 is the perceptron.
+- **Checkpoints and named skills** (LESSON_STANDARD.md §2 and §4, `test_lessons.js`: S-checkpoint, S-skills, S-units; `review.js`:
+  `skillParts`, `skillStatus`): a checkpoint has no rule box and at least six checks tagged with skills from every lesson of its unit; a
+  course with `skills` must tag every check and exercise of its standard lessons.
 - A function-writing exercise in a Full C++ course: use `prelude` for includes, `main` (or `call`) tests, and `name` on each test.

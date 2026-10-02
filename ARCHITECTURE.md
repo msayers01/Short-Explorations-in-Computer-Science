@@ -95,6 +95,7 @@ site/
     terminal.js          the terminals in front of shell.js: the Code Lab panel, lesson examples and shell exercises → window.TERMINAL (§9f)
     shellgrade.js        the shell course's setups (file trees) and grader → window.SHELLGRADE; node: test_course.js shell (§9f)
     course_shell.js      SC 108 The Command Line (lang 'shell': examples and exercises are terminals)
+    course_ml.js         SC 109 How Machines Learn (Python; the first course written to LESSON_STANDARD.md: named skills, checkpoints; figure knn)
     course_computer.js   SC 099 What Is a Computer? (lang 'none': no runnable code; answer/choice/table exercises; figures parts, cpu, bits)
     guide.js             the teacher guide (one HTML string) → window.GUIDE; build.js also writes dist/teacher-guide.html
     qr.js                QR encoder → window.QR
@@ -166,10 +167,12 @@ drives the accent colour through CSS tokens.
 ## 6. Content model (courses)
 
 Course: `{ id, code, short, lang, title, grades, audience, tagline, description, outcomes[], lessons[], readingWpm?,
-howItWorks?, textbook?, status?, standard?, readingGrade? }`. `standard: 1` (on a course or a lesson) makes `test_lessons.js` enforce
-LESSON_STANDARD.md; `readingGrade` caps the Flesch-Kincaid grade of a standard lesson's prose. `status: 'developing'` marks a course still being written: app.js shows an "Under development"
+howItWorks?, textbook?, status?, standard?, readingGrade?, skills? }`. `standard: 1` (on a course or a lesson) makes `test_lessons.js` enforce
+LESSON_STANDARD.md; `skills: [{ id, name }]` names the course's skills, and each quick check and exercise names its own with
+`skill: 'id'` or `skill: ['id', ...]` (the skills map lists them, §9i); `readingGrade` caps the Flesch-Kincaid grade of a standard lesson's prose. `status: 'developing'` marks a course still being written: app.js shows an "Under development"
 tag on the catalog card, the course page and every lesson's crumb (`devTag`), and the guide says what the tag means.
-Lesson: `{ title, summary, blocks[], standard? }`. Blocks, rendered by `renderBlocks()`, which also wraps each block in a `.blk` card with a coloured rail
+Lesson: `{ title, summary, blocks[], standard?, checkpoint? }`. A checkpoint lesson (`checkpoint: true`) ends a unit: no rule boxes,
+at least six quick checks tagged with skills of the unit's lessons, then exercises and a recap (LESSON_STANDARD.md §4). Blocks, rendered by `renderBlocks()`, which also wraps each block in a `.blk` card with a coloured rail
 and a labelled pill, one colour per kind (Example n in the course accent, Interactive teal, Quick check n green, Watch out amber, Quiz purple,
 Exercise n; tokens `--k-fig`, `--k-warn`, `--k-quiz`, `--k-ink` in style.css), numbers every `<h2>` with a CSS counter and gives it an id, and collects the lesson's parts (Story, each section,
 Quiz, Exercises, Recap) for the map under the title (`lessonMap`) and the "On this page" list in the side column, which follows the
@@ -615,7 +618,9 @@ for a right Guessing, box 0 for a miss (a meta-analysis found expanding gaps no 
 than that reviews happen). `#/today` shows at most `PER_DAY = 10` items due by the end of today, the most overdue first, then shuffled
 so lessons and courses mix, each with its options in a new order (`wrong[]` and `answer` follow). An item whose question no longer exists
 (edited text gives a new id) is ignored. The skills map is per lesson: *secure* = every exercise done and every quick check at box 2 or
-higher (right at the 1- and 3-day reviews), *practising* = something done, else *not started*. It is on the course page (only once the
+higher (right at the 1- and 3-day reviews), *practising* = something done, else *not started*. A course with named skills
+(`course.skills`) also lists them under the lessons (`skillParts`, `skillStatus`): a skill is first taught where it is first tagged, and is
+*secure* when its exercises are done and every quick check of it the student has met is at box 2 or higher. It is on the course page (only once the
 course is started) and on `#/today`. The top bar shows **Review** with the number due once there is anything to review. Lesson recaps say
 when their checks come back. Pure parts (`next`, `itemId`, `clean`, `merge`, `dueIds`) are tested in node by `test_review.js`, which
 also checks that all quick checks on the site have distinct ids; `test_backup.js` covers the backup file; `test_browser.js` the loop.
