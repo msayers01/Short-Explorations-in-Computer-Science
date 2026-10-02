@@ -136,7 +136,13 @@ if (fs.existsSync('img')) {
   }
   console.log('copied', Object.keys(IMAGES).length, 'pictures to dist/img/');
 }
-const BUILD = { date: new Date().toISOString().slice(0, 10), thirdParty: THIRD_PARTY, images: IMAGES, clang: { path: CLANG_DIR, mb: Math.round(clangBytes / 1024 / 1024), llvm: CLANG_PKG.version,
+// Language logos (img/icons/<lang>.svg + .json, from scripts/fetch-image.js --icon): a few KB each, so they go into the page as data URIs.
+const ICONS = {};
+if (fs.existsSync('img/icons')) for (const f of fs.readdirSync('img/icons').filter((f) => f.endsWith('.json')).sort()) {
+  const meta = JSON.parse(fs.readFileSync('img/icons/' + f, 'utf8'));
+  ICONS[meta.id] = { src: 'data:image/' + (meta.file.endsWith('.png') ? 'png' : 'svg+xml') + ';base64,' + fs.readFileSync('img/icons/' + meta.file).toString('base64'), title: meta.title, author: meta.author, license: meta.license, licenseUrl: meta.licenseUrl, source: meta.source, credit: meta.credit };
+}
+const BUILD = { date: new Date().toISOString().slice(0, 10), thirdParty: THIRD_PARTY, images: IMAGES, icons: ICONS, clang: { path: CLANG_DIR, mb: Math.round(clangBytes / 1024 / 1024), llvm: CLANG_PKG.version,
   // The page checks the compiler script it downloads against this before running it. (The script then checks every compiler file it fetches against hashes it carries.)
   sha256: crypto.createHash('sha256').update(fs.readFileSync('dist/' + CLANG_DIR + 'toolchain.js')).digest('hex') } };
 // The same notices as a file at the repository root, for copies of the source and of dist/index.html.

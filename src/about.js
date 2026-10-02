@@ -71,7 +71,15 @@
       h('p', {}, 'The photographs and drawings in the lessons are in the public domain or shared under Creative Commons licences that allow reuse with credit. They were resized for the web and otherwise not changed. Each one links to its page on Wikimedia Commons, which has its full description and licence.'),
       h('details', { class: 'ab-licences' }, h('summary', {}, imgs.length + ' pictures and their credits'),
         h('ul', { class: 'ab-list' }, imgs.map((m) => h('li', {}, ext(m.source, m.title), m.date ? ' (' + m.date + ')' : '', ': ',
-          (m.author && !/^unknown/i.test(m.author) ? m.author : m.credit || 'unknown author'), ' \u00b7 ', m.licenseUrl ? ext(m.licenseUrl, m.license) : m.license))))];
+          (m.author && !/^unknown/i.test(m.author) ? m.author : m.credit || 'unknown author'), ' \u00b7 ', m.licenseUrl ? ext(m.licenseUrl, m.license) : m.license)))),
+      ...logoList()];
+  }
+  // The languages' logos beside the courses and in the Code Lab: each is its owner's trademark, used only to name the language.
+  function logoList() {
+    const icons = Object.values((window.BUILD && window.BUILD.icons) || {});
+    if (!icons.length) return [];
+    return [h('p', {}, 'The logos beside the courses and in the Code Lab name the languages; each is a trademark of its owner, and none of them endorses this site. ',
+      icons.map((m, i) => [i ? '; ' : '', ext(m.source, m.title), ': ', (m.author && !/^unknown/i.test(m.author) ? m.author : m.credit || 'unknown'), ', ', m.licenseUrl ? ext(m.licenseUrl, m.license) : m.license]), '.')];
   }
 
   function page() {

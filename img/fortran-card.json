@@ -1,0 +1,16 @@
+{
+  "id": "fortran-card",
+  "file": "fortran-card.jpg",
+  "title": "A punched card",
+  "alt": "A cream-coloured punched card printed with rows of the digits 0 to 9; across it, small rectangular holes are punched in columns, one column per character of a line of a Fortran program.",
+  "author": "Pete Birkinshaw from Manchester, UK",
+  "license": "CC BY 2.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Used_Punchcard_(5151286161).jpg",
+  "credit": "Used Punchcard",
+  "description": "This card was used to load software into a mainframe computer. Each byte (the letter 'A', for example) is entered by punching out a column of holes. Contents appear to be a line from a Fortran program: 12 PIFRA=(A(JB,37)-A(JB,99))/A(JB,47) PUX 0430 where 12 is a statement label and PUX 430, starting in column 73, would typically be a card sequence number. Per author \"You may scoff at the low-tech but this data has survived longer than most CD-Rs will last - they rot in a decade or so...\"",
+  "date": "2010-11-06 17:51",
+  "width": 960,
+  "height": 420,
+  "fetched": "2026-10-02"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "scratch-editor",
+  "file": "scratch-editor.jpg",
+  "title": "The Scratch editor",
+  "alt": "The Scratch 3.0 editor: purple sound blocks on the left; in the middle a script of two blocks, when green flag clicked and play sound Chirp until done; on the right the stage with a green dinosaur sprite.",
+  "author": "Screenshot is own work, Scratch is by MIT and other contributors",
+  "license": "CC BY-SA 2.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Scratch_3.0_editor.png",
+  "credit": "Screenshotted from https://scratch.mit.edu/projects/editor, with default sprite being swapped with another sprite in the asset library.",
+  "description": "Screenshot of the Scratch 3.0 editor",
+  "date": "2023-08-24",
+  "width": 960,
+  "height": 600,
+  "fetched": "2026-10-02"
+}

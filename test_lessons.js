@@ -140,6 +140,19 @@ for (const file of FILES) {
   });
 }
 
+// ---- the languages' logos (img/icons/<lang>.svg + .json): free licences only (logos may also be BSD or GPL), plain SVG, credited
+const ICON_DIR = path.join(IMG_DIR, 'icons');
+if (fs.existsSync(ICON_DIR)) for (const f of fs.readdirSync(ICON_DIR).filter((f) => f.endsWith('.json'))) {
+  const where = 'img/icons/' + f, m = JSON.parse(fs.readFileSync(path.join(ICON_DIR, f), 'utf8'));
+  if (!(LICENCE_OK(m.license) || /^(bsd|gpl|lgpl|apache|mit)\b/i.test(String(m.license || '')))) err(where, 'licence ' + JSON.stringify(m.license) + ' is not free');
+  if (!/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/.test(m.source || '')) err(where, 'source must be its Wikimedia Commons page');
+  const svgPath = path.join(ICON_DIR, m.file || '');
+  if (!m.file || !fs.existsSync(svgPath)) { err(where, 'its SVG is missing'); continue; }
+  const svg = fs.readFileSync(svgPath, 'utf8');
+  if (m.file.endsWith('.png')) { if (fs.statSync(svgPath).size > 30 * 1024) err(where, 'over 30 KB'); continue; }
+  if (!/<svg[\s>]/i.test(svg) || /<script|\bon\w+\s*=|<foreignObject|href\s*=\s*["']https?:/i.test(svg)) err(where, 'not a plain SVG (script, handler or outside reference)');
+  if (svg.length > 30 * 1024) err(where, 'over 30 KB: it goes into the page itself');
+}
 for (const id of pictures.keys()) if (!usedPictures.has(id)) err('img/' + id + '.json', 'this picture is not used by any lesson (remove it, or use it)');
 
 // ---- exercise ids are never renumbered or removed: progress and portfolios are keyed by them

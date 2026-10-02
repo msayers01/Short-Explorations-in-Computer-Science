@@ -1,0 +1,16 @@
+{
+  "id": "ibm-card-sorter",
+  "file": "ibm-card-sorter.jpg",
+  "title": "A punched-card sorter",
+  "alt": "A grey IBM card sorter in a museum display: a long machine with a row of pockets along its front, and above it a rack of thirteen slots holding stacks of punched cards of different heights; an old photograph of an office with card machines hangs behind.",
+  "author": "Atomic Taco from Seattle, WA, USA",
+  "license": "CC BY-SA 2.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+  "source": "https://commons.wikimedia.org/wiki/File:IBM_Type_83_Card_Sorter%2C_1955_(12935302905).jpg",
+  "credit": "IBM Type 83 Card Sorter, 1955",
+  "description": "\"These sorters use a metal brush to detect the position of the hole in the column being sorted. When the brush contacts a metal roller or bar through the hole, it closes an electrical circuit that causes an electromagnet to direct the card into one of 13 chutes leading to the appropriate bin. The type 83 could process 1000 cards per minute--almost 17 per second.\"",
+  "date": "1955 (photographed 2013)",
+  "width": 960,
+  "height": 640,
+  "fetched": "2026-10-02"
+}

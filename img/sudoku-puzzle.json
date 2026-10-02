@@ -1,0 +1,16 @@
+{
+  "id": "sudoku-puzzle",
+  "file": "sudoku-puzzle.jpg",
+  "title": "A Sudoku puzzle",
+  "alt": "A nine by nine Sudoku grid divided into nine three by three boxes, with about thirty cells filled with digits and the rest empty; the first row begins 5, 3.",
+  "author": "Tim Stellmach",
+  "license": "CC0",
+  "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+  "source": "https://commons.wikimedia.org/wiki/File:Sudoku_Puzzle_by_L2G-20050714_standardized_layout.svg",
+  "credit": "",
+  "description": "A very easy Sudoku puzzle with a nice layout. It can be solved with the most elementary tactics.",
+  "date": "2017-04-08",
+  "width": 960,
+  "height": 960,
+  "fetched": "2026-10-02"
+}

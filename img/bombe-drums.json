@@ -1,0 +1,16 @@
+{
+  "id": "bombe-drums",
+  "file": "bombe-drums.jpg",
+  "title": "A Bombe",
+  "alt": "A large black cabinet on wheels, its front covered with rows of round drums, mostly dark red with some of other colours, in a room at Bletchley Park.",
+  "author": "Ian Petticrew",
+  "license": "CC BY-SA 2.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+  "source": "https://commons.wikimedia.org/wiki/File:A_Turing_Bombe%2C_Bletchley_Park_-_geograph.org.uk_-_1591001.jpg",
+  "credit": "From geograph.org.uk",
+  "description": "A Turing Bombe, Bletchley Park. The BOMBE was named after and inspired by a device that had been designed in 1938 by the cryptologist Marian Rejewski of the Polish Cipher Bureau, who revealed their deciphering technique to the British just prior to WWII. Unlike COLOSSUS 1590854, the bombe was not a programmable computer, but an electromechanical machine designed to assist British cryptologists to break into German Enigma-machine-enciphered wireless traffic. Designed by Alan Turing 1591025, with an important refinement suggested by Gordon Welchman, the bombe made its first appearance during 194",
+  "date": "2009-10-31",
+  "width": 640,
+  "height": 480,
+  "fetched": "2026-10-02"
+}
