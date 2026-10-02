@@ -56,8 +56,11 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   (`src/javaworker.js`, data block `java-src`), `JAVARUN` in `runner.js`, harness for method exercises in `src/javautil.js`.
 - Error messages are javac's words; outputs match real Java (number formatting, HashMap order, Random sequence, stack traces). When adding
   a lesson example, make sure its expected output is what a real JVM would print, not what seems reasonable.
-- Not covered: user generics, lambdas, nested classes, enums, records, streams, files, threads, checked-exception analysis; `==` on
-  Strings compares text (so that trap is taught with a listing, not a runnable example).
+- Not covered: user generics, lambdas, nested classes, enums, records, streams, files, threads, checked-exception analysis, switch
+  expressions (`yield`); `==` on Strings compares text (so that trap is taught with a listing, not a runnable example).
+- Queue/Deque/ArrayDeque have their own method tables (no index methods; `remove(x)` removes a value, `remove()` the head), as in Java.
+  Comparator works only as a user class implementing `compare` (no lambdas). `%f %e %g` round the shortest decimal half-up, like
+  `java.util.Formatter`. Exception messages follow JDK 21's wording. `test_java.js` expectations were produced by a real JDK: keep it so.
 - Exercises: whole programs with `{stdin, expect}`; methods with `{call, expect}` (the student writes only the `static` method; `prelude`
   for imports); whole classes with `ex.classes: true` and `{main, expect}`. Ids are `jv-<n>-<k>`.
 
@@ -75,9 +78,10 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 
 ## Current state (October 2026)
 
-- Merged: everything above through PR #20 (DSA lessons 1-7, Scratch lessons 1-7, quick checks and the lesson map in every lesson, colour-coded
-  block cards, the terminal-style output panel). `main` = `4b61662`. Cloudflare's production build of PR #20 timed out in "Initializing build
-  environment" during a Workers Builds incident on their side (the repo is 3.6 MB; nothing of ours runs in that phase); a later push rebuilds.
+- Merged: everything below through PR #27. `main` = `361036a`. PRs #21-#26: the practice terminal, SC 108 lessons 1-4, the one-inline-script
+  build, SC 099, Scratch lessons 8-9, the tour. PR #27 was a bug sweep (four reviews: shell against bash, Java against javac/java 21, the
+  app and Scheme, course text): see its commit messages. Bugs it found but left: Java `switch` with `yield`, `%1$s`, TreeSet/TreeMap with
+  a comparator; shell `${s/a/b}` and other unlisted `${...}` forms (they report "bad substitution"); Scheme character literals.
 - SC 105 Modern C++ has 8 lessons (string, vector, references, struct, class, algorithms/lambdas, map/set, gradebook project), 15 exercises.
 - SC 107 Data Structures and Algorithms (Java, `src/course_dsa.js`): lessons 1-7 (cost and arrays; searching; simple sorts; merge sort and
   quicksort; linked lists; stacks and queues; recursion), 24 exercises (code and `answer` kinds), figures growth, arrayops, dynarray, sortlab,
