@@ -6,7 +6,8 @@ rule, `test_lessons.js` does.
 
 - A course or a single lesson opts in with `standard: 1`. From then on every gap below is an **error** for it.
 - `node test_lessons.js --standard` lists, for every lesson on the site, which rules it does not meet yet. Use it to plan a retrofit.
-- SC 106 lessons 5-8 are the first lessons written to the standard; read one before writing a new lesson.
+- SC 106 lessons 5-8 were the first lessons brought up to the standard; SC 109 How Machines Learn is the first course written to it from
+  lesson 1, with named skills and checkpoints. Read one of its lessons before writing a new one.
 
 ## 1. The shape of a lesson
 
@@ -45,6 +46,9 @@ Each main idea:
 | **S-make** | have at least two graded exercises, each with two or more hints and a `followup` | Hints go from a nudge to the near-solution; the followup is a stretch task. |
 | **S-recap** | end with the recap (or, in a project lesson, stretch goals) | The last block is the `<div class="recap">`. |
 | **S-level** | keep the prose at or below the course's `readingGrade` | Set `readingGrade` on any course for grades 5-8 (Scratch to Python is checked at grade 4.5 by its own rule). |
+| **S-checkpoint** | (a checkpoint lesson) teach nothing new and ask about the whole unit | No `stmt` box; at least six quick checks, each with `wrong` reasons and a `skill` taught earlier, together covering every lesson since the last checkpoint; two exercises; a recap. The other rules do not apply to it. |
+| **S-skills** | (the course) name its skills and tag everything with them | Every quick check and exercise of a standard lesson names a skill of `course.skills`; every skill used has at least one quick check, so it comes back in the review; 15 to 30 skills once the course is no longer `developing`. |
+| **S-units** | (the course) end each unit with a checkpoint | At most four lessons in a row without a `checkpoint: true` lesson. |
 
 ## 3. Writing each part
 
@@ -100,9 +104,11 @@ expected output, no timers on thinking, and nothing that animates without a paus
 
 Each course is built from:
 - **Units** of three or four lessons, each ending with a **checkpoint**: no new material, mixed questions on the confusable pairs of the
-  unit (`for`/`while`, `=`/`==`, array/`ArrayList`, `cp`/`mv`), and "which construct fits this problem?". *(Planned.)*
+  unit (`for`/`while`, `=`/`==`, array/`ArrayList`, `cp`/`mv`), and "which construct fits this problem?". Mark it `checkpoint: true`.
+  SC 109 lesson 4 is the first.
 - **A project lesson** every two units, where students choose the theme.
-- **Named skills**, 15 to 30 per course, for the skills map that the review queue will show. *(Planned.)*
+- **Named skills**, 15 to 30 per course: `skills: [{ id, name }]` on the course, and `skill: 'id'` (or a list) on every quick check and
+  exercise. The skills map on the course page and on the Review page shows each as not started, practising or secure.
 - **A teacher note for every lesson** in the teacher guide, giving:
   - the model solution;
   - the three most common wrong answers and the misconception behind each;

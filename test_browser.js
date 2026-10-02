@@ -392,6 +392,21 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('#/today asks the due question, reschedules it, and says what comes next', badge === '1' && /Done for today: [01] of 1/.test(doneText) && it.n === 2 && it.due > Date.now(), { badge, doneText, it });
   await goto('#/scratch');
   check('the course page shows the skills map once a course is started', (await page.locator('.review-panel .skills li').count()) === (await page.locator('ol.lessons > li').count()) && (await page.locator('.review-panel .sk-practising').count()) >= 1);
+  // SC 109: the k-NN figure (k = 1 is perfect on its training fruit and misses a test fruit; k = 3 is the other way round), the arrow
+  // keys move the new fruit, and a course with named skills lists them under its lessons
+  await goto('#/ml/3');
+  const knn = page.locator('.fig-mount').filter({ has: page.locator('.knn-new') }).first();
+  const knnScore = () => knn.locator('.fig-status').nth(1).textContent();
+  const k1 = await knnScore(); await knn.locator('select').selectOption('3'); const k3 = await knnScore();
+  const knnBefore = await knn.locator('.fig-status').first().textContent();
+  await knn.locator('.knn-new').focus(); await page.keyboard.press('ArrowRight');
+  const knnAfter = await knn.locator('.fig-status').first().textContent();
+  check('k-NN figure: training and test scores for each k, and the arrow keys move the new fruit', /16 of 16[\s\S]*5 of 6/.test(k1) && /15 of 16[\s\S]*6 of 6/.test(k3) && /6\.8 cm wide/.test(knnBefore) && /6\.9 cm wide/.test(knnAfter), { k1, k3, knnBefore, knnAfter });
+  await goto('#/ml/1');
+  const mlq = page.locator('.qc').first();
+  await mlq.locator('.qc-opt').nth(1).click(); await mlq.locator('.qc-sure button').first().click();
+  await goto('#/ml');
+  check('a course with named skills lists them in its skills map', (await page.locator('.review-panel .sk-chip').count()) === 12 && (await page.locator('.review-panel .sk-chip.sk-practising').count()) === 1, await page.locator('.review-panel').innerText().catch(() => 'no panel'));
   await goto('#/scratch/4');
   check('the lesson map lists the parts and the side column follows the page', (await page.locator('.lesson-map li').count()) >= 4 && (await page.locator('.onpage li').count()) >= 4);
   const quiz = page.locator('.bq').first();

@@ -35,6 +35,7 @@ add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is w
     src/course_java.js     SC 106 Introduction to Java (the first lessons; runs on the site's own Java interpreter)
     src/course_dsa.js      SC 107 Data Structures and Algorithms (the first lessons; Java, with interactive figures)
     src/course_shell.js    SC 108 The Command Line (the first lessons; taught in the practice terminal)
+    src/course_ml.js       SC 109 How Machines Learn (the first unit; Python, written to LESSON_STANDARD.md)
     src/style.css          design tokens, layout and every component's styles
     src/app.js             router, pages, code editor, runners, grader, saved progress
     src/lab.js             the Code Lab (#/lab): files, editor, Python tracer and turtle, Scheme REPL,

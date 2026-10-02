@@ -9,8 +9,8 @@
 'use strict';
 const fs = require('fs'), path = require('path');
 global.window = global;
-const FILES = ['computer', 'scratch', 'python', 'lisp', 'cpp', 'math', 'modern', 'java', 'dsa', 'shell'];
-const ID_PREFIX = { computer: 'cs', scratch: 'sp', python: 'py', lisp: 'ls', cpp: 'cp', math: 'ma', modern: 'mc', java: 'jv', dsa: 'ds', shell: 'sh' };
+const FILES = ['computer', 'scratch', 'python', 'lisp', 'cpp', 'math', 'modern', 'java', 'dsa', 'shell', 'ml'];
+const ID_PREFIX = { computer: 'cs', scratch: 'sp', python: 'py', lisp: 'ls', cpp: 'cp', math: 'ma', modern: 'mc', java: 'jv', dsa: 'ds', shell: 'sh', ml: 'ml' };
 const IDS_FILE = path.join(__dirname, 'lint/exercise-ids.txt');
 let errors = 0, warnings = 0;
 const err = (where, msg) => { errors++; console.log('ERROR ' + where + ': ' + msg); };
@@ -55,8 +55,9 @@ function brokenString(code) {
 
 // ---- LESSON_STANDARD.md, as far as a program can check it. Returns the gaps as [rule, message]; the rule names match the guide.
 const STD_WORDS = 450;   // words of reading (about three minutes) before the next thing to do
-function standardGaps(L, course) {
+function standardGaps(L, course, li) {
   const gaps = [], B = L.blocks || [], gap = (rule, msg) => gaps.push([rule, msg]);
+  if (L.checkpoint) return checkpointGaps(L, course, li || 0);
   const isStr = (b) => typeof b === 'string';
   const playground = course.lang !== 'shell' && course.lang !== 'none';
   // S-question: the lesson asks before it tells: a question in the story, a prediction or a reveal before the first section
@@ -98,6 +99,61 @@ function standardGaps(L, course) {
   if (course.readingGrade) { const fk = fkGrade(text(B.filter((b) => isStr(b) && !/class="recap"/.test(b)).join(' '))); if (fk && fk.grade > course.readingGrade + 0.5) gap('S-level', 'reading level grade ' + fk.grade.toFixed(1) + ' (the course sets ' + course.readingGrade + ')'); }
   return gaps;
 }
+// A checkpoint lesson (checkpoint: true) ends a unit: no new material, mixed quick checks on what the unit taught, then exercises.
+const CHECKPOINT_CHECKS = 6;
+const skillTags = (x) => [].concat(x && x.skill != null ? x.skill : []).map(String);
+function checkpointGaps(L, course, li) {
+  const gaps = [], B = L.blocks || [], gap = (rule, msg) => gaps.push([rule, msg]);
+  const isStr = (b) => typeof b === 'string';
+  if (B.some((b) => isStr(b) && /class="stmt"/.test(b))) gap('S-checkpoint', 'a rule box: a checkpoint has no new material (move the rule to the lesson that teaches it)');
+  const checks = B.filter((b) => b && b.check);
+  if (checks.length < CHECKPOINT_CHECKS) gap('S-checkpoint', checks.length + ' quick checks (at least ' + CHECKPOINT_CHECKS + ', mixed across the unit)');
+  checks.forEach((c, i) => { const miss = (c.options || []).map((o, k) => k).filter((k) => k !== c.answer && !(c.wrong && c.wrong[k])); if (miss.length) gap('S-checks', 'quick check ' + (i + 1) + ': option' + (miss.length > 1 ? 's ' : ' ') + miss.map((k) => String.fromCharCode(65 + k)).join(', ') + ' without a wrong[] reason'); });
+  // the unit: the lessons since the previous checkpoint. Every one of them is asked about, through the skills it taught.
+  let start = li; while (start > 0 && !course.lessons[start - 1].checkpoint) start--;
+  const firstTaught = new Map();
+  course.lessons.slice(0, li).forEach((M, mi) => (M.blocks || []).forEach((b) => { for (const t of skillTags(b && (b.check ? b : b.ex))) if (!firstTaught.has(t)) firstTaught.set(t, mi); }));
+  const asked = new Set();
+  checks.forEach((c, i) => {
+    const tags = skillTags(c);
+    if (!tags.length) gap('S-checkpoint', 'quick check ' + (i + 1) + ' names no skill (skill: \'id\', one taught earlier in the unit)');
+    for (const t of tags) { if (!firstTaught.has(t)) gap('S-checkpoint', 'quick check ' + (i + 1) + ': skill ' + JSON.stringify(t) + ' is not taught in an earlier lesson'); else asked.add(firstTaught.get(t)); }
+  });
+  for (let mi = start; mi < li; mi++) if (!asked.has(mi)) gap('S-checkpoint', 'nothing asks about lesson ' + (mi + 1) + ' (' + course.lessons[mi].title + ')');
+  const exs = B.filter((b) => b && b.ex).map((b) => b.ex);
+  if (exs.length < 2) gap('S-make', exs.length + ' graded exercise' + (exs.length === 1 ? '' : 's') + ' (at least two)');
+  for (const ex of exs) { if (!ex.hints || ex.hints.length < 2) gap('S-make', ex.id + ' has fewer than two hints'); if (!ex.followup) gap('S-make', ex.id + ' has no followup'); }
+  if (!(isStr(B[B.length - 1]) && /class="recap"/.test(B[B.length - 1]))) gap('S-recap', 'the last block is not the recap');
+  return gaps;
+}
+// A course's named skills (LESSON_STANDARD.md §4) and its units. Returns [rule, message] pairs for the course as a whole.
+const SKILL_ID = /^[a-z][a-z0-9-]{0,30}$/;
+function courseGaps(course) {
+  const gaps = [], gap = (rule, msg) => gaps.push([rule, msg]);
+  const skills = course.skills || [];
+  if (course.standard >= 1 && !skills.length) gap('S-skills', 'no named skills (course.skills: [{ id, name }], 15 to 30 when the course is finished)');
+  const ids = new Set();
+  for (const sk of skills) {
+    if (!sk || !SKILL_ID.test(sk.id || '')) gap('S-skills', 'skill id ' + JSON.stringify(sk && sk.id) + ' (lower case, digits and dashes)');
+    else if (ids.has(sk.id)) gap('S-skills', 'skill ' + sk.id + ' listed twice'); else ids.add(sk.id);
+    if (!sk || !sk.name || sk.name.length > 60) gap('S-skills', 'skill ' + (sk && sk.id) + ' needs a short name (at most 60 characters)');
+  }
+  if (skills.length && course.status !== 'developing' && (skills.length < 15 || skills.length > 30)) gap('S-skills', skills.length + ' skills (15 to 30 in a finished course)');
+  const checked = new Set(), used = new Set();
+  course.lessons.forEach((L, li) => (L.blocks || []).forEach((b) => {
+    if (!b || !(b.check || b.ex)) return;
+    const tags = skillTags(b.check ? b : b.ex), what = 'lesson ' + (li + 1) + ' ' + (b.check ? 'quick check "' + text(String(b.check)).trim().slice(0, 40) + '"' : b.ex.id);
+    if (skills.length && (course.standard >= 1 || L.standard >= 1) && !tags.length) gap('S-skills', what + ' names no skill');
+    for (const t of tags) { if (!ids.has(t)) gap('S-skills', what + ': unknown skill ' + JSON.stringify(t)); used.add(t); if (b.check) checked.add(t); }
+  }));
+  for (const id of ids) {
+    if (!used.has(id)) { if (course.status !== 'developing') gap('S-skills', 'skill ' + id + ' is not practised anywhere'); }
+    else if (!checked.has(id)) gap('S-skills', 'skill ' + id + ' has no quick check, so it never comes back in the review');
+  }
+  // S-units: a checkpoint at least every four lessons (a unit is three or four lessons)
+  if (course.standard >= 1) { let run = 0; course.lessons.forEach((L, li) => { if (L.checkpoint) { run = 0; return; } if (++run > 4) gap('S-units', 'lesson ' + (li + 1) + ' is the fifth lesson in a row without a checkpoint'); }); }
+  return gaps;
+}
 const STANDARD_REPORT = process.argv.includes('--standard'), stdRows = [];
 
 const allIds = new Map();
@@ -125,7 +181,7 @@ for (const file of FILES) {
   course.lessons.forEach((L, li) => {
     const where = C + ' lesson ' + (li + 1);
     {   // LESSON_STANDARD.md: errors for a course or lesson that opts in with standard: 1, a report for the rest
-      const gaps = standardGaps(L, course), strict = course.standard >= 1 || L.standard >= 1;
+      const gaps = standardGaps(L, course, li), strict = course.standard >= 1 || L.standard >= 1;
       if (strict) for (const [rule, msg] of gaps) err(where, rule + ': ' + msg);
       stdRows.push({ where, title: L.title, strict, gaps });
     }
@@ -136,7 +192,7 @@ for (const file of FILES) {
     // the shape of a lesson: a story first, three quick checks, exercises, then a recap (or, in a project lesson, stretch goals)
     if (!(typeof B[0] === 'string' && /^\s*<p>/.test(B[0]))) err(where, 'does not open with a story (a <p> of prose)');
     const checks = ks.filter((k) => k === 'check').length;
-    if (checks !== 3) err(where, checks + ' quick checks (the style is three, one after each main idea)');
+    if (L.checkpoint ? checks < CHECKPOINT_CHECKS : checks !== 3) err(where, checks + ' quick checks (' + (L.checkpoint ? 'a checkpoint has at least ' + CHECKPOINT_CHECKS : 'the style is three, one after each main idea') + ')');
     if (!ks.includes('ex')) err(where, 'no graded exercise');
     const lastEx = ks.lastIndexOf('ex'), recap = ks.lastIndexOf('recap'), stretch = B.findIndex((b, i) => i > lastEx && typeof b === 'string' && /<h2>Stretch goals<\/h2>/.test(b));
     if (recap < lastEx && stretch < 0) err(where, 'no recap after the exercises');
@@ -213,6 +269,11 @@ for (const file of FILES) {
       if (!B.some((b) => b && b.fig === 'blockquiz')) err(where, 'no blockquiz figure before the exercises');
     }
   });
+  {   // the course as a whole: its named skills and its units
+    const gaps = courseGaps(course), strict = course.standard >= 1 || !!(course.skills && course.skills.length);
+    if (strict) for (const [rule, msg] of gaps) err(C, rule + ': ' + msg);
+    if (gaps.length) stdRows.push({ where: C, title: 'the course', strict, gaps });
+  }
 }
 
 // ---- the languages' logos (img/icons/<lang>.svg + .json): free licences only (logos may also be BSD or GPL), plain SVG, credited
@@ -240,7 +301,7 @@ if (added.length) {
 }
 
 if (STANDARD_REPORT) {
-  console.log('\nLESSON_STANDARD.md: what each lesson still needs (rules: S-question S-predict S-do S-checks S-spacing S-short S-make S-recap S-level)');
+  console.log('\nLESSON_STANDARD.md: what each lesson still needs (rules: S-question S-predict S-do S-checks S-spacing S-short S-make S-recap S-level S-checkpoint S-skills S-units)');
   for (const r of stdRows) console.log((r.gaps.length ? '  ' : 'OK') + ' ' + r.where + ' (' + r.title + ')' + (r.strict ? ' [standard]' : '') + (r.gaps.length ? '\n      ' + r.gaps.map(([rule, msg]) => rule + ': ' + msg).join('\n      ') : ''));
   const meet = stdRows.filter((r) => !r.gaps.length).length, byRule = {};
   for (const r of stdRows) for (const [rule] of r.gaps) byRule[rule] = (byRule[rule] || 0) + 1;

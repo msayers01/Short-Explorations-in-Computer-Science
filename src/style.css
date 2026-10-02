@@ -33,6 +33,7 @@
 :root[data-course="modern"] { --accent: #0e6b77; --accent-soft: #e0f1f3; }
 :root[data-course="java"] { --accent: #a63d2a; --accent-soft: #f9e8e4; }
 :root[data-course="dsa"] { --accent: #7b2d78; --accent-soft: #f3e5f2; }
+:root[data-course="ml"] { --accent: #2f5d8a; --accent-soft: #e6eef7; }
 :root[data-course="scratch"] { --accent: #c2185b; --accent-soft: #fbe4ec; }
 :root[data-course="shell"] { --accent: #3d4a5c; --accent-soft: #e6e9ef; }
 :root[data-course="computer"] { --accent: #8a5a10; --accent-soft: #f6ecd9; }
@@ -51,6 +52,7 @@
   :root:not([data-theme="light"])[data-course="modern"] { --accent: #5cc9d6; --accent-ink: #04222a; --accent-soft: #11313a; }
   :root:not([data-theme="light"])[data-course="java"] { --accent: #f0907e; --accent-ink: #2a0d08; --accent-soft: #3a1f1a; }
   :root:not([data-theme="light"])[data-course="dsa"] { --accent: #dc9fd8; --accent-ink: #26091f; --accent-soft: #341a32; }
+  :root:not([data-theme="light"])[data-course="ml"] { --accent: #8fb8e6; --accent-ink: #0c1a2a; --accent-soft: #1a2838; }
   :root:not([data-theme="light"])[data-course="scratch"] { --accent: #f48fb1; --accent-ink: #2a0712; --accent-soft: #3a1a26; }
   :root:not([data-theme="light"])[data-course="shell"] { --accent: #b9c4d6; --accent-ink: #121620; --accent-soft: #262b36; }
   :root:not([data-theme="light"])[data-course="computer"] { --accent: #e0b060; --accent-ink: #1e1400; --accent-soft: #332810; }
@@ -69,6 +71,7 @@
 :root[data-theme="dark"][data-course="modern"] { --accent: #5cc9d6; --accent-ink: #04222a; --accent-soft: #11313a; }
 :root[data-theme="dark"][data-course="java"] { --accent: #f0907e; --accent-ink: #2a0d08; --accent-soft: #3a1f1a; }
 :root[data-theme="dark"][data-course="dsa"] { --accent: #dc9fd8; --accent-ink: #26091f; --accent-soft: #341a32; }
+:root[data-theme="dark"][data-course="ml"] { --accent: #8fb8e6; --accent-ink: #0c1a2a; --accent-soft: #1a2838; }
 :root[data-theme="dark"][data-course="scratch"] { --accent: #f48fb1; --accent-ink: #2a0712; --accent-soft: #3a1a26; }
 :root[data-theme="dark"][data-course="shell"] { --accent: #b9c4d6; --accent-ink: #121620; --accent-soft: #262b36; }
 :root[data-theme="dark"][data-course="computer"] { --accent: #e0b060; --accent-ink: #1e1400; --accent-soft: #332810; }
@@ -138,6 +141,7 @@ body.tour-on { overflow-x: hidden; }
 .catalog li[data-course="modern"] .cat-code { color: #0e6b77; box-shadow: inset 0 -2px 0 #0e6b77; }
 .catalog li[data-course="java"] .cat-code { color: #a63d2a; box-shadow: inset 0 -2px 0 #a63d2a; }
 .catalog li[data-course="dsa"] .cat-code { color: #7b2d78; box-shadow: inset 0 -2px 0 #7b2d78; }
+.catalog li[data-course="ml"] .cat-code { color: #2f5d8a; box-shadow: inset 0 -2px 0 #2f5d8a; }
 .catalog li[data-course="scratch"] .cat-code { color: #c2185b; box-shadow: inset 0 -2px 0 #c2185b; }
 :root[data-theme="dark"] .catalog li[data-course="python"] .cat-code { color: #e8a640; box-shadow: inset 0 -2px 0 #e8a640; }
 :root[data-theme="dark"] .catalog li[data-course="lisp"] .cat-code { color: #b99ae6; box-shadow: inset 0 -2px 0 #b99ae6; }
@@ -146,12 +150,18 @@ body.tour-on { overflow-x: hidden; }
 :root[data-theme="dark"] .catalog li[data-course="modern"] .cat-code { color: #5cc9d6; box-shadow: inset 0 -2px 0 #5cc9d6; }
 :root[data-theme="dark"] .catalog li[data-course="java"] .cat-code { color: #f0907e; box-shadow: inset 0 -2px 0 #f0907e; }
 :root[data-theme="dark"] .catalog li[data-course="dsa"] .cat-code { color: #dc9fd8; box-shadow: inset 0 -2px 0 #dc9fd8; }
+:root[data-theme="dark"] .catalog li[data-course="ml"] .cat-code { color: #8fb8e6; box-shadow: inset 0 -2px 0 #8fb8e6; }
 :root[data-theme="dark"] .catalog li[data-course="scratch"] .cat-code { color: #f48fb1; box-shadow: inset 0 -2px 0 #f48fb1; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .catalog li[data-course="python"] .cat-code { color: #e8a640; box-shadow: inset 0 -2px 0 #e8a640; }
   :root:not([data-theme="light"]) .catalog li[data-course="lisp"] .cat-code { color: #b99ae6; box-shadow: inset 0 -2px 0 #b99ae6; }
   :root:not([data-theme="light"]) .catalog li[data-course="cpp"] .cat-code { color: #7fb0f0; box-shadow: inset 0 -2px 0 #7fb0f0; }
   :root:not([data-theme="light"]) .catalog li[data-course="math"] .cat-code { color: #6fcf97; box-shadow: inset 0 -2px 0 #6fcf97; }
+  :root:not([data-theme="light"]) .catalog li[data-course="modern"] .cat-code { color: #5cc9d6; box-shadow: inset 0 -2px 0 #5cc9d6; }
+  :root:not([data-theme="light"]) .catalog li[data-course="java"] .cat-code { color: #f0907e; box-shadow: inset 0 -2px 0 #f0907e; }
+  :root:not([data-theme="light"]) .catalog li[data-course="dsa"] .cat-code { color: #dc9fd8; box-shadow: inset 0 -2px 0 #dc9fd8; }
+  :root:not([data-theme="light"]) .catalog li[data-course="scratch"] .cat-code { color: #f48fb1; box-shadow: inset 0 -2px 0 #f48fb1; }
+  :root:not([data-theme="light"]) .catalog li[data-course="ml"] .cat-code { color: #8fb8e6; box-shadow: inset 0 -2px 0 #8fb8e6; }
 }
 .cat-title { font-size: 1.35rem; color: var(--ink); text-decoration: none; }
 .cat-title:hover { text-decoration: underline; }
@@ -1237,3 +1247,16 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .ps-tool:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-3); }
 .ps-tool:disabled { opacity: 0.35; cursor: default; }
 .ps-empty { color: var(--ink-3); padding: 0.3rem; }
+/* k nearest neighbours (widgets.js knn) */
+.knn-new { cursor: grab; outline: none; }
+.knn-new:focus-visible circle { stroke: var(--link); stroke-width: 4; }
+.knn-key { margin: 0.2rem 0 0; }
+.knn-sw { display: inline-block; width: 0.8em; height: 0.8em; border: 1px solid var(--ink); vertical-align: -0.05em; }
+.knn-o { background: #e67e22; border-radius: 50%; } .knn-l { background: #e3c614; clip-path: polygon(50% 0, 100% 100%, 0 100%); border: 0; }
+/* the named skills of a course (review.js skillsMap) */
+.sk-named { margin-top: 0.6rem; }
+.sk-named summary { cursor: pointer; color: var(--ink-2); font-size: 0.9rem; }
+.sk-chips { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.sk-chip a { display: inline-block; padding: 0.15rem 0.55rem; border: 1px solid var(--rule); border-left-width: 4px; border-radius: 3px; font-size: 0.85rem; color: var(--ink); text-decoration: none; }
+.sk-chip.sk-practising a { border-left-color: var(--warn, #b7791f); }
+.sk-chip.sk-secure a { border-left-color: var(--ok); font-weight: 600; }

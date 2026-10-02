@@ -1523,4 +1523,79 @@ xs mapped kept result`;
     const tools = el('div', { class: 'fig-tools' }, el('span', {}, 'word'), input, el('button', { class: 'btn sm', onclick: run }, 'Load'), el('span', {}, 'read the'), mode);
     mount.append(el('div', { class: 'fig-scroll' }, svg), tools, presets, log, ctl.el);
   };
+  /* ---------- k nearest neighbours: drag a fruit, choose k, watch the label and the boundary (SC 109 lessons 2-3) ---------- */
+  // Fruit measured as width and height in cm. Most lemons are tall and narrow and most oranges round, but one lemon is round: the
+  // point that k = 1 believes and a larger k outvotes. With b.test the figure also shows fruit it was not trained on, and how many of
+  // each set k-NN labels right, so overfitting (k = 1: every training fruit right) and underfitting (k = 15: the majority) are visible.
+  W.knn = function (mount, b) {
+    const TRAIN = [[7.4, 7.2, 'o'], [7.8, 7.6, 'o'], [7.0, 7.1, 'o'], [7.6, 7.3, 'o'], [8.0, 7.8, 'o'], [7.2, 7.0, 'o'], [7.5, 7.7, 'o'], [7.9, 7.3, 'o'],
+      [6.0, 8.0, 'l'], [6.2, 8.4, 'l'], [5.8, 7.6, 'l'], [6.5, 8.6, 'l'], [6.1, 7.9, 'l'], [6.4, 8.2, 'l'], [6.9, 7.4, 'l'], [6.3, 7.7, 'l']];
+    const TEST = [[7.3, 7.4, 'o'], [7.7, 7.9, 'o'], [7.0, 7.6, 'o'], [6.1, 8.3, 'l'], [6.6, 8.1, 'l'], [5.9, 7.8, 'l']];
+    const NAME = { o: 'orange', l: 'lemon' }, FILL = { o: '#e67e22', l: '#e3c614' };
+    const KS = [1, 3, 5, 7, 9];
+    let k = KS.includes(b.k) ? b.k : 1, q = [6.8, 7.6], showTest = !!b.test;
+    const X0 = 5.5, X1 = 8.5, Y0 = 6.8, Y1 = 8.9;
+    const W0 = 560, H0 = 380, L = 46, R = 14, T = 12, B = 40;
+    const X = (v) => L + (v - X0) / (X1 - X0) * (W0 - L - R), Y = (v) => T + (1 - (v - Y0) / (Y1 - Y0)) * (H0 - T - B);
+    const dist = (a, p) => Math.hypot(a[0] - p[0], a[1] - p[1]);
+    // the k nearest training fruit; equal distances keep the order of the list, as a stable sort does in Python
+    const nearest = (p, kk, skip) => TRAIN.map((t, i) => ({ t, i, d: dist(t, p) })).filter((x) => x.i !== skip).sort((a, c) => a.d - c.d).slice(0, kk);
+    const vote = (ns) => { const o = ns.filter((x) => x.t[2] === 'o').length; return { o, l: ns.length - o, label: o > ns.length / 2 ? 'o' : 'l' }; };
+    const svg = sv('svg', { viewBox: '0 0 ' + W0 + ' ' + H0, role: 'img', 'aria-label': 'Fruit plotted by width and height, with a new fruit to label' });
+    const status = el('p', { class: 'fig-status', role: 'status' });
+    const score = el('p', { class: 'fig-status' });
+    const mark = (p, kind, attrs) => kind === 'o'
+      ? sv('circle', Object.assign({ cx: X(p[0]), cy: Y(p[1]), r: 7, fill: FILL.o, stroke: 'var(--ink)', 'stroke-width': 1.2 }, attrs || {}))
+      : sv('polygon', Object.assign({ points: [[0, -9], [8, 6], [-8, 6]].map(([dx, dy]) => (X(p[0]) + dx) + ',' + (Y(p[1]) + dy)).join(' '), fill: FILL.l, stroke: 'var(--ink)', 'stroke-width': 1.2 }, attrs || {}));
+    function render() {
+      svg.replaceChildren();
+      // the regions: every small square coloured by the label k-NN would give a fruit there
+      const cell = 0.1;
+      for (let x = X0; x < X1 - 1e-9; x += cell) for (let y = Y0; y < Y1 - 1e-9; y += cell) {
+        const lab = vote(nearest([x + cell / 2, y + cell / 2], k)).label;
+        svg.append(sv('rect', { x: X(x), y: Y(y + cell), width: X(x + cell) - X(x), height: Y(y) - Y(y + cell), fill: FILL[lab], 'fill-opacity': 0.16, 'shape-rendering': 'crispEdges' }));
+      }
+      svg.append(sv('line', { x1: L, y1: Y(Y0), x2: W0 - R, y2: Y(Y0), stroke: 'var(--ink-2)' }), sv('line', { x1: L, y1: T, x2: L, y2: Y(Y0), stroke: 'var(--ink-2)' }));
+      for (let v = 6; v <= 8.5; v += 0.5) svg.append(txt(X(v), H0 - B + 16, v.toFixed(1), { 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-3)' }));
+      for (let v = 7; v <= 8.9; v += 0.5) svg.append(txt(L - 6, Y(v) + 4, v.toFixed(1), { 'text-anchor': 'end', 'font-size': 11, fill: 'var(--ink-3)' }));
+      svg.append(txt(W0 - R, H0 - 6, 'width (cm)', { 'text-anchor': 'end', 'font-size': 11, fill: 'var(--ink-2)' }), txt(L + 6, T + 10, 'height (cm)', { 'font-size': 11, fill: 'var(--ink-2)' }));
+      const ns = nearest(q, k), v = vote(ns), far = ns[ns.length - 1].d;
+      svg.append(sv('circle', { cx: X(q[0]), cy: Y(q[1]), r: X(q[0] + far) - X(q[0]), fill: 'none', stroke: 'var(--ink-3)', 'stroke-dasharray': '4 4' }));
+      for (const n of ns) svg.append(sv('line', { x1: X(q[0]), y1: Y(q[1]), x2: X(n.t[0]), y2: Y(n.t[1]), stroke: 'var(--ink-2)', 'stroke-width': 1.2 }));
+      for (const t of TRAIN) svg.append(mark(t, t[2]));
+      if (showTest) for (const t of TEST) svg.append(mark(t, t[2], { fill: 'var(--paper)', stroke: t[2] === 'o' ? FILL.o : '#a08a00', 'stroke-width': 2.5 }));
+      const g = sv('g', { class: 'knn-new', tabindex: '0', role: 'slider', 'aria-label': 'The new fruit: arrow keys move it', 'aria-valuetext': 'width ' + q[0].toFixed(1) + ' cm, height ' + q[1].toFixed(1) + ' cm' },
+        sv('circle', { cx: X(q[0]), cy: Y(q[1]), r: 11, fill: 'var(--paper)', stroke: 'var(--ink)', 'stroke-width': 2.5 }),
+        txt(X(q[0]), Y(q[1]) + 5, '?', { 'text-anchor': 'middle', 'font-size': 14, 'font-weight': 700 }));
+      svg.append(g);
+      status.textContent = 'New fruit ' + q[0].toFixed(1) + ' cm wide, ' + q[1].toFixed(1) + ' cm tall. The ' + (k === 1 ? 'nearest fruit is' : k + ' nearest are ' + v.o + ' orange and ' + v.l + ' lemon') + (k === 1 ? ' a' + (v.label === 'o' ? 'n orange' : ' lemon') : '') + ', so k-NN says: ' + NAME[v.label] + '.';
+      if (showTest) {
+        // a training fruit is labelled by the training set, itself included: that is what "accuracy on the training set" means
+        const trainRight = TRAIN.filter((t) => vote(nearest(t, k)).label === t[2]).length, testRight = TEST.filter((t) => vote(nearest(t, k)).label === t[2]).length;
+        score.replaceChildren('k = ' + k + ': training fruit ', el('b', {}, trainRight + ' of ' + TRAIN.length), ' right; test fruit (never seen) ', el('b', {}, testRight + ' of ' + TEST.length), ' right.');
+      }
+    }
+    // dragging: pointer events on the whole picture, so a touch anywhere moves the new fruit there
+    const toData = (e) => { const r = svg.getBoundingClientRect(), sx = W0 / r.width, sy = H0 / r.height; const px = (e.clientX - r.left) * sx, py = (e.clientY - r.top) * sy;
+      return [Math.max(X0, Math.min(X1, X0 + (px - L) / (W0 - L - R) * (X1 - X0))), Math.max(Y0, Math.min(Y1, Y0 + (1 - (py - T) / (H0 - T - B)) * (Y1 - Y0)))]; };
+    let dragging = false;
+    svg.addEventListener('pointerdown', (e) => { dragging = true; try { svg.setPointerCapture(e.pointerId); } catch (x) { /* old browser */ } q = toData(e); render(); e.preventDefault(); });
+    svg.addEventListener('pointermove', (e) => { if (!dragging) return; q = toData(e); render(); });
+    const end = () => { dragging = false; const f = svg.querySelector('.knn-new'); if (f && document.activeElement === document.body) f.focus({ preventScroll: true }); };
+    svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+    svg.addEventListener('keydown', (e) => {
+      const step = e.shiftKey ? 0.5 : 0.1, mv = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }[e.key];
+      if (!mv) return; e.preventDefault();
+      q = [Math.max(X0, Math.min(X1, Math.round((q[0] + mv[0]) * 10) / 10)), Math.max(Y0, Math.min(Y1, Math.round((q[1] + mv[1]) * 10) / 10))];
+      render(); const f = svg.querySelector('.knn-new'); if (f) f.focus();
+    });
+    svg.style.touchAction = 'none';
+    const pick = el('select', { 'aria-label': 'k, the number of neighbours that vote', onchange: (e) => { k = +e.target.value; render(); } }, KS.map((n) => el('option', { value: String(n), selected: n === k ? '' : null }, String(n))));
+    const tools = el('div', { class: 'fig-tools' }, el('label', {}, 'k = ', pick),
+      b.test ? el('label', {}, el('input', { type: 'checkbox', checked: showTest ? '' : null, onchange: (e) => { showTest = e.target.checked; score.hidden = !showTest; render(); } }), ' show the test fruit (hollow)') : null,
+      el('span', { class: 'fig-note' }, 'drag the ? (or focus it and use the arrow keys)'));
+    const key = el('p', { class: 'fig-note knn-key' }, el('span', { class: 'knn-sw knn-o', 'aria-hidden': 'true' }), ' orange (circle)  ', el('span', { class: 'knn-sw knn-l', 'aria-hidden': 'true' }), ' lemon (triangle)  · shading: the label a new fruit there would get');
+    render();
+    mount.append(svg, tools, status, b.test ? score : null, key);
+  };
 })();

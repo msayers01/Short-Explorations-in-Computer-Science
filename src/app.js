@@ -1064,11 +1064,11 @@
   const COURSE_GROUPS = [
     { id: 'start', title: 'Start here', blurb: 'No experience needed: what a computer is, the jump from Scratch blocks to typed code, and the command line.', ids: ['computer', 'scratch', 'shell'] },
     { id: 'languages', title: 'Programming languages', blurb: 'Learn to program in one language, then see the same ideas in others: each course is a complete introduction.', ids: ['python', 'java', 'cpp', 'modern', 'lisp'] },
-    { id: 'cs', title: 'Computer science', blurb: 'The ideas under every program: the mathematics of computing, and how to arrange data so programs are fast.', ids: ['math', 'dsa'] },
+    { id: 'cs', title: 'Computer science', blurb: 'The ideas under every program: the mathematics of computing, how to arrange data so programs are fast, and how machines learn.', ids: ['math', 'dsa', 'ml'] },
   ];
   // The official logos of the languages (BUILD.icons, from img/icons/). Decorative: the name is always written beside them.
   const ICONS = (window.BUILD && window.BUILD.icons) || {};
-  const COURSE_ICONS = { scratch: ['scratch', 'python'], python: ['python'], lisp: ['scheme'], cpp: ['cpp'], modern: ['cpp'], java: ['java'], dsa: ['java'], shell: ['shell'] };
+  const COURSE_ICONS = { scratch: ['scratch', 'python'], python: ['python'], lisp: ['scheme'], cpp: ['cpp'], modern: ['cpp'], java: ['java'], dsa: ['java'], shell: ['shell'], ml: ['python'] };
   const langIcon = (id, cls) => ICONS[id] ? el('img', { class: 'lang-icon lang-' + id + (cls ? ' ' + cls : ''), src: ICONS[id].src, alt: '', title: ICONS[id].title }) : null;
   const courseIcons = (c, cls) => { const ids = (COURSE_ICONS[c.id] || []).filter((i) => ICONS[i]); return ids.length ? el('span', { class: 'course-icons' + (cls ? ' ' + cls : ''), 'aria-hidden': 'true' }, ids.map((i) => langIcon(i))) : null; };
   function catalogItem(c) {

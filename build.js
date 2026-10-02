@@ -57,6 +57,7 @@ const scripts = [
   'src/course_java.js',
   'src/course_dsa.js',
   'src/course_shell.js',
+  'src/course_ml.js',      // SC 109 How Machines Learn: the first course written to LESSON_STANDARD.md
   'src/mathgrade.js',
   'src/cppfull.js',
   'src/javautil.js',
