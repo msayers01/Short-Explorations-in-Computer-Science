@@ -1,0 +1,16 @@
+{
+  "id": "intel-4004",
+  "file": "intel-4004.jpg",
+  "title": "Intel 4004",
+  "alt": "An Intel 4004 chip: a white ceramic package with a gold lid marked C4004 and sixteen gold pins, eight along each side.",
+  "author": "Thomas Nguyen",
+  "license": "CC BY-SA 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Intel_C4004.jpg",
+  "credit": "Own work",
+  "description": "A processor Intel C4004 with grey traces (no gray trace version).",
+  "date": "2016",
+  "width": 960,
+  "height": 640,
+  "fetched": "2026-10-02"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "eliza-conversation",
+  "file": "eliza-conversation.jpg",
+  "title": "A conversation with ELIZA",
+  "alt": "White text on a black terminal screen: the name ELIZA in big letters made of letters, a note that the original program was described by Joseph Weizenbaum in 1966 and this version written by Norbert Landsteiner in 2005, then a conversation, with lines starting ELIZA: and YOU: in turn.",
+  "author": "Unknown author",
+  "license": "Public domain",
+  "licenseUrl": null,
+  "source": "https://commons.wikimedia.org/wiki/File:ELIZA_conversation.png",
+  "credit": "File:ELIZA conversation.jpg",
+  "description": "A conversation with the ELIZA chatbot.",
+  "date": "",
+  "width": 751,
+  "height": 487,
+  "fetched": "2026-10-02"
+}

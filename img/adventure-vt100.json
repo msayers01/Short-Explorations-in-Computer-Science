@@ -1,0 +1,16 @@
+{
+  "id": "adventure-vt100",
+  "file": "adventure-vt100.jpg",
+  "title": "Adventure on a VT100 terminal",
+  "alt": "An old cream-coloured VT100 terminal with blue text on its screen: \"YOU ARE STANDING AT THE END OF A ROAD BEFORE A SMALL BRICK BUILDING\", then the commands ENTER BUILDING, GET LAMP, INVENTORY and QUIT, and a score of 27 out of 350. Reels of tape sit on shelves behind it.",
+  "author": "Autopilot",
+  "license": "CC BY-SA 3.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Colossal_Cave_Adventure_on_VT100_terminal.jpg",
+  "credit": "Own work",
+  "description": "Colossal Cave Adventure running on a PDP-11/34 displayed on the VT100 console.",
+  "date": "2014",
+  "width": 960,
+  "height": 720,
+  "fetched": "2026-10-02"
+}
