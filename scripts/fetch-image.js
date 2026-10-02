@@ -67,10 +67,11 @@ function icon(lang, file, name) {
   // PNG rendering, which it asks clients to use instead
   let fname = lang + '.svg', out = path.join(dir, fname), svg = '';
   try { curl(ii.url, out); svg = fs.readFileSync(out, 'utf8'); } catch (e) { svg = ''; }
-  const plain = /<svg[\s>]/i.test(svg) && !/<script|\bon\w+\s*=|<foreignObject|xlink:href\s*=\s*["']https?:|href\s*=\s*["']https?:/i.test(svg);
+  const isSvg = /^\s*(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE svg[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*<svg[\s>]/i.test(svg);   // an HTML error page can contain an <svg> too
+  const plain = isSvg && !/<script|\bon\w+\s*=|<foreignObject|xlink:href\s*=\s*["']https?:|href\s*=\s*["']https?:/i.test(svg);
   if (!plain) {
     fs.rmSync(out, { force: true });
-    if (/<svg[\s>]/i.test(svg)) throw new Error(file + ': not a plain SVG (script, event handler or outside reference)');   // shown only in <img>, but a logo has no business carrying those
+    if (isSvg) throw new Error(file + ': not a plain SVG (script, event handler or outside reference)');   // shown only in <img>, but a logo has no business carrying those
     name = lang + '.png'; out = path.join(dir, fname); curl(ii.thumburl, out);
     if (fs.readFileSync(out).slice(0, 8).toString('hex') !== '89504e470d0a1a0a') { fs.rmSync(out); throw new Error(file + ': the PNG rendering did not arrive'); }
     svg = fs.readFileSync(out);
