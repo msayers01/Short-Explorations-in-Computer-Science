@@ -259,7 +259,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
     for (const id of demoIds) {
       await goto('#/algorithms/' + id);
       await page.waitForFunction(() => document.querySelector('.algo-host') && document.querySelector('.algo-host').children.length > 0, null, { timeout: 5000 }).catch(() => { });
-      const play = page.locator('.algo-host .algo-controls .btn.primary').first();
+      const play = page.locator('.algo-host .algo-controls .btn.primary:visible').first();
       if (await play.count()) { await play.click(); await page.waitForTimeout(400); }
       const info = await page.evaluate(() => ({ kids: document.querySelector('.algo-host').children.length, error: !!document.querySelector('.algo-error'), wide: document.documentElement.scrollWidth > window.innerWidth + 1 }));
       if (!info.kids || info.error || info.wide) demoProblems.push(id + ' at ' + w + 'px: ' + JSON.stringify(info));

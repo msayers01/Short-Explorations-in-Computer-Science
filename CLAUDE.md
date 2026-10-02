@@ -132,6 +132,11 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   it pulses until opened once, `shortcourses.tour.v1`) spotlights twelve real elements across `#/`, `#/python/1` and `#/lab`. Steps are
   `{route, target, title, text, place?, optional?}`; a target that moves or is renamed breaks its step silently (the card says the part is
   not on the page), so keep the browser check in `test_browser.js` passing. The step texts describe the UI: update them when it changes.
+- **Courses, Algorithms, Real world** (ARCHITECTURE §9g): the top bar is Courses / Algorithms / Real world / Code Lab. `#/courses` groups the
+  courses (`COURSE_GROUPS` in app.js: add a new course to a group). `#/algorithms` has 12 interactive demos (`src/algos.js` frame,
+  `src/algo_{search,sort,paths,games}.js`, each with `selfTest()` run by `test_algos.js`). `#/real-world` (`src/applied.js`) has 30 topics,
+  147 examples tagged by field, and links to the lessons. The tour's top-bar step describes these pages: update it when they change.
+- The DOM's own `append`/`replaceChildren` do not flatten arrays (they print `[object HTMLElement]`): spread them, or use `el()`, which does.
 - Ideas not started: C in the Code Lab (same compiler); lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
   beside the single-page design and needs a policy change); splitting CI (about 4 minutes now); a Java step-through debugger like the C++ memory stepper.
