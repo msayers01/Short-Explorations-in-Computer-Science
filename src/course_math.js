@@ -1689,7 +1689,7 @@ print("eavesdropper found", f, "and", n // f, "after", steps, "divisions")
 m2 = (f - 1) * (n // f - 1)
 print("and reads the message:", pow(locked, inverse(e, m2), n))`, caption: 'No exceptions; the key is 2753; 1234 is locked to 2183 and unlocked again. The eavesdropper factors 3233 after 51 divisions and reads the message. Every extra digit of n multiplies her work by about three, while barely slowing the legitimate user.' },
         { check: "With n = pq, what is m, the number the keys e and d must satisfy ed ≡ 1 modulo?", options: ["n − 1", "(p − 1)(q − 1)", "pq"], answer: 1, why: "Theorem 1: raising to the power km + 1 modulo n is a round trip when m = (p − 1)(q − 1)." },
-        { check: "What must an eavesdropper do to recover d from the public (n, e)?", options: ["Compute e⁻¹ mod n", "Factor n into p and q, to find m", "Try every message"], answer: 1, why: "d is the inverse of e modulo m, and m needs p and q. Factoring is believed to take time exponential in the number of digits." },
+        { check: "What must an eavesdropper do to recover d from the public (n, e)?", options: ["Compute e⁻¹ mod n", "Factor n into p and q, to find m", "Try every message"], answer: 1, why: "d is the inverse of e modulo m, and m needs p and q. Every known way of factoring takes time that grows faster than any power of the number of digits." },
         `<h2>Before the exercises</h2>
 <p>Both exercises are by hand, as in the table above. The first makes a key pair and locks a message; for the unlocking step, notice that 31 ≡ −2 (mod 33), and powers of −2 are easy. The second is the eavesdropper's job on a small padlock: factor <i>n</i>, rebuild <i>m</i>, find <i>d</i>. To find an inverse by hand, try <i>d</i> = 1, 2, 3, … until <i>ed</i> is one more than a multiple of <i>m</i>, or look for the multiple of <i>m</i> that is one less than a multiple of <i>e</i>.</p>`,
         { aside: `<p><b>Common mistakes in this project.</b> Choosing an <i>e</i> that shares a factor with <i>m</i>, so that no <i>d</i> exists. Computing <i>m</i> as <i>n</i> − 1, or with the wrong primes. Forgetting to reduce mod <i>n</i> after every multiplication, so the numbers grow enormous. Locking a message that is not smaller than <i>n</i>: the round trip only returns numbers below <i>n</i>. Thinking the security comes from keeping the method secret; it comes from the difficulty of factoring.</p>` },
@@ -1740,7 +1740,7 @@ print("and reads the message:", pow(locked, inverse(e, m2), n))`, caption: 'No e
 <li>With <i>n</i> = <i>pq</i> and <i>m</i> = (<i>p</i> − 1)(<i>q</i> − 1), raising to the power <i>km</i> + 1 modulo <i>n</i> is a round trip (Theorem 1, from Fermat's little theorem).</li>
 <li>Choose <i>e</i> with gcd(<i>e</i>, <i>m</i>) = 1 and <i>d</i> with <i>ed</i> ≡ 1 (mod <i>m</i>): <i>e</i> locks and <i>d</i> unlocks.</li>
 <li>Locking and unlocking use repeated squaring, so they stay fast for huge numbers.</li>
-<li>(<i>n</i>, <i>e</i>) is public; recovering <i>d</i> means factoring <i>n</i>, which is believed to take time exponential in the number of digits. The security is a growth rate, not a secret.</li>
+<li>(<i>n</i>, <i>e</i>) is public; recovering <i>d</i> means factoring <i>n</i>, which, by every method known, takes time growing faster than any power of the number of digits. The security is a growth rate, not a secret.</li>
 </ul></div>`
       ]
     }

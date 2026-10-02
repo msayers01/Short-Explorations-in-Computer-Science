@@ -9,7 +9,7 @@ window.COURSES.push({
   id: 'scratch', code: 'SC 100', short: 'Scratch', lang: 'python', status: 'developing', readingWpm: 110,
   title: 'From Scratch to Python',
   grades: 'Grades 5–8 · after Scratch',
-  audience: `<p><b>Grades 5–8</b>. For anyone who has made a few Scratch projects and wants to see what grown-up programmers type. Can you make a sprite say hello? Keep a score? Use a <em>repeat</em> block? Then you already know most of what this course teaches. The only new part is typing the words instead of dragging the blocks.</p><p>The lessons are short. Most of the programs talk, draw or play. The course is being written: the first seven lessons are here.</p>`,
+  audience: `<p><b>Grades 5–8</b>. For anyone who has made a few Scratch projects and wants to see what grown-up programmers type. Can you make a sprite say hello? Keep a score? Use a <em>repeat</em> block? Then you already know most of what this course teaches. The only new part is typing the words instead of dragging the blocks.</p><p>The lessons are short. Most of the programs talk, draw or play. The course is being written: the first nine lessons are here.</p>`,
   affirm: ['You did it!', 'Yes! That works.', 'Nailed it.', 'Perfect. On to the next one.', 'That passes every test. Nice.', 'Exactly right.'],
   tagline: 'The blocks you know, one line of Python each: say, ask, variables, repeat, if, lists, your own blocks, and a sprite that becomes a turtle.',
   description: `<p>In Scratch you build a program by snapping blocks together. In Python you build the same program by typing one line for each block. That is honestly the whole difference. <code>say [Hello!]</code> becomes <code>print("Hello!")</code>. <code>repeat (10)</code> becomes <code>for i in range(10):</code>. <code>move (10) steps</code> becomes <code>t.forward(10)</code>, and the sprite, which Python calls a turtle, moves.</p>
@@ -32,7 +32,7 @@ window.COURSES.push({
       title: 'Say it in Python', summary: 'You already know how to program. This lesson shows how to type it: say becomes print, ask becomes input, and the computer tells you when you make a typo.',
       blocks: [
         `<p>Here is a secret. You already know how to program. You learned it in Scratch. Every idea in this course is one you have used before: say, ask, variables, repeat, if. The only new thing is how to <em>spell</em> them.</p>
-<p>Scratch was made at MIT in Boston by a team called Lifelong Kindergarten. It went online in 2007. The name comes from DJs: <em>scratching</em> is mixing bits of records together. Scratch lets you mix bits of programs. The blocks snap together, so you can never make a spelling mistake. That was the whole idea.</p>
+<p>Scratch was made at MIT, near Boston, by a team called Lifelong Kindergarten. It went online in 2007. The name comes from DJs: <em>scratching</em> is mixing bits of records together. Scratch lets you mix bits of programs. The blocks snap together, so you can never make a spelling mistake. That was the whole idea.</p>
 <p>Python is older. A Dutch programmer, Guido van Rossum, started it as a holiday project at Christmas 1989. He named it after the comedy group Monty Python, because he wanted a language that was fun. Python has no blocks. You type. And when you type, you can make spelling mistakes. Luckily, Python tells you where.</p>
 <h2>A program is a list of instructions</h2>
 <p>In Scratch, a script is a stack of blocks. The sprite does them from top to bottom. In Python, a program is a list of lines. The computer does them from top to bottom. Same thing, different clothes. Here is the first script everyone makes, both ways.</p>`,
@@ -401,7 +401,7 @@ else:
     print("Sorry, you must be 12 or over.")`, stdin: '14\nyes', caption: 'Try 14 with no, and 9 with yes. not has_ticket == "yes" is the same as has_ticket != "yes". Both are fine; use whichever reads best.' },
         { check: "Which condition is true for Saturday <em>and</em> Sunday only?", options: ["<code>day == \"Saturday\" or \"Sunday\"</code>", "<code>day == \"Saturday\" or day == \"Sunday\"</code>", "<code>day == \"Saturday\" and day == \"Sunday\"</code>"], answer: 1, why: "Each side of or needs its own complete comparison. The first option is always true; the last can never be true, because day cannot be both." },
         `<h2>Checking what someone typed</h2>
-<p>Scratch has a <code>[list] contains [thing]?</code> block for lists. For words there is nothing quite like it. Python has <code>in</code>, and it works on text. <code>"cat" in sentence</code> is true if the letters c-a-t appear somewhere in the sentence. That is all ELIZA needed.</p>`,
+<p>Scratch has a <code>[list] contains [thing]?</code> block for lists. Scratch also has a green <code>(apple) contains (a)?</code> block for words. Python's <code>in</code> does both jobs. <code>"cat" in sentence</code> is true if the letters c-a-t appear somewhere in the sentence. That is all ELIZA needed.</p>`,
         { play: `print("Hello. Tell me what is on your mind.")
 sentence = input("> ")
 words = sentence.lower()
@@ -589,7 +589,7 @@ print("The 8-ball says:", random.choice(answers))`, stdin: 'Will I get a dog?', 
       blocks: [
         `<p>In 1949, at Cambridge University in England, a computer called EDSAC started working. It was one of the first in the world that could store its own program. Writing for it was slow. Every program had to be punched onto paper tape, hole by hole. Even printing a number took dozens of instructions.</p>
 <p>The team noticed they were punching the same pieces over and over. So a student called David Wheeler worked out a trick. A program could jump into a saved piece of tape, do the job, and jump back to where it left off. They kept the saved tapes together and called the collection the library. Nobody at Cambridge wrote "print a number" twice again.</p>
-<p>Wheeler's trick is called a <em>subroutine</em>, and every language has it. In Scratch it is the pink <code>define</code> block under My Blocks. You make a block once and use it as many times as you like. In Python it is <code>def</code>. It is the last big idea of this course.</p>
+<p>Wheeler's trick is called a <em>subroutine</em>, and every language has it. In Scratch it is the pink <code>define</code> block under My Blocks. You make a block once and use it as many times as you like. In Python it is <code>def</code>. It is one of the biggest ideas in all of coding.</p>
 <h2>Define becomes def</h2>`,
         { fig: 'blocks', stack: [['myblocks', 'define [cheer]'], ['looks', 'say [Hip hip]'], ['looks', 'say [Hooray!]']], python: 'def cheer():\n    print("Hip hip")\n    print("Hooray!")', caption: 'define becomes def. The name is followed by empty brackets and a colon. The blocks under the hat are indented under it. Defining a function does not run it. A define block does nothing until you use the block it defines.' },
         { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['myblocks', 'cheer'], ['myblocks', 'cheer'], ['myblocks', 'cheer']], python: 'cheer()\ncheer()\ncheer()', caption: 'Using the block is calling the function: its name with brackets. Three calls, six lines printed.' },
@@ -739,7 +739,7 @@ turtle.done()`, caption: 'A triangle, a square, a pentagon and so on, each in a 
 <li>Inputs are parameters, the names in the brackets. The values you call with are matched to them in order.</li>
 <li><code>return</code> hands a value back, so your function becomes a reporter block, something Scratch could not do. <code>print</code> shows; <code>return</code> gives.</li>
 <li>Build big things from small functions: a square, then a flower made of squares, then a garden made of flowers.</li>
-<li>You have now met every block in this course as a line of Python. <em>Introduction to Python</em> (SC 101) takes it from here.</li>
+<li>You have now met the big blocks of Scratch as lines of Python. Next you put them all together in a game.</li>
 </ul></div>`
       ]
     },
@@ -920,7 +920,7 @@ if health <= 0:
 <li>Rooms are a variable; doors are <code>elif</code> lines with <code>and</code>; the bag is a list checked with <code>in</code>; the fight is a loop with <code>random.randint</code>.</li>
 <li><code>broadcast</code> is a function call and <code>when I receive</code> is <code>def</code>. A function that changes a number takes it in and returns it.</li>
 <li>Build one piece, run it, add the next. The order of <code>elif</code> lines matters.</li>
-<li>You have built a real program from nothing but the blocks you already knew. That was the whole course.</li>
+<li>You have built a real program from nothing but the blocks you already knew.</li>
 </ul></div>`
       ]
     },
@@ -928,7 +928,7 @@ if health <= 0:
     {
       title: 'Project: turtle art', summary: 'Shapes become functions, colours and fills make them pretty, and loops turn one shape into a flower, a spiral and a sky full of stars.',
       blocks: [
-        `<p>In 1969 a teacher called Seymour Papert built a robot for kids. It was a little round machine on wheels. It had a pen underneath. Kids typed <code>FORWARD 50</code> and it rolled forward and drew a line. They typed <code>RIGHT 90</code> and it turned. The kids called it the turtle. Papert's language was called Logo. He said kids should teach the computer, not the other way round. Scratch was made by his students, years later, with the same idea.</p>
+        `<p>Remember Seymour Papert from lesson 3? He made Logo, a language for kids. His team gave it a robot with a pen underneath. Kids typed <code>FORWARD 50</code> and it rolled forward and drew a line. They typed <code>RIGHT 90</code> and it turned. Papert called it the turtle. He said kids should teach the computer, not the other way round. Scratch was made by his students, years later, with the same idea.</p>
 <p>Your turtle is the same turtle, on a screen. In lesson 3 you drew squares and stars with <code>repeat</code>. Now you have functions. That changes everything. A shape becomes one word. One word, repeated and turned, becomes art.</p>
 <h2>A shape is a function</h2>
 <p>You know how to draw a square: four times, move and turn. Put that inside a <code>def</code> and the square gets a name. Then you can draw ten of them with one loop.</p>`,
@@ -1137,7 +1137,7 @@ print(words)
 print(len(words), "words")
 print("ha" * 5)
 print("-" * 20)`, caption: 'ELIZA\'s best trick is the first line: swap "I feel" for "Why do you feel" and add a question mark. split() turns a sentence into a list, so everything from lesson 5 works on it. "-" * 20 draws a line.' },
-        `<details class="reveal"><summary>Guess first: what is <code>"abc" * 3</code>? And <code>"abc" + 3</code>?</summary><p><code>"abcabcabc"</code>: a string times a number repeats it. <code>"abc" + 3</code> is an error: you cannot join a string and a number. Turn the number into a string first: <code>"abc" + str(3)</code> is "abc3". That is why lesson 2 had str().</p></details>`,
+        `<details class="reveal"><summary>Guess first: what is <code>"abc" * 3</code>? And <code>"abc" + 3</code>?</summary><p><code>"abcabcabc"</code>: a string times a number repeats it. <code>"abc" + 3</code> is an error: you cannot join a string and a number. Turn the number into a string first: <code>"abc" + str(3)</code> is "abc3". That is why lesson 5 had str().</p></details>`,
         { check: 'What does <code>"hello world".split()</code> give?', options: ['<code>"helloworld"</code>', '<code>["hello", "world"]</code>', '<code>11</code>'], answer: 1, why: 'split() cuts at the spaces and gives a list of the pieces. Two words, so a list of two strings.' },
         { fig: 'blockquiz', items: [
           { stack: [['looks', 'say (join [Hi ] (name))']], answer: ['print("Hi " + name)', "print('Hi ' + name)"], hint: 'join is +: print("Hi " + name)' },

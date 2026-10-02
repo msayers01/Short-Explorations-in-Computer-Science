@@ -5,7 +5,7 @@ window.COURSES.push({
   id: 'java', code: 'SC 106', short: 'Java', lang: 'java', status: 'developing',
   title: 'Introduction to Java',
   grades: 'Grades 10–12 · after Python, or with some experience',
-  audience: `<p><b>Grades 10–12</b>, after the Python course or a semester of any language. Java is the language of the AP Computer Science A exam, of Android apps, and of much of the software that runs banks, airlines and large web sites. It is also the language most university first-year courses use. Expect the ceremony of a typed, compiled language, and in return a compiler that catches a whole class of mistakes before your program runs.</p><p>Each lesson is a self-contained Hour of Code activity. The course is being written: the first three lessons are here, and more follow.</p>`,
+  audience: `<p><b>Grades 10–12</b>, after the Python course or a semester of any language. Java is the language of the AP Computer Science A exam, of Android apps, and of much of the software that runs banks, airlines and large web sites. It is also the language most university first-year courses use. Expect the ceremony of a typed, compiled language, and in return a compiler that catches a whole class of mistakes before your program runs.</p><p>Each lesson is a self-contained Hour of Code activity. The course is being written: the first four lessons are here, and more follow.</p>`,
   tagline: 'Classes, types, decisions, loops, methods and objects: the language of AP Computer Science and of Android, run and checked in your browser.',
   description: `<p>Java was designed in the 1990s to run the same everywhere, and it did: the same program runs on a laptop, a phone and a server without being changed. That promise made it the language of Android apps, of <em>Minecraft</em>, of the systems behind banks and airlines, and of most university introductions to programming. It is the language of the AP Computer Science A exam.</p>
 <p>Java is a cousin of C++ with the sharp edges filed off. It has types that the compiler checks, so a whole class of mistakes is caught before anything runs, but no pointers to misuse and no memory to free by hand. If you have done the Python course, every idea here will be familiar: values and names, decisions, loops, functions (called <em>methods</em>), lists. What changes is that you must say more, and that the compiler reads what you say with a critical eye.</p>
@@ -108,7 +108,7 @@ window.COURSES.push({
         System.out.println(Math.pow(2, 10));
         System.out.println(Math.max(3, 9) + Math.abs(-4));
     }
-}`, caption: 'A cast, (double) total, makes a copy of the value as a double before the division. The last line shows the classic mistake: casting the result instead of an operand.' },
+}`, caption: 'A cast, (double) total, makes a copy of the value as a double before the division. The line that prints 4.0 shows the classic mistake: casting the result instead of an operand.' },
         { check: "What does <code>7 / 2</code> give in Java?", options: ["3.5", "3", "4"], answer: 1, why: "int divided by int is an int: the fraction is dropped, not rounded. 7 / 2.0 gives 3.5." },
         `<div class="stmt"><p><span class="kind">Rule (division).</span> <code>int / int</code> is an <code>int</code>: the fraction is dropped, not rounded. To get a decimal answer, make one operand a <code>double</code> first, with a cast or by writing <code>2.0</code> instead of <code>2</code>.</p>
 <p><span class="kind">Rule (mixing).</span> When an <code>int</code> meets a <code>double</code>, the <code>int</code> is converted and the answer is a <code>double</code>. Going the other way needs a cast, <code>(int) 3.99</code>, which gives <code>3</code>: the fraction is cut off, not rounded. Storing a <code>double</code> in an <code>int</code> without a cast is a compile error: <em>possible lossy conversion from double to int</em>.</p></div>
@@ -636,7 +636,7 @@ public class Main {
         System.out.println(twice(value));
         System.out.println(result);
     }
-}`, expectError: true, caption: 'Main.java:9: error: cannot find symbol: variable result. The result inside twice belongs to twice. Note that both methods have a variable called value, and they are two different variables.' },
+}`, expectError: true, caption: 'Main.java:10: error: cannot find symbol: variable result. The result inside twice belongs to twice. Note that both methods have a variable called value, and they are two different variables.' },
         `<h2>Several methods with one name</h2>
 <p>Java lets you define two methods with the same name as long as their parameters differ in number or type. The compiler picks the one whose parameters match the arguments. This is called <em>overloading</em>, and the library uses it everywhere: <code>println</code> is a dozen methods, one for each type it can print, and <code>Math.abs</code> works for <code>int</code> and <code>double</code> alike. Use it when the methods really do the same job for different inputs; two unrelated methods with one name confuse everyone.</p>`,
         { play: `public class Main {
