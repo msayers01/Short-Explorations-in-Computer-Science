@@ -163,4 +163,12 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   two graded exercises (`ex`) with hints and tests, then a `recap`. Check facts in the stories; do not invent. The renderer labels every
   block and builds a map of the lesson from the `<h2>` headings, so headings should be short and the lesson's parts in the usual order.
   `test_lessons.js` checks the structure, the HTML of every field (a C++ header in a caption must be `&lt;ctime&gt;`) and the Scratch reading level.
+- **New lessons follow LESSON_STANDARD.md** (built from a literature review in October 2026): a question before teaching, `predict: true`
+  on the key example of each section (the caption then shows after the run, as the explanation), a `wrong` reason for every wrong option of
+  a quick check, at most 450 words without something to do, examples of at most 25 lines (`long: true` for a whole class), two exercises
+  with two or more hints and a `followup`. Put `standard: 1` on a new lesson (or course) and the linter enforces it; `node test_lessons.js
+  --standard` reports the gaps of every lesson (SC 106 lessons 5-8 are the first to meet it). Quick checks ask Sure / Think so / Guessing
+  before marking. Still to build from the same review, in order: the spaced review queue and skills map; tracing and Parsons exercise
+  kinds; diagnostic feedback (whitespace-visible diffs, hand-written notes for common errors); exit codes and a class table for teachers;
+  a display panel and read-aloud; then SC 109 How Machines Learn.
 - A function-writing exercise in a Full C++ course: use `prelude` for includes, `main` (or `call`) tests, and `name` on each test.

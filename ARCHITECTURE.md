@@ -164,9 +164,10 @@ drives the accent colour through CSS tokens.
 ## 6. Content model (courses)
 
 Course: `{ id, code, short, lang, title, grades, audience, tagline, description, outcomes[], lessons[], readingWpm?,
-howItWorks?, textbook?, status? }`. `status: 'developing'` marks a course still being written: app.js shows an "Under development"
+howItWorks?, textbook?, status?, standard?, readingGrade? }`. `standard: 1` (on a course or a lesson) makes `test_lessons.js` enforce
+LESSON_STANDARD.md; `readingGrade` caps the Flesch-Kincaid grade of a standard lesson's prose. `status: 'developing'` marks a course still being written: app.js shows an "Under development"
 tag on the catalog card, the course page and every lesson's crumb (`devTag`), and the guide says what the tag means.
-Lesson: `{ title, summary, blocks[] }`. Blocks, rendered by `renderBlocks()`, which also wraps each block in a `.blk` card with a coloured rail
+Lesson: `{ title, summary, blocks[], standard? }`. Blocks, rendered by `renderBlocks()`, which also wraps each block in a `.blk` card with a coloured rail
 and a labelled pill, one colour per kind (Example n in the course accent, Interactive teal, Quick check n green, Watch out amber, Quiz purple,
 Exercise n; tokens `--k-fig`, `--k-warn`, `--k-quiz`, `--k-ink` in style.css), numbers every `<h2>` with a CSS counter and gives it an id, and collects the lesson's parts (Story, each section,
 Quiz, Exercises, Recap) for the map under the title (`lessonMap`) and the "On this page" list in the side column, which follows the
@@ -175,7 +176,7 @@ reader with an IntersectionObserver (`watchParts`):
 | Block | Renders |
 |---|---|
 | `"<p>…</p>"` (string) | prose; may contain `<details class="reveal">`, `<div class="recap">`, `<div class="stmt">`, `<div class="proof [annotated]">`, `<table class="small">` |
-| `{ play, caption, stdin, expectError, testStdin, lang, predict? }` | runnable playground with "Open in Code Lab". `predict: true` (or a question string) asks for the expected output before the first run, compares it line by line after, and holds the caption back until then (it becomes the "Why"); not stored; skipped in classroom mode |
+| `{ play, caption, stdin, expectError, testStdin, lang, predict?, long? }` | runnable playground with "Open in Code Lab". `long: true` excuses an example over 25 lines from the standard's length rule. `predict: true` (or a question string) asks for the expected output before the first run, compares it line by line after, and holds the caption back until then (it becomes the "Why"); not stored; skipped in classroom mode |
 | `{ code, caption, lang }` | static listing |
 | `{ fig, caption, ...params }` | `WIDGETS[fig]` figure |
 | `{ aside }` | "Common mistakes" aside |
@@ -609,7 +610,8 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
 
 ## 10. Adding things — recipes
 
-- **A lesson:** add a lesson object in `course_X.js` with new ids `xx-<n>-1/2`, `<n>` being the next number
+- **A lesson:** write it to LESSON_STANDARD.md and give it `standard: 1`, so that `test_lessons.js` holds it to the standard
+  (`--standard` lists the gaps of every lesson). Add a lesson object in `course_X.js` with new ids `xx-<n>-1/2`, `<n>` being the next number
   the course has not used; run `node build.js && node test_course.js X`. If inserting mid-course, keep the later
   lessons' ids as they are (see §6) and update the "Lesson N" cross-references, including "the next lesson" in the
   lesson before, the course tagline, and the lesson count in `guide.js`.

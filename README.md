@@ -19,7 +19,8 @@ is one file with no server behind it, and students' work stays in their own brow
 is inside the site at `#/guide`; `dist/teacher-guide.html` is a printable copy.
 
 ARCHITECTURE.md describes the design in detail: constraints, routes, storage keys, link formats and how to
-add lessons, figures and exercise types.
+add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is written, and why (the research behind each part);
+`node test_lessons.js --standard` shows which lessons meet it.
 
 ## Layout
 
