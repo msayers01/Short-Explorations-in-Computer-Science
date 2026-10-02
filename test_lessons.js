@@ -149,6 +149,7 @@ if (fs.existsSync(ICON_DIR)) for (const f of fs.readdirSync(ICON_DIR).filter((f)
   const svgPath = path.join(ICON_DIR, m.file || '');
   if (!m.file || !fs.existsSync(svgPath)) { err(where, 'its SVG is missing'); continue; }
   const svg = fs.readFileSync(svgPath, 'utf8');
+  if (m.file.endsWith('.png')) { if (fs.statSync(svgPath).size > 30 * 1024) err(where, 'over 30 KB'); continue; }
   if (!/<svg[\s>]/i.test(svg) || /<script|\bon\w+\s*=|<foreignObject|href\s*=\s*["']https?:/i.test(svg)) err(where, 'not a plain SVG (script, handler or outside reference)');
   if (svg.length > 30 * 1024) err(where, 'over 30 KB: it goes into the page itself');
 }

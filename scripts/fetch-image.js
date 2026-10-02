@@ -57,17 +57,26 @@ function search(q) {
 const ICON_ALLOWED = (lic) => ALLOWED(lic) || /^(bsd|gpl|lgpl|apache|mit)\b/i.test(lic.trim());
 function icon(lang, file, name) {
   if (!/^[a-z]+$/.test(lang || '') || !/^File:.+\.svg$/i.test(file || '') || !name) { console.error('usage: --icon <lang> "File:Logo.svg" "name"'); process.exit(2); }
-  const api = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&prop=imageinfo&iiprop=url|size|extmetadata&titles=' + encodeURIComponent(file);
+  const api = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&prop=imageinfo&iiprop=url|size|extmetadata&iiurlwidth=160&titles=' + encodeURIComponent(file);
   const page = Object.values(JSON.parse(curl(api)).query.pages)[0];
   if (!page.imageinfo) throw new Error(file + ' is not on Commons');
   const ii = page.imageinfo[0], m = ii.extmetadata || {}, license = strip((m.LicenseShortName || {}).value);
   if (!ICON_ALLOWED(license)) throw new Error(file + ': licence "' + license + '" is not free');
   const dir = path.join(DIR, 'icons'); fs.mkdirSync(dir, { recursive: true });
-  const out = path.join(dir, lang + '.svg'); curl(ii.url, out);
-  const svg = fs.readFileSync(out, 'utf8');
-  // shown only through <img> (where nothing in an SVG runs), but a logo has no business carrying script or outside references
-  if (!/<svg[\s>]/i.test(svg) || /<script|\bon\w+\s*=|<foreignObject|xlink:href\s*=\s*["']https?:|href\s*=\s*["']https?:/i.test(svg)) { fs.rmSync(out); throw new Error(file + ': not a plain SVG (script, event handler or outside reference)'); }
-  const meta = { id: lang, file: lang + '.svg', title: name, author: dedupe(strip((m.Artist || {}).value)) || 'Unknown', license, licenseUrl: strip((m.LicenseUrl || {}).value) || null,
+  // the SVG itself; when Wikimedia refuses original files to this machine (it answers with an HTML error page), its own 160 px
+  // PNG rendering, which it asks clients to use instead
+  let fname = lang + '.svg', out = path.join(dir, fname), svg = '';
+  try { curl(ii.url, out); svg = fs.readFileSync(out, 'utf8'); } catch (e) { svg = ''; }
+  const plain = /<svg[\s>]/i.test(svg) && !/<script|\bon\w+\s*=|<foreignObject|xlink:href\s*=\s*["']https?:|href\s*=\s*["']https?:/i.test(svg);
+  if (!plain) {
+    fs.rmSync(out, { force: true });
+    if (/<svg[\s>]/i.test(svg)) throw new Error(file + ': not a plain SVG (script, event handler or outside reference)');   // shown only in <img>, but a logo has no business carrying those
+    name = lang + '.png'; out = path.join(dir, fname); curl(ii.thumburl, out);
+    if (fs.readFileSync(out).slice(0, 8).toString('hex') !== '89504e470d0a1a0a') { fs.rmSync(out); throw new Error(file + ': the PNG rendering did not arrive'); }
+    svg = fs.readFileSync(out);
+  }
+  for (const ext of ['.svg', '.png']) if (lang + ext !== fname) fs.rmSync(path.join(dir, lang + ext), { force: true });
+  const meta = { id: lang, file: fname, title: name, author: dedupe(strip((m.Artist || {}).value)) || 'Unknown', license, licenseUrl: strip((m.LicenseUrl || {}).value) || null,
     source: 'https://commons.wikimedia.org/wiki/' + encodeURIComponent(file.replace(/ /g, '_')).replace(/%3A/g, ':'), credit: dedupe(strip((m.Credit || {}).value)).slice(0, 300), bytes: svg.length, fetched: new Date().toISOString().slice(0, 10) };
   fs.writeFileSync(path.join(dir, lang + '.json'), JSON.stringify(meta, null, 2) + '\n');
   console.log('ok icon ' + lang + ': ' + Math.round(svg.length / 1024) + ' KB, ' + license + ', ' + meta.author);
