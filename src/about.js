@@ -63,6 +63,17 @@
     ];
   }
 
+  // Every picture in the lessons, with who made it, its licence and where it came from (build.js reads img/*.json into BUILD.images).
+  function pictureList() {
+    const imgs = Object.values((window.BUILD && window.BUILD.images) || {}).sort((a, b) => a.title.localeCompare(b.title));
+    if (!imgs.length) return [];
+    return [h('h3', { id: 'ab-pictures' }, 'Pictures'),
+      h('p', {}, 'The photographs and drawings in the lessons are in the public domain or shared under Creative Commons licences that allow reuse with credit. They were resized for the web and otherwise not changed. Each one links to its page on Wikimedia Commons, which has its full description and licence.'),
+      h('details', { class: 'ab-licences' }, h('summary', {}, imgs.length + ' pictures and their credits'),
+        h('ul', { class: 'ab-list' }, imgs.map((m) => h('li', {}, ext(m.source, m.title), m.date ? ' (' + m.date + ')' : '', ': ',
+          (m.author && !/^unknown/i.test(m.author) ? m.author : m.credit || 'unknown author'), ' \u00b7 ', m.licenseUrl ? ext(m.licenseUrl, m.license) : m.license))))];
+  }
+
   function page() {
     const main = h('main', { class: 'about' });
     const B = window.BUILD || {};
@@ -81,7 +92,7 @@
         h('p', {}, 'Nothing you do leaves your computer unless you send it yourself. There are no accounts, no tracking and no advertising. The web host sees that the page was downloaded, as with any website, but the page itself never sends anything back.'),
         h('p', {}, 'What you do is saved in this browser only: your progress and your code in the lessons, your Code Lab files, your portfolio settings, a teacher\u2019s assignments and grade book, and display choices such as light or dark. Another computer, or another browser on this one, starts empty, unless you use \u201cSave my work to a file\u201d on the home page and restore the file there (the file holds your code and your name, so keep it private). \u201cReset my progress\u201d on the home page clears the lessons; clearing the browser\u2019s site data clears everything.'),
         h('p', {}, 'The links the site makes (a shared program, an assignment, a submission, a portfolio) carry their contents inside the link itself. Anyone who has a link can read what is in it, so share them the way you would share the work itself.'),
-        h('p', {}, 'The page makes no requests to any other site: the typefaces are part of the page itself, so no one else, not even a font provider, learns that you opened it. The one thing the page ever fetches is the real C++ compiler (about ' + ((window.BUILD && window.BUILD.clang && window.BUILD.clang.mb) || 28) + ' MB), and only from this same site, only after you agree, and only when you choose Full C++ or the Modern C++ course. It is stored by your browser so it is downloaded once.')),
+        h('p', {}, 'The page makes no requests to any other site: the typefaces are part of the page itself, so no one else, not even a font provider, learns that you opened it. The one thing the page ever fetches is the real C++ compiler (about ' + ((window.BUILD && window.BUILD.clang && window.BUILD.clang.mb) || 28) + ' MB), and only from this same site, only after you agree, and only when you choose Full C++ or the Modern C++ course. It is stored by your browser so it is downloaded once. The pictures in the lessons also come from this same site, one at a time as you scroll to them; the people and archives credited below do not see that you looked.')),
 
       licenceSection(),
 
@@ -96,6 +107,7 @@
         h('p', {}, 'The Lisp course follows parts of Harold Abelson and Gerald Jay Sussman with Julie Sussman, ', ext(SICP, h('em', {}, 'Structure and Interpretation of Computer Programs')),
           ', 2nd edition (MIT Press, 1996), and adapts several of its examples, exercises and puzzles, and the symbolic-differentiation project; each is marked in the lesson with the section of the book it comes from. The book is licensed under ', ext(CC_BY_SA_4, 'CC BY-SA 4.0'), ' by the MIT Press, and the adapted material is shared under the same licence. The lessons rewrite the book\u2019s material for high-school students, with new explanations, examples and exercises around it.'),
         h('p', {}, 'The C++ course\u2019s account of how often professional programmers get binary search wrong is from Jon Bentley\u2019s ', h('em', {}, 'Programming Pearls'), ' (Addison-Wesley).'),
+        ...pictureList(),
         h('h3', {}, 'Software'),
         ...softwareList(),
         h('h3', {}, 'Typefaces'),

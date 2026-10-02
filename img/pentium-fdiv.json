@@ -1,0 +1,16 @@
+{
+  "id": "pentium-fdiv",
+  "file": "pentium-fdiv.jpg",
+  "title": "Intel Pentium with the FDIV bug",
+  "alt": "A square grey Intel Pentium processor with a gold lid, marked A80501-66 and SX837.",
+  "author": "Konstantin Lanzet",
+  "license": "CC BY-SA 3.0",
+  "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+  "source": "https://commons.wikimedia.org/wiki/File:KL_Intel_Pentium_A80501.jpg",
+  "credit": "CPU Collection Konstantin Lanzet",
+  "description": "CPU Intel Pentium A80501 with GoldCap, 66 MHz, Vcore = 5V, SX837 = with FDIV-Bug",
+  "date": "2008-11-02",
+  "width": 960,
+  "height": 960,
+  "fetched": "2026-10-02"
+}

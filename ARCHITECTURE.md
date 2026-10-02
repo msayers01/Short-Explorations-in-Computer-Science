@@ -37,7 +37,7 @@ must move between people travels inside a URL.
      `document`, `urllib` and other modules that reach out; do not add one back. Nothing the sandboxes send back is trusted: it is
      checked and shown as text. Scheme runs in the page: it is our own interpreter, with no way to name a host object, a step limit and
      no `eval`.
-   - `build.js` writes a Content Security Policy (script hashes; `connect-src 'self'`, which exists only for the Full C++ download) into every page and into `dist/_headers`. A new inline
+   - `build.js` writes a Content Security Policy (script hashes; `connect-src 'self'`, which exists only for the Full C++ download; `img-src 'self'` for the lessons' pictures, §9h) into every page and into `dist/_headers`. A new inline
      script needs no change (its hash is computed); a new external resource must be added to the policy deliberately.
 
 The site's own scripts are concatenated into one inline `<script>` (joined with `;`), so the policy carries one hash for them, one for the
@@ -588,6 +588,24 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   mobile), a search box, contents, and a by-course index for teachers. Lesson links are labelled from `window.COURSES` at page time and a
   link to a missing lesson is left out; `test_browser.js` checks every link resolves. Every example names a real system or event: check it
   before adding one, and keep the two that describe this site true when the site changes.
+
+## 9h. Pictures in lessons (`img/`, `scripts/fetch-image.js`, `app.js: photoBlock`)
+
+- **Where they come from.** Wikimedia Commons only, through `node scripts/fetch-image.js` (`--search "words"` lists candidates with
+  their licence; `<id> "File:Name.jpg" "alt" "title"` fetches one). It accepts public domain, CC0, CC BY and CC BY-SA and nothing else
+  (no fair use, no NC or ND: the lessons are CC BY-SA 4.0), resizes to at most 960 px (progressive JPEG, quality 78, metadata
+  stripped) and writes `img/<id>.jpg` with `img/<id>.json` (`title, alt, author, license, licenseUrl, source, credit, description,
+  date, width, height`). Wikimedia rate-limits shared machines: the script sends a User-Agent, goes one request at a time and waits as
+  told. **Look at every picture** and write its alt text from what is visible and from the Commons description, never from a guess.
+- **How they are served.** `build.js` copies them to `dist/img/<id>.<hash>.jpg` (content-hashed, so `_headers` caches `/img/*` forever)
+  and puts the credits in `BUILD.images`. They are files beside the page, not data in it, so a lesson's pictures download only when read
+  (`loading="lazy"`, with width and height so nothing jumps). The policy's `img-src` is `'self' data: blob:`: pictures come from this
+  site only. A copy opened from a file still shows them in Chrome; where a picture cannot load, a box with its title and alt text
+  replaces it. `dist/img/` is not committed (the build makes it); `img/` is.
+- **In a lesson:** `{ photo: 'id', caption }` or up to three ids side by side; the caption says what it shows and why it is there; the
+  credit line (author or credit, licence, source link) is added under it, and tapping opens it larger (Esc closes). About lists every
+  picture's credit. `test_lessons.js` checks each picture's json (licence, alt text, Commons source, size, under 250 KB), that every
+  picture a lesson names exists and every stored picture is used; `test_browser.js` checks one loads, enlarges and falls back.
 
 ## 10. Adding things — recipes
 
