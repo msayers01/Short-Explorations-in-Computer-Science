@@ -84,7 +84,7 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     check('for over args', SHELL.parse('for x\ndo echo $x\ndone').items[0].first.cmds[0].words, null);
     check('while', SHELL.parse('while [ 1 ]; do :; done | cat').items[0].first.cmds.length, 2);
     check('multi-line', SHELL.parse('a\nb\n\nc').items.length, 3);
-    for (const [line, msg] of [['echo "x', /matching `"'/], ["echo 'x", /matching `''/], ['ls |', /unexpected token `end of line'/], ['| ls', /unexpected token `\|'/], ['echo $(ls', /matching `\)'/], ['if true; then echo', /expected fi/], ['for in; do; done', /for needs a variable name/], ['ls &', /background jobs/], ['fi', /unexpected token `fi'/], ['echo a;; b', /`;;'/], ['echo ${x', /matching `}'/]]) {
+    for (const [line, msg] of [['echo "x', /matching `"'/], ["echo 'x", /matching `''/], ['ls |', /unexpected end of file/], ['| ls', /unexpected token `\|'/], ['echo $(ls', /matching `\)'/], ['if true; then echo', /expected fi/], ['for in; do; done', /for needs a variable name/], ['ls &', /background jobs/], ['fi', /unexpected token `fi'/], ['echo a;; b', /`;;'/], ['echo ${x', /matching `}'/]]) {
       let got = ''; try { SHELL.parse(line); } catch (e) { got = e.message; } check('syntax error: ' + line, got, msg);
     }
     check('arith ops', [SHELL.arith('1 + 2 * 3', () => ''), SHELL.arith('(1 + 2) * 3', () => ''), SHELL.arith('7 / 2', () => ''), SHELL.arith('-7 % 3', () => ''), SHELL.arith('2 ** 3 ** 2', () => ''), SHELL.arith('3 > 2 && 1', () => ''), SHELL.arith('x + 1', (n) => n === 'x' ? '41' : '')].join(), '7,9,3,-1,512,1,42');
@@ -144,7 +144,7 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('cp dir without -r', await run('cp notes n2'), "cp: -r not specified; omitting directory 'notes'\n", 1);
     eq('cp -r', await run('cp -r notes n2; ls n2'), 'ab.txt  f.txt\n');
     eq('cp many to file', await run('cp ab.txt h.txt copy.txt'), "cp: target 'copy.txt' is not a directory\n", 1);
-    eq('cp one arg', await run('cp ab.txt'), "cp: missing destination file operand after 'ab.txt'\n", 1);
+    eq('cp one arg', await run('cp ab.txt'), "cp: missing destination file operand after 'ab.txt'\nTry 'cp --help' for more information.\n", 1);
     eq('mv rename', await run('mv copy.txt renamed.txt; ls renamed.txt copy.txt'), "ls: cannot access 'copy.txt': No such file or directory\nrenamed.txt\n", 2);
     eq('mv into dir', await run('mv renamed.txt projects/; ls projects'), 'renamed.txt\n');
     eq('mv missing', await run('mv nope x'), "mv: cannot stat 'nope': No such file or directory\n", 1);
@@ -167,11 +167,11 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('head', await run('seq 20 | head -3'), '1\n2\n3\n');
     eq('head -n', await run('seq 20 | head -n 2'), '1\n2\n');
     eq('tail', await run('seq 20 | tail -2'), '19\n20\n');
-    eq('head missing', await run('head nope'), 'head: nope: No such file or directory\n', 1);
+    eq('head missing', await run('head nope'), 'head: cannot open \'nope\' for reading: No such file or directory\n', 1);
     eq('head two files', await run('head -1 ab.txt h.txt'), '==> ab.txt <==\na\n\n==> h.txt <==\n');
     eq('wc', await run('printf "one two\\nthree\\n" > w.txt; wc w.txt'), ' 2  3 14 w.txt\n');
     eq('wc -l pipe', await run('cat w.txt | wc -l'), '2\n');
-    eq('wc several', await run('wc -l w.txt ab.txt'), '2 w.txt\n2 ab.txt\n4 total\n');
+    eq('wc several', await run('wc -l w.txt ab.txt'), ' 2 w.txt\n 2 ab.txt\n 4 total\n');   // GNU: wide enough for the files' total size
     eq('wc missing', await run('wc nope'), 'wc: nope: No such file or directory\n', 1);
     eq('grep', await run('grep t w.txt'), 'one two\nthree\n', 0);
     eq('grep -n', await run('grep -n three w.txt'), '2:three\n');
@@ -280,7 +280,7 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('$() nested', await run('echo $(echo $(echo deep))'), 'deep\n');
     eq('backticks', await run('echo `echo bt`'), 'bt\n');
     eq('$(( ))', await run('x=5; echo $((x * 2)) $((x - 10)) $((10 / 3)) $((2 ** 8))'), '10 -5 3 256\n');
-    eq('arith division by zero', await run('echo $((1 / 0))'), 'bash: arithmetic: division by 0\n', 2);
+    eq('arith division by zero', await run('echo $((1 / 0))'), 'bash: 1 / 0: division by 0 (error token is "0")\n', 1);
     eq('for', await run('for i in 1 2 3; do echo "n=$i"; done'), 'n=1\nn=2\nn=3\n');
     eq('for over glob', await run('touch a.txt b.txt; for f in *.txt; do echo $f; done'), 'a.txt\nb.txt\n');
     eq('for over $()', await run('for i in $(seq 2); do echo $i; done'), '1\n2\n');
@@ -291,7 +291,7 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('elif', await run('x=5; if [ $x -lt 3 ]; then echo small; elif [ $x -lt 10 ]; then echo medium; else echo big; fi'), 'medium\n');
     eq('test strings', await run('[ abc = abc ] && echo 1; [ abc != abd ] && echo 2; [ -z "" ] && echo 3; [ -n "x" ] && echo 4; test -d /etc && echo 5'), '1\n2\n3\n4\n5\n');
     eq('test numbers', await run('[ 10 -gt 9 ] && echo yes; [ 10 -lt 9 ] || echo no; [ 3 -eq 3 ] && [ 3 -ne 4 ] && echo both'), 'yes\nno\nboth\n');
-    eq('test bad', await run('[ a -gt 1 ]'), "bash: [: integer expression expected: 'a'\n", 2);
+    eq('test bad', await run('[ a -gt 1 ]'), "bash: [: a: integer expression expected\n", 2);
     eq('test missing ]', await run('[ a = a'), "bash: [: missing `]'\n", 2);
     eq('group', await run('{ echo a; echo b; } | wc -l'), '2\n');
     eq('subshell keeps cwd', await run('(cd /tmp; pwd); pwd'), '/tmp\n/home/student\n');
@@ -304,7 +304,7 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('source keeps variables', await run('echo "SV=set" > v.sh; source v.sh; echo $SV; . v.sh'), 'set\n');
     eq('bash -c', await run('bash -c "echo in; echo line"'), 'in\nline\n');
     eq('bash missing', await run('bash nope.sh'), 'bash: nope.sh: No such file or directory\n', 127);
-    eq('script syntax error', await run('echo "echo \\"oops" > bad.sh; bash bad.sh'), /^bad\.sh: unexpected EOF/, 2);
+    eq('script syntax error', await run('echo "echo \\"oops" > bad.sh; bash bad.sh'), /^bad\.sh: line 1: unexpected EOF/, 2);
     eq('exit in script does not stop the line', await run('echo "exit 7" > e.sh; bash e.sh; echo after $?'), 'after 7\n');
     eq('__proto__ as a file name', await run('mkdir __proto__; echo x > __proto__/constructor; cat __proto__/constructor; ls -d __proto__; rm -r __proto__'), 'x\n__proto__\n');
     eq('loop limit', await run('while true; do :; done'), /stopped: more than \d+ commands/, 1);
@@ -429,7 +429,7 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     // ${...}: length, slices, defaults; anything else is a bad substitution, not an empty string
     eq('${#x} ${x:1:3}', await run('s=hello; echo ${#s} ${s:1:3} ${s:2}'), '5 ell llo\n', 0);
     eq('${x:-d}', await run('n=x; e=; echo ${n:-d} ${nope:-d} ${e:-d} ${e-d2}. "${n:+set}" ${z:=zz} $z'), 'x d d . set zz zz\n', 0);
-    eq('${1:-d} in a script', await run('bash -c \'echo ${1:-none} ${2:-none}\' a'), 'a none\n', 0);
+    eq('${1:-d} in a script', await run('bash -c \'echo ${1:-none} ${2:-none}\' _ a'), 'a none\n', 0);
     eq('bad substitution', await run('echo ${s/a/b}'), 'bash: ${s/a/b}: bad substitution\n', 1);
     // sort -k N runs to the end of the line; -k N,M; -u compares keys
     eq('sort -k 2', await run("printf 'a x 2\\nb x 1\\n' | sort -k 2"), 'b x 1\na x 2\n', 0);
@@ -451,7 +451,78 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('cp f f', await run('cp notes/a.txt notes/'), "cp: 'notes/a.txt' and 'notes/a.txt' are the same file\n", 1);
     eq('cp -r d d/sub', await run('cp -r notes notes/sub'), "cp: cannot copy a directory, 'notes', into itself, 'notes/sub/notes'\n", 1);
     // wc prints the total line whenever more than one file was named
-    eq('wc total with a missing file', await run('wc -l words.txt nope'), 'wc: nope: No such file or directory\n2 words.txt\n2 total\n', 1);
+    eq('wc total with a missing file', await run('wc -l words.txt nope'), ' 2 words.txt\nwc: nope: No such file or directory\n 2 total\n', 1);
+  }
+  // ---- more differences from bash and coreutils, found by test_diff.js (each expectation is what bash prints)
+  {
+    const { run, sh } = fresh();
+    await run("printf 'banana\\napple\\ncherry\\n' > fruit.txt; printf 'the cat sat on the mat\\nthe dog\\n' > words.txt; mkdir -p notes/sub; touch notes/a.txt notes/sub/c.txt; echo gamma > notes/sub/c.txt");
+    const noAsk = (line) => run(line, { ask: undefined });
+    // 1: -i with nothing to answer: the question stays on the line
+    eq('rm -i, no answer', await noAsk('rm -i fruit.txt; ls fruit.txt'), "rm: remove regular file 'fruit.txt'? fruit.txt\n", 0);
+    eq('cp -i, no answer', await noAsk('cp -i words.txt fruit.txt; head -1 fruit.txt'), "cp: overwrite 'fruit.txt'? banana\n", 0);
+    eq('mv -i, no answer', await noAsk('mv -i words.txt fruit.txt; ls words.txt'), "mv: overwrite 'fruit.txt'? words.txt\n", 0);
+    // 2: head -c, tail -c
+    eq('head -c', await run('head -c 5 fruit.txt'), 'banan', 0);
+    eq('tail -c', await run('tail -c 7 fruit.txt'), 'cherry\n', 0);
+    eq('head -c -N', await run('head -c -15 fruit.txt'), 'banan', 0);
+    // 3: several sources and a target that is missing or not a directory
+    eq('mv to a missing target', await run('mv fruit.txt words.txt nope'), "mv: target 'nope': No such file or directory\n", 1);
+    eq('cp to a file target', await run('cp fruit.txt words.txt notes/a.txt'), "cp: target 'notes/a.txt' is not a directory\n", 1);
+    // 4: the second line of a usage error
+    for (const [c, msg] of [['mv', 'mv: missing file operand'], ['cp', 'cp: missing file operand'], ['mkdir', 'mkdir: missing operand'], ['touch', 'touch: missing file operand'], ['rm', 'rm: missing operand'], ['rmdir', 'rmdir: missing operand']]) eq(c + ' with no operand', await run(c), msg + "\nTry '" + c + " --help' for more information.\n", 1);
+    eq('mv one operand', await run('mv fruit.txt'), "mv: missing destination file operand after 'fruit.txt'\nTry 'mv --help' for more information.\n", 1);
+    // 5: [ wording; \< and \>
+    eq('[ not a number', await run('[ abc -gt 1 ]'), 'bash: [: abc: integer expression expected\n', 2);
+    eq('[ string order', await run('[ 3 \\< 10 ]; echo $?; [ b \\> a ]; echo $?'), '1\n0\n', 0);
+    // 6: seq -w
+    eq('seq -w', await run('seq -w 8 10 | tr "\\n" " "; seq -w 2 -1 -1 | tr "\\n" " "'), '08 09 10 02 01 00 -1 ', 0);
+    // 7: ls with several operands: files (sorted), then directories (sorted)
+    eq('ls operands', await run('ls notes/sub notes/a.txt fruit.txt notes | cat'), 'fruit.txt\nnotes/a.txt\n\nnotes:\na.txt\nsub\n\nnotes/sub:\nc.txt\n', 0);
+    // 8: xargs -n
+    eq('xargs -n 1', await run('echo a b c | xargs -n 1 echo'), 'a\nb\nc\n', 0);
+    eq('xargs -n2', await run('echo a b c | xargs -n2'), 'a b\nc\n', 0);
+    eq('xargs: a failure is 123', await run('echo x | xargs false'), '', 123);
+    // 9: grep -r with no directory
+    eq('grep -r, no directory', await run('grep -r gamma'), 'notes/sub/c.txt:gamma\n', 0);
+    // 10, 11, 15, 18: errors in order between the output, each command's own words, names quoted the GNU way
+    eq('wc rows and errors in order', await run('wc words.txt nope'), " 2  8 31 words.txt\nwc: nope: No such file or directory\n 2  8 31 total\n", 1);
+    eq('wc -lw width', await run('wc -lw words.txt'), ' 2  8 words.txt\n', 0);
+    eq('wc -l one file', await run('wc -l words.txt'), '2 words.txt\n', 0);
+    eq('cat in order', await run('cat fruit.txt nope words.txt 2>&1 | head -5'), 'banana\napple\ncherry\ncat: nope: No such file or directory\nthe cat sat on the mat\n', 0);
+    eq('sort missing', await run('sort nope'), 'sort: cannot read: nope: No such file or directory\n', 2);
+    eq('head missing', await run('head nope'), "head: cannot open 'nope' for reading: No such file or directory\n", 1);
+    eq('tail missing', await run('tail nope'), "tail: cannot open 'nope' for reading: No such file or directory\n", 1);
+    eq('cat quotes a name with a space', await run('cat "sp ace.txt"'), "cat: 'sp ace.txt': No such file or directory\n", 1);
+    eq('grep does not quote', await run('grep x "sp ace.txt"'), 'grep: sp ace.txt: No such file or directory\n', 2);
+    eq("a name with a ' is in double quotes", await run('cat "it\'s"'), 'cat: "it\'s": No such file or directory\n', 1);
+    // 12: read keeps the spacing inside the last variable
+    eq('read keeps inner spaces', await run('echo "  lead  trail  " | { read a; echo "[$a]"; }; echo "a   b   c" | { read x y; echo "[$x][$y]"; }'), '[lead  trail]\n[a][b   c]\n', 0);
+    // 13: arithmetic: octal and hex, unary minus before **, ++ and --, assignments, bash's error words
+    eq('arith numbers', await run('echo $((010)) $((0x1F)) $((-2**2)) $((2**3**2)) $((1--2))'), '8 31 4 512 3\n', 0);
+    eq('arith ++ --', await run('x=5; echo $((x++)) $x $((--x)) $((x+=10)) $x'), '5 6 5 15 15\n', 0);
+    eq('arith $x inside', await run('x=5; echo $(($x+1)) $((${x}*2))'), '6 10\n', 0);
+    eq('arith a variable holding an expression', await run('a=3; b="a*2"; echo $((b+1))'), '7\n', 0);
+    eq('arith 08', await run('echo $(( 08 ))'), 'bash: 08: value too great for base (error token is "08")\n', 1);
+    eq('arith 10/0', await run('echo $((10/0))'), 'bash: 10/0: division by 0 (error token is "0")\n', 1);
+    eq('arith operand expected', await run('echo $((1+))'), 'bash: 1+: syntax error: operand expected (error token is "+")\n', 1);
+    eq('arith 1 2', await run('echo $((1 2))'), 'bash: 1 2: syntax error in expression (error token is "2")\n', 1);
+    // 14: set -- sets the positional parameters
+    eq('set --', await run('bash -c \'set -- a b; echo $# $2\''), '2 b\n', 0);
+    // 16: bash -c TEXT NAME ARGS
+    eq('bash -c $0', await run("bash -c 'echo $0 $1 $#' x y z"), 'x y 2\n', 0);
+    // 17: errors inside a script say where they are; an expansion error drops the rest of its line only
+    await run("printf 'echo one\\nnosuch\\ncd nope\\nx=$((1/0)); echo same line\\necho next line\\n' > s.sh; chmod +x s.sh");
+    eq('script errors with line numbers', await run('bash s.sh; echo $?'), 'one\ns.sh: line 2: nosuch: command not found\ns.sh: line 3: cd: nope: No such file or directory\ns.sh: line 4: 1/0: division by 0 (error token is "0")\nnext line\n0\n', 0);
+    eq('./script errors', await run('./s.sh 2>&1 | head -2'), 'one\n./s.sh: line 2: nosuch: command not found\n', 0);
+    // 19: mv of a directory onto something already there
+    eq('mv dir onto a file', await run('mkdir -p e d; touch e/d; mv d e'), "mv: cannot overwrite non-directory 'e/d' with directory 'd'\n", 1);
+    eq('mv dir onto a full dir', await run('mkdir -p e2/d d; touch e2/d/x; mv d e2'), "mv: cannot overwrite 'e2/d': Directory not empty\n", 1);
+    eq('mv file onto a dir', await run('mkdir -p e3/f; touch f; mv f e3'), "mv: cannot overwrite directory 'e3/f' with non-directory\n", 1);
+    // 20: a line that ends in | or &&
+    eq('line ending in |', await run('echo hi |'), 'bash: syntax error: unexpected end of file\n', 2);
+    eq('line ending in &&', await run('echo hi &&'), 'bash: syntax error: unexpected end of file\n', 2);
+    check('set kept the shell usable', sh.lastExit, 2);
   }
   // ---- the grader puts the student's history back, even when it is full
   {

@@ -740,7 +740,7 @@ int main() {
         cout << "30 is at position " << (where - v.begin()) << endl;
     }
     return 0;
-}`, caption: 'find and max_element hand back a position, not a value. The star in *max_element(...) means "the item at that position". find says "not found" by returning v.end(). accumulate lives in <numeric>.' },
+}`, caption: 'find and max_element hand back a position, not a value. The star in *max_element(...) means "the item at that position". find says "not found" by returning v.end(). accumulate lives in &lt;numeric&gt;.' },
         { check: "What does <code>*max_element(v.begin(), v.end())</code> give?", options: ["The position of the largest item", "The largest item itself", "The number of items"], answer: 1, why: "max_element returns a position; the star gives the item at that position. On an empty vector there is nothing to point at." },
         `<h2>Telling an algorithm what you mean: lambdas</h2>
 <p><code>sort</code> puts numbers in increasing order unless told otherwise. To sort differently (biggest first, shortest word first) you give it a third argument: a function that says which of two items should come first. Writing a whole named function for that is heavy, so C++ lets you write the function right where it is needed, with no name. It is called a <em>lambda</em>.</p>

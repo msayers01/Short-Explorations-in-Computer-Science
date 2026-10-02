@@ -196,7 +196,12 @@
   const RESERVED = ['if', 'then', 'elif', 'else', 'fi', 'for', 'in', 'do', 'done', 'while', 'until', '{', '}', '!'];
 
   function tokenize(src) {
-    const toks = []; let i = 0; const n = src.length;
+    const toks = []; let i = 0, start = 0; const n = src.length;
+    // each token knows its line (for "script.sh: line 3: ..." messages): the line where it starts
+    const nls = []; for (let k = src.indexOf('\n'); k >= 0; k = src.indexOf('\n', k + 1)) nls.push(k);
+    const lineAt = (pos) => { let lo = 0, hi = nls.length; while (lo < hi) { const mid = (lo + hi) >> 1; if (nls[mid] < pos) lo = mid + 1; else hi = mid; } return lo + 1; };
+    toks.push = (t) => { t.line = lineAt(start); return Array.prototype.push.call(toks, t); };
+    try {
     const peek = (k) => src[i + (k || 0)];
     // read a balanced $( ... ) or $(( ... )) body; i is just after the opening
     const balanced = (open, close, dbl) => {
@@ -221,7 +226,7 @@
         else if ((m = body.match(/^#([A-Za-z_][A-Za-z0-9_]*|[0-9]+|[@*])$/))) parts.push({ x: 'len', v: m[1], q });
         else if ((m = body.match(/^([A-Za-z_][A-Za-z0-9_]*|[0-9]+):(\d+)(?::(\d+))?$/))) parts.push({ x: 'slice', v: m[1], from: +m[2], len: m[3] === undefined ? null : +m[3], q });
         else if ((m = body.match(/^([A-Za-z_][A-Za-z0-9_]*|[0-9]+)(:?)([-=+])([^]*)$/))) parts.push({ x: 'def', v: m[1], colon: m[2] === ':', op: m[3], word: m[4], q });
-        else { const e = new SyntaxError_('${' + body + '}: bad substitution'); e.exit = 1; throw e; }
+        else parts.push({ x: 'bad', v: body, q });   // refused when it is expanded, as bash does
         return;
       }
       const m = src.slice(i).match(/^([A-Za-z_][A-Za-z0-9_]*|[0-9]|[?#@*$!])/);
@@ -229,7 +234,7 @@
       parts.push({ v: '$', q });
     };
     while (i < n) {
-      const c = src[i];
+      const c = src[i]; start = i;
       if (c === ' ' || c === '\t' || c === '\r') { i++; continue; }
       if (c === '\\' && src[i + 1] === '\n') { i += 2; continue; }
       if (c === '\n') { toks.push({ t: 'op', v: '\n' }); i++; continue; }
@@ -266,6 +271,7 @@
       toks.push({ t: 'word', parts });
     }
     return toks;
+    } catch (e) { if (e instanceof SyntaxError_ && e.line === undefined) e.line = lineAt(start); throw e; }
   }
   const wordText = (w) => w.parts.map((p) => p.x ? '' : p.v).join('');
   const plainText = (w) => w.parts.every((p) => !p.x && !p.q) ? wordText(w) : null;   // the word if it is a bare literal, else null
@@ -275,6 +281,8 @@
      command := simple | if | for | while | until | '{' list '}' | '(' list ')'   each followed by redirections */
   function parse(src) {
     const toks = tokenize(src); let p = 0;
+    try { return parseToks(); } catch (e) { if (e instanceof SyntaxError_ && e.line === undefined) e.line = (toks[p] || toks[toks.length - 1] || { line: 1 }).line; throw e; }
+    function parseToks() {
     const peek = () => toks[p];
     const isOp = (v) => { const t = toks[p]; return !!t && t.t === 'op' && t.v === v; };
     const isWord = (v) => { const t = toks[p]; return !!t && t.t === 'word' && plainText(t) === v; };
@@ -320,7 +328,7 @@
     const command = () => {
       const c = compound();
       if (c) { c.redirs = []; redirs(c.redirs); return c; }
-      const node = { k: 'simple', assigns: [], words: [], redirs: [] };
+      const node = { k: 'simple', assigns: [], words: [], redirs: [], line: peek() ? peek().line : 0 };
       let first = true;
       while (peek() && (peek().t === 'word' || (peek().t === 'op' && REDIR.includes(peek().v)))) {
         if (peek().t === 'op') { redirs(node.redirs); continue; }
@@ -337,34 +345,87 @@
     const pipeline = () => {
       let neg = false; if (isWord('!')) { neg = true; p++; }
       const cmds = [command()];
-      while (isOp('|')) { p++; skipNl(); cmds.push(command()); }
+      while (isOp('|')) { p++; skipNl(); if (!peek()) synErr('syntax error: unexpected end of file'); cmds.push(command()); }
       return { k: 'pipe', cmds, neg };
     };
     const andor = () => {
-      const first = pipeline(); const rest = [];
-      while (isOp('&&') || isOp('||')) { const op = toks[p++].v; skipNl(); rest.push({ op, p: pipeline() }); }
-      return { k: 'andor', first, rest };
+      const line = peek() ? peek().line : 0, first = pipeline(); const rest = [];
+      while (isOp('&&') || isOp('||')) { const op = toks[p++].v; skipNl(); if (!peek()) synErr('syntax error: unexpected end of file'); rest.push({ op, p: pipeline() }); }
+      return { k: 'andor', first, rest, line };
     };
     const list = listUntil([]);
     if (p < toks.length) synErr("syntax error near unexpected token `" + tokDesc(peek()) + "'");
     return list;
+    }
   }
 
   /* ---------------- $(( arithmetic )) ---------------- */
-  function arith(src, vars) {
-    const toks = src.match(/\d+|[A-Za-z_][A-Za-z0-9_]*|\*\*|<=|>=|==|!=|&&|\|\||[-+*\/%()<>!]/g) || [];
-    let i = 0; const peek = () => toks[i], take = () => toks[i++];
-    const val = (t) => /^\d/.test(t) ? parseInt(t, 10) : (parseInt(vars(t) || '0', 10) || 0);
-    const prim = () => { const t = take(); if (t === undefined) synErr('arithmetic: syntax error in "' + src + '"'); if (t === '(') { const v = or(); if (take() !== ')') synErr('arithmetic: missing ) in "' + src + '"'); return v; } if (t === '-') return -unary(); if (t === '+') return unary(); if (t === '!') return unary() ? 0 : 1; if (/^\d|^[A-Za-z_]/.test(t)) return val(t); synErr('arithmetic: syntax error in "' + src + '"'); };
-    const pow = () => { const b = prim(); if (peek() === '**') { take(); return Math.pow(b, pow()); } return b; };
-    const unary = () => pow();
-    const mul = () => { let a = unary(); while (['*', '/', '%'].includes(peek())) { const op = take(); const b = unary(); if (op === '*') a = a * b; else { if (b === 0) synErr('arithmetic: division by 0'); a = op === '/' ? Math.trunc(a / b) : a % b; } } return a; };
-    const add = () => { let a = mul(); while (peek() === '+' || peek() === '-') { const op = take(); const b = mul(); a = op === '+' ? a + b : a - b; } return a; };
-    const cmp = () => { let a = add(); while (['<', '>', '<=', '>='].includes(peek())) { const op = take(); const b = add(); a = (op === '<' ? a < b : op === '>' ? a > b : op === '<=' ? a <= b : a >= b) ? 1 : 0; } return a; };
-    const eq = () => { let a = cmp(); while (peek() === '==' || peek() === '!=') { const op = take(); const b = cmp(); a = (op === '==' ? a === b : a !== b) ? 1 : 0; } return a; };
-    const and = () => { let a = eq(); while (peek() === '&&') { take(); const b = eq(); a = a && b ? 1 : 0; } return a; };
-    const or = () => { let a = and(); while (peek() === '||') { take(); const b = and(); a = a || b ? 1 : 0; } return a; };
-    const v = or(); if (i < toks.length) synErr('arithmetic: syntax error in "' + src + '"');
+  // bash's integer arithmetic: numbers in base 10, 0x hex and 0 octal; variables (their values are expressions too); = += -= *= /= %=,
+  // x++ x-- ++x --x; unary - + ! bind tighter than **. Errors use bash's words: "EXPR: MESSAGE (error token is "REST")".
+  function arith(src, vars, setVar, depth) {
+    depth = depth || 0;
+    const shown = src.replace(/^\s+/, '');
+    const fail = (msg, at, tok) => { const e = new SyntaxError_((tok ? shown.replace(/\s+$/, '') : shown) + ': ' + msg + ' (error token is "' + (tok || src.slice(at)) + '")'); e.exit = 1; throw e; };
+    // tokens, each with where it starts in src
+    const toks = [], re = /(0[xX][0-9A-Fa-f]*|\d[A-Za-z0-9_]*)|([A-Za-z_][A-Za-z0-9_]*)|(\*\*|\+\+|--|<=|>=|==|!=|&&|\|\||[-+*\/%]=|[-+*\/%()<>!=])/y;
+    for (let pos = 0; ;) {
+      while (pos < src.length && /\s/.test(src[pos])) pos++;
+      if (pos >= src.length) break;
+      re.lastIndex = pos; const m = re.exec(src);
+      if (!m) fail('syntax error: invalid arithmetic operator', pos);
+      toks.push({ v: m[0], pos, k: m[1] ? 'num' : m[2] ? 'name' : 'op' }); pos = re.lastIndex;
+    }
+    // ++ and -- belong to a variable next to them; otherwise they are two signs (1--2 is 1 - -2)
+    for (let k = 0; k < toks.length; k++) {
+      const t = toks[k];
+      if ((t.v === '++' || t.v === '--') && !(toks[k - 1] && toks[k - 1].k === 'name') && !(toks[k + 1] && toks[k + 1].k === 'name')) toks.splice(k, 1, { v: t.v[0], pos: t.pos, k: 'op' }, { v: t.v[0], pos: t.pos + 1, k: 'op' });
+    }
+    if (!toks.length) return 0;
+    let i = 0; const peek = () => toks[i] && toks[i].v, at = () => (toks[i] || toks[toks.length - 1]).pos;
+    const number = (text, pos) => {
+      if (/^0[xX]/.test(text)) { if (!/^0[xX][0-9A-Fa-f]*$/.test(text)) fail('value too great for base', pos, text); return text.length > 2 ? parseInt(text.slice(2), 16) : 0; }
+      if (/^0\d/.test(text)) { if (!/^0[0-7]+$/.test(text)) fail('value too great for base', pos, text); return parseInt(text, 8); }
+      if (!/^\d+$/.test(text)) fail('value too great for base', pos, text);
+      return parseInt(text, 10);
+    };
+    const value = (name) => {   // a variable's value is itself an expression (an empty or unset one is 0)
+      const v = String(vars(name) || '').trim();
+      if (v === '') return 0;
+      if (depth > 10) { const e = new SyntaxError_(name + ': expression recursion level exceeded'); e.exit = 1; throw e; }
+      return arith(v, vars, setVar, depth + 1);
+    };
+    const assign = (name, v) => { if (setVar) setVar(name, String(v)); return v; };
+    const prim = () => {
+      const t = toks[i];
+      if (!t) fail('syntax error: operand expected', at());
+      if (t.v === '(') { i++; const v = expr(); if (peek() !== ')') fail("missing `)'", at()); i++; return v; }
+      if (t.k === 'num') { i++; return number(t.v, t.pos); }
+      if (t.k === 'name') { i++; if (peek() === '++' || peek() === '--') { const op = toks[i++].v, old = value(t.v); assign(t.v, op === '++' ? old + 1 : old - 1); return old; } return value(t.v); }
+      fail('syntax error: operand expected', t.pos);
+    };
+    const unary = () => {
+      const t = peek();
+      if (t === '-') { i++; return -unary(); } if (t === '+') { i++; return unary(); } if (t === '!') { i++; return unary() ? 0 : 1; }
+      if ((t === '++' || t === '--') && toks[i + 1] && toks[i + 1].k === 'name') { i++; const name = toks[i++].v; return assign(name, value(name) + (t === '++' ? 1 : -1)); }
+      return prim();
+    };
+    const pow = () => { const b = unary(); if (peek() === '**') { i++; const p0 = at(), e = pow(); if (e < 0) fail('exponent less than 0', p0); return Math.pow(b, e); } return b; };
+    const mul = () => { let a = pow(); while (['*', '/', '%'].includes(peek())) { const op = toks[i++].v, p0 = at(), b = pow(); if (op === '*') a = a * b; else { if (b === 0) fail('division by 0', p0); a = op === '/' ? Math.trunc(a / b) : a % b; } } return a; };
+    const add = () => { let a = mul(); while (peek() === '+' || peek() === '-') { const op = toks[i++].v; const b = mul(); a = op === '+' ? a + b : a - b; } return a; };
+    const cmp = () => { let a = add(); while (['<', '>', '<=', '>='].includes(peek())) { const op = toks[i++].v; const b = add(); a = (op === '<' ? a < b : op === '>' ? a > b : op === '<=' ? a <= b : a >= b) ? 1 : 0; } return a; };
+    const eq = () => { let a = cmp(); while (peek() === '==' || peek() === '!=') { const op = toks[i++].v; const b = cmp(); a = (op === '==' ? a === b : a !== b) ? 1 : 0; } return a; };
+    const and = () => { let a = eq(); while (peek() === '&&') { i++; const b = eq(); a = a && b ? 1 : 0; } return a; };
+    const or = () => { let a = and(); while (peek() === '||') { i++; const b = and(); a = a || b ? 1 : 0; } return a; };
+    const expr = () => {   // NAME = value, NAME += value, ...: the lowest precedence, right to left
+      const t = toks[i], op = toks[i + 1] && toks[i + 1].v;
+      if (t && t.k === 'name' && ['=', '+=', '-=', '*=', '/=', '%='].includes(op)) {
+        i += 2; const p0 = at(), b = expr(), old = op === '=' ? 0 : value(t.v);
+        if ((op === '/=' || op === '%=') && b === 0) fail('division by 0', p0);
+        return assign(t.v, op === '=' ? b : op === '+=' ? old + b : op === '-=' ? old - b : op === '*=' ? old * b : op === '/=' ? Math.trunc(old / b) : old % b);
+      }
+      return or();
+    };
+    const v = expr(); if (i < toks.length) fail(toks[i].v === '=' ? 'attempted assignment to non-variable' : 'syntax error in expression', toks[i].pos);
     return v;
   }
 
@@ -456,6 +517,7 @@
         // "$@": each argument is its own word; with no arguments, a word that is only "$@" disappears
         if (quotedAt(p)) { ctx.args.forEach((a, k) => { if (k > 0) fields.push([]); push(a, true); any = true; }); continue; }
         let v;
+        if (p.x === 'bad') { const e = new SyntaxError_('${' + p.v + '}: bad substitution'); e.exit = 1; throw e; }
         if (p.x === 'var') v = getVar(p.v, ctx);
         else if (p.x === 'len') v = String(p.v === '@' || p.v === '*' ? ctx.args.length : getVar(p.v, ctx).length);
         else if (p.x === 'slice') { const cur = getVar(p.v, ctx); v = p.len === null ? cur.slice(p.from) : cur.substr(p.from, p.len); }
@@ -467,7 +529,7 @@
           else if (filled) v = cur;
           else { v = word(); if (p.op === '=') setVar(p.v, v); }
         }
-        else if (p.x === 'arith') { v = String(arith(p.v, (n) => getVar(n, ctx))); }
+        else if (p.x === 'arith') { const text = p.v.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*|[0-9]+|[?#])\}|\$([A-Za-z_][A-Za-z0-9_]*|[0-9?#])/g, (m, a, b) => getVar(a || b, ctx)); v = String(arith(text, (n) => getVar(n, ctx), setVar)); }   // $x inside is replaced first, as in bash
         else { v = (await capture(p.v, ctx, io)).replace(/\n+$/, ''); }
         if (p.q) { push(v, true); any = true; continue; }
         const pieces = v.split(/[ \t\n]+/);
@@ -571,7 +633,7 @@
       });
     }
     async function runSimple(node, ctx, io) {
-      tick();
+      tick(); if (node.line) ctx.line = node.line;
       const words = await expandAll(node.words, ctx, io);
       if (!words.length) { for (const [name, w] of node.assigns) setVar(name, await expandOne(w, ctx, io)); return 0; }
       const saved = [];   // VAR=value cmd: the variable holds for that command only
@@ -600,17 +662,29 @@
       const m = n.d.match(/^#!\s*(\S+)(?:\s+(\S+))?/);
       const interp = m ? (m[1].endsWith('/env') ? m[2] || '' : m[1].split('/').pop()) : 'bash';
       if (/^python/.test(interp)) return runProgram({ lang: 'python', src: n.d }, name, args, io);
-      if (interp === 'bash' || interp === 'sh') return runScript(n.d, name, args, io);
+      if (interp === 'bash' || interp === 'sh') return runScript(n.d, name, args, io, true);
       io.err('bash: ' + name + ': cannot execute: ' + interp + ' is not available here\n');
       return 126;
     }
     // a script runs in this shell (its variables stay), with its own arguments; exit ends only the script
-    async function runScript(text, name, args, io) {
-      const ctx = { name, args };
-      try { return await runList(parse(text), ctx, io); }
+    // fromFile (bash s.sh, ./s.sh, source s.sh): the shell's own messages say where they come from, "s.sh: line 2: ...", as bash's do
+    async function runScript(text, name, args, io, fromFile) {
+      const ctx = { name, args, line: 1 };
+      const where = (line) => fromFile ? name + ': line ' + line + ': ' : name + ': ';
+      if (fromFile) io = Object.assign({}, io, { err: ((err) => (s) => err(String(s).replace(/^bash: /, where(ctx.line))))(io.err) });
+      try {
+        // an error in an expansion ($((1/0)), a bad ${...}) abandons the rest of its line, and the script goes on with the next one
+        const list = parse(text); let exit = 0, skip = 0;
+        for (const item of list.items) {
+          if (item.line && item.line === skip) continue;
+          try { exit = await runAndOr(item, ctx, io); }
+          catch (e) { if (!(e instanceof SyntaxError_ && e.exit)) throw e; io.err(where(ctx.line) + e.message + '\n'); sh.lastExit = exit = e.exit; skip = item.line; }
+        }
+        return exit;
+      }
       catch (e) {
         if (e instanceof Stop && e.kind === 'exit') return e.code;
-        if (e instanceof SyntaxError_) { io.err(name + ': ' + e.message + '\n'); return e.exit || 2; }
+        if (e instanceof SyntaxError_) { io.err(where(e.line || ctx.line) + e.message + '\n'); return e.exit || 2; }
         throw e;
       }
     }
@@ -713,7 +787,13 @@
     return { f, args: rest };
   }
   const LONG = { all: 'a', recursive: 'r', 'ignore-case': 'i', 'line-number': 'n', count: 'c', reverse: 'r', unique: 'u', parents: 'p', force: 'f', verbose: 'v', 'invert-match': 'v', numeric: 'n', 'numeric-sort': 'n', lines: 'l', words: 'w', bytes: 'c', version: 'V' };
-  const q = (s) => "'" + s + "'";
+  const q = (s) => s.includes("'") ? '"' + s + '"' : "'" + s + "'";
+  const TRY = (name) => "\nTry '" + name + " --help' for more information.\n";   // the second line of a usage error, as in coreutils
+  // a file name in a message, the way coreutils quotes it: bare when it is plain, quoted when it has spaces or special characters
+  const qf = (s) => /^[A-Za-z0-9_.\/+,:@%=-]+$/.test(s) ? s : q(s);
+  // how each command says it could not open a file (coreutils' and grep's words); the rest say "name: file: reason"
+  const OPEN_ERR = { head: (a) => 'cannot open ' + q(a) + ' for reading', tail: (a) => 'cannot open ' + q(a) + ' for reading', tac: (a) => 'failed to open ' + q(a) + ' for reading',
+    sort: (a) => 'cannot read: ' + qf(a), sed: (a) => "can't read " + a, rev: (a) => 'cannot open ' + a, grep: (a) => a };
   const stdinOf = (s) => s == null ? null : { text: String(s), pos: 0 };
   async function readAll(io, name) {
     if (io.stdin) { const s = io.stdin.text.slice(io.stdin.pos); io.stdin.pos = io.stdin.text.length; return s; }
@@ -723,14 +803,19 @@
     return lines.length ? lines.join('\n') + '\n' : '';
   }
   const lines = (s) => { const a = s.split('\n'); if (a.length && a[a.length - 1] === '') a.pop(); return a; };
-  /** read every named file (or stdin when there are none) → [{name, text}]; files that fail are reported and skipped */
+  /** read every named file (or stdin when there are none) → [{name, text}]; a file that fails is null, and its error is printed when the
+      command reaches it (each entry is a getter), so errors come out between the other files' output, in order, as in coreutils */
   async function inputs(args, io, sh, name) {
     if (!args.length) return [{ name: '-', text: await readAll(io, name) }];
     const out = [];
     for (const a of args) {
       if (a === '-') { out.push({ name: '-', text: await readAll(io, name) }); continue; }
       try { out.push({ name: a, text: sh.fs.read(sh.fs.resolve(a)) }); }
-      catch (e) { if (!(e instanceof FsError)) throw e; io.err(name + ': ' + a + ': ' + e.message + '\n'); out.push(null); }
+      catch (e) {
+        if (!(e instanceof FsError)) throw e;
+        const msg = name + ': ' + (e.code !== 'EISDIR' && OPEN_ERR[name] ? OPEN_ERR[name](a) : qf(a)) + ': ' + e.message + '\n'; let told = false;
+        Object.defineProperty(out, out.length, { enumerable: true, configurable: true, get() { if (!told) { told = true; io.err(msg); } return null; } });
+      }
     }
     return out;
   }
@@ -778,6 +863,8 @@
       const fs = sh.fs, paths = o.args.length ? o.args : ['.']; let exit = 0;
       const files = [], dirs = [];
       for (const p of paths) { const n = fs.stat(fs.resolve(p)); if (!n) { io.err('ls: cannot access ' + q(p) + ': No such file or directory\n'); exit = 2; } else if (n.t === 'd' && !o.f.d) dirs.push(p); else files.push(p); }
+      // as GNU ls: the files named first, sorted, then each directory, sorted (-r turns the directories round; show() turns the files)
+      files.sort(nameOrder); dirs.sort(nameOrder); if (o.f.r) dirs.reverse();
       const show = (names, dirAbs) => {
         const items = names.map((name) => { const n = name === '.' ? fs.stat(dirAbs) : name === '..' ? fs.stat(fs.resolve('..', dirAbs)) : dirAbs === null ? fs.stat(fs.resolve(name)) : fs.stat(dirAbs === '/' ? '/' + name : dirAbs + '/' + name); return { name: name + (o.f.F ? (n.t === 'd' ? '/' : n.x ? '*' : '') : ''), node: n, cls: io.tty ? kind(n) : '' }; });
         if (o.f.t) items.sort((a, b) => b.node.m - a.node.m); if (o.f.r) items.reverse();
@@ -802,20 +889,20 @@
     ex: ['mkdir notes', 'mkdir -p projects/game/levels', 'mkdir {spring,summer,autumn}'],
     run(args, io, sh) {
       const o = getopts(args, 'pv', io, 'mkdir'); if (!o) return 1;
-      if (!o.args.length) { io.err('mkdir: missing operand\n'); return 1; }
+      if (!o.args.length) { io.err('mkdir: missing operand' + TRY('mkdir')); return 1; }
       let exit = 0;
       for (const a of o.args) { try { sh.fs.mkdir(sh.fs.resolve(a), !!o.f.p); } catch (e) { if (!(e instanceof FsError)) throw e; exit = 1; io.err('mkdir: cannot create directory ' + q(a) + ': ' + e.message + '\n'); } }
       return exit;
     } });
   def('rmdir', { cat: 'files', use: 'rmdir directory...', desc: 'Remove an empty directory. (rm -r removes one with things inside.)', ex: ['rmdir old'],
-    run(args, io, sh) { if (!args.length) { io.err('rmdir: missing operand\n'); return 1; } let exit = 0; for (const a of args) { try { sh.fs.rmdir(sh.fs.resolve(a)); } catch (e) { if (!(e instanceof FsError)) throw e; exit = 1; io.err('rmdir: failed to remove ' + q(a) + ': ' + e.message + '\n'); } } return exit; } });
+    run(args, io, sh) { if (!args.length) { io.err('rmdir: missing operand' + TRY('rmdir')); return 1; } let exit = 0; for (const a of args) { try { sh.fs.rmdir(sh.fs.resolve(a)); } catch (e) { if (!(e instanceof FsError)) throw e; exit = 1; io.err('rmdir: failed to remove ' + q(a) + ': ' + e.message + '\n'); } } return exit; } });
   def('touch', { cat: 'files', use: 'touch file...', desc: 'Make an empty file, or update the date of one that exists.', ex: ['touch notes.txt', 'touch day{1..7}.txt'],
-    run(args, io, sh) { if (!args.length) { io.err('touch: missing file operand\n'); return 1; } let exit = 0; for (const a of args) { try { sh.fs.touch(sh.fs.resolve(a)); } catch (e) { if (!(e instanceof FsError)) throw e; exit = 1; io.err('touch: cannot touch ' + q(a) + ': ' + e.message + '\n'); } } return exit; } });
+    run(args, io, sh) { if (!args.length) { io.err('touch: missing file operand' + TRY('touch')); return 1; } let exit = 0; for (const a of args) { try { sh.fs.touch(sh.fs.resolve(a)); } catch (e) { if (!(e instanceof FsError)) throw e; exit = 1; io.err('touch: cannot touch ' + q(a) + ': ' + e.message + '\n'); } } return exit; } });
   def('rm', { cat: 'files', use: 'rm [-r] [-f] file...', desc: 'Remove files. There is no recycle bin: a removed file is gone.', opts: [['-r', 'recursive: remove a directory and everything in it'], ['-f', 'force: no complaint about files that do not exist']],
     ex: ['rm draft.txt', 'rm *.tmp', 'rm -r old-project'],
     async run(args, io, sh) {
       const o = getopts(args, 'rRfiv', io, 'rm'); if (!o) return 1;
-      if (!o.args.length) { if (o.f.f) return 0; io.err('rm: missing operand\n'); return 1; }
+      if (!o.args.length) { if (o.f.f) return 0; io.err('rm: missing operand' + TRY('rm')); return 1; }
       let exit = 0; const fs = sh.fs;
       for (const a of o.args) {
         const abs = fs.resolve(a), n = fs.stat(abs);
@@ -835,7 +922,7 @@
     let ans = null;
     if (io.stdin) { io.err(prompt); const rest = io.stdin.text.slice(io.stdin.pos); const k = rest.indexOf('\n'); ans = k < 0 ? rest : rest.slice(0, k); io.stdin.pos += k < 0 ? rest.length : k + 1; }
     else if (io.ask) ans = await io.ask(prompt);
-    else io.err(prompt + '\n');
+    else io.err(prompt);   // no answer to read: the question stays on the line, as when bash reads an empty stdin
     return /^\s*y/i.test(ans || '');
   }
   // cp and mv: the same file, or a directory into itself, are refused with the words coreutils uses; null when the copy or move may go ahead
@@ -844,9 +931,9 @@
     ex: ['cp notes.txt backup.txt', 'cp *.py scripts/', 'cp -r project project-copy'],
     async run(args, io, sh) {
       const o = getopts(args, 'rRvi', io, 'cp'); if (!o) return 1;
-      if (o.args.length < 2) { io.err(o.args.length ? 'cp: missing destination file operand after ' + q(o.args[0]) + '\n' : 'cp: missing file operand\n'); return 1; }
+      if (o.args.length < 2) { io.err((o.args.length ? 'cp: missing destination file operand after ' + q(o.args[0]) : 'cp: missing file operand') + TRY('cp')); return 1; }
       const dst = o.args.pop(), fs = sh.fs; let exit = 0;
-      if (o.args.length > 1 && !fs.isDir(fs.resolve(dst))) { io.err('cp: target ' + q(dst) + ' is not a directory\n'); return 1; }
+      if (o.args.length > 1 && !fs.isDir(fs.resolve(dst))) { io.err('cp: target ' + q(dst) + (fs.exists(fs.resolve(dst)) ? ' is not a directory' : ': No such file or directory') + '\n'); return 1; }
       for (const s of o.args) {
         const sabs = fs.resolve(s), n = fs.stat(sabs);
         if (!n) { exit = 1; io.err('cp: cannot stat ' + q(s) + ': No such file or directory\n'); continue; }
@@ -862,13 +949,19 @@
     ex: ['mv draft.txt essay.txt', 'mv *.jpg photos/', 'mv photos pictures'],
     async run(args, io, sh) {
       const o = getopts(args, 'vi', io, 'mv'); if (!o) return 1;
-      if (o.args.length < 2) { io.err(o.args.length ? 'mv: missing destination file operand after ' + q(o.args[0]) + '\n' : 'mv: missing file operand\n'); return 1; }
+      if (o.args.length < 2) { io.err((o.args.length ? 'mv: missing destination file operand after ' + q(o.args[0]) : 'mv: missing file operand') + TRY('mv')); return 1; }
       const dst = o.args.pop(), fs = sh.fs; let exit = 0;
-      if (o.args.length > 1 && !fs.isDir(fs.resolve(dst))) { io.err('mv: target ' + q(dst) + ' is not a directory\n'); return 1; }
+      if (o.args.length > 1 && !fs.isDir(fs.resolve(dst))) { io.err('mv: target ' + q(dst) + (fs.exists(fs.resolve(dst)) ? ' is not a directory' : ': No such file or directory') + '\n'); return 1; }
       for (const s of o.args) {
         const sabs = fs.resolve(s);
         if (!fs.exists(sabs)) { exit = 1; io.err('mv: cannot stat ' + q(s) + ': No such file or directory\n'); continue; }
-        const target = intoDir(fs, dst, s), shown = shownDst(fs, dst, s), bad = sameOrInside('mv', s, sabs, fs.stat(sabs), target, shown);
+        const target = intoDir(fs, dst, s), shown = shownDst(fs, dst, s), n = fs.stat(sabs), old = fs.stat(target);
+        let bad = sameOrInside('mv', s, sabs, n, target, shown);
+        if (!bad && old && target !== sabs) {   // what is already there decides, with GNU's words
+          if (n.t === 'd' && old.t !== 'd') bad = 'mv: cannot overwrite non-directory ' + q(shown) + ' with directory ' + q(s);
+          else if (n.t !== 'd' && old.t === 'd') bad = 'mv: cannot overwrite directory ' + q(shown) + ' with non-directory';
+          else if (old.t === 'd' && Object.keys(old.c).length) bad = 'mv: cannot overwrite ' + q(shown) + ': Directory not empty';
+        }
         if (bad) { exit = 1; io.err(bad + '\n'); continue; }
         if (o.f.i && fs.exists(target) && !await confirm(io, 'mv: overwrite ' + q(shown) + '? ')) continue;
         try { fs.move(sabs, target); } catch (e) { if (!(e instanceof FsError)) throw e; exit = 1; io.err('mv: cannot move ' + q(s) + ' to ' + q(dst) + ': ' + e.message + '\n'); }
@@ -878,7 +971,7 @@
   def('chmod', { cat: 'files', use: 'chmod +x|-x file...', desc: 'Change whether a file may run as a program (the x permission). A script needs chmod +x before ./script.sh works.',
     ex: ['chmod +x tidy.sh', 'chmod 755 run.sh', 'chmod -x notes.txt'],
     run(args, io, sh) {
-      if (args.length < 2) { io.err('chmod: missing operand\n'); return 1; }
+      if (args.length < 2) { io.err('chmod: missing operand' + (args.length ? ' after ' + q(args[0]) : '') + TRY('chmod')); return 1; }
       const mode = args[0]; let exec;
       if (/^[ugoa]*\+[rwx]+$/.test(mode)) exec = mode.includes('x') ? true : undefined; else if (/^[ugoa]*-[rwx]+$/.test(mode)) exec = mode.includes('x') ? false : undefined; else if (/^[0-7]{3,4}$/.test(mode)) exec = (parseInt(mode[mode.length - 3], 8) & 1) === 1; else { io.err('chmod: invalid mode: ' + q(mode) + '\n'); return 1; }
       let exit = 0;
@@ -944,25 +1037,27 @@
     } });
   def('tac', { cat: 'text', use: 'tac [file...]', desc: 'Print a file with its lines in reverse order (cat backwards).', ex: ['tac log.txt'],
     async run(args, io, sh) { let exit = 0; for (const f of await inputs(args, io, sh, 'tac')) { if (!f) { exit = 1; continue; } for (const l of lines(f.text).reverse()) io.out(l + '\n'); } return exit; } });
-  def('head', { cat: 'text', use: 'head [-n N] [file...]', desc: 'Print the first lines of a file: ten, or N with -n N.', opts: [['-n N', 'how many lines (head -3 also works)']], ex: ['head story.txt', 'head -n 3 scores.csv', 'ls | head -5'],
+  def('head', { cat: 'text', use: 'head [-n N] [file...]', desc: 'Print the first lines of a file: ten, or N with -n N.', opts: [['-n N', 'how many lines (head -3 also works)'], ['-c N', 'how many characters (bytes) instead of lines']], ex: ['head story.txt', 'head -n 3 scores.csv', 'ls | head -5'],
     async run(args, io, sh) { return headTail(args, io, sh, 'head'); } });
-  def('tail', { cat: 'text', use: 'tail [-n N] [file...]', desc: 'Print the last lines of a file: ten, or N with -n N.', opts: [['-n N', 'how many lines (tail -3 also works)']], ex: ['tail log.txt', 'tail -n 1 scores.csv'],
+  def('tail', { cat: 'text', use: 'tail [-n N] [file...]', desc: 'Print the last lines of a file: ten, or N with -n N.', opts: [['-n N', 'how many lines (tail -3 also works)'], ['-c N', 'how many characters (bytes) instead of lines']], ex: ['tail log.txt', 'tail -n 1 scores.csv'],
     async run(args, io, sh) { return headTail(args, io, sh, 'tail'); } });
   async function headTail(args, io, sh, name) {
     // head -3 means head -n 3, but the -2 in head -n -2 is the value of -n
-    const o = getopts(args.map((a, i) => /^-\d+$/.test(a) && args[i - 1] !== '-n' ? '-n' + a.slice(1) : a), 'n:', io, name); if (!o) return 1;
+    const o = getopts(args.map((a, i) => /^-\d+$/.test(a) && args[i - 1] !== '-n' && args[i - 1] !== '-c' ? '-n' + a.slice(1) : a), 'n:c:', io, name); if (!o) return 1;
     if (o.f.f) { io.err(name + ': -f is not available here\n'); return 1; }
     // head -n -N: all but the last N lines; tail -n +N: from line N on
-    let n = 10, allBut = false, from = false;
-    if (o.f.n !== undefined) {
-      const v = String(o.f.n), m = v.match(name === 'head' ? /^(-?)(\d+)$/ : /^(\+?)(\d+)$/);
-      if (!m) { io.err(name + ': invalid number of lines: ' + q(v) + '\n'); return 1; }
+    // -c N counts characters (bytes) instead of lines
+    let n = 10, allBut = false, from = false; const bytes = o.f.c !== undefined;
+    if (o.f.n !== undefined || bytes) {
+      const v = String(bytes ? o.f.c : o.f.n), m = v.match(name === 'head' ? /^(-?)(\d+)$/ : /^(\+?)(\d+)$/);
+      if (!m) { io.err(name + ': invalid number of ' + (bytes ? 'bytes' : 'lines') + ': ' + q(v) + '\n'); return 1; }
       n = parseInt(m[2], 10); allBut = name === 'head' && m[1] === '-'; from = name === 'tail' && m[1] === '+';
     }
     let exit = 0; const many = o.args.length > 1;
     (await inputs(o.args, io, sh, name)).forEach((f, i) => {
       if (!f) { exit = 1; return; }
       if (many) io.out((i ? '\n' : '') + '==> ' + f.name + ' <==\n');
+      if (bytes) { const t = f.text; io.out(name === 'head' ? (allBut ? t.slice(0, Math.max(0, t.length - n)) : t.slice(0, n)) : (from ? t.slice(Math.max(0, n - 1)) : t.slice(Math.max(0, t.length - n)))); return; }
       const ls = lines(f.text); for (const l of name === 'head' ? (allBut ? ls.slice(0, Math.max(0, ls.length - n)) : ls.slice(0, n)) : (from ? ls.slice(Math.max(0, n - 1)) : ls.slice(Math.max(0, ls.length - n)))) io.out(l + '\n');
     });
     return exit;
@@ -972,15 +1067,19 @@
     async run(args, io, sh) {
       const o = getopts(args, 'lwcm', io, 'wc'); if (!o) return 1;
       const which = (o.f.l || o.f.w || o.f.c || o.f.m) ? ['l', 'w', 'c'].filter((k) => o.f[k] || (k === 'c' && o.f.m)) : ['l', 'w', 'c'];
-      const rows = [], tot = { l: 0, w: 0, c: 0 }; let exit = 0;
+      // the column width, worked out first as GNU wc does: 1 for one count of one input; 7 when an input is a pipe or the keyboard;
+      // otherwise wide enough for the size of all the named files together. Rows and errors then come out in order.
+      const named = o.args.length ? o.args : ['-'];
+      const bytes = named.reduce((t, a) => { const n = a === '-' ? null : sh.fs.stat(sh.fs.resolve(a)); return t + (n && n.t === 'f' ? n.d.length : 0); }, 0);
+      const w = which.length === 1 && named.length === 1 ? 1 : named.includes('-') ? 7 : Math.max(1, String(bytes).length);
+      const row = (r) => io.out(which.map((k) => pad(r[k], w)).join(' ') + (r.name === '-' && !o.args.length ? '' : ' ' + r.name) + '\n');
+      const tot = { l: 0, w: 0, c: 0, name: 'total' }; let exit = 0;
       for (const f of await inputs(o.args, io, sh, 'wc')) {
         if (!f) { exit = 1; continue; }
         const r = { l: (f.text.match(/\n/g) || []).length, w: (f.text.match(/\S+/g) || []).length, c: f.text.length, name: f.name };
-        rows.push(r); for (const k of which) tot[k] += r[k];
+        row(r); for (const k of which) tot[k] += r[k];
       }
-      if (o.args.length > 1) rows.push(Object.assign({ name: 'total' }, tot));
-      const w = rows.length === 1 && rows[0].name === '-' ? (which.length === 1 ? 1 : 7) : Math.max(1, ...rows.map((r) => Math.max(...which.map((k) => String(r[k]).length))));
-      for (const r of rows) io.out(which.map((k) => pad(r[k], w)).join(' ') + (r.name === '-' ? '' : ' ' + r.name) + '\n');
+      if (o.args.length > 1) row(tot);
       return exit;
     } });
   // POSIX regular expressions → JavaScript: [:digit:] and friends inside brackets, \< \> word edges, and in a basic expression (grep without -E,
@@ -1028,7 +1127,7 @@
       else if (o.f.w) re = new RegExp('(?:^|[^A-Za-z0-9_])(?:' + re.source + ')(?![A-Za-z0-9_])', flags);
       const fs = sh.fs; let files = o.f.e !== undefined ? o.args.slice() : o.args.slice(1);
       const rec = o.f.r || o.f.R;
-      if (rec) { const expanded = []; for (const f of files.length ? files : ['.']) { const abs = fs.resolve(f); if (!fs.exists(abs)) { expanded.push(f); continue; } for (const [a, n] of fs.walk(abs)) if (n.t === 'f') expanded.push(a === abs ? f : (f.replace(/\/$/, '') + a.slice(abs.length))); } files = expanded; }
+      if (rec) { const expanded = []; for (const f of files.length ? files : ['.']) { const abs = fs.resolve(f); if (!fs.exists(abs)) { expanded.push(f); continue; } for (const [a, n] of fs.walk(abs)) if (n.t === 'f') expanded.push(a === abs ? f : (f.replace(/\/$/, '') + a.slice(abs.length))); } files = o.args.length > (o.f.e !== undefined ? 0 : 1) ? expanded : expanded.map((f) => f.replace(/^\.\//, '')); }   // grep -r with no directory names files without ./
       const many = files.length > 1 || rec; let found = false, exit = 0;
       const srcs = files.length ? files.map((f) => { const abs = fs.resolve(f), n = fs.stat(abs); if (!n) { io.err('grep: ' + f + ': No such file or directory\n'); exit = 2; return null; } if (n.t === 'd') { io.err('grep: ' + f + ': Is a directory\n'); exit = 2; return null; } return { name: f, text: n.d }; }) : [{ name: '(standard input)', text: await readAll(io, 'grep') }];
       for (const f of srcs) {
@@ -1172,7 +1271,16 @@
   def('tee', { cat: 'text', use: 'tee [-a] file', desc: 'Write what comes in from a pipe both to the screen and to a file.', opts: [['-a', 'append to the file instead of replacing it']], ex: ['ls -l | tee listing.txt'],
     async run(args, io, sh) { const o = getopts(args, 'a', io, 'tee'); if (!o) return 1; const text = await readAll(io, 'tee'); io.out(text); let exit = 0; for (const a of o.args) { try { sh.fs.write(sh.fs.resolve(a), text, !!o.f.a); } catch (e) { if (!(e instanceof FsError)) throw e; exit = 1; io.err('tee: ' + a + ': ' + e.message + '\n'); } } return exit; } });
   def('xargs', { cat: 'text', use: 'xargs command [arguments]', desc: 'Run a command with the words from a pipe added as its arguments.', ex: ['find . -name "*.tmp" | xargs rm', 'echo a b c | xargs mkdir'],
-    async run(args, io, sh, ctx) { const words = (await readAll(io, 'xargs')).split(/\s+/).filter(Boolean); const cmd = args.length ? args : ['echo']; return sh.exec_words(cmd.concat(words), ctx, Object.assign({}, io, { stdin: null })); } });
+    opts: [['-n N', 'at most N words for each run of the command']],
+    async run(args, io, sh, ctx) {
+      let per = Infinity; const m = args[0] && args[0].match(/^-n(\d*)$/);
+      if (m) { const v = m[1] || args[1]; args = args.slice(m[1] ? 1 : 2); per = parseInt(v, 10); if (!(per >= 1)) { io.err('xargs: value ' + q(v === undefined ? '' : v) + ' for -n option should be >= 1\n'); return 1; } }
+      const words = (await readAll(io, 'xargs')).split(/\s+/).filter(Boolean); const cmd = args.length ? args : ['echo'];
+      // the command runs once for each group of words (once with none when nothing came in); a failure makes xargs answer 123, as GNU xargs does
+      let exit = 0, k = 0;
+      do { const r = await sh.exec_words(cmd.concat(words.slice(k, k + per)), ctx, Object.assign({}, io, { stdin: null })); if (r === 127 || r === 126) return r; if (r) exit = 123; k += per; } while (k < words.length);
+      return exit;
+    } });
 
   // ----- text out
   const unescape = (s) => s.replace(/\\(n|t|\\|a|0|e|r|")/g, (m, c) => ({ n: '\n', t: '\t', '\\': '\\', a: '', 0: '', e: '\u001b', r: '\r', '"': '"' })[c]);
@@ -1200,10 +1308,15 @@
       io.out(out); return 0;
     } });
   def('seq', { cat: 'text', use: 'seq [first] [step] last', desc: 'Print the numbers from first to last, one per line.', ex: ['seq 5', 'seq 1 10', 'seq 0 5 20', 'for i in $(seq 3); do echo $i; done'],
-    run(args, io) { const nums = args.map(Number); if (!args.length || nums.some(isNaN)) { io.err('seq: ' + (args.length ? 'invalid floating point argument: ' + q(args.find((a) => isNaN(Number(a)))) : 'missing operand') + '\n'); return 1; } let [a, s, b] = nums.length === 1 ? [1, 1, nums[0]] : nums.length === 2 ? [nums[0], 1, nums[1]] : nums; if (s === 0) { io.err('seq: invalid Zero increment value: \'0\'\n'); return 1; } // decimals: as many places as the first number and the step have (seq 0 0.1 0.3 → 0.0 0.1 0.2 0.3); each value is first + k*step, so no drift
+    opts: [['-w', 'equal width: pad with leading zeros (08 09 10)']],
+    run(args, io) { let wide = false; if (args[0] === '-w') { wide = true; args = args.slice(1); } const nums = args.map(Number); if (!args.length || nums.some(isNaN)) { io.err('seq: ' + (args.length ? 'invalid floating point argument: ' + q(args.find((a) => isNaN(Number(a)))) : 'missing operand') + '\n'); return 1; } let [a, s, b] = nums.length === 1 ? [1, 1, nums[0]] : nums.length === 2 ? [nums[0], 1, nums[1]] : nums; if (s === 0) { io.err('seq: invalid Zero increment value: \'0\'\n'); return 1; } // decimals: as many places as the first number and the step have (seq 0 0.1 0.3 → 0.0 0.1 0.2 0.3); each value is first + k*step, so no drift
       const places = (t) => { const m = String(t).match(/\.(\d+)$/); return m ? m[1].length : 0; };
       const dp = Math.max(places(nums.length === 1 ? 1 : args[0]), nums.length === 3 ? places(args[1]) : 0), eps = Math.abs(s) * 1e-9;
-      for (let k = 0; k <= 100000; k++) { const x = a + k * s; if (s > 0 ? x > b + eps : x < b - eps) break; io.out((dp ? x.toFixed(dp) : String(Math.round(x * 1e9) / 1e9)) + '\n'); }
+      const vals = [];
+      for (let k = 0; k <= 100000; k++) { const x = a + k * s; if (s > 0 ? x > b + eps : x < b - eps) break; vals.push(dp ? x.toFixed(dp) : String(Math.round(x * 1e9) / 1e9)); }
+      // -w: zeros after any minus sign, up to the widest number
+      const w = wide ? Math.max(0, ...vals.map((v) => v.length)) : 0, zp = (v) => v.length >= w ? v : v[0] === '-' ? '-' + '0'.repeat(w - v.length) + v.slice(1) : '0'.repeat(w - v.length) + v;
+      for (const v of vals) io.out(zp(v) + '\n');
       return 0; } });
   def('date', { cat: 'other', use: 'date [+FORMAT]', desc: 'Print the date and time. +FORMAT chooses the pieces: %Y year, %m month, %d day, %H:%M:%S time, %A weekday, %B month name.', ex: ['date', 'date +%Y-%m-%d', 'date "+%A, %d %B %Y"'],
     run(args, io, sh) {
@@ -1240,7 +1353,10 @@
     run(args, io, sh) { if (!args.length) { for (const k of Object.keys(sh.vars).sort()) io.out('declare -x ' + k + '="' + sh.vars[k] + '"\n'); return 0; } for (const a of args) { const m = a.match(/^([A-Za-z_][A-Za-z0-9_]*)(?:=(.*))?$/s); if (!m) { io.err("bash: export: `" + a + "': not a valid identifier\n"); return 1; } if (m[2] !== undefined) sh.setVar(m[1], m[2]); } return 0; } });
   def('unset', { cat: 'shell', builtin: true, use: 'unset NAME', desc: 'Forget a variable.', ex: ['unset NAME'], run(args, io, sh) { for (const a of args) delete sh.vars[a]; return 0; } });
   def('env printenv set', { cat: 'shell', builtin: true, use: 'env', desc: 'List the variables and their values.', ex: ['env', 'printenv HOME'],
-    run(args, io, sh) { if (args.length && this.name === 'printenv') { let exit = 0; for (const a of args) { const v = sh.getVar(a); if (v === '') exit = 1; else io.out(v + '\n'); } return exit; } for (const k of Object.keys(sh.vars).sort()) io.out(k + '=' + sh.vars[k] + '\n'); io.out('PWD=' + sh.fs.cwd + '\n'); return 0; } });
+    run(args, io, sh, ctx) {
+      // set -- a b (or set a b): the positional parameters $1 $2 ... become a b; options such as -e are accepted and ignored here
+      if (args.length && this.name === 'set') { let k = 0; while (k < args.length && /^[-+][a-z]+$/.test(args[k])) k++; if (args[k] === '--') k++; else if (k === args.length) return 0; ctx.args.splice(0, ctx.args.length, ...args.slice(k)); return 0; }
+      if (args.length && this.name === 'printenv') { let exit = 0; for (const a of args) { const v = sh.getVar(a); if (v === '') exit = 1; else io.out(v + '\n'); } return exit; } for (const k of Object.keys(sh.vars).sort()) io.out(k + '=' + sh.vars[k] + '\n'); io.out('PWD=' + sh.fs.cwd + '\n'); return 0; } });
   def('which', { cat: 'shell', use: 'which command', desc: 'Show where a command lives.', ex: ['which python'], run(args, io) { let exit = 0; for (const a of args) { if (has(COMMANDS, a) && !COMMANDS[a].builtin) io.out('/bin/' + a + '\n'); else exit = 1; } return args.length ? exit : 1; } });
   def('type', { cat: 'shell', builtin: true, use: 'type command', desc: 'Say what kind of command a name is.', ex: ['type cd', 'type ls'], run(args, io) { let exit = 0; for (const a of args) { if (!has(COMMANDS, a)) { io.err('bash: type: ' + a + ': not found\n'); exit = 1; } else io.out(a + (COMMANDS[a].builtin ? ' is a shell builtin' : ' is /bin/' + a) + '\n'); } return exit; } });
   def('alias', { cat: 'shell', builtin: true, use: 'alias', desc: 'Aliases are not kept in this practice shell.', ex: [], run(args, io) { if (args.length) io.err('bash: alias: aliases are not available in this practice shell\n'); return args.length ? 1 : 0; } });
@@ -1250,13 +1366,13 @@
     run(args, io, sh) {
       if (this.name === '[') { if (args[args.length - 1] !== ']') { io.err("bash: [: missing `]'\n"); return 2; } args = args.slice(0, -1); }
       const fs = sh.fs;
-      const num = (s) => { if (!/^-?\d+$/.test(String(s).trim())) { throw new Error('integer expression expected: ' + q(s)); } return parseInt(s, 10); };
+      const num = (s) => { if (!/^[-+]?\d+$/.test(String(s).trim())) { throw new Error(s + ': integer expression expected'); } return parseInt(s, 10); };
       const term = (a) => {
         if (a.length === 0) return false;
         if (a.length === 1) return a[0] !== '';
         if (a[0] === '!') return !term(a.slice(1));
         if (a.length === 2) { const n = fs.stat(fs.resolve(a[1])); switch (a[0]) { case '-e': return !!n; case '-f': return !!n && n.t === 'f'; case '-d': return !!n && n.t === 'd'; case '-s': return !!n && n.t === 'f' && n.d.length > 0; case '-x': return !!n && (n.t === 'd' || n.x); case '-r': case '-w': return !!n; case '-z': return a[1] === ''; case '-n': return a[1] !== ''; default: throw new Error(a[0] + ': unary operator expected'); } }
-        if (a.length === 3) { const [x, op, y] = a; switch (op) { case '=': case '==': return x === y; case '!=': return x !== y; case '-eq': return num(x) === num(y); case '-ne': return num(x) !== num(y); case '-lt': return num(x) < num(y); case '-le': return num(x) <= num(y); case '-gt': return num(x) > num(y); case '-ge': return num(x) >= num(y); default: throw new Error(op + ': binary operator expected'); } }
+        if (a.length === 3) { const [x, op, y] = a; switch (op) { case '=': case '==': return x === y; case '!=': return x !== y; case '<': return x < y; case '>': return x > y; case '-eq': return num(x) === num(y); case '-ne': return num(x) !== num(y); case '-lt': return num(x) < num(y); case '-le': return num(x) <= num(y); case '-gt': return num(x) > num(y); case '-ge': return num(x) >= num(y); default: throw new Error(op + ': binary operator expected'); } }
         const i = a.indexOf('-a') >= 0 ? a.indexOf('-a') : a.indexOf('-o');
         if (i > 0) return a[i] === '-a' ? term(a.slice(0, i)) && term(a.slice(i + 1)) : term(a.slice(0, i)) || term(a.slice(i + 1));
         throw new Error('too many arguments');
@@ -1273,21 +1389,22 @@
       else eof = true;
       const names = o.args.length ? o.args : ['REPLY'];
       if (eof) { for (const n of names) sh.setVar(n, ''); return 1; }
-      const words = line.trim().split(/\s+/);
-      names.forEach((n, i) => sh.setVar(n, i === names.length - 1 ? words.slice(i).join(' ') : (words[i] || '')));
+      // one word for each name; the last name takes the rest of the line as it is, only the spaces at its two ends removed
+      let rest = line.replace(/^[ \t]+/, '');
+      names.forEach((n, i) => { if (i === names.length - 1) { sh.setVar(n, rest.replace(/[ \t]+$/, '')); return; } const m = rest.match(/^(\S*)[ \t]*/); sh.setVar(n, m[1]); rest = rest.slice(m[0].length); });
       return 0;
     } });
   def('source .', { cat: 'shell', builtin: true, use: 'source script.sh', desc: 'Run a script in this shell, so its variables stay.', ex: ['source settings.sh'],
-    async run(args, io, sh, ctx) { if (!args.length) { io.err('bash: ' + this.name + ': filename argument required\n'); return 2; } const abs = sh.fs.resolve(args[0]); const n = sh.fs.stat(abs); if (!n) { io.err('bash: ' + args[0] + ': No such file or directory\n'); return 1; } if (n.t === 'd') { io.err('bash: ' + args[0] + ': Is a directory\n'); return 1; } return sh.runScript(n.d, args[0], args.slice(1), io); } });
+    async run(args, io, sh, ctx) { if (!args.length) { io.err('bash: ' + this.name + ': filename argument required\n'); return 2; } const abs = sh.fs.resolve(args[0]); const n = sh.fs.stat(abs); if (!n) { io.err('bash: ' + args[0] + ': No such file or directory\n'); return 1; } if (n.t === 'd') { io.err('bash: ' + args[0] + ': Is a directory\n'); return 1; } return sh.runScript(n.d, args[0], args.slice(1), io, true); } });
   def('bash sh', { cat: 'run', use: 'bash script.sh [arguments]', desc: 'Run a shell script: a file of commands, one per line. (./script.sh also works once the file is executable: chmod +x.)', opts: [['-c TEXT', 'run the commands in TEXT']],
     ex: ['bash tidy.sh', 'bash -c "echo hi; ls"'],
     async run(args, io, sh) {
-      if (args[0] === '-c') { if (args[1] === undefined) { io.err(this.name + ': -c: option requires an argument\n'); return 2; } return sh.runScript(args[1], this.name, args.slice(2), io); }
+      if (args[0] === '-c') { if (args[1] === undefined) { io.err(this.name + ': -c: option requires an argument\n'); return 2; } return sh.runScript(args[1], args.length > 2 ? args[2] : this.name, args.slice(3), io); }   // bash -c TEXT NAME ARGS: NAME is $0
       if (!args.length) { io.out('(you are already in a shell)\n'); return 0; }
       const abs = sh.fs.resolve(args[0]); const n = sh.fs.stat(abs);
       if (!n) { io.err(this.name + ': ' + args[0] + ': No such file or directory\n'); return 127; }
       if (n.t === 'd') { io.err(this.name + ': ' + args[0] + ': Is a directory\n'); return 126; }
-      return sh.runScript(n.d, args[0], args.slice(1), io);
+      return sh.runScript(n.d, args[0], args.slice(1), io, true);
     } });
 
   // ----- running programs: the hooks hand the source to the site's sandboxes

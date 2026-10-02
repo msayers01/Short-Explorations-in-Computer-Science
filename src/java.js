@@ -285,7 +285,7 @@
     function parseBlock() {
       const line = toks[p].line; expectOp('{'); const body = [];
       while (!atOp('}')) { if (at('eof')) fail("reached end of file while parsing"); body.push(parseStatement()); }
-      next(); return { k: 'Block', body, line };
+      const close = next(); return { k: 'Block', body, line, closeLine: close.line };   // javac reports a missing return at the closing brace
     }
     function parseStatement() {
       const tok = toks[p], line = tok.line;
@@ -769,7 +769,7 @@
   function jformat(fmt, args, R) {
     let ai = 0; const self = R;
     const group = (intPart) => intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    const pad = (s, width, flags) => { if (!width || s.length >= width) return s; if (flags.includes('-')) return s + ' '.repeat(width - s.length); if (flags.includes('0') && /^[+\- ]?[\d.,]/.test(s) && !/[a-zA-Z]/.test(s.replace(/^[+\- ]?/, '').replace(/[eE][+-]\d+$/, ''))) { const sign = /^[+\- ]/.test(s) ? s[0] : ''; return sign + '0'.repeat(width - s.length) + s.slice(sign.length); } return ' '.repeat(width - s.length) + s; };
+    const pad = (s, width, flags) => { if (!width || s.length >= width) return s; if (flags.includes('-')) return s + ' '.repeat(width - s.length); if (flags.includes('0') && /^[+\-( ]?[\d.,]/.test(s) && !/[a-zA-Z]/.test(s.replace(/^[+\-( ]?/, '').replace(/[eE][+-]\d+$/, ''))) { const sign = /^[+\-( ]/.test(s) ? s[0] : ''; /* zeros go after the sign, or after the ( of a negative */ return sign + '0'.repeat(width - s.length) + s.slice(sign.length); } return ' '.repeat(width - s.length) + s; };
     const bad = (conv, v) => throwJ(R, 'IllegalFormatConversionException', conv + ' != ' + qualified(runtimeClassName(v)));
     return fmt.replace(/%([-#+ 0,(]*)(\d+)?(?:\.(\d+))?([a-zA-Z%])|%/g, (m, flags, width, prec, conv) => {
       if (m === '%') throwJ(R, 'UnknownFormatConversionException', "Conversion = '%'");
@@ -787,15 +787,15 @@
         }
         case 'x': case 'X': case 'o': {
           let s; if (typeof v === 'number' && !(v instanceof JBox)) s = (v >>> 0).toString(conv === 'o' ? 8 : 16); else if (typeof v === 'bigint') s = BigInt.asUintN(64, v).toString(conv === 'o' ? 8 : 16); else if (v === null) s = 'null'; else bad(conv, v);
-          if (flags.includes('#')) s = (conv === 'o' ? '0' : '0x') + s; return pad(conv === 'X' ? s.toUpperCase() : s, width, flags);
+          const pre = flags.includes('#') ? (conv === 'o' ? '0' : '0x') : ''; if (flags.includes('0') && !flags.includes('-') && width > pre.length + s.length) s = '0'.repeat(width - pre.length - s.length) + s; s = pre + s; return pad(conv === 'X' ? s.toUpperCase() : s, width, flags);
         }
         case 'f': case 'e': case 'E': case 'g': case 'G': {
           let x; if (v instanceof JBox && (v.kind === 'D' || v.kind === 'F')) x = v.v; else if (v === null) return pad('null', width, flags); else bad(conv, v);
-          if (!Number.isFinite(x)) return pad(Number.isNaN(x) ? 'NaN' : signed('Infinity', x < 0), width, flags.replace('0', ''));
+          if (!Number.isFinite(x)) { const t = Number.isNaN(x) ? 'NaN' : signed('Infinity', x < 0); return pad(conv === 'E' || conv === 'G' ? t.toUpperCase() : t, width, flags.replace('0', '')); }
           const p = prec === null ? 6 : prec; const neg = x < 0 || (x === 0 && 1 / x < 0); x = Math.abs(x); let s;
           if (conv === 'f') { s = halfUpFixed(x, p); if (flags.includes(',')) { const [i, f] = s.split('.'); s = group(i) + (f !== undefined ? '.' + f : ''); } }
           else if (conv === 'e' || conv === 'E') { s = halfUpExp(x, p); if (conv === 'E') s = s.toUpperCase(); }
-          else { const P = p === 0 ? 1 : p; const ex = halfUpExp(x, P - 1), E = x === 0 ? 0 : +ex.slice(ex.indexOf('e') + 1); if (E < -4 || E >= P) s = ex; else s = halfUpFixed(x, Math.max(0, P - 1 - E)); if (conv === 'G') s = s.toUpperCase(); }
+          else { const P = p === 0 ? 1 : p; const ex = halfUpExp(x, P - 1), E = x === 0 ? 0 : +ex.slice(ex.indexOf('e') + 1); if (E < -4 || E >= P) s = ex; else { s = halfUpFixed(x, Math.max(0, P - 1 - E)); if (flags.includes(',')) { const [i, f] = s.split('.'); s = group(i) + (f !== undefined ? '.' + f : ''); } } if (conv === 'G') s = s.toUpperCase(); }
           return pad(signed(s, neg), width, flags);
         }
         case 's': case 'S': { let s = dstr(v, self); if (prec !== null) s = s.slice(0, prec); if (conv === 'S') s = s.toUpperCase(); return pad(s, width, flags); }
@@ -840,9 +840,10 @@
   const toJList = (v) => (v instanceof JList ? v.a : v instanceof JSet ? (v.ordered || v.m.entries().map(e => e.key)) : v instanceof JArr ? v.a : []);
   const collItems = (R, v) => { nn(R, v); if (v instanceof JList) return v.a.slice(); if (v instanceof JSet) return v.ordered ? v.ordered.slice() : v.m.entries(R).map(e => e.key); if (v instanceof JArr) return v.a.slice(); return []; };
   const unb = (v) => (v instanceof JBox ? v.v : v);
-  const parseIntJ = (R, s, radix) => { if (s === null) throwJ(R, 'NumberFormatException', 'Cannot parse null string'); radix = radix || 10; if (radix < 2) throwJ(R, 'NumberFormatException', 'radix ' + radix + ' less than Character.MIN_RADIX'); if (radix > 36) throwJ(R, 'NumberFormatException', 'radix ' + radix + ' greater than Character.MAX_RADIX'); const re = radix === 10 ? /^[+-]?\d+$/ : radix === 16 ? /^[+-]?[0-9a-fA-F]+$/ : radix === 2 ? /^[+-]?[01]+$/ : radix === 8 ? /^[+-]?[0-7]+$/ : /^[+-]?[0-9a-zA-Z]+$/; if (!re.test(s)) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"' + (radix !== 10 ? ' under radix ' + radix : '')); const v = parseInt(s, radix); if (v < -2147483648 || v > 2147483647) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"' + (radix !== 10 ? ' under radix ' + radix : '')); return v; };
+  const parseIntJ = (R, s, radix) => { if (s === null) throwJ(R, 'NumberFormatException', 'Cannot parse null string'); radix = radix || 10; if (radix < 2) throwJ(R, 'NumberFormatException', 'radix ' + radix + ' less than Character.MIN_RADIX'); if (radix > 36) throwJ(R, 'NumberFormatException', 'radix ' + radix + ' greater than Character.MAX_RADIX'); const re = radix === 10 ? /^[+-]?\d+$/ : radix === 16 ? /^[+-]?[0-9a-fA-F]+$/ : radix === 2 ? /^[+-]?[01]+$/ : radix === 8 ? /^[+-]?[0-7]+$/ : /^[+-]?[0-9a-zA-Z]+$/; if (!re.test(s) || [...s.replace(/^[+-]/, '')].some((ch) => parseInt(ch, 36) >= radix)) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"' + (radix !== 10 ? ' under radix ' + radix : '')); const v = parseInt(s, radix) + 0; if (v < -2147483648 || v > 2147483647) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"' + (radix !== 10 ? ' under radix ' + radix : '')); return v; };
   const parseLongJ = (R, s) => { if (s === null) throwJ(R, 'NumberFormatException', 'Cannot parse null string'); if (!/^[+-]?\d+$/.test(s)) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"'); const v = toLong(s); if (v === null) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"'); return v; };
-  const parseDoubleJ = (R, s) => { if (s === null) npe(R); const t = s.trim(); if (t === '') throwJ(R, 'NumberFormatException', 'empty String'); if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?[fFdD]?$|^[+-]?(NaN|Infinity)$/.test(t)) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"'); return Number(t.replace(/[fFdD]$/, '')); };
+  const parseDoubleJ = (R, s) => { if (s === null) npe(R, 'Cannot invoke "String.trim()" because "in" is null');   // JDK 21's words (its parser trims first)
+  const t = s.trim(); if (t === '') throwJ(R, 'NumberFormatException', 'empty String'); if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?[fFdD]?$|^[+-]?(NaN|Infinity)$/.test(t)) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"'); return Number(t.replace(/[fFdD]$/, '')); };
   const roundJ = (x) => { if (Number.isNaN(x)) return 0n; const r = Math.round(x);   // Math.round rounds the exact value (0.49999999999999994 → 0), ties up, as Java does
     if (r >= 9223372036854775807) return 9223372036854775807n; if (r <= -9223372036854775808) return -9223372036854775808n; return BigInt(r); };
   // a Comparator: null (natural order), a JCmp (reverseOrder/reversed), or an object of a user class with compare(T, T)
@@ -930,11 +931,11 @@
     'abs(int)': ['int', (o, a) => Math.abs(a[0]) | 0], 'abs(long)': ['long', (o, a) => BigInt.asIntN(64, a[0] < 0n ? -a[0] : a[0])], 'abs(double)': ['double', (o, a) => Math.abs(a[0])], 'abs(float)': ['float', (o, a) => Math.abs(a[0])],
     'max(int,int)': ['int', (o, a) => Math.max(a[0], a[1])], 'max(long,long)': ['long', (o, a) => (a[0] > a[1] ? a[0] : a[1])], 'max(double,double)': ['double', (o, a) => Math.max(a[0], a[1])], 'max(float,float)': ['float', (o, a) => Math.max(a[0], a[1])],
     'min(int,int)': ['int', (o, a) => Math.min(a[0], a[1])], 'min(long,long)': ['long', (o, a) => (a[0] < a[1] ? a[0] : a[1])], 'min(double,double)': ['double', (o, a) => Math.min(a[0], a[1])], 'min(float,float)': ['float', (o, a) => Math.min(a[0], a[1])],
-    'pow(double,double)': ['double', (o, a) => Math.pow(a[0], a[1])], 'sqrt(double)': ['double', (o, a) => Math.sqrt(a[0])], 'cbrt(double)': ['double', (o, a) => Math.cbrt(a[0])], 'hypot(double,double)': ['double', (o, a) => Math.hypot(a[0], a[1])],
-    'floor(double)': ['double', (o, a) => Math.floor(a[0])], 'ceil(double)': ['double', (o, a) => Math.ceil(a[0])], 'round(double)': ['long', (o, a) => roundJ(a[0])], 'round(float)': ['int', (o, a) => d2i(Math.round(a[0]))], 'rint(double)': ['double', (o, a) => { const f = Math.floor(a[0]), d = a[0] - f; return d < 0.5 ? f : d > 0.5 ? f + 1 : (f % 2 === 0 ? f : f + 1); }],
+    'pow(double,double)': ['double', (o, a) => Math.pow(a[0], a[1])], 'sqrt(double)': ['double', (o, a) => Math.sqrt(a[0])], 'cbrt(double)': ['double', (o, a) => Math.cbrt(a[0])], 'sinh(double)': ['double', (o, a) => Math.sinh(a[0])], 'cosh(double)': ['double', (o, a) => Math.cosh(a[0])], 'tanh(double)': ['double', (o, a) => Math.tanh(a[0])], 'log1p(double)': ['double', (o, a) => Math.log1p(a[0])], 'expm1(double)': ['double', (o, a) => Math.expm1(a[0])], 'hypot(double,double)': ['double', (o, a) => Math.hypot(a[0], a[1])],
+    'floor(double)': ['double', (o, a) => Math.floor(a[0])], 'ceil(double)': ['double', (o, a) => Math.ceil(a[0])], 'round(double)': ['long', (o, a) => roundJ(a[0])], 'round(float)': ['int', (o, a) => d2i(Math.round(a[0]))], 'rint(double)': ['double', (o, a) => { const f = Math.floor(a[0]), d = a[0] - f, r = d < 0.5 ? f : d > 0.5 ? f + 1 : (f % 2 === 0 ? f : f + 1); return r === 0 && (a[0] < 0 || Object.is(a[0], -0)) ? -0 : r; }],   // a negative that rounds to zero is -0.0
     'random()': ['double', () => Math.random()], 'sin(double)': ['double', (o, a) => Math.sin(a[0])], 'cos(double)': ['double', (o, a) => Math.cos(a[0])], 'tan(double)': ['double', (o, a) => Math.tan(a[0])], 'asin(double)': ['double', (o, a) => Math.asin(a[0])], 'acos(double)': ['double', (o, a) => Math.acos(a[0])], 'atan(double)': ['double', (o, a) => Math.atan(a[0])], 'atan2(double,double)': ['double', (o, a) => Math.atan2(a[0], a[1])],
     'exp(double)': ['double', (o, a) => Math.exp(a[0])], 'log(double)': ['double', (o, a) => Math.log(a[0])], 'log10(double)': ['double', (o, a) => Math.log10(a[0])], 'signum(double)': ['double', (o, a) => Math.sign(a[0])], 'toRadians(double)': ['double', (o, a) => a[0] / 180 * Math.PI], 'toDegrees(double)': ['double', (o, a) => a[0] * 180 / Math.PI],
-    'floorDiv(int,int)': ['int', (o, a, R) => { if (a[1] === 0) throwJ(R, 'ArithmeticException', '/ by zero'); return Math.floor(a[0] / a[1]) | 0; }], 'floorMod(int,int)': ['int', (o, a, R) => { if (a[1] === 0) throwJ(R, 'ArithmeticException', '/ by zero'); return ((a[0] % a[1]) + a[1]) % a[1]; }],
+    'floorDiv(int,int)': ['int', (o, a, R) => { if (a[1] === 0) throwJ(R, 'ArithmeticException', '/ by zero'); return Math.floor(a[0] / a[1]) | 0; }], 'floorMod(int,int)': ['int', (o, a, R) => { if (a[1] === 0) throwJ(R, 'ArithmeticException', '/ by zero'); return (((a[0] % a[1]) + a[1]) % a[1]) | 0; }],
     'floorDiv(long,long)': ['long', (o, a, R) => { if (a[1] === 0n) throwJ(R, 'ArithmeticException', '/ by zero'); let q = a[0] / a[1]; if ((a[0] % a[1] !== 0n) && ((a[0] < 0n) !== (a[1] < 0n))) q -= 1n; return q; }], 'floorMod(long,long)': ['long', (o, a, R) => { if (a[1] === 0n) throwJ(R, 'ArithmeticException', '/ by zero'); return ((a[0] % a[1]) + a[1]) % a[1]; }],
     'addExact(int,int)': ['int', (o, a, R) => { const r = a[0] + a[1]; if (r !== (r | 0)) throwJ(R, 'ArithmeticException', 'integer overflow'); return r; }], 'multiplyExact(int,int)': ['int', (o, a, R) => { const r = a[0] * a[1]; if (r !== (r | 0)) throwJ(R, 'ArithmeticException', 'integer overflow'); return r; }], 'toIntExact(long)': ['int', (o, a, R) => { if (a[0] < -2147483648n || a[0] > 2147483647n) throwJ(R, 'ArithmeticException', 'integer overflow'); return Number(a[0]); }]
   } });
@@ -1300,7 +1301,7 @@
           const ctx = { cls: c, isStatic: m.static, method: m, scope: new Scope(null), nslots: { n: 0 }, loops: [], retType: m.ret };
           m.paramSlots = m.params.map((t, i) => declareLocal(ctx, m.paramNames[i], t, m.line).slot);
           stmt(m.body, ctx);
-          if (m.ret.k !== 'void' && completes(m.body)) err(m.body.endLine || lastLine(m.body), 'missing return statement');
+          if (m.ret.k !== 'void' && completes(m.body)) err(m.body.closeLine || m.body.endLine || lastLine(m.body), 'missing return statement');
           m.nslots = ctx.nslots.n;
           definiteAssignment(m.body);
         }
@@ -1898,6 +1899,7 @@
     function numOp(op, a, b, t) {
       switch (t.n) {
         case 'int': case 'short': case 'byte': case 'char':
+          if (typeof b === 'bigint') b = Number(BigInt.asUintN(5, b));   // a long shift distance: only its low five bits count, as in Java
           switch (op) { case '+': return (a + b) | 0; case '-': return (a - b) | 0; case '*': return Math.imul(a, b); case '/': if (b === 0) zeroDiv(); return (a / b) | 0; case '%': if (b === 0) zeroDiv(); return (a % b) | 0; case '<<': return a << b; case '>>': return a >> b; case '>>>': return (a >>> b) | 0; case '&': return a & b; case '|': return a | b; case '^': return a ^ b; case '<': return a < b; case '>': return a > b; case '<=': return a <= b; case '>=': return a >= b; case '==': return a === b; case '!=': return a !== b; }
           break;
         case 'long': {
