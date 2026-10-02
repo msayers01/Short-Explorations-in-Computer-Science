@@ -36,6 +36,7 @@
 :root[data-course="scratch"] { --accent: #c2185b; --accent-soft: #fbe4ec; }
 :root[data-course="shell"] { --accent: #3d4a5c; --accent-soft: #e6e9ef; }
 :root[data-course="computer"] { --accent: #8a5a10; --accent-soft: #f6ecd9; }
+:root[data-course="algorithms"] { --accent: #0b6e7a; --accent-soft: #e0f1f3; }   /* the #/algorithms pages: the colour of the lessons' figures */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
@@ -53,6 +54,7 @@
   :root:not([data-theme="light"])[data-course="scratch"] { --accent: #f48fb1; --accent-ink: #2a0712; --accent-soft: #3a1a26; }
   :root:not([data-theme="light"])[data-course="shell"] { --accent: #b9c4d6; --accent-ink: #121620; --accent-soft: #262b36; }
   :root:not([data-theme="light"])[data-course="computer"] { --accent: #e0b060; --accent-ink: #1e1400; --accent-soft: #332810; }
+  :root:not([data-theme="light"])[data-course="algorithms"] { --accent: #5fc6d2; --accent-ink: #04222a; --accent-soft: #11313a; }
 }
 :root[data-theme="dark"] {
   --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
@@ -68,6 +70,9 @@
 :root[data-theme="dark"][data-course="java"] { --accent: #f0907e; --accent-ink: #2a0d08; --accent-soft: #3a1f1a; }
 :root[data-theme="dark"][data-course="dsa"] { --accent: #dc9fd8; --accent-ink: #26091f; --accent-soft: #341a32; }
 :root[data-theme="dark"][data-course="scratch"] { --accent: #f48fb1; --accent-ink: #2a0712; --accent-soft: #3a1a26; }
+:root[data-theme="dark"][data-course="shell"] { --accent: #b9c4d6; --accent-ink: #121620; --accent-soft: #262b36; }
+:root[data-theme="dark"][data-course="computer"] { --accent: #e0b060; --accent-ink: #1e1400; --accent-soft: #332810; }
+:root[data-theme="dark"][data-course="algorithms"] { --accent: #5fc6d2; --accent-ink: #04222a; --accent-soft: #11313a; }
 
 *, *::before, *::after { box-sizing: inherit; }
 html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
