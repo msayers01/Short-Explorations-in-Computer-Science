@@ -68,9 +68,11 @@
       else if (t.cmd !== undefined) {
         name = name || t.cmd + ' prints the right thing'; io = true; expected = t.expect;
         const cwd = fs.cwd; fs.cwd = HOME; let out = '';
-        const hist = sh.history.length;
+        const hist = sh.history.slice(), lastExit = sh.lastExit;
         try { await sh.exec(t.cmd, { out: (s) => { out += s; }, err: (s) => { out += s; }, tty: false }); } catch (e) { out += 'error: ' + (e && e.message || e); }
-        sh.history.length = hist;   // the check's own command is not the student's
+        // the check's own command is not the student's: the history is put back as it was (a full history drops its oldest line on a push,
+        // so cutting it back to its old length would not do), and so is $?
+        sh.history.splice(0, sh.history.length, ...hist); sh.lastExit = lastExit;
         fs.cwd = cwd; got = out; ok = norm(out) === norm(t.expect);
       }
       else if (t.ran !== undefined) { name = name || 'a command like ' + String(t.ran); expected = 'typed'; ok = sh.history.some((h) => t.ran.test(h)); got = ok ? 'typed' : 'not typed yet'; }

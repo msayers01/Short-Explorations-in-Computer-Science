@@ -374,6 +374,98 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('no hooks: setup', await run2('setup x'), 'setup: nothing to set up here\n', 1);
   }
 
+  // ---- fixes found by comparing with bash and coreutils (each line is what bash prints)
+  {
+    const { run } = fresh();
+    await run("printf 'banana\\napple\\ncherry\\napple\\nBanana\\n10\\n9\\n100\\n' > fruit.txt; printf 'name,score\\nAda,90\\nBob,85\\nCy,90\\n' > grades.csv; printf 'the cat sat on the mat\\nthe dog\\n' > words.txt; mkdir -p notes/sub; touch notes/a.txt notes/b.md");
+    // brace words that do not expand stay as they are (they used to recurse until the stack overflowed); letter ranges
+    eq('braces: no expansion', await run('echo {} {x} a{b}c'), '{} {x} a{b}c\n', 0);
+    eq('braces: letter ranges', await run('echo {a..e} {e..c}'), 'a b c d e e d c\n', 0);
+    eq('braces: a huge range is left alone', await run('echo {1..5000} | wc -c'), '10\n', 0);
+    // an option made of digits (ls -1) is an option when the command knows it
+    eq('ls -1', await run('ls -1 notes'), 'a.txt\nb.md\nsub\n', 0);
+    eq('ls -1a', await run('ls -1a notes | head -2'), '.\n..\n', 0);
+    // a wildcard ending in / matches only directories, and keeps the slash
+    eq('glob */', await run('echo */ notes/*/'), 'notes/ notes/sub/\n', 0);
+    eq('ls -d */', await run('ls -d */'), 'notes/\n', 0);
+    // "$@" keeps each argument a word; shift
+    await run('printf \'for a in "$@"; do echo "[$a]"; done\\necho $#; shift; echo "$1" $#\\n\' > s.sh');
+    eq('"$@" and shift', await run('bash s.sh "one two" three'), '[one two]\n[three]\n2\nthree 1\n', 0);
+    eq('"$@" with no arguments is no word', await run('bash -c \'for a in "$@"; do echo "[$a]"; done; echo "x$@y"\''), 'xy\n', 0);
+    eq('shift with nothing to shift', await run('shift; echo $?'), '1\n', 0);
+    // -i asks first (the keyboard, or the pipe); anything but y is no
+    eq('rm -i: no', await run('rm -i fruit.txt; ls fruit.txt'), 'fruit.txt\n', 0);
+    eq('rm -i: yes', await run('cp fruit.txt f2; rm -i f2; ls f2', { ask: async () => 'y' }), "ls: cannot access 'f2': No such file or directory\n", 2);
+    eq('rm -i: answer from a pipe', await run('cp fruit.txt f3; echo y | rm -i f3; ls f3'), "rm: remove regular file 'f3'? ls: cannot access 'f3': No such file or directory\n", 2);
+    eq('cp -i: no', await run('echo old > o.txt; cp -i fruit.txt o.txt; cat o.txt'), 'old\n', 0);
+    eq('mv -i: yes', await run('echo old > o.txt; cp fruit.txt f4; mv -i f4 o.txt; head -1 o.txt', { ask: async () => 'yes' }), 'banana\n', 0);
+    let asked = ''; await run('echo old > o.txt; cp -i fruit.txt o.txt', { ask: async (p) => { asked = p; return 'n'; } });
+    check('cp -i: the question', asked, "cp: overwrite 'o.txt'? ");
+    // tail -n +N, head -n -N
+    eq('tail -n +2', await run('tail -n +2 grades.csv'), 'Ada,90\nBob,85\nCy,90\n', 0);
+    eq('head -n -2', await run('head -n -6 fruit.txt'), 'banana\napple\n', 0);
+    eq('head -3 still works', await run('head -3 fruit.txt | tail -1'), 'cherry\n', 0);
+    // printf: %o %e, and the format is reused only while it takes arguments
+    eq('printf %o %e', await run('printf "%x %o %e %.2E\\n" 255 8 1234.5 0.001'), 'ff 10 1.234500e+03 1.00E-03\n', 0);
+    eq('printf without conversions', await run('printf "hi\\n" a b'), 'hi\n', 0);
+    // grep: -o -x -e -L, basic regular expressions, POSIX classes
+    eq('grep -o', await run('grep -o an fruit.txt'), 'an\nan\nan\nan\n', 0);
+    eq('grep -ow', await run('grep -ow the words.txt'), 'the\nthe\nthe\n', 0);
+    eq('grep -x', await run('grep -x apple fruit.txt'), 'apple\napple\n', 0);
+    eq('grep -e', await run('grep -c -e apple fruit.txt'), '2\n', 0);
+    eq('grep -L', await run('grep -L the words.txt fruit.txt'), 'fruit.txt\n', 0);
+    eq('grep BRE \\|', await run("grep -c 'cherry\\|dog' fruit.txt words.txt"), 'fruit.txt:1\nwords.txt:1\n', 0);
+    eq('grep BRE + is literal', await run("grep 'p+' fruit.txt"), '', 1);
+    eq('grep BRE \\+ and groups', await run("grep '\\(an\\)\\{2\\}' fruit.txt; grep -c 'p\\+' fruit.txt"), 'banana\nBanana\n2\n', 0);
+    eq('grep -E', await run("grep -E '(an){2}|^9' fruit.txt"), 'banana\nBanana\n9\n', 0);
+    eq('grep [[:digit:]]', await run("grep '[[:digit:]]' fruit.txt"), '10\n9\n100\n', 0);
+    eq('grep \\< \\>', await run("grep -c '\\<at\\>' words.txt"), '0\n', 1);
+    eq('sed with a group', await run("echo banana | sed 's/\\(an\\)/[\\1]/'"), 'b[an]ana\n', 0);
+    // tr -c and [:alnum:]
+    eq('tr -c', await run('echo hello | tr -c a-z X'), 'helloX', 0);
+    eq('tr -cd', await run("echo 'Hello, World 42' | tr -cd '[:alpha:]'"), 'HelloWorld', 0);
+    eq('tr [:alnum:]', await run("echo 'ab-1' | tr -d '[:alnum:]'"), '-\n', 0);
+    eq('tr -cs', await run("echo 'a  b,,c' | tr -cs a-z ' '"), 'a b c ', 0);
+    // ${...}: length, slices, defaults; anything else is a bad substitution, not an empty string
+    eq('${#x} ${x:1:3}', await run('s=hello; echo ${#s} ${s:1:3} ${s:2}'), '5 ell llo\n', 0);
+    eq('${x:-d}', await run('n=x; e=; echo ${n:-d} ${nope:-d} ${e:-d} ${e-d2}. "${n:+set}" ${z:=zz} $z'), 'x d d . set zz zz\n', 0);
+    eq('${1:-d} in a script', await run('bash -c \'echo ${1:-none} ${2:-none}\' a'), 'a none\n', 0);
+    eq('bad substitution', await run('echo ${s/a/b}'), 'bash: ${s/a/b}: bad substitution\n', 1);
+    // sort -k N runs to the end of the line; -k N,M; -u compares keys
+    eq('sort -k 2', await run("printf 'a x 2\\nb x 1\\n' | sort -k 2"), 'b x 1\na x 2\n', 0);
+    eq('sort -k 2,2', await run("printf 'a x 2\\nb y 1\\nc x 1\\n' | sort -k 2,2"), 'a x 2\nc x 1\nb y 1\n', 0);
+    eq('sort -nu', await run("printf '1\\n01\\n1.0\\n2\\n' | sort -nu"), '1\n2\n', 0);
+    eq('sort -t, -k2 -n', await run('sort -t , -k 2 -n grades.csv | head -2'), 'name,score\nBob,85\n', 0);
+    // 2>&1 goes wherever the output goes at that point
+    eq('2>&1 > f', await run('ls nope 2>&1 > out.txt; echo ---; cat out.txt'), "ls: cannot access 'nope': No such file or directory\n---\n", 0);
+    eq('> f 2>&1', await run('ls nope > out.txt 2>&1; cat out.txt'), "ls: cannot access 'nope': No such file or directory\n", 0);
+    eq('2>&1 |', await run('ls nope 2>&1 | wc -l'), '1\n', 0);
+    // seq with decimals
+    eq('seq 0 0.1 0.3', await run('seq 0 0.1 0.3'), '0.0\n0.1\n0.2\n0.3\n', 0);
+    eq('seq 10 -2.5 0', await run('seq 10 -2.5 0 | tr "\\n" " "'), '10.0 7.5 5.0 2.5 0.0 ', 0);
+    eq('seq whole numbers', await run('seq 5 -2 1 | tr "\\n" " "'), '5 3 1 ', 0);
+    // mv and cp: the same file, a directory into itself
+    eq('mv f f', await run('mv fruit.txt fruit.txt'), "mv: 'fruit.txt' and 'fruit.txt' are the same file\n", 1);
+    eq('mv d d', await run('mkdir dd; mv dd dd'), "mv: cannot move 'dd' to a subdirectory of itself, 'dd/dd'\n", 1);
+    eq('mv d d/sub', await run('mv notes notes/sub'), "mv: cannot move 'notes' to a subdirectory of itself, 'notes/sub/notes'\n", 1);
+    eq('cp f f', await run('cp notes/a.txt notes/'), "cp: 'notes/a.txt' and 'notes/a.txt' are the same file\n", 1);
+    eq('cp -r d d/sub', await run('cp -r notes notes/sub'), "cp: cannot copy a directory, 'notes', into itself, 'notes/sub/notes'\n", 1);
+    // wc prints the total line whenever more than one file was named
+    eq('wc total with a missing file', await run('wc -l words.txt nope'), 'wc: nope: No such file or directory\n2 words.txt\n2 total\n', 1);
+  }
+  // ---- the grader puts the student's history back, even when it is full
+  {
+    const SG = require('./src/shellgrade.js');
+    const { sh } = fresh();
+    for (let i = 0; i < SHELL.LIMITS.history; i++) sh.history.push('cmd ' + i);
+    sh.lastExit = 3;
+    const r = await SG.grade({ tests: [{ cmd: 'echo graded', expect: 'graded' }, { ran: /echo graded/, name: 'not the grader' }] }, sh);
+    check('grader: cmd passes', r.results[0].ok, true);
+    check('grader: its command is not in the history', r.results[1].ok, false);
+    check('grader: history unchanged', sh.history.length === SHELL.LIMITS.history && sh.history[0] === 'cmd 0' && sh.history[sh.history.length - 1] === 'cmd ' + (SHELL.LIMITS.history - 1), true);
+    check('grader: $? unchanged', sh.lastExit, 3);
+  }
+
   // ---- saving and reloading a session's work
   {
     const { fs, run } = fresh();
