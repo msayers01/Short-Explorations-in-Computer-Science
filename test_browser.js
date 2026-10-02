@@ -402,11 +402,27 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await knn.locator('.knn-new').focus(); await page.keyboard.press('ArrowRight');
   const knnAfter = await knn.locator('.fig-status').first().textContent();
   check('k-NN figure: training and test scores for each k, and the arrow keys move the new fruit', /16 of 16[\s\S]*5 of 6/.test(k1) && /15 of 16[\s\S]*6 of 6/.test(k3) && /6\.8 cm wide/.test(knnBefore) && /6\.9 cm wide/.test(knnAfter), { k1, k3, knnBefore, knnAfter });
+  // SC 109 unit two: the perceptron stops after a clean pass, a learning rate of 0.25 flies off the valley, and the tree builder
+  // reaches five pure leaves by outlook, then humidity and wind
+  await goto('#/ml/5');
+  const pfig = page.locator('.fig-mount').filter({ has: page.locator('button:has-text("Next mistake")') }).first();
+  await pfig.locator('button:has-text("To the end")').click();
+  const pEnd = await pfig.locator('.fig-status').last().textContent();
+  await goto('#/ml/6');
+  const dfig = page.locator('.fig-mount').filter({ has: page.locator('select[aria-label="learning rate"]') }).first();
+  await dfig.locator('select').selectOption('0.25');
+  for (let i = 0; i < 4; i++) await dfig.locator('button:has-text("Step")').click();
+  const dEnd = await dfig.locator('.fig-status').last().textContent();
+  await goto('#/ml/7');
+  const tfig = page.locator('.fig-mount').filter({ has: page.locator('.dt-tree') }).first();
+  await tfig.locator('button', { hasText: /^outlook/ }).click(); await tfig.locator('button', { hasText: /^humidity/ }).first().click(); await tfig.locator('button', { hasText: /^windy/ }).first().click();
+  const tEnd = await tfig.locator('.fig-status').textContent();
+  check('SC 109 figures: perceptron converges, a big learning rate diverges, the tree builder finds the 5-leaf tree', /0 of 16[\s\S]*after 4 passes/.test(pEnd) && /off the picture/.test(dEnd) && /5 leaves/.test(tEnd), { pEnd, dEnd, tEnd });
   await goto('#/ml/1');
   const mlq = page.locator('.qc').first();
   await mlq.locator('.qc-opt').nth(1).click(); await mlq.locator('.qc-sure button').first().click();
   await goto('#/ml');
-  check('a course with named skills lists them in its skills map', (await page.locator('.review-panel .sk-chip').count()) === 12 && (await page.locator('.review-panel .sk-chip.sk-practising').count()) === 1, await page.locator('.review-panel').innerText().catch(() => 'no panel'));
+  check('a course with named skills lists them in its skills map', (await page.locator('.review-panel .sk-chip').count()) === 21 && (await page.locator('.review-panel .sk-chip.sk-practising').count()) === 1, await page.locator('.review-panel').innerText().catch(() => 'no panel'));
   await goto('#/scratch/4');
   check('the lesson map lists the parts and the side column follows the page', (await page.locator('.lesson-map li').count()) >= 4 && (await page.locator('.onpage li').count()) >= 4);
   const quiz = page.locator('.bq').first();

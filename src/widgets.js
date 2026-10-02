@@ -1598,4 +1598,142 @@ xs mapped kept result`;
     render();
     mount.append(svg, tools, status, b.test ? score : null, key);
   };
+  /* ---------- the perceptron: every mistake moves the line (SC 109 lesson 5) ---------- */
+  // The sixteen fruit of the knn figure, lemons +1 and oranges -1, trained with Rosenblatt's rule at a rate of 0.1, one step per
+  // fruit looked at. The line w0·width + w1·height + b = 0 is drawn after every step; a mistake moves it.
+  W.perceptron = function (mount) {
+    const DATA = [[7.4, 7.2, -1], [6.0, 8.0, 1], [7.8, 7.6, -1], [6.2, 8.4, 1], [7.0, 7.1, -1], [5.8, 7.6, 1], [7.6, 7.3, -1], [6.5, 8.6, 1],
+      [8.0, 7.8, -1], [6.1, 7.9, 1], [7.2, 7.0, -1], [6.4, 8.2, 1], [7.5, 7.7, -1], [6.9, 7.4, 1], [7.9, 7.3, -1], [6.3, 7.7, 1]];
+    const RATE = 0.1, MAX_EPOCHS = 60;
+    // the whole run, worked out once: one state per fruit looked at
+    const steps = [{ w: [0, 0], b: 0, at: -1, epoch: 0, mistake: false, errs: 0 }];
+    let w = [0, 0], bias = 0, done = false;
+    for (let ep = 1; ep <= MAX_EPOCHS && !done; ep++) {
+      let errs = 0;
+      DATA.forEach((d, i) => {
+        const s = w[0] * d[0] + w[1] * d[1] + bias, guess = s > 0 ? 1 : -1, wrong = guess !== d[2];
+        if (wrong) { w = [w[0] + RATE * d[2] * d[0], w[1] + RATE * d[2] * d[1]]; bias += RATE * d[2]; errs++; }
+        steps.push({ w: w.slice(), b: bias, at: i, epoch: ep, mistake: wrong, errs });
+      });
+      if (!errs) done = true;
+    }
+    const X0 = 5.5, X1 = 8.5, Y0 = 6.8, Y1 = 8.9, W0 = 560, H0 = 360, L = 46, R = 14, T = 12, B = 40;
+    const X = (v) => L + (v - X0) / (X1 - X0) * (W0 - L - R), Y = (v) => T + (1 - (v - Y0) / (Y1 - Y0)) * (H0 - T - B);
+    const svg = sv('svg', { viewBox: '0 0 ' + W0 + ' ' + H0, role: 'img', 'aria-label': 'Sixteen fruit and the perceptron\'s dividing line' });
+    const status = el('p', { class: 'fig-status', role: 'status' });
+    const r1 = (v) => (Math.round(v * 100) / 100).toFixed(2);
+    // the part of the line w0·x + w1·y + b = 0 inside the plot
+    function segment(st) {
+      const [a, c] = st.w, b = st.b, pts = [];
+      if (Math.abs(c) > 1e-9) for (const x of [X0, X1]) { const y = -(a * x + b) / c; if (y >= Y0 - 1e-9 && y <= Y1 + 1e-9) pts.push([x, y]); }
+      if (Math.abs(a) > 1e-9) for (const y of [Y0, Y1]) { const x = -(c * y + b) / a; if (x > X0 && x < X1) pts.push([x, y]); }
+      return pts.length >= 2 ? pts.slice(0, 2) : null;
+    }
+    function render(k) {
+      const st = steps[k];
+      svg.replaceChildren();
+      svg.append(sv('line', { x1: L, y1: Y(Y0), x2: W0 - R, y2: Y(Y0), stroke: 'var(--ink-2)' }), sv('line', { x1: L, y1: T, x2: L, y2: Y(Y0), stroke: 'var(--ink-2)' }));
+      for (let v = 6; v <= 8.5; v += 0.5) svg.append(txt(X(v), H0 - B + 16, v.toFixed(1), { 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-3)' }));
+      for (let v = 7; v <= 8.9; v += 0.5) svg.append(txt(L - 6, Y(v) + 4, v.toFixed(1), { 'text-anchor': 'end', 'font-size': 11, fill: 'var(--ink-3)' }));
+      svg.append(txt(W0 - R, H0 - 6, 'width (cm)', { 'text-anchor': 'end', 'font-size': 11, fill: 'var(--ink-2)' }), txt(L + 6, T + 10, 'height (cm)', { 'font-size': 11, fill: 'var(--ink-2)' }));
+      const seg = segment(st);
+      if (seg) svg.append(sv('line', { x1: X(seg[0][0]), y1: Y(seg[0][1]), x2: X(seg[1][0]), y2: Y(seg[1][1]), stroke: 'var(--accent)', 'stroke-width': 3 }));
+      DATA.forEach((d, i) => {
+        const hot = i === st.at, guess = st.w[0] * d[0] + st.w[1] * d[1] + st.b > 0 ? 1 : -1, wrongNow = guess !== d[2];
+        const attrs = { stroke: wrongNow ? 'var(--err)' : 'var(--ink)', 'stroke-width': wrongNow ? 2.5 : 1.2 };
+        svg.append(d[2] < 0 ? sv('circle', Object.assign({ cx: X(d[0]), cy: Y(d[1]), r: 7, fill: '#e67e22' }, attrs))
+          : sv('polygon', Object.assign({ points: [[0, -9], [8, 6], [-8, 6]].map(([dx, dy]) => (X(d[0]) + dx) + ',' + (Y(d[1]) + dy)).join(' '), fill: '#e3c614' }, attrs)));
+        if (hot) svg.append(sv('circle', { cx: X(d[0]), cy: Y(d[1]), r: 15, fill: 'none', stroke: st.mistake ? 'var(--err)' : 'var(--ok)', 'stroke-width': 2.5 }));
+      });
+      const wrongAll = DATA.filter((d) => (st.w[0] * d[0] + st.w[1] * d[1] + st.b > 0 ? 1 : -1) !== d[2]).length;
+      const head = k === 0 ? 'Before training: all weights 0, so every score is 0 and every fruit is called an orange.'
+        : 'Pass ' + st.epoch + ', fruit ' + (st.at + 1) + ' (' + (DATA[st.at][2] > 0 ? 'lemon' : 'orange') + '): ' + (st.mistake ? 'a mistake, so the weights move.' : 'right, so nothing changes.');
+      status.textContent = head + ' Weights ' + r1(st.w[0]) + ' and ' + r1(st.w[1]) + ', bias ' + r1(st.b) + '. Fruit on the wrong side now: ' + wrongAll + ' of 16.' + (seg ? '' : ' The dividing line is outside this part of the graph for now.') + (k === steps.length - 1 ? ' A whole pass with no mistake: training stops after ' + st.epoch + ' passes.' : '');
+    }
+    const ctl = stepper(steps.length, render, { interval: 120 });
+    const mistakesOnly = el('button', { class: 'btn sm', onclick: () => { let k = ctl.index + 1; while (k < steps.length - 1 && !steps[k].mistake) k++; ctl.stop(); ctl.set(k); } }, 'Next mistake');
+    const endBtn = el('button', { class: 'btn sm quiet', onclick: () => { ctl.stop(); ctl.set(steps.length - 1); } }, 'To the end');
+    ctl.el.insertBefore(mistakesOnly, ctl.el.lastChild); ctl.el.insertBefore(endBtn, ctl.el.lastChild);
+    mount.append(svg, ctl.el, status);
+  };
+
+  /* ---------- walking downhill: gradient descent on one weight, with a choice of learning rate (SC 109 lesson 6) ---------- */
+  // The error of the line y = w·x on the points (1, 2), (2, 4), (3, 6) is (14/3)(w − 2)², so its slope is (28/3)(w − 2). Each step
+  // moves w by −rate × slope. Rates below 3/28 ≈ 0.107 walk straight down; up to 3/14 ≈ 0.214 they zigzag in; above it they fly off.
+  W.descent = function (mount, b) {
+    const RATES = [0.01, 0.05, 0.1, 0.2, 0.25];
+    let rate = RATES.includes(b.rate) ? b.rate : 0.05;
+    const err = (w) => 14 / 3 * (w - 2) * (w - 2), slope = (w) => 28 / 3 * (w - 2);
+    const N = 12, W0 = 560, H0 = 300, L = 46, R = 14, T = 14, B = 34, WL = -1, WR = 5, EMAX = 45;
+    const X = (w) => L + (w - WL) / (WR - WL) * (W0 - L - R), Y = (e) => T + (1 - Math.min(e, EMAX) / EMAX) * (H0 - T - B);
+    const svg = sv('svg', { viewBox: '0 0 ' + W0 + ' ' + H0, role: 'img', 'aria-label': 'The error as a valley, and the steps of gradient descent' });
+    const status = el('p', { class: 'fig-status', role: 'status' });
+    let path = [];
+    const compute = () => { path = [0]; for (let i = 0; i < N; i++) path.push(path[i] - rate * slope(path[i])); };
+    function render(k) {
+      svg.replaceChildren();
+      svg.append(sv('line', { x1: L, y1: Y(0), x2: W0 - R, y2: Y(0), stroke: 'var(--ink-2)' }), sv('line', { x1: L, y1: T, x2: L, y2: Y(0), stroke: 'var(--ink-2)' }));
+      for (let w = WL; w <= WR; w++) svg.append(txt(X(w), H0 - B + 16, String(w), { 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-3)' }));
+      for (let e = 0; e <= EMAX; e += 15) svg.append(txt(L - 6, Y(e) + 4, String(e), { 'text-anchor': 'end', 'font-size': 11, fill: 'var(--ink-3)' }));
+      svg.append(txt(W0 - R, H0 - 4, 'w (the weight)', { 'text-anchor': 'end', 'font-size': 11, fill: 'var(--ink-2)' }), txt(L + 6, T + 10, 'error', { 'font-size': 11, fill: 'var(--ink-2)' }));
+      const pts = []; for (let w = WL; w <= WR + 1e-9; w += 0.05) pts.push(X(w) + ',' + Y(err(w)));
+      svg.append(sv('polyline', { points: pts.join(' '), fill: 'none', stroke: 'var(--ink-3)', 'stroke-width': 2 }));
+      const inView = (w) => w >= WL && w <= WR && err(w) <= EMAX;
+      for (let i = 0; i < k; i++) if (inView(path[i]) && inView(path[i + 1])) svg.append(sv('line', { x1: X(path[i]), y1: Y(err(path[i])), x2: X(path[i + 1]), y2: Y(err(path[i + 1])), stroke: 'var(--accent)', 'stroke-width': 1.5, 'stroke-dasharray': '4 3' }));
+      for (let i = 0; i <= k; i++) if (inView(path[i])) svg.append(sv('circle', { cx: X(path[i]), cy: Y(err(path[i])), r: i === k ? 8 : 4, fill: i === k ? 'var(--accent)' : 'var(--paper)', stroke: 'var(--accent)', 'stroke-width': 2 }));
+      const w = path[k], off = !inView(w);
+      status.textContent = 'Rate ' + rate + ', step ' + k + ': w = ' + (Math.abs(w) < 1e6 ? (Math.round(w * 1000) / 1000) : w.toExponential(2)) + ', error = ' + (err(w) < 1e6 ? (Math.round(err(w) * 1000) / 1000) : err(w).toExponential(2)) + '. ' +
+        (k === 0 ? 'Start at w = 0. The best line is w = 2, at the bottom of the valley.' : off ? 'The step was so big it jumped right over the valley and landed higher up the other side: off the picture.' : Math.abs(w - 2) < 0.005 ? 'At the bottom.' : (path[k] - 2) * (path[k - 1] - 2) < 0 ? 'It stepped over the bottom to the other side.' : 'Still walking down.');
+    }
+    const box = el('div', {});
+    let ctl = null;
+    const reset = () => { compute(); if (ctl) ctl.stop(); const fresh = stepper(N + 1, render, { interval: 700 }); if (ctl) ctl.el.replaceWith(fresh.el); else box.append(fresh.el); ctl = fresh; };
+    const pick = el('select', { 'aria-label': 'learning rate', onchange: (e) => { rate = +e.target.value; reset(); } }, RATES.map((r) => el('option', { value: String(r), selected: r === rate ? '' : null }, String(r))));
+    mount.append(svg, el('div', { class: 'fig-tools' }, el('label', {}, 'learning rate ', pick)), box, status);
+    reset();
+  };
+
+  /* ---------- building a decision tree on Quinlan's Saturday mornings (SC 109 lesson 7) ---------- */
+  // Table 1 of J. R. Quinlan, "Induction of Decision Trees", Machine Learning 1 (1986): fourteen mornings, four attributes, classes P and N.
+  // Any group that is not pure can be split by any attribute not used above it; each choice shows its information gain.
+  W.dtree = function (mount) {
+    const ATTRS = ['outlook', 'temperature', 'humidity', 'windy'];
+    const ROWS = [['sunny', 'hot', 'high', 'false', 'N'], ['sunny', 'hot', 'high', 'true', 'N'], ['overcast', 'hot', 'high', 'false', 'P'], ['rain', 'mild', 'high', 'false', 'P'],
+      ['rain', 'cool', 'normal', 'false', 'P'], ['rain', 'cool', 'normal', 'true', 'N'], ['overcast', 'cool', 'normal', 'true', 'P'], ['sunny', 'mild', 'high', 'false', 'N'],
+      ['sunny', 'cool', 'normal', 'false', 'P'], ['rain', 'mild', 'normal', 'false', 'P'], ['sunny', 'mild', 'normal', 'true', 'P'], ['overcast', 'mild', 'high', 'true', 'P'],
+      ['overcast', 'hot', 'normal', 'false', 'P'], ['rain', 'mild', 'high', 'true', 'N']];
+    const entropy = (rows) => { let h = 0; for (const c of ['P', 'N']) { const p = rows.filter((r) => r[4] === c).length / rows.length; if (p > 0) h -= p * Math.log2(p); } return h; };
+    const groups = (rows, a) => { const g = new Map(); for (const r of rows) { if (!g.has(r[a])) g.set(r[a], []); g.get(r[a]).push(r); } return g; };
+    const gain = (rows, a) => { let after = 0; for (const g of groups(rows, a).values()) after += g.length / rows.length * entropy(g); return entropy(rows) - after; };
+    const root = { rows: ROWS, used: [], split: null, kids: null };
+    const out = el('div', { class: 'dt-tree' });
+    const status = el('p', { class: 'fig-status', role: 'status' });
+    const f3 = (v) => (Math.round(v * 1000) / 1000).toFixed(3);
+    const countText = (rows) => { const p = rows.filter((r) => r[4] === 'P').length; return p + ' P, ' + (rows.length - p) + ' N'; };
+    function nodeEl(node, label) {
+      const pure = entropy(node.rows) === 0, li = el('li', { class: 'dt-node' + (pure ? ' dt-pure' : '') });
+      li.append(el('div', { class: 'dt-head' }, label ? el('b', {}, label + ': ') : null, node.rows.length + ' mornings, ' + countText(node.rows) + ' · entropy ' + f3(entropy(node.rows)) + ' bits',
+        pure ? el('span', { class: 'dt-leaf' }, ' → always ' + node.rows[0][4]) : null));
+      if (node.split != null) {
+        li.append(el('div', { class: 'dt-q' }, 'Ask: ', el('b', {}, ATTRS[node.split] + '?'), ' (gain ' + f3(gain(node.rows, node.split)) + ' bits) ',
+          el('button', { class: 'btn sm quiet', onclick: () => { node.split = null; node.kids = null; draw('Undone.'); } }, 'undo')));
+        li.append(el('ul', {}, [...node.kids.entries()].map(([v, k]) => nodeEl(k, v))));
+      } else if (!pure) {
+        const free = ATTRS.map((a, i) => i).filter((i) => !node.used.includes(i));
+        li.append(el('div', { class: 'dt-q' }, 'Split by: ', free.map((i) => el('button', { class: 'btn sm', onclick: () => {
+          node.split = i; node.kids = new Map([...groups(node.rows, i).entries()].map(([v, rows]) => [v, { rows, used: node.used.concat(i), split: null, kids: null }]));
+          draw('Split ' + node.rows.length + ' mornings by ' + ATTRS[i] + ': information gain ' + f3(gain(node.rows, i)) + ' bits.');
+        } }, ATTRS[i] + ' (' + f3(gain(node.rows, i)) + ')'))));
+      }
+      return li;
+    }
+    const leaves = (n) => (n.split == null ? [n] : [...n.kids.values()].flatMap(leaves));
+    function draw(msg) {
+      out.replaceChildren(el('ul', {}, nodeEl(root, '')));
+      const ls = leaves(root), impure = ls.filter((n) => entropy(n.rows) > 0).length;
+      status.textContent = (msg ? msg + ' ' : '') + (impure ? impure + (impure === 1 ? ' group is' : ' groups are') + ' still mixed.' : 'Every group is pure: the tree has ' + ls.length + ' leaves and gets all 14 mornings right.');
+    }
+    draw('Each button shows how much a question would reduce the uncertainty (its information gain, in bits).');
+    mount.append(out, status);
+  };
 })();

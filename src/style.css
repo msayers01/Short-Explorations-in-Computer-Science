@@ -1260,3 +1260,11 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .sk-chip a { display: inline-block; padding: 0.15rem 0.55rem; border: 1px solid var(--rule); border-left-width: 4px; border-radius: 3px; font-size: 0.85rem; color: var(--ink); text-decoration: none; }
 .sk-chip.sk-practising a { border-left-color: var(--warn, #b7791f); }
 .sk-chip.sk-secure a { border-left-color: var(--ok); font-weight: 600; }
+/* decision tree builder (widgets.js dtree) */
+.dt-tree ul { list-style: none; margin: 0; padding-left: 1.2rem; border-left: 2px solid var(--rule); }
+.dt-tree > ul { padding-left: 0; border-left: 0; }
+.dt-node { margin: 0.35rem 0; }
+.dt-head { font-family: var(--sans); font-size: 0.92rem; }
+.dt-pure > .dt-head { color: var(--ok); }
+.dt-leaf { font-weight: 600; }
+.dt-q { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; margin: 0.25rem 0 0.2rem; font-size: 0.9rem; }
