@@ -13,7 +13,15 @@ const UA = 'ShortExplorationsCS/1.0 (free CS lessons for schools; https://github
 const DIR = path.join(__dirname, '..', 'img');
 const ALLOWED = (lic) => /^(public domain|pd\b|pd-|cc0|cc[ -]by(-sa)?[ -]\d(\.\d)?|cc[ -]by(-sa)?$)/i.test(lic.trim()) && !/\b(nc|nd)\b/i.test(lic);
 const dedupe = (t) => { const h = t.length / 2; return t.length % 2 === 0 && t.slice(0, h) === t.slice(h) ? t.slice(0, h) : t; };   // Commons HTML can repeat a name in a hidden span
-const strip = (h) => String(h || '').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+// HTML from Commons to plain text: tags are removed until none are left (one pass can leave "<scr<b>ipt>" behind), any stray < or >
+// is dropped, and entities are decoded in one pass (decoding &amp; first would turn &amp;quot; into a quote). The result is only ever
+// shown as text, but it should be text.
+const ENTITIES = { amp: '&', quot: '"', '#39': "'", '#039': "'", apos: "'", nbsp: ' ' };
+const strip = (h) => {
+  let t = String(h || ''), prev;
+  do { prev = t; t = t.replace(/<[^<>]*>/g, ''); } while (t !== prev);
+  return t.replace(/[<>]/g, '').replace(/&(amp|quot|#0?39|apos|nbsp);/g, (m, e) => ENTITIES[e]).replace(/\s+/g, ' ').trim();
+};
 
 function curl(url, out) {
   for (let attempt = 1; attempt <= 8; attempt++) {
