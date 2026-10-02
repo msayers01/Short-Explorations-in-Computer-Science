@@ -56,6 +56,9 @@ site/
   test_course.js         node harness: solutions pass, starters fail, playgrounds run (per course)
   test_cppstep.js        node tests for the C++ memory stepper, including stepping every C++ course program
   test_subst.js          node tests for the substitution stepper: every Lisp playground steps without error and ends at the interpreter's value
+  test_diff.js           differential tests: src/java.js against javac/java 21, src/shell.js against bash (§11); difftest/ holds the probe
+                         programs, the program generator (javagen.js), the shell cases (shell.txt) and the accepted differences (known.json)
+  test_lessons.js        the lesson linter (§11); lint/exercise-ids.txt lists every exercise id ever published
   package.json           npm test runs all five courses and the node tests; npm run test:browser the browser tests; deps: skulpt, JSCPP,
                          esbuild, the typefaces, playwright-core (tests)
   .github/workflows/ci.yml   runs npm test, the build and the browser tests on every push to main and every pull request
@@ -493,9 +496,12 @@ in the tests) wraps method-writing exercises in a class with a `main`.
   `{name, main, expect}` for method exercises (`javautil.js` supplies `public class Main` and `main`; `ex.prelude` for imports), and with
   `ex.classes: true` the student's whole classes are tested by a `class Check` put in front of them. Line numbers in messages are shifted
   back to the student's lines.
-- **Testing.** `node test_java.js` checks the interpreter against outputs of real javac/java (expected strings were written from Java's
-  documented behaviour, not run against a JVM here); `node test_course.js java` grades the course; the browser test runs Java in the worker,
-  checks the lockdown and the Lab.
+- **Testing.** `node test_java.js` checks the interpreter against outputs of real javac/java; `node test_course.js java` grades the course;
+  the browser test runs Java in the worker, checks the lockdown and the Lab. `node test_diff.js java` (§11) runs every lesson example and
+  exercise of SC 106 and SC 107, the probe programs and generated programs on both the interpreter and a real JDK 21 and compares them.
+- **Floating point.** Arithmetic, `Math.sqrt/floor/ceil/rint/abs` and `pow` with small integer exponents are exact (IEEE rounding is the
+  same in both); `Math.sin/log/exp/pow/hypot/atan2...` use JavaScript's math library, which can differ from the JVM's in the last binary
+  digit (so the printed value can differ in its last decimal). The generated tests compare those to 12 significant digits.
 
 ## 9f. The practice terminal (`shell.js`, `terminal.js`)
 
@@ -604,6 +610,20 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
    are not in the page, programs cannot reach it (hostile code is sent into a worker and into a sandboxed iframe), an infinite loop cannot
    freeze the page and Stop ends it, the Lab's input, turtle, step-through and memory view work, graded exercises pass in the sandbox,
    and there is not one Content Security Policy violation. CI runs both on every push and pull request.
+   `npm test` ends with `test_lessons.js`, the lesson linter: every lesson opens with a story, has three quick checks (answer in range, a
+   why), graded exercises and a recap (or stretch goals); every HTML field is well formed and uses only real HTML elements (a C++ header
+   written as `<ctime>` in a caption is swallowed by the browser: write `&lt;ctime&gt;`); code-exercise hints are plain text; a Java or C++
+   example has no newline inside a string; exercise ids are unique, well formed, and none ever published has gone (`lint/exercise-ids.txt`;
+   `node test_lessons.js --update` records new ones); the Scratch course reads at grade 3-4 (Flesch-Kincaid, measured per lesson) and ends
+   each lesson with a block quiz. Two examples in a row and long headings are warnings.
+   `npm run test:diff` (`test_diff.js`, in CI with JDK 21) compares the site's own implementations with the real ones. Java: every lesson
+   example and exercise test of the Java courses (and each exercise's expected answer against what the JVM prints), the probe programs in
+   `difftest/java/`, and programs generated from a seed by `difftest/javagen.js` (typed expressions of every kind, printf formats, string
+   and collection operations, each statement in try/catch so exception messages are compared too), all compiled by one javac and run on
+   the JVM in parallel; output, stderr and exit code must agree. Shell: the command lines in `difftest/shell.txt` run on the same files in
+   the practice shell and in bash with GNU coreutils. Deliberate differences are listed with their reason in `difftest/known.json` (a listed
+   case that starts agreeing is reported, to be removed). `SEED=n COUNT=n node test_diff.js java` searches further: run a few seeds after
+   changing the interpreter. A part whose real tool is missing is skipped locally and fails in CI (`REQUIRE_DIFF=1`).
    A linter (ESLint, installed outside the project) with `no-undef`, `no-unused-vars` and the usual correctness rules
    should report nothing.
 3. Check in a browser, or headless with jsdom (installed outside the project so it stays out of the repository):

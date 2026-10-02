@@ -16,9 +16,11 @@ not written down there.
     node test_course.js python|lisp|cpp|math|modern|java   # one course; "modern" compiles with the real compiler, about 1.5 minutes
     node test_java.js      # the Java interpreter against what javac/java print (a few seconds)
     node test_shell.js     # the practice shell: file system, parser, every command, limits, hostile saved copies (a second)
+    node test_lessons.js   # the lesson linter (part of npm test); --update records new exercise ids in lint/exercise-ids.txt
+    npm run test:diff      # java.js against a real JDK 21, shell.js against bash (about 35 s; SEED=n COUNT=n searches further)
     npm run test:browser   # needs a built dist and Chromium (playwright-core); serves dist over a local http server; about 1.5 minutes
 
-CI (`.github/workflows/ci.yml`) runs install, `npm test`, build, `npm run test:browser` on every PR and push to main. CodeQL also runs.
+CI (`.github/workflows/ci.yml`) runs install, `npm test`, `npm run test:diff` (with JDK 21), build, `npm run test:browser` on every PR and push to main. CodeQL also runs.
 Cloudflare Workers Builds builds every PR (build command `npm run build`) and posts a preview URL. `dist/index.html`, `dist/_headers` and
 `dist/teacher-guide.html` ARE committed: rebuild and commit them with any change to `src/`. `dist/clang/` is not committed.
 
@@ -46,7 +48,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - **Everything from a link or a file is checked** before use: `TEACH.normalize/cleanSub`, `BACKUP` sanitizers, `ID_RE`, `hasLang`,
   null-prototype dictionaries (a key may be `__proto__`), size-capped `unpack`. Add a hostile-input test with each new field (see
   `test_backup.js`).
-- Ids of exercises are never renumbered (progress and portfolios are keyed by them).
+- Ids of exercises are never renumbered (progress and portfolios are keyed by them); `lint/exercise-ids.txt` and `test_lessons.js` enforce it.
 - Build nodes with `el()`; the DOM's `append` prints `null`/`false` as text.
 - JSCPP is patched (`patches/*.patch`, applied to node_modules by `scripts/patch-jscpp.js`, baked into `vendor/jscpp.min.js`).
 
@@ -61,6 +63,8 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - Queue/Deque/ArrayDeque have their own method tables (no index methods; `remove(x)` removes a value, `remove()` the head), as in Java.
   Comparator works only as a user class implementing `compare` (no lambdas). `%f %e %g` round the shortest decimal half-up, like
   `java.util.Formatter`. Exception messages follow JDK 21's wording. `test_java.js` expectations were produced by a real JDK: keep it so.
+- After changing `java.js` or `shell.js`, run `npm run test:diff` and a few extra seeds (`SEED=2 COUNT=40 node test_diff.js java`). A new
+  difference is a bug to fix; only a deliberate one goes in `difftest/known.json`, with its reason.
 - Exercises: whole programs with `{stdin, expect}`; methods with `{call, expect}` (the student writes only the `static` method; `prelude`
   for imports); whole classes with `ex.classes: true` and `{main, expect}`. Ids are `jv-<n>-<k>`.
 
@@ -144,4 +148,5 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   checks (`{ check, options, answer, why }`, one after each main idea, never two examples in a row without something between them),
   two graded exercises (`ex`) with hints and tests, then a `recap`. Check facts in the stories; do not invent. The renderer labels every
   block and builds a map of the lesson from the `<h2>` headings, so headings should be short and the lesson's parts in the usual order.
+  `test_lessons.js` checks the structure, the HTML of every field (a C++ header in a caption must be `&lt;ctime&gt;`) and the Scratch reading level.
 - A function-writing exercise in a Full C++ course: use `prelude` for includes, `main` (or `call`) tests, and `name` on each test.

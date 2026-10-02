@@ -32,6 +32,18 @@ jobs:
       - name: Tests
         run: npm test
 
+      # The site's Java interpreter against the real JDK, and its practice shell against bash and GNU coreutils (difftest/known.json
+      # lists the differences that are deliberate). Exception messages follow JDK 21, so that is the JDK used.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Differential tests
+        run: npm run test:diff
+        env:
+          REQUIRE_DIFF: 1
+
       - name: Build
         run: npm run build
 

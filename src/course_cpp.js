@@ -1580,7 +1580,7 @@ int main() {
     srand(7);
     cout << rand() % 100 << " " << rand() % 100 << " " << rand() % 100 << endl;
     return 0;
-}`, caption: 'The same seed replays the same sequence; a different seed gives a different one. Add #include <ctime> and srand(time(0)), and each run differs.' },
+}`, caption: 'The same seed replays the same sequence; a different seed gives a different one. Add #include &lt;ctime&gt; and srand(time(0)), and each run differs.' },
         { check: "Why does a program that never calls <code>srand</code> print the same \"random\" numbers every run?", options: ["A bug in rand", "The seed is always the same, so the sequence is the same", "The compiler caches them"], answer: 1, why: "The numbers are pseudorandom: a fixed rule applied from a seed. srand(time(0)) seeds from the clock." },
         `<h2>How much can you trust a simulation?</h2>
 <p>A fair die shows each face with probability 1/6. Roll it 60 times and a face will rarely come up exactly 10 times; roll it 6000 times and each face comes up close to 1000 times, as a fraction much closer to 1/6. That the fraction settles down as the number of trials grows is the <em>law of large numbers</em>. Lesson 6's tally array shows it.</p>`,

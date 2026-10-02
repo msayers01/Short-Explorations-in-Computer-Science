@@ -1,0 +1,32 @@
+{
+  "java": {
+    "dsa/7/play2": "StackOverflowError: the JVM allows about ten times deeper recursion than our 1200 frames (MAX_DEPTH), so the stack trace is shorter (ARCHITECTURE §9e).",
+    "corpus/probe-d1.java": "ArrayStoreException (storing an Integer into a String[] seen as Object[]) is not modelled: arrays do not check the runtime type of what is stored.",
+    "corpus/probe-f1.java": "== between two Strings compares the text, a deliberate choice (lesson 2 teaches the trap with a listing instead).",
+    "corpus/probe-fz.java": "Float.toString and %f of a float that falls exactly halfway (215969.625f) round the other way; doubles agree.",
+    "corpus/probe-g.java": "Object.hashCode / toString of a plain Object: identity hash codes cannot match the JVM's."
+  },
+  "shell": {
+    "tail -3 noeol.txt": "A file without a final newline: the practice terminal ends the output with one, so the prompt starts on a fresh line (a deliberate display choice).",
+    "tail -1 noeol.txt": "A file without a final newline: the practice terminal ends the output with one, so the prompt starts on a fresh line (a deliberate display choice).",
+    "cat -n noeol.txt": "A file without a final newline: the practice terminal ends the output with one, so the prompt starts on a fresh line (a deliberate display choice).",
+    "rev noeol.txt": "A file without a final newline: the practice terminal ends the output with one, so the prompt starts on a fresh line (a deliberate display choice).",
+    "tac noeol.txt": "tac on a file without a final newline: GNU glues the last two lines together; ours keeps them apart.",
+    "wc < fruit.txt": "wc reading standard input: GNU sizes the columns from the file it can see behind the redirection; ours always uses width 7, as GNU does for a pipe.",
+    "echo one two | read a b; echo \"[$a]\"": "Each part of a pipeline runs in the same shell here, so read in a pipeline sets the variable (bash runs it in a subshell).",
+    "[[ -f fruit.txt ]] && echo yes": "[[ ]] is not supported: the course teaches [ ].",
+    "f() { echo hi; }; f": "Shell functions are not supported; the parser says so.",
+    "case x in x) echo yes;; esac": "case is not supported; the parser says so.",
+    "find notes -name \"*.txt\"": "find lists entries in the file system's own order, which differs between machines; ours lists them sorted.",
+    "find notes -maxdepth 1": "find lists entries in the file system's own order, which differs between machines; ours lists them sorted.",
+    "find . -name \"*.txt\" -exec echo {} \\;": "find -exec is not supported (use a pipe to xargs).",
+    "type ls cd": "The practice computer keeps its commands in /bin; the host's are in /usr/bin.",
+    "which ls": "The practice computer keeps its commands in /bin; the host's are in /usr/bin.",
+    "tree notes": "tree is not installed on the machine running the test; ours has it.",
+    "echo ~/notes ~student": "~student: the practice computer has a user called student; the machine running the test does not.",
+    "echo $0": "$0 is the script file on the real side (the test runs each case as a script) and bash in the terminal.",
+    "echo ${#HOME}": "HOME is a temporary directory on the real side, so its length differs.",
+    "echo ${s/a/b}; echo after": "${var/pattern/replacement} is not supported: it reports a bad substitution.",
+    ")": "Run as a script, bash also echoes the offending line; at the prompt it prints only the message, as ours does."
+  }
+}

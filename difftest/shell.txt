@@ -1,0 +1,820 @@
+# Differential cases for the practice shell (test_diff.js). The files below exist in the home directory for every case;
+# each case is one or more command lines, separated by a line of ===. Lines starting with # are comments.
+@file fruit.txt
+banana
+apple
+cherry
+apple
+Banana
+10
+9
+100
+@end
+@file nums.txt
+3
+10
+2
+-1
+2
+@end
+@file grades.csv
+name,score
+Ada,90
+Bob,85
+Cy,90
+@end
+@file words.txt
+the cat sat on the mat
+the dog
+@end
+@file noeol.txt
+one
+two\noeol
+@end
+@file notes/a.txt
+alpha
+@end
+@file notes/b.md
+beta
+@end
+@file notes/sub/c.txt
+gamma
+@end
+@file sp ace.txt
+x
+@end
+sort fruit.txt
+===
+sort -n nums.txt
+===
+sort -u fruit.txt
+===
+sort -t , -k 2 -n grades.csv
+===
+sort -k2 words.txt
+===
+sort fruit.txt | uniq -c
+===
+uniq -c fruit.txt
+===
+wc fruit.txt
+===
+wc -l fruit.txt nums.txt
+===
+wc < fruit.txt
+===
+cat fruit.txt | wc -l
+===
+wc -l *.txt
+===
+wc noeol.txt
+===
+cut -d , -f 2 grades.csv
+===
+cut -c 1-3 fruit.txt
+===
+cut -d , -f 1,2 grades.csv | head -2
+===
+echo hello | tr a-z A-Z
+===
+echo hello world | tr -d lo
+===
+echo "aa  bb" | tr -s ' '
+===
+echo hello | tr -c a-z X
+===
+echo "Hello, World 42" | tr -cd '[:alpha:]'
+===
+grep -o apple fruit.txt
+===
+grep -c a fruit.txt nums.txt
+===
+grep -e apple fruit.txt
+===
+grep 'a\|b' fruit.txt
+===
+grep 'p+' fruit.txt
+===
+grep -E 'p+' fruit.txt
+===
+grep -rn alpha notes
+===
+grep -l a *.txt
+===
+grep -w the words.txt
+===
+grep -n the words.txt
+===
+grep -v a fruit.txt
+===
+grep missing nofile.txt
+===
+grep -i BANANA fruit.txt
+===
+head -n 2 fruit.txt
+===
+head -2 fruit.txt nums.txt
+===
+tail -n 2 fruit.txt
+===
+tail -n +2 grades.csv
+===
+head -n -2 fruit.txt
+===
+tail -3 noeol.txt
+===
+head -c 5 fruit.txt
+===
+tail -1 noeol.txt
+===
+grep -o an fruit.txt
+===
+grep -c an fruit.txt
+===
+echo */
+===
+ls -d */
+===
+echo notes/*
+===
+echo *.txt
+===
+echo "*.txt"
+===
+echo n*/
+===
+echo notes/*/
+===
+echo [ab]*
+===
+echo [!f]*.txt
+===
+echo nomatch*
+===
+ls nomatch*
+===
+mv fruit.txt notes; ls notes
+===
+mv notes notes/sub
+===
+mv fruit.txt nums.txt nope
+===
+mv notes/a.txt .; ls
+===
+cp notes/a.txt notes/a.txt
+===
+cp -r notes notes2; ls notes2
+===
+cp -r notes notes2; cp -r notes notes2; ls notes2
+===
+mkdir d; mv notes d; mv d/notes .; ls
+===
+mv fruit.txt notes/sub/../../f2.txt; ls
+===
+cp fruit.txt notes/sub/; ls notes/sub
+===
+cp notes x
+===
+rm notes
+===
+rmdir notes
+===
+mkdir notes
+===
+mkdir -p notes/sub
+===
+cd notes; cd -; pwd
+===
+cd; cd -
+===
+cd notes/sub/../..; pwd
+===
+cd ..; pwd
+===
+cd nope
+===
+cd fruit.txt
+===
+cd /; ls -d ..
+===
+cd notes && cd sub && pwd && cd ../.. && pwd
+===
+echo $((5/2)) $((2**10)) $((7%3)) $((-2**2))
+===
+x=5; echo $((x+1)) $(( x * 2 ))
+===
+x=5; echo $((x++)) $x
+===
+echo 'a  b' "c  d" e\ \ f
+===
+a="x  y"; echo $a "$a"
+===
+echo "$HOME" ~ '~' "~"
+===
+echo a{b,c}d {1..3}
+===
+echo {a..e}
+===
+echo "{1..3}"
+===
+false; echo $?
+===
+true && echo yes || echo no
+===
+nosuchcmd; echo $?
+===
+ls nope; echo $?
+===
+cat nope 2>/dev/null; echo $?
+===
+echo hi > out.txt; cat out.txt; echo bye >> out.txt; cat out.txt
+===
+cat < nope
+===
+echo hi > nodir/x
+===
+ls nope > out.txt 2>&1; cat out.txt
+===
+ls nope 2>&1 > out.txt; echo ---; cat out.txt
+===
+echo hi | cat > out.txt; cat out.txt
+===
+sort fruit.txt > fruit.txt; cat fruit.txt
+===
+echo one two | read a b; echo "[$a]"
+===
+echo $#
+===
+set -- a b; echo $#
+===
+echo {}
+===
+echo {x}
+===
+echo {a,b}{1,2}
+===
+mkdir -p {x,y}/z && ls -d */
+===
+touch file{1..3}.txt; ls file*
+===
+printf '#!/bin/bash\nfor a in "$@"; do echo "[$a]"; done\n' > s.sh; bash s.sh "one two" three
+===
+printf '#!/bin/bash\necho $# "$1"\nshift\necho $1\n' > s.sh; bash s.sh a b c
+===
+printf 'echo hi\n' > s.sh; ./s.sh
+===
+printf 'echo hi\n' > s.sh; chmod +x s.sh; ./s.sh; echo $?
+===
+for f in *.txt; do echo "$f"; done
+===
+for i in 1 2 3; do echo $i; done | sort -r
+===
+i=0; while [ $i -lt 3 ]; do echo $i; i=$((i+1)); done
+===
+while read line; do echo "got $line"; done < grades.csv
+===
+while read -r a b; do echo "$b"; done < words.txt
+===
+if [ -f fruit.txt ]; then echo yes; else echo no; fi
+===
+[ abc -gt 1 ]; echo $?
+===
+[ "$x" = "" ] && echo empty
+===
+test 3 -lt 10 && echo lt
+===
+[ 3 \< 10 ]; echo $?
+===
+[[ -f fruit.txt ]] && echo yes
+===
+printf "%s=%d\n" a 1 b 2
+===
+printf "%5.1f|%-4s|%03d\n" 3.14159 ab 7
+===
+printf "%s\n"
+===
+printf "50%%\n"
+===
+printf "%x %o %e\n" 255 8 1234.5
+===
+echo -e "a\tb\nc"
+===
+echo -n hi; echo
+===
+echo "a\nb"
+===
+seq 3
+===
+seq 0 0.1 0.3
+===
+seq 2 2 9
+===
+seq -w 8 10
+===
+echo $(ls notes | wc -l)
+===
+n=$(wc -l < fruit.txt); echo "$n lines"
+===
+echo "$(echo hi)"
+===
+ls notes
+===
+ls -F notes
+===
+ls -a notes
+===
+ls notes/sub notes
+===
+ls fruit.txt notes
+===
+tree notes
+===
+find notes -name "*.txt"
+===
+find . -type d
+===
+find notes -maxdepth 1
+===
+find notes/ -name a.txt
+===
+diff fruit.txt nums.txt
+===
+diff fruit.txt fruit.txt; echo $?
+===
+cat -n noeol.txt
+===
+nl fruit.txt
+===
+rev noeol.txt
+===
+tac noeol.txt
+===
+cat noeol.txt fruit.txt
+===
+sed 's/a/X/g' fruit.txt
+===
+sed 's/\(an\)/[\1]/' fruit.txt
+===
+sed -n '2,3p' fruit.txt
+===
+sed '1d' grades.csv
+===
+sed 's/a/[&]/' fruit.txt
+===
+echo "a b c" | xargs -n 1 echo
+===
+echo a.txt | xargs touch; ls a.txt
+===
+cat fruit.txt | head -3 | tail -1
+===
+ls | grep txt
+===
+type ls cd
+===
+which ls
+===
+echo $PWD
+===
+cd notes; echo $OLDPWD
+===
+echo "it's" 'a'"b" \*
+===
+x=hi; echo "${x}y" "$xy" $x.txt
+===
+x='*.txt'; echo $x; echo "$x"
+===
+cat "sp ace.txt"; rm sp\ ace.txt; ls
+===
+echo hi # comment
+===
+echo a#b
+===
+echo hi;
+===
+echo hi |
+===
+echo "unterminated
+===
+)
+===
+echo hi && 
+===
+x=~; echo $x
+===
+echo ~/notes ~student
+===
+cd ~/notes; pwd
+===
+ls ~/notes/../notes
+===
+echo $((1+))
+===
+echo $((10/0))
+===
+v=3; echo $(( v > 2 ))
+===
+echo "$(( 3 + 4 ))"
+===
+echo `echo hi`
+===
+a=1 b=2; echo $a$b
+===
+a=1 echo $a
+===
+echo "a" > out.txt; echo "b" >> out.txt; wc -l < out.txt
+===
+cat fruit.txt | sort | uniq -c | sort -rn | head -3
+===
+sort -rn nums.txt
+===
+sort -n fruit.txt
+===
+sort -r fruit.txt
+===
+sort -f fruit.txt
+===
+sort -k 2 -t, grades.csv
+===
+uniq -d fruit.txt
+===
+sort fruit.txt | uniq -d
+===
+sort fruit.txt | uniq -u
+===
+sort fruit.txt | uniq -ci
+===
+cut -f 1 grades.csv
+===
+cut -d , -f 3 grades.csv
+===
+cut -d ' ' -f 2- words.txt
+===
+cut -d, -f2 grades.csv | sort -n | tail -1
+===
+wc -w words.txt
+===
+wc -c words.txt
+===
+wc -lw words.txt
+===
+wc words.txt nope
+===
+cat words.txt | wc
+===
+echo hello | wc -c
+===
+grep -c the words.txt
+===
+grep "the" words.txt fruit.txt
+===
+grep -h the words.txt fruit.txt
+===
+grep "^a" fruit.txt
+===
+grep -n "" noeol.txt
+===
+grep -x apple fruit.txt
+===
+grep -ic BANANA fruit.txt
+===
+grep -vc a fruit.txt
+===
+grep -l the words.txt fruit.txt
+===
+grep -L the words.txt fruit.txt
+===
+grep -r gamma .
+===
+grep -r gamma
+===
+grep a notes
+===
+grep '[0-9]' fruit.txt
+===
+grep '\.' grades.csv
+===
+grep '[[:digit:]]' fruit.txt
+===
+grep -E '^[0-9]+$' fruit.txt
+===
+grep 'a.*e' fruit.txt
+===
+echo "x" | grep -q x && echo found
+===
+ls | grep -v txt
+===
+mv fruit.txt FRUIT.txt; ls
+===
+mv nope x
+===
+mv fruit.txt
+===
+cp fruit.txt
+===
+cp nope x
+===
+cp -r notes/ copy; ls copy
+===
+cp notes/*.txt .; ls
+===
+mkdir a; mv a a
+===
+mv fruit.txt fruit.txt
+===
+mkdir -p d/e; mv notes d; ls d d/notes
+===
+mkdir e; touch e/notes; mv notes e
+===
+mkdir e; mkdir e/notes; touch e/notes/x; mv notes e
+===
+rm -r notes; ls
+===
+rm -rf nope; echo $?
+===
+rm -i fruit.txt; ls fruit.txt
+===
+rmdir notes/sub
+===
+rm notes/*.txt; ls notes
+===
+touch notes; ls -d notes
+===
+mkdir a b c; ls -d a b c
+===
+mkdir notes/sub/x/y
+===
+mkdir -p notes/sub/x/y; find notes -type d
+===
+ls -R notes
+===
+ls -R
+===
+cd notes; ls -R .
+===
+ls -1 notes/*
+===
+ls notes/sub/c.txt notes/a.txt
+===
+ls -a
+===
+ls .
+===
+ls ..
+===
+head -n0 fruit.txt; echo x
+===
+head -n3 fruit.txt
+===
+tail -n 0 fruit.txt; echo x
+===
+cat -n fruit.txt words.txt
+===
+cat fruit.txt nope words.txt
+===
+cat -
+===
+echo hi | cat - words.txt
+===
+echo hi | cat words.txt -
+===
+echo a b | tee t.txt | wc -w; cat t.txt
+===
+echo hi > out.txt 2> err.txt; ls
+===
+ls > out.txt; cat out.txt
+===
+echo "$(ls)"
+===
+echo $(ls)
+===
+for f in $(ls *.txt); do echo "<$f>"; done
+===
+for f in *; do [ -d "$f" ] && echo "dir $f"; done; echo end
+===
+x=3; if [ $x -gt 2 ]; then echo big; elif [ $x -gt 1 ]; then echo mid; else echo small; fi
+===
+for i in {1..3}; do echo -n "$i "; done; echo
+===
+count=0; for f in *.txt; do count=$((count+1)); done; echo $count
+===
+echo $RANDOM | grep -cE '^[0-9]+$'
+===
+if grep -q apple fruit.txt; then echo has; fi
+===
+! grep -q zzz fruit.txt && echo none
+===
+[ -z "" ] && echo empty; [ -n "x" ] && echo notempty
+===
+[ ! -f nope ] && echo nofile
+===
+[ -f fruit.txt -a -d notes ] && echo both
+===
+[ fruit.txt ]; echo $?
+===
+[ ]; echo $?
+===
+[ -f ]; echo $?
+===
+test; echo $?
+===
+[ 1 -eq 1 ] && [ 2 -eq 2 ] && echo ok
+===
+[ 1 = 1 ; echo $?
+===
+[ a == a ] && echo eq
+===
+[ "a b" = "a b" ] && echo eq
+===
+[ 010 -eq 10 ] && echo eq
+===
+[ " 5" -eq 5 ] && echo eq
+===
+read x < fruit.txt; echo $x
+===
+echo "  lead  trail  " | { read a; echo "[$a]"; }
+===
+echo "a   b   c" | { read x y; echo "[$y]"; }
+===
+printf "%s\n" "  x  " | { read -r v; echo "[$v]"; }
+===
+{ echo a; echo b; } > out.txt; cat out.txt
+===
+(cd notes; pwd); pwd
+===
+echo $0
+===
+f() { echo hi; }; f
+===
+case x in x) echo yes;; esac
+===
+echo $(( 2 + 3 * 4 )) $(( (2+3)*4 )) $(( 7 / 2 )) $(( -7 / 2 )) $(( -7 % 3 ))
+===
+echo $(( 3 > 2 && 1 ))
+===
+x=5; echo $((x)); echo $(($x+1))
+===
+echo $(( 08 ))
+===
+echo ${#HOME}
+===
+s=hello; echo ${s:1:3}
+===
+name=x; echo ${name:-default} ${unset:-default}
+===
+ls -1
+===
+ls -1a notes
+===
+touch .hid; echo .*
+===
+echo notes/.*
+===
+echo "a,b" | tr -d '[:punct:]'
+===
+echo "Hi 5" | tr '[:upper:]' '[:lower:]'
+===
+echo abc | tr -d '[:alnum:]'
+===
+echo "a-b" | tr '-' '_'
+===
+echo "a-b" | tr 'a-' 'xy'
+===
+echo hello | tr el ip
+===
+echo hello | tr -s l
+===
+printf '%s\n' 1.5 -2.5 0.25 | sort -n
+===
+cp -i fruit.txt nums.txt; cat nums.txt
+===
+mv -i fruit.txt nums.txt; ls
+===
+x=1; x=$((x+1)); echo $x
+===
+echo $((x+=2))
+===
+sort nope
+===
+uniq nope
+===
+head nope
+===
+wc nope
+===
+cut -d , -f 1 nope
+===
+echo "a b" > "my file.txt"; cat my\ file.txt; ls
+===
+cat notes
+===
+cat notes/*.txt
+===
+echo hi > notes
+===
+ls -l nope
+===
+mkdir
+===
+touch
+===
+rm
+===
+cd notes sub
+===
+echo $1 $2
+===
+bash -c 'echo $1 $#' x y z
+===
+sh -c 'exit 3'; echo $?
+===
+printf 'exit 4\n' > s.sh; bash s.sh; echo $?
+===
+printf 'echo a\nexit 2\necho b\n' > s.sh; chmod +x s.sh; ./s.sh; echo $?
+===
+printf 'echo one\nnosuch\n' > s.sh; bash s.sh; echo $?
+===
+printf '#!/bin/bash\nname=$1\necho "Hello, ${name}!"\n' > s.sh; bash s.sh Ada
+===
+printf 'for f in "$@"; do echo $f; done\n' > s.sh; bash s.sh a b
+===
+printf '#!/bin/bash\nif [ $# -eq 0 ]; then echo "usage"; exit 1; fi\necho ok\n' > s.sh; bash s.sh; echo $?
+===
+printf 'a x 2\nb x 1\n' | sort -k 2
+===
+printf 'Ada 90\nBob 85\nCy 90\n' | sort -k 2 -rn
+===
+printf '1\n01\n1.0\n' | sort -nu
+===
+ls nope 2>&1 | wc -l
+===
+find . -name "*.txt" -exec echo {} \;
+===
+echo {} {x} {a..e} {e..a}
+===
+ls -1 notes
+===
+echo */ notes/*/
+===
+printf 'for a in "$@"; do echo "[$a]"; done\necho $#; shift; echo $1 $#\n' > s.sh; bash s.sh "one two" three
+===
+printf 'for a in "$@"; do echo "[$a]"; done; echo "x$@y"\n' > s.sh; bash s.sh
+===
+echo y | rm -i fruit.txt; ls fruit.txt
+===
+echo n | rm -i fruit.txt; ls fruit.txt
+===
+echo n | cp -i fruit.txt nums.txt; cat nums.txt
+===
+echo y | mv -i fruit.txt nums.txt; ls
+===
+tail -n 2 fruit.txt; head -3 fruit.txt
+===
+printf "%x %o %e %E %.2e\n" 255 8 1234.5 0.001 99
+===
+printf "%s\n" a b c
+===
+printf "hi\n" a b
+===
+grep -on 'a.' words.txt
+===
+grep 'p\+' fruit.txt
+===
+grep -E 'p+|^9' fruit.txt
+===
+grep '[^[:alpha:]]' fruit.txt
+===
+grep '\(an\)\{2\}' fruit.txt
+===
+grep -E '(an){2}' fruit.txt
+===
+grep '*a' fruit.txt
+===
+grep -ow the words.txt
+===
+grep '\<the\>' words.txt
+===
+echo abc1 | tr -d '[:alnum:]'
+===
+echo "a  b,,c" | tr -cs 'a-z' ' '
+===
+name=x; echo ${name:-default} ${unset:-default} ${unset-d2} "${name:+set}"
+===
+echo ${z:=zz}; echo $z
+===
+s=hello; echo ${s:1:3}; echo after
+===
+printf 'a x 2\nb y 1\nc x 1\n' | sort -k 2,2
+===
+seq 1 0.5 3
+===
+seq 5 -1 3
+===
+seq 10 -2.5 0
+===
+cp notes/a.txt notes/
+===
+cp -r notes notes/sub
+===
+s=hello; echo ${s:1:3} ${s:2} ${s:9}; echo after
+===
+echo ${s/a/b}; echo after
