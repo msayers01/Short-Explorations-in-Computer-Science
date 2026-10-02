@@ -75,7 +75,13 @@ const scripts = [
   'src/portfolio.js',
   'src/classroom.js',
   'src/ojibwe.js',
-  'src/about.js'
+  'src/about.js',
+  'src/algos.js',      // the #/algorithms page: the frame and the shared player; the demos follow
+  'src/algo_search.js',
+  'src/algo_sort.js',
+  'src/algo_paths.js',
+  'src/algo_games.js',
+  'src/applied.js'     // the #/real-world page: where the ideas of the courses are used
 ];
 // Third-party code bundled into the page, with each licence text read from the installed package, so the credits
 // on #/about always match what is bundled (the MIT licence asks for its notice to accompany every copy).

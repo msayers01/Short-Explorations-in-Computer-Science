@@ -53,6 +53,7 @@
 :root[data-course="scratch"] { --accent: #c2185b; --accent-soft: #fbe4ec; }
 :root[data-course="shell"] { --accent: #3d4a5c; --accent-soft: #e6e9ef; }
 :root[data-course="computer"] { --accent: #8a5a10; --accent-soft: #f6ecd9; }
+:root[data-course="algorithms"] { --accent: #0b6e7a; --accent-soft: #e0f1f3; }   /* the #/algorithms pages: the colour of the lessons' figures */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
@@ -70,6 +71,7 @@
   :root:not([data-theme="light"])[data-course="scratch"] { --accent: #f48fb1; --accent-ink: #2a0712; --accent-soft: #3a1a26; }
   :root:not([data-theme="light"])[data-course="shell"] { --accent: #b9c4d6; --accent-ink: #121620; --accent-soft: #262b36; }
   :root:not([data-theme="light"])[data-course="computer"] { --accent: #e0b060; --accent-ink: #1e1400; --accent-soft: #332810; }
+  :root:not([data-theme="light"])[data-course="algorithms"] { --accent: #5fc6d2; --accent-ink: #04222a; --accent-soft: #11313a; }
 }
 :root[data-theme="dark"] {
   --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
@@ -85,6 +87,9 @@
 :root[data-theme="dark"][data-course="java"] { --accent: #f0907e; --accent-ink: #2a0d08; --accent-soft: #3a1f1a; }
 :root[data-theme="dark"][data-course="dsa"] { --accent: #dc9fd8; --accent-ink: #26091f; --accent-soft: #341a32; }
 :root[data-theme="dark"][data-course="scratch"] { --accent: #f48fb1; --accent-ink: #2a0712; --accent-soft: #3a1a26; }
+:root[data-theme="dark"][data-course="shell"] { --accent: #b9c4d6; --accent-ink: #121620; --accent-soft: #262b36; }
+:root[data-theme="dark"][data-course="computer"] { --accent: #e0b060; --accent-ink: #1e1400; --accent-soft: #332810; }
+:root[data-theme="dark"][data-course="algorithms"] { --accent: #5fc6d2; --accent-ink: #04222a; --accent-soft: #11313a; }
 
 *, *::before, *::after { box-sizing: inherit; }
 html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
@@ -1084,6 +1089,49 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .bq-msg { min-height: 1.4em; }
 @media (max-width: 640px) { .sb-pair { grid-template-columns: minmax(0, 1fr); } .sb-arrow { display: none; } }
 
+/* ---------- the courses page and the grouped catalogue (app.js: coursesPage, groupedCatalog) */
+.courses-head h1 { font-size: 2.4rem; font-weight: 400; margin-bottom: 0.6rem; }
+.courses-tools { display: flex; flex-wrap: wrap; gap: 0.8rem 1.4rem; align-items: center; margin: 1.4rem 0 0.4rem; }
+.course-search { font: inherit; font-family: var(--sans); font-size: 1rem; color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 3px; padding: 0.5rem 0.7rem; flex: 1 1 18rem; max-width: 26rem; }
+.course-search:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.group-jump { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; font-family: var(--sans); font-size: 0.92rem; }
+.group-jump a { color: var(--ink-2); }
+.course-group { margin-top: 2rem; scroll-margin-top: 1rem; }
+.course-group .group-title { font-size: 1.25rem; display: flex; align-items: baseline; gap: 0.7rem; border-bottom: 1px solid var(--rule); padding-bottom: 0.35rem; }
+.group-count { font-family: var(--sans); font-size: 0.82rem; color: var(--ink-3); font-weight: 400; }
+.group-blurb { color: var(--ink-2); margin: 0.5rem 0 0.2rem; }
+.group-empty { color: var(--ink-2); margin-top: 2rem; }
+.more-pages { font-family: var(--sans); font-size: 0.95rem; margin-top: 1.4rem; }
+
+/* ---------- Algorithms in motion (src/algos.js and the demos in src/algo_*.js) */
+.algos { max-width: 66rem; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+.algos-head h1, .algo-one h1 { font-size: 2.4rem; font-weight: 400; }
+.algos-head { border-bottom: 2px solid var(--accent); padding-bottom: 1.2rem; margin-bottom: 1rem; }
+.algos-group { margin-top: 2.2rem; }
+.algos-group h2 { font-size: 1.35rem; margin-bottom: 0.8rem; }
+.algo-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.9rem; }
+.algo-card { border: 1px solid var(--rule); border-radius: 4px; padding: 0.9rem 1rem; background: var(--paper); }
+.algo-card:hover { border-color: var(--ink-3); }
+.algo-card-link { text-decoration: none; color: var(--ink); font-family: var(--serif); font-size: 1.15rem; }
+.algo-card-link::after { content: ''; }
+.algo-card-blurb { color: var(--ink-2); font-size: 0.95rem; margin: 0.35rem 0 0; }
+.algo-one .crumbs { font-family: var(--sans); font-size: 0.9rem; color: var(--ink-3); margin-bottom: 0.6rem; }
+.algo-host { margin: 1.4rem 0 1rem; }
+.algo-canvas { width: 100%; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); overflow: hidden; line-height: 0; }
+.algo-canvas canvas { display: block; touch-action: none; }
+.algo-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.6rem; margin: 0.7rem 0; font-family: var(--sans); font-size: 0.92rem; }
+.algo-controls select, .algo-controls input[type=number] { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 3px; padding: 0.3rem 0.4rem; }
+.algo-speed-label { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--ink-2); }
+.algo-speed { width: 8rem; accent-color: var(--accent); }
+.algo-status { margin-left: auto; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.algo-legend { display: flex; flex-wrap: wrap; gap: 0.3rem 1.1rem; font-family: var(--sans); font-size: 0.85rem; color: var(--ink-2); margin: 0.4rem 0; }
+.algo-legend i { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 2px; margin-right: 0.35rem; vertical-align: -0.1em; }
+.algo-about { margin-top: 1.6rem; }
+.algo-taught { font-family: var(--sans); font-size: 0.92rem; color: var(--ink-2); }
+.algo-pager { display: flex; justify-content: space-between; gap: 1rem; margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--rule); font-family: var(--sans); font-size: 0.92rem; }
+.algo-error { color: var(--err); }
+@media (max-width: 560px) { .algos-head h1, .algo-one h1, .courses-head h1 { font-size: 1.9rem; } .algo-status { margin-left: 0; width: 100%; } }
+
 </style>
 </head>
 <body>
@@ -1152,6 +1200,8 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
   <p>Courses marked <b>Under development</b> on the site (From Scratch to Python, Modern C++, Java, Data Structures and Algorithms) are being written: their lessons are complete and checked, but more are coming and details may change.</p>
   <p><b>Suggested paths.</b> A one-semester elective: Python, then the mathematics course. A two-year sequence adds C++, Java and Lisp. A single Hour of Code event: Python lesson 1 alone.</p>
   <p><b>Lesson length.</b> Programming lessons take 45–60 minutes. Mathematics lessons take 60–90, because proofs are read slowly. Any lesson likely to run past an hour is marked "Longer than an hour" in its course list, with an estimate; split it over two periods.</p>
+  <p><b>Finding a course.</b> The <em>Courses</em> button in the top bar lists every course in three groups (start here, programming languages, computer science), with a search box: type a language, a topic or a grade.</p>
+  <p><b>Two pages to use alongside any course.</b> <em>Algorithms</em> (top bar) shows searching, sorting, path-finding, mazes and game search moving one step at a time: project one while you explain it, or let students change the input and count the steps. <em>Real world</em> takes each idea the courses teach and says where it is used in software, cybersecurity, engineering and science, which jobs use it, and which lesson teaches it. It answers "when will we ever use this?", and it is a good opener for a lesson.</p>
 </section>
 
 <section id="g-3">

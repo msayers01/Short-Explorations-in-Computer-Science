@@ -67,6 +67,8 @@ window.GUIDE = (function () {
   <p>Courses marked <b>Under development</b> on the site (From Scratch to Python, Modern C++, Java, Data Structures and Algorithms) are being written: their lessons are complete and checked, but more are coming and details may change.</p>
   <p><b>Suggested paths.</b> A one-semester elective: Python, then the mathematics course. A two-year sequence adds C++, Java and Lisp. A single Hour of Code event: Python lesson 1 alone.</p>
   <p><b>Lesson length.</b> Programming lessons take 45–60 minutes. Mathematics lessons take 60–90, because proofs are read slowly. Any lesson likely to run past an hour is marked "Longer than an hour" in its course list, with an estimate; split it over two periods.</p>
+  <p><b>Finding a course.</b> The <em>Courses</em> button in the top bar lists every course in three groups (start here, programming languages, computer science), with a search box: type a language, a topic or a grade.</p>
+  <p><b>Two pages to use alongside any course.</b> <em>Algorithms</em> (top bar) shows searching, sorting, path-finding, mazes and game search moving one step at a time: project one while you explain it, or let students change the input and count the steps. <em>Real world</em> takes each idea the courses teach and says where it is used in software, cybersecurity, engineering and science, which jobs use it, and which lesson teaches it. It answers "when will we ever use this?", and it is a good opener for a lesson.</p>
 </section>
 
 <section id="g-3">

@@ -105,6 +105,9 @@ site/
     tour.js              the guided tour (the Tour button in the top bar) → window.TOUR (§9a)
     ojibwe.js            Ojibwe interface words, their sources, the review page (#/ojibwe) → window.OJIBWE
     about.js             About and credits page (#/about) → window.ABOUT
+    algos.js             the #/algorithms page (§9g): demo registry, index and demo pages, shared player and canvas → window.ALGOS
+    algo_search.js, algo_sort.js, algo_paths.js, algo_games.js   the demos (§9g); each also exports selfTest() for test_algos.js
+    applied.js           the #/real-world page (§9g): topics, where each is used, jobs, lesson links → window.APPLIED
 ```
 
 **Script order in `build.js` matters:** (window.BUILD) → cppstep → scheme → subst → site →
@@ -139,7 +142,10 @@ Hash routes; a `?query` after the path is split off first.
 
 | Route | Page |
 |---|---|
-| `#/` | home (greeting, Ojibwe clock, course catalog, Code Lab card, portfolio and teacher links, footer with About and "Reset my progress") |
+| `#/` | home (greeting, Ojibwe clock, course catalog in groups, Code Lab card, portfolio and teacher links, footer with About and "Reset my progress") |
+| `#/courses` | every course in groups (`COURSE_GROUPS` in app.js; a course in no group is listed under "More courses"), with a search box |
+| `#/algorithms`, `#/algorithms/<demo-id>` | Algorithms in motion: the index of demos, or one demo (§9g) |
+| `#/real-world`, `#/real-world/<topic-id>` | where the ideas of the courses are used, scrolled to a topic (§9g) |
 | `#/<course>` | course page (audience, outcomes, lesson list with progress) |
 | `#/<course>/<n>` | lesson n (1-based) |
 | `#/<course>/<n>/<exercise-id>` | lesson n, scrolled to that exercise |
@@ -558,6 +564,30 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   `setup NAME` in the Code Lab's terminal writes a lesson's tree into the home directory (`terminal.js: mount`).
 - **Not there (yet):** job control (`&`), functions, `case`, `[[ ]]`, arrays, `${x:-default}`, here-documents, `awk`, `tar`, `ssh` and
   anything needing a network (those names answer with a sentence saying so), a Windows `cmd`/PowerShell dialect (planned with the course).
+
+## 9g. Algorithms in motion and Where it is used (`algos.js`, `algo_*.js`, `applied.js`)
+
+- **The top bar** has four links: Courses (`#/courses`, marked on every course page too), Algorithms, Real world, Code Lab. A link per course
+  crowded it once there were ten courses; the courses page groups them instead (start here; programming languages; computer science).
+- **Algorithms in motion.** `algos.js` is the frame: `ALGOS.register({ id, title, group, blurb, mount(host, api) → cleanup, about, taught })`,
+  the index (demos by `ALGOS.GROUPS`, in registration order) and one page per demo (crumbs, the demo, its `about`, "Taught in" links, previous
+  and next). `api.player` gives every demo the same Play / Pause / Step / Reset and a log-scale speed slider over a generator of steps (many
+  steps per animation frame; it pauses when the tab is hidden and stops when its host leaves the page); `api.canvas` is a canvas as wide as its
+  container, sharp on high-density screens, redrawn on resize and theme change; `api.rng` is seeded. Leaving the page calls the demo's
+  cleanup. The pages use a teal accent (`data-course="algorithms"`).
+- **The demos** (12): searching (linear against binary, guess my number, interpolation), sorting (eleven sorts in four views with optional
+  sound, and a race of up to four), paths and graphs (grid path-finding with BFS, DFS, Dijkstra, A*, greedy best-first, walls, mud and
+  diagonals; graph traversal with the queue or stack shown), mazes (seven generators, six solvers), games (minimax and alpha-beta on a tree,
+  unbeatable tic-tac-toe, Connect Four with depth-limited alpha-beta run in time slices, Nim by the XOR rule). Each file keeps the algorithms
+  as pure generators apart from the drawing, injects its own `<style id="algo-…-css">` with the site's variables, and exports `selfTest()`.
+- **Adding a demo:** register it from an `algo_*.js` file listed in `build.js` after `algos.js` (and in `test_algos.js`), keep the algorithm
+  pure and test it in `selfTest()`, use `api.player` and `api.canvas`, link the lessons in `taught` (`#/<course>/<n>`; `test_algos.js`
+  checks the form, `test_browser.js` checks every demo opens and plays at 1280 and 390 px wide with no sideways scrolling).
+- **Where it is used** (`#/real-world`): `APPLIED.TOPICS`, each `{ id, title, idea, uses: [{ f: field, t: text }], jobs, learn: [href],
+  teach }`, rendered with a filter by field (software engineering, cybersecurity, engineering & science, data & AI, games & graphics, web &
+  mobile), a search box, contents, and a by-course index for teachers. Lesson links are labelled from `window.COURSES` at page time and a
+  link to a missing lesson is left out; `test_browser.js` checks every link resolves. Every example names a real system or event: check it
+  before adding one, and keep the two that describe this site true when the site changes.
 
 ## 10. Adding things — recipes
 
