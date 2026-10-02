@@ -40,7 +40,7 @@
     },
     scheme: {
       comment: /;.*$/m, string: /"(?:[^"\\]|\\.)*"/,
-      keywords: 'define lambda if cond else let let* begin and or set! quote when unless do'.split(' '),
+      keywords: 'define lambda if cond else let let* begin and or set! quote when unless do case letrec'.split(' '),
       builtins: 'car cdr cons list map filter reduce append reverse length null? pair? display newline eq? equal? number? symbol? cadr caddr cddr apply error not zero? even? odd? abs square'.split(' '),
       tab: '  '
     },
@@ -446,6 +446,10 @@
       const r = Scheme.runProgram(code);
       if (r.error) return { passed: false, results, error: r.error };
       for (const t of ex.tests) {
+        if (t.call === undefined) {   // an input → output test (teacher assignments): the whole program's output
+          results.push({ name: t.name || 'program output', expected: t.expect, got: r.output, ok: norm(r.output) === norm(t.expect), err: null, io: true });
+          continue;
+        }
         try {
           const outBefore = r.it.output.length;
           const v = r.it.evaluate(Scheme.parseAll(t.call)[0], r.it.G);
@@ -491,7 +495,7 @@
   // Confirmations happen in the button itself (click again to confirm) rather than in a confirm() dialog,
   // which embedded pages often cannot show.
   function armConfirm(btn, armedLabel, onYes) {
-    if (btn.dataset.armed) { clearTimeout(+btn.dataset.timer); btn.textContent = btn.dataset.label; delete btn.dataset.armed; onYes(); return; }
+    if (btn.dataset.armed) { clearTimeout(+btn.dataset.timer); btn.textContent = btn.dataset.label; delete btn.dataset.armed; btn.classList.remove('armed'); onYes(); return; }
     btn.dataset.label = btn.textContent; btn.textContent = armedLabel; btn.dataset.armed = '1'; btn.classList.add('armed');
     btn.dataset.timer = setTimeout(() => { btn.textContent = btn.dataset.label; delete btn.dataset.armed; btn.classList.remove('armed'); }, 4000);
   }
@@ -743,15 +747,17 @@
   // The map of a lesson: its parts in order (story, sections, quiz, exercises, recap) as links, and what it contains.
   // Sections are numbered, matching the numbers the page puts on the headings.
   const partTitle = (parts, p) => p.kind === 'section' ? (parts.filter((q) => q.kind === 'section').indexOf(p) + 1) + '. ' + p.title : p.title;
-  function lessonMap(parts) {
+  // A link to one part of a lesson: a click scrolls; a new tab or a copied link opens the lesson at that part.
+  const partLink = (course, idx, p, text) => el('a', { href: '#/' + course.id + '/' + (idx + 1) + '/' + p.id, onclick: (e) => { if (e.button || e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); const t = document.getElementById(p.id); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, text);
+  function lessonMap(parts, course, idx) {
     const n = parts.counts || {};
     const bits = [];
     if (n.plays) bits.push(n.plays + (n.plays === 1 ? ' example' : ' examples'));
     if (n.figs) bits.push(n.figs + ' interactive');
-    if (n.checks) bits.push(n.checks + ' quick checks');
+    if (n.checks) bits.push(n.checks + (n.checks === 1 ? ' quick check' : ' quick checks'));
     if (n.exercises) bits.push(n.exercises + (n.exercises === 1 ? ' exercise' : ' exercises'));
     return el('nav', { class: 'lesson-map', 'aria-label': 'Parts of this lesson' },
-      el('ol', {}, parts.map((p) => el('li', { class: 'map-' + p.kind }, el('a', { href: '#' + p.id, onclick: (e) => { e.preventDefault(); const t = document.getElementById(p.id); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, partTitle(parts, p))))),
+      el('ol', {}, parts.map((p) => el('li', { class: 'map-' + p.kind }, partLink(course, idx, p, partTitle(parts, p))))),
       bits.length ? el('p', { class: 'map-counts' }, bits.join(' · ')) : null);
   }
   // The "on this page" list in the side column follows the reader: the part in view is marked.
@@ -917,8 +923,8 @@
     art.append(el('header', { class: 'lesson-head' }, el('p', { class: 'crumb' }, el('a', { href: '#/' + course.id }, course.code), ' · ', lbl('lesson', ' ' + (idx + 1)), devTag(course, true)), el('h1', {}, L.title), el('p', { class: 'lead' }, L.summary),
       (() => { const m = lessonMinutes(course, L); return m > LONG_LESSON ? el('p', { class: 'lesson-time' }, 'This lesson may take longer than an hour: about ' + about5(m) + ' minutes. Plan for two sessions, or leave the exercises for the next one.') : null; })()));
     const parts = []; const body = renderBlocks(L.blocks, course, idx, parts);
-    art.append(lessonMap(parts), body);
-    if (parts.length) { const onPage = el('div', { class: 'onpage' }, el('p', { class: 'onpage-head' }, 'On this page'), el('ol', {}, parts.map((p) => el('li', { class: 'map-' + p.kind }, el('a', { href: '#' + p.id, onclick: (e) => { e.preventDefault(); const t = document.getElementById(p.id); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, partTitle(parts, p)))))); nav.append(onPage); setTimeout(() => watchParts(parts, onPage.querySelector('ol')), 0); }
+    art.append(lessonMap(parts, course, idx), body);
+    if (parts.length) { const onPage = el('div', { class: 'onpage' }, el('p', { class: 'onpage-head' }, 'On this page'), el('ol', {}, parts.map((p) => el('li', { class: 'map-' + p.kind }, partLink(course, idx, p, partTitle(parts, p)))))); nav.append(onPage); setTimeout(() => watchParts(parts, onPage.querySelector('ol')), 0); }
     const prev = idx > 0 ? el('a', { class: 'pager prev', href: '#/' + course.id + '/' + idx }, el('span', {}, 'Previous'), course.lessons[idx - 1].title) : el('span');
     const next = idx < course.lessons.length - 1 ? el('a', { class: 'pager next', href: '#/' + course.id + '/' + (idx + 2) }, el('span', {}, 'Next'), course.lessons[idx + 1].title) : el('a', { class: 'pager next', href: '#/' + course.id }, el('span', {}, 'Finished'), 'Back to ' + course.code);
     art.append(el('footer', { class: 'lesson-foot' }, prev, next));

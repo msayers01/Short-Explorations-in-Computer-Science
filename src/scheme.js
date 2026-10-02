@@ -20,7 +20,7 @@
     quote: sym('quote'), define: sym('define'), lambda: sym('lambda'), if: sym('if'), cond: sym('cond'), else: sym('else'),
     let: sym('let'), letstar: sym('let*'), begin: sym('begin'), and: sym('and'), or: sym('or'), set: sym('set!'), arrow: sym('=>'),
     quasi: sym('quasiquote'), unquote: sym('unquote'), when: sym('when'), unless: sym('unless'), letrec: sym('letrec'), dot: sym('.'),
-    do: sym('do'), splice: sym('unquote-splicing')
+    do: sym('do'), splice: sym('unquote-splicing'), case: sym('case')
   };
 
   const list = (...xs) => { let r = NIL; for (let i = xs.length - 1; i >= 0; i--) r = new Pair(xs[i], r); return r; };
@@ -161,7 +161,7 @@
     // (the non-tail recursion in the lessons: (+ 1 (f (- n 1))) ...) is limited by MAX_STACK, not by the JS call stack.
     // Tail positions reuse the current frame, so tail calls take constant space. do, named-let inits, letrec and
     // quasiquote still recurse into evaluate(); they are never what makes a program deep.
-    const F = { IF: 1, SEQ: 2, DEF: 3, SET: 4, APP: 5, COND: 6, ARROW: 7, AND: 8, OR: 9, WHEN: 10, LET: 11, LETSTAR: 12 };
+    const F = { IF: 1, SEQ: 2, DEF: 3, SET: 4, APP: 5, COND: 6, ARROW: 7, AND: 8, OR: 9, WHEN: 10, LET: 11, LETSTAR: 12, CASE: 13 };
     const MAX_STACK = 200000;
     const ill = (x) => new SchemeError('Ill-formed special form: ' + write(x));
 
@@ -201,6 +201,9 @@
                 x = b.car; continue main;
               }
               case S.cond: stack.push({ k: F.COND, c: x.cdr, x, env, fresh: true }); val = undefined; break step;
+              case S.case:   // (case key ((d1 d2 ...) body...) ... (else body...)): the key is compared with eqv?
+                if (!(x.cdr instanceof Pair)) throw ill(x);
+                stack.push({ k: F.CASE, x, env }); x = x.cdr.car; continue main;
               case S.and: {
                 const c = x.cdr; if (c === NIL) { val = true; break step; }
                 if (c.cdr !== NIL) stack.push({ k: F.AND, rest: c.cdr, env });
@@ -302,6 +305,18 @@
               val = UNSPEC; continue ret;
             }
             case F.ARROW: { val = apply(val, [f.t]); continue ret; }
+            case F.CASE: {
+              const key = val, same = (d) => d === key || (typeof d === 'bigint' || typeof key === 'bigint') && typeof d !== 'object' && typeof key !== 'object' && Number(d) === Number(key);
+              let hit = null;
+              for (let c = f.x.cdr.cdr; c instanceof Pair; c = c.cdr) {
+                const clause = c.car;
+                if (!(clause instanceof Pair)) throw ill(f.x);
+                if (clause.car === S.else || (clause.car instanceof Pair || clause.car === NIL) && arr(clause.car).some(same)) { hit = clause; break; }
+              }
+              if (!hit || hit.cdr === NIL) { val = UNSPEC; continue ret; }
+              if (hit.cdr instanceof Pair && hit.cdr.car === S.arrow) { stack.push({ k: F.ARROW, t: key }); x = hit.cdr.cdr.car; env = f.env; continue main; }
+              x = new Pair(S.begin, hit.cdr); env = f.env; continue main;
+            }
             case F.AND: {
               if (val === false) continue ret;
               const r = f.rest;
@@ -483,12 +498,17 @@
       if (/^[-+]?\d+\/\d+$/.test(s)) { const [a, b] = s.split('/'); return parseFloat(a) / parseFloat(b); }
       return false;
     }, 1, 2);
-    def('symbol->string', ([s]) => s.name, 1, 1); def('string->symbol', ([s]) => sym(s), 1, 1);
-    def('string-append', (a) => a.join(''), 0); def('string-length', ([s]) => s.length, 1, 1);
-    def('string=?', ([a, b]) => a === b, 2, 2); def('string<?', ([a, b]) => a < b, 2, 2);
+    const str = (x, who) => { if (typeof x !== 'string') throw new SchemeError('The object ' + write(x) + ', passed as an argument to ' + who + ', is not the correct type.'); return x; };
+    const strCmp = (name, ok) => def(name, (a) => { a.forEach((s) => str(s, name)); for (let i = 1; i < a.length; i++) if (!ok(a[i - 1], a[i])) return false; return true; }, 1);
+    def('symbol->string', ([s]) => { if (!(s instanceof Sym)) throw new SchemeError('The object ' + write(s) + ', passed as the first argument to symbol->string, is not the correct type.'); return s.name; }, 1, 1);
+    def('string->symbol', ([s]) => sym(str(s, 'string->symbol')), 1, 1);
+    def('string-append', (a) => a.map((s) => str(s, 'string-append')).join(''), 0); def('string-length', ([s]) => str(s, 'string-length').length, 1, 1);
+    strCmp('string=?', (a, b) => a === b); strCmp('string<?', (a, b) => a < b); strCmp('string>?', (a, b) => a > b);
+    strCmp('string<=?', (a, b) => a <= b); strCmp('string>=?', (a, b) => a >= b);
+    def('string-ref', ([s, k]) => { str(s, 'string-ref'); if (!Number.isInteger(k) || k < 0 || k >= s.length) throw new SchemeError('The object ' + write(k) + ', passed as the second argument to string-ref, is not in the correct range.'); return s[k]; }, 2, 2);
     def('substring', ([s, a, b]) => { if (typeof s !== 'string') throw new SchemeError('The object ' + write(s) + ', passed as the first argument to substring, is not the correct type.'); const e = b === undefined ? s.length : b; if (!Number.isInteger(a) || a < 0 || a > s.length) throw new SchemeError('The object ' + write(a) + ', passed as the second argument to substring, is not in the correct range.'); if (!Number.isInteger(e) || e < a || e > s.length) throw new SchemeError('The object ' + write(e) + ', passed as the third argument to substring, is not in the correct range.'); return s.substring(a, e); }, 2, 3);
-    def('string-upcase', ([s]) => s.toUpperCase(), 1, 1); def('string-downcase', ([s]) => s.toLowerCase(), 1, 1);
-    def('list->string', ([l]) => arr(l).join(''), 1, 1); def('string->list', ([s]) => fromArr(s.split('')), 1, 1);
+    def('string-upcase', ([s]) => str(s, 'string-upcase').toUpperCase(), 1, 1); def('string-downcase', ([s]) => str(s, 'string-downcase').toLowerCase(), 1, 1);
+    def('list->string', ([l]) => arr(l).join(''), 1, 1); def('string->list', ([s]) => fromArr(str(s, 'string->list').split('')), 1, 1);
     def('runtime', () => Date.now() / 1000, 0, 0); def('real-time', () => Date.now(), 0, 0);
     def('void', () => UNSPEC, 0);
     def('assert', ([x]) => { if (x === false) throw new SchemeError('Assertion failed'); return UNSPEC; }, 1, 1);

@@ -40,7 +40,7 @@
     document.body.append(block, spot, card);
     document.body.classList.add('tour-on');
     state = { i: -1, spot, card, block, navigating: false };
-    state.onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); end(); } else if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); go(state.i + 1); } else if (e.key === 'ArrowLeft') { e.preventDefault(); go(state.i - 1); } };
+    state.onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); end(); } else if (e.key === 'ArrowRight' || (e.key === 'Enter' && !(e.target && e.target.closest && e.target.closest('button, a')))) { e.preventDefault(); go(state.i + 1); } else if (e.key === 'ArrowLeft') { e.preventDefault(); go(state.i - 1); } };
     state.onMove = () => { if (state && state.target) place(); };
     state.onHash = () => { if (state && !state.navigating) end(); };   // the reader went somewhere else: the tour steps aside
     document.addEventListener('keydown', state.onKey);

@@ -473,8 +473,12 @@ in the tests) wraps method-writing exercises in a class with a `main`.
   `'add(E)'`, `'sort(List<T>)'`): String, StringBuilder, the boxed types, Math, System (`out`, `err`, `in`, `exit`, `arraycopy`),
   PrintStream (`print`/`println` overloads, `printf`/`format` with `%d %s %f %e %x %c %b %n`, flags, width, precision, grouping, and
   `IllegalFormatConversionException` when the types disagree), Scanner (on `System.in` or a String; the `nextInt`/`nextLine` trap behaves as
-  in Java), Random, Arrays, Collections, ArrayList/LinkedList/List, HashMap/TreeMap/Map/Map.Entry, HashSet/TreeSet/Set, Iterable,
-  Comparable, Object, Class (`getSimpleName`), and the exception hierarchy as real classes a program can extend.
+  in Java), Random, Arrays, Collections, Objects, ArrayList/LinkedList/List, Queue/Deque/ArrayDeque (own method tables, no index
+  methods: `remove(x)` removes a value, as in Java), HashMap/TreeMap/Map/Map.Entry, HashSet/TreeSet/Set (TreeSet/TreeMap navigation:
+  `floor`, `higher`, `firstEntry`, `headMap`, ... returning copies, not views), Iterable/Iterator (with `remove`), Comparable, Comparator (a
+  user class implementing `compare`; `reversed`, `Collections.reverseOrder`), Object, Class (`getSimpleName`), and the exception hierarchy
+  as real classes a program can extend. `%f %e %g` round the shortest decimal half-up, as `java.util.Formatter` does (not `toFixed`).
+  Exception messages use JDK 21's wording (`Index 5 out of bounds for length 3`, `Range [2, 1) out of bounds for length 3`).
 - **Not covered** (the parser says so in plain words): generics in user classes, lambdas and method references, nested/anonymous/local
   classes, enums, records, interfaces with default-method bodies on user classes are fine but `switch` patterns are not, try-with-resources,
   streams, threads, files, checked-exception analysis (`throws` is parsed and ignored). `==` between two Strings compares the text (Java

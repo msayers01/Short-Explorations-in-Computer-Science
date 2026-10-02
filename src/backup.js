@@ -249,7 +249,7 @@
     const save = el('button', { class: 'btn', onclick: () => {
       const content = collect(storage, { teacher: !!(teacherRow && teacherChk.checked) });
       const s = summarize(content.data);
-      if (!s.exercises && !s.programs && !s.portfolio && !s.received && !s.assignments && !(content.data.progress && keys(content.data.progress.code).length)) { note('There is nothing saved on this device yet, so there is nothing to put in a file.'); return; }
+      if (!s.exercises && !s.programs && !s.portfolio && !s.received && !s.assignments && !s.terminal && !(content.data.progress && keys(content.data.progress.code).length)) { note('There is nothing saved on this device yet, so there is nothing to put in a file.'); return; }
       const blob = new Blob([JSON.stringify(content, null, 1)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = el('a', { href: url, download: 'short-explorations-work-' + content.saved.slice(0, 10) + '.json' });

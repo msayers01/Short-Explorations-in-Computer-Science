@@ -87,19 +87,21 @@
         else {
           while (j < n && /[0-9_]/.test(src[j])) j++;
           if (src[j] === '.' && /[0-9]/.test(src[j + 1] || '')) { isFloat = true; j++; while (j < n && /[0-9_]/.test(src[j])) j++; }
-          else if (src[j] === '.' && !/[A-Za-z_]/.test(src[j + 1] || '')) { isFloat = true; j++; }
+          else if (src[j] === '.' && (!/[A-Za-z_]/.test(src[j + 1] || '') || (/[eE]/.test(src[j + 1]) && /[0-9+\-]/.test(src[j + 2] || '')) || (/[fFdD]/.test(src[j + 1]) && !/[A-Za-z0-9_$]/.test(src[j + 2] || '')))) { isFloat = true; j++; }   // 1. 1.e1 1.f
           if (/[eE]/.test(src[j] || '') && /[0-9+\-]/.test(src[j + 1] || '')) { isFloat = true; j += 2; while (j < n && /[0-9]/.test(src[j])) j++; }
         }
         let text = src.slice(i, j).replace(/_/g, ''), kind = isFloat ? 'double' : 'int';
+        const oct = !hex && !bin && !isFloat && /^0\d+$/.test(text) && !/^0\d*[fFdDeE.]/.test(src.slice(i, j + 1));   // 010 is octal (8)
+        if (oct && /[89]/.test(text)) throw new CompileError(line, "';' expected");
         const suf = src[j] || '';
         if (/[lL]/.test(suf) && !isFloat) { kind = 'long'; j++; }
         else if (/[fF]/.test(suf)) { kind = 'float'; isFloat = true; j++; }
         else if (/[dD]/.test(suf)) { kind = 'double'; isFloat = true; j++; }
         let value;
         if (kind === 'int' || kind === 'long') {
-          const big = hex ? BigInt('0x' + text.slice(2)) : bin ? BigInt('0b' + text.slice(2)) : BigInt(text);
-          if (kind === 'int') { if (hex || bin) { if (big > 0xFFFFFFFFn) throw new CompileError(line, 'integer number too large'); value = Number(BigInt.asIntN(32, big)); } else { if (big > 2147483648n) throw new CompileError(line, 'integer number too large'); value = Number(big); } }   // 2147483648 is allowed only as -2147483648; the parser checks
-          else { if (big > (hex || bin ? 0xFFFFFFFFFFFFFFFFn : 9223372036854775808n)) throw new CompileError(line, 'integer number too large'); value = BigInt.asIntN(64, big); }
+          const big = hex ? BigInt('0x' + text.slice(2)) : bin ? BigInt('0b' + text.slice(2)) : oct ? BigInt('0o' + text.slice(1)) : BigInt(text);
+          if (kind === 'int') { if (hex || bin || oct) { if (big > 0xFFFFFFFFn) throw new CompileError(line, 'integer number too large'); value = Number(BigInt.asIntN(32, big)); } else { if (big > 2147483648n) throw new CompileError(line, 'integer number too large'); value = Number(big); } }   // 2147483648 is allowed only as -2147483648; the parser checks
+          else { if (big > (hex || bin || oct ? 0xFFFFFFFFFFFFFFFFn : 9223372036854775808n)) throw new CompileError(line, 'integer number too large'); value = BigInt.asIntN(64, big); }
         } else value = kind === 'float' ? Math.fround(Number(text)) : Number(text);
         push('num', value, { kind, text: src.slice(i, j) }); i = j; continue;
       }
@@ -514,6 +516,8 @@
   class JArr { constructor(et, a) { this.et = et; this.a = a; this.id = ++JObj.n; } }
   class JList { constructor(a) { this.a = a || []; this.id = ++JObj.n; } }
   class JSB { constructor(s) { this.s = s || ''; this.id = ++JObj.n; } }
+  class JIter { constructor(items, src, desc) { this.items = items; this.i = 0; this.src = src; this.desc = desc; this.last = -1; } }   // list.iterator(): a snapshot, with remove() reaching the source
+  class JCmp { constructor(base, rev) { this.base = base; this.rev = rev; } }   // Collections.reverseOrder(), cmp.reversed(): base null is the natural order
   class JEntry { constructor(key, value) { this.key = key; this.value = value; } }
   class JavaThrow { constructor(obj) { this.obj = obj; } }   // a Java exception travelling through the JavaScript stack
   class Signal { constructor(k, label, v) { this.k = k; this.label = label; this.v = v; } }   // break / continue / return, as statement results
@@ -521,14 +525,16 @@
   function fmtDouble(x) {
     if (Number.isNaN(x)) return 'NaN'; if (x === Infinity) return 'Infinity'; if (x === -Infinity) return '-Infinity';
     if (x === 0) return 1 / x < 0 ? '-0.0' : '0.0';
+    if (Math.abs(x) === 5e-324) return (x < 0 ? '-' : '') + '4.9E-324';   // Double.MIN_VALUE: Java shows two digits
     const a = Math.abs(x);
     if (a >= 1e-3 && a < 1e7) { let s = String(x); if (!/[.e]/.test(s)) s += '.0'; return s; }
     let [m, e] = x.toExponential().split('e'); if (!m.includes('.')) m += '.0'; return m + 'E' + e.replace('+', '');
   }
+  function shortFloat(x) { for (let p = 1; p <= 9; p++) { const c = x.toPrecision(p); if (Math.fround(Number(c)) === x) return String(Number(c)); } return String(x); }
   function fmtFloat(x) {
     if (Number.isNaN(x) || !Number.isFinite(x) || x === 0) return fmtDouble(x);
-    let s = null; for (let p = 1; p <= 9; p++) { const c = x.toPrecision(p); if (Math.fround(Number(c)) === x) { s = Number(c); break; } }
-    if (s === null) s = x;
+    if (Math.abs(x) === 1.401298464324817e-45) return (x < 0 ? '-' : '') + '1.4E-45';   // Float.MIN_VALUE: Java shows two digits
+    const s = Number(shortFloat(x));
     const a = Math.abs(s);
     if (a >= 1e-3 && a < 1e7) { let r = String(s); if (!/[.e]/.test(r)) r += '.0'; return r; }
     let [m, e] = s.toExponential().split('e'); if (!m.includes('.')) m += '.0'; return m + 'E' + e.replace('+', '');
@@ -563,7 +569,7 @@
   const LIB_PKG = { String: 'java.lang', Object: 'java.lang', Integer: 'java.lang', Long: 'java.lang', Double: 'java.lang', Float: 'java.lang', Character: 'java.lang', Boolean: 'java.lang', Short: 'java.lang', Byte: 'java.lang', Number: 'java.lang', Math: 'java.lang', System: 'java.lang', StringBuilder: 'java.lang', Comparable: 'java.lang', CharSequence: 'java.lang', Iterable: 'java.lang', PrintStream: 'java.io', InputStream: 'java.io',
     Throwable: 'java.lang', Exception: 'java.lang', RuntimeException: 'java.lang', Error: 'java.lang', ArithmeticException: 'java.lang', IllegalArgumentException: 'java.lang', IllegalStateException: 'java.lang', NumberFormatException: 'java.lang', IndexOutOfBoundsException: 'java.lang', ArrayIndexOutOfBoundsException: 'java.lang', StringIndexOutOfBoundsException: 'java.lang', NullPointerException: 'java.lang', ClassCastException: 'java.lang', NegativeArraySizeException: 'java.lang', UnsupportedOperationException: 'java.lang', StackOverflowError: 'java.lang', OutOfMemoryError: 'java.lang', ArrayStoreException: 'java.lang', CloneNotSupportedException: 'java.lang', InterruptedException: 'java.lang',
     ArrayList: 'java.util', List: 'java.util', Collection: 'java.util', HashMap: 'java.util', TreeMap: 'java.util', Map: 'java.util', Entry: 'java.util', HashSet: 'java.util', TreeSet: 'java.util', Set: 'java.util', Scanner: 'java.util', Random: 'java.util', Arrays: 'java.util', Collections: 'java.util', NoSuchElementException: 'java.util', InputMismatchException: 'java.util', ConcurrentModificationException: 'java.util', Iterator: 'java.util', LinkedList: 'java.util', Deque: 'java.util', Queue: 'java.util',
-    IOException: 'java.io', FileNotFoundException: 'java.io', UncheckedIOException: 'java.io', IllegalFormatException: 'java.util', IllegalFormatConversionException: 'java.util', MissingFormatArgumentException: 'java.util', UnknownFormatConversionException: 'java.util', NoSuchFieldException: 'java.lang', ArrayDeque: 'java.util' };
+    IOException: 'java.io', FileNotFoundException: 'java.io', UncheckedIOException: 'java.io', IllegalFormatException: 'java.util', IllegalFormatConversionException: 'java.util', MissingFormatArgumentException: 'java.util', UnknownFormatConversionException: 'java.util', NoSuchFieldException: 'java.lang', ArrayDeque: 'java.util', Comparator: 'java.util', Objects: 'java.util' };
   const qualified = (n) => (LIB_PKG[n] ? LIB_PKG[n] + '.' : '') + n;
 
   // ----- the parts of the standard library that are implemented, as classes with native methods.
@@ -587,7 +593,7 @@
       fields: Object.create(null), methods: Object.create(null), ctors: [], staticValues: Object.create(null), noNew: !!spec.noNew };
     for (const sig in spec.methods || {}) { const [ret, fn] = spec.methods[sig]; const ps = parseSig(sig); (info.methods[ps.name] = info.methods[ps.name] || []).push({ name: ps.name, params: ps.params, ret: sigType(ret), fn, static: false, cls: info, native: true, access: 'public', sig }); }
     for (const sig in spec.statics || {}) { const [ret, fn] = spec.statics[sig]; const ps = parseSig(sig); (info.methods[ps.name] = info.methods[ps.name] || []).push({ name: ps.name, params: ps.params, ret: sigType(ret), fn, static: true, cls: info, native: true, access: 'public', sig }); }
-    for (const sig in spec.ctors || {}) { const ps = parseSig('x(' + sig + ')'); info.ctors.push({ params: ps.params, fn: spec.ctors[sig], native: true, cls: info, access: 'public' }); }
+    for (const sig in spec.ctors || {}) { const ps = parseSig('x(' + sig + ')'); info.ctors.push({ name, ctor: true, params: ps.params, fn: spec.ctors[sig], native: true, cls: info, access: 'public' }); }
     for (const f in spec.fields || {}) { const [type, value] = spec.fields[f]; info.fields[f] = { name: f, type: sigType(type), static: true, final: true, access: 'public', cls: info }; info.staticValues[f] = value; }
     NATIVE[name] = info; return info;
   }
@@ -597,7 +603,7 @@
     if (t && t.k === 'prim') { switch (t.n) { case 'char': return String.fromCharCode(v); case 'double': return fmtDouble(v); case 'float': return fmtFloat(v); case 'long': return v.toString(); default: return String(v); } }
     return dstr(v, R);
   }
-  function isThrowable(c) { for (; c; c = c.ext && (c.lib ? NATIVE[c.ext] : c.extInfo)) if (c.name === 'Throwable') return true; return false; }
+  function isThrowable(c) { for (; c; c = c.ext && (c.lib ? NATIVE[c.ext] : c.extInfo || NATIVE[c.ext])) if (c.name === 'Throwable') return true; return false; }   // extInfo: a user class's superclass (set by the checker)
   const excName = (c) => (c.lib ? qualified(c.name) : c.name);
   function dstr(v, R, depth) {
     depth = depth || 0; if (depth > 20) return '...';
@@ -607,12 +613,12 @@
     if (v instanceof JObj) {
       const m = R.findMethod(v.cls, 'toString', []); if (m && !m.native) return R.invoke(v, m, []);
       if (isThrowable(v.cls)) return excName(v.cls) + (v.f.message != null ? ': ' + dstr(v.f.message, R) : '');
-      return v.cls.name + '@' + hex(idHash(v.id));
+      return (v.cls.lib ? qualified(v.cls.name) : v.cls.name) + '@' + hex(idHash(v.id));
     }
     if (v instanceof JArr) return '[' + arrayCode(v.et) + '@' + hex(idHash(v.id));
     if (v instanceof JList) return '[' + v.a.map(x => (x === v ? '(this Collection)' : dstr(x, R, depth + 1))).join(', ') + ']';
     if (v instanceof JMap) return '{' + v.entries(R).map(e => dstr(e.key, R, depth + 1) + '=' + (e.value === v ? '(this Map)' : dstr(e.value, R, depth + 1))).join(', ') + '}';
-    if (v instanceof JSet) return '[' + v.m.entries(R).map(e => dstr(e.key, R, depth + 1)).join(', ') + ']';
+    if (v instanceof JSet) return '[' + (v.ordered || v.m.entries(R).map(e => e.key)).map(k => dstr(k, R, depth + 1)).join(', ') + ']';   // ordered: an entrySet, in the map's order
     if (v instanceof JSB) return v.s;
     if (v instanceof JEntry) return dstr(v.key, R, depth + 1) + '=' + dstr(v.value, R, depth + 1);
     if (v instanceof JScanner) return 'java.util.Scanner[delimiters=\\p{javaWhitespace}+]';
@@ -661,9 +667,9 @@
     if (v === null || v === undefined) return 'null';
     switch (typeof v) { case 'string': return 'String'; case 'number': return 'Integer'; case 'bigint': return 'Long'; case 'boolean': return 'Boolean'; }
     if (v instanceof JBox) return v.kind === 'D' ? 'Double' : v.kind === 'F' ? 'Float' : 'Character';
-    if (v instanceof JObj) return v.cls.name; if (v instanceof JArr) return typeStr(v.et) + '[]'; if (v instanceof JList) return 'ArrayList';
+    if (v instanceof JObj) return v.cls.name; if (v instanceof JArr) return typeStr(v.et) + '[]'; if (v instanceof JList) return v.kind || 'ArrayList';
     if (v instanceof JMap) return v.sorted ? 'TreeMap' : 'HashMap'; if (v instanceof JSet) return v.m.sorted ? 'TreeSet' : 'HashSet';
-    if (v instanceof JSB) return 'StringBuilder'; if (v instanceof JEntry) return 'Entry'; if (v instanceof JScanner) return 'Scanner'; if (v instanceof JRandom) return 'Random';
+    if (v instanceof JSB) return 'StringBuilder'; if (v instanceof JEntry) return 'Entry'; if (v instanceof JIter) return 'Iterator'; if (v instanceof JCmp) return 'Comparator'; if (v instanceof JScanner) return 'Scanner'; if (v instanceof JRandom) return 'Random';
     if (v === SYSOUT || v === SYSERR) return 'PrintStream'; if (v === SYSIN) return 'InputStream';
     return 'Object';
   }
@@ -700,7 +706,7 @@
     peekToken() { let q = this.p; while (q < this.s.length && /\s/.test(this.s[q])) q++; if (q >= this.s.length) return null; let e = q; while (e < this.s.length && !/\s/.test(this.s[e])) e++; return { tok: this.s.slice(q, e), end: e }; }
     next(R) { const t = this.peekToken(); if (!t) throwJ(R, 'NoSuchElementException', null); this.p = t.end; return t.tok; }
     nextLine(R) { if (this.p >= this.s.length) throwJ(R, 'NoSuchElementException', 'No line found'); const i = this.s.indexOf('\n', this.p); const line = i < 0 ? this.s.slice(this.p) : this.s.slice(this.p, i); this.p = i < 0 ? this.s.length : i + 1; return line.replace(/\r$/, ''); }
-    typed(R, re, conv, what) { const t = this.peekToken(); if (!t) throwJ(R, 'NoSuchElementException', null); if (!re.test(t.tok)) throwJ(R, 'InputMismatchException', 'For input string: "' + t.tok + '"'); const v = conv(t.tok); if (v === null) throwJ(R, 'InputMismatchException', 'For input string: "' + t.tok + '"' + (what ? ' (' + what + ')' : '')); this.p = t.end; return v; }
+    typed(R, re, conv, what) { const t = this.peekToken(); if (!t) throwJ(R, 'NoSuchElementException', null); if (!re.test(t.tok)) throwJ(R, 'InputMismatchException', null); /* Java: no message unless the token is a number out of range */ const v = conv(t.tok); if (v === null) throwJ(R, 'InputMismatchException', 'For input string: "' + t.tok + '"' + (what ? ' (' + what + ')' : '')); this.p = t.end; return v; }
     hasTyped(re, conv) { const t = this.peekToken(); return !!t && re.test(t.tok) && conv(t.tok) !== null; }
   }
   const INT_RE = /^[+-]?\d+$/, DBL_RE = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$|^[+-]?(NaN|Infinity)$/, BOOL_RE = /^(true|false)$/i;
@@ -739,6 +745,27 @@
   }
 
   // String.format / printf
+  // Java's Formatter rounds the shortest decimal form of the value (the digits Double.toString shows) HALF_UP, not the exact binary
+  // value as toFixed does: %.2f of 2.675 is 2.68 and of 1.005 is 1.01. A float argument is widened to double first (%.2f of 1.005f is 1.00).
+  function decDigits(x) {   // x >= 0, finite: the shortest decimal as D * 10^scale
+    if (x === 5e-324) return { D: 49n, scale: -325 };   // Double.MIN_VALUE prints as 4.9E-324
+    const [m, e] = String(x).split('e'); const [ip, fp = ''] = m.split('.');
+    return { D: BigInt(ip + fp), scale: (e ? +e : 0) - fp.length };
+  }
+  function halfUpFixed(x, p) {
+    const { D, scale } = decDigits(x); const sc = scale + p; let q;
+    if (sc >= 0) q = D * 10n ** BigInt(sc); else { const d = 10n ** BigInt(-sc); q = D / d; if ((D % d) * 2n >= d) q++; }
+    const t = q.toString().padStart(p + 1, '0'); return p ? t.slice(0, -p) + '.' + t.slice(-p) : t;
+  }
+  function halfUpExp(x, p) {
+    let ds = '0', E = 0;
+    if (x !== 0) {
+      const { D, scale } = decDigits(x); const all = D.toString(); E = all.length - 1 + scale;
+      if (all.length <= p + 1) ds = all.padEnd(p + 1, '0');
+      else { let k = BigInt(all.slice(0, p + 1)); if (all[p + 1] >= '5') k++; ds = k.toString(); if (ds.length > p + 1) { ds = ds.slice(0, p + 1); E++; } }
+    } else ds = '0'.repeat(p + 1);
+    return ds[0] + (p ? '.' + ds.slice(1) : '') + 'e' + (E < 0 ? '-' : '+') + String(Math.abs(E)).padStart(2, '0');
+  }
   function jformat(fmt, args, R) {
     let ai = 0; const self = R;
     const group = (intPart) => intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -766,9 +793,9 @@
           let x; if (v instanceof JBox && (v.kind === 'D' || v.kind === 'F')) x = v.v; else if (v === null) return pad('null', width, flags); else bad(conv, v);
           if (!Number.isFinite(x)) return pad(Number.isNaN(x) ? 'NaN' : signed('Infinity', x < 0), width, flags.replace('0', ''));
           const p = prec === null ? 6 : prec; const neg = x < 0 || (x === 0 && 1 / x < 0); x = Math.abs(x); let s;
-          if (conv === 'f') { s = x.toFixed(p); if (flags.includes(',')) { const [i, f] = s.split('.'); s = group(i) + (f !== undefined ? '.' + f : ''); } }
-          else if (conv === 'e' || conv === 'E') { s = x.toExponential(p).replace(/e([+-])(\d)$/, 'e$10$2'); if (conv === 'E') s = s.toUpperCase(); }
-          else { const P = p === 0 ? 1 : p; if (x !== 0 && (x < 1e-4 || x >= Math.pow(10, P))) s = x.toExponential(P - 1).replace(/e([+-])(\d)$/, 'e$10$2'); else { const digits = x === 0 ? 1 : Math.floor(Math.log10(x)) + 1; s = x.toFixed(Math.max(0, P - digits)); } if (conv === 'G') s = s.toUpperCase(); }
+          if (conv === 'f') { s = halfUpFixed(x, p); if (flags.includes(',')) { const [i, f] = s.split('.'); s = group(i) + (f !== undefined ? '.' + f : ''); } }
+          else if (conv === 'e' || conv === 'E') { s = halfUpExp(x, p); if (conv === 'E') s = s.toUpperCase(); }
+          else { const P = p === 0 ? 1 : p; const ex = halfUpExp(x, P - 1), E = x === 0 ? 0 : +ex.slice(ex.indexOf('e') + 1); if (E < -4 || E >= P) s = ex; else s = halfUpFixed(x, Math.max(0, P - 1 - E)); if (conv === 'G') s = s.toUpperCase(); }
           return pad(signed(s, neg), width, flags);
         }
         case 's': case 'S': { let s = dstr(v, self); if (prec !== null) s = s.slice(0, prec); if (conv === 'S') s = s.toUpperCase(); return pad(s, width, flags); }
@@ -783,15 +810,19 @@
 
   // Java regular expressions and JavaScript ones agree on what students write (literal text, classes, quantifiers); a few differences are mapped.
   function jregex(re, R) { try { return new RegExp(re.replace(/\\p\{Alpha\}/g, '[A-Za-z]').replace(/\\p\{Digit\}/g, '[0-9]').replace(/\\p\{Punct\}/g, '[!-\\/:-@\\[-`{-~]').replace(/\(\?<(\w+)>/g, '(?<$1>'), 'u'); } catch (e) { throwJ(R, 'PatternSyntaxException', e.message + ' near index 0\n' + re); } }
-  function jsplit(s, re, limit, R) {
+  function jsplit(s, re, limit, R) {   // String.split as Java does it: no captured groups in the result, a zero-length match at 0 skipped
     if (s === '') return [''];
-    let parts;
-    if (re.length === 1 && !'.$|()[{^?*+\\'.includes(re)) parts = s.split(re);
-    else if (re.length === 2 && re[0] === '\\' && !/[0-9a-zA-Z]/.test(re[1])) parts = s.split(re[1]);
-    else parts = s.split(jregex(re, R));
-    if (parts.length > 1 && parts[0] === '' && re !== '' && s.search(jregex(re, R)) === 0 && s.match(jregex(re, R))[0] === '') parts.shift();
-    if (limit > 0 && parts.length > limit) { const head = parts.slice(0, limit - 1); let count = 0; const r = jregex(re, R); r.lastIndex = 0; let pos = 0, m; const rg = new RegExp(r.source, r.flags + 'g'); while (count < limit - 1 && (m = rg.exec(s)) !== null) { if (m[0] === '' && m.index === 0) continue; pos = m.index + m[0].length; count++; } head.push(s.slice(pos)); parts = head; }
-    if (limit === 0) while (parts.length > 1 && parts[parts.length - 1] === '') parts.pop();
+    const rx = jregex(re, R), g = new RegExp(rx.source, rx.flags + 'g');
+    const parts = []; let index = 0, m;
+    while ((m = g.exec(s)) !== null) {
+      if (m[0] === '') g.lastIndex++;
+      if (m[0] === '' && m.index === 0) continue;
+      if (limit > 0 && parts.length >= limit - 1) break;
+      parts.push(s.slice(index, m.index)); index = m.index + m[0].length;
+    }
+    if (!parts.length) return [s];
+    parts.push(s.slice(index));
+    if (limit === 0) while (parts.length > 0 && parts[parts.length - 1] === '') parts.pop();   // ",,".split(",") is empty
     return parts;
   }
   const re1 = (re) => re.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -800,17 +831,28 @@
   function throwJ(R, name, msg) { const c = NATIVE[name] || NATIVE.RuntimeException; const o = new JObj(c); o.f.message = msg === undefined ? null : msg; o.f.cause = null; o.trace = R.frames.slice(); throw new JavaThrow(o); }
   const npe = (R, what) => throwJ(R, 'NullPointerException', what || null);
   const nn = (R, v, what) => { if (v === null || v === undefined) npe(R, what); return v; };
-  const sidx = (R, s, i) => { if (i < 0 || i >= s.length) throwJ(R, 'StringIndexOutOfBoundsException', (i < 0 ? 'index ' + i + ', length ' + s.length : 'Index ' + i + ' out of bounds for length ' + s.length)); return s.charCodeAt(i); };
-  const lidx = (R, a, i) => { if (i < 0 || i >= a.length) throwJ(R, 'IndexOutOfBoundsException', 'Index ' + i + ' out of bounds for length ' + a.length); return i; };
+  const sidx = (R, s, i) => { if (i < 0 || i >= s.length) throwJ(R, 'StringIndexOutOfBoundsException', 'Index ' + i + ' out of bounds for length ' + s.length); return s.charCodeAt(i); };
+  // the JDK 21 wording of a bad range: "Range [2, 1) out of bounds for length 3" (substring, StringBuilder insert/delete/replace)
+  const srange = (R, b, e, len) => { if (b < 0 || b > e || e > len) throwJ(R, 'StringIndexOutOfBoundsException', 'Range [' + b + ', ' + e + ') out of bounds for length ' + len); };
+  const substrJ = (R, s, b, e) => { srange(R, b, e, s.length); return s.slice(b, e); };
+  const lidx = (R, a, i, linked) => { if (i < 0 || i >= a.length) throwJ(R, 'IndexOutOfBoundsException', linked ? 'Index: ' + i + ', Size: ' + a.length : 'Index ' + i + ' out of bounds for length ' + a.length); return i; };   // LinkedList words it the old way
   const chars = (R, a) => String.fromCharCode.apply(null, nn(R, a).a);
-  const toJList = (v) => (v instanceof JList ? v.a : v instanceof JSet ? v.m.entries().map(e => e.key) : v instanceof JArr ? v.a : []);
-  const collItems = (R, v) => { nn(R, v); if (v instanceof JList) return v.a.slice(); if (v instanceof JSet) return v.m.entries(R).map(e => e.key); if (v instanceof JArr) return v.a.slice(); return []; };
+  const toJList = (v) => (v instanceof JList ? v.a : v instanceof JSet ? (v.ordered || v.m.entries().map(e => e.key)) : v instanceof JArr ? v.a : []);
+  const collItems = (R, v) => { nn(R, v); if (v instanceof JList) return v.a.slice(); if (v instanceof JSet) return v.ordered ? v.ordered.slice() : v.m.entries(R).map(e => e.key); if (v instanceof JArr) return v.a.slice(); return []; };
   const unb = (v) => (v instanceof JBox ? v.v : v);
-  const parseIntJ = (R, s, radix) => { if (s === null) throwJ(R, 'NumberFormatException', 'Cannot parse null string: null'); radix = radix || 10; const re = radix === 10 ? /^[+-]?\d+$/ : radix === 16 ? /^[+-]?[0-9a-fA-F]+$/ : radix === 2 ? /^[+-]?[01]+$/ : radix === 8 ? /^[+-]?[0-7]+$/ : /^[+-]?[0-9a-zA-Z]+$/; if (!re.test(s)) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"' + (radix !== 10 ? ' under radix ' + radix : '')); const v = parseInt(s, radix); if (v < -2147483648 || v > 2147483647) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"' + (radix !== 10 ? ' under radix ' + radix : '')); return v; };
-  const parseLongJ = (R, s) => { if (s === null) throwJ(R, 'NumberFormatException', 'Cannot parse null string: null'); if (!/^[+-]?\d+$/.test(s)) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"'); const v = toLong(s); if (v === null) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"'); return v; };
+  const parseIntJ = (R, s, radix) => { if (s === null) throwJ(R, 'NumberFormatException', 'Cannot parse null string'); radix = radix || 10; if (radix < 2) throwJ(R, 'NumberFormatException', 'radix ' + radix + ' less than Character.MIN_RADIX'); if (radix > 36) throwJ(R, 'NumberFormatException', 'radix ' + radix + ' greater than Character.MAX_RADIX'); const re = radix === 10 ? /^[+-]?\d+$/ : radix === 16 ? /^[+-]?[0-9a-fA-F]+$/ : radix === 2 ? /^[+-]?[01]+$/ : radix === 8 ? /^[+-]?[0-7]+$/ : /^[+-]?[0-9a-zA-Z]+$/; if (!re.test(s)) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"' + (radix !== 10 ? ' under radix ' + radix : '')); const v = parseInt(s, radix); if (v < -2147483648 || v > 2147483647) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"' + (radix !== 10 ? ' under radix ' + radix : '')); return v; };
+  const parseLongJ = (R, s) => { if (s === null) throwJ(R, 'NumberFormatException', 'Cannot parse null string'); if (!/^[+-]?\d+$/.test(s)) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"'); const v = toLong(s); if (v === null) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"'); return v; };
   const parseDoubleJ = (R, s) => { if (s === null) npe(R); const t = s.trim(); if (t === '') throwJ(R, 'NumberFormatException', 'empty String'); if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?[fFdD]?$|^[+-]?(NaN|Infinity)$/.test(t)) throwJ(R, 'NumberFormatException', 'For input string: "' + s + '"'); return Number(t.replace(/[fFdD]$/, '')); };
-  const roundJ = (x) => { if (Number.isNaN(x)) return 0n; const r = Math.floor(x + 0.5); if (r >= 9223372036854775807) return 9223372036854775807n; if (r <= -9223372036854775808) return -9223372036854775808n; return BigInt(r); };
-  const sortJ = (R, a) => { const items = a.slice(); items.sort((x, y) => jcmp(x, y, R)); return items; };
+  const roundJ = (x) => { if (Number.isNaN(x)) return 0n; const r = Math.round(x);   // Math.round rounds the exact value (0.49999999999999994 → 0), ties up, as Java does
+    if (r >= 9223372036854775807) return 9223372036854775807n; if (r <= -9223372036854775808) return -9223372036854775808n; return BigInt(r); };
+  // a Comparator: null (natural order), a JCmp (reverseOrder/reversed), or an object of a user class with compare(T, T)
+  const cmpWith = (R, c) => {
+    if (c === null || c === undefined) return (x, y) => jcmp(x, y, R);
+    if (c instanceof JCmp) { const f = cmpWith(R, c.base); return c.rev ? (x, y) => f(y, x) : f; }
+    if (c instanceof JObj) { let m = null; for (let k = c.cls; k && !m; k = k.ext ? R.classOf(k.ext) : null) m = (k.methods.compare || []).find(o => o.params.length === 2 && !o.native && !o.abstract) || null; if (m) return (x, y) => R.invoke(c, m, [x, y]) | 0; }
+    throwJ(R, 'UnsupportedOperationException', 'this comparator is not supported by this interpreter');
+  };
+  const sortJ = (R, a, cmp) => { const items = a.slice(); const f = cmpWith(R, cmp); items.sort((x, y) => f(x, y)); return items; };   // stable, like Java's object sort
   const ovl = (name, types, mk) => { const o = {}; for (const t of types) o[name + '(' + t + ')'] = mk(sigType(t), t); return o; };
   const PRINT_TYPES = ['char', 'int', 'long', 'double', 'float', 'boolean', 'char[]', 'String', 'Object'];
   const printArg = (R, v, t) => (t.k === 'array' ? chars(R, v) : jstr(v, t, R));
@@ -823,6 +865,8 @@
   NATIVE.Object.objClass = true;
   def('Class', { noNew: true, methods: { 'getSimpleName()': ['String', (c) => c.classOf], 'getName()': ['String', (c) => qualified(c.classOf)], 'toString()': ['String', (c) => 'class ' + qualified(c.classOf)] } });
   def('Comparable', { isInterface: true, tparams: ['T'], methods: { 'compareTo(T)': ['int', (o, a, R) => jcmp(o, a[0], R)] } });
+  def('Comparator', { isInterface: true, tparams: ['T'], methods: { 'compare(T,T)': ['int', (c, a, R) => cmpWith(R, c)(a[0], a[1])], 'reversed()': ['Comparator<T>', (c) => new JCmp(c, true)] },
+    statics: { 'naturalOrder()': ['Comparator<T>', () => new JCmp(null, false)], 'reverseOrder()': ['Comparator<T>', () => new JCmp(null, true)] } });
   def('CharSequence', { isInterface: true, methods: { 'length()': ['int', (s) => s.length], 'charAt(int)': ['char', (s, a, R) => sidx(R, s, a[0])], 'toString()': ['String', (s, a, R) => dstr(s, R)] } });
   def('Iterable', { isInterface: true, tparams: ['E'], methods: {} });
   def('Number', { abstract: true, methods: { 'intValue()': ['int', (v) => { v = unb(v); return typeof v === 'bigint' ? Number(BigInt.asIntN(32, v)) : (v | 0); }], 'doubleValue()': ['double', (v) => Number(unb(v))], 'longValue()': ['long', (v) => { v = unb(v); return typeof v === 'bigint' ? v : BigInt(Math.trunc(v)); }] } });
@@ -830,10 +874,11 @@
     fields: { 'CASE_INSENSITIVE_ORDER': ['Object', null] },
     methods: {
       'length()': ['int', (s) => s.length], 'charAt(int)': ['char', (s, a, R) => sidx(R, s, a[0])], 'isEmpty()': ['boolean', (s) => s.length === 0], 'isBlank()': ['boolean', (s) => s.trim().length === 0],
-      'substring(int)': ['String', (s, a, R) => { if (a[0] < 0 || a[0] > s.length) throwJ(R, 'StringIndexOutOfBoundsException', 'begin ' + a[0] + ', end ' + s.length + ', length ' + s.length); return s.slice(a[0]); }],
-      'substring(int,int)': ['String', (s, a, R) => { if (a[0] < 0 || a[1] > s.length || a[0] > a[1]) throwJ(R, 'StringIndexOutOfBoundsException', 'begin ' + a[0] + ', end ' + a[1] + ', length ' + s.length); return s.slice(a[0], a[1]); }],
+      'substring(int)': ['String', (s, a, R) => substrJ(R, s, a[0], s.length)],
+      'substring(int,int)': ['String', (s, a, R) => substrJ(R, s, a[0], a[1])],
       'indexOf(String)': ['int', (s, a, R) => s.indexOf(nn(R, a[0]))], 'indexOf(int)': ['int', (s, a) => s.indexOf(String.fromCharCode(a[0]))], 'indexOf(String,int)': ['int', (s, a, R) => s.indexOf(nn(R, a[0]), a[1])], 'indexOf(int,int)': ['int', (s, a) => s.indexOf(String.fromCharCode(a[0]), a[1])],
       'lastIndexOf(String)': ['int', (s, a, R) => s.lastIndexOf(nn(R, a[0]))], 'lastIndexOf(int)': ['int', (s, a) => s.lastIndexOf(String.fromCharCode(a[0]))],
+      'lastIndexOf(String,int)': ['int', (s, a, R) => (a[1] < 0 ? -1 : s.lastIndexOf(nn(R, a[0]), a[1]))], 'lastIndexOf(int,int)': ['int', (s, a) => (a[1] < 0 ? -1 : s.lastIndexOf(String.fromCharCode(a[0]), a[1]))],
       'contains(CharSequence)': ['boolean', (s, a, R) => s.includes(dstr(nn(R, a[0]), R))], 'equals(Object)': ['boolean', (s, a) => s === a[0]], 'equalsIgnoreCase(String)': ['boolean', (s, a) => a[0] !== null && s.toLowerCase() === a[0].toLowerCase()],
       'compareTo(String)': ['int', (s, a, R) => strCompare(s, nn(R, a[0]))], 'compareToIgnoreCase(String)': ['int', (s, a, R) => strCompare(s.toUpperCase().toLowerCase(), nn(R, a[0]).toUpperCase().toLowerCase())],
       'toUpperCase()': ['String', (s) => s.toUpperCase()], 'toLowerCase()': ['String', (s) => s.toLowerCase()], 'trim()': ['String', (s) => s.replace(/^[\x00-\x20]+|[\x00-\x20]+$/g, '')], 'strip()': ['String', (s) => s.trim()], 'stripLeading()': ['String', (s) => s.replace(/^\s+/, '')], 'stripTrailing()': ['String', (s) => s.replace(/\s+$/, '')],
@@ -876,7 +921,7 @@
       ['isWhitespace(' + t + ')']: ['boolean', (o, a) => /[\t\n\x0B\f\r\x1C-\x1F \u1680\u2000-\u2006\u2008-\u200A\u2028\u2029\u205F\u3000]/.test(String.fromCodePoint(a[0]))], ['isSpaceChar(' + t + ')']: ['boolean', (o, a) => /\p{Zs}/u.test(String.fromCodePoint(a[0]))],
       ['toUpperCase(' + t + ')']: [t, (o, a) => { const u = String.fromCodePoint(a[0]).toUpperCase(); return u.length === 1 ? u.charCodeAt(0) : a[0]; }], ['toLowerCase(' + t + ')']: [t, (o, a) => { const u = String.fromCodePoint(a[0]).toLowerCase(); return u.length === 1 ? u.charCodeAt(0) : a[0]; }],
       ['getNumericValue(' + t + ')']: ['int', (o, a) => { const c = String.fromCodePoint(a[0]); if (/\p{Nd}/u.test(c)) return +c.normalize('NFKD')[0] || parseInt(c, 10) || 0; if (/[a-zA-Z]/.test(c)) return c.toLowerCase().charCodeAt(0) - 87; return -1; }]
-    })), { 'toString(char)': ['String', (o, a) => String.fromCharCode(a[0])], 'valueOf(char)': ['Character', (o, a) => new JBox('C', a[0])], 'compare(char,char)': ['int', (o, a) => a[0] - a[1]], 'digit(char,int)': ['int', (o, a) => { const d = parseInt(String.fromCharCode(a[0]), a[1]); return Number.isNaN(d) ? -1 : d; }], 'forDigit(int,int)': ['char', (o, a) => (a[0] < 0 || a[0] >= a[1] ? 0 : a[0].toString(a[1]).charCodeAt(0))] }) });
+    })), { 'toString(char)': ['String', (o, a) => String.fromCharCode(a[0])], 'toString(int)': ['String', (o, a, R) => { if (a[0] < 0 || a[0] > 0x10FFFF) throwJ(R, 'IllegalArgumentException', 'Not a valid Unicode code point: 0x' + (a[0] >>> 0).toString(16).toUpperCase()); return String.fromCodePoint(a[0]); }], 'valueOf(char)': ['Character', (o, a) => new JBox('C', a[0])], 'compare(char,char)': ['int', (o, a) => a[0] - a[1]], 'digit(char,int)': ['int', (o, a) => { const d = parseInt(String.fromCharCode(a[0]), a[1]); return Number.isNaN(d) ? -1 : d; }], 'forDigit(int,int)': ['char', (o, a) => (a[0] < 0 || a[0] >= a[1] ? 0 : a[0].toString(a[1]).charCodeAt(0))] }) });
   def('Boolean', { impl: ['Comparable'], fields: { TRUE: ['Boolean', true], FALSE: ['Boolean', false] }, methods: Object.assign(boxCommon('Boolean'), { 'booleanValue()': ['boolean', (v) => v] }),
     statics: { 'parseBoolean(String)': ['boolean', (o, a) => a[0] !== null && a[0].toLowerCase() === 'true'], 'toString(boolean)': ['String', (o, a) => String(a[0])], 'valueOf(boolean)': ['Boolean', (o, a) => a[0]], 'valueOf(String)': ['Boolean', (o, a) => a[0] !== null && a[0].toLowerCase() === 'true'], 'compare(boolean,boolean)': ['int', (o, a) => (a[0] === a[1] ? 0 : a[0] ? 1 : -1)], 'logicalAnd(boolean,boolean)': ['boolean', (o, a) => a[0] && a[1]], 'logicalOr(boolean,boolean)': ['boolean', (o, a) => a[0] || a[1]], 'logicalXor(boolean,boolean)': ['boolean', (o, a) => a[0] !== a[1]] } });
   function d2i(x) { if (Number.isNaN(x)) return 0; if (x >= 2147483647) return 2147483647; if (x <= -2147483648) return -2147483648; return Math.trunc(x) | 0; }
@@ -886,7 +931,7 @@
     'max(int,int)': ['int', (o, a) => Math.max(a[0], a[1])], 'max(long,long)': ['long', (o, a) => (a[0] > a[1] ? a[0] : a[1])], 'max(double,double)': ['double', (o, a) => Math.max(a[0], a[1])], 'max(float,float)': ['float', (o, a) => Math.max(a[0], a[1])],
     'min(int,int)': ['int', (o, a) => Math.min(a[0], a[1])], 'min(long,long)': ['long', (o, a) => (a[0] < a[1] ? a[0] : a[1])], 'min(double,double)': ['double', (o, a) => Math.min(a[0], a[1])], 'min(float,float)': ['float', (o, a) => Math.min(a[0], a[1])],
     'pow(double,double)': ['double', (o, a) => Math.pow(a[0], a[1])], 'sqrt(double)': ['double', (o, a) => Math.sqrt(a[0])], 'cbrt(double)': ['double', (o, a) => Math.cbrt(a[0])], 'hypot(double,double)': ['double', (o, a) => Math.hypot(a[0], a[1])],
-    'floor(double)': ['double', (o, a) => Math.floor(a[0])], 'ceil(double)': ['double', (o, a) => Math.ceil(a[0])], 'round(double)': ['long', (o, a) => roundJ(a[0])], 'round(float)': ['int', (o, a) => d2i(Math.floor(a[0] + 0.5))], 'rint(double)': ['double', (o, a) => { const f = Math.floor(a[0]), d = a[0] - f; return d < 0.5 ? f : d > 0.5 ? f + 1 : (f % 2 === 0 ? f : f + 1); }],
+    'floor(double)': ['double', (o, a) => Math.floor(a[0])], 'ceil(double)': ['double', (o, a) => Math.ceil(a[0])], 'round(double)': ['long', (o, a) => roundJ(a[0])], 'round(float)': ['int', (o, a) => d2i(Math.round(a[0]))], 'rint(double)': ['double', (o, a) => { const f = Math.floor(a[0]), d = a[0] - f; return d < 0.5 ? f : d > 0.5 ? f + 1 : (f % 2 === 0 ? f : f + 1); }],
     'random()': ['double', () => Math.random()], 'sin(double)': ['double', (o, a) => Math.sin(a[0])], 'cos(double)': ['double', (o, a) => Math.cos(a[0])], 'tan(double)': ['double', (o, a) => Math.tan(a[0])], 'asin(double)': ['double', (o, a) => Math.asin(a[0])], 'acos(double)': ['double', (o, a) => Math.acos(a[0])], 'atan(double)': ['double', (o, a) => Math.atan(a[0])], 'atan2(double,double)': ['double', (o, a) => Math.atan2(a[0], a[1])],
     'exp(double)': ['double', (o, a) => Math.exp(a[0])], 'log(double)': ['double', (o, a) => Math.log(a[0])], 'log10(double)': ['double', (o, a) => Math.log10(a[0])], 'signum(double)': ['double', (o, a) => Math.sign(a[0])], 'toRadians(double)': ['double', (o, a) => a[0] / 180 * Math.PI], 'toDegrees(double)': ['double', (o, a) => a[0] * 180 / Math.PI],
     'floorDiv(int,int)': ['int', (o, a, R) => { if (a[1] === 0) throwJ(R, 'ArithmeticException', '/ by zero'); return Math.floor(a[0] / a[1]) | 0; }], 'floorMod(int,int)': ['int', (o, a, R) => { if (a[1] === 0) throwJ(R, 'ArithmeticException', '/ by zero'); return ((a[0] % a[1]) + a[1]) % a[1]; }],
@@ -896,29 +941,29 @@
   def('StringBuilder', { impl: ['CharSequence', 'Comparable'], ctors: { '': () => new JSB(''), 'String': (o, a, R) => new JSB(nn(R, a[0])), 'int': () => new JSB(''), 'CharSequence': (o, a, R) => new JSB(dstr(nn(R, a[0]), R)) },
     methods: Object.assign(
       ovl('append', PRINT_TYPES, (t) => ['StringBuilder', (b, a, R) => { b.s += printArg(R, a[0], t); return b; }]),
-      ovl('insert', PRINT_TYPES.map(t => 'int,' + t), (t, s) => ['StringBuilder', (b, a, R) => { if (a[0] < 0 || a[0] > b.s.length) throwJ(R, 'StringIndexOutOfBoundsException', 'offset ' + a[0] + ', length ' + b.s.length); b.s = b.s.slice(0, a[0]) + printArg(R, a[1], sigType(s.slice(4))) + b.s.slice(a[0]); return b; }]),
-      { 'toString()': ['String', (b) => b.s], 'length()': ['int', (b) => b.s.length], 'charAt(int)': ['char', (b, a, R) => { if (a[0] < 0 || a[0] >= b.s.length) throwJ(R, 'StringIndexOutOfBoundsException', 'index ' + a[0] + ',length ' + b.s.length); return b.s.charCodeAt(a[0]); }],
-        'reverse()': ['StringBuilder', (b) => { b.s = Array.from(b.s).reverse().join(''); return b; }], 'deleteCharAt(int)': ['StringBuilder', (b, a, R) => { if (a[0] < 0 || a[0] >= b.s.length) throwJ(R, 'StringIndexOutOfBoundsException', 'index ' + a[0] + ',length ' + b.s.length); b.s = b.s.slice(0, a[0]) + b.s.slice(a[0] + 1); return b; }],
-        'delete(int,int)': ['StringBuilder', (b, a, R) => { if (a[0] < 0 || a[0] > b.s.length || a[0] > a[1]) throwJ(R, 'StringIndexOutOfBoundsException', 'start ' + a[0] + ', end ' + a[1] + ', length ' + b.s.length); b.s = b.s.slice(0, a[0]) + b.s.slice(Math.min(a[1], b.s.length)); return b; }],
-        'setCharAt(int,char)': ['void', (b, a, R) => { if (a[0] < 0 || a[0] >= b.s.length) throwJ(R, 'StringIndexOutOfBoundsException', 'index ' + a[0] + ',length ' + b.s.length); b.s = b.s.slice(0, a[0]) + String.fromCharCode(a[1]) + b.s.slice(a[0] + 1); }],
+      ovl('insert', PRINT_TYPES.map(t => 'int,' + t), (t, s) => ['StringBuilder', (b, a, R) => { srange(R, a[0], b.s.length, b.s.length); b.s = b.s.slice(0, a[0]) + printArg(R, a[1], sigType(s.slice(4))) + b.s.slice(a[0]); return b; }]),
+      { 'toString()': ['String', (b) => b.s], 'length()': ['int', (b) => b.s.length], 'charAt(int)': ['char', (b, a, R) => { sidx(R, b.s, a[0]); return b.s.charCodeAt(a[0]); }],
+        'reverse()': ['StringBuilder', (b) => { b.s = Array.from(b.s).reverse().join(''); return b; }], 'deleteCharAt(int)': ['StringBuilder', (b, a, R) => { sidx(R, b.s, a[0]); b.s = b.s.slice(0, a[0]) + b.s.slice(a[0] + 1); return b; }],
+        'delete(int,int)': ['StringBuilder', (b, a, R) => { srange(R, a[0], Math.min(a[1], b.s.length), b.s.length); b.s = b.s.slice(0, a[0]) + b.s.slice(Math.min(a[1], b.s.length)); return b; }],
+        'setCharAt(int,char)': ['void', (b, a, R) => { sidx(R, b.s, a[0]); b.s = b.s.slice(0, a[0]) + String.fromCharCode(a[1]) + b.s.slice(a[0] + 1); }],
         'setLength(int)': ['void', (b, a, R) => { if (a[0] < 0) throwJ(R, 'StringIndexOutOfBoundsException', 'String index out of range: ' + a[0]); b.s = a[0] <= b.s.length ? b.s.slice(0, a[0]) : b.s + '\0'.repeat(a[0] - b.s.length); }],
-        'indexOf(String)': ['int', (b, a, R) => b.s.indexOf(nn(R, a[0]))], 'lastIndexOf(String)': ['int', (b, a, R) => b.s.lastIndexOf(nn(R, a[0]))], 'replace(int,int,String)': ['StringBuilder', (b, a, R) => { b.s = b.s.slice(0, a[0]) + nn(R, a[2]) + b.s.slice(Math.min(a[1], b.s.length)); return b; }],
-        'substring(int)': ['String', (b, a, R) => NATIVE.String.methods.substring[0].fn(b.s, a, R)], 'substring(int,int)': ['String', (b, a, R) => NATIVE.String.methods.substring[1].fn(b.s, a, R)], 'isEmpty()': ['boolean', (b) => b.s.length === 0], 'capacity()': ['int', (b) => b.s.length + 16], 'compareTo(StringBuilder)': ['int', (b, a, R) => strCompare(b.s, nn(R, a[0]).s)] }) });
+        'indexOf(String)': ['int', (b, a, R) => b.s.indexOf(nn(R, a[0]))], 'lastIndexOf(String)': ['int', (b, a, R) => b.s.lastIndexOf(nn(R, a[0]))], 'indexOf(String,int)': ['int', (b, a, R) => b.s.indexOf(nn(R, a[0]), Math.max(0, a[1]))], 'lastIndexOf(String,int)': ['int', (b, a, R) => (a[1] < 0 ? -1 : b.s.lastIndexOf(nn(R, a[0]), a[1]))], 'replace(int,int,String)': ['StringBuilder', (b, a, R) => { srange(R, a[0], Math.min(a[1], b.s.length), b.s.length); b.s = b.s.slice(0, a[0]) + nn(R, a[2]) + b.s.slice(Math.min(a[1], b.s.length)); return b; }],
+        'substring(int)': ['String', (b, a, R) => substrJ(R, b.s, a[0], b.s.length)], 'substring(int,int)': ['String', (b, a, R) => substrJ(R, b.s, a[0], a[1])], 'isEmpty()': ['boolean', (b) => b.s.length === 0], 'capacity()': ['int', (b) => b.s.length + 16], 'compareTo(StringBuilder)': ['int', (b, a, R) => strCompare(b.s, nn(R, a[0]).s)] }) });
   // collections
   const LIST_METHODS = {
     'add(E)': ['boolean', (l, a, R) => { if (l.immutable) throwJ(R, 'UnsupportedOperationException', null); l.a.push(a[0]); return true; }],
     'add(int,E)': ['void', (l, a, R) => { if (l.immutable) throwJ(R, 'UnsupportedOperationException', null); if (a[0] < 0 || a[0] > l.a.length) throwJ(R, 'IndexOutOfBoundsException', 'Index: ' + a[0] + ', Size: ' + l.a.length); l.a.splice(a[0], 0, a[1]); }],
-    'get(int)': ['E', (l, a, R) => l.a[lidx(R, l.a, a[0])]], 'set(int,E)': ['E', (l, a, R) => { if (l.immutable) throwJ(R, 'UnsupportedOperationException', null); const i = lidx(R, l.a, a[0]); const old = l.a[i]; l.a[i] = a[1]; return old; }],
-    'remove(int)': ['E', (l, a, R) => { if (l.immutable) throwJ(R, 'UnsupportedOperationException', null); const i = lidx(R, l.a, a[0]); return l.a.splice(i, 1)[0]; }],
+    'get(int)': ['E', (l, a, R) => l.a[lidx(R, l.a, a[0], l.kind === 'LinkedList')]], 'set(int,E)': ['E', (l, a, R) => { if (l.immutable) throwJ(R, 'UnsupportedOperationException', null); const i = lidx(R, l.a, a[0], l.kind === 'LinkedList'); const old = l.a[i]; l.a[i] = a[1]; return old; }],
+    'remove(int)': ['E', (l, a, R) => { if (l.immutable) throwJ(R, 'UnsupportedOperationException', null); const i = lidx(R, l.a, a[0], l.kind === 'LinkedList'); return l.a.splice(i, 1)[0]; }],
     'remove(Object)': ['boolean', (l, a, R) => { if (l.immutable) throwJ(R, 'UnsupportedOperationException', null); const i = l.a.findIndex(x => jeq(x, a[0], R)); if (i < 0) return false; l.a.splice(i, 1); return true; }],
     'size()': ['int', (l) => l.a.length], 'isEmpty()': ['boolean', (l) => l.a.length === 0], 'contains(Object)': ['boolean', (l, a, R) => l.a.some(x => jeq(x, a[0], R))],
     'indexOf(Object)': ['int', (l, a, R) => l.a.findIndex(x => jeq(x, a[0], R))], 'lastIndexOf(Object)': ['int', (l, a, R) => { for (let i = l.a.length - 1; i >= 0; i--) if (jeq(l.a[i], a[0], R)) return i; return -1; }],
     'clear()': ['void', (l, a, R) => { if (l.immutable) throwJ(R, 'UnsupportedOperationException', null); l.a.length = 0; }], 'addAll(Collection<E>)': ['boolean', (l, a, R) => { if (l.immutable) throwJ(R, 'UnsupportedOperationException', null); const items = collItems(R, a[0]); l.a.push(...items); return items.length > 0; }],
     'removeAll(Collection<E>)': ['boolean', (l, a, R) => { const items = collItems(R, a[0]); const before = l.a.length; l.a = l.a.filter(x => !items.some(y => jeq(x, y, R))); return l.a.length !== before; }], 'containsAll(Collection<E>)': ['boolean', (l, a, R) => collItems(R, a[0]).every(y => l.a.some(x => jeq(x, y, R)))],
-    'subList(int,int)': ['List<E>', (l, a, R) => { if (a[0] < 0 || a[1] > l.a.length || a[0] > a[1]) throwJ(R, 'IndexOutOfBoundsException', 'fromIndex: ' + a[0] + ', toIndex: ' + a[1] + ', size: ' + l.a.length); return new JList(l.a.slice(a[0], a[1])); }],
+    'subList(int,int)': ['List<E>', (l, a, R) => { if (a[0] < 0) throwJ(R, 'IndexOutOfBoundsException', 'fromIndex = ' + a[0]); if (a[1] > l.a.length) throwJ(R, 'IndexOutOfBoundsException', 'toIndex = ' + a[1]); if (a[0] > a[1]) throwJ(R, 'IllegalArgumentException', 'fromIndex(' + a[0] + ') > toIndex(' + a[1] + ')'); return new JList(l.a.slice(a[0], a[1])); }],
     'toString()': ['String', (l, a, R) => dstr(l, R)], 'equals(Object)': ['boolean', (l, a, R) => jeq(l, a[0], R)], 'hashCode()': ['int', (l, a, R) => jhash(l, R)],
-    'sort(Object)': ['void', (l, a, R) => { if (a[0] !== null) throwJ(R, 'UnsupportedOperationException', 'comparators are not supported by this interpreter: use Collections.sort(list)'); l.a = sortJ(R, l.a); }],
-    'toArray()': ['Object[]', (l) => new JArr(T.Object, l.a.slice())], 'getFirst()': ['E', (l, a, R) => { if (!l.a.length) throwJ(R, 'NoSuchElementException', null); return l.a[0]; }], 'getLast()': ['E', (l, a, R) => { if (!l.a.length) throwJ(R, 'NoSuchElementException', null); return l.a[l.a.length - 1]; }],
+    'sort(Comparator<E>)': ['void', (l, a, R) => { if (l.immutable) throwJ(R, 'UnsupportedOperationException', null); l.a = sortJ(R, l.a, a[0]); }],
+    'toArray()': ['Object[]', (l) => new JArr(T.Object, l.a.slice())], 'toArray(T[])': ['T[]', (l, a, R) => new JArr(nn(R, a[0]).et, l.a.slice())], 'iterator()': ['Iterator<E>', (l) => new JIter(l.a.slice(), l)], 'getFirst()': ['E', (l, a, R) => { if (!l.a.length) throwJ(R, 'NoSuchElementException', null); return l.a[0]; }], 'getLast()': ['E', (l, a, R) => { if (!l.a.length) throwJ(R, 'NoSuchElementException', null); return l.a[l.a.length - 1]; }],
     'removeFirst()': ['E', (l, a, R) => { if (!l.a.length) throwJ(R, 'NoSuchElementException', null); return l.a.shift(); }], 'removeLast()': ['E', (l, a, R) => { if (!l.a.length) throwJ(R, 'NoSuchElementException', null); return l.a.pop(); }], 'addFirst(E)': ['void', (l, a) => { l.a.unshift(a[0]); }], 'addLast(E)': ['void', (l, a) => { l.a.push(a[0]); }]
   };
   const SET_METHODS = {
@@ -926,7 +971,7 @@
     'size()': ['int', (s) => s.m.size], 'isEmpty()': ['boolean', (s) => s.m.size === 0], 'clear()': ['void', (s) => s.m.clear()], 'addAll(Collection<E>)': ['boolean', (s, a, R) => { let ch = false; for (const x of collItems(R, a[0])) if (!s.m.find(x, R)) { s.m.put(x, true, R); ch = true; } return ch; }],
     'removeAll(Collection<E>)': ['boolean', (s, a, R) => { let ch = false; for (const x of collItems(R, a[0])) if (s.m.remove(x, R) !== undefined) ch = true; return ch; }], 'retainAll(Collection<E>)': ['boolean', (s, a, R) => { const keep = collItems(R, a[0]); let ch = false; for (const e of s.m.entries(R).slice()) if (!keep.some(k => jeq(k, e.key, R))) { s.m.remove(e.key, R); ch = true; } return ch; }],
     'containsAll(Collection<E>)': ['boolean', (s, a, R) => collItems(R, a[0]).every(x => !!s.m.find(x, R))], 'toString()': ['String', (s, a, R) => dstr(s, R)], 'equals(Object)': ['boolean', (s, a, R) => jeq(s, a[0], R)], 'hashCode()': ['int', (s, a, R) => jhash(s, R)],
-    'first()': ['E', (s, a, R) => { const e = s.m.entries(R); if (!e.length) throwJ(R, 'NoSuchElementException', null); return e[0].key; }], 'last()': ['E', (s, a, R) => { const e = s.m.entries(R); if (!e.length) throwJ(R, 'NoSuchElementException', null); return e[e.length - 1].key; }], 'toArray()': ['Object[]', (s, a, R) => new JArr(T.Object, s.m.entries(R).map(e => e.key))]
+    'first()': ['E', (s, a, R) => { const e = s.m.entries(R); if (!e.length) throwJ(R, 'NoSuchElementException', null); return e[0].key; }], 'last()': ['E', (s, a, R) => { const e = s.m.entries(R); if (!e.length) throwJ(R, 'NoSuchElementException', null); return e[e.length - 1].key; }], 'toArray()': ['Object[]', (s, a, R) => new JArr(T.Object, s.m.entries(R).map(e => e.key))], 'iterator()': ['Iterator<E>', (s, a, R) => new JIter(collItems(R, s), s.ordered ? null : s)]
   };
   const entryOf = (e) => { const en = new JEntry(e.key, e.value); en.src = e; return en; };
   const MAP_METHODS = {
@@ -940,33 +985,92 @@
     'firstKey()': ['K', (m, a, R) => { const e = m.entries(R); if (!e.length) throwJ(R, 'NoSuchElementException', null); return e[0].key; }], 'lastKey()': ['K', (m, a, R) => { const e = m.entries(R); if (!e.length) throwJ(R, 'NoSuchElementException', null); return e[e.length - 1].key; }],
     'floorKey(K)': ['K', (m, a, R) => { let r = null; for (const e of m.entries(R)) if (jcmp(e.key, a[0], R) <= 0) r = e.key; return r; }], 'ceilingKey(K)': ['K', (m, a, R) => { for (const e of m.entries(R)) if (jcmp(e.key, a[0], R) >= 0) return e.key; return null; }]
   };
-  def('Collection', { isInterface: true, tparams: ['E'], impl: ['Iterable'], methods: { 'size()': ['int', (c, a, R) => (c instanceof JList ? c.a.length : c instanceof JSet ? c.m.size : 0)], 'isEmpty()': ['boolean', (c, a, R) => collItems(R, c).length === 0], 'contains(Object)': ['boolean', (c, a, R) => collItems(R, c).some(x => jeq(x, a[0], R))], 'add(E)': ['boolean', (c, a, R) => (c instanceof JList ? LIST_METHODS['add(E)'][1](c, a, R) : SET_METHODS['add(E)'][1](c, a, R))], 'remove(Object)': ['boolean', (c, a, R) => (c instanceof JList ? LIST_METHODS['remove(Object)'][1](c, a, R) : SET_METHODS['remove(Object)'][1](c, a, R))], 'clear()': ['void', (c, a, R) => (c instanceof JList ? c.a.length = 0 : c.m.clear())], 'toString()': ['String', (c, a, R) => dstr(c, R)], 'addAll(Collection<E>)': ['boolean', (c, a, R) => (c instanceof JList ? LIST_METHODS['addAll(Collection<E>)'][1](c, a, R) : SET_METHODS['addAll(Collection<E>)'][1](c, a, R))] } });
+  def('Collection', { isInterface: true, tparams: ['E'], impl: ['Iterable'], methods: { 'iterator()': ['Iterator<E>', (c, a, R) => new JIter(collItems(R, c), c instanceof JSet && c.ordered ? null : c)], 'size()': ['int', (c, a, R) => (c instanceof JList ? c.a.length : c instanceof JSet ? c.m.size : 0)], 'isEmpty()': ['boolean', (c, a, R) => collItems(R, c).length === 0], 'contains(Object)': ['boolean', (c, a, R) => collItems(R, c).some(x => jeq(x, a[0], R))], 'add(E)': ['boolean', (c, a, R) => (c instanceof JList ? LIST_METHODS['add(E)'][1](c, a, R) : SET_METHODS['add(E)'][1](c, a, R))], 'remove(Object)': ['boolean', (c, a, R) => (c instanceof JList ? LIST_METHODS['remove(Object)'][1](c, a, R) : SET_METHODS['remove(Object)'][1](c, a, R))], 'clear()': ['void', (c, a, R) => (c instanceof JList ? c.a.length = 0 : c.m.clear())], 'toString()': ['String', (c, a, R) => dstr(c, R)], 'addAll(Collection<E>)': ['boolean', (c, a, R) => (c instanceof JList ? LIST_METHODS['addAll(Collection<E>)'][1](c, a, R) : SET_METHODS['addAll(Collection<E>)'][1](c, a, R))] } });
   def('List', { isInterface: true, tparams: ['E'], impl: ['Collection'], methods: LIST_METHODS, statics: { 'of(T...)': ['List<T>', (o, a) => { const l = new JList(a[0].a.slice()); l.immutable = true; return l; }], 'copyOf(Collection<T>)': ['List<T>', (o, a, R) => { const l = new JList(collItems(R, a[0])); l.immutable = true; return l; }] } });
   def('ArrayList', { tparams: ['E'], impl: ['List'], ctors: { '': () => new JList(), 'int': (o, a, R) => { if (a[0] < 0) throwJ(R, 'IllegalArgumentException', 'Illegal Capacity: ' + a[0]); return new JList(); }, 'Collection<E>': (o, a, R) => new JList(collItems(R, a[0])) }, methods: LIST_METHODS });
-  def('LinkedList', { tparams: ['E'], impl: ['List', 'Deque'], ctors: { '': () => new JList(), 'Collection<E>': (o, a, R) => new JList(collItems(R, a[0])) }, methods: LIST_METHODS });
-  def('Queue', { isInterface: true, tparams: ['E'], impl: ['Collection'], methods: Object.assign({}, LIST_METHODS, { 'offer(E)': ['boolean', (l, a) => { l.a.push(a[0]); return true; }], 'poll()': ['E', (l) => (l.a.length ? l.a.shift() : null)], 'peek()': ['E', (l) => (l.a.length ? l.a[0] : null)] }) });
-  def('Deque', { isInterface: true, tparams: ['E'], impl: ['Queue'], methods: Object.assign({}, LIST_METHODS, { 'offer(E)': ['boolean', (l, a) => { l.a.push(a[0]); return true; }], 'poll()': ['E', (l) => (l.a.length ? l.a.shift() : null)], 'peek()': ['E', (l) => (l.a.length ? l.a[0] : null)], 'push(E)': ['void', (l, a) => { l.a.unshift(a[0]); }], 'pop()': ['E', (l, a, R) => { if (!l.a.length) throwJ(R, 'NoSuchElementException', null); return l.a.shift(); }], 'peekFirst()': ['E', (l) => (l.a.length ? l.a[0] : null)], 'peekLast()': ['E', (l) => (l.a.length ? l.a[l.a.length - 1] : null)], 'pollFirst()': ['E', (l) => (l.a.length ? l.a.shift() : null)], 'pollLast()': ['E', (l) => (l.a.length ? l.a.pop() : null)] }) });
-  def('ArrayDeque', { tparams: ['E'], impl: ['Deque'], ctors: { '': () => new JList() }, methods: NATIVE.Deque.methods && {} });
-  NATIVE.ArrayDeque.methods = NATIVE.Deque.methods;
+  
+  // Queue and Deque have no index methods (q.get(0) and q.remove(1) by index do not compile; q.remove(x) removes the value x).
+  // An ArrayDeque refuses null (NullPointerException); a LinkedList, which is also a List, accepts it.
+  const noNull = (R, l, x) => { if (x === null && l.kind === 'ArrayDeque') throwJ(R, 'NullPointerException', null); return x; };
+  const emptyQ = (R, l) => { if (!l.a.length) throwJ(R, 'NoSuchElementException', null); };
+  const QUEUE_METHODS = {
+    'add(E)': ['boolean', (l, a, R) => { l.a.push(noNull(R, l, a[0])); return true; }], 'offer(E)': ['boolean', (l, a, R) => { l.a.push(noNull(R, l, a[0])); return true; }],
+    'remove()': ['E', (l, a, R) => { emptyQ(R, l); return l.a.shift(); }], 'remove(Object)': LIST_METHODS['remove(Object)'],
+    'poll()': ['E', (l) => (l.a.length ? l.a.shift() : null)], 'element()': ['E', (l, a, R) => { emptyQ(R, l); return l.a[0]; }], 'peek()': ['E', (l) => (l.a.length ? l.a[0] : null)],
+    'size()': LIST_METHODS['size()'], 'isEmpty()': LIST_METHODS['isEmpty()'], 'contains(Object)': LIST_METHODS['contains(Object)'], 'clear()': LIST_METHODS['clear()'],
+    'addAll(Collection<E>)': ['boolean', (l, a, R) => { const items = collItems(R, a[0]); for (const x of items) l.a.push(noNull(R, l, x)); return items.length > 0; }],
+    'removeAll(Collection<E>)': LIST_METHODS['removeAll(Collection<E>)'], 'containsAll(Collection<E>)': LIST_METHODS['containsAll(Collection<E>)'],
+    'toString()': LIST_METHODS['toString()'], 'toArray()': LIST_METHODS['toArray()'], 'iterator()': ['Iterator<E>', (l) => new JIter(l.a.slice(), l)]
+  };
+  const DEQUE_METHODS = Object.assign({}, QUEUE_METHODS, {
+    'push(E)': ['void', (l, a, R) => { l.a.unshift(noNull(R, l, a[0])); }], 'pop()': ['E', (l, a, R) => { emptyQ(R, l); return l.a.shift(); }],
+    'addFirst(E)': ['void', (l, a, R) => { l.a.unshift(noNull(R, l, a[0])); }], 'addLast(E)': ['void', (l, a, R) => { l.a.push(noNull(R, l, a[0])); }],
+    'offerFirst(E)': ['boolean', (l, a, R) => { l.a.unshift(noNull(R, l, a[0])); return true; }], 'offerLast(E)': ['boolean', (l, a, R) => { l.a.push(noNull(R, l, a[0])); return true; }],
+    'getFirst()': LIST_METHODS['getFirst()'], 'getLast()': LIST_METHODS['getLast()'], 'removeFirst()': LIST_METHODS['removeFirst()'], 'removeLast()': LIST_METHODS['removeLast()'],
+    'peekFirst()': ['E', (l) => (l.a.length ? l.a[0] : null)], 'peekLast()': ['E', (l) => (l.a.length ? l.a[l.a.length - 1] : null)],
+    'pollFirst()': ['E', (l) => (l.a.length ? l.a.shift() : null)], 'pollLast()': ['E', (l) => (l.a.length ? l.a.pop() : null)],
+    'removeFirstOccurrence(Object)': LIST_METHODS['remove(Object)'], 'descendingIterator()': ['Iterator<E>', (l) => new JIter(l.a.slice().reverse(), l, true)]
+  });
+  def('Queue', { isInterface: true, tparams: ['E'], impl: ['Collection'], methods: QUEUE_METHODS });
+  def('Deque', { isInterface: true, tparams: ['E'], impl: ['Queue'], methods: DEQUE_METHODS });
+  const mkDeque = (items) => { const l = new JList(items); l.kind = 'ArrayDeque'; return l; };
+  def('ArrayDeque', { tparams: ['E'], impl: ['Deque'], ctors: { '': () => mkDeque(), 'int': () => mkDeque(), 'Collection<E>': (o, a, R) => { const items = collItems(R, a[0]); const l = mkDeque(); for (const x of items) l.a.push(noNull(R, l, x)); return l; } }, methods: DEQUE_METHODS });
+  const mkLinked = (items) => { const l = new JList(items); l.kind = 'LinkedList'; return l; };
+  def('LinkedList', { tparams: ['E'], impl: ['List', 'Deque'], ctors: { '': () => mkLinked(), 'Collection<E>': (o, a, R) => mkLinked(collItems(R, a[0])) }, methods: Object.assign({}, DEQUE_METHODS, LIST_METHODS, { 'remove()': DEQUE_METHODS['remove()'] }) });
   def('Set', { isInterface: true, tparams: ['E'], impl: ['Collection'], methods: SET_METHODS, statics: { 'of(T...)': ['Set<T>', (o, a, R) => { const s = new JSet(false); for (const x of a[0].a) { if (s.m.find(x, R)) throwJ(R, 'IllegalArgumentException', 'duplicate element: ' + dstr(x, R)); s.m.put(x, true, R); } s.immutable = true; return s; }] } });
   def('HashSet', { tparams: ['E'], impl: ['Set'], ctors: { '': () => new JSet(false), 'int': () => new JSet(false), 'Collection<E>': (o, a, R) => { const s = new JSet(false); for (const x of collItems(R, a[0])) s.m.put(x, true, R); return s; } }, methods: SET_METHODS });
-  def('TreeSet', { tparams: ['E'], impl: ['Set'], ctors: { '': () => new JSet(true), 'Collection<E>': (o, a, R) => { const s = new JSet(true); for (const x of collItems(R, a[0])) s.m.put(x, true, R); return s; } }, methods: SET_METHODS });
+  // TreeSet and TreeMap navigation (headSet/headMap and the like return copies here, not live views)
+  const keysOf = (m, R) => m.entries(R).map(e => e.key);
+  const navFind = (keys, x, R, test) => { for (const k of keys) if (test(jcmp(k, x, R))) return k; return null; };
+  const navLast = (keys, x, R, test) => { let r = null; for (const k of keys) if (test(jcmp(k, x, R))) r = k; return r; };
+  const TREESET_METHODS = Object.assign({}, SET_METHODS, {
+    'higher(E)': ['E', (s, a, R) => navFind(keysOf(s.m, R), nn(R, a[0]), R, c => c > 0)], 'ceiling(E)': ['E', (s, a, R) => navFind(keysOf(s.m, R), nn(R, a[0]), R, c => c >= 0)],
+    'lower(E)': ['E', (s, a, R) => navLast(keysOf(s.m, R), nn(R, a[0]), R, c => c < 0)], 'floor(E)': ['E', (s, a, R) => navLast(keysOf(s.m, R), nn(R, a[0]), R, c => c <= 0)],
+    'pollFirst()': ['E', (s, a, R) => { const k = keysOf(s.m, R); if (!k.length) return null; s.m.remove(k[0], R); return k[0]; }], 'pollLast()': ['E', (s, a, R) => { const k = keysOf(s.m, R); if (!k.length) return null; s.m.remove(k[k.length - 1], R); return k[k.length - 1]; }],
+    'headSet(E)': ['TreeSet<E>', (s, a, R) => { const r = new JSet(true); for (const k of keysOf(s.m, R)) if (jcmp(k, a[0], R) < 0) r.m.put(k, true, R); return r; }], 'tailSet(E)': ['TreeSet<E>', (s, a, R) => { const r = new JSet(true); for (const k of keysOf(s.m, R)) if (jcmp(k, a[0], R) >= 0) r.m.put(k, true, R); return r; }]
+  });
+  def('TreeSet', { tparams: ['E'], impl: ['Set'], ctors: { '': () => new JSet(true), 'Collection<E>': (o, a, R) => { const s = new JSet(true); for (const x of collItems(R, a[0])) s.m.put(x, true, R); return s; } }, methods: TREESET_METHODS });
   def('Entry', { isInterface: true, tparams: ['K', 'V'], methods: { 'getKey()': ['K', (e) => e.key], 'getValue()': ['V', (e) => e.value], 'setValue(V)': ['V', (e, a) => { const old = e.value; e.value = a[0]; if (e.src) e.src.value = a[0]; return old; }], 'toString()': ['String', (e, a, R) => dstr(e, R)], 'equals(Object)': ['boolean', (e, a, R) => jeq(e, a[0], R)], 'hashCode()': ['int', (e, a, R) => jhash(e, R)] } });
   def('Map', { isInterface: true, tparams: ['K', 'V'], methods: MAP_METHODS, statics: { 'of()': ['Map<K,V>', () => { const m = new JMap(false); m.immutable = true; return m; }], 'entry(K,V)': ['Entry<K,V>', (o, a) => new JEntry(a[0], a[1])] } });
   def('HashMap', { tparams: ['K', 'V'], impl: ['Map'], ctors: { '': () => new JMap(false), 'int': () => new JMap(false), 'Map<K,V>': (o, a, R) => { const m = new JMap(false); for (const e of nn(R, a[0]).entries(R)) m.put(e.key, e.value, R); return m; } }, methods: MAP_METHODS });
-  def('TreeMap', { tparams: ['K', 'V'], impl: ['Map'], ctors: { '': () => new JMap(true), 'Map<K,V>': (o, a, R) => { const m = new JMap(true); for (const e of nn(R, a[0]).entries(R)) m.put(e.key, e.value, R); return m; } }, methods: MAP_METHODS });
-  def('Iterator', { isInterface: true, tparams: ['E'], methods: { 'hasNext()': ['boolean', (it) => it.i < it.items.length], 'next()': ['E', (it, a, R) => { if (it.i >= it.items.length) throwJ(R, 'NoSuchElementException', null); return it.items[it.i++]; }] } });
+  const subMap = (m, R, test) => { const r = new JMap(true); for (const e of m.entries(R)) if (test(e.key)) r.put(e.key, e.value, R); return r; };
+  const TREEMAP_METHODS = Object.assign({}, MAP_METHODS, {
+    'firstEntry()': ['Entry<K,V>', (m, a, R) => { const e = m.entries(R); return e.length ? new JEntry(e[0].key, e[0].value) : null; }], 'lastEntry()': ['Entry<K,V>', (m, a, R) => { const e = m.entries(R); return e.length ? new JEntry(e[e.length - 1].key, e[e.length - 1].value) : null; }],
+    'higherKey(K)': ['K', (m, a, R) => navFind(keysOf(m, R), nn(R, a[0]), R, c => c > 0)], 'lowerKey(K)': ['K', (m, a, R) => navLast(keysOf(m, R), nn(R, a[0]), R, c => c < 0)],
+    'pollFirstEntry()': ['Entry<K,V>', (m, a, R) => { const e = m.entries(R); if (!e.length) return null; const r = new JEntry(e[0].key, e[0].value); m.remove(e[0].key, R); return r; }],
+    'headMap(K)': ['TreeMap<K,V>', (m, a, R) => subMap(m, R, k => jcmp(k, a[0], R) < 0)], 'tailMap(K)': ['TreeMap<K,V>', (m, a, R) => subMap(m, R, k => jcmp(k, a[0], R) >= 0)]
+  });
+  def('TreeMap', { tparams: ['K', 'V'], impl: ['Map'], ctors: { '': () => new JMap(true), 'Map<K,V>': (o, a, R) => { const m = new JMap(true); for (const e of nn(R, a[0]).entries(R)) m.put(e.key, e.value, R); return m; } }, methods: TREEMAP_METHODS });
+  def('Iterator', { isInterface: true, tparams: ['E'], methods: { 'hasNext()': ['boolean', (it) => it.i < it.items.length], 'next()': ['E', (it, a, R) => { if (it.i >= it.items.length) throwJ(R, 'NoSuchElementException', null); it.last = it.i; return it.items[it.i++]; }],
+    'remove()': ['void', (it, a, R) => {
+      if (it.last < 0 || !it.src) throwJ(R, 'IllegalStateException', null);
+      const src = it.src, x = it.items[it.last];
+      if (src instanceof JList) { if (src.immutable) throwJ(R, 'UnsupportedOperationException', null); const n0 = it.items.length; src.a.splice(it.desc ? n0 - 1 - it.last : it.last - (it.removed || 0), 1); it.removed = (it.removed || 0) + 1; }
+      else if (src instanceof JSet) src.m.remove(x, R);
+      it.last = -1;
+    }] } });
+  const rangeCheck = (R, len, from, to) => { if (from > to) throwJ(R, 'IllegalArgumentException', 'fromIndex(' + from + ') > toIndex(' + to + ')'); if (from < 0) throwJ(R, 'ArrayIndexOutOfBoundsException', 'Array index out of range: ' + from); if (to > len) throwJ(R, 'ArrayIndexOutOfBoundsException', 'Array index out of range: ' + to); };   // Arrays.sort/fill(a, from, to, ...)
   const arrOvl = (name, mk, types) => Object.assign({}, ...(types || ['int', 'long', 'double', 'float', 'char', 'boolean', 'byte', 'short', 'Object']).map(t => mk(t)));
   def('Arrays', { noNew: true, statics: Object.assign(
     arrOvl('toString', (t) => ({ ['toString(' + t + '[])']: ['String', (o, a, R) => (a[0] === null ? 'null' : '[' + a[0].a.map(x => jstr(x, a[0].et, R)).join(', ') + ']')] })),
-    arrOvl('sort', (t) => ({ ['sort(' + t + '[])']: ['void', (o, a, R) => { nn(R, a[0]); a[0].a = sortJ(R, a[0].a); }], ['sort(' + t + '[],int,int)']: ['void', (o, a, R) => { nn(R, a[0]); if (a[1] < 0 || a[2] > a[0].a.length || a[1] > a[2]) throwJ(R, 'ArrayIndexOutOfBoundsException', 'Array index out of range: ' + a[2]); const part = sortJ(R, a[0].a.slice(a[1], a[2])); a[0].a.splice(a[1], part.length, ...part); }] }), ['int', 'long', 'double', 'char', 'Object']),
-    arrOvl('fill', (t) => ({ ['fill(' + t + '[],' + t + ')']: ['void', (o, a, R) => { nn(R, a[0]); a[0].a.fill(a[1]); }] })),
+    arrOvl('sort', (t) => ({ ['sort(' + t + '[])']: ['void', (o, a, R) => { nn(R, a[0]); a[0].a = sortJ(R, a[0].a); }], ['sort(' + t + '[],int,int)']: ['void', (o, a, R) => { nn(R, a[0]); rangeCheck(R, a[0].a.length, a[1], a[2]); const part = sortJ(R, a[0].a.slice(a[1], a[2])); a[0].a.splice(a[1], part.length, ...part); }] }), ['int', 'long', 'double', 'char', 'Object']),
+    arrOvl('fill', (t) => ({ ['fill(' + t + '[],' + t + ')']: ['void', (o, a, R) => { nn(R, a[0]); a[0].a.fill(a[1]); }], ['fill(' + t + '[],int,int,' + t + ')']: ['void', (o, a, R) => { nn(R, a[0]); rangeCheck(R, a[0].a.length, a[1], a[2]); a[0].a.fill(a[3], a[1], a[2]); }] })),
     arrOvl('equals', (t) => ({ ['equals(' + t + '[],' + t + '[])']: ['boolean', (o, a, R) => (a[0] === a[1]) || (a[0] !== null && a[1] !== null && a[0].a.length === a[1].a.length && a[0].a.every((x, i) => jeq(x, a[1].a[i], R)))] })),
-    arrOvl('copyOf', (t) => ({ ['copyOf(' + t + '[],int)']: [t + '[]', (o, a, R) => { nn(R, a[0]); if (a[1] < 0) throwJ(R, 'NegativeArraySizeException', String(a[1])); const r = a[0].a.slice(0, a[1]); while (r.length < a[1]) r.push(defaultValue(a[0].et)); return new JArr(a[0].et, r); }], ['copyOfRange(' + t + '[],int,int)']: [t + '[]', (o, a, R) => { nn(R, a[0]); if (a[1] > a[2]) throwJ(R, 'IllegalArgumentException', a[1] + ' > ' + a[2]); if (a[1] < 0 || a[1] > a[0].a.length) throwJ(R, 'ArrayIndexOutOfBoundsException', 'Array index out of range: ' + a[1]); const r = a[0].a.slice(a[1], a[2]); while (r.length < a[2] - a[1]) r.push(defaultValue(a[0].et)); return new JArr(a[0].et, r); }] })),
+    arrOvl('copyOf', (t) => ({ ['copyOf(' + t + '[],int)']: [t + '[]', (o, a, R) => { nn(R, a[0]); if (a[1] < 0) throwJ(R, 'NegativeArraySizeException', String(a[1])); const r = a[0].a.slice(0, a[1]); while (r.length < a[1]) r.push(defaultValue(a[0].et)); return new JArr(a[0].et, r); }], ['copyOfRange(' + t + '[],int,int)']: [t + '[]', (o, a, R) => { nn(R, a[0]); if (a[1] > a[2]) throwJ(R, 'IllegalArgumentException', a[1] + ' > ' + a[2]); if (a[1] < 0) throwJ(R, 'ArrayIndexOutOfBoundsException', 'arraycopy: source index ' + a[1] + ' out of bounds for ' + (isPrim(a[0].et) ? typeStr(a[0].et) : 'object array') + '[' + a[0].a.length + ']'); if (a[1] > a[0].a.length) throwJ(R, 'ArrayIndexOutOfBoundsException', 'arraycopy: length ' + (a[0].a.length - a[1]) + ' is negative'); const r = a[0].a.slice(a[1], a[2]); while (r.length < a[2] - a[1]) r.push(defaultValue(a[0].et)); return new JArr(a[0].et, r); }] })),
     arrOvl('binarySearch', (t) => ({ ['binarySearch(' + t + '[],' + t + ')']: ['int', (o, a, R) => { nn(R, a[0]); let lo = 0, hi = a[0].a.length - 1; while (lo <= hi) { const mid = (lo + hi) >>> 1; const c = jcmp(a[0].a[mid], a[1], R); if (c < 0) lo = mid + 1; else if (c > 0) hi = mid - 1; else return mid; } return -(lo + 1); }] }), ['int', 'long', 'double', 'char', 'Object']),
-    { 'asList(T...)': ['List<T>', (o, a) => new JList(a[0].a.slice())], 'deepToString(Object[])': ['String', (o, a, R) => { const f = (x) => (x instanceof JArr ? '[' + x.a.map(f).join(', ') + ']' : dstr(x, R)); return a[0] === null ? 'null' : f(a[0]); }], 'stream(int[])': ['Object', (o, a, R) => throwJ(R, 'UnsupportedOperationException', 'streams are not supported by this interpreter')] }) });
+    { 'sort(T[],Comparator<T>)': ['void', (o, a, R) => { nn(R, a[0]); a[0].a = sortJ(R, a[0].a, a[1]); }], 'sort(T[],int,int,Comparator<T>)': ['void', (o, a, R) => { nn(R, a[0]); rangeCheck(R, a[0].a.length, a[1], a[2]); const part = sortJ(R, a[0].a.slice(a[1], a[2]), a[3]); a[0].a.splice(a[1], part.length, ...part); }],
+      'asList(T...)': ['List<T>', (o, a) => new JList(a[0].a.slice())], 'deepToString(Object[])': ['String', (o, a, R) => { const f = (x) => (x instanceof JArr ? '[' + x.a.map(f).join(', ') + ']' : dstr(x, R)); return a[0] === null ? 'null' : f(a[0]); }], 'stream(int[])': ['Object', (o, a, R) => throwJ(R, 'UnsupportedOperationException', 'streams are not supported by this interpreter')] }) });
+  def('Objects', { noNew: true, statics: {
+    'equals(Object,Object)': ['boolean', (o, a, R) => jeq(a[0], a[1], R)], 'hash(Object...)': ['int', (o, a, R) => { let h = 1; for (const x of a[0].a) h = (Math.imul(31, h) + (x === null ? 0 : jhash(x, R))) | 0; return h; }],
+    'hashCode(Object)': ['int', (o, a, R) => (a[0] === null ? 0 : jhash(a[0], R))], 'toString(Object)': ['String', (o, a, R) => dstr(a[0], R)], 'toString(Object,String)': ['String', (o, a, R) => (a[0] === null ? a[1] : dstr(a[0], R))],
+    'isNull(Object)': ['boolean', (o, a) => a[0] === null], 'nonNull(Object)': ['boolean', (o, a) => a[0] !== null],
+    'requireNonNull(T)': ['T', (o, a, R) => { if (a[0] === null) throwJ(R, 'NullPointerException', null); return a[0]; }], 'requireNonNull(T,String)': ['T', (o, a, R) => { if (a[0] === null) throwJ(R, 'NullPointerException', a[1]); return a[0]; }],
+    'requireNonNullElse(T,T)': ['T', (o, a, R) => { if (a[0] !== null) return a[0]; if (a[1] === null) throwJ(R, 'NullPointerException', 'defaultObj'); return a[1]; }]
+  } });
   def('Collections', { noNew: true, statics: {
-    'sort(List<T>)': ['void', (o, a, R) => { nn(R, a[0]); a[0].a = sortJ(R, a[0].a); }], 'reverse(List<T>)': ['void', (o, a, R) => { nn(R, a[0]).a.reverse(); }],
+    'sort(List<T>)': ['void', (o, a, R) => { nn(R, a[0]); a[0].a = sortJ(R, a[0].a); }], 'sort(List<T>,Comparator<T>)': ['void', (o, a, R) => { nn(R, a[0]); a[0].a = sortJ(R, a[0].a, a[1]); }],
+    'reverseOrder()': ['Comparator<T>', () => new JCmp(null, true)], 'reverseOrder(Comparator<T>)': ['Comparator<T>', (o, a) => new JCmp(a[0], true)],
+    'max(Collection<T>,Comparator<T>)': ['T', (o, a, R) => { const it = collItems(R, a[0]); if (!it.length) throwJ(R, 'NoSuchElementException', null); const f = cmpWith(R, a[1]); return it.reduce((m, x) => (f(x, m) > 0 ? x : m)); }], 'min(Collection<T>,Comparator<T>)': ['T', (o, a, R) => { const it = collItems(R, a[0]); if (!it.length) throwJ(R, 'NoSuchElementException', null); const f = cmpWith(R, a[1]); return it.reduce((m, x) => (f(x, m) < 0 ? x : m)); }], 'reverse(List<T>)': ['void', (o, a, R) => { nn(R, a[0]).a.reverse(); }],
     'shuffle(List<T>)': ['void', (o, a, R) => { const l = nn(R, a[0]).a; for (let i = l.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [l[i], l[j]] = [l[j], l[i]]; } }], 'shuffle(List<T>,Random)': ['void', (o, a, R) => { const l = nn(R, a[0]).a; for (let i = l.length; i > 1; i--) { const j = a[1].nextIntBound(i, R); [l[i - 1], l[j]] = [l[j], l[i - 1]]; } }],
     'max(Collection<T>)': ['T', (o, a, R) => { const it = collItems(R, a[0]); if (!it.length) throwJ(R, 'NoSuchElementException', null); return it.reduce((m, x) => (jcmp(x, m, R) > 0 ? x : m)); }], 'min(Collection<T>)': ['T', (o, a, R) => { const it = collItems(R, a[0]); if (!it.length) throwJ(R, 'NoSuchElementException', null); return it.reduce((m, x) => (jcmp(x, m, R) < 0 ? x : m)); }],
     'swap(List<T>,int,int)': ['void', (o, a, R) => { const l = nn(R, a[0]).a; lidx(R, l, a[1]); lidx(R, l, a[2]); [l[a[1]], l[a[2]]] = [l[a[2]], l[a[1]]]; }], 'frequency(Collection<T>,Object)': ['int', (o, a, R) => collItems(R, a[0]).filter(x => jeq(x, a[1], R)).length],
@@ -1045,17 +1149,25 @@
       if (from.k === 'array' && to.k === 'class') return to.n === 'Object' || to.n === 'Cloneable';
       return false;
     }
+    function lub(a, b) {   // List.of(new Dog(), new Cat()) is a List<Animal>; List.of(1, 2.5) a List<Number>; List.of(1, "a") a List<Object>
+      if (a.k !== 'class' || b.k !== 'class') return T.Object;
+      for (let c = classOf(a.n), seen = 0; c && seen < 50; c = c.ext ? classOf(c.ext) : null, seen++) { const t = cls(c.name); if (assignable(a, t, false) && assignable(b, t, false)) return t; }
+      return T.Object;
+    }
     function bind(param, argT, env) {   // infer method type variables from an argument
       if (!param || !argT) return;
-      if (param.k === 'tvar') { if (!(param.n in env) && argT.k !== 'null') env[param.n] = boxed(argT); return; }
+      if (param.k === 'tvar') { if (argT.k === 'null') return; const b = boxed(argT); if (!(param.n in env)) env[param.n] = b; else if (!(env.$fixed && env.$fixed.has(param.n)) && !assignable(b, env[param.n], false)) env[param.n] = lub(env[param.n], b); return; }   // widen only a variable this call is inferring
       if (param.k === 'array' && argT.k === 'array') return bind(param.e, argT.e, env);
       if (param.k === 'class' && argT.k === 'class' && param.args.length && argT.args.length === param.args.length) param.args.forEach((a, i) => bind(a, argT.args[i], env));
     }
     // choose among overloads (JLS 15.12.2, simplified): phase 1 without boxing, phase 2 with, phase 3 varargs
+    // the library's Collection<E> and Map<K,V> parameters are really Collection<? extends E>: new ArrayList<Animal>(listOfDogs)
+    const covariant = (from, to) => from.k === 'class' && to.k === 'class' && from.args.length > 0 && from.args.length === to.args.length && isSubclass(from.n, to.n) && from.args.every((a, i) => assignable(a, to.args[i], true));
     function applicable(m, argTypes, argNodes, env, phase) {
       const ps = m.params.map(p => subst(p, env));
       const last = ps[ps.length - 1];
-      if (phase < 3) { if (ps.length !== argTypes.length) return null; for (let i = 0; i < ps.length; i++) if (!assignable(argTypes[i], ps[i], phase === 1, null)) return null; return { ps, varargs: false }; }
+      const ok = (from, to, strict) => assignable(from, to, strict, null) || (m.native && covariant(from, to));
+      if (phase < 3) { if (ps.length !== argTypes.length) return null; for (let i = 0; i < ps.length; i++) if (!ok(argTypes[i], ps[i], phase === 1)) return null; return { ps, varargs: false }; }
       if (!last || !last.varargs || argTypes.length < ps.length - 1) return null;
       for (let i = 0; i < ps.length - 1; i++) if (!assignable(argTypes[i], ps[i], false, null)) return null;
       for (let i = ps.length - 1; i < argTypes.length; i++) if (!assignable(argTypes[i], last.e, false, null)) return null;
@@ -1066,7 +1178,7 @@
       const envFor = typeof env0 === 'function' ? env0 : () => env0;
       for (let phase = 1; phase <= 3; phase++) {
         const ok = [];
-        for (const m of cands) { const env = Object.assign({}, envFor(m)); m.params.forEach((p, i) => { if (i < argTypes.length) bind(p, argTypes[i], env); if (p.k === 'array' && p.varargs && i === m.params.length - 1) for (let j = i; j < argTypes.length; j++) bind(p.e, argTypes[j], env); }); const a = applicable(m, argTypes, argNodes, env, phase); if (a) ok.push({ m, ps: a.ps, varargs: a.varargs, env }); }
+        for (const m of cands) { const env = Object.assign({}, envFor(m)); Object.defineProperty(env, '$fixed', { value: new Set(Object.keys(env)) }); m.params.forEach((p, i) => { if (i < argTypes.length) bind(p, argTypes[i], env); if (p.k === 'array' && p.varargs && i === m.params.length - 1) for (let j = i; j < argTypes.length; j++) bind(p.e, argTypes[j], env); }); const a = applicable(m, argTypes, argNodes, env, phase); if (a) ok.push({ m, ps: a.ps, varargs: a.varargs, env }); }
         if (ok.length === 1) return ok[0];
         if (ok.length > 1) { const best = ok.filter(x => ok.every(y => x === y || moreSpecific(x, y))); return best[0] || ok[0]; }
       }
@@ -1108,6 +1220,7 @@
         if (d.ext) { const p = needClass(d.ext.n, d.line); if (p.isInterface) err(d.line, 'no interface expected here'); if (p.lib && !(p.objClass && isSubclass(p.name, 'Throwable')) && p.name !== 'Object') err(d.line, 'a class of this interpreter cannot extend the library class ' + p.name + ' (only Object and the exception classes)'); if (p.name === d.name) err(d.line, 'cyclic inheritance involving ' + d.name); if (d.ext.args.length) err(d.line, 'library exception classes take no type arguments'); c.ext = p.name; } else c.ext = 'Object';
         for (const i of d.impl) { const p = needClass(i.n, d.line); if (!p.isInterface) err(d.line, 'interface expected here'); c.impl.push(p.name); if (i.args.length) { c.implArgs = c.implArgs || {}; c.implArgs[p.name] = i.args.map(a => resolveType(a, d.line)); } }
       }
+      for (const d of unit.classes) classes[d.name].extInfo = classOf(classes[d.name].ext);   // for isThrowable: MyException extends Exception prints as "MyException: message"
       for (const d of unit.classes) { let seen = new Set([d.name]); for (let p = classOf(classes[d.name].ext); p && !p.lib; p = classOf(p.ext)) { if (seen.has(p.name)) err(d.line, 'cyclic inheritance involving ' + d.name); seen.add(p.name); } }
       for (const d of unit.classes) {
         const c = classes[d.name];
@@ -1145,7 +1258,7 @@
         }
         if (!c.abstract) {
           const need = [];
-          const collect = (ci, env, seen) => { if (!ci || seen.has(ci.name)) return; seen.add(ci.name); for (const n in ci.methods) for (const m of ci.methods[n]) if (m.abstract || (ci.isInterface && !m.static && !m.body && !m.native) || (ci.isInterface && m.native && !m.static && ci.name === 'Comparable')) need.push({ m, env, from: ci }); const e2 = ci.lib ? env : env; collect(parentOf(ci), e2, seen); for (const i of ci.impl) collect(classOf(i), (ci.implArgs && ci.implArgs[i] ? Object.fromEntries((classOf(i).tparams || []).map((tp, k) => [tp, ci.implArgs[i][k]])) : env), seen); };
+          const collect = (ci, env, seen) => { if (!ci || seen.has(ci.name)) return; seen.add(ci.name); for (const n in ci.methods) for (const m of ci.methods[n]) if (m.abstract || (ci.isInterface && !m.static && !m.body && !m.native) || (ci.isInterface && m.native && !m.static && (ci.name === 'Comparable' || (ci.name === 'Comparator' && m.name === 'compare')))) need.push({ m, env, from: ci }); const e2 = ci.lib ? env : env; collect(parentOf(ci), e2, seen); for (const i of ci.impl) collect(classOf(i), (ci.implArgs && ci.implArgs[i] ? Object.fromEntries((classOf(i).tparams || []).map((tp, k) => [tp, ci.implArgs[i][k]])) : env), seen); };
           collect(c, {}, new Set());
           for (const { m, env, from } of need) {
             const ps = m.params.map(p => subst(p, env));
@@ -1298,7 +1411,7 @@
     }
     function convArgs(args, argTypes, chosen) {
       const ps = chosen.ps; const out = [];
-      for (let i = 0; i < ps.length - (chosen.varargs ? 1 : 0); i++) out.push(conv(args[i], argTypes[i], ps[i], null, '', true));
+      for (let i = 0; i < ps.length - (chosen.varargs ? 1 : 0); i++) out.push(covariant(argTypes[i], ps[i]) ? args[i] : conv(args[i], argTypes[i], ps[i], null, '', true));
       if (chosen.varargs) { const last = ps[ps.length - 1]; const rest = args.slice(ps.length - 1); if (rest.length === 1 && argTypes[ps.length - 1].k === 'array' && assignable(argTypes[ps.length - 1], last, true)) out.push(rest[0]); else out.push({ k: 'VarArgs', et: last.e, items: rest.map((a, j) => conv(a, argTypes[ps.length - 1 + j], last.e, null)), line: args.length ? args[0].line : 0, t: last }); }
       return out;
     }
@@ -1604,7 +1717,7 @@
           else if (promote(at, bt)) { t = promote(at, bt); if ((unboxed(at).n === 'char' && n.b.const !== undefined && fits(n.b.const, T.char)) || (unboxed(bt).n === 'char' && n.a.const !== undefined && fits(n.a.const, T.char))) t = T.char; }
           else if (isBoolean(unboxed(at)) && isBoolean(unboxed(bt))) t = T.boolean;
           else if (assignable(at, bt, false)) t = bt; else if (assignable(bt, at, false)) t = at;
-          else if (isRef(at) && isRef(bt)) t = T.Object;
+          else if ((isRef(at) || at.k === 'prim') && (isRef(bt) || bt.k === 'prim')) t = lub(boxed(at), boxed(bt));   // true ? 1 : "s" is an Object
           else err(n.line, 'incompatible types in conditional expression: ' + typeStr(at) + ' and ' + typeStr(bt));
           n.a = conv(n.a, at, t, ctx); n.b = conv(n.b, bt, t, ctx); return t;
         }
@@ -1665,7 +1778,7 @@
   function Interp(R, chk) {
     const { classOf, isSubclass } = chk;
     R.findMethod = (ci, name, params) => { for (let c = ci; c; c = c.ext ? classOf(c.ext) : null) { const list = c.methods[name]; if (list) for (const m of list) if (params === null ? m.params.length === 1 : (m.params.length === params.length && m.params.every((p, i) => same(subst0(p), params[i])))) return m; } return null; };
-    R.invoke = (obj, m, args) => invoke(obj, m, args);
+    R.invoke = (obj, m, args) => invoke(obj, m, args); R.classOf = classOf;
     const describe = (n) => {
       if (!n) return 'the value';
       switch (n.k) {
@@ -1804,6 +1917,8 @@
       throw new Error('bad operator ' + op + ' on ' + typeStr(t));
     }
     function refEq(a, b) {
+      if (a instanceof JBox && b instanceof JBox) return a === b || (a.kind === 'C' && b.kind === 'C' && a.v === b.v && a.v <= 127);   // Character.valueOf caches 0..127
+      if (a !== null && b !== null && typeof a === 'object' && typeof b === 'object' && a.classOf !== undefined && b.classOf !== undefined) return a.classOf === b.classOf;   // getClass() == o.getClass()
       if (typeof a === 'number' && typeof b === 'number') return a === b && a >= -128 && a <= 127;   // Integer == Integer compares references; only small values are shared
       if (typeof a === 'bigint' && typeof b === 'bigint') return a === b && a >= -128n && a <= 127n;
       return a === b;

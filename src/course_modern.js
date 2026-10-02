@@ -973,7 +973,7 @@ Top student: cy</pre>
 <tr><td>What do I need to remember about each student?</td><td>how many scores, their total (for the average), their best. Three numbers that belong together: a <code>struct</code> (lesson 4).</td></tr>
 <tr><td>How do I find a student's record from a name?</td><td>a <code>map&lt;string, Record&gt;</code> (lesson 7). It also keeps the names in alphabetical order, which the report needs.</td></tr>
 <tr><td>How do I update a record without copying it?</td><td>a reference: <code>Record&amp; r = records[name];</code> (lesson 3).</td></tr>
-<tr><td>How do I print one decimal place?</td><td><code>cout &lt;&lt; fixed &lt;&lt; setprecision(1);</code> from <code>&lt;iomanip&gt;</code>. Without <code>fixed</code> you would get 75, not 75.0.</td></tr>
+<tr><td>How do I print one decimal place?</td><td><code>cout &lt;&lt; fixed &lt;&lt; setprecision(1);</code> (<code>setprecision</code> needs <code>&lt;iomanip&gt;</code>). Without <code>fixed</code>, <code>setprecision(1)</code> means one significant digit, and 75.0 prints as 8e+01.</td></tr>
 <tr><td>How do I avoid integer division in an average?</td><td>convert one side first: <code>(double)total / count</code> (SC 103, lesson 1).</td></tr>
 </table></div>
 <p>Build it in three small steps, running after each: first read the scores and print only each student's count (this proves the map and the reference work); then add the total and best; last, the averages and the top student. A program that is correct in small steps is far easier to fix than one written all at once.</p>
@@ -1006,7 +1006,7 @@ int main() {
     return 0;
 }`, stdin: '5\nbo 80\nada 90\nbo 70\ncy 100\nada 95', caption: 'Step one: count scores per student. Extend it in the exercise below.' },
         { check: "Which tool fits \"find a student's record by name\"?", options: ["A vector searched with a loop", "A map from name to record", "A struct"], answer: 1, why: "A map looks up by key in one step. A struct holds what belongs together; a vector is for a sequence." },
-        { check: "What do <code>fixed</code> and <code>setprecision(2)</code> do together?", options: ["Round to 2 significant figures", "Print exactly 2 digits after the decimal point", "Limit the width to 2 characters"], answer: 1, why: "fixed switches to fixed-point notation; setprecision then counts digits after the point. Both come from &lt;iomanip&gt;." },
+        { check: "What do <code>fixed</code> and <code>setprecision(2)</code> do together?", options: ["Round to 2 significant figures", "Print exactly 2 digits after the decimal point", "Limit the width to 2 characters"], answer: 1, why: "fixed switches to fixed-point notation; setprecision then counts digits after the point. setprecision needs &lt;iomanip&gt;; fixed comes with &lt;iostream&gt;." },
         { check: "What should you decide before typing a bigger program?", options: ["What must be remembered, how it will be found, and what each answer should look like", "Which compiler flags to use", "How many lines it will be"], answer: 0, why: "Those three questions pick the data structures and the output format; the code follows from them." },
         {
           ex: {
@@ -1031,7 +1031,7 @@ int main() {
 <p>The best next step is to take a program you have already written, in any of this site's courses, and rewrite it in this style. Where you wrote a loop to find a maximum, call <code>max_element</code>. Where you kept three parallel lists, write a <code>struct</code>. Where a function copied a big vector, put a <code>const&amp;</code> on it. That is exactly what the next generation of programmers does to the code of the last.</p>
 <div class="recap"><h3>In this lesson</h3><ul>
 <li>A bigger program is built from small steps you can run and check, and from choosing the right tool for each piece: a <code>struct</code> for what belongs together, a <code>map</code> for lookup by name, a reference to update in place.</li>
-<li><code>fixed</code> and <code>setprecision(n)</code> (from <code>&lt;iomanip&gt;</code>) control how many digits are printed after the decimal point.</li>
+<li><code>fixed</code> and <code>setprecision(n)</code> (the second from <code>&lt;iomanip&gt;</code>) control how many digits are printed after the decimal point.</li>
 <li>Ask first, then type: what must be remembered, how it will be found, and what each answer needs to look like.</li>
 </ul></div>`
       ]

@@ -196,7 +196,7 @@
   }
 
   document.addEventListener('keydown', (e) => {
-    if (!S.on || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!S.on || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || document.body.classList.contains('tour-on')) return;   // the tour has the arrow keys while it runs
     if (blank) { e.preventDefault(); unblank(); return; }
     const t = e.target;
     if (t && t.closest && t.closest('input, textarea, select, [contenteditable="true"], [contenteditable=""]')) return;

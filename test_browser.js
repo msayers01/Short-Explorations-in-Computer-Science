@@ -272,6 +272,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('Scratch blocks render beside Python', (await page.locator('.sb-stack .sb').count()) >= 3);
   const turtlePlay = page.locator('.play').filter({ hasText: 'import turtle' }).first();
   await turtlePlay.locator('button:has-text("Run")').click(); await page.waitForSelector('.play-turtle iframe', { timeout: 15000 }).catch(() => { });
+  await page.frameLocator('.play-turtle iframe').locator('canvas').first().waitFor({ state: 'attached', timeout: 15000 }).catch(() => { });   // the frame draws its canvas a moment after it appears
   check('a lesson example draws with turtle in a sandboxed frame', (await page.locator('.play-turtle iframe').count()) === 1 && (await page.locator('.play-turtle iframe').getAttribute('sandbox')) === 'allow-scripts' && (await page.frameLocator('.play-turtle iframe').locator('canvas').count()) > 0);
   await goto('#/dsa/1');
   check('DSA figures render', (await page.locator('.fig-mount svg').count()) >= 3);

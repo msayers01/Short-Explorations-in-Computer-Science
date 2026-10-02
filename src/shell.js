@@ -214,7 +214,16 @@
       i++;
       const c = peek();
       if (c === '(') { i++; if (peek() === '(') { i++; parts.push({ x: 'arith', v: balanced('(', ')', true), q }); } else parts.push({ x: 'sub', v: balanced('(', ')'), q }); return; }
-      if (c === '{') { i++; const j = src.indexOf('}', i); if (j < 0) synErr('unexpected EOF while looking for matching `}\''); parts.push({ x: 'var', v: src.slice(i, j), q }); i = j + 1; return; }
+      if (c === '{') {
+        i++; const j = src.indexOf('}', i); if (j < 0) synErr('unexpected EOF while looking for matching `}\''); const body = src.slice(i, j); i = j + 1; let m;
+        // ${NAME}, ${#NAME} (its length), ${NAME:offset} and ${NAME:offset:length}, ${NAME:-word} ${NAME:=word} ${NAME:+word} (and the same without the colon); anything else is refused, as bash does
+        if (/^([A-Za-z_][A-Za-z0-9_]*|[0-9]+|[?#@*$!])$/.test(body)) parts.push({ x: 'var', v: body, q });
+        else if ((m = body.match(/^#([A-Za-z_][A-Za-z0-9_]*|[0-9]+|[@*])$/))) parts.push({ x: 'len', v: m[1], q });
+        else if ((m = body.match(/^([A-Za-z_][A-Za-z0-9_]*|[0-9]+):(\d+)(?::(\d+))?$/))) parts.push({ x: 'slice', v: m[1], from: +m[2], len: m[3] === undefined ? null : +m[3], q });
+        else if ((m = body.match(/^([A-Za-z_][A-Za-z0-9_]*|[0-9]+)(:?)([-=+])([^]*)$/))) parts.push({ x: 'def', v: m[1], colon: m[2] === ':', op: m[3], word: m[4], q });
+        else { const e = new SyntaxError_('${' + body + '}: bad substitution'); e.exit = 1; throw e; }
+        return;
+      }
       const m = src.slice(i).match(/^([A-Za-z_][A-Za-z0-9_]*|[0-9]|[?#@*$!])/);
       if (m) { parts.push({ x: 'var', v: m[1], q }); i += m[1].length; return; }
       parts.push({ v: '$', q });
@@ -388,7 +397,9 @@
       }
       bases = next;
     }
-    return bases.filter((b) => b !== '' && b !== '/' || comps.length === 0).sort(nameOrder);
+    const out = bases.filter((b) => b !== '' && b !== '/' || comps.length === 0).sort(nameOrder);
+    // a pattern ending in / (*/) matches only directories, and keeps the slash, as in bash
+    return /\/$/.test(pat) && comps.length ? out.filter((b) => fs.isDir(fs.resolve(b))).map((b) => b + '/') : out;
   }
   // {a,b,c} and {1..5}: one level, done before anything else
   function braceExpand(s) {
@@ -396,7 +407,9 @@
     if (!m) return [s];
     const body = m[2]; let items;
     const r = body.match(/^(-?\d+)\.\.(-?\d+)$/);
+    const lr = body.match(/^([A-Za-z])\.\.([A-Za-z])$/);
     if (r) { const a = +r[1], b = +r[2]; if (Math.abs(b - a) > 1000) return [s]; items = []; for (let i = a; a <= b ? i <= b : i >= b; a <= b ? i++ : i--) items.push(String(i)); }
+    else if (lr) { const a = lr[1].charCodeAt(0), b = lr[2].charCodeAt(0); items = []; for (let i = a; a <= b ? i <= b : i >= b; a <= b ? i++ : i--) items.push(String.fromCharCode(i)); }
     else if (body.includes(',')) items = body.split(',');
     else return [s];
     return items.flatMap((it) => braceExpand(m[1] + it + m[3]));
@@ -417,7 +430,7 @@
       if (name === '#') return String(ctx.args.length);
       if (name === '@' || name === '*') return ctx.args.join(' ');
       if (name === '0') return ctx.name || 'bash';
-      if (/^[0-9]$/.test(name)) return ctx.args[+name - 1] || '';
+      if (/^[0-9]+$/.test(name)) return ctx.args[+name - 1] || '';
       if (name === '$') return '4242';
       if (name === 'RANDOM') return String(Math.floor(Math.random() * 32768));
       if (name === 'PWD') return fs.cwd;
@@ -433,14 +446,27 @@
     // ----- expanding words
     async function expandWord(w, ctx, io) {
       // 1. brace expansion on a bare literal word
-      if (w.parts.every((p) => !p.x && !p.q) && /\{.*\}/.test(wordText(w))) { const outs = []; for (const s of braceExpand(wordText(w))) outs.push(...await expandWord({ parts: [{ v: s, q: false }], noBrace: true }, ctx, io)); return outs; }
+      if (!w.noBrace && w.parts.every((p) => !p.x && !p.q) && /\{.*\}/.test(wordText(w))) { const outs = []; for (const s of braceExpand(wordText(w))) outs.push(...await expandWord({ parts: [{ v: s, q: false }], noBrace: true }, ctx, io)); return outs; }
       // 2. parameters, commands, arithmetic → fields (lists of chunks; each chunk knows whether it was quoted)
       const fields = [[]]; let any = false;
       const push = (v, q) => { fields[fields.length - 1].push({ v, q }); };
+      const quotedAt = (p) => p.x === 'var' && p.v === '@' && p.q;
       for (const p of w.parts) {
         if (!p.x) { push(p.v, p.q); any = any || p.v !== '' || p.q; continue; }
+        // "$@": each argument is its own word; with no arguments, a word that is only "$@" disappears
+        if (quotedAt(p)) { ctx.args.forEach((a, k) => { if (k > 0) fields.push([]); push(a, true); any = true; }); continue; }
         let v;
         if (p.x === 'var') v = getVar(p.v, ctx);
+        else if (p.x === 'len') v = String(p.v === '@' || p.v === '*' ? ctx.args.length : getVar(p.v, ctx).length);
+        else if (p.x === 'slice') { const cur = getVar(p.v, ctx); v = p.len === null ? cur.slice(p.from) : cur.substr(p.from, p.len); }
+        else if (p.x === 'def') {
+          const cur = getVar(p.v, ctx), isSet = /^[0-9]+$/.test(p.v) ? +p.v <= ctx.args.length : has(sh.vars, p.v);
+          const word = () => p.word.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*|[0-9?#])/g, (m, a, b) => getVar(a || b, ctx));
+          const filled = p.colon ? cur !== '' : isSet;
+          if (p.op === '+') v = filled ? word() : '';
+          else if (filled) v = cur;
+          else { v = word(); if (p.op === '=') setVar(p.v, v); }
+        }
         else if (p.x === 'arith') { v = String(arith(p.v, (n) => getVar(n, ctx))); }
         else { v = (await capture(p.v, ctx, io)).replace(/\n+$/, ''); }
         if (p.q) { push(v, true); any = true; continue; }
@@ -448,6 +474,7 @@
         pieces.forEach((piece, k) => { if (k > 0) fields.push([]); if (piece !== '') { push(piece, false); any = true; } });
       }
       if (!any && !w.parts.some((p) => p.q)) return [];
+      if (!ctx.args.length && w.parts.some(quotedAt) && w.parts.every((p) => quotedAt(p) || (!p.x && p.v === ''))) return [];
       const out = [];
       for (const f of fields) {
         if (!f.length) continue;
@@ -497,9 +524,10 @@
     async function withRedirs(redirs, ctx, io, body) {
       if (!redirs || !redirs.length) return body(io);
       const sub = Object.assign({}, io); const writes = [];
-      let outBuf = null, errBuf = null, errToOut = false;
+      let outBuf = null, errBuf = null;
       for (const r of redirs) {
-        if (r.op === '2>&1') { errToOut = true; continue; }
+        // 2>&1 sends errors wherever the output goes at that point, so the order counts: > f 2>&1 puts both in f, 2>&1 > f only the output
+        if (r.op === '2>&1') { errBuf = outBuf || 'out'; continue; }
         const target = await expandOne(r.target, ctx, io); const abs = fs.resolve(target);
         if (abs === '/dev/null') { if (r.op === '<') sub.stdin = stdinOf(''); else { const w = { abs: null, buf: '' }; if (r.op !== '2>' && r.op !== '2>>') outBuf = w; if (r.op !== '>' && r.op !== '>>') errBuf = w; } continue; }
         try {
@@ -513,8 +541,8 @@
       }
       const limit = (w) => { if (w.buf.length > LIMITS.fileBytes) throw new Stop('output', 1); };
       if (outBuf) { sub.out = outBuf.abs === null ? () => { } : (s) => { outBuf.buf += s; limit(outBuf); }; sub.tty = false; }
-      if (errBuf) sub.err = errBuf.abs === null ? () => { } : (s) => { errBuf.buf += s; limit(errBuf); };
-      if (errToOut) sub.err = (s) => sub.out(s);
+      if (errBuf === 'out') sub.err = (s) => io.out(s);
+      else if (errBuf) sub.err = errBuf.abs === null ? () => { } : (s) => { errBuf.buf += s; limit(errBuf); };
       let exit;
       try { exit = await body(sub); }
       finally { for (const w of writes) { try { fs.write(w.abs, w.buf, true); } catch (e) { io.err('bash: ' + tilde(w.abs) + ': ' + (e instanceof FsError ? e.message : e.message) + '\n'); } } }
@@ -582,7 +610,7 @@
       try { return await runList(parse(text), ctx, io); }
       catch (e) {
         if (e instanceof Stop && e.kind === 'exit') return e.code;
-        if (e instanceof SyntaxError_) { io.err(name + ': ' + e.message + '\n'); return 2; }
+        if (e instanceof SyntaxError_) { io.err(name + ': ' + e.message + '\n'); return e.exit || 2; }
         throw e;
       }
     }
@@ -614,7 +642,7 @@
       const ctx = { name: 'bash', args: [] };
       try { sh.lastExit = await runList(parse(line), ctx, io); }
       catch (e) {
-        if (e instanceof SyntaxError_) { io.err('bash: ' + e.message + '\n'); sh.lastExit = 2; }
+        if (e instanceof SyntaxError_) { io.err('bash: ' + e.message + '\n'); sh.lastExit = e.exit || 2; }
         else if (e instanceof Stop) {
           if (e.kind === 'cancel') io.err('^C\n');
           else if (e.kind === 'steps') io.err('bash: stopped: more than ' + LIMITS.steps + ' commands ran from this line. Is there a loop that never ends?\n');
@@ -673,7 +701,7 @@
     for (; i < args.length; i++) {
       const a = args[i];
       if (a === '--') { rest.push(...args.slice(i + 1)); break; }
-      if (a === '-' || !a.startsWith('-') || /^-\d/.test(a) && !spec.includes('#')) { rest.push(a); continue; }
+      if (a === '-' || !a.startsWith('-') || /^-\d/.test(a) && !spec.includes(a[1])) { rest.push(a); continue; }
       if (a.startsWith('--')) { const long = a.slice(2); if (long === 'help') { f.help = true; continue; } if (LONG[long] && spec.includes(LONG[long])) { f[LONG[long]] = true; continue; } io.err(name + ": unrecognized option '" + a + "'\nTry 'man " + name + "' for help.\n"); return null; }
       for (let k = 1; k < a.length; k++) {
         const c = a[k], j = spec.indexOf(c);
@@ -785,7 +813,7 @@
     run(args, io, sh) { if (!args.length) { io.err('touch: missing file operand\n'); return 1; } let exit = 0; for (const a of args) { try { sh.fs.touch(sh.fs.resolve(a)); } catch (e) { if (!(e instanceof FsError)) throw e; exit = 1; io.err('touch: cannot touch ' + q(a) + ': ' + e.message + '\n'); } } return exit; } });
   def('rm', { cat: 'files', use: 'rm [-r] [-f] file...', desc: 'Remove files. There is no recycle bin: a removed file is gone.', opts: [['-r', 'recursive: remove a directory and everything in it'], ['-f', 'force: no complaint about files that do not exist']],
     ex: ['rm draft.txt', 'rm *.tmp', 'rm -r old-project'],
-    run(args, io, sh) {
+    async run(args, io, sh) {
       const o = getopts(args, 'rRfiv', io, 'rm'); if (!o) return 1;
       if (!o.args.length) { if (o.f.f) return 0; io.err('rm: missing operand\n'); return 1; }
       let exit = 0; const fs = sh.fs;
@@ -793,16 +821,28 @@
         const abs = fs.resolve(a), n = fs.stat(abs);
         try {
           if (!n) { if (!o.f.f) { exit = 1; io.err('rm: cannot remove ' + q(a) + ': No such file or directory\n'); } continue; }
-          if (n.t === 'd') { if (!(o.f.r || o.f.R)) { exit = 1; io.err('rm: cannot remove ' + q(a) + ': Is a directory\n'); continue; } if (abs === '/' || abs === HOME) { exit = 1; io.err('rm: refusing to remove ' + q(a) + ': it is your home directory\n'); continue; } fs.rmTree(abs); }
-          else fs.unlink(abs);
+          if (n.t === 'd') { if (!(o.f.r || o.f.R)) { exit = 1; io.err('rm: cannot remove ' + q(a) + ': Is a directory\n'); continue; } if (abs === '/' || abs === HOME) { exit = 1; io.err('rm: refusing to remove ' + q(a) + ': it is your home directory\n'); continue; } if (o.f.i && !await confirm(io, 'rm: remove directory ' + q(a) + '? ')) continue; fs.rmTree(abs); }
+          else { if (o.f.i && !await confirm(io, 'rm: remove regular ' + (n.d === '' ? 'empty ' : '') + 'file ' + q(a) + '? ')) continue; fs.unlink(abs); }
         } catch (e) { if (!(e instanceof FsError)) throw e; exit = 1; io.err('rm: cannot remove ' + q(a) + ': ' + e.message + '\n'); }
       }
       return exit;
     } });
   const intoDir = (fs, dst, srcName) => { const abs = fs.resolve(dst); return fs.isDir(abs) ? (abs === '/' ? '/' : abs + '/') + srcName.split('/').filter(Boolean).pop() : abs; };
+  // the destination as the student would name it: dir/name when copying or moving into a directory
+  const shownDst = (fs, dst, srcName) => fs.isDir(fs.resolve(dst)) ? dst.replace(/\/+$/, '') + '/' + srcName.split('/').filter(Boolean).pop() : dst;
+  /** -i: ask before removing or overwriting. The answer comes from the pipe or file on stdin, else the keyboard; anything but y means no. */
+  async function confirm(io, prompt) {
+    let ans = null;
+    if (io.stdin) { io.err(prompt); const rest = io.stdin.text.slice(io.stdin.pos); const k = rest.indexOf('\n'); ans = k < 0 ? rest : rest.slice(0, k); io.stdin.pos += k < 0 ? rest.length : k + 1; }
+    else if (io.ask) ans = await io.ask(prompt);
+    else io.err(prompt + '\n');
+    return /^\s*y/i.test(ans || '');
+  }
+  // cp and mv: the same file, or a directory into itself, are refused with the words coreutils uses; null when the copy or move may go ahead
+  const sameOrInside = (verb, s, sabs, n, target, shown) => target === sabs ? verb + ': ' + q(s) + ' and ' + q(shown) + ' are the same file' : n.t === 'd' && target.startsWith(sabs + '/') ? (verb === 'cp' ? 'cp: cannot copy a directory, ' + q(s) + ', into itself, ' + q(shown) : 'mv: cannot move ' + q(s) + ' to a subdirectory of itself, ' + q(shown)) : null;
   def('cp', { cat: 'files', use: 'cp [-r] source... destination', desc: 'Copy files. The destination can be a new name or a directory to copy into.', opts: [['-r', 'recursive: copy a directory and everything in it']],
     ex: ['cp notes.txt backup.txt', 'cp *.py scripts/', 'cp -r project project-copy'],
-    run(args, io, sh) {
+    async run(args, io, sh) {
       const o = getopts(args, 'rRvi', io, 'cp'); if (!o) return 1;
       if (o.args.length < 2) { io.err(o.args.length ? 'cp: missing destination file operand after ' + q(o.args[0]) + '\n' : 'cp: missing file operand\n'); return 1; }
       const dst = o.args.pop(), fs = sh.fs; let exit = 0;
@@ -811,13 +851,16 @@
         const sabs = fs.resolve(s), n = fs.stat(sabs);
         if (!n) { exit = 1; io.err('cp: cannot stat ' + q(s) + ': No such file or directory\n'); continue; }
         if (n.t === 'd' && !(o.f.r || o.f.R)) { exit = 1; io.err('cp: -r not specified; omitting directory ' + q(s) + '\n'); continue; }
-        try { fs.copy(sabs, intoDir(fs, dst, s), true); } catch (e) { if (!(e instanceof FsError)) throw e; exit = 1; io.err('cp: cannot copy ' + q(s) + ' to ' + q(dst) + ': ' + e.message + '\n'); }
+        const target = intoDir(fs, dst, s), shown = shownDst(fs, dst, s), bad = sameOrInside('cp', s, sabs, n, target, shown);
+        if (bad) { exit = 1; io.err(bad + '\n'); continue; }
+        if (o.f.i && fs.isFile(target) && !await confirm(io, 'cp: overwrite ' + q(shown) + '? ')) continue;
+        try { fs.copy(sabs, target, true); } catch (e) { if (!(e instanceof FsError)) throw e; exit = 1; io.err('cp: cannot copy ' + q(s) + ' to ' + q(dst) + ': ' + e.message + '\n'); }
       }
       return exit;
     } });
   def('mv', { cat: 'files', use: 'mv source... destination', desc: 'Move or rename files. mv old.txt new.txt renames; mv file.txt notes/ moves it into the directory.',
     ex: ['mv draft.txt essay.txt', 'mv *.jpg photos/', 'mv photos pictures'],
-    run(args, io, sh) {
+    async run(args, io, sh) {
       const o = getopts(args, 'vi', io, 'mv'); if (!o) return 1;
       if (o.args.length < 2) { io.err(o.args.length ? 'mv: missing destination file operand after ' + q(o.args[0]) + '\n' : 'mv: missing file operand\n'); return 1; }
       const dst = o.args.pop(), fs = sh.fs; let exit = 0;
@@ -825,7 +868,10 @@
       for (const s of o.args) {
         const sabs = fs.resolve(s);
         if (!fs.exists(sabs)) { exit = 1; io.err('mv: cannot stat ' + q(s) + ': No such file or directory\n'); continue; }
-        try { fs.move(sabs, intoDir(fs, dst, s)); } catch (e) { if (!(e instanceof FsError)) throw e; exit = 1; io.err('mv: cannot move ' + q(s) + ' to ' + q(dst) + ': ' + e.message + '\n'); }
+        const target = intoDir(fs, dst, s), shown = shownDst(fs, dst, s), bad = sameOrInside('mv', s, sabs, fs.stat(sabs), target, shown);
+        if (bad) { exit = 1; io.err(bad + '\n'); continue; }
+        if (o.f.i && fs.exists(target) && !await confirm(io, 'mv: overwrite ' + q(shown) + '? ')) continue;
+        try { fs.move(sabs, target); } catch (e) { if (!(e instanceof FsError)) throw e; exit = 1; io.err('mv: cannot move ' + q(s) + ' to ' + q(dst) + ': ' + e.message + '\n'); }
       }
       return exit;
     } });
@@ -903,14 +949,21 @@
   def('tail', { cat: 'text', use: 'tail [-n N] [file...]', desc: 'Print the last lines of a file: ten, or N with -n N.', opts: [['-n N', 'how many lines (tail -3 also works)']], ex: ['tail log.txt', 'tail -n 1 scores.csv'],
     async run(args, io, sh) { return headTail(args, io, sh, 'tail'); } });
   async function headTail(args, io, sh, name) {
-    const o = getopts(args.map((a) => /^-\d+$/.test(a) ? '-n' + a.slice(1) : a), 'n:', io, name); if (!o) return 1;
+    // head -3 means head -n 3, but the -2 in head -n -2 is the value of -n
+    const o = getopts(args.map((a, i) => /^-\d+$/.test(a) && args[i - 1] !== '-n' ? '-n' + a.slice(1) : a), 'n:', io, name); if (!o) return 1;
     if (o.f.f) { io.err(name + ': -f is not available here\n'); return 1; }
-    let n = 10; if (o.f.n !== undefined) { n = parseInt(o.f.n, 10); if (isNaN(n) || n < 0) { io.err(name + ': invalid number of lines: ' + q(o.f.n) + '\n'); return 1; } }
+    // head -n -N: all but the last N lines; tail -n +N: from line N on
+    let n = 10, allBut = false, from = false;
+    if (o.f.n !== undefined) {
+      const v = String(o.f.n), m = v.match(name === 'head' ? /^(-?)(\d+)$/ : /^(\+?)(\d+)$/);
+      if (!m) { io.err(name + ': invalid number of lines: ' + q(v) + '\n'); return 1; }
+      n = parseInt(m[2], 10); allBut = name === 'head' && m[1] === '-'; from = name === 'tail' && m[1] === '+';
+    }
     let exit = 0; const many = o.args.length > 1;
     (await inputs(o.args, io, sh, name)).forEach((f, i) => {
       if (!f) { exit = 1; return; }
       if (many) io.out((i ? '\n' : '') + '==> ' + f.name + ' <==\n');
-      const ls = lines(f.text); for (const l of name === 'head' ? ls.slice(0, n) : ls.slice(Math.max(0, ls.length - n))) io.out(l + '\n');
+      const ls = lines(f.text); for (const l of name === 'head' ? (allBut ? ls.slice(0, Math.max(0, ls.length - n)) : ls.slice(0, n)) : (from ? ls.slice(Math.max(0, n - 1)) : ls.slice(Math.max(0, ls.length - n)))) io.out(l + '\n');
     });
     return exit;
   }
@@ -925,22 +978,55 @@
         const r = { l: (f.text.match(/\n/g) || []).length, w: (f.text.match(/\S+/g) || []).length, c: f.text.length, name: f.name };
         rows.push(r); for (const k of which) tot[k] += r[k];
       }
-      if (rows.length > 1) rows.push(Object.assign({ name: 'total' }, tot));
+      if (o.args.length > 1) rows.push(Object.assign({ name: 'total' }, tot));
       const w = rows.length === 1 && rows[0].name === '-' ? (which.length === 1 ? 1 : 7) : Math.max(1, ...rows.map((r) => Math.max(...which.map((k) => String(r[k]).length))));
       for (const r of rows) io.out(which.map((k) => pad(r[k], w)).join(' ') + (r.name === '-' ? '' : ' ' + r.name) + '\n');
       return exit;
     } });
+  // POSIX regular expressions → JavaScript: [:digit:] and friends inside brackets, \< \> word edges, and in a basic expression (grep without -E,
+  // sed) \( \) \| \{ \} \+ \? are the operators while ( ) | { } + ? are plain characters
+  const POSIX_CLASSES = { alpha: 'a-zA-Z', digit: '0-9', alnum: 'a-zA-Z0-9', upper: 'A-Z', lower: 'a-z', space: ' \\t\\n\\r\\f\\v', blank: ' \\t', xdigit: '0-9A-Fa-f', punct: '!-\\/:-@\\[-`{-~' };
+  function posixRegex(pat, extended) {
+    let out = '';
+    for (let i = 0; i < pat.length; i++) {
+      const c = pat[i];
+      if (c === '[') {
+        let j = i + 1, body = '';
+        if (pat[j] === '^' || pat[j] === '!') { body += '^'; j++; }
+        if (pat[j] === ']') { body += '\\]'; j++; }
+        while (j < pat.length && pat[j] !== ']') {
+          const m = pat.slice(j).match(/^\[:([a-z]+):\]/);
+          if (m && POSIX_CLASSES[m[1]]) { body += POSIX_CLASSES[m[1]]; j += m[0].length; continue; }
+          body += pat[j] === '\\' || pat[j] === '[' ? '\\' + pat[j] : pat[j]; j++;
+        }
+        if (j >= pat.length) { out += '\\['; continue; }   // no closing bracket: a plain [
+        out += '[' + body + ']'; i = j; continue;
+      }
+      if (c === '\\' && i + 1 < pat.length) {
+        const d = pat[++i];
+        if (d === '<' || d === '>') out += '\\b';
+        else if (!extended && '()|{}+?'.includes(d)) out += d;
+        else out += '\\' + d;
+        continue;
+      }
+      if (!extended && '()|{}+?'.includes(c)) { out += '\\' + c; continue; }
+      if (!extended && c === '*' && (out === '' || out === '^' || /[(|]$/.test(out) && !/\\[(|]$/.test(out))) { out += '\\*'; continue; }
+      out += c;
+    }
+    return out;
+  }
   def('grep', { cat: 'text', use: 'grep [-i] [-n] [-v] [-c] [-l] [-w] [-r] pattern [file...]', desc: 'Print the lines that contain a pattern. The pattern is a regular expression (plain words work as you expect); quote it.',
     opts: [['-i', 'ignore capitals'], ['-n', 'show line numbers'], ['-v', 'the lines that do NOT match'], ['-c', 'only count the matching lines'], ['-l', 'only the names of files with a match'], ['-w', 'whole words only'], ['-r', 'search every file in a directory'], ['-q', 'quiet: print nothing, only answer with the status (for if)'], ['-F', 'the pattern is plain text, not a regular expression']],
     ex: ['grep error log.txt', 'grep -n "def " game.py', 'grep -ri todo projects', 'ls | grep .txt'],
     async run(args, io, sh) {
-      const o = getopts(args, 'invclwrRFhHEoq', io, 'grep'); if (!o) return 2;
-      if (!o.args.length) { io.err('Usage: grep [OPTION]... PATTERNS [FILE]...\nTry \'man grep\' for more information.\n'); return 2; }
-      let pat = o.args[0]; const flags = o.f.i ? 'i' : '';
-      let re; try { re = o.f.F ? null : new RegExp(pat, flags); } catch (e) { re = null; }
+      const o = getopts(args, 'invclLwxrRFhHEoqe:', io, 'grep'); if (!o) return 2;
+      if (!o.args.length && o.f.e === undefined) { io.err('Usage: grep [OPTION]... PATTERNS [FILE]...\nTry \'man grep\' for more information.\n'); return 2; }
+      const pat = o.f.e !== undefined ? o.f.e : o.args[0]; const flags = o.f.i ? 'i' : '';
+      let re; try { re = o.f.F ? null : new RegExp(posixRegex(pat, !!o.f.E), flags); } catch (e) { re = null; }
       if (!re) re = new RegExp(pat.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&'), flags);
-      if (o.f.w) re = new RegExp('(?:^|[^A-Za-z0-9_])(?:' + re.source + ')(?![A-Za-z0-9_])', flags);
-      const fs = sh.fs; let files = o.args.slice(1);
+      if (o.f.x) re = new RegExp('^(?:' + re.source + ')$', flags);
+      else if (o.f.w) re = new RegExp('(?:^|[^A-Za-z0-9_])(?:' + re.source + ')(?![A-Za-z0-9_])', flags);
+      const fs = sh.fs; let files = o.f.e !== undefined ? o.args.slice() : o.args.slice(1);
       const rec = o.f.r || o.f.R;
       if (rec) { const expanded = []; for (const f of files.length ? files : ['.']) { const abs = fs.resolve(f); if (!fs.exists(abs)) { expanded.push(f); continue; } for (const [a, n] of fs.walk(abs)) if (n.t === 'f') expanded.push(a === abs ? f : (f.replace(/\/$/, '') + a.slice(abs.length))); } files = expanded; }
       const many = files.length > 1 || rec; let found = false, exit = 0;
@@ -949,9 +1035,17 @@
         if (!f) continue;
         const prefix = many && !o.f.h ? f.name + ':' : '';
         let count = 0;
-        lines(f.text).forEach((l, i) => { const m = re.test(l); if (m !== !!o.f.v) { count++; found = true; if (!o.f.c && !o.f.l && !o.f.q) io.out(prefix + (o.f.n ? (i + 1) + ':' : '') + l + '\n'); } });
+        const quiet = o.f.c || o.f.l || o.f.L || o.f.q, all = new RegExp(re.source, flags + 'g');
+        lines(f.text).forEach((l, i) => {
+          const m = re.test(l); if (m === !!o.f.v) return;
+          count++; found = true; if (quiet) return;
+          const head = prefix + (o.f.n ? (i + 1) + ':' : '');
+          if (!o.f.o) { io.out(head + l + '\n'); return; }
+          if (o.f.v) return;   // -o -v prints nothing, as in GNU grep
+          all.lastIndex = 0; let mm; while ((mm = all.exec(l))) { if (mm[0] === '') { all.lastIndex++; continue; } io.out(head + (o.f.w ? mm[0].replace(/^[^A-Za-z0-9_]/, '') : mm[0]) + '\n'); }   // -o: only the matching parts
+        });
         if (o.f.q) continue;
-        if (o.f.c) io.out(prefix + count + '\n'); else if (o.f.l && count) io.out(f.name + '\n');
+        if (o.f.c) io.out(prefix + count + '\n'); else if (o.f.l && count) io.out(f.name + '\n'); else if (o.f.L && !count) io.out(f.name + '\n');
       }
       return exit || (found ? 0 : 1);
     } });
@@ -962,12 +1056,17 @@
       const o = getopts(args, 'rnufk:t:', io, 'sort'); if (!o) return 2;
       let all = [], exit = 0;
       for (const f of await inputs(o.args, io, sh, 'sort')) { if (!f) { exit = 2; continue; } all.push(...lines(f.text)); }
-      const col = o.f.k ? parseInt(o.f.k, 10) : 0; if (o.f.k && !(col >= 1)) { io.err('sort: invalid number at field start: invalid count at start of ' + q(o.f.k) + '\n'); return 2; }
-      const key = (l) => { let k = col ? ((o.f.t ? l.split(o.f.t) : l.trim().split(/\s+/))[col - 1] || '') : l; if (o.f.f) k = k.toLowerCase(); return k; };
+      // -k N: the key runs from field N to the end of the line; -k N,M from field N to field M
+      const km = o.f.k ? String(o.f.k).match(/^(\d+)(?:,(\d+))?$/) : null;
+      if (o.f.k && (!km || +km[1] < 1 || (km[2] !== undefined && +km[2] < +km[1]))) { io.err('sort: invalid number at field start: invalid count at start of ' + q(o.f.k) + '\n'); return 2; }
+      const col = km ? +km[1] : 0, colEnd = km && km[2] !== undefined ? +km[2] : Infinity;
+      const key = (l) => { let k = l; if (col) { if (o.f.t) k = l.split(o.f.t).slice(col - 1, colEnd).join(o.f.t); else k = (l.match(/\s*\S+/g) || []).slice(col - 1, colEnd).join('').replace(/^\s+/, ''); } if (o.f.f) k = k.toLowerCase(); return k; };
       const num = (s) => { const m = s.match(/^\s*-?\d+(\.\d+)?/); return m ? parseFloat(m[0]) : 0; };
-      const cmp = (a, b) => { const ka = key(a), kb = key(b); let c = o.f.n ? num(ka) - num(kb) : (ka < kb ? -1 : ka > kb ? 1 : 0); if (c === 0) c = a < b ? -1 : a > b ? 1 : 0; return o.f.r ? -c : c; };
+      const keyCmp = (a, b) => { const ka = key(a), kb = key(b); return o.f.n ? num(ka) - num(kb) : (ka < kb ? -1 : ka > kb ? 1 : 0); };
+      // equal keys fall back on the whole line, except with -u, where equal keys mean the same line (the first one is kept)
+      const cmp = (a, b) => { let c = keyCmp(a, b); if (c === 0 && !o.f.u) c = a < b ? -1 : a > b ? 1 : 0; return o.f.r ? -c : c; };
       all.sort(cmp);
-      if (o.f.u) all = all.filter((l, i) => i === 0 || cmp(all[i - 1], l) !== 0 && key(all[i - 1]) !== key(l));
+      if (o.f.u) all = all.filter((l, i) => i === 0 || keyCmp(all[i - 1], l) !== 0);
       for (const l of all) io.out(l + '\n');
       return exit;
     } });
@@ -1001,7 +1100,7 @@
       }
       return exit;
     } });
-  const trSet = (s) => { const out = []; s = s.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\\\/g, '\\'); const classes = { '[:upper:]': 'A-Z', '[:lower:]': 'a-z', '[:digit:]': '0-9', '[:space:]': ' \t\n', '[:alpha:]': 'a-zA-Z', '[:punct:]': '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~' }; for (const k in classes) s = s.split(k).join(classes[k]); for (let i = 0; i < s.length; i++) { if (s[i + 1] === '-' && i + 2 < s.length) { for (let c = s.charCodeAt(i); c <= s.charCodeAt(i + 2); c++) out.push(String.fromCharCode(c)); i += 2; } else out.push(s[i]); } return out; };
+  const trSet = (s) => { const out = []; s = s.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\\\/g, '\\'); const classes = { '[:alnum:]': 'a-zA-Z0-9', '[:blank:]': ' \t', '[:upper:]': 'A-Z', '[:lower:]': 'a-z', '[:digit:]': '0-9', '[:space:]': ' \t\n', '[:alpha:]': 'a-zA-Z', '[:punct:]': '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~' }; for (const k in classes) s = s.split(k).join(classes[k]); for (let i = 0; i < s.length; i++) { if (s[i + 1] === '-' && i + 2 < s.length) { for (let c = s.charCodeAt(i); c <= s.charCodeAt(i + 2); c++) out.push(String.fromCharCode(c)); i += 2; } else out.push(s[i]); } return out; };
   def('tr', { cat: 'text', use: 'tr [-d] [-s] SET1 [SET2]', desc: 'Translate characters: each character in SET1 becomes the matching one in SET2. Reads from a pipe or <, never from a file name.',
     opts: [['-d', 'delete the characters in SET1'], ['-s', 'squeeze repeats of a character into one'], ['a-z', 'ranges and [:upper:], [:lower:], [:digit:], [:space:] work in sets']],
     ex: ['echo hello | tr a-z A-Z', 'cat text.txt | tr -d ,', "tr ' ' '\\n' < words.txt"],
@@ -1010,10 +1109,12 @@
       if (!o.args.length || (!o.f.d && !o.f.s && o.args.length < 2)) { io.err('tr: missing operand\nTry \'man tr\' for help.\n'); return 1; }
       const s1 = trSet(o.args[0]), s2 = o.args[1] !== undefined ? trSet(o.args[1]) : [];
       let text = await readAll(io, 'tr'), out = '';
-      if (o.f.d) { const del = new Set(s1); for (const ch of text) if (!del.has(ch)) out += ch; }
+      const inS1 = new Set(s1), c = !!o.f.c, pick = (ch) => inS1.has(ch) !== c;   // -c: the complement, every character NOT in SET1
+      if (o.f.d) { for (const ch of text) if (!pick(ch)) out += ch; }
       else if (!s2.length) out = text;   // tr -s SET: squeeze only
+      else if (c) { const to = s2[s2.length - 1]; for (const ch of text) out += pick(ch) ? to : ch; }
       else { const map = new Map(); s1.forEach((ch, i) => { if (!map.has(ch)) map.set(ch, s2[Math.min(i, s2.length - 1)]); }); for (const ch of text) out += map.has(ch) ? map.get(ch) : ch; }
-      if (o.f.s) { const sq = new Set(o.f.d ? s1 : (s2.length ? s2 : s1)); let r = ''; for (const ch of out) if (!(sq.has(ch) && r.endsWith(ch))) r += ch; out = r; }
+      if (o.f.s) { const inS2 = new Set(s2), sq = s2.length ? (ch) => inS2.has(ch) : pick; let r = ''; for (const ch of out) if (!(sq(ch) && r.endsWith(ch))) r += ch; out = r; }
       io.out(out); return 0;
     } });
   def('sed', { cat: 'text', use: "sed [-i] 's/old/new/[g]' [file...]", desc: 'Replace text on every line: s/old/new/ changes the first match on each line, s/old/new/g every match. old is a regular expression.',
@@ -1028,7 +1129,7 @@
       const sm = (() => { if (script[0] !== 's' || script.length < 2) return null; const d = script[1], parts = ['']; for (let i = 2; i < script.length; i++) { const c = script[i]; if (c === '\\' && i + 1 < script.length) { parts[parts.length - 1] += c + script[++i]; continue; } if (c === d) { parts.push(''); continue; } parts[parts.length - 1] += c; } return parts.length === 3 && /^[gi]*$/.test(parts[2]) ? [script, d, parts[0], parts[1], parts[2]] : null; })();
       const pm = script.match(/^(\d+)(?:,(\d+|\$))?p$/);
       const dm = script.match(/^(\d+)(?:,(\d+|\$))?d$/);
-      if (sm) { let re; try { re = new RegExp(sm[2], sm[4].includes('g') ? 'g' + (sm[4].includes('i') ? 'i' : '') : (sm[4].includes('i') ? 'i' : '')); } catch (e) { io.err('sed: -e expression #1, char 0: ' + e.message + '\n'); return 1; } const rep = sm[3].replace(/\\(\d)/g, '$$$1').replace(/&/g, '$$&').replace(/\\&/g, '&'); fn = (l, i, n) => [l.replace(re, rep), true]; }
+      if (sm) { let re; try { re = new RegExp(posixRegex(sm[2], !!o.f.E), sm[4].includes('g') ? 'g' + (sm[4].includes('i') ? 'i' : '') : (sm[4].includes('i') ? 'i' : '')); } catch (e) { io.err('sed: -e expression #1, char 0: ' + e.message + '\n'); return 1; } const rep = sm[3].replace(/\\(\d)/g, '$$$1').replace(/&/g, '$$&').replace(/\\&/g, '&'); fn = (l, i, n) => [l.replace(re, rep), true]; }
       else if (pm || dm) { const m = pm || dm; const a = +m[1], b = m[2] === undefined ? a : m[2] === '$' ? Infinity : +m[2]; fn = pm ? (l, i) => [l, i >= a && i <= b] : (l, i) => [l, !(i >= a && i <= b)]; if (pm && !o.f.n) fn = (l, i) => [l, true, i >= a && i <= b]; }
       else if (script[0] === 's') { io.err("sed: -e expression #1, char " + script.length + ": unterminated `s' command\n"); return 1; }
       else { io.err('sed: -e expression #1, char 1: unknown command: ' + q(script[0] || '') + ' (only s/old/new/, Np and Nd are available here)\n'); return 1; }
@@ -1082,23 +1183,28 @@
     ex: ['printf "%s is %d years old\\n" Ada 36', 'printf "%-10s|%5d|\\n" name 42', 'printf "%.2f\\n" 3.14159'],
     run(args, io) {
       if (!args.length) { io.err('printf: usage: printf format [arguments]\n'); return 2; }
-      const fmt = unescape(args[0]); let rest = args.slice(1), out = '', rounds = 0;
-      const one = () => fmt.replace(/%(%|[-+ 0]*\d*(?:\.\d+)?[sdifxXc])/g, (m, spec) => {
+      const fmt = unescape(args[0]); let rest = args.slice(1), out = '', rounds = 0, used = 0;
+      const one = () => fmt.replace(/%(%|[-+ 0]*\d*(?:\.\d+)?[sdifoxXceE])/g, (m, spec) => {
         if (spec === '%') return '%';
-        const s = spec.match(/^([-+ 0]*)(\d*)(?:\.(\d+))?([sdifxXc])$/); const flags = s[1], width = +s[2] || 0, prec = s[3] === undefined ? null : +s[3], conv = s[4];
-        const a = rest.length ? rest.shift() : ''; let v;
+        const s = spec.match(/^([-+ 0]*)(\d*)(?:\.(\d+))?([sdifoxXceE])$/); const flags = s[1], width = +s[2] || 0, prec = s[3] === undefined ? null : +s[3], conv = s[4];
+        const a = rest.length ? (used++, rest.shift()) : ''; let v;
         if (conv === 's') v = prec === null ? a : a.slice(0, prec);
         else if (conv === 'c') v = a.slice(0, 1);
+        else if (conv === 'e' || conv === 'E') { const x = parseFloat(a) || 0; v = x.toExponential(prec === null ? 6 : prec).replace(/e([+-])(\d)$/, 'e$10$2'); if (conv === 'E') v = v.toUpperCase(); if (flags.includes('+') && x >= 0) v = '+' + v; }
         else if (conv === 'f') { const x = parseFloat(a) || 0; v = x.toFixed(prec === null ? 6 : prec); if (flags.includes('+') && x >= 0) v = '+' + v; }
-        else { const x = Math.trunc(parseFloat(a)) || 0; v = conv === 'x' ? x.toString(16) : conv === 'X' ? x.toString(16).toUpperCase() : String(x); if (flags.includes('+') && x >= 0) v = '+' + v; }
+        else { const x = Math.trunc(parseFloat(a)) || 0; v = conv === 'x' ? x.toString(16) : conv === 'X' ? x.toString(16).toUpperCase() : conv === 'o' ? x.toString(8) : String(x); if (flags.includes('+') && x >= 0) v = '+' + v; }
         if (v.length < width) v = flags.includes('-') ? padR(v, width) : (flags.includes('0') && conv !== 's' ? (v[0] === '-' ? '-' + '0'.repeat(width - v.length) + v.slice(1) : '0'.repeat(width - v.length) + v) : pad(v, width));
         return v;
       });
-      do { out += one(); if (++rounds > 1000) break; } while (rest.length && /%[^%]/.test(fmt));
+      do { used = 0; out += one(); if (++rounds > 1000) break; } while (rest.length && used > 0);   // the format is reused only while it takes arguments
       io.out(out); return 0;
     } });
   def('seq', { cat: 'text', use: 'seq [first] [step] last', desc: 'Print the numbers from first to last, one per line.', ex: ['seq 5', 'seq 1 10', 'seq 0 5 20', 'for i in $(seq 3); do echo $i; done'],
-    run(args, io) { const nums = args.map(Number); if (!args.length || nums.some(isNaN)) { io.err('seq: ' + (args.length ? 'invalid floating point argument: ' + q(args.find((a) => isNaN(Number(a)))) : 'missing operand') + '\n'); return 1; } let [a, s, b] = nums.length === 1 ? [1, 1, nums[0]] : nums.length === 2 ? [nums[0], 1, nums[1]] : nums; if (s === 0) { io.err('seq: invalid Zero increment value: \'0\'\n'); return 1; } let k = 0; for (let x = a; s > 0 ? x <= b : x >= b; x += s) { io.out(x + '\n'); if (++k > 100000) break; } return 0; } });
+    run(args, io) { const nums = args.map(Number); if (!args.length || nums.some(isNaN)) { io.err('seq: ' + (args.length ? 'invalid floating point argument: ' + q(args.find((a) => isNaN(Number(a)))) : 'missing operand') + '\n'); return 1; } let [a, s, b] = nums.length === 1 ? [1, 1, nums[0]] : nums.length === 2 ? [nums[0], 1, nums[1]] : nums; if (s === 0) { io.err('seq: invalid Zero increment value: \'0\'\n'); return 1; } // decimals: as many places as the first number and the step have (seq 0 0.1 0.3 → 0.0 0.1 0.2 0.3); each value is first + k*step, so no drift
+      const places = (t) => { const m = String(t).match(/\.(\d+)$/); return m ? m[1].length : 0; };
+      const dp = Math.max(places(nums.length === 1 ? 1 : args[0]), nums.length === 3 ? places(args[1]) : 0), eps = Math.abs(s) * 1e-9;
+      for (let k = 0; k <= 100000; k++) { const x = a + k * s; if (s > 0 ? x > b + eps : x < b - eps) break; io.out((dp ? x.toFixed(dp) : String(Math.round(x * 1e9) / 1e9)) + '\n'); }
+      return 0; } });
   def('date', { cat: 'other', use: 'date [+FORMAT]', desc: 'Print the date and time. +FORMAT chooses the pieces: %Y year, %m month, %d day, %H:%M:%S time, %A weekday, %B month name.', ex: ['date', 'date +%Y-%m-%d', 'date "+%A, %d %B %Y"'],
     run(args, io, sh) {
       const d = new Date(sh.fs.now()); const two = (x) => String(x).padStart(2, '0');
@@ -1125,6 +1231,8 @@
   def('clear', { cat: 'shell', builtin: true, use: 'clear', desc: 'Clear the screen (Ctrl+L does the same).', ex: ['clear'], run(args, io) { if (io.clear) io.clear(); return 0; } });
   def('exit logout', { cat: 'shell', builtin: true, use: 'exit [status]', desc: 'End a script with a status: 0 means success, anything else a problem. At the prompt it does nothing but say so.', ex: ['exit', 'exit 1'],
     run(args, io, sh, ctx) { const code = args.length ? (parseInt(args[0], 10) & 255) || 0 : sh.lastExit; if (ctx.name === 'bash') { io.out('(this terminal stays open: close its panel to leave)\n'); return code; } throw new Stop('exit', code); } });
+  def('shift', { cat: 'shell', builtin: true, use: 'shift [n]', desc: 'In a script, drop the first argument (or the first n): $2 becomes $1, and $# goes down by one.', ex: ['shift'],
+    run(args, io, sh, ctx) { const n = args.length ? parseInt(args[0], 10) : 1; if (isNaN(n) || n < 0) { io.err('bash: shift: ' + args[0] + ': numeric argument required\n'); return 1; } if (n > ctx.args.length) return 1; ctx.args.splice(0, n); return 0; } });
   def(':', { cat: 'shell', builtin: true, use: ':', desc: 'Do nothing (a no-op; the body of a loop that only waits).', ex: [], run() { return 0; } });
   def('true', { cat: 'shell', builtin: true, use: 'true', desc: 'Do nothing, successfully (status 0).', ex: ['true && echo yes'], run() { return 0; } });
   def('false', { cat: 'shell', builtin: true, use: 'false', desc: 'Do nothing, unsuccessfully (status 1).', ex: ['false || echo no'], run() { return 1; } });
