@@ -23,7 +23,6 @@ window.COURSES.push({
       title: 'Hello, C++', summary: 'What a compiler does, the rules every C++ line follows, and why a variable must have a type before it has a value.',
       blocks: [
         `<p>In 1979, Bjarne Stroustrup, a Danish computer scientist at Bell Labs in New Jersey, started adding new features to the language C, which his colleagues had created a few years earlier to write the Unix operating system. He called the result "C with Classes". In 1983 it was renamed C++, a programmer's joke: in C, <code>++</code> means "add one", so C++ is "one more than C". Today it runs underneath web browsers, game engines, and the software on space probes.</p>`,
-        { photo: 'stroustrup', caption: 'Bjarne Stroustrup in 2013, thirty-four years after he began "C with Classes" at Bell Labs.' },
         `<p>You already know Python. C++ has the same ideas underneath: values, names, decisions, loops, functions. What changes is how much the language makes you say, and when your mistakes are caught. C++ is the language of operating systems, game engines and browsers, and it earns that place by letting the programmer control exactly what the machine does. The price is ceremony. This lesson is about reading the ceremony so it stops looking like noise.</p>
 <h2>The first program</h2>
 <p>Here is the traditional first program. It is seven lines where Python needed one. Run it, then read the table below it, which takes it apart line by line.</p>`,
@@ -780,7 +779,6 @@ int main() {
       title: 'Pointers', summary: 'Addresses and the variables that hold them, stated exactly: &, * and the three meanings of the star; why passing a pointer still passes by value; and how a function changes the caller\u2019s variables.',
       blocks: [
         `<p>In 1965 the computer scientist Tony Hoare added a special "points nowhere" value to a programming language he was designing, because it was so easy to implement. In 2009 he apologised for it in public, calling it his "billion-dollar mistake", after decades of programs crashing because they followed a pointer that pointed nowhere. Pointers are powerful and they are sharp. This lesson shows how they work, and how not to cut yourself.</p>`,
-        { photo: 'tony-hoare', caption: 'Tony Hoare in 2011. The null reference was not his only invention: in 1959 he thought of Quicksort, still one of the fastest ways to sort.' },
         `<p>Lesson 4 ended with a limitation: a function receives copies, so it cannot change the caller's variables, and it can hand back only one value. C++'s answer is one of the ideas it is best known for. It has a fearsome reputation, but it rests on three small rules, and the whole difficulty is keeping those rules separate in your head.</p>
 <h2>Addresses</h2>
 <p>Lesson 1's memory figure showed each variable occupying some bytes, laid out by the compiler. Every byte of memory has a number, its <em>address</em>, just as every house on a street has a number.</p>

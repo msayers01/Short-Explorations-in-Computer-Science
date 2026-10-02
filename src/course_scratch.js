@@ -936,7 +936,6 @@ if health <= 0:
       title: 'Project: turtle art', summary: 'Shapes become functions, colours and fills make them pretty, and loops turn one shape into a flower, a spiral and a sky full of stars.',
       blocks: [
         `<p>Remember Seymour Papert from lesson 3? He made Logo, a language for kids. His team gave it a robot with a pen underneath. Kids typed <code>FORWARD 50</code> and it rolled forward and drew a line. They typed <code>RIGHT 90</code> and it turned. Papert called it the turtle. He said kids should teach the computer, not the other way round. Scratch was made by his students, years later, with the same idea.</p>`,
-        { photo: 'papert-1987', caption: 'Seymour Papert teaches about Logo in Moscow in 1987. Look at the board. It says TO BOX. In Logo, TO makes a new block, like def.' },
         `<p>Your turtle is the same turtle, on a screen. In lesson 3 you drew squares and stars with <code>repeat</code>. Now you have functions. That changes everything. A shape becomes one word. One word, repeated and turned, becomes art.</p>
 <h2>A shape is a function</h2>
 <p>You know how to draw a square: four times, move and turn. Put that inside a <code>def</code> and the square gets a name. Then you can draw ten of them with one loop.</p>`,
