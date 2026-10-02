@@ -568,7 +568,7 @@ Settings s;          // volume 5, muted false</code></pre>
       title: 'Types with rules', summary: 'class: private data, constructors and member functions, so that a value can never be put into a state the program forbids.',
       blocks: [
         `<p>In 1962 Kristen Nygaard and Ole-Johan Dahl, two Norwegian computer scientists, began work on a language for simulating real systems: ships in a harbour, customers in a queue. They found that the natural way to describe such things was as <em>objects</em>, each with its own data and its own behaviour, and in 1967 their language Simula 67 introduced the word <em>class</em>. A young Dane named Bjarne Stroustrup, who had learned Simula as a student in Aarhus, used it for his doctoral research at Cambridge in the late 1970s. Years later, at Bell Labs, he wanted its classes in a language that ran at the speed of C. That was the beginning of "C with Classes", and so of C++.</p>`,
-        { photo: 'kristen-nygaard', caption: 'Kristen Nygaard in about 1997, at a conference on programming languages in Brazil, thirty years after Simula 67 gave the world the word <em>class</em>.' },
+        { photo: 'house-blueprint', caption: 'A plan of a house and its grounds, drawn in 1910. A class is a plan of this kind: it says what every object built from it has and what it can do, and a program builds as many objects from one class as it needs, each with its own data.' },
         `<p>The last lesson ended with a complaint: a <code>struct</code> cannot protect itself. Look at this one.</p>`,
         { play: `#include <iostream>
 using namespace std;

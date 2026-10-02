@@ -9,7 +9,7 @@
 
 /
 /index.html
-  Content-Security-Policy: default-src 'none'; script-src 'sha256-0JtaZ04ZOYhqPFDKjxvokml+cEpHD+HPqP7SGH7iC/o=' 'sha256-Qp1qVCZyA/DWsyu5mYY0PpD7ohtsg2f++rMBpAQAVrM=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'sha256-Aut+He3DoDXhKvmsNNfisNoXm6qtYR0UnmsZ4kTyj7g=' 'sha256-S7BYUXw+x2LlcxHZri6bYZSCc3oH+hiX6xz3RsATwAM=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
   Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()
