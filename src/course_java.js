@@ -25,8 +25,9 @@ window.COURSES.push({
       title: 'Hello, Java', summary: 'Where Java came from, the shape every Java program has, what the compiler checks, and the types a variable can have.',
       blocks: [
         `<p>In 1991 a small team at Sun Microsystems in California, led by James Gosling, set out to write software for the gadgets they expected to fill living rooms: television set-top boxes, handheld controllers, devices that did not yet exist. Every such device would have a different chip inside, so a program written for one would have to be rewritten for the next. Gosling's answer was a language whose programs were not translated for any particular chip. Instead they were translated into instructions for an imaginary machine, the <em>Java virtual machine</em>, and any real device that could pretend to be that machine could run every Java program ever written. He called the language Oak, after a tree outside his office window. The set-top boxes never came. The World Wide Web did, and in 1995 the language, renamed Java, was released to run the same program on every computer on the Internet. Its slogan was "write once, run anywhere".</p>`,
-        { photo: 'james-gosling', caption: 'James Gosling, the designer of Java, speaking at a Java seminar in Australia.' },
-        `<p>It worked. Today the same Java program runs on a laptop, a phone and a rack of servers. Android apps are written in it; so was <em>Minecraft</em>, by one programmer in his spare time; so are large parts of the systems behind banks, airlines and the biggest web sites. It is the language of the AP Computer Science A exam and of most university first-year courses. If you learned Python first, Java will feel like Python with its rules written out in full: every value has a type, every statement ends with a mark, and a compiler reads your whole program before any of it runs. This lesson is about reading those rules so they stop looking like noise.</p>
+        `<p>It worked. Today the same Java program runs on a laptop, a phone and a rack of servers. Android apps are written in it, and so are large parts of the systems behind banks, airlines and the biggest web sites. So was a game you may know. Markus Persson, a Swedish programmer, began <em>Minecraft</em> in his spare time and released the first version to the public in 2009, written in Java. Minecraft: Java Edition is still a Java program, and the mods that players write for it, adding new blocks, creatures and machines, are Java programs too. (The Bedrock Edition, for consoles and phones, is written in C++.)</p>`,
+        { photo: ['minecraft-cave-game-2009', 'minecraft-beta-landscape'], caption: 'Minecraft in 2009, in an early version then called <i>Cave Game</i>, and two years later in Beta 1.8.1, with a river, trees, and the row of nine inventory slots at the bottom of the screen. Every block in both pictures was drawn by a Java program.' },
+        `<p>It is the language of the AP Computer Science A exam and of most university first-year courses. If you learned Python first, Java will feel like Python with its rules written out in full: every value has a type, every statement ends with a mark, and a compiler reads your whole program before any of it runs. This lesson is about reading those rules so they stop looking like noise.</p>
 <h2>The first program</h2>
 <p>Here is the traditional first program. It is five lines where Python needed one. Run it, then read the table below, which takes it apart line by line.</p>`,
         { play: `public class Main {
@@ -113,7 +114,21 @@ window.COURSES.push({
         { check: "What does <code>7 / 2</code> give in Java?", options: ["3.5", "3", "4"], answer: 1, why: "int divided by int is an int: the fraction is dropped, not rounded. 7 / 2.0 gives 3.5." },
         `<div class="stmt"><p><span class="kind">Rule (division).</span> <code>int / int</code> is an <code>int</code>: the fraction is dropped, not rounded. To get a decimal answer, make one operand a <code>double</code> first, with a cast or by writing <code>2.0</code> instead of <code>2</code>.</p>
 <p><span class="kind">Rule (mixing).</span> When an <code>int</code> meets a <code>double</code>, the <code>int</code> is converted and the answer is a <code>double</code>. Going the other way needs a cast, <code>(int) 3.99</code>, which gives <code>3</code>: the fraction is cut off, not rounded. Storing a <code>double</code> in an <code>int</code> without a cast is a compile error: <em>possible lossy conversion from double to int</em>.</p></div>
-<h2>Printing</h2>
+<p>Dropping the fraction sounds like a nuisance, but often it is exactly the question. In Minecraft one inventory slot holds a <em>stack</em> of up to 64 blocks of dirt or stone (eggs stack only to 16). How many full stacks do 200 blocks make, and how many are left over? That is <code>/</code> and <code>%</code>.</p>`,
+        { play: `public class Main {
+    public static void main(String[] args) {
+        int blocks = 200;
+        int stacks = blocks / 64;   // whole stacks of 64
+        int left = blocks % 64;     // the remainder
+        System.out.println(blocks + " blocks make " + stacks + " stacks and " + left + " more");
+        System.out.println("Check: " + (stacks * 64 + left));
+        int perStack = 16;          // eggs stack only to 16
+        int eggs = 50;
+        System.out.println(eggs / perStack + " full stacks of eggs, " + eggs % perStack + " left");
+        System.out.println(blocks / 64.0 + " stacks, if a stack could be cut");
+    }
+}`, caption: 'Division and remainder always fit back together: stacks × 64 + left is the number you started with. Try 64 blocks, then 63. The last line shows what a double gives instead: an answer no inventory can hold.' },
+        `<h2>Printing</h2>
 <p><code>System.out.println(x)</code> prints <code>x</code> and ends the line; <code>System.out.print(x)</code> prints without ending the line, so the next output continues on the same line. To print several things at once, join them into one <code>String</code> with <code>+</code>. When one side of <code>+</code> is text, the other side is turned into text and joined on; Java never adds spaces of its own, so write them inside the quotes.</p>`,
         { play: `public class Main {
     public static void main(String[] args) {
@@ -242,6 +257,20 @@ public class Main {
         System.out.println(!(hour > 12));    // not: the opposite
     }
 }`, caption: 'Try hour = 12, then weekend = true. With count = 0 the division is never reached: && stopped at the first false. Remove the count != 0 && and run: ArithmeticException: / by zero.' },
+        `<p>A game is full of decisions like these. In Minecraft a wooden pickaxe takes 3 planks and 2 sticks, and 2 planks make 4 sticks. A program that advises the player tests the best case first, then the next best, and so on down the chain.</p>`,
+        { play: `public class Main {
+    public static void main(String[] args) {
+        int planks = 5;
+        int sticks = 1;
+        if (planks >= 3 && sticks >= 2) {
+            System.out.println("You can craft a wooden pickaxe.");
+        } else if (planks >= 5) {
+            System.out.println("Turn 2 planks into 4 sticks first, then craft the pickaxe.");
+        } else {
+            System.out.println("Chop more wood: one log makes 4 planks.");
+        }
+    }
+}`, caption: 'With 5 planks and 1 stick the first test fails (not enough sticks) and the second succeeds. Try planks = 3 and sticks = 2, then planks = 4 and sticks = 0. Why does the second test ask for 5 planks, not 3?' },
         `<h2>Comparing text</h2>
 <p>Numbers and <code>char</code>s compare with <code>==</code>. <code>String</code>s do not. A <code>String</code> is an object, and <code>==</code> between two objects asks whether they are <em>the same object</em>, not whether they hold the same text. Two strings that read the same can be two different objects, for example one typed by the user and one written in your program, and <code>==</code> then says <code>false</code>. Ask the string itself instead: <code>a.equals(b)</code> is <code>true</code> exactly when the characters match, and <code>a.equalsIgnoreCase(b)</code> ignores capitals.</p>`,
         { code: `String answer = in.next();        // the user types   yes
@@ -584,6 +613,21 @@ public class Main {
     }
 }`, expectError: true, caption: 'Main.java:8: error: missing return statement. For n equal to 0 neither branch returns, so the method would fall off its end. Add return 0; before the closing brace, or make the last branch a plain else.' },
         { check: "An int method has an if that returns and an else-if that returns, and no else. What does the compiler say?", options: ["Nothing: it compiles", "missing return statement: some path reaches the end without returning", "It returns 0 by default"], answer: 1, why: "A non-void method must return on every path. The compiler can see a way to the closing brace, so it refuses." },
+        `<p>Here is a method with two parameters that a Minecraft player could use. An inventory slot holds one stack: up to 64 blocks of dirt, but only 16 eggs, and a sword does not stack at all. How many slots does a pile of items need? Lesson 1 found the full stacks with <code>/</code>; a part stack needs a slot too, so this time the division must round <em>up</em>. Adding <code>stackSize - 1</code> before dividing does that, and once it is in a method nobody has to remember the trick again.</p>`,
+        { play: `public class Main {
+    static int slotsNeeded(int items, int stackSize) {
+        return (items + stackSize - 1) / stackSize;   // rounds up: a part stack needs a slot too
+    }
+
+    public static void main(String[] args) {
+        System.out.println(slotsNeeded(200, 64));   // 3 full stacks and 8 more
+        System.out.println(slotsNeeded(64, 64));    // exactly one stack
+        System.out.println(slotsNeeded(50, 16));    // eggs stack to 16
+        System.out.println(slotsNeeded(3, 1));      // swords do not stack at all
+        int total = slotsNeeded(200, 64) + slotsNeeded(50, 16) + slotsNeeded(3, 1);
+        System.out.println("Slots for everything: " + total + " of 36");
+    }
+}`, caption: 'A player\u2019s inventory has 36 slots. Check the rounding by hand: 200 + 63 = 263, and 263 / 64 is 4. Try slotsNeeded(0, 64): no items need no slots.' },
         `<h2>Methods that do something: void</h2>
 <p>Not every method hands back a value. One that prints, or draws, or changes a list, has the return type <code>void</code>, "nothing". A <code>void</code> method is called as a statement on its own, not inside an expression, and may end with a bare <code>return;</code> or simply by reaching its closing brace. <code>main</code> is one.</p>`,
         { play: `public class Main {

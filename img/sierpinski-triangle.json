@@ -1,0 +1,16 @@
+{
+  "id": "sierpinski-triangle",
+  "file": "sierpinski-triangle.jpg",
+  "title": "A Sierpinski triangle",
+  "alt": "A large black-and-white triangle made of three half-size triangles, each made of three smaller ones, and so on down to tiny triangles; the empty triangles left between them form holes of every size.",
+  "author": "Medvedev",
+  "license": "Public domain",
+  "licenseUrl": null,
+  "source": "https://commons.wikimedia.org/wiki/File:Big_Sierpinski_triangle.svg",
+  "credit": "Own work",
+  "description": "Sierpiński triangle",
+  "date": "2010-09-03",
+  "width": 960,
+  "height": 960,
+  "fetched": "2026-10-02"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "internet-map-2005",
+  "file": "internet-map-2005.jpg",
+  "title": "A map of the Internet",
+  "alt": "A dense web of thousands of fine coloured lines on black, branching out from bright star-like points; an inset at the bottom right zooms in on one point with lines labelled by numeric network addresses radiating from it.",
+  "author": "The Opte Project",
+  "license": "CC BY 2.5",
+  "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
+  "source": "https://commons.wikimedia.org/wiki/File:Internet_map_1024.jpg",
+  "credit": "Originally from the English Wikipedia; description page is/was here.",
+  "description": "Partial map of the Internet based on the January 15, 2005 data found on opte.org. Each line is drawn between two nodes, representing two IP addresses. The length of the lines are indicative of the delay between those two nodes. This graph represents less than 30% of the Class C networks reachable by the data collection program in early 2005. Lines are color-coded according to their corresponding RFC 1918 allocation as follows: Dark blue: net, ca, us Green: com, org Red: mil, gov, edu Yellow: jp, cn, tw, au, de Magenta: uk, it, pl, fr Gold: br, kr, nl White: unknown",
+  "date": "2005-01-15",
+  "width": 960,
+  "height": 960,
+  "fetched": "2026-10-02"
+}
