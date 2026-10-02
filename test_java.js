@@ -20,7 +20,7 @@ t('int, double, char arithmetic', M('System.out.println(7 / 2); System.out.print
 t('strings', M('String s = "Hello, World"; System.out.println(s.length() + " " + s.charAt(4) + " " + s.substring(7) + " " + s.indexOf("World") + " " + s.indexOf(\'z\') + " " + s.contains("lo, ")); System.out.println("abc".compareTo("abd") + " " + "Zebra".compareTo("apple") + " " + "x".compareTo("xy")); System.out.println("hello".hashCode()); System.out.println("a,b,,c,,".split(",").length + " " + "one two  three".split("\\\\s+").length); System.out.println("  trim me ".trim() + "|" + "ab".repeat(3) + "|" + String.join("-", "x", "y")); System.out.println("Mississippi".replaceAll("ss", "S") + " " + "ABC".equalsIgnoreCase("abc") + " " + "abc".equals("abc")); System.out.println(Integer.parseInt("42") + 1); System.out.println(Double.parseDouble("2.5") * 2); StringBuilder sb = new StringBuilder(); sb.append(1).append(\'x\').append(2.5).append(true); System.out.println(sb.reverse());'),
   '12 o World 7 -1 true\n-1 -7 -1\n99162322\n4 3\ntrim me|ababab|x-y\nMiSiSippi true true\n43\n5.0\neurt5.2x1\n');
 t('printf', M('System.out.printf("%d items at $%.2f = $%8.2f%n", 3, 1.5, 4.5); System.out.printf("%-10s|%5d|%05d|%x%n", "name", 42, 42, 255); System.out.println(String.format("%,d %,.2f", 1234567, 1234567.891)); System.out.printf("%s %s %s %c%c %b %e%n", 1, 2.5, \'c\', \'o\', 107, true, 12345.678); System.out.printf("%.0f %.1f %.2f %6.1f%%%n", 2.5, 0.05, 1.005, 99.5);'),
-  '3 items at $1.50 = $    4.50\nname      |   42|00042|ff\n1,234,567 1,234,567.89\n1 2.5 c ok true 1.234568e+04\n3 0.1 1.00   99.5%\n');
+  '3 items at $1.50 = $    4.50\nname      |   42|00042|ff\n1,234,567 1,234,567.89\n1 2.5 c ok true 1.234568e+04\n3 0.1 1.01   99.5%\n');   // Java rounds the shortest decimal 1.005 half-up
 t('printf type error', M('System.out.printf("%d%n", 2.5);'), '', /IllegalFormatConversionException: d != java\.lang\.Double/);
 // ---- control flow
 t('loops, switch, labels', M('int sum = 0; for (int i = 1; i <= 10; i++) { if (i % 2 == 0) continue; sum += i; } System.out.print(sum + " "); int k = 10; do { k -= 3; } while (k > 0); System.out.print(k + " "); outer: for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) { if (j == 2) continue outer; if (i == 2) break outer; System.out.print(i + "" + j + " "); } System.out.println(); String day = "TUE"; switch (day) { case "MON": System.out.println("Monday"); break; case "TUE": case "WED": System.out.println("Midweek"); default: System.out.println("fell through"); } int x = 3; switch (x) { case 1 -> System.out.println("one"); case 2, 3 -> System.out.println("two or three"); default -> System.out.println("other"); } System.out.println(x > 2 ? "big" : "small");'),
@@ -61,7 +61,7 @@ public class Main { public static void main(String[] args) { List<Student> xs = 
 // ---- input
 t('scanner', M('Scanner in = new Scanner(System.in); int n = in.nextInt(); String rest = in.nextLine(); String line = in.nextLine(); double d = in.nextDouble(); String w = in.next(); System.out.println(n + "|" + rest + "|" + line + "|" + d + "|" + w); while (in.hasNextInt()) System.out.print(in.nextInt() * 2 + " "); System.out.println(in.hasNext() + " " + in.next() + " " + in.hasNextLine());'),
   '42||Ada Lovelace|3.5|word\n2 4 6 true end false\n', undefined, '42\nAda Lovelace\n3.5 word 1 2 3 end');
-t('scanner mismatch', M('Scanner sc = new Scanner(System.in); int n = sc.nextInt();'), '', /InputMismatchException: For input string: "abc"/, 'abc\n');
+t('scanner mismatch', M('Scanner sc = new Scanner(System.in); int n = sc.nextInt();'), '', /^Exception in thread "main" java\.util\.InputMismatchException\n/, 'abc\n');   // no message, as in Java
 t('scanner no input', M('Scanner sc = new Scanner(System.in); String s = sc.nextLine();'), '', /NoSuchElementException: No line found/, '');
 // ---- exceptions
 t('exceptions', `public class Main {
@@ -111,6 +111,89 @@ ce('end of file', 'public class Main { public static void main(String[] args) { 
 ce('outside a class', 'int x = 5;', /class, interface, enum, or record expected/);
 ce('list indexed like an array', M('ArrayList<Integer> xs = new ArrayList<>(); xs[0] = 1;'), /array required, but ArrayList<Integer> found/);
 ce('duplicate case', M('int x = 1; switch (x) { case 1: break; case 1: break; }'), /duplicate case label/);
+// ---- regressions found by comparing with the real JDK 21 (expected outputs are what javac + java print)
+t("printf rounds the shortest decimal half-up", M("System.out.println(String.format(\"%.2f %.2f %.1f %.1f %.2f %.2f %.0f %.0f\", 2.675, 1.005, 0.15, 0.35, 0.015, 1.115, 0.5, 2.5)); System.out.println(String.format(\"%.20f|%.3e|%.2e|%e|%.3g|%.1g|%g\", 0.1, 9.9995, 1234.5, 0.0, 9.995, 0.0000972, 0.0001234)); System.out.printf(\"%.2f %.3f %,.2f %10.3f|%n\", 1.005f, 0.2285f, 1234567.125, -2.0005); System.out.println(Double.MIN_VALUE + \" \" + Float.MIN_VALUE + \" \" + String.format(\"%e\", Double.MIN_VALUE));"),
+  "2.68 1.01 0.2 0.4 0.02 1.12 1 3\n0.10000000000000000000|1.000e+01|1.23e+03|0.000000e+00|10.0|0.0001|0.000123400\n1.00 0.228 1,234,567.13     -2.001|\n4.9E-324 1.4E-45 4.900000e-324\n");
+t("queues and deques: remove(x) removes the value", M("ArrayDeque<Integer> d = new ArrayDeque<>(); d.add(5); d.add(7); d.add(0); System.out.println(d.remove(0) + \" \" + d); Queue<Integer> q = new LinkedList<>(); q.add(4); q.add(8); q.add(0); System.out.println(q.remove(0) + \" \" + q + \" \" + q.remove() + \" \" + q.element() + \" \" + q); Deque<Integer> e = new ArrayDeque<>(List.of(3, 9, 1)); System.out.println(e.remove(1) + \" \" + e + \" \" + e.offerFirst(7) + \" \" + e.offerLast(8) + \" \" + e + \" \" + e.peekLast() + \" \" + e.removeLast()); Iterator<Integer> it = e.descendingIterator(); while (it.hasNext()) System.out.print(it.next() + \" \"); System.out.println(); try { d.add(null); } catch (NullPointerException ex) { System.out.println(\"NPE\"); } try { new ArrayDeque<Integer>().remove(); } catch (NoSuchElementException ex) { System.out.println(ex); } try { new ArrayDeque<String>().element(); } catch (NoSuchElementException ex) { System.out.println(ex); } LinkedList<Integer> ll = new LinkedList<>(); ll.add(null); ll.add(2); System.out.println(ll + \" \" + ll.remove() + \" \" + ll.get(0) + \" \" + ll); try { new LinkedList<Integer>().get(0); } catch (IndexOutOfBoundsException ex) { System.out.println(ex); } Queue<int[]> bfs = new ArrayDeque<>(); bfs.offer(new int[]{0}); int n = 0; while (!bfs.isEmpty()) { int[] c = bfs.remove(); n++; if (c[0] < 4) bfs.add(new int[]{c[0] + 1}); } System.out.println(n + \" \" + d.getClass().getSimpleName());"),
+  "true [5, 7]\ntrue [4, 8] 4 8 [8]\ntrue [3, 9] true true [7, 3, 9, 8] 8 8\n9 3 7 \nNPE\njava.util.NoSuchElementException\njava.util.NoSuchElementException\n[null, 2] null 2 [2]\njava.lang.IndexOutOfBoundsException: Index: 0, Size: 0\n5 ArrayDeque\n");
+t("iterators", M("List<Integer> xs = new ArrayList<>(List.of(1, 2, 3, 4, 5, 6)); Iterator<Integer> it = xs.iterator(); while (it.hasNext()) if (it.next() % 2 == 0) it.remove(); System.out.println(xs); Set<String> ss = new TreeSet<>(List.of(\"a\", \"bb\", \"c\", \"dd\")); for (Iterator<String> i = ss.iterator(); i.hasNext();) if (i.next().length() > 1) i.remove(); System.out.println(ss); try { xs.iterator().remove(); } catch (IllegalStateException e) { System.out.println(e); } try { new ArrayList<Integer>().iterator().next(); } catch (NoSuchElementException e) { System.out.println(e); }"),
+  "[1, 3, 5]\n[a, c]\njava.lang.IllegalStateException\njava.util.NoSuchElementException\n");
+t("user exceptions print their message", `class MyRt extends RuntimeException { MyRt(String m) { super(m); } MyRt() { } }
+class MyEx extends Exception { MyEx(String m) { super(m); } }
+class Sub extends MyEx { Sub() { super("sub"); } }
+public class Main {
+    public static void main(String[] args) {
+        System.out.println(new MyRt("boom"));
+        try { throw new MyEx("bad"); } catch (Exception e) { System.out.println(e + " | " + e.toString() + " | " + e.getMessage()); }
+        try { throw new MyRt(); } catch (RuntimeException e) { System.out.println(e + " | " + e.getMessage()); }
+        try { throw new Sub(); } catch (MyEx e) { System.out.println("caught " + e); }
+    }
+}
+`,
+  "MyRt: boom\nMyEx: bad | MyEx: bad | bad\nMyRt | null\ncaught Sub: sub\n");
+t("getClass() == o.getClass(), Objects.hash and boxed Character identity", `import java.util.*;
+class Pt { final int x, y; Pt(int x, int y) { this.x = x; this.y = y; }
+    @Override public boolean equals(Object o) { if (this == o) return true; if (o == null || getClass() != o.getClass()) return false; Pt p = (Pt) o; return x == p.x && y == p.y; }
+    @Override public int hashCode() { return Objects.hash(x, y); } public String toString() { return "(" + x + "," + y + ")"; } }
+class Pt3 extends Pt { Pt3(int x, int y) { super(x, y); } }
+public class Main {
+    public static void main(String[] args) {
+        Set<Pt> ps = new HashSet<>(); ps.add(new Pt(1, 2)); ps.add(new Pt(1, 2)); ps.add(new Pt(-3, 70)); System.out.println(ps + " " + ps.contains(new Pt(-3, 70)) + " " + new Pt(1, 2).equals(new Pt3(1, 2)));
+        System.out.println(Objects.hash(1, 2, 3) + " " + Objects.hash("a", null, 2.5) + " " + Objects.equals(null, null) + " " + Objects.equals("a", "b") + " " + Objects.toString(null, "none") + " " + Objects.hashCode(null) + " " + Objects.isNull(null));
+        try { Objects.requireNonNull(null, "name must not be null"); } catch (NullPointerException e) { System.out.println(e); }
+        Character a = 'a', b = 'a', c = '\\u0100', d = '\\u0100'; System.out.println((a == b) + " " + (c == d) + " " + c.equals(d) + " " + ("x".getClass() == "y".getClass()));
+        System.out.println(new Object().toString().startsWith("java.lang.Object@"));
+    }
+}
+`,
+  "[(1,2), (-3,70)] true false\n30817 1074126976 true false none 0 true\njava.lang.NullPointerException: name must not be null\ntrue false true true\ntrue\n");
+t("entrySet order, split", M("HashMap<String, Integer> ages = new HashMap<>(); ages.put(\"Alice\", 30); ages.put(\"Bob\", 25); ages.put(\"Charlie\", 35); ages.put(\"Diana\", 28); ages.put(\"Eve\", 22); System.out.println(ages.entrySet()); List<Map.Entry<String, Integer>> es = new ArrayList<>(ages.entrySet()); System.out.println(es.get(0)); System.out.println(Arrays.toString(\"a1b2c\".split(\"(\\\\d)\")) + \" \" + \",,\".split(\",\").length + \" \" + Arrays.toString(\"a,b,,\".split(\",\")) + \" \" + Arrays.toString(\"a,b,,\".split(\",\", -1)) + \" \" + Arrays.toString(\"abc\".split(\"\")) + \" \" + Arrays.toString(\"abc\".split(\"\", 2)) + \" \" + Arrays.toString(\"x1y22z\".split(\"(\\\\d)+\", 2)) + \" \" + Arrays.toString(\" a b\".split(\" \")) + \" \" + \"\".split(\",\").length);"),
+  "[Diana=28, Bob=25, Eve=22, Alice=30, Charlie=35]\nDiana=28\n[a, b, c] 0 [a, b] [a, b, , ] [a, b, c] [a, bc] [x, y22z] [, a, b] 1\n");
+t("octal and other literals", M("System.out.println(010 + \" \" + 0777 + \" \" + 017L + \" \" + 0 + \" \" + 00 + \" \" + 037777777777 + \" \" + 09.5 + \" \" + 1.e1 + \" \" + 1.f + \" \" + 0x1F + \" \" + 0b101);"),
+  "8 511 15 0 0 -1 9.5 10.0 1.0 31 5\n");
+t("scanner mismatch has no message", M("Scanner sc = new Scanner(System.in); try { sc.nextInt(); } catch (InputMismatchException e) { System.out.println(e + \" \" + e.getMessage()); sc.next(); } try { sc.nextInt(); } catch (InputMismatchException e) { System.out.println(e); }"),
+  "java.util.InputMismatchException null\njava.util.InputMismatchException: For input string: \"99999999999\"\n", undefined, "abc 99999999999\n");
+t("exception messages (JDK 21 wording)", M("String s = \"abc\"; StringBuilder sb = new StringBuilder(\"ab\"); try { s.substring(2, 1); } catch (Exception e) { System.out.println(e); } try { s.substring(5); } catch (Exception e) { System.out.println(e); } try { s.charAt(-1); } catch (Exception e) { System.out.println(e); } try { sb.charAt(5); } catch (Exception e) { System.out.println(e); } try { sb.deleteCharAt(2); } catch (Exception e) { System.out.println(e); } try { sb.setCharAt(-1, 'x'); } catch (Exception e) { System.out.println(e); } try { sb.insert(5, \"x\"); } catch (Exception e) { System.out.println(e); } try { sb.delete(3, 4); } catch (Exception e) { System.out.println(e); } try { sb.replace(1, 0, \"x\"); } catch (Exception e) { System.out.println(e); } try { sb.substring(3); } catch (Exception e) { System.out.println(e); } try { Integer.parseInt(null); } catch (Exception e) { System.out.println(e); } try { Integer.parseInt(\"1\", 1); } catch (Exception e) { System.out.println(e); } try { new ArrayList<Integer>().subList(0, 2); } catch (Exception e) { System.out.println(e); } try { Arrays.sort(new int[2], 2, 1); } catch (Exception e) { System.out.println(e); } try { Arrays.copyOfRange(new int[2], 3, 4); } catch (Exception e) { System.out.println(e); } System.out.println(sb.delete(1, 9) + \" \" + new StringBuilder(\"hello\").replace(1, 99, \"ey\"));"),
+  "java.lang.StringIndexOutOfBoundsException: Range [2, 1) out of bounds for length 3\njava.lang.StringIndexOutOfBoundsException: Range [5, 3) out of bounds for length 3\njava.lang.StringIndexOutOfBoundsException: Index -1 out of bounds for length 3\njava.lang.StringIndexOutOfBoundsException: Index 5 out of bounds for length 2\njava.lang.StringIndexOutOfBoundsException: Index 2 out of bounds for length 2\njava.lang.StringIndexOutOfBoundsException: Index -1 out of bounds for length 2\njava.lang.StringIndexOutOfBoundsException: Range [5, 2) out of bounds for length 2\njava.lang.StringIndexOutOfBoundsException: Range [3, 2) out of bounds for length 2\njava.lang.StringIndexOutOfBoundsException: Range [1, 0) out of bounds for length 2\njava.lang.StringIndexOutOfBoundsException: Range [3, 2) out of bounds for length 2\njava.lang.NumberFormatException: Cannot parse null string\njava.lang.NumberFormatException: radix 1 less than Character.MIN_RADIX\njava.lang.IndexOutOfBoundsException: toIndex = 2\njava.lang.IllegalArgumentException: fromIndex(2) > toIndex(1)\njava.lang.ArrayIndexOutOfBoundsException: arraycopy: length -1 is negative\na hey\n");
+t("Math.round on the exact value", M("System.out.println(Math.round(0.49999999999999994) + \" \" + Math.round(4503599627370497.0) + \" \" + Math.round(-2.5) + \" \" + Math.round(-0.5) + \" \" + Math.round(2.5) + \" \" + Math.round(1e19) + \" \" + Math.round(0.49999997f) + \" \" + Math.round(-2.5f) + \" \" + Math.round(8388609.0f));"),
+  "0 4503599627370497 -2 0 3 9223372036854775807 0 -2 8388609\n");
+t("type inference and the conditional operator", `import java.util.*;
+class Animal { public String toString() { return getClass().getSimpleName(); } } class Dog extends Animal { } class Cat extends Animal { }
+public class Main {
+    public static void main(String[] args) {
+        List<Animal> zoo = new ArrayList<>(List.of(new Dog(), new Cat())); zoo.addAll(Arrays.asList(new Cat(), new Dog())); System.out.println(zoo);
+        List<Dog> dogs = new ArrayList<>(); dogs.add(new Dog()); List<Animal> copy = new ArrayList<>(dogs); Set<Animal> set = new HashSet<>(dogs); System.out.println(copy + " " + set.size());
+        List<Number> ns = List.of(1, 2.5, 3L); System.out.println(ns); List<Object> os = List.of(1, "a", 'c'); System.out.println(os);
+        boolean f = args.length == 0; Object o = f ? 1 : "s"; Animal a = f ? new Dog() : new Cat(); Number n = f ? Integer.valueOf(3) : Double.valueOf(2.5);
+        System.out.println(o + " " + o.getClass().getSimpleName() + " " + a + " " + n + " " + (f ? 'c' : "x") + " " + (f ? null : 5));
+    }
+}
+`,
+  "[Dog, Cat, Cat, Dog]\n[Dog] 1\n[1, 2.5, 3]\n[1, a, c]\n1 Integer Dog 3.0 c null\n");
+t("String and StringBuilder lastIndexOf with a start, Character.toString(int)", M("String s = \"banana\"; System.out.println(s.lastIndexOf(\"an\", 2) + \" \" + s.lastIndexOf('a', 4) + \" \" + s.lastIndexOf(\"a\", -1) + \" \" + s.lastIndexOf(\"na\", 99) + \" \" + new StringBuilder(s).indexOf(\"an\", 2) + \" \" + new StringBuilder(s).lastIndexOf(\"an\", 2) + \" \" + Character.toString(65) + Character.toString('b'));"),
+  "1 3 -1 4 3 1 Ab\n");
+t("Arrays.fill and sort with a range", M("int[] f = new int[5]; Arrays.fill(f, 1, 3, 9); System.out.println(Arrays.toString(f)); String[] w = {\"d\", \"c\", \"b\", \"a\"}; Arrays.fill(w, 3, 4, \"z\"); Arrays.sort(w, 0, 3); System.out.println(Arrays.toString(w)); try { Arrays.fill(f, 3, 1, 0); } catch (IllegalArgumentException e) { System.out.println(e); } try { Arrays.fill(f, 0, 9, 0); } catch (ArrayIndexOutOfBoundsException e) { System.out.println(e); }"),
+  "[0, 9, 9, 0, 0]\n[b, c, d, z]\njava.lang.IllegalArgumentException: fromIndex(3) > toIndex(1)\njava.lang.ArrayIndexOutOfBoundsException: Array index out of range: 9\n");
+t("TreeSet and TreeMap navigation", M("TreeSet<Integer> ts = new TreeSet<>(List.of(5, 1, 9, 3)); System.out.println(ts.higher(5) + \" \" + ts.lower(1) + \" \" + ts.floor(4) + \" \" + ts.ceiling(4) + \" \" + ts.ceiling(10) + \" \" + ts.headSet(5) + \" \" + ts.tailSet(5) + \" \" + ts.pollFirst() + \" \" + ts.pollLast() + \" \" + ts); TreeMap<String, Integer> tm = new TreeMap<>(); tm.put(\"b\", 2); tm.put(\"a\", 1); tm.put(\"d\", 4); System.out.println(tm.firstEntry() + \" \" + tm.lastEntry() + \" \" + tm.headMap(\"c\") + \" \" + tm.tailMap(\"b\") + \" \" + tm.higherKey(\"b\") + \" \" + tm.lowerKey(\"a\") + \" \" + tm.pollFirstEntry() + \" \" + tm + \" \" + new TreeMap<String, Integer>().firstEntry());"),
+  "9 null 3 5 null [1, 3] [5, 9] 1 9 [3, 5]\na=1 d=4 {a=1, b=2} {b=2, d=4} d null a=1 {b=2, d=4} null\n");
+t("comparators", `import java.util.*;
+class Student { String name; int grade; Student(String n, int g) { name = n; grade = g; } public String toString() { return name + ":" + grade; } }
+class ByGrade implements Comparator<Student> { public int compare(Student a, Student b) { return Integer.compare(a.grade, b.grade); } }
+class ByName implements Comparator<Student> { @Override public int compare(Student a, Student b) { return a.name.compareTo(b.name); } }
+public class Main {
+    public static void main(String[] args) {
+        List<Student> xs = new ArrayList<>(); xs.add(new Student("cy", 80)); xs.add(new Student("al", 90)); xs.add(new Student("bo", 80));
+        Collections.sort(xs, new ByGrade()); System.out.println(xs); xs.sort(new ByName()); System.out.println(xs); xs.sort(new ByGrade().reversed()); System.out.println(xs);
+        System.out.println(Collections.max(xs, new ByGrade()) + " " + Collections.min(xs, new ByName()) + " " + new ByGrade().compare(xs.get(0), xs.get(1)));
+        List<Integer> ns = new ArrayList<>(List.of(3, 1, 2)); ns.sort(Collections.reverseOrder()); System.out.println(ns); ns.sort(null); System.out.println(ns);
+        Integer[] arr = {5, 2, 8}; Arrays.sort(arr, Collections.reverseOrder()); System.out.println(Arrays.toString(arr));
+        Student[] st = xs.toArray(new Student[0]); Arrays.sort(st, new ByName()); System.out.println(Arrays.toString(st));
+    }
+}
+`,
+  "[cy:80, bo:80, al:90]\n[al:90, bo:80, cy:80]\n[al:90, bo:80, cy:80]\nal:90 al:90 1\n[3, 2, 1]\n[1, 2, 3]\n[8, 5, 2]\n[al:90, bo:80, cy:80]\n");
+ce('a queue has no index methods', M('Queue<Integer> q = new ArrayDeque<>(); q.add(1); System.out.println(q.get(0));'), /cannot find symbol\n  symbol:   method get\(int\)/);
+ce('Collection constructor checks the element type', 'import java.util.*;\nclass A { } class D extends A { }\npublic class Main { public static void main(String[] args) { List<D> ds = new ArrayList<>(); List<String> bad = new ArrayList<>(ds); } }', /no suitable constructor found for ArrayList\(List<D>\)/);
 // ---- the exercise harness
 const h1 = U.harness({}, 'public static int square(int x) {\n    return x * x;\n}', { call: 'square(7)' });
 t('harness: method exercise', h1.src, '49\n');
