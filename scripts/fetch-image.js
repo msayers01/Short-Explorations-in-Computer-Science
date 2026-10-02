@@ -2,6 +2,9 @@
 //
 //   node scripts/fetch-image.js <id> "File:Name on Commons.jpg" "alt text" ["short title"]
 //   node scripts/fetch-image.js --search "words"      lists Commons files that match, with licence, size and description
+//   node scripts/fetch-image.js --icon <lang> "File:Logo.svg" "name"   a language's logo, kept as SVG: img/icons/<lang>.svg + .json.
+//      Logos may also be BSD or GPL (the Python logo is GPL, Java's mascot Duke BSD): they are shown only as small marks naming
+//      the language, credited on About, never changed.
 //
 // Writes img/<id>.jpg (at most 960 px wide, progressive JPEG, metadata stripped) and img/<id>.json:
 //   { id, file, title, alt, author, license, licenseUrl, source, credit, width, height, fetched }
@@ -51,8 +54,28 @@ function search(q) {
   }
 }
 
+const ICON_ALLOWED = (lic) => ALLOWED(lic) || /^(bsd|gpl|lgpl|apache|mit)\b/i.test(lic.trim());
+function icon(lang, file, name) {
+  if (!/^[a-z]+$/.test(lang || '') || !/^File:.+\.svg$/i.test(file || '') || !name) { console.error('usage: --icon <lang> "File:Logo.svg" "name"'); process.exit(2); }
+  const api = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&prop=imageinfo&iiprop=url|size|extmetadata&titles=' + encodeURIComponent(file);
+  const page = Object.values(JSON.parse(curl(api)).query.pages)[0];
+  if (!page.imageinfo) throw new Error(file + ' is not on Commons');
+  const ii = page.imageinfo[0], m = ii.extmetadata || {}, license = strip((m.LicenseShortName || {}).value);
+  if (!ICON_ALLOWED(license)) throw new Error(file + ': licence "' + license + '" is not free');
+  const dir = path.join(DIR, 'icons'); fs.mkdirSync(dir, { recursive: true });
+  const out = path.join(dir, lang + '.svg'); curl(ii.url, out);
+  const svg = fs.readFileSync(out, 'utf8');
+  // shown only through <img> (where nothing in an SVG runs), but a logo has no business carrying script or outside references
+  if (!/<svg[\s>]/i.test(svg) || /<script|\bon\w+\s*=|<foreignObject|xlink:href\s*=\s*["']https?:|href\s*=\s*["']https?:/i.test(svg)) { fs.rmSync(out); throw new Error(file + ': not a plain SVG (script, event handler or outside reference)'); }
+  const meta = { id: lang, file: lang + '.svg', title: name, author: dedupe(strip((m.Artist || {}).value)) || 'Unknown', license, licenseUrl: strip((m.LicenseUrl || {}).value) || null,
+    source: 'https://commons.wikimedia.org/wiki/' + encodeURIComponent(file.replace(/ /g, '_')).replace(/%3A/g, ':'), credit: dedupe(strip((m.Credit || {}).value)).slice(0, 300), bytes: svg.length, fetched: new Date().toISOString().slice(0, 10) };
+  fs.writeFileSync(path.join(dir, lang + '.json'), JSON.stringify(meta, null, 2) + '\n');
+  console.log('ok icon ' + lang + ': ' + Math.round(svg.length / 1024) + ' KB, ' + license + ', ' + meta.author);
+}
+
 function main() {
   if (process.argv[2] === '--search') return search(process.argv.slice(3).join(' '));
+  if (process.argv[2] === '--icon') return icon(...process.argv.slice(3));
   const [id, file, alt, short] = process.argv.slice(2);
   if (!id || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(id) || !file || !/^File:/.test(file) || !alt) {
     console.error('usage: node scripts/fetch-image.js <id: lower-case-with-dashes> "File:Name.jpg" "alt text" ["short title"]'); process.exit(2);

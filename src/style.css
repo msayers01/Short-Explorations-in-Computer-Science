@@ -1138,3 +1138,12 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .photo-zoom-close { position: absolute; top: 0.6rem; right: 0.8rem; font-size: 2rem; line-height: 1; background: none; border: 0; color: #fff; cursor: pointer; padding: 0.2rem 0.6rem; }
 .photo-zoom-close:focus-visible { outline: 2px solid #fff; }
 @media (max-width: 560px) { .photo-row.several { gap: 0.35rem; } }   /* side by side even on a phone: equal heights, and a tap enlarges each */
+
+/* ---------- language logos (app.js: langIcon, courseIcons; lab.js language tabs). Sized by height, so a wide wordmark (Scratch) keeps its shape. */
+.lang-icon { display: inline-block; height: 1.25rem; width: auto; max-width: 4.5rem; vertical-align: -0.25em; }
+.course-icons { display: inline-flex; gap: 0.35rem; align-items: center; }
+.cat-icons { margin: 0 0.5rem 0 0.6rem; vertical-align: -0.15em; }
+.cat-icons .lang-icon { height: 1.35rem; }
+.course-code .head-icons { display: flex; margin-top: 0.5rem; justify-content: flex-start; }
+.course-code .head-icons .lang-icon { height: 2rem; max-width: 6rem; }
+.lang-btn .tab-icon { height: 1.05rem; margin-right: 0.4rem; vertical-align: -0.2em; }

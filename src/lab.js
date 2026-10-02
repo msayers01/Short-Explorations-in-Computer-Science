@@ -594,7 +594,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     // ----- language switch
     const langBar = el('div', { class: 'lab-langs', role: 'tablist' });
     const langBtns = {};
-    for (const l in LANG_INFO) langBtns[l] = el('button', { class: 'lang-btn' + (l === S.lang ? ' on' : ''), role: 'tab', onclick: () => switchLang(l) }, LANG_INFO[l].label);
+    for (const l in LANG_INFO) langBtns[l] = el('button', { class: 'lang-btn' + (l === S.lang ? ' on' : ''), role: 'tab', onclick: () => switchLang(l) }, A().langIcon ? A().langIcon(l, 'tab-icon') : null, LANG_INFO[l].label);
     langBar.append(...Object.values(langBtns));
     function switchLang(l) {
       if (l === S.lang) return;

@@ -873,12 +873,17 @@
     { id: 'languages', title: 'Programming languages', blurb: 'Learn to program in one language, then see the same ideas in others: each course is a complete introduction.', ids: ['python', 'java', 'cpp', 'modern', 'lisp'] },
     { id: 'cs', title: 'Computer science', blurb: 'The ideas under every program: the mathematics of computing, and how to arrange data so programs are fast.', ids: ['math', 'dsa'] },
   ];
+  // The official logos of the languages (BUILD.icons, from img/icons/). Decorative: the name is always written beside them.
+  const ICONS = (window.BUILD && window.BUILD.icons) || {};
+  const COURSE_ICONS = { scratch: ['scratch', 'python'], python: ['python'], lisp: ['scheme'], cpp: ['cpp'], modern: ['cpp'], java: ['java'], dsa: ['java'], shell: ['shell'] };
+  const langIcon = (id, cls) => ICONS[id] ? el('img', { class: 'lang-icon lang-' + id + (cls ? ' ' + cls : ''), src: ICONS[id].src, alt: '', title: ICONS[id].title }) : null;
+  const courseIcons = (c, cls) => { const ids = (COURSE_ICONS[c.id] || []).filter((i) => ICONS[i]); return ids.length ? el('span', { class: 'course-icons' + (cls ? ' ' + cls : ''), 'aria-hidden': 'true' }, ids.map((i) => langIcon(i))) : null; };
   function catalogItem(c) {
     const p = courseProgress(c);
     return el('li', { 'data-course': c.id },
       el('a', { class: 'cat-code', href: '#/' + c.id }, c.code),
       el('div', { class: 'cat-body' },
-        el('a', { class: 'cat-title', href: '#/' + c.id }, c.title), devTag(c, true),
+        el('a', { class: 'cat-title', href: '#/' + c.id }, c.title), courseIcons(c, 'cat-icons'), devTag(c, true),
         el('p', { class: 'cat-desc' }, c.tagline),
         c.grades ? el('p', { class: 'cat-grades' }, c.grades) : null,
         el('p', { class: 'cat-meta' }, c.lessons.length + ' lessons · ' + p.total + ' graded exercises' + (p.done ? ' · ' + p.done + ' completed' : ''))));
@@ -970,7 +975,7 @@
     const p = courseProgress(course);
     main.append(
       el('header', { class: 'course-head' },
-        el('div', { class: 'course-code' }, course.code),
+        el('div', { class: 'course-code' }, course.code, courseIcons(course, 'head-icons')),
         el('div', {},
           el('h1', {}, course.title, devTag(course)),
           el('p', { class: 'tagline' }, course.tagline))),
@@ -1046,5 +1051,5 @@
   window.addEventListener('hashchange', route);
   document.addEventListener('progress-changed', () => { /* sidebars re-render on next navigation */ });
   document.addEventListener('DOMContentLoaded', route);
-  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, checkSVG, lbl } };
+  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { langIcon, lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, checkSVG, lbl } };
 })();
