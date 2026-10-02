@@ -3,8 +3,7 @@
     "dsa/7/play2": "StackOverflowError: the JVM allows about ten times deeper recursion than our 1200 frames (MAX_DEPTH), so the stack trace is shorter (ARCHITECTURE §9e).",
     "corpus/probe-d1.java": "ArrayStoreException (storing an Integer into a String[] seen as Object[]) is not modelled: arrays do not check the runtime type of what is stored.",
     "corpus/probe-f1.java": "== between two Strings compares the text, a deliberate choice (lesson 2 teaches the trap with a listing instead).",
-    "corpus/probe-fz.java": "Float.toString and %f of a float that falls exactly halfway (215969.625f) round the other way; doubles agree.",
-    "corpus/probe-g.java": "Object.hashCode / toString of a plain Object: identity hash codes cannot match the JVM's."
+    "corpus/probe-fz.java": "Float.toString and %f of a float that falls exactly halfway (215969.625f) round the other way; doubles agree."
   },
   "shell": {
     "tail -3 noeol.txt": "A file without a final newline: the practice terminal ends the output with one, so the prompt starts on a fresh line (a deliberate display choice).",
