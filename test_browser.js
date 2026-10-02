@@ -237,6 +237,40 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('tour: the lesson steps change the route and wait for their target', (await page.evaluate(() => location.hash)) === '#/python/1' && /Inside a lesson/.test(await page.locator('.tour-card h3').innerText()) && (await page.locator('.tour-spot:not(.hidden)').count()) === 1, await page.locator('.tour-card h3').innerText());
   await page.keyboard.press('Escape');
   check('tour: Esc ends it and leaves the page as it was', (await page.locator('.tour-card, .tour-spot, .tour-block').count()) === 0 && !(await page.evaluate(() => document.body.classList.contains('tour-on'))) && (await page.locator('.lesson-map').count()) === 1);
+  // ---- the top bar, the courses page (grouped, with search), Algorithms in motion and the real-world page
+  await goto('#/');
+  const topLinks = await page.locator('.top-links a').allInnerTexts();
+  check('top bar: Courses, Algorithms, Real world and Code Lab instead of a link per course', topLinks.join('|') === 'Courses|Algorithms|Real world|Code Lab', topLinks);
+  await goto('#/courses');
+  const courseCount = await page.evaluate(() => window.COURSES.length);
+  const listed = await page.locator('.courses-page .catalog li').evaluateAll((ls) => ls.map((l) => l.getAttribute('data-course')));
+  check('courses page: every course is listed exactly once, in groups', listed.length === courseCount && new Set(listed).size === courseCount && (await page.locator('.course-group').count()) >= 3, listed);
+  await page.fill('.course-search', 'java');
+  const found = await page.locator('.courses-page .catalog li').evaluateAll((ls) => ls.map((l) => l.getAttribute('data-course')));
+  check('courses page: the search box filters the list', found.includes('java') && !found.includes('python') && found.length < courseCount, found);
+  await goto('#/python');
+  check('top bar: Courses is marked on a course page', (await page.locator('.top-links a.current').allInnerTexts()).join() === 'Courses');
+  const demoIds = await page.evaluate(() => (window.ALGOS ? window.ALGOS.demos.map((d) => d.id) : []));
+  await goto('#/algorithms');
+  check('algorithms: the index lists every demonstration', demoIds.length >= 8 && (await page.locator('.algo-card').count()) === demoIds.length, demoIds);
+  const demoProblems = [];
+  for (const [w, h] of [[1280, 900], [390, 844]]) {
+    await page.setViewportSize({ width: w, height: h });
+    for (const id of demoIds) {
+      await goto('#/algorithms/' + id);
+      await page.waitForFunction(() => document.querySelector('.algo-host') && document.querySelector('.algo-host').children.length > 0, null, { timeout: 5000 }).catch(() => { });
+      const play = page.locator('.algo-host .algo-controls .btn.primary').first();
+      if (await play.count()) { await play.click(); await page.waitForTimeout(400); }
+      const info = await page.evaluate(() => ({ kids: document.querySelector('.algo-host').children.length, error: !!document.querySelector('.algo-error'), wide: document.documentElement.scrollWidth > window.innerWidth + 1 }));
+      if (!info.kids || info.error || info.wide) demoProblems.push(id + ' at ' + w + 'px: ' + JSON.stringify(info));
+    }
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
+  check('algorithms: every demonstration starts and plays, on a wide screen and at phone width without sideways scrolling', demoProblems.length === 0, demoProblems);
+  await goto('#/real-world');
+  const realLinks = await page.evaluate(() => [...document.querySelectorAll('main a[href^="#/"]')].map((a) => a.getAttribute('href')).filter((h) => /^#\/[a-z]+\/\d+/.test(h)));
+  const badLinks = await page.evaluate((hs) => hs.filter((h) => { const [, c, n] = h.match(/^#\/([a-z]+)\/(\d+)/); const course = window.COURSES.find((x) => x.id === c); return !course || !course.lessons[+n - 1]; }), realLinks);
+  check('real world: the page lists topics, and every lesson it links to exists', realLinks.length >= 20 && badLinks.length === 0, badLinks.slice(0, 5));
   // ---- SC 099: no code; the figures render and the non-code exercises grade
   await goto('#/computer/2'); await page.waitForSelector('.cpu-fig');
   for (let i = 0; i < 4; i++) await page.locator('.fig-tools button:has-text("Step")').first().click();

@@ -810,7 +810,11 @@
   function topBar(course) {
     return el('nav', { class: 'top' },
       el('a', { class: 'top-name', href: '#/' }, SITE.name),
-      el('div', { class: 'top-links' }, COURSES.map(c => el('a', { href: '#/' + c.id, class: course && course.id === c.id ? 'current' : '' }, c.short)), el('a', { href: '#/lab', class: 'lab-link' + (course === 'lab' ? ' current' : '') }, 'Code Lab')),
+      el('div', { class: 'top-links' },   // a link per course crowded the bar: the courses have their own page, grouped (coursesPage)
+        el('a', { href: '#/courses', class: 'courses-link' + (course === 'courses' || (course && course.id) ? ' current' : '') }, 'Courses'),
+        window.ALGOS ? el('a', { href: '#/algorithms', class: 'algos-link' + (course === 'algorithms' ? ' current' : '') }, 'Algorithms') : null,
+        window.APPLIED ? el('a', { href: '#/real-world', class: 'applied-link' + (course === 'applied' ? ' current' : '') }, 'Real world') : null,
+        el('a', { href: '#/lab', class: 'lab-link' + (course === 'lab' ? ' current' : '') }, 'Code Lab')),
       el('div', { class: 'top-tools' },   // the three small controls sit close together so the links keep their room
         window.TOUR ? window.TOUR.button() : null,   // a guided tour of the site (src/tour.js)
         window.CLASSROOM ? window.CLASSROOM.button() : null,
@@ -828,6 +832,63 @@
   }
   (function initTheme() { try { const t = localStorage.getItem('shortcourses.theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) { } })();
 
+  // The catalogue, in groups, so a reader can find the kind of course they want. A course missing from every group is listed under
+  // "More courses", so a new course is never hidden.
+  const COURSE_GROUPS = [
+    { id: 'start', title: 'Start here', blurb: 'No experience needed: what a computer is, the jump from Scratch blocks to typed code, and the command line.', ids: ['computer', 'scratch', 'shell'] },
+    { id: 'languages', title: 'Programming languages', blurb: 'Learn to program in one language, then see the same ideas in others: each course is a complete introduction.', ids: ['python', 'java', 'cpp', 'modern', 'lisp'] },
+    { id: 'cs', title: 'Computer science', blurb: 'The ideas under every program: the mathematics of computing, and how to arrange data so programs are fast.', ids: ['math', 'dsa'] },
+  ];
+  function catalogItem(c) {
+    const p = courseProgress(c);
+    return el('li', { 'data-course': c.id },
+      el('a', { class: 'cat-code', href: '#/' + c.id }, c.code),
+      el('div', { class: 'cat-body' },
+        el('a', { class: 'cat-title', href: '#/' + c.id }, c.title), devTag(c, true),
+        el('p', { class: 'cat-desc' }, c.tagline),
+        c.grades ? el('p', { class: 'cat-grades' }, c.grades) : null,
+        el('p', { class: 'cat-meta' }, c.lessons.length + ' lessons · ' + p.total + ' graded exercises' + (p.done ? ' · ' + p.done + ' completed' : ''))));
+  }
+  function courseGroups() {
+    const placed = new Set(COURSE_GROUPS.flatMap((g) => g.ids));
+    const groups = COURSE_GROUPS.map((g) => Object.assign({}, g, { courses: g.ids.map(courseById).filter(Boolean) }));
+    const rest = COURSES.filter((c) => !placed.has(c.id));
+    if (rest.length) groups.push({ id: 'more', title: 'More courses', blurb: '', courses: rest });
+    return groups.filter((g) => g.courses.length);
+  }
+  function groupedCatalog(filter) {
+    const q = (filter || '').trim().toLowerCase();
+    const match = (c) => !q || [c.code, c.title, c.short, c.tagline, c.grades].join(' ').toLowerCase().includes(q);
+    const out = [];
+    for (const g of courseGroups()) {
+      const cs = g.courses.filter(match);
+      if (!cs.length) continue;
+      out.push(el('section', { class: 'course-group', id: 'group-' + g.id },
+        el('h3', { class: 'group-title' }, g.title, el('span', { class: 'group-count' }, cs.length + (cs.length === 1 ? ' course' : ' courses'))),
+        g.blurb ? el('p', { class: 'group-blurb' }, g.blurb) : null,
+        el('ul', { class: 'catalog' }, cs.map(catalogItem))));
+    }
+    if (!out.length) out.push(el('p', { class: 'group-empty' }, 'No course matches \u201c' + filter + '\u201d.'));
+    return out;
+  }
+  function coursesPage() {
+    const main = el('main', { class: 'home courses-page' });
+    const results = el('div', { class: 'course-groups' });
+    const show = () => { results.replaceChildren(...groupedCatalog(search.value)); };
+    const search = el('input', { type: 'search', class: 'course-search', placeholder: 'Find a course: a language, a topic, a grade', 'aria-label': 'Find a course', oninput: show });
+    const jump = el('nav', { class: 'group-jump', 'aria-label': 'Groups of courses' }, courseGroups().map((g) => el('a', { href: '#group-' + g.id, onclick: (e) => { e.preventDefault(); search.value = ''; show(); const t = document.getElementById('group-' + g.id); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, g.title)));
+    main.append(
+      el('header', { class: 'courses-head' }, el('h1', {}, 'Courses'), (() => {   // the first paragraph; the advice on where to start folds away
+        const intro = el('div', { class: 'prose', html: SITE.coursesIntro }), rest = [...intro.children].slice(1);
+        if (rest.length) intro.append(el('details', { class: 'reveal which-course' }, el('summary', {}, 'Which course should I take?'), ...rest));
+        return intro;
+      })()),
+      el('div', { class: 'courses-tools' }, search, jump),
+      results);
+    show();
+    return main;
+  }
+
   function homePage() {
     const main = el('main', { class: 'home' });
     main.append(
@@ -842,16 +903,10 @@
       el('section', { class: 'section' },
         el('h2', {}, 'Short courses'),
         el('div', { class: 'prose', html: SITE.coursesIntro }),
-        el('ul', { class: 'catalog' }, COURSES.map(c => {
-          const p = courseProgress(c);
-          return el('li', { 'data-course': c.id },
-            el('a', { class: 'cat-code', href: '#/' + c.id }, c.code),
-            el('div', { class: 'cat-body' },
-              el('a', { class: 'cat-title', href: '#/' + c.id }, c.title), devTag(c, true),
-              el('p', { class: 'cat-desc' }, c.tagline),
-              c.grades ? el('p', { class: 'cat-grades' }, c.grades) : null,
-              el('p', { class: 'cat-meta' }, c.lessons.length + ' lessons · ' + p.total + ' graded exercises' + (p.done ? ' · ' + p.done + ' completed' : ''))));
-        }))
+        el('div', { class: 'course-groups' }, groupedCatalog('')),
+        el('p', { class: 'more-pages' }, el('a', { href: '#/courses' }, 'All courses, with search'),
+          window.ALGOS ? [' · ', el('a', { href: '#/algorithms' }, 'Algorithms in motion')] : null,
+          window.APPLIED ? [' · ', el('a', { href: '#/real-world' }, 'Where this is used in the real world')] : null)
       ),
       el('section', { class: 'section' },
         el('h2', {}, 'Code Lab'),
@@ -942,6 +997,9 @@
     if (parts[0] === 'ojibwe' && window.OJIBWE) { document.documentElement.setAttribute('data-course', ''); document.title = 'Ojibwemowin — ' + SITE.name; app.append(topBar('ojibwe'), window.OJIBWE.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'about' && window.ABOUT) { document.documentElement.setAttribute('data-course', ''); document.title = 'About and credits — ' + SITE.name; app.append(topBar('about'), window.ABOUT.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'portfolio' && window.PORTFOLIO) { document.documentElement.setAttribute('data-course', ''); document.title = 'Portfolio — ' + SITE.name; app.append(topBar('portfolio'), window.PORTFOLIO.page(query)); window.scrollTo(0, 0); return; }
+    if (parts[0] === 'courses') { document.documentElement.setAttribute('data-course', ''); document.title = 'Courses — ' + SITE.name; app.append(topBar('courses'), coursesPage()); window.scrollTo(0, 0); return; }
+    if (parts[0] === 'algorithms' && window.ALGOS) { document.documentElement.setAttribute('data-course', ''); app.append(topBar('algorithms'), window.ALGOS.page(parts[1])); window.scrollTo(0, 0); return; }
+    if (parts[0] === 'real-world' && window.APPLIED) { document.documentElement.setAttribute('data-course', ''); document.title = 'Where it is used — ' + SITE.name; app.append(topBar('applied'), window.APPLIED.page(parts[1])); if (parts[1]) { const t = document.getElementById(parts[1]); if (t && t.scrollIntoView) { t.scrollIntoView(); return; } } window.scrollTo(0, 0); return; }
     if ((parts[0] === 'lab' || parts[0] === 'assign' || parts[0] === 'review') && window.LAB) { document.title = 'Code Lab — ' + SITE.name; app.append(topBar('lab'), window.LAB.page(query, parts[0])); window.scrollTo(0, 0); return; }
     let course = parts[0] ? courseById(parts[0]) : null;
     document.documentElement.setAttribute('data-course', course ? course.id : '');
