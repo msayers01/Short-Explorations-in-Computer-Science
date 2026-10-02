@@ -47,7 +47,7 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); redraw();
     };
     const redraw = () => { if (w) opts.draw(ctx, w, h, colors()); };
-    let ro = null; if (window.ResizeObserver) { ro = new ResizeObserver(() => { if (Math.abs((wrap.clientWidth || 0) - w) > 1) size(); }); ro.observe(wrap); }
+    let ro = null, pending = 0; if (window.ResizeObserver) { ro = new ResizeObserver(() => { if (!pending && Math.abs((wrap.clientWidth || 0) - w) > 1) pending = requestAnimationFrame(() => { pending = 0; size(); }); }); ro.observe(wrap); }   // resizing in the next frame, not inside the observer's callback
     const mo = new MutationObserver(redraw); mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     const mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null; if (mq && mq.addEventListener) mq.addEventListener('change', redraw);
     requestAnimationFrame(size);
