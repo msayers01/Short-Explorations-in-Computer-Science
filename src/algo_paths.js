@@ -760,6 +760,150 @@
     return () => { p.stop(); cv.stop(); dirty.cancel(); };
   }
 
+  // ---------------------------------------------------------------- demo: the maze race
+  /** Open some extra walls of a perfect maze, so that it has loops: about frac of the closed inner walls, chosen by rnd. */
+  function addLoops(m, rnd, frac) {
+    for (let i = 0; i < m.n; i++) {
+      if (i % m.C < m.C - 1 && !m.e[i] && rnd() < frac) m.e[i] = 1;
+      if (i < m.n - m.C && !m.s[i] && rnd() < frac) m.s[i] = 1;
+    }
+    return m;
+  }
+  // A race step is one cell explored (a pop), walked or filled; pushes onto the frontier come free with the pop that made them.
+  const RACE_STEP = { pop: 1, walk: 1, fill: 1 };
+  /** Race solvers on one maze, one step each per tick, as the demo does. → [{ solver, steps, found, pathLen, place }] (pure, for tests). */
+  function runMazeRace(m, solvers) {
+    const lanes = solvers.map((s) => ({ solver: s, it: mazeSolve(m, s), steps: 0, done: false, result: null, at: 0, place: 0 }));
+    let tick = 0, finished = 0, lastAt = -1, lastPlace = 0;
+    while (lanes.some((l) => !l.done) && tick < 50 * m.n + 100) {
+      tick++;
+      for (const l of lanes) {
+        if (l.done) continue;
+        for (;;) {
+          const r = l.it.next();
+          if (r.done) { l.done = true; l.result = r.value; finished++; l.at = tick; l.place = tick === lastAt ? lastPlace : finished; lastAt = tick; lastPlace = l.place; break; }
+          if (RACE_STEP[r.value.t]) { l.steps++; break; }
+        }
+      }
+    }
+    return lanes.map((l) => ({ solver: l.solver, steps: l.steps, found: !!(l.result && l.result.found), pathLen: l.result && l.result.found ? l.result.path.length : 0, place: l.place }));
+  }
+  const MEDALS = ['1st', '2nd', '3rd', '4th'];
+  function mountMazeRace(host, api) {
+    injectCss();
+    const el = api.el, rm = api.reducedMotion();
+    const SIZES = [[8, 12, 'Small (8 × 12)'], [12, 18, 'Medium (12 × 18)'], [18, 28, 'Large (18 × 28)']];
+    const picks = ['bfs', 'dfs', 'astar', 'wall'];
+    let sizeIdx = (host.clientWidth || 800) < 600 ? 0 : 1, gen = 'backtracker', loops = false, seed = 1 + Math.floor(Math.random() * 99999), bet = '';
+    let m = null, lanes = [], tick = 0;
+    function buildMaze() { const [R, C] = SIZES[sizeIdx]; m = makeMaze(gen, R, C, seed); if (loops) addLoops(m, A.rng(seed + 7), 0.1); }
+    function buildLanes() {
+      tick = 0;
+      lanes = picks.map((s) => ({ solver: s, it: null, steps: 0, done: false, result: null, place: 0, sst: new Uint8Array(m.n), trail: new Uint16Array(m.n), filled: new Uint8Array(m.n), path: [], cur: -1 }));
+    }
+    buildMaze(); buildLanes();
+    const solverOpts = Object.entries(SOLVERS);
+    const laneSel = picks.map((pk, k) => selectBox(el, 'Lane ' + (k + 1), solverOpts, pk, (v) => { picks[k] = v; betOptions(); p.reset(); }));
+    const [sizeL] = selectBox(el, 'Size', SIZES.map((s2, k) => [String(k), s2[2]]), String(sizeIdx), (v) => { sizeIdx = +v; fresh(); });
+    const [genL] = selectBox(el, 'Maze', Object.entries(MAZE_GENS).map(([k, g]) => [k, g.name]), gen, (v) => { gen = v; fresh(); });
+    const loopBox = el('input', { type: 'checkbox', onchange: () => { loops = loopBox.checked; fresh(); } });
+    const betSel = el('select', { 'aria-label': 'Your bet', onchange: () => { bet = betSel.value; } });
+    function betOptions() {
+      const keep = bet; betSel.replaceChildren(el('option', { value: '' }, 'no bet'), ...picks.map((s2, k) => el('option', { value: String(k) }, 'Lane ' + (k + 1) + ': ' + SOLVERS[s2])));
+      betSel.value = keep && +keep < picks.length ? keep : ''; bet = betSel.value;
+    }
+    betOptions();
+    host.append(el('div', { class: 'algo-controls ap-controls' }, laneSel.map((x) => x[0])),
+      el('div', { class: 'algo-controls ap-controls' }, genL, sizeL, el('label', {}, loopBox, 'Add loops'),
+        el('button', { class: 'btn', onclick: () => { seed = 1 + Math.floor(Math.random() * 999999); fresh(); } }, 'New maze'),
+        el('label', {}, 'Who will win? ', betSel)));
+    function fresh() { buildMaze(); p.reset(); }
+
+    const cols = () => ((host.clientWidth || 800) < 560 ? 1 : 2);
+    const cv = api.canvas(host, { label: 'Four maze solvers racing through copies of the same maze', maxWidth: 1100,
+      height: (w) => { const c2 = w < 560 ? 1 : 2, rows = Math.ceil(4 / c2), cellW = w / c2, [R, C] = SIZES[sizeIdx]; return Math.round(rows * (cellW * R / C + 26)); },
+      draw: (ctx, w, h, c) => {
+        ctx.fillStyle = c.paper; ctx.fillRect(0, 0, w, h);
+        const c2 = cols(), rows = Math.ceil(lanes.length / c2), lw = w / c2, lh = h / rows;
+        lanes.forEach((ln, k) => drawLane(ctx, (k % c2) * lw, Math.floor(k / c2) * lh, lw, lh, ln, c));
+      } });
+    const dirty = painter(cv);
+    const p = api.player(host, {
+      speeds: rm ? [200, 20000] : [3, 4000], speed: 45, extra: [el('button', { class: 'btn quiet', onclick: () => finish(p) }, 'Finish')],
+      start: () => { buildLanes(); for (const l of lanes) l.it = mazeSolve(m, l.solver); return race(); },
+      onStep: () => dirty(),
+      onDone: () => {
+        const order = lanes.slice().sort((x, y) => x.place - y.place);
+        let msg = 'Finished: ' + order.map((l) => MEDALS[l.place - 1] + ' ' + SOLVERS[l.solver] + ' (' + l.steps + ' steps' + (l.result && l.result.found ? ', path ' + l.result.path.length : ', no path') + ')').join(', ') + '.';
+        if (bet !== '') { const b = lanes[+bet]; msg = (b && b.place === 1 ? 'Your bet won! ' : 'Your bet came ' + (b ? MEDALS[b.place - 1] : '?') + '. ') + msg; }
+        p.status(msg); dirty();
+      },
+      onReset: () => { buildLanes(); p.status('Make your bet, then press Play.'); dirty(); }
+    });
+    host.append(legend(el, [['background:var(--k-quiz);opacity:.5', 'Frontier (waiting to be explored)'], ['background:var(--k-fig);opacity:.35', 'Explored or walked'],
+      ['background:var(--err);opacity:.3', 'Filled dead end'], ['background:var(--warn)', 'The path found']]));
+    let lastAt = -1, lastPlace = 0, finished = 0;
+    function* race() {
+      lastAt = -1; lastPlace = 0; finished = 0;
+      while (lanes.some((l) => !l.done)) {
+        tick++;
+        for (const l of lanes) {
+          if (l.done) continue;
+          for (;;) {
+            const r = l.it.next();
+            if (r.done) {
+              l.done = true; l.result = r.value; l.path = r.value && r.value.found ? r.value.path : []; l.cur = -1;
+              finished++; l.place = tick === lastAt ? lastPlace : finished; lastAt = tick; lastPlace = l.place; break;
+            }
+            const ev = r.value, i = ev.i;
+            if (ev.t === 'push') { if (!l.sst[i]) l.sst[i] = 1; }
+            else if (ev.t === 'pop') { l.sst[i] = 2; l.cur = i; }
+            else if (ev.t === 'walk') { if (l.trail[i] < 60000) l.trail[i]++; l.cur = i; }
+            else if (ev.t === 'fill') { l.filled[i] = 1; l.cur = i; }
+            if (RACE_STEP[ev.t]) { l.steps++; break; }
+          }
+        }
+        yield tick;
+      }
+    }
+    function drawLane(ctx, x0, y0, lw, lh, ln, c) {
+      const R = m.R, C = m.C, n = m.n, top = 22, cs = Math.min((lw - 12) / C, (lh - top - 6) / R), ox = x0 + (lw - cs * C) / 2, oy = y0 + top;
+      const X = (k) => Math.round(ox + k * cs), Y = (k) => Math.round(oy + k * cs);
+      const box = (i) => { const r = (i / C) | 0, cc = i % C; ctx.fillRect(X(cc), Y(r), X(cc + 1) - X(cc), Y(r + 1) - Y(r)); };
+      ctx.font = '600 13px ' + (c.sans || 'sans-serif'); ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+      ctx.fillStyle = ln.place === 1 ? c.ok : c.ink;
+      ctx.fillText(SOLVERS[ln.solver], x0 + 8, y0 + 4);
+      ctx.textAlign = 'right'; ctx.fillStyle = ln.done ? c.ok : c.ink2;
+      ctx.fillText(ln.steps + ' steps' + (ln.done ? ' · ' + MEDALS[ln.place - 1] + (ln.result && ln.result.found ? '' : ' (stuck)') : ''), x0 + lw - 8, y0 + 4);
+      ctx.textAlign = 'left';
+      for (let i = 0; i < n; i++) {
+        if (ln.filled[i]) { ctx.globalAlpha = 0.3; ctx.fillStyle = c.err; box(i); }
+        else if (ln.sst[i] === 2) { ctx.globalAlpha = 0.35; ctx.fillStyle = c.fig; box(i); }
+        else if (ln.sst[i] === 1) { ctx.globalAlpha = 0.5; ctx.fillStyle = c.quiz; box(i); }
+        if (ln.trail[i]) { ctx.globalAlpha = Math.min(0.6, 0.22 * ln.trail[i]); ctx.fillStyle = c.fig; box(i); }
+      }
+      ctx.globalAlpha = 1;
+      if (ln.cur >= 0) { ctx.fillStyle = c.fig; box(ln.cur); }
+      ctx.globalAlpha = 0.85; ctx.fillStyle = c.ok; box(0); ctx.fillStyle = c.err; box(n - 1); ctx.globalAlpha = 1;
+      if (ln.path.length > 1) {
+        ctx.strokeStyle = c.warn; ctx.lineWidth = Math.max(2, cs * 0.3); ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.beginPath();
+        ln.path.forEach((i, k) => { const x = ox + (i % C + 0.5) * cs, y = oy + (((i / C) | 0) + 0.5) * cs; if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
+        ctx.stroke();
+      }
+      ctx.strokeStyle = c.ink; ctx.lineWidth = Math.max(1, Math.min(3, cs * 0.12)); ctx.lineCap = 'square'; ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const r = (i / C) | 0, cc = i % C;
+        if (cc < C - 1 && !m.e[i]) { ctx.moveTo(X(cc + 1), Y(r)); ctx.lineTo(X(cc + 1), Y(r + 1)); }
+        if (r < R - 1 && !m.s[i]) { ctx.moveTo(X(cc), Y(r + 1)); ctx.lineTo(X(cc + 1), Y(r + 1)); }
+      }
+      ctx.moveTo(X(0), Y(1)); ctx.lineTo(X(0), Y(R)); ctx.lineTo(X(C), Y(R));
+      ctx.moveTo(X(C), Y(R - 1)); ctx.lineTo(X(C), Y(0)); ctx.lineTo(X(0), Y(0));
+      ctx.stroke();
+    }
+    p.status('Who will win? Make your bet, then press Play.');
+    return () => { p.stop(); cv.stop(); dirty.cancel(); };
+  }
+
   // ---------------------------------------------------------------- demo 3: BFS and DFS on a small graph
   function mountGraph(host, api) {
     injectCss();
@@ -905,6 +1049,22 @@
   });
 
   A.register({
+    id: 'maze-race', group: 'Mazes', title: 'Maze race',
+    blurb: 'Four solvers race through copies of the same maze, one step each per tick. Place your bet, then watch BFS flood, DFS dive, A* aim and the wall follower feel its way out.',
+    mount: mountMazeRace,
+    about: `<h2>How the race works</h2>
+<p>Every lane gets its own copy of the same maze. At each tick every solver that has not finished takes one step: it explores one cell (BFS, DFS, A*, greedy), walks one cell (the wall follower) or fills one cell (dead-end filling). The first to reach the red corner wins. A step counts the same for all of them, so the race measures how much of the maze each one has to look at.</p>
+<h2>Things to try</h2>
+<ul>
+<li><b>Bet first.</b> Choose a winner before you press Play, then see whether you were right. Then try the same solvers on a new maze: the winner often changes, because DFS and the wall follower can be lucky or very unlucky.</li>
+<li><b>BFS is never fastest here, but it is never fooled.</b> It explores every cell nearer than the goal, ring by ring, so it nearly always comes last; but with <em>Add loops</em> on, its path is always the shortest one there is.</li>
+<li><b>Add loops.</b> A perfect maze has exactly one path, so every solver finds the same one. With loops there are many paths: watch DFS bring back a long winding one, and dead-end filling get stuck, because a loop has no dead end to fill.</li>
+<li><b>Change the maze.</b> Sidewinder and binary-style mazes have a long open top corridor that suits A*; the recursive backtracker's long twisting corridors make A*'s sense of direction almost useless.</li>
+</ul>`,
+    taught: [{ href: '#/dsa/6', text: 'SC 107, Stacks and queues' }, { href: '#/math/5', text: 'SC 104, Graphs and paths' }]
+  });
+
+  A.register({
     id: 'graph-traversal', group: 'Paths and graphs', title: 'Breadth-first and depth-first search',
     blurb: 'Run BFS and DFS on a small graph and watch the queue, the stack or the call stack beside it, with a sentence for every step, the visit order on each vertex, and the search tree they leave behind. Dijkstra too.',
     mount: mountGraph,
@@ -1026,8 +1186,23 @@
     { const G = buildGraph(PRESETS.towns), r = runToEnd(graphTraverse(G, 0, 'dijkstra')), b = runToEnd(graphTraverse(G, 0, 'bfs'));
       if (r.dist[4] !== 9 || b.dist[4] !== 2) fail('towns: the A to E example in the text no longer holds'); }
     { const lc = lineCells(0, 7 * 10 + 9, 10); for (let k = 1; k < lc.length; k++) { const a = lc[k - 1], b = lc[k]; if (Math.abs(((a / 10) | 0) - ((b / 10) | 0)) > 1 || Math.abs(a % 10 - b % 10) > 1) fail('lineCells skips a cell'); } }
+    // the maze race: in a perfect maze every solver finds the one path; with loops BFS's path is never longer than another's, and
+    // dead-end filling may give up; places follow the step counts
+    for (let k = 0; k < 30; k++) {
+      const gname = Object.keys(MAZE_GENS)[k % Object.keys(MAZE_GENS).length], R = 4 + (k % 7), C = 5 + ((k * 3) % 9);
+      const ids = Object.keys(SOLVERS);
+      const perfect = runMazeRace(makeMaze(gname, R, C, 1000 + k), ids);
+      const lens = new Set(perfect.map((x) => x.pathLen));
+      if (perfect.some((x) => !x.found) || lens.size !== 1) fail('maze race on a perfect ' + gname + ' maze: ' + JSON.stringify(perfect));
+      for (const x of perfect) for (const y of perfect) if (x.steps < y.steps && x.place > y.place) fail('maze race places do not follow the steps: ' + JSON.stringify(perfect));
+      const looped = runMazeRace(addLoops(makeMaze(gname, R, C, 2000 + k), A.rng(k + 1), 0.15), ['bfs', 'dfs', 'astar', 'wall', 'greedy']);
+      const bfs = looped[0];
+      if (!bfs.found) fail('maze race: BFS found no path in a maze with loops');
+      for (const x of looped) if (x.found && x.pathLen < bfs.pathLen) fail('maze race: ' + x.solver + ' found a shorter path than BFS: ' + JSON.stringify(looped));
+      if (looped.some((x) => !x.found && x.solver !== 'deadend')) fail('maze race: a solver gave up in a maze with loops: ' + JSON.stringify(looped));
+    }
     return fails;
   }
 
-  if (typeof module !== 'undefined') module.exports = { selfTest, search, runToEnd, makeGrid, gridGraph, newMaze, makeMaze, MAZE_GENS, SOLVERS, mazeSolve, mazeGraph, wallFollower, deadEndFill, gridFromMaze, PRESETS, buildGraph, graphTraverse };
+  if (typeof module !== 'undefined') module.exports = { selfTest, runMazeRace, addLoops, search, runToEnd, makeGrid, gridGraph, newMaze, makeMaze, MAZE_GENS, SOLVERS, mazeSolve, mazeGraph, wallFollower, deadEndFill, gridFromMaze, PRESETS, buildGraph, graphTraverse };
 })();

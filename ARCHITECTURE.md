@@ -108,7 +108,7 @@ site/
     ojibwe.js            Ojibwe interface words, their sources, the review page (#/ojibwe) → window.OJIBWE
     about.js             About and credits page (#/about) → window.ABOUT
     algos.js             the #/algorithms page (§9g): demo registry, index and demo pages, shared player and canvas → window.ALGOS
-    algo_search.js, algo_sort.js, algo_paths.js, algo_games.js   the demos (§9g); each also exports selfTest() for test_algos.js
+    algo_search.js, algo_sort.js, algo_paths.js, algo_games.js, algo_puzzles.js   the demos (§9g); each also exports selfTest() for test_algos.js
     applied.js           the #/real-world page (§9g): topics, where each is used, jobs, lesson links → window.APPLIED
 ```
 
@@ -595,10 +595,13 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   steps per animation frame; it pauses when the tab is hidden and stops when its host leaves the page); `api.canvas` is a canvas as wide as its
   container, sharp on high-density screens, redrawn on resize and theme change; `api.rng` is seeded. Leaving the page calls the demo's
   cleanup. The pages use a teal accent (`data-course="algorithms"`).
-- **The demos** (12): searching (linear against binary, guess my number, interpolation), sorting (eleven sorts in four views with optional
+- **The demos** (17): searching (linear against binary, guess my number, interpolation), sorting (eleven sorts in four views with optional
   sound, and a race of up to four), paths and graphs (grid path-finding with BFS, DFS, Dijkstra, A*, greedy best-first, walls, mud and
-  diagonals; graph traversal with the queue or stack shown), mazes (seven generators, six solvers), games (minimax and alpha-beta on a tree,
-  unbeatable tic-tac-toe, Connect Four with depth-limited alpha-beta run in time slices, Nim by the XOR rule). Each file keeps the algorithms
+  diagonals; graph traversal with the queue or stack shown; untangle the tour: draw a travelling-salesman tour, then nearest neighbour and
+  2-opt race it), mazes (seven generators, six solvers; a maze race of four solvers on one maze), games (minimax and alpha-beta on a tree,
+  unbeatable tic-tac-toe, Connect Four with depth-limited alpha-beta run in time slices, Nim by the XOR rule), puzzles and simulations
+  (`algo_puzzles.js`: Towers of Hanoi to play or watch, Conway's Game of Life with a glider gun, raindrops for π). The two races do not
+  start by themselves: the reader bets on a lane first ("Who will win?") and the result says how the bet did. Each file keeps the algorithms
   as pure generators apart from the drawing, injects its own `<style id="algo-…-css">` with the site's variables, and exports `selfTest()`.
 - **Adding a demo:** register it from an `algo_*.js` file listed in `build.js` after `algos.js` (and in `test_algos.js`), keep the algorithm
   pure and test it in `selfTest()`, use `api.player` and `api.canvas`, link the lessons in `taught` (`#/<course>/<n>`; `test_algos.js`

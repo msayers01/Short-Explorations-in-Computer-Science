@@ -4,7 +4,7 @@
 global.window = global;
 const ALGOS = require('./src/algos.js');
 let bad = 0;
-const files = ['algo_search', 'algo_sort', 'algo_paths', 'algo_games'];
+const files = ['algo_search', 'algo_sort', 'algo_paths', 'algo_games', 'algo_puzzles'];
 for (const f of files) {
   let mod;
   try { mod = require('./src/' + f + '.js'); } catch (e) { bad++; console.log('BAD  ' + f + ' does not load: ' + e.message); continue; }

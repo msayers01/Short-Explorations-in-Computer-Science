@@ -267,6 +267,20 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   }
   await page.setViewportSize({ width: 1280, height: 900 });
   check('algorithms: every demonstration starts and plays, on a wide screen and at phone width without sideways scrolling', demoProblems.length === 0, demoProblems);
+  // the races wait for a bet; Hanoi can be solved from the keyboard in the fewest moves; the tour's computer leaves no crossing
+  await goto('#/algorithms/maze-race');
+  await page.locator('select[aria-label="Your bet"]').selectOption('0');
+  await page.locator('.algo-host .algo-controls .btn.primary').first().click(); await page.locator('.algo-host button:has-text("Finish")').click();
+  const mazeRace = await page.locator('.algo-status').first().textContent();
+  await goto('#/algorithms/hanoi');
+  await page.locator('.algo-host select').selectOption('3'); await page.locator('.algo-host canvas').focus();
+  for (const [a, b] of [[1, 3], [1, 2], [3, 2], [1, 3], [2, 1], [2, 3], [1, 3]]) { await page.keyboard.press(String(a)); await page.keyboard.press(String(b)); }
+  const hanoiMsg = await page.locator('.pz-big').textContent();
+  await goto('#/algorithms/tour');
+  await page.locator('.algo-host .algo-speed').fill('100'); await page.locator('.algo-host .algo-controls .btn.primary').first().click();
+  await page.waitForFunction(() => /Play again/.test((document.querySelector('.algo-host .algo-controls .btn.primary') || {}).textContent || ''), null, { timeout: 20000 }).catch(() => { });
+  const tourStats = await page.locator('.pz-stats').textContent();
+  check('algorithms: a maze race reports the bet, Hanoi in 7 moves is perfect, the computer\'s tour has no crossings', /Your bet (won|came)/.test(mazeRace) && /Perfect! 7 moves/.test(hanoiMsg) && /Computer: [\d.]+ km · 0 crossings/.test(tourStats), { mazeRace, hanoiMsg, tourStats });
   await goto('#/real-world');
   const realLinks = await page.evaluate(() => [...document.querySelectorAll('main a[href^="#/"]')].map((a) => a.getAttribute('href')).filter((h) => /^#\/[a-z]+\/\d+/.test(h)));
   const badLinks = await page.evaluate((hs) => hs.filter((h) => { const [, c, n] = h.match(/^#\/([a-z]+)\/(\d+)/); const course = window.COURSES.find((x) => x.id === c); return !course || !course.lessons[+n - 1]; }), realLinks);
