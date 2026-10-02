@@ -19,7 +19,8 @@ is one file with no server behind it, and students' work stays in their own brow
 is inside the site at `#/guide`; `dist/teacher-guide.html` is a printable copy.
 
 ARCHITECTURE.md describes the design in detail: constraints, routes, storage keys, link formats and how to
-add lessons, figures and exercise types.
+add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is written, and why (the research behind each part);
+`node test_lessons.js --standard` shows which lessons meet it.
 
 ## Layout
 
@@ -45,6 +46,8 @@ add lessons, figures and exercise types.
     src/teach.js           assignments, submissions and grade book, carried in links
     src/portfolio.js       the student portfolio (#/portfolio)
     src/classroom.js       classroom (projector) mode
+    src/review.js          spaced review (#/today) and the skills map
+    src/parsons.js         Parsons problems: blocks, order and program (shared with test_course.js)
     src/tour.js            the guided tour behind the Tour button in the top bar
     src/guide.js           the guide for teachers (#/guide; also built to dist/teacher-guide.html)
     src/about.js           About and credits (#/about)

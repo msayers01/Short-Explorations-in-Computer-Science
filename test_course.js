@@ -105,6 +105,44 @@ async function grade(ex, code) {
   }
   return { passed: results.length > 0 && results.every(x => x.ok), results };
 }
+// A trace exercise's steps must be what really happens: run its program with a capture after every watched line (inside the block, for
+// a line that opens one) and compare the values, in order, with the first accepted answer of every cell.
+async function verifyTrace(ex) {
+  const lang = ex.lang || course.lang, lines = ex.code.split('\n'), probs = [];
+  const watched = [...new Set(ex.steps.map((st) => st.line))].sort((a, b) => b - a);
+  const header = (l) => (lang === 'python' ? /:\s*(#.*)?$/.test(l) : /\{\s*$/.test(l));
+  // Python reads every variable and reports one that does not exist as '-'. Java cannot even compile a read of a variable that is out of
+  // scope, so a '-' there is left out of the capture, and checked separately: reading it must not compile.
+  const missing = (n) => new Set(lang === 'python' ? [] : ex.vars.filter((v) => { const st = ex.steps.find((x) => x.line === n); return st && String([].concat(st.values[v])[0]) === '-'; }));
+  if (lang === 'java') for (const n of watched) for (const v of missing(n)) {
+    const L = ex.code.split('\n'), at = L[n - 1] || '', ind = (header(at) ? (L[n] || '') : at).match(/^\s*/)[0];
+    L.splice(n, 0, ind + 'System.out.println(' + v + ');');
+    const r = JAVA.run(L.join('\n'), '', { maxMs: 3000 });
+    if (!(r.err && /cannot find symbol/.test(r.err))) probs.push('after line ' + n + ' the table says ' + v + ' does not exist, but it does');
+  }
+  for (const n of watched) {
+    const at = lines[n - 1]; if (at === undefined) { probs.push('step line ' + n + ' is not in the program'); continue; }
+    const ind = (header(at) ? (lines[n] || '') : at).match(/^\s*/)[0], gone = missing(n);
+    const cap = lang === 'python' ? ind + '__t(' + n + ', [' + ex.vars.map((v) => gone.has(v) ? "'-'" : '__v(lambda: ' + v + ')').join(', ') + '])'
+      : ind + 'System.out.println("@@' + n + '|"' + ex.vars.map((v) => ' + ' + (gone.has(v) ? '"-"' : '(' + v + ')')).join(' + "|"') + ');';
+    lines.splice(n, 0, cap);
+  }
+  let src = lines.join('\n'), out = '', err = null;
+  if (lang === 'python') {
+    src = "def __v(f):\n    try:\n        return str(f())\n    except NameError:\n        return '-'\ndef __t(n, vals):\n    print('@@' + str(n) + '|' + '|'.join(vals))\n" + src;
+    const r = await py(src, ex.stdin || ''); out = r.out; err = r.err;
+  } else if (lang === 'java') { const r = JAVA.run(src, ex.stdin || '', { maxMs: 5000 }); out = r.out; err = r.err; }
+  else return ['trace verification is not written for ' + lang];
+  if (err) return ['the traced program fails: ' + String(err).split('\n')[0]];
+  const events = out.split('\n').filter((l) => l.startsWith('@@')).map((l) => { const [n, ...vals] = l.slice(2).split('|'); return { line: +n, vals }; });
+  const tidy = (x) => String(x).trim().toLowerCase().replace(/\s+/g, '');
+  if (events.length !== ex.steps.length) probs.push('the program passes the watched lines ' + events.length + ' times, the table has ' + ex.steps.length + ' steps: ' + events.map((e) => e.line).join(','));
+  ex.steps.forEach((st, k) => { const e = events[k]; if (!e) return;
+    if (e.line !== st.line) probs.push('step ' + (k + 1) + ' is after line ' + st.line + ', but the program is after line ' + e.line);
+    ex.vars.forEach((v, i) => { const want = String([].concat(st.values[v])[0]); if (tidy(want) !== tidy(e.vals[i])) probs.push('step ' + (k + 1) + ' ' + v + ': the table says ' + want + ', the program has ' + e.vals[i]); }); });
+  return probs;
+}
+
 (async () => {
   let bad = 0;
   for (const lesson of course.lessons) for (const b of lesson.blocks) {
@@ -117,8 +155,20 @@ async function grade(ex, code) {
       if (ex.kind === 'choice' && !ex.options.some(o => o.ok)) probs.push('no correct option');
       if (ex.kind === 'choice' && !ex.multi && ex.options.filter(o => o.ok).length > 1) probs.push('several correct options but multi is not set');
       if (!ex.solution) probs.push('no solution text');
+      if (ex.kind === 'trace') probs.push(...await verifyTrace(ex));
       const ok = s.passed && !st.passed && !probs.length; if (!ok) bad++;
       console.log((ok ? 'OK  ' : 'BAD ') + ex.id + '  [' + ex.kind + ']  reference:' + (s.passed ? 'pass' : 'FAIL') + '  empty:' + (st.passed ? 'PASSES(!)' : 'fails') + (probs.length ? '  ' + probs.join('; ') : ''));
+      continue;
+    }
+    if (ex.kind === 'parsons') {   // Parsons: the solution passes, an empty program does not, and the blocks are handed out shuffled
+      const PS = require('./src/parsons.js'), sol = PS.solution(ex), codeEx = Object.assign({}, ex, { kind: undefined });
+      const s = ex.tests ? await grade(codeEx, sol) : { passed: PS.orderOk(ex, sol) };
+      const st = ex.tests ? await grade(codeEx, '') : { passed: PS.orderOk(ex, '') };
+      const shuffled = PS.blocks(ex).order.some((b, i) => b !== i);
+      const ok = s.passed && !st.passed && shuffled;
+      if (!ok) bad++;
+      console.log((ok ? 'OK  ' : 'BAD ') + ex.id + '  [parsons' + (ex.tests ? ', run' : ', order') + ']  solution:' + (s.passed ? 'pass' : 'FAIL') + '  empty:' + (st.passed ? 'PASSES(!)' : 'fails') + (shuffled ? '' : '  NOT SHUFFLED'));
+      if (!s.passed && s.results) console.log('   ', s.error || s.results.filter(r => !r.ok));
       continue;
     }
     const s = await grade(ex, ex.solution);

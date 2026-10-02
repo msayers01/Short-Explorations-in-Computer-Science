@@ -130,7 +130,7 @@ window.COURSES.push({
 }`, caption: 'Division and remainder always fit back together: stacks × 64 + left is the number you started with. Try 64 blocks, then 63. The last line shows what a double gives instead: an answer no inventory can hold.' },
         `<h2>Printing</h2>
 <p><code>System.out.println(x)</code> prints <code>x</code> and ends the line; <code>System.out.print(x)</code> prints without ending the line, so the next output continues on the same line. To print several things at once, join them into one <code>String</code> with <code>+</code>. When one side of <code>+</code> is text, the other side is turned into text and joined on; Java never adds spaces of its own, so write them inside the quotes.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         int apples = 3;
         double price = 0.5;
@@ -383,7 +383,7 @@ public class Main {
         `<p>Repetition is the thing computers do that people cannot: the same step, billions of times, without tiring and without a single slip, so that when a slip does appear it is worth 475 million dollars. In Python you wrote loops with <code>while</code> and <code>for</code>. Java has both, and its <code>for</code> is a more general tool than Python's. This lesson is about writing loops that stop where you meant them to, which is where most loop bugs live.</p>
 <h2>while</h2>
 <p>A <code>while</code> loop checks its condition, runs its block if the condition is true, and goes back to check again. It stops the first time the condition is false. If the block never changes anything in the condition, it never stops.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         int n = 1;
         while (n <= 5) {
@@ -414,7 +414,7 @@ public class Main {
         { check: "Why prefer <code>n &lt; 10</code> to <code>n != 10</code> as a loop test?", options: ["It is faster", "A counter that steps past 10 ends a &lt; loop and never ends a != one", "It makes no difference"], answer: 1, why: "If n goes 1, 3, 5, …, it is never exactly 10. The < test stops at 11; the != test runs forever." },
         `<h2>for</h2>
 <p>Most loops count: start somewhere, test, step. Java's <code>for</code> puts those three parts on one line, separated by semicolons, so the whole shape of the loop can be read at a glance: <code>for (start; keep going while; step)</code>. The variable declared in the start part belongs to the loop and does not exist after it.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         for (int i = 0; i < 5; i++) {
             System.out.print(i + " ");
@@ -536,6 +536,24 @@ public class Main {
         { aside: `<p><b>Common mistakes in this lesson.</b> Off-by-one: <code>i &lt;= n</code> runs one pass more than <code>i &lt; n</code>; say the first and last values aloud. A <code>while</code> whose body never changes the variables in its condition, or changes them past the stopping point: prefer <code>&lt;</code> to <code>!=</code>. Forgetting to set an accumulator to 0 before the loop (Java will refuse to use an unset variable: <em>variable total might not have been initialized</em>). Using a <code>for</code> loop's variable after the loop: it no longer exists. A semicolon straight after the loop header, <code>for (…);</code> or <code>while (…);</code>, which gives the loop an empty body. Putting the <code>println</code> that ends a row inside the inner loop. <code>charAt(s.length())</code>: the last character is at <code>length() - 1</code>. A product or total in an <code>int</code> that quietly wraps around.</p>` },
         {
           ex: {
+            id: 'jv-3-3', kind: 'trace', title: 'Trace the loop',
+            prompt: `<p>Read the loop before you write one. Fill in the table: each row is the moment just after the line it names has run, with the values of <code>i</code> and <code>total</code> then. The first row is done for you. After the loop, <code>i</code> no longer exists: write <code>-</code> for it.</p>`,
+            code: `public class Main {\n    public static void main(String[] args) {\n        int total = 0;\n        for (int i = 1; i <= 4; i++) {\n            total = total + i * i;\n        }\n        System.out.println(total);\n    }\n}`,
+            vars: ['i', 'total'],
+            steps: [
+              { line: 5, values: { i: '1', total: '1' }, show: true },
+              { line: 5, values: { i: '2', total: '5' }, why: { total: { '4': 'total is not reset: it was 1, and 2 * 2 is added to it.' } } },
+              { line: 5, values: { i: '3', total: '14' } },
+              { line: 5, values: { i: '4', total: '30' } },
+              { line: 7, values: { i: '-', total: '30' }, why: { i: { '5': 'i was declared inside the for, so it exists only inside the loop. After it, there is no i at all.', '4': 'i was declared inside the for, so it exists only inside the loop. After it, there is no i at all.' } } }
+            ],
+            hints: ['Line 5 runs once per pass, with i going 1, 2, 3, 4. Each time it adds i * i to what total already holds.', 'The squares are 1, 4, 9 and 16, so total goes 1, 5, 14, 30. A variable declared in the for header lives only inside the loop.'],
+            solution: '<p>i: 1, 2, 3, 4, then no i. total: 1, 5, 14, 30, 30. The program prints <code>30</code>.</p>',
+            followup: 'Change i <= 4 to i < 4 and trace again before running: which row disappears? Then move int i = 1 out of the for header, above the loop, and check what is printed for i after it.'
+          }
+        },
+        {
+          ex: {
             id: 'jv-3-1', title: 'Digit sum',
             prompt: `<p>Read a whole number that is 0 or more and print the sum of its digits in exactly this form: for <code>4729</code> print <code>Digit sum: 22</code>. Do it with arithmetic, not by turning the number into text: <code>n % 10</code> is the last digit, and <code>n / 10</code> is the number with that digit removed. Repeat while <code>n</code> is greater than 0.</p>`,
             starter: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        int n = in.nextInt();\n        int sum = 0;\n        // your code here\n        System.out.println("Digit sum: " + sum);\n    }\n}`,
@@ -577,7 +595,7 @@ public class Main {
         `<p>Every language since has had them under some name: subroutines, procedures, functions. Java calls them <em>methods</em>, and you have been using them from the first line you wrote: <code>println</code> is a method, so are <code>nextInt</code> and <code>Math.sqrt</code>, and the program itself lives in one called <code>main</code>. This lesson is about writing your own, and the reason is the one Wheeler saw: a piece of code that does one job, written once, named, and called from wherever it is needed.</p>
 <h2>Defining and calling</h2>
 <p>A method is defined inside the class, beside <code>main</code>, and has four parts: the type of value it hands back, its name, a list of <em>parameters</em> in parentheses, each with a type, and a body in braces. The keyword <code>static</code> in front says the method belongs to the class and can be called directly from <code>main</code>; every method in this lesson is static, and lesson 8 shows the other kind. Calling the method is writing its name with values for the parameters, called <em>arguments</em>. The call is an expression: it stands for the value the method returns.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     static int square(int x) {
         return x * x;
     }
@@ -651,7 +669,7 @@ public class Main {
 }`, caption: 'printBox calls printLine twice: methods are built out of methods. Try int x = printBox("a"); and read the message: a void method has no value to give.' },
         `<h2>A method gets copies</h2>
 <p>When you call <code>square(n)</code>, the method's parameter <code>x</code> is a new variable holding a <em>copy</em> of <code>n</code>'s value. Whatever the method does to <code>x</code>, <code>n</code> is untouched. This is called <em>passing by value</em>, and it is how every argument of a primitive type (<code>int</code>, <code>double</code>, <code>char</code>, <code>boolean</code>) is handed over in Java. A method that wants to give the caller a new number returns it; it cannot reach back and change the caller's variable.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     static void addTen(int n) {
         n = n + 10;
         System.out.println("inside: " + n);
@@ -801,14 +819,14 @@ public class Main {
     },
     /* ================================================================== */
     {
-      title: 'Arrays', summary: 'Many values under one name: making and indexing arrays, visiting every slot, the bounds Java checks, arrays shared between methods, counting with an array, and tables of rows and columns.',
+      standard: 1, title: 'Arrays', summary: 'Many values under one name: making and indexing arrays, visiting every slot, the bounds Java checks, arrays shared between methods, counting with an array, and tables of rows and columns.',
       blocks: [
         `<p>In 1985 Friedhelm Hillebrand, an engineer at the German post office, was helping to plan GSM, the new mobile phone network that Europe was about to build, and he had to decide how long a text message could be. The messages were to travel in a spare corner of the network's signalling channel, where there was room for only a small, fixed amount of data, so the limit had to be chosen once, before a single phone was made. Hillebrand sat at his typewriter at home in Bonn, typed out the kind of sentences and questions people send each other, and counted the characters. Nearly all of them fitted in 160. So did most of the postcards and telex messages he looked at. The limit became 160 characters, each squeezed into 7 bits, so that a whole message fits in 140 bytes. When Twitter began in 2006 it kept its posts short enough to travel as one text message with room for the sender's name, and that is where its famous limit of 140 characters came from.</p>`,
         { photo: 'sms-feature-phone', caption: 'A text message on a basic mobile phone. With so few characters to spend, people invented a shorthand to fit more into each one: gr8, 2nite, 4 ur.' },
-        `<p>Programs need the same thing all the time: not one value but many of the same kind. Thirty test scores, twelve monthly rainfall totals, the 36 slots of a Minecraft inventory. Thirty variables called <code>score1</code> to <code>score30</code> would hold the scores, but no loop could visit them, because a loop cannot make up a variable's name. Java's answer is the <em>array</em>: one variable that names a whole row of slots, all of the same type, numbered 0, 1, 2 and onwards. Like Hillebrand's messages, an array has a fixed number of slots, chosen when it is made.</p>
+        `<p>Programs need the same thing all the time: not one value but many of the same kind. Thirty test scores, twelve monthly rainfall totals, the 36 slots of a Minecraft inventory. Thirty variables called <code>score1</code> to <code>score30</code> would hold the scores, but no loop could visit them, because a loop cannot make up a variable's name. Java's answer is the <em>array</em>: one variable that names a whole row of slots, all of the same type, numbered 0, 1, 2 and onwards. Like Hillebrand's messages, an array has a fixed number of slots, chosen when it is made. So what happens when a program reaches for a slot that is not there? In some languages, something dangerous; in Java, something safe, as you will see.</p>
 <h2>Making an array</h2>
 <p>The type of an array is the type of its elements followed by square brackets: <code>int[]</code> is "array of <code>int</code>", <code>String[]</code> is "array of <code>String</code>". <code>new int[5]</code> makes an array of five <code>int</code>s, all set to 0. Each slot is reached by its <em>index</em> in square brackets, and the first index is 0, so the five slots are <code>scores[0]</code> to <code>scores[4]</code>. <code>scores.length</code> is the number of slots. It has no parentheses, unlike the <code>length()</code> of a <code>String</code>; that difference trips up everyone once.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         int[] scores = new int[5];       // five ints, all 0
         scores[0] = 90;
@@ -838,11 +856,11 @@ public class Main {
         System.out.println(names[month - 1] + " has " + days[month - 1] + " days");
     }
 }`, caption: 'Two arrays of the same length, where the same index means the same month: a common pattern. People number months from 1 and arrays number from 0, so the program subtracts 1 at the boundary, in one place.' },
-        { check: "After <code>int[] a = new int[4];</code> which of these is <em>not</em> a slot of <code>a</code>?", options: ["<code>a[0]</code>", "<code>a[3]</code>", "<code>a[4]</code>"], answer: 2, why: "Four slots are numbered 0, 1, 2 and 3. There is no a[4]: using it stops the program with an ArrayIndexOutOfBoundsException." },
+        { check: "After <code>int[] a = new int[4];</code> which of these is <em>not</em> a slot of <code>a</code>?", options: ["<code>a[0]</code>", "<code>a[3]</code>", "<code>a[4]</code>"], answer: 2, wrong: ["a[0] is the first slot: arrays count from 0, so it exists.", "a[3] is the last of the four slots, 0, 1, 2 and 3. It is the next one, a[4], that does not exist.", null], why: "Four slots are numbered 0, 1, 2 and 3. There is no a[4]: using it stops the program with an ArrayIndexOutOfBoundsException." },
         `<h2>Visiting every slot</h2>
 <p>Why start at 0? In 1982 the Dutch computer scientist Edsger Dijkstra wrote a short note, <em>Why numbering should start at zero</em>, arguing that a range of whole numbers is best written with its lower end included and its upper end left out: <code>0 ≤ i &lt; n</code>. Then a range of <code>n</code> numbers starts at 0, the count <code>n</code> appears in the condition itself, and two ranges that meet, <code>0 ≤ i &lt; 5</code> and <code>5 ≤ i &lt; 9</code>, share their boundary without overlapping. Java, like C before it, agrees, and so every loop over an array has the same shape: <code>for (int i = 0; i &lt; a.length; i++)</code>.</p>
 <p>When the loop needs only the values and not their positions, there is a shorter form, the <em>for-each</em> loop: <code>for (double t : temps)</code> reads "for each <code>t</code> in <code>temps</code>". On each pass <code>t</code> holds a copy of the next value. It cannot tell you where you are in the array, and changing <code>t</code> does not change the array.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         double[] temps = {12.5, 15.0, 9.5, 18.0, 17.5, 11.0, 14.5};
         double sum = 0;
@@ -890,10 +908,10 @@ public class Main {
     }
 }`, expectError: true, caption: 'Exception in thread "main" java.lang.ArrayIndexOutOfBoundsException: Index 3 out of bounds for length 3. Because of <=, the loop also runs with i equal to 3. Change it to < and run again: 60.' },
         `<div class="stmt"><p><span class="kind">Trap (off by one).</span> A loop over an array runs <code>i = 0; i &lt; a.length</code>. Writing <code>&lt;=</code> visits one slot too many; starting at 1 misses the first. When a loop works on neighbours, <code>a[i]</code> and <code>a[i + 1]</code>, it must stop one sooner: <code>i &lt; a.length - 1</code>.</p></div>`,
-        { check: "A loop runs <code>for (int i = 1; i &lt;= a.length; i++)</code> and reads <code>a[i]</code>. What happens?", options: ["It reads every slot", "It misses <code>a[0]</code>, then stops with an exception at the end", "It reads every slot except the last"], answer: 1, why: "Starting at 1 skips a[0], and when i reaches a.length the index is out of bounds, so the program stops. The loop people mean is i = 0; i &lt; a.length." },
+        { check: "A loop runs <code>for (int i = 1; i &lt;= a.length; i++)</code> and reads <code>a[i]</code>. What happens?", options: ["It reads every slot", "It misses <code>a[0]</code>, then stops with an exception at the end", "It reads every slot except the last"], answer: 1, wrong: ["Look at both ends. It starts at 1, so a[0] is never read, and <= lets i reach a.length, one past the last slot.", null, "It goes one slot too far, not one short: with <=, i reaches a.length, and there is no a[a.length]."], why: "Starting at 1 skips a[0], and when i reaches a.length the index is out of bounds, so the program stops. The loop people mean is i = 0; i &lt; a.length." },
         `<h2>Arrays are shared, not copied</h2>
 <p>Lesson 4 showed that a method receives a copy of an <code>int</code>, so it cannot change the caller's variable. Arrays behave differently, and the reason is worth knowing exactly. An array variable does not hold the slots themselves. It holds a <em>reference</em>: where in memory the array is. <code>int[] b = a;</code> copies the reference, so <code>a</code> and <code>b</code> are two names for one array, and a change made through either is seen through both. Passing an array to a method copies the reference in the same way, so the method works on the caller's slots.</p>`,
-        { play: `import java.util.Arrays;
+        { predict: true, play: `import java.util.Arrays;
 
 public class Main {
     static void doubleAll(int[] values) {
@@ -916,10 +934,10 @@ public class Main {
     }
 }`, caption: 'a == b asks whether two names refer to the same array; Arrays.equals compares the contents, slot by slot. After the real copy, changing c leaves a alone.' },
         `<div class="stmt"><p><span class="kind">Rule (references).</span> Assigning an array, or passing it to a method, copies the reference, not the slots. A method can change the elements of an array it is given, and the caller sees the change. To get an independent copy, use <code>Arrays.copyOf</code>. To compare contents, use <code>Arrays.equals(a, b)</code>, not <code>==</code>.</p></div>`,
-        { check: "<code>int[] a = {1, 2}; int[] b = a; b[1] = 5;</code> What is <code>a[1]</code> now?", options: ["2", "5", "A compile error"], answer: 1, why: "b = a copies the reference, not the slots, so a and b are the same array. To copy the slots, use Arrays.copyOf." },
+        { check: "<code>int[] a = {1, 2}; int[] b = a; b[1] = 5;</code> What is <code>a[1]</code> now?", options: ["2", "5", "A compile error"], answer: 1, wrong: ["That would be true if b = a copied the slots. It copies the reference, so a and b are one array, and the change made through b is seen through a.", null, "Both are int[] variables, so the assignment compiles. It just does not copy anything."], why: "b = a copies the reference, not the slots, so a and b are the same array. To copy the slots, use Arrays.copyOf." },
         `<h2>Counting with an array</h2>
 <p>Here is an idea that turns up again and again. To count how often each of a few values occurs, keep an array of counters and use the value itself as the index. A shop's reviews give 1 to 5 stars; <code>count[stars]++</code> adds one to the right counter with no <code>if</code> for each rating.</p>`,
-        { play: `import java.util.Scanner;
+        { predict: true, play: `import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
@@ -964,6 +982,17 @@ public class Main {
         { aside: `<p><b>Common mistakes in this lesson.</b> Using <code>a[a.length]</code> for the last slot, or <code>&lt;=</code> in the loop condition. Writing <code>a.length()</code> for an array or <code>s.length</code> for a String. Printing an array with <code>println</code> and getting <code>[I@…</code>. Expecting <code>b = a</code> to copy an array, or <code>a == b</code> to compare contents. Reading a slot of a <code>String[]</code> that was never filled, which is <code>null</code>, and calling a method on it: <code>NullPointerException</code>. Trying to make an array longer: make a new one with <code>Arrays.copyOf</code>. Changing the variable of a for-each loop and expecting the array to change.</p>` },
         {
           ex: {
+            id: 'jv-5-3', kind: 'parsons', title: 'Put it in order: the largest value',
+            prompt: `<p>Build the method</p><pre class="code">static int largest(int[] a)</pre><p>that returns the largest value in an array of at least one number. The braces set the indentation for you; you only choose the order. Two of the blocks are wrong: they would work for some arrays and not for others.</p>`,
+            lines: ['static int largest(int[] a) {', '    int best = a[0];', '    for (int i = 1; i < a.length; i++) {', '        if (a[i] > best) {', '            best = a[i];', '        }', '    }', '    return best;', '}'],
+            distractors: ['int best = 0;', 'for (int i = 1; i <= a.length; i++) {'],
+            tests: [{ call: 'largest(new int[] {3, 9, 2})', expect: '9' }, { call: 'largest(new int[] {-5, -2, -8})', expect: '-2' }, { call: 'largest(new int[] {7})', expect: '7' }, { call: 'largest(new int[] {1, 2, 3, 4})', expect: '4' }],
+            hints: ['Start with the best value seen so far. Starting at 0 looks natural, but what if every number is negative?', 'The loop must stop at the last slot, a.length - 1, so its condition uses <, not <=. Inside it, replace best when a[i] is bigger; after it, return best.'],
+            followup: 'Change the method to return the position of the largest value instead of the value itself: keep the index of the best so far, and compare a[i] with a[bestIndex].'
+          }
+        },
+        {
+          ex: {
             id: 'jv-5-1', title: 'Above average',
             prompt: `<p>Read a whole number <code>n</code>, then <code>n</code> test scores (whole numbers). Print the average with one decimal place, then how many scores are strictly above the average, in exactly this form:</p><pre class="code">Average: 82.5\nAbove average: 2</pre><p>(That is the output for the input <code>4</code> and then <code>90 75 85 80</code>.) You cannot count the scores above the average until you know the average, so keep the scores in an array and go through them twice.</p>`,
             starter: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        int n = in.nextInt();\n        int[] scores = new int[n];\n        // read the n scores into the array, adding them up\n        // then count the scores above the average\n    }\n}`,
@@ -971,7 +1000,8 @@ public class Main {
             sampleStdin: '4\n90 75 85 80',
             hints: ['First loop: for (int i = 0; i < n; i++) { scores[i] = in.nextInt(); sum += scores[i]; }', 'The average must be a double: (double) sum / n. Without the cast, 330 / 4 is 82, not 82.5.', 'Second loop: for (int s : scores) if (s > average) above++; Then printf("Average: %.1f%n", average) and println("Above average: " + above).'],
             tests: [{ stdin: '4\n90 75 85 80', expect: 'Average: 82.5\nAbove average: 2' }, { stdin: '3\n70 70 70', expect: 'Average: 70.0\nAbove average: 0' }, { stdin: '5\n100 0 0 0 0', expect: 'Average: 20.0\nAbove average: 1' }, { stdin: '1\n42', expect: 'Average: 42.0\nAbove average: 0' }, { stdin: '6\n1 2 3 4 5 6', expect: 'Average: 3.5\nAbove average: 3' }, { stdin: '3\n1 1 2', expect: 'Average: 1.3\nAbove average: 1' }],
-            failTip: 'Check the case where every score is the same: none is strictly above the average. And check that the average is computed as a double.'
+            failTip: 'Check the case where every score is the same: none is strictly above the average. And check that the average is computed as a double.',
+            followup: 'Also print the scores that are above the average, in the order they were read. Notice why this program needs the array at all: the average is only known after the last score, and by then the earlier ones would be gone.'
           }
         },
         {
@@ -997,14 +1027,14 @@ public class Main {
     },
     /* ================================================================== */
     {
-      title: 'Strings', summary: 'Text as a row of characters: indexes and substrings, searching, why a String never changes, alphabetical order, characters as numbers, building text with StringBuilder, and splitting a line into parts.',
+      standard: 1, title: 'Strings', summary: 'Text as a row of characters: indexes and substrings, searching, why a String never changes, alphabetical order, characters as numbers, building text with StringBuilder, and splitting a line into parts.',
       blocks: [
         `<p>In 1987 three engineers, Joe Becker at Xerox and Lee Collins and Mark Davis at Apple, started work on a mess that every computer company had made for itself. Computers store letters as numbers, and each country, often each company, had its own table of which number meant which letter. The number that meant <em>é</em> on one computer meant a Greek letter or a line-drawing symbol on another, so a file written in Paris could arrive in Athens as nonsense. Becker's proposal of 1988, which he named <em>Unicode</em>, was one table for every writing system on Earth: Latin and Greek, Arabic and Hebrew, Devanagari and Thai, and the tens of thousands of Chinese characters, each with a number of its own. He reckoned that 16 bits, room for 65,536 characters, would be plenty for every script in modern use.</p>
-<p>Java, designed a few years later, believed him: a Java <code>char</code> is exactly 16 bits. Then the world wanted more. Ancient scripts, rare Chinese characters, mathematical symbols and, from 2010, emoji pushed Unicode far past 65,536; it now has more than 150,000 characters. Java's <code>char</code> could not grow, so every character beyond the first 65,536 is stored as a <em>pair</em> of <code>char</code>s. To this day Java will tell you that the text <code>"😀"</code>, one character on your screen, has a length of 2. This lesson is about text in Java: what a <code>String</code> is, and the dozen methods you will use every day.</p>`,
+<p>Java, designed a few years later, believed him: a Java <code>char</code> is exactly 16 bits. Then the world wanted more. Ancient scripts, rare Chinese characters, mathematical symbols and, from 2010, emoji pushed Unicode far past 65,536; it now has more than 150,000 characters. Java's <code>char</code> could not grow, so every character beyond the first 65,536 is stored as a <em>pair</em> of <code>char</code>s. To this day Java will tell you that the text <code>"😀"</code>, one character on your screen, has a length of 2. This lesson is about text in Java: what a <code>String</code> is, and the dozen methods you will use every day. And by the end of it you will be able to answer the puzzle: how can one character count as two?</p>`,
         { photo: 'rosetta-stone', caption: 'The Rosetta Stone, carved in 196 BC, carries the same decree in three scripts: Egyptian hieroglyphs, Demotic and Greek. Scholars could read the Greek, and that made it the key to reading hieroglyphs. Today Unicode has numbers for Egyptian hieroglyphs as well as for Greek letters.' },
         `<h2>A String is a row of characters</h2>
 <p>A <code>String</code> is a sequence of <code>char</code>s, numbered from 0 like the slots of an array. <code>s.length()</code> is how many there are (with parentheses: a <code>String</code> is an object and <code>length</code> is one of its methods), and <code>s.charAt(i)</code> is the character at index <code>i</code>, so the last one is <code>s.charAt(s.length() - 1)</code>. <code>s.substring(begin, end)</code> is a new <code>String</code> made of the characters from <code>begin</code> up to, but not including, <code>end</code>: the same half-open range as an array loop, <code>begin ≤ i &lt; end</code>. Leave out <code>end</code> and the substring runs to the end of the text.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         String email = "ada.lovelace@example.org";
         System.out.println(email.length());
@@ -1020,10 +1050,10 @@ public class Main {
 }`, caption: 'indexOf finds the @, and two substrings cut the address on either side of it. Because the end index is left out, substring(4, 12) has exactly 12 − 4 characters. Try substring(at) instead of substring(at + 1).' },
         `<div class="stmt"><p><span class="kind">Rule (indexes).</span> The characters of <code>s</code> are <code>s.charAt(0)</code> to <code>s.charAt(s.length() - 1)</code>. An index outside that range stops the program with a <code>StringIndexOutOfBoundsException</code>.</p>
 <p><span class="kind">Rule (substring).</span> <code>s.substring(b, e)</code> includes index <code>b</code> and stops before index <code>e</code>, so its length is <code>e − b</code>. <code>s.substring(b)</code> runs from <code>b</code> to the end. <code>s.substring(0, 0)</code> is the empty string <code>""</code>, which is a perfectly good <code>String</code> of length 0.</p></div>`,
-        { check: "What is <code>\"computer\".substring(3, 6)</code>?", options: ["<code>\"put\"</code>", "<code>\"pute\"</code>", "<code>\"mpu\"</code>"], answer: 0, why: "c is index 0, so p is 3, u is 4 and t is 5. The end index 6 is not included: three characters, 6 − 3." },
+        { check: "What is <code>\"computer\".substring(3, 6)</code>?", options: ["<code>\"put\"</code>", "<code>\"pute\"</code>", "<code>\"mpu\"</code>"], answer: 0, wrong: [null, "That includes index 6, the e. The end index is left out, so substring(3, 6) has 6 − 3 = 3 characters.", "That starts at index 2. Counting from 0, c is 0, o is 1 and m is 2, so index 3 is the p."], why: "c is index 0, so p is 3, u is 4 and t is 5. The end index 6 is not included: three characters, 6 − 3." },
         `<h2>Searching</h2>
 <p><code>s.indexOf(x)</code> returns the index where <code>x</code> (a <code>char</code> or a <code>String</code>) first appears, or <code>-1</code> if it does not appear at all; always check for <code>-1</code> before using the answer as an index. <code>s.indexOf(x, from)</code> starts looking at index <code>from</code>, which is how a loop finds every occurrence, and <code>s.lastIndexOf(x)</code> searches from the end. When you only need yes or no, <code>s.contains(x)</code>, <code>s.startsWith(x)</code> and <code>s.endsWith(x)</code> return a <code>boolean</code>.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         String file = "holiday.photo.jpg";
         int dot = file.lastIndexOf('.');
@@ -1043,7 +1073,7 @@ public class Main {
 }`, caption: 'lastIndexOf finds the last dot, so a name with several dots still gives jpg. The loop asks indexOf again, starting one past the last find, until the answer is -1. Count the six by hand: the la in land counts too.' },
         `<h2>A String never changes</h2>
 <p>Here is a fact about Java that surprises everyone once: a <code>String</code> cannot be changed. Not one character of it, ever. Methods that seem to change text, <code>toUpperCase()</code>, <code>replace</code>, <code>trim()</code>, <code>substring</code>, all leave the original alone and return a <em>new</em> <code>String</code>. If you do not store the result, it is thrown away. Strings that never change can be shared safely between any number of variables and methods, which is why Java's designers made them that way.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         String name = "  Grace Hopper ";
         name.trim();                         // the result is thrown away
@@ -1057,10 +1087,10 @@ public class Main {
 }`, caption: 'The square brackets show the spaces. The first two calls make new Strings and drop them. Calls can be chained, name.trim().toUpperCase(), because each returns a String that the next one works on.' },
         `<div class="stmt"><p><span class="kind">Rule (immutable).</span> A <code>String</code> never changes. Every method that "changes" text returns a new <code>String</code>; write <code>s = s.toUpperCase();</code> to keep the result. This is also why a method cannot change a <code>String</code> you pass to it, although it can change the slots of an array.</p>
 <p><span class="kind">Rule (equals).</span> Compare text with <code>a.equals(b)</code>, or <code>a.equalsIgnoreCase(b)</code> to ignore capitals; never with <code>==</code>, which asks whether two variables refer to the same object (lesson 2).</p></div>`,
-        { check: "<code>String s = \"java\"; s.toUpperCase(); System.out.println(s);</code> What is printed?", options: ["<code>JAVA</code>", "<code>java</code>", "<code>Java</code>"], answer: 1, why: "toUpperCase returns a new String, and nothing stores it, so s is still \"java\". Write s = s.toUpperCase(); to keep the change." },
+        { check: "<code>String s = \"java\"; s.toUpperCase(); System.out.println(s);</code> What is printed?", options: ["<code>JAVA</code>", "<code>java</code>", "<code>Java</code>"], answer: 1, wrong: ["toUpperCase does make \"JAVA\", but as a new String that nothing stores. s itself never changes.", null, "Nothing here capitalises only the first letter, and nothing changes s at all: the new String from toUpperCase is thrown away."], why: "toUpperCase returns a new String, and nothing stores it, so s is still \"java\". Write s = s.toUpperCase(); to keep the change." },
         `<h2>Alphabetical order</h2>
 <p><code>a.compareTo(b)</code> says which of two strings comes first: a negative number if <code>a</code> comes before <code>b</code>, 0 if they are equal, a positive number if <code>a</code> comes after. Only the sign matters. It works character by character, comparing the characters' numbers, and that has a consequence: in Unicode, as in the older code ASCII, the capitals A to Z all have smaller numbers than the small letters a to z, so <code>"Zebra"</code> comes before <code>"apple"</code>. <code>Arrays.sort</code> on an array of strings uses the same order. When capitals should not count, use <code>compareToIgnoreCase</code>.</p>`,
-        { play: `import java.util.Arrays;
+        { predict: true, play: `import java.util.Arrays;
 
 public class Main {
     public static void main(String[] args) {
@@ -1077,7 +1107,7 @@ public class Main {
         `<h2>Characters are numbers</h2>
 <p>A <code>char</code> is stored as its Unicode number: <code>'A'</code> is 65, <code>'B'</code> 66, and so on to <code>'Z'</code> at 90; <code>'a'</code> is 97; the digit <code>'0'</code> is 48. Arithmetic on a <code>char</code> works on that number and gives an <code>int</code>, so <code>c - 'A'</code> is the position of a capital letter in the alphabet (0 for A, 25 for Z), and <code>(char) ('A' + 2)</code> turns a position back into a letter, C. The class <code>Character</code> has questions to ask of a single character: <code>Character.isLetter(c)</code>, <code>isDigit</code>, <code>isUpperCase</code>, and <code>Character.toUpperCase(c)</code>.</p>
 <p>According to the Roman historian Suetonius, Julius Caesar wrote his secret letters by replacing each letter with the one three places further on in the alphabet. Shifting letters is a few lines of arithmetic on <code>char</code>s.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         String message = "ATTACK AT DAWN";
         int shift = 3;
@@ -1094,10 +1124,10 @@ public class Main {
         System.out.println((int) 'A' + " " + (int) 'a' + " " + (char) 66 + " " + ('C' - 'A'));
     }
 }`, caption: 'Characters that are not capital letters, like the spaces, pass through unchanged. To decode, shift by 23: three more steps round the alphabet of 26. Try it on the secret.' },
-        { check: "What is <code>(char) ('a' + 2)</code>?", options: ["<code>'c'</code>", "<code>99</code>", "<code>'a2'</code>"], answer: 0, why: "'a' is 97, so 'a' + 2 is the int 99, and the cast turns 99 back into the character c. Without the cast the answer would be the number 99." },
+        { check: "What is <code>(char) ('a' + 2)</code>?", options: ["<code>'c'</code>", "<code>99</code>", "<code>'a2'</code>"], answer: 0, wrong: [null, "'a' + 2 on its own is the int 99, but the cast (char) turns it back into a character.", "+ joins text only when one side is a String. 'a' is a char, and a char is a number, so this is arithmetic."], why: "'a' is 97, so 'a' + 2 is the int 99, and the cast turns 99 back into the character c. Without the cast the answer would be the number 99." },
         `<h2>Building text with StringBuilder</h2>
 <p>The Caesar program builds its answer with <code>secret += c</code>. Because a <code>String</code> cannot change, every <code>+=</code> makes a brand new <code>String</code> and copies all the old characters into it. For a short message nobody notices; for a text of a million characters that is a million copies of ever longer strings, and the program crawls. A <code>StringBuilder</code> is text that <em>can</em> change: <code>append</code> adds to the end, <code>insert</code> puts text anywhere, <code>reverse</code> turns it round, and <code>toString()</code> gives back an ordinary <code>String</code> when you are done.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         StringBuilder sb = new StringBuilder();
         for (int i = 1; i <= 5; i++) {
@@ -1116,7 +1146,7 @@ public class Main {
 }`, caption: 'The if puts a comma between the numbers but not after the last one, a pattern you will write often. new StringBuilder(word).reverse().toString() is the usual way to reverse a String in Java.' },
         `<h2>Splitting a line into parts</h2>
 <p>Data often arrives as one line with the parts separated by commas or spaces. <code>line.split(",")</code> cuts the line at every comma and returns the pieces as a <code>String[]</code>. The pieces are text, even when they look like numbers: <code>"1906" + 1</code> is <code>"19061"</code>. <code>Integer.parseInt(s)</code> turns text into an <code>int</code> (and <code>Double.parseDouble</code> into a <code>double</code>); it stops the program with a <code>NumberFormatException</code> if the text is not a number. Going the other way, <code>"" + n</code> or <code>String.valueOf(n)</code> turns a number into text.</p>`,
-        { play: `import java.util.Scanner;
+        { predict: true, play: `import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
@@ -1152,7 +1182,8 @@ public class Main {
             sampleStdin: 'grace brewster murray hopper',
             hints: ['trim() removes the spaces at both ends; then split(" +") cuts at every run of one or more spaces, giving the words.', 'For each word w, the initial is w.charAt(0). Character.toUpperCase turns it into a capital. Append it and a \'.\' to a StringBuilder, and print that at the end.', 'Another way, with no split: walk along the line and take every letter that comes right after a space, or at index 0.'],
             tests: [{ stdin: 'grace brewster murray hopper', expect: 'G.B.M.H.' }, { stdin: 'Ada Lovelace', expect: 'A.L.' }, { stdin: '  alan   mathison turing ', expect: 'A.M.T.' }, { stdin: 'cher', expect: 'C.' }, { stdin: 'katherine Coleman goble JOHNSON', expect: 'K.C.G.J.' }],
-            failTip: 'Try the input with extra spaces: if your program prints a stray full stop, or stops with an exception, it is treating an empty piece as a word.'
+            failTip: 'Try the input with extra spaces: if your program prints a stray full stop, or stops with an exception, it is treating an empty piece as a word.',
+            followup: 'Change it to print the first initial and the whole last name, the way a class list does: grace brewster murray hopper becomes G. Hopper. The last word is words[words.length - 1], and its first letter needs capitalising too.'
           }
         },
         {
@@ -1163,7 +1194,8 @@ public class Main {
             solution: `static boolean isPalindrome(String s) {\n    StringBuilder clean = new StringBuilder();\n    for (int i = 0; i < s.length(); i++) {\n        char c = s.charAt(i);\n        if (Character.isLetterOrDigit(c)) {\n            clean.append(Character.toLowerCase(c));\n        }\n    }\n    int i = 0;\n    int j = clean.length() - 1;\n    while (i < j) {\n        if (clean.charAt(i) != clean.charAt(j)) {\n            return false;\n        }\n        i++;\n        j--;\n    }\n    return true;\n}`,
             hints: ['First make a cleaned copy: for each character c of s, if Character.isLetterOrDigit(c), append Character.toLowerCase(c) to a StringBuilder.', 'Then compare from both ends: i starts at 0, j at the last index; while i < j, if the characters differ return false, else move i right and j left. If the loop finishes, return true.', 'Shorter, if slower: String t = clean.toString(); return t.equals(new StringBuilder(t).reverse().toString());'],
             tests: [{ call: 'isPalindrome("racecar")', expect: 'true' }, { call: 'isPalindrome("Hello")', expect: 'false' }, { call: 'isPalindrome("A man, a plan, a canal: Panama")', expect: 'true' }, { call: 'isPalindrome("Never odd or even")', expect: 'true' }, { call: 'isPalindrome("")', expect: 'true' }, { call: 'isPalindrome("ab")', expect: 'false' }, { call: 'isPalindrome("12321")', expect: 'true' }, { call: 'isPalindrome("123 21x")', expect: 'false' }, { call: 'isPalindrome("Was it a car or a cat I saw?")', expect: 'true' }],
-            failTip: 'Check that capitals are ignored (N and n are the same here) and that spaces and punctuation are skipped, not compared.'
+            failTip: 'Check that capitals are ignored (N and n are the same here) and that spaces and punctuation are skipped, not compared.',
+            followup: 'Write static boolean isAnagram(String a, String b): true when a and b use exactly the same letters, ignoring case and spaces, like Listen and Silent. One way: clean both as here, turn each into a char array with toCharArray, sort them with Arrays.sort, and compare with Arrays.equals.'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
@@ -1177,13 +1209,13 @@ public class Main {
     },
     /* ================================================================== */
     {
-      title: 'ArrayList', summary: 'A list that grows as you add to it: adding, reading and removing, numbers in a list, the traps of removing inside a loop, when to choose a list over an array, and how a list grows.',
+      standard: 1, title: 'ArrayList', summary: 'A list that grows as you add to it: adding, reading and removing, numbers in a list, the traps of removing inside a loop, when to choose a list over an array, and how a list grows.',
       blocks: [
         `<p>At 8:01 on the morning of 26 June 1974, in a Marsh supermarket in Troy, Ohio, a cashier named Sharon Buchanan slid a ten-pack of Wrigley's Juicy Fruit chewing gum across a glass window in her counter. A laser underneath read the black and white stripes on the packet, and the till looked up the price for itself: 67 cents. It was the first time anything in a shop had been sold by scanning a Universal Product Code, the barcode that is now printed on nearly everything you can buy. The packet of gum is kept at the Smithsonian's National Museum of American History.</p>`,
-        `<p>Think about the program in that till. It cannot know how long the receipt will be: one packet of gum, or a family's shopping for a fortnight. An array needs its length when it is made, and that length never changes. What the till needs is a list that starts empty and grows by one each time something is scanned. Java's library has one, called <code>ArrayList</code>, and it is one of the classes Java programmers use most.</p>
+        `<p>Think about the program in that till. It cannot know how long the receipt will be: one packet of gum, or a family's shopping for a fortnight. An array needs its length when it is made, and that length never changes. What the till needs is a list that starts empty and grows by one each time something is scanned. Java's library has one, called <code>ArrayList</code>, and it is one of the classes Java programmers use most. How can a list grow when the arrays it is built from cannot? The last section of the lesson answers that.</p>
 <h2>A list that grows</h2>
 <p><code>ArrayList</code> lives in <code>java.util</code>, like <code>Scanner</code>, so it must be imported. The type of thing it holds goes in angle brackets: <code>ArrayList&lt;String&gt;</code> is a list of strings. <code>new ArrayList&lt;&gt;()</code> makes an empty one; the empty brackets, called the <em>diamond</em>, tell Java to take the type from the left-hand side. Then <code>add(x)</code> puts <code>x</code> on the end, <code>size()</code> says how many items there are, and <code>get(i)</code> reads the item at index <code>i</code>, counting from 0 as always.</p>`,
-        { play: `import java.util.ArrayList;
+        { predict: true, play: `import java.util.ArrayList;
 
 public class Main {
     public static void main(String[] args) {
@@ -1204,7 +1236,7 @@ public class Main {
 }`, caption: 'A list prints itself in square brackets, no Arrays.toString needed. add(0, x) inserts at the front and moves every other item one place along; remove(i) closes the gap. indexOf returns -1 for something that is not there, like String’s indexOf.' },
         `<div class="stmt"><p><span class="kind">Rule (methods).</span> <code>add(x)</code> appends; <code>add(i, x)</code> inserts at index <code>i</code>; <code>get(i)</code> reads; <code>set(i, x)</code> replaces; <code>remove(i)</code> removes and closes the gap; <code>size()</code> counts; <code>contains(x)</code> and <code>indexOf(x)</code> search, comparing with <code>equals</code>; <code>clear()</code> empties the list.</p>
 <p><span class="kind">Rule (indexes).</span> As with arrays, the items are at indexes 0 to <code>size() - 1</code>, and an index outside that range stops the program with an <code>IndexOutOfBoundsException</code>. Note the three different ways of asking for a length: <code>a.length</code> for an array, <code>s.length()</code> for a <code>String</code>, <code>list.size()</code> for a list.</p></div>`,
-        { check: "<code>list</code> is empty. After <code>list.add(\"a\"); list.add(\"b\"); list.add(0, \"c\");</code> what is <code>list.get(1)</code>?", options: ["<code>\"a\"</code>", "<code>\"b\"</code>", "<code>\"c\"</code>"], answer: 0, why: "The list is [a, b], then c is inserted at the front: [c, a, b]. Index 1 is a." },
+        { check: "<code>list</code> is empty. After <code>list.add(\"a\"); list.add(\"b\"); list.add(0, \"c\");</code> what is <code>list.get(1)</code>?", options: ["<code>\"a\"</code>", "<code>\"b\"</code>", "<code>\"c\"</code>"], answer: 0, wrong: [null, "b was at index 1 before c arrived. add(0, c) moved every item one place along, so b is now at index 2.", "c went in at index 0, the front: add(0, x) inserts at the very start."], why: "The list is [a, b], then c is inserted at the front: [c, a, b]. Index 1 is a." },
         `<h2>Numbers in a list</h2>
 <p>An <code>ArrayList</code> can hold only objects, not the plain values <code>int</code>, <code>double</code>, <code>char</code> and <code>boolean</code>. For each of those Java has a class that wraps one value in an object: <code>Integer</code>, <code>Double</code>, <code>Character</code> and <code>Boolean</code>. So a list of whole numbers is an <code>ArrayList&lt;Integer&gt;</code>. You hardly notice the difference after that, because Java wraps and unwraps values for you as they go into the list and come out.</p>`,
         { play: `import java.util.ArrayList;
@@ -1216,7 +1248,8 @@ public class Main {
         System.out.println(numbers);
     }
 }`, expectError: true, caption: 'Main.java:5: error: unexpected type. The message goes on: required: reference, found: int. Change both int to Integer on line 5 and run again.' },
-        `<p>Here is the till. It reads pairs of an item and a price until the input runs out, keeps them in two lists side by side, and prints a receipt. <code>printf</code> lines the columns up: <code>%-10s</code> prints text in a space 10 characters wide, against the left edge, and <code>%6.2f</code> prints a number with two decimals in a space 6 characters wide, against the right.</p>`,
+        `<details class="reveal"><summary>Guess first: with the input gum 0.67, bread 2.49, milk 1.15 and apples 3.20, what will the last line of the receipt say?</summary><p>The words <code>4 items</code> and then the total, <code>7.51</code>, lined up under the prices. The program counts the items with <code>items.size()</code> and adds the prices as it prints them. Run it below to check, and look at how <code>printf</code> lines up the columns.</p></details>
+<p>Here is the till. It reads pairs of an item and a price until the input runs out, keeps them in two lists side by side, and prints a receipt. <code>printf</code> lines the columns up: <code>%-10s</code> prints text in a space 10 characters wide, against the left edge, and <code>%6.2f</code> prints a number with two decimals in a space 6 characters wide, against the right.</p>`,
         { play: `import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -1239,7 +1272,7 @@ public class Main {
 }`, stdin: 'gum 0.67\nbread 2.49\nmilk 1.15\napples 3.20', caption: 'The program has no idea how many items are coming, and does not need one. Add a line to the input, say tea 4.10, and run again: the lists simply grow.' },
         `<h2>Removing, and two traps</h2>
 <p>A list of <code>Integer</code>s has a trap built in. <code>remove</code> comes in two kinds: <code>remove(int index)</code> removes the item at that position, and <code>remove(Object x)</code> removes the first item equal to <code>x</code>. Given <code>list.remove(3)</code>, Java picks the first, because 3 is an <code>int</code>. To remove the <em>value</em> 3, wrap it: <code>list.remove(Integer.valueOf(3))</code>.</p>`,
-        { play: `import java.util.ArrayList;
+        { predict: true, play: `import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
@@ -1254,7 +1287,7 @@ public class Main {
     }
 }`, caption: 'List.of(10, 3, 7, 3) is a quick way to write a list of values; new ArrayList<>(...) makes a list you can change from it. The first remove took away the last 3 because it was at index 3; the second took away the value.' },
         `<p>The second trap is removing while you loop forwards. When an item is removed, every item after it moves one place to the left, so the item that was next is now at the index you just looked at, and the loop's <code>i++</code> steps straight past it. Going backwards avoids the problem, because the items that move are ones the loop has already seen. (A for-each loop is no good either: change the list inside one and Java stops the program with a <code>ConcurrentModificationException</code>.)</p>`,
-        { play: `import java.util.ArrayList;
+        { predict: true, play: `import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
@@ -1278,7 +1311,7 @@ public class Main {
 }`, caption: 'The aim is to remove the odd numbers. Going forwards, removing the 1 moves the 3 into index 0, the loop moves on to index 1, and the 3 is never looked at. Going backwards removes all four.' },
         `<div class="stmt"><p><span class="kind">Rule (removing in a loop).</span> To remove items from a list as you go, loop backwards: <code>for (int i = list.size() - 1; i &gt;= 0; i--)</code>. Never add to or remove from a list inside a for-each loop over that same list.</p>
 <p><span class="kind">Trap (Integer lists).</span> <code>list.remove(3)</code> removes the item at index 3. To remove the value 3, write <code>list.remove(Integer.valueOf(3))</code>.</p></div>`,
-        { check: "<code>nums</code> is the list <code>[5, 6, 7]</code> of <code>Integer</code>s. What is it after <code>nums.remove(1);</code>?", options: ["<code>[6, 7]</code>", "<code>[5, 7]</code>", "<code>[5, 6, 7]</code>: there is no 1 to remove"], answer: 1, why: "1 is an int, so this is remove by index: the item at index 1, which is 6, goes. To remove a value, wrap it: nums.remove(Integer.valueOf(5))." },
+        { check: "<code>nums</code> is the list <code>[5, 6, 7]</code> of <code>Integer</code>s. What is it after <code>nums.remove(1);</code>?", options: ["<code>[6, 7]</code>", "<code>[5, 7]</code>", "<code>[5, 6, 7]</code>: there is no 1 to remove"], answer: 1, wrong: ["That removes the item at index 0. With an int argument, remove(1) removes the item at index 1, which is 6.", null, "With an int argument, remove looks for an index, not a value. Index 1 exists, so 6 goes. To remove the value 1, write nums.remove(Integer.valueOf(1))."], why: "1 is an int, so this is remove by index: the item at index 1, which is 6, goes. To remove a value, wrap it: nums.remove(Integer.valueOf(5))." },
         `<h2>Arrays or lists?</h2>
 <p>Both hold a row of values reached by index, and you will use both. The differences are worth having in one place.</p>
 <div class="tbl-wrap"><table>
@@ -1291,10 +1324,10 @@ public class Main {
 <tr><td>print</td><td><code>Arrays.toString(a)</code></td><td><code>println(list)</code></td></tr>
 </table></div>
 <p>Use an <code>ArrayList</code> when you do not know in advance how many items there will be, or when items come and go. Use an array when the size is fixed by the problem: twelve months, a 9 by 9 sudoku, the 26 counters for the letters of the alphabet.</p>`,
-        { check: "Which of these needs an <code>ArrayList</code> rather than an array?", options: ["The rainfall for each of the 12 months of a year", "The names of everyone who signs up for a club, until the deadline", "A 9 by 9 sudoku grid"], answer: 1, why: "Nobody knows how many people will sign up, so the list must grow. The months and the sudoku have sizes fixed by the problem, which suits an array." },
+        { check: "Which of these needs an <code>ArrayList</code> rather than an array?", options: ["The rainfall for each of the 12 months of a year", "The names of everyone who signs up for a club, until the deadline", "A 9 by 9 sudoku grid"], answer: 1, wrong: ["A year always has 12 months, so the size is fixed by the problem, and an array of 12 fits exactly.", null, "A sudoku is always 9 by 9: a fixed size, which is what an int[9][9] array is for."], why: "Nobody knows how many people will sign up, so the list must grow. The months and the sudoku have sizes fixed by the problem, which suits an array." },
         `<h2>Help from the library</h2>
 <p>The class <code>Collections</code> (with an s, also in <code>java.util</code>) does for lists what <code>Arrays</code> does for arrays. <code>Collections.sort(list)</code> sorts a list in place, using the same order as <code>compareTo</code>; <code>Collections.max</code> and <code>Collections.min</code> find the largest and smallest; <code>Collections.reverse</code> turns a list round; <code>Collections.frequency(list, x)</code> counts how many times <code>x</code> appears.</p>`,
-        { play: `import java.util.ArrayList;
+        { predict: true, play: `import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -1325,7 +1358,8 @@ public class Main {
             sampleStdin: 'the cat saw the other cat',
             hints: ['Inside the loop: if (!seen.contains(word)) seen.add(word); The list keeps the words in the order they were first added.', 'Printing the list with println gives [the, cat, saw, other], with brackets and commas, which is not the form asked for. Build the line with a StringBuilder, putting a space before every word except the first. (String.join(" ", seen) does the same in one call.)'],
             tests: [{ stdin: 'the cat saw the other cat', expect: 'the cat saw other\n4' }, { stdin: 'a a a', expect: 'a\n1' }, { stdin: 'one two three', expect: 'one two three\n3' }, { stdin: 'To be or not to be', expect: 'To be or not to\n5' }, { stdin: 'red green\nblue red\n\ngreen', expect: 'red green blue\n3' }],
-            failTip: 'The words may come on several lines: in.next() skips line breaks as well as spaces, so read with next(), not nextLine().'
+            failTip: 'The words may come on several lines: in.next() skips line breaks as well as spaces, so read with next(), not nextLine().',
+            followup: 'Keep a second list with every word, repeats included. After the first line, print each different word with how many times it appeared, using Collections.frequency(all, word): the 2, cat 2, saw 1, other 1.'
           }
         },
         {
@@ -1337,7 +1371,8 @@ public class Main {
             solution: `static int removeShort(ArrayList<String> words, int min) {\n    int removed = 0;\n    for (int i = words.size() - 1; i >= 0; i--) {\n        if (words.get(i).length() < min) {\n            words.remove(i);\n            removed++;\n        }\n    }\n    return removed;\n}`,
             hints: ['Loop backwards, from words.size() - 1 down to 0, so that removing a word does not make the loop skip the next one.', 'if (words.get(i).length() < min) { words.remove(i); removed++; }'],
             tests: [{ name: 'a sentence', setup: '        ArrayList<String> w = new ArrayList<>(List.of("a", "an", "the", "cat", "is", "on", "mat"));', call: 'removeShort(w, 3) + " " + w', expect: '4 [the, cat, mat]' }, { name: 'short words side by side', setup: '        ArrayList<String> w = new ArrayList<>(List.of("I", "am", "so", "happy"));', call: 'removeShort(w, 3) + " " + w', expect: '3 [happy]' }, { name: 'nothing to remove', setup: '        ArrayList<String> w = new ArrayList<>(List.of("hello", "world"));', call: 'removeShort(w, 2) + " " + w', expect: '0 [hello, world]' }, { name: 'everything removed', setup: '        ArrayList<String> w = new ArrayList<>(List.of("ab", "c", "de"));', call: 'removeShort(w, 5) + " " + w', expect: '3 []' }, { name: 'an empty list', setup: '        ArrayList<String> w = new ArrayList<>();', call: 'removeShort(w, 3) + " " + w', expect: '0 []' }, { name: 'the length exactly min stays', setup: '        ArrayList<String> w = new ArrayList<>(List.of("cat", "ox", "bird"));', call: 'removeShort(w, 3) + " " + w', expect: '1 [cat, bird]' }],
-            failTip: 'If a short word survives when it comes straight after another short word, your loop runs forwards and skips it. Run it backwards.'
+            failTip: 'If a short word survives when it comes straight after another short word, your loop runs forwards and skips it. Run it backwards.',
+            followup: 'Write static void removeRepeats(ArrayList<Integer> list), which keeps only the first time each value appears: [3, 1, 3, 2, 1] becomes [3, 1, 2]. Loop backwards again, and remove the item at i when list.indexOf(list.get(i)) is smaller than i, which means the same value appears earlier.'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
@@ -1351,13 +1386,13 @@ public class Main {
     },
     /* ================================================================== */
     {
-      title: 'Classes and objects', summary: 'Making your own types: fields, constructors and methods that belong to an object, private fields that protect a class’s rules, toString, references and null, static, and objects that work together.',
+      standard: 1, title: 'Classes and objects', summary: 'Making your own types: fields, constructors and methods that belong to an object, private fields that protect a class’s rules, toString, references and null, static, and objects that work together.',
       blocks: [
         `<p>In the early 1960s, at the Norwegian Computing Center in Oslo, Kristen Nygaard was writing simulations: programs that imitate some part of the real world to find out how it will behave before anyone builds it or changes it. The things such programs imitate are full of separate parts acting at the same time: customers arriving at counters, ships moving through a port, jobs passing from machine to machine in a factory. Nygaard found that the languages of the day made it hard to say what he meant, and with Ole-Johan Dahl, a brilliant programmer, he set out to design a better one. Their second language, Simula 67, gave the world a new way to organise programs. A program could describe a <em>class</em> of things, say a customer, once: what every customer knows and what every customer can do. Then it could make as many customers, <em>objects</em> of that class, as the simulation needed, each with its own information.</p>
-<p>The idea spread. Alan Kay built the language Smalltalk around it in the 1970s. Bjarne Stroustrup used Simula for his doctoral research at Cambridge, and at Bell Labs added classes to C, which became C++. Java took its classes from C++. In 2001 Dahl and Nygaard received the Turing Award, the highest honour in computing, for ideas fundamental to object-oriented programming. Every Java program you have written was a class; this lesson is about writing classes that describe things, and making objects from them.</p>
+<p>The idea spread. Alan Kay built the language Smalltalk around it in the 1970s. Bjarne Stroustrup used Simula for his doctoral research at Cambridge, and at Bell Labs added classes to C, which became C++. Java took its classes from C++. In 2001 Dahl and Nygaard received the Turing Award, the highest honour in computing, for ideas fundamental to object-oriented programming. Every Java program you have written was a class; this lesson is about writing classes that describe things, and making objects from them. What is the difference between the class and the objects, and why would anyone want a hundred customers made from one description?</p>
 <h2>A class is a new type</h2>
 <p>You have used objects since lesson 1: every <code>String</code> is an object of the class <code>String</code>, and <code>Scanner</code> and <code>ArrayList</code> are classes too. A class of your own starts with its <em>fields</em>: the variables that every object of the class has a copy of. Here is a stack of items in a Minecraft inventory, which has an item and a count. <code>new ItemStack()</code> makes a new object, and a dot reaches its fields.</p>`,
-        { play: `class ItemStack {
+        { predict: true, play: `class ItemStack {
     String item;
     int count;
 }
@@ -1380,7 +1415,7 @@ public class Main {
 <h2>Constructors and methods</h2>
 <p>Setting every field by hand after <code>new</code> is tedious, and forgetting one is easy. A <em>constructor</em> does it at once. It looks like a method with the same name as the class and no return type, and it runs every time an object is made; the values in the parentheses after <code>new</code> become its parameters. Inside it, <code>this</code> means "the object being made", so <code>this.count = count;</code> copies the parameter <code>count</code> into the field <code>count</code>.</p>
 <p>Methods can belong to an object too. Lesson 4 said every method there was <code>static</code> and promised the other kind; here it is. A method declared <em>without</em> <code>static</code> is called on an object, <code>dirt.add(20)</code>, and inside it the fields are that object's fields. A stack can hold up to some maximum (64 for dirt, 16 for eggs), so <code>add</code> puts in what fits and returns how many were left over.</p>`,
-        { play: `class ItemStack {
+        { long: true, predict: true, play: `class ItemStack {
     String item;
     int count;
     int max;
@@ -1415,7 +1450,7 @@ public class Main {
 }`, caption: 'Inside add, count and max mean the count and max of whichever stack add was called on: dirt’s for dirt.add(20), eggs’ for eggs.add(3). Try new ItemStack() with no arguments: once a class has a constructor, Java no longer supplies the empty one.' },
         `<div class="stmt"><p><span class="kind">Rule (constructor).</span> A constructor has the class's name and no return type, not even <code>void</code>. It runs when <code>new</code> makes the object. <code>this.name</code> is the object's field, <code>name</code> alone the parameter. A class can have several constructors with different parameters, just as methods can be overloaded.</p>
 <p><span class="kind">Rule (instance methods).</span> A method without <code>static</code> belongs to each object and is called on one: <code>object.method(...)</code>. It can use the object's fields by name. A <code>static</code> method belongs to the class as a whole, has no object, and cannot use fields that belong to objects.</p></div>`,
-        { check: "<code>a</code> and <code>b</code> are two different <code>ItemStack</code> objects. Which count does <code>a.add(5)</code> change?", options: ["Only <code>a</code>’s", "Both, because they are the same class", "Neither: methods cannot change fields"], answer: 0, why: "Each object has its own fields. Inside add, count means the count of the object the method was called on: a." },
+        { check: "<code>a</code> and <code>b</code> are two different <code>ItemStack</code> objects. Which count does <code>a.add(5)</code> change?", options: ["Only <code>a</code>’s", "Both, because they are the same class", "Neither: methods cannot change fields"], answer: 0, wrong: [null, "They share a class, but each object has its own copy of every field that is not static, so a.add(5) changes a's count only.", "Methods can change fields: that is what add is for. Inside it, count means the count of the object add was called on."], why: "Each object has its own fields. Inside add, count means the count of the object the method was called on: a." },
         `<h2>Private fields</h2>
 <p>As the class stands, nothing stops a careless line elsewhere from writing <code>dirt.count = 500;</code>, a stack no game would allow. The cure is to make the fields <code>private</code>. A private field can be used only by the methods of its own class; everyone else must go through the methods the class chooses to offer, such as <code>add</code>, and a method can refuse to break the rules. Reading a private field is offered by a small method called a <em>getter</em>, by convention named <code>getCount()</code>.</p>`,
         { play: `class ItemStack {
@@ -1442,7 +1477,7 @@ public class Main {
         `<div class="stmt"><p><span class="kind">Rule (private).</span> Make fields <code>private</code> and offer methods for what other code may do. Then the class alone decides what its fields may hold, and a rule like "a stack holds 0 to 64 items" has to be checked in only one place. Hiding the fields behind methods in this way is called <em>encapsulation</em>.</p></div>
 <h2>Printing an object</h2>
 <p><code>System.out.println(dirt)</code> prints something like <code>ItemStack@4e25154f</code>: the class name and a number, as with arrays. To print something useful, give the class a method <code>public String toString()</code> that returns the text you want. <code>println</code> calls it, and so does <code>+</code> whenever an object is joined to a <code>String</code>; this is how <code>ArrayList</code> prints itself so nicely. Here is the stack class with private fields, a getter, and a <code>toString</code>. Its constructor also refuses impossible stacks by keeping the count within the limits.</p>`,
-        { play: `class ItemStack {
+        { long: true, predict: true, play: `class ItemStack {
     private String item;
     private int count;
     private int max;
@@ -1484,7 +1519,7 @@ public class Main {
 }`, caption: 'The constructor will not make a stack of 70, and add will not overfill one: every way into the fields goes through code that keeps the rule. toString must be spelled exactly so, with public in front; misspell it tostring and println goes back to printing ItemStack@ and a number.' },
         `<h2>Variables hold references</h2>
 <p>Like an array variable, an object variable holds a reference to the object, not the object itself. <code>ItemStack b = a;</code> makes <code>b</code> refer to the same object as <code>a</code>, and <code>a == b</code> asks whether two variables refer to the same object, not whether two objects hold the same values. Passing an object to a method passes the reference, so the method can call the object's methods and the caller sees what changed. A variable that refers to no object holds <code>null</code>; calling a method on <code>null</code> stops the program with a <code>NullPointerException</code>, Java's most common error.</p>`,
-        { play: `class Counter {
+        { long: true, play: `class Counter {
     private int value;
 
     void increase() {
@@ -1514,14 +1549,15 @@ public class Main {
         System.out.println(nobody.get());
     }
 }`, expectError: true, caption: 'One object, three increases, whether made through a, b or the method. c is a different object with its own value. The last line stops the program with a NullPointerException: there is no object to ask.' },
-        { check: "<code>Counter a = new Counter(); Counter b = a; b.increase();</code> What is <code>a.get()</code>?", options: ["0", "1", "A compile error"], answer: 1, why: "b = a copies the reference, so a and b are one object. Increasing it through b is seen through a. To have two counters, call new twice." },
+        { check: "<code>Counter a = new Counter(); Counter b = a; b.increase();</code> What is <code>a.get()</code>?", options: ["0", "1", "A compile error"], answer: 1, wrong: ["That would be true if b = a made a second counter. It copies the reference, so a and b are one object, increased once.", null, "Both variables are of type Counter, so the assignment compiles. It just gives one object two names."], why: "b = a copies the reference, so a and b are one object. Increasing it through b is seen through a. To have two counters, call new twice." },
         `<h2>static: belonging to the class</h2>
 <p>Now the words in <code>public static void main</code> and the Scanner recipe from lesson 1 can be read in full. A field or method marked <code>static</code> belongs to the class itself, not to any object: there is one copy, shared by all. <code>Math.sqrt</code> is static, so you call it on the class, <code>Math</code>, with no object in sight; <code>s.length()</code> is not, so you call it on a particular <code>String</code>. <code>main</code> is static because it must run before any object exists.</p>
 <p>And <code>Scanner in = new Scanner(System.in);</code> is now an ordinary line. <code>new Scanner(...)</code> makes a <code>Scanner</code> object; its constructor is given <code>System.in</code>, the keyboard, to say where to read from; and the variable <code>in</code> refers to it. <code>in.nextInt()</code> calls an instance method on that object, which reads the next number from its own input.</p>`,
-        { check: "Which of these calls a <code>static</code> method?", options: ["<code>name.toUpperCase()</code>", "<code>Math.max(3, 4)</code>", "<code>in.nextInt()</code>"], answer: 1, why: "Math.max is called on the class Math, with no object: it is static. toUpperCase and nextInt are called on an object, a String and a Scanner." },
+        { check: "Which of these calls a <code>static</code> method?", options: ["<code>name.toUpperCase()</code>", "<code>Math.max(3, 4)</code>", "<code>in.nextInt()</code>"], answer: 1, wrong: ["toUpperCase is called on a particular String, name: it is an instance method.", null, "nextInt is called on a particular Scanner object, in: it is an instance method."], why: "Math.max is called on the class Math, with no object: it is static. toUpperCase and nextInt are called on an object, a String and a Scanner." },
         `<h2>Objects working together</h2>
-<p>Real programs are many objects, each of a class with one job, holding references to each other. An inventory is a list of stacks: it uses an <code>ArrayList&lt;ItemStack&gt;</code> to hold them, and asks each stack to take what it can. Lesson 4 worked out how many slots a pile of items needs; this time the stacks fill themselves. A static field counts how many stacks have been made in all, one count shared by every stack.</p>`,
-        { play: `import java.util.ArrayList;
+<p>Real programs are many objects, each of a class with one job, holding references to each other. An inventory is a list of stacks: it uses an <code>ArrayList&lt;ItemStack&gt;</code> to hold them, and asks each stack to take what it can. Lesson 4 worked out how many slots a pile of items needs; this time the stacks fill themselves. A static field counts how many stacks have been made in all, one count shared by every stack.</p>
+<details class="reveal"><summary>Guess first: 100 dirt, 20 eggs and then 40 more dirt go into a bag of 6 slots. How many slots are in use, and how many of them hold dirt?</summary><p>Five slots, three of them dirt: 64, 64 and 12. The third <code>add</code> tops up the half-full stack of 36 dirt before starting a new one, so 28 of the 40 go there. The eggs fill a stack of 16 and start another of 4. Run it below to check.</p></details>`,
+        { long: true, play: `import java.util.ArrayList;
 
 class ItemStack {
     static int made = 0;                 // one count for the whole class
@@ -1607,7 +1643,8 @@ public class Main {
               { name: 'amounts of 0 or less change nothing', main: '        BankAccount a = new BankAccount("Grace");\n        a.deposit(-5);\n        a.deposit(0);\n        a.deposit(10);\n        System.out.println(a.withdraw(-10) + " " + a.withdraw(0) + " " + a);', expect: 'false false Grace: 10' },
               { name: 'two accounts are separate', main: '        BankAccount a = new BankAccount("Ada");\n        BankAccount b = new BankAccount("Grace");\n        a.deposit(10);\n        b.deposit(99);\n        b.withdraw(9);\n        System.out.println(a + " " + b);', expect: 'Ada: 10 Grace: 90' }
             ],
-            failTip: 'If two accounts share a balance, the field is static: remove the word static, so that each account has its own.'
+            failTip: 'If two accounts share a balance, the field is static: remove the word static, so that each account has its own.',
+            followup: 'Add boolean transfer(BankAccount to, int amount), which moves money only if the withdrawal succeeds and returns whether it did. What should a transfer from an account to itself do? Make sure it cannot create money.'
           }
         },
         {

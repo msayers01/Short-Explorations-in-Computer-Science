@@ -100,6 +100,7 @@ site/
     qr.js                QR encoder → window.QR
     teach.js             assignments / submissions / grade book → window.TEACH
     widgets.js           interactive SVG figures → window.WIDGETS[name](mount, block, course)
+    review.js            spaced review (#/today) and the skills map → window.REVIEW (node: test_review.js)
     portfolio.js         student portfolio page (#/portfolio) → window.PORTFOLIO
     classroom.js         classroom (projector) mode → window.CLASSROOM
     tour.js              the guided tour (the Tour button in the top bar) → window.TOUR (§9a)
@@ -146,7 +147,7 @@ Hash routes; a `?query` after the path is split off first.
 | `#/courses` | every course in groups (`COURSE_GROUPS` in app.js; a course in no group is listed under "More courses"), with a search box |
 | `#/algorithms`, `#/algorithms/<demo-id>` | Algorithms in motion: the index of demos, or one demo (§9g) |
 | `#/real-world`, `#/real-world/<topic-id>` | where the ideas of the courses are used, scrolled to a topic (§9g) |
-| `#/<course>` | course page (audience, outcomes, lesson list with progress) |
+| `#/<course>` | course page (audience, outcomes, "Your skills" once started (§9i), lesson list with progress) |
 | `#/<course>/<n>` | lesson n (1-based) |
 | `#/<course>/<n>/<exercise-id>` | lesson n, scrolled to that exercise |
 | `#/guide` | the teacher guide (printable; `dist/teacher-guide.html` is the standalone copy) |
@@ -155,6 +156,7 @@ Hash routes; a `?query` after the path is split off first.
 | `#/review?s=` | Code Lab, teacher side: reviews the submission, opens the grade book |
 | `#/ojibwe` | every Ojibwe word with its source, the days and hours of the clock, and words still needed; printable |
 | `#/about` | About and credits: who made it, what it keeps about a visitor, the licence, credits and full third-party licence texts |
+| `#/today` | Today's review: due quick checks, one at a time, and the skills map of every started course (§9i) |
 | `#/portfolio` | the student's portfolio (settings, print, download, make a link) |
 | `#/portfolio?p=` | a received portfolio, read-only, with "Check every exercise on this computer" |
 
@@ -164,9 +166,10 @@ drives the accent colour through CSS tokens.
 ## 6. Content model (courses)
 
 Course: `{ id, code, short, lang, title, grades, audience, tagline, description, outcomes[], lessons[], readingWpm?,
-howItWorks?, textbook?, status? }`. `status: 'developing'` marks a course still being written: app.js shows an "Under development"
+howItWorks?, textbook?, status?, standard?, readingGrade? }`. `standard: 1` (on a course or a lesson) makes `test_lessons.js` enforce
+LESSON_STANDARD.md; `readingGrade` caps the Flesch-Kincaid grade of a standard lesson's prose. `status: 'developing'` marks a course still being written: app.js shows an "Under development"
 tag on the catalog card, the course page and every lesson's crumb (`devTag`), and the guide says what the tag means.
-Lesson: `{ title, summary, blocks[] }`. Blocks, rendered by `renderBlocks()`, which also wraps each block in a `.blk` card with a coloured rail
+Lesson: `{ title, summary, blocks[], standard? }`. Blocks, rendered by `renderBlocks()`, which also wraps each block in a `.blk` card with a coloured rail
 and a labelled pill, one colour per kind (Example n in the course accent, Interactive teal, Quick check n green, Watch out amber, Quiz purple,
 Exercise n; tokens `--k-fig`, `--k-warn`, `--k-quiz`, `--k-ink` in style.css), numbers every `<h2>` with a CSS counter and gives it an id, and collects the lesson's parts (Story, each section,
 Quiz, Exercises, Recap) for the map under the title (`lessonMap`) and the "On this page" list in the side column, which follows the
@@ -175,11 +178,11 @@ reader with an IntersectionObserver (`watchParts`):
 | Block | Renders |
 |---|---|
 | `"<p>…</p>"` (string) | prose; may contain `<details class="reveal">`, `<div class="recap">`, `<div class="stmt">`, `<div class="proof [annotated]">`, `<table class="small">` |
-| `{ play, caption, stdin, expectError, testStdin, lang }` | runnable playground with "Open in Code Lab" |
+| `{ play, caption, stdin, expectError, testStdin, lang, predict?, long? }` | runnable playground with "Open in Code Lab". `long: true` excuses an example over 25 lines from the standard's length rule. `predict: true` (or a question string) asks for the expected output before the first run, compares it line by line after, and holds the caption back until then (it becomes the "Why"); not stored; skipped in classroom mode |
 | `{ code, caption, lang }` | static listing |
 | `{ fig, caption, ...params }` | `WIDGETS[fig]` figure |
 | `{ aside }` | "Common mistakes" aside |
-| `{ check, options[], answer, why, wrong[]? }` | a quick check: one multiple-choice question with instant feedback, nothing saved (every lesson has three, after an idea has been stated) |
+| `{ check, options[], answer, why, wrong[]? }` | a quick check: one multiple-choice question, nothing saved (every lesson has three, after an idea has been stated). Choosing selects; Sure / Think so / Guessing then checks, and the message differs for a confident miss and a lucky guess. Later attempts, and every attempt in classroom mode, check at once |
 | `{ ex: {...} }` | exercise (code kind or math kind, see below) |
 
 Code exercise: `{ id, title, prompt, starter, solution, hints[], tests[], mustContain[], mustNotContain[], followup, failTip, sampleStdin, prelude }`.
@@ -188,7 +191,20 @@ Tests: Python `{call, expect}` (repr) or `{stdin, expect}`; Scheme `{call, expec
 `{setup, call, expect}` (checker supplies main) or `{name, main, expect}`; Java also `ex.classes: true` (see §9e).
 
 Math exercise (`kind`): `'answer'` (`parts[{label, answer, re, wrong[{match,msg}], exact}]`; `exact: true` compares as text, for digit strings such as `01`; table blank cells accept `exact` too), `'choice'`
-(`options[{text, ok, why}]`, `multi`), `'table'` (`head`, `rows` with `{a, why}` blank cells); `solution` is HTML.
+(`options[{text, ok, why}]`, `multi`), `'table'` (`head`, `rows` with `{a, why}` blank cells), `'trace'` (`code`, `vars[]`,
+`steps[{line, values: {var: value or [accepted]}, show?: true | [vars], why?: {var: {wrong: msg}}}]`: a trace table, one row per time
+execution passes a watched line, `'-'` for a variable that does not exist; graded as the table `MATHGRADE.traceTable` builds; the program
+is shown with numbered lines and the line a blank asks about is lit; `test_course.js` runs the program with a capture after every watched
+line and fails if a value, a step or a `'-'` is not what really happens); `solution` is HTML.
+
+Parsons problem (`kind: 'parsons'`, `src/parsons.js` shared with `test_course.js`, `app.js: parsonsBlock`): `{ lines[] (the solution,
+indented 4 spaces a level), distractors[]?, tests[]?, indent? (default: Python only), sampleStdin?, hints[], followup }`. Blocks are
+shuffled by the exercise id (never into the solution order); the student adds them by click or Enter and moves, indents and removes them
+with buttons or keys (Alt+↑/↓, ←/→, Delete), never only by dragging. With `tests`, the built program is graded like a code exercise (any
+order that works passes; a distractor in a failing program gets its own message); without, order and indent must equal the solution and
+the lines in place are marked. In brace languages the braces set the indentation, and unbalanced braces are reported before running.
+Saved as `{ p: [[block, indent]] }` until passed, then as the program (`markDone`); the portfolio shows and re-checks the program.
+Hints and followup are plain text, as in code exercises.
 
 **Lesson length.** `lessonMinutes(course, lesson)` (app.js) estimates a lesson's time from its content: reading at
 `course.readingWpm` words a minute (default 130; the mathematics course sets 60), 2.5 minutes per playground, 2 per
@@ -212,6 +228,7 @@ lesson 7 has `ma-13-1/2`, and lessons 8–13 have `ma-7-*` … `ma-12-*`.
 | `shortcourses.lab.v1` | lab.js | `{ lang, files: {python:[…], cpp:[…], java:[…], scheme:[…]}, active: {lang: idx}, fontSize, wrap, panels }`; a file is `{ name, code, ex?: {id, course, lesson}, asg?: assignmentId, asgSeen?, lastCheck? }` |
 | `shortcourses.portfolio.v1` | portfolio.js | `{ name, note, unfinished, tasks, lab: ["<lang>/<file name>", …] }` (name starts as teach's `studentName` if set) |
 | `shortcourses.classroom.v1` | classroom.js | `{ on, scale: index into [1.1, 1.25, 1.4, 1.6, 1.8], spot }` |
+| `shortcourses.review.v1` | review.js | `{ v: 1, items: { id: { box 0-4, due, n, miss, last } } }`; id = `<course id>:<FNV-1a hash of the question and options, base 36>`; in the backup file (merge: the copy answered last wins) |
 | `shortcourses.tour.v1` | tour.js | `'1'` once the tour has been opened (stops the Tour button's first-visit pulse); not in backups |
 | `shortcourses.teach.v1` | teach.js | `{ teacher, name, studentName, assignments: {id: A}, book: {id: {studentName: entry}}, received: {id: studentCopy} }` |
 | `shortcourses.shell.v1` | terminal.js | `{ v: 1, fs: { v: 1, cwd, root }, history: [lines] }`; `root` holds only `/home` and `/tmp` (`shell.js: fs.toJSON`); the system part (`/bin`, `/etc`, `/dev`) is rebuilt on load. A file is `{ t:'f', d, x?, m, bin? }`, a directory `{ t:'d', m, c: [[name, node], …] }` |
@@ -589,6 +606,20 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   link to a missing lesson is left out; `test_browser.js` checks every link resolves. Every example names a real system or event: check it
   before adding one, and keep the two that describe this site true when the site changes.
 
+## 9i. Spaced review and the skills map (`review.js`)
+
+Every quick check a student answers in a lesson (`app.js: renderBlocks` passes `onFirstAnswer` to `checkBlock`) joins the review with
+its first answer only, so re-reading a lesson does not reset it; classroom mode records nothing. The schedule is a Leitner box: after an
+answer the item comes back in `GAPS = [1, 3, 10, 30, 90]` days, one box further for a right answer marked Sure or Think so, the same box
+for a right Guessing, box 0 for a miss (a meta-analysis found expanding gaps no better than equal ones, so the exact gaps matter less
+than that reviews happen). `#/today` shows at most `PER_DAY = 10` items due by the end of today, the most overdue first, then shuffled
+so lessons and courses mix, each with its options in a new order (`wrong[]` and `answer` follow). An item whose question no longer exists
+(edited text gives a new id) is ignored. The skills map is per lesson: *secure* = every exercise done and every quick check at box 2 or
+higher (right at the 1- and 3-day reviews), *practising* = something done, else *not started*. It is on the course page (only once the
+course is started) and on `#/today`. The top bar shows **Review** with the number due once there is anything to review. Lesson recaps say
+when their checks come back. Pure parts (`next`, `itemId`, `clean`, `merge`, `dueIds`) are tested in node by `test_review.js`, which
+also checks that all quick checks on the site have distinct ids; `test_backup.js` covers the backup file; `test_browser.js` the loop.
+
 ## 9h. Pictures in lessons (`img/`, `scripts/fetch-image.js`, `app.js: photoBlock`)
 
 - **Where they come from.** Wikimedia Commons only, through `node scripts/fetch-image.js` (`--search "words"` lists candidates with
@@ -609,7 +640,8 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
 
 ## 10. Adding things — recipes
 
-- **A lesson:** add a lesson object in `course_X.js` with new ids `xx-<n>-1/2`, `<n>` being the next number
+- **A lesson:** write it to LESSON_STANDARD.md and give it `standard: 1`, so that `test_lessons.js` holds it to the standard
+  (`--standard` lists the gaps of every lesson). Add a lesson object in `course_X.js` with new ids `xx-<n>-1/2`, `<n>` being the next number
   the course has not used; run `node build.js && node test_course.js X`. If inserting mid-course, keep the later
   lessons' ids as they are (see §6) and update the "Lesson N" cross-references, including "the next lesson" in the
   lesson before, the course tagline, and the lesson count in `guide.js`.

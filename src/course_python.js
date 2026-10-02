@@ -83,12 +83,12 @@ print("Total cost:", total)`, caption: 'Change the number of apples on line 1 on
         `<p>The most important thing to understand about <code>=</code> is that it is <em>not</em> the equals sign of mathematics. It does not state that two things are equal; it is an instruction with two steps: first work out the value on the right-hand side, then attach the name on the left to that value. Read <code>=</code> as "becomes" or "is set to". This line is the test of whether you have understood it:</p>`,
         { code: `apples = apples + 3` },
         `<p>As an equation this would be nonsense: no number equals itself plus 3. As an instruction it makes perfect sense. Step one: work out <code>apples + 3</code> using the <em>current</em> value of <code>apples</code>, which is 7, giving 10. Step two: make the name <code>apples</code> refer to 10. The old value is simply forgotten.</p>`,
-        { play: `apples = 7
+        { predict: true, play: `apples = 7
 print(apples)
 apples = apples + 3
 print(apples)
 apples = apples * 2
-print(apples)`, caption: 'Predict the three numbers before you run it.' },
+print(apples)`, caption: '7, then 10, then 20. Each line works out the right-hand side using the value <code>apples</code> has at that moment, then makes the name refer to the result. If you expected 7, 10, 14, you used the old 7 on the last line: the name had already moved on to 10.' },
         `<p>The figure below shows what is really going on. A name is a label, and a value is a separate thing the label points at. Assigning moves the label; it never changes the value. Step through it.</p>`,
         { fig: 'names', caption: 'Step through five assignments. Names are labels that can be moved; the values they point at do not change.' },
         `<p>The rules for names: letters, digits and underscores only, no spaces, and a name cannot begin with a digit. Capital letters count as different letters, so <code>Total</code> and <code>total</code> are two different names. Beyond the rules, there is one piece of advice: choose names that say what the value means. <code>price_per_apple</code> is better than <code>p</code>, because you will read your code far more often than you write it, and so will the person helping you find a bug.</p>
@@ -273,7 +273,7 @@ Total: 2.0</code></pre>
 <div class="stmt"><p><span class="kind">Rule (booleans).</span> Python has a type called <code>bool</code> with exactly two values, <code>True</code> and <code>False</code>. They are written with capital letters and without quotes.</p>
 <p><span class="kind">Rule (comparisons).</span> The six comparison operators are <code>==</code> (equal), <code>!=</code> (not equal), <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code> and <code>&gt;=</code>. A comparison works out to <code>True</code> or <code>False</code>.</p></div>
 <p>Notice the two equals signs in <code>==</code>. A single <code>=</code> means "store this value in this name", as in Lesson 1; two of them ask "are these equal?". Mixing them up is the most common mistake in this lesson, and the next section shows what Python does about it. Predict all six values, then run.</p>`,
-        { play: `x = 7
+        { predict: true, play: `x = 7
 print(x > 5)
 print(x < 5)
 print(x == 7)
@@ -329,7 +329,7 @@ print(3 <= x <= 10)
 d = 0
 print(d != 0 and 10 / d > 2)`, caption: 'True, True, False, True, False. The last line would divide by zero, but d != 0 is False, so and stops there and never does the division. Swap the two sides of that and and run again.' },
         `<p>One mistake with <code>or</code> is so common that it is worth running on purpose. In English you can say "if x is 1 or 2". In Python, each side of <code>or</code> must be a complete condition.</p>`,
-        { play: `x = 5
+        { predict: true, play: `x = 5
 
 if x == 1 or 2:
     print("wrong version says yes")
@@ -436,7 +436,7 @@ for i in range(2, 8, 2):    # start at 2, stop before 8, jump by 2
         `<p>Starting at 0 feels odd at first, but it matches the way Python numbers the items in a list (next lesson), and "stop before <i>b</i>" is what makes the count come out as exactly <i>b</i> − <i>a</i>. When you write a range, say its first and last values aloud; that habit prevents most off-by-one mistakes.</p>
 <details class="reveal"><summary>Predict: how many lines do <code>for i in range(10, 20): print(i)</code> and <code>for i in range(10, 0, -2): print(i)</code> print, and what are their last lines?</summary><p>The first prints ten lines (20 − 10), from 10 to 19. The second counts down: 10, 8, 6, 4, 2, five lines. It stops before 0, so 0 is not printed. A negative step counts down, and "stop before" still applies.</p></details>
 <p>A <code>for</code> loop can go through other collections too. A list of values, written in square brackets, is one; Lesson 5 is about lists, and for now it is enough to know that the loop visits the values in the order they are written.</p>`,
-        { play: `for word in ["red", "green", "blue"]:
+        { predict: true, play: `for word in ["red", "green", "blue"]:
     print(word, "has", len(word), "letters")`, caption: 'The name word takes each value in turn. len gives the number of characters in a piece of text.' },
         { check: "How many numbers does <code>range(3, 8)</code> give, and what is the last one?", options: ["6 numbers, ending at 8", "5 numbers, ending at 7", "5 numbers, ending at 8"], answer: 1, why: "<code>range(a, b)</code> starts at a and stops before b: 3, 4, 5, 6, 7, which is b − a = 5 numbers." },
         `<h2>The accumulator pattern</h2>
@@ -535,6 +535,36 @@ print(digits)`, testStdin: '1234\n', caption: 'For 1234: the even numbers below 
         { aside: `<p><b>Common mistakes in this lesson.</b> Off-by-one errors: <code>range(1, 10)</code> stops at 9, so "the numbers up to 10" is <code>range(1, 11)</code>. Starting an accumulator at the wrong value, such as 0 for a product. Indenting the final <code>print</code> so it runs on every pass instead of once at the end. A <code>while</code> loop whose block never changes the variable in its condition, or steps past the stopping point. Testing with <code>!=</code> when <code>&lt;</code> would be safer. Forgetting the colon at the end of a <code>for</code> or <code>while</code> line.</p>` },
         {
           ex: {
+            id: 'py-4-3', kind: 'trace', title: 'Trace the loop',
+            prompt: `<p>Before writing loops, read one. Work through this program by hand and fill in the table: each row is a moment just after the line it names has run, and the cells are the values of the variables then. The first row is done for you. Line 3 is reached once at the start of every pass through the loop.</p>`,
+            code: `total = 0\ncount = 0\nfor n in [4, 7, 10, 3]:\n    if n > 5:\n        total = total + n\n        count = count + 1\nprint(total, count)`,
+            vars: ['n', 'total', 'count'],
+            steps: [
+              { line: 3, values: { n: '4', total: '0', count: '0' }, show: true },
+              { line: 3, values: { n: '7', total: '0', count: '0' }, why: { total: { '4': '4 is not more than 5, so the if skipped lines 5 and 6: total is still 0.' } } },
+              { line: 3, values: { n: '10', total: '7', count: '1' }, why: { total: { '17': 'This row is the start of the pass for 10: line 3 has run, but line 5 has not added 10 yet.' } } },
+              { line: 3, values: { n: '3', total: '17', count: '2' } },
+              { line: 7, values: { n: '3', total: '17', count: '2' }, why: { n: { '-': 'After a for loop the loop variable keeps its last value: n is still 3.' } } }
+            ],
+            hints: ['Go pass by pass. At line 3, n takes the next value from the list; then the if decides whether lines 5 and 6 run.', 'Only 7 and 10 are more than 5, so total goes 0, 0, 7, 17 at the starts of the passes, and count 0, 0, 1, 2. After the loop, n keeps its last value.'],
+            solution: '<p>n: 4, 7, 10, 3, 3. total: 0, 0, 7, 17, 17. count: 0, 0, 1, 2, 2. The program prints <code>17 2</code>.</p>',
+            followup: 'Change the list to [6, 6, 6] and trace it again before running it. Tracing by hand is how programmers check a loop they are not sure of: it is slow, and it finds the mistake.'
+          }
+        },
+        {
+          ex: {
+            id: 'py-4-4', kind: 'parsons', title: 'Put it in order: even numbers',
+            prompt: `<p>Build a program that reads a whole number <code>n</code> and prints the even numbers from 2 up to and including <code>n</code>, one per line, and then the word <code>done</code>. For 6 it prints 2, 4, 6 and done. In Python the indentation is part of the program, so put each line at the right depth.</p>`,
+            lines: ['n = int(input())', 'for i in range(2, n + 1):', '    if i % 2 == 0:', '        print(i)', 'print("done")'],
+            distractors: ['for i in range(2, n):', 'if i % 2 == 1:'],
+            tests: [{ stdin: '6', expect: '2\n4\n6\ndone' }, { stdin: '3', expect: '2\ndone' }, { stdin: '2', expect: '2\ndone' }, { stdin: '9', expect: '2\n4\n6\n8\ndone' }],
+            sampleStdin: '6',
+            hints: ['"Up to and including n" needs the range to stop at n + 1, because range never includes its end.', 'The if belongs inside the loop, and the print(i) inside the if. "done" is printed once, after the loop, so it is not indented at all.'],
+            followup: 'Now write the same program from memory in the Code Lab, with a while loop instead of for. Then make it count by 2 from the start, with no if at all: range has a third argument, the step.'
+          }
+        },
+        {
+          ex: {
             id: 'py-4-1', title: 'Sum of multiples',
             prompt: `<p>Read a number <em>n</em> and print the sum of all multiples of 3 or 5 below <em>n</em>. For <em>n</em> = 10 the multiples are 3, 5, 6 and 9, and the sum is 23. A number that is a multiple of both, such as 15, is added once.</p>`,
             starter: `n = int(input("n: "))\ntotal = 0\nfor i in range(n):\n    ...\nprint(total)`,
@@ -588,14 +618,14 @@ print(playlist[len(playlist) - 1])   # also the last song`, caption: '5, then Mo
 <div class="stmt"><p><span class="kind">Rule (slices).</span> <code>xs[<i>a</i>:<i>b</i>]</code> is a <em>new</em> list containing the items at positions <i>a</i>, <i>a</i> + 1, …, <i>b</i> − 1: it starts at <i>a</i> and stops <em>before</em> <i>b</i>, exactly like <code>range(<i>a</i>, <i>b</i>)</code>. Leave out <i>a</i> to start from the beginning, and <i>b</i> to go to the end. <code>xs[<i>a</i>:<i>b</i>:<i>step</i>]</code> takes every <i>step</i>-th item. A slice never raises an error: positions past the end are simply treated as the end.</p></div>
 <p>A good way to picture a slice is to number the <em>gaps between</em> the items, not the items themselves. Then <code>xs[1:4]</code> means "cut at gap 1 and gap 4, and keep what is in between". Drag the boundaries in the figure until the rule feels obvious.</p>`,
         { fig: 'indexer', caption: 'A slice keeps everything between the two marked gaps. Negative numbers count gaps from the end, so items[-2:] is "the last two".' },
-        { play: `days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        { predict: true, play: `days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 print(days[1:4])
 print(days[:2], days[5:])
 print(days[-2:])
 print(days[::2])          # every second day
 print(days[::-1])         # a step of -1 walks backwards
 print(days[5:100])        # past the end: no error
-print("Wed" in days, "Funday" in days)`, caption: 'Predict each line first. in asks "is this value somewhere in the list?" and gives True or False.' },
+print("Wed" in days, "Funday" in days)`, caption: '<code>in</code> asks "is this value somewhere in the list?" and gives True or False.' },
         { check: "<code>days = [\"Mon\", \"Tue\", \"Wed\", \"Thu\", \"Fri\"]</code>. What is <code>days[1:3]</code>?", options: ["<code>[\"Tue\", \"Wed\", \"Thu\"]</code>", "<code>[\"Tue\", \"Wed\"]</code>", "<code>[\"Mon\", \"Tue\", \"Wed\"]</code>"], answer: 1, why: "A slice starts at the first position and stops before the second, like range: positions 1 and 2." },
         `<details class="reveal"><summary>Slice challenge: using <code>days</code>, write one slice for each of these. The weekdays. The middle three days. Every day except the first and the last.</summary><p><code>days[:5]</code>, then <code>days[2:5]</code> (Wed, Thu, Fri), then <code>days[1:-1]</code>. The last one works because −1 names the gap before the last item. Each slice has <i>b</i> − <i>a</i> items when both ends are inside the list: 5, 3, and 7 − 2 = 5.</p></details>
 <h2>Looping over a list</h2>
@@ -637,7 +667,7 @@ print(ys)`, caption: 'The last line prints None: the list was lost. Write ys.app
         `<h2>Two names, one list</h2>
 <p>Here is the surprise promised at the start. Imagine a family shopping list on the fridge. You and your sister both read and write the same sheet of paper. Your brother photocopied it yesterday. When your sister adds "cake", which lists have cake on them?</p>
 <div class="stmt"><p><span class="kind">Rule (names and lists).</span> An assignment such as <code>b = a</code> does not copy a list. It makes <code>b</code> a second name for the <em>same</em> list, so a change made through either name is seen through both. To make an independent copy, write <code>b = a[:]</code> or <code>b = list(a)</code>. The test <code>a is b</code> asks "are these the same list?", while <code>a == b</code> asks "do they contain equal items?".</p></div>`,
-        { play: `fridge = ["milk", "eggs"]
+        { predict: true, play: `fridge = ["milk", "eggs"]
 sister = fridge          # the same sheet of paper
 brother = fridge[:]      # yesterday's photocopy
 sister.append("cake")
@@ -742,7 +772,7 @@ for ch in "abc":
 word[0] = "P"`, expectError: true, caption: 'TypeError: \'str\' does not support item assignment. Lists can be changed in place; strings cannot.' },
         { check: "<code>word = \"python\"</code> and then <code>word.upper()</code>. What is <code>word</code> now?", options: ["<code>\"PYTHON\"</code>", "<code>\"python\"</code>: the method made a new string that was not stored", "An error"], answer: 1, why: "Strings never change. Every method returns a new string; to keep it, write <code>word = word.upper()</code>." },
         `<p>So how does anything ever change? You make a new string and store it, perhaps under the same name. <code>word.upper()</code> does not shout <code>word</code>; it hands you a shouting copy, and if you want to keep it you must store it.</p>`,
-        { play: `word = "python"
+        { predict: true, play: `word = "python"
 shout = word.upper()
 print(word, shout)          # word is unchanged
 word.capitalize()           # makes a new string... and throws it away
@@ -891,7 +921,7 @@ print(text.upper())`, caption: 'The def lines print nothing; the three calls do 
 <details class="reveal"><summary>Predict: after <code>def f(x): return x * 2</code>, what does <code>print(f(f(3)))</code> show? And what does <code>print(f)</code> show?</summary><p><code>12</code>: by the call rule, the argument <code>f(3)</code> is worked out first, giving 6, and then the outer call doubles it. <code>print(f)</code>, with no parentheses, does not call anything: it shows the function itself, something like <code>&lt;function f&gt;</code>. Parentheses are what make a call happen.</p></details>
 <h2>Print or return?</h2>
 <p>The most common confusion with functions is between showing a value and handing it back. <code>print</code> shows a value to a person, and then it is gone. <code>return</code> hands it to the code that made the call, which can store it, print it, or compute with it. Watch what happens when a function prints instead of returning.</p>`,
-        { play: `def double_print(n):
+        { predict: true, play: `def double_print(n):
     print(n * 2)        # shows the answer...
 
 def double_return(n):
@@ -925,7 +955,7 @@ print(double_return(5) + 1)`, caption: 'double_print shows 10, but a is None: no
 <h2>Scope: what a function can see</h2>
 <div class="stmt"><p><span class="kind">Rule (scope).</span> A name that is assigned anywhere inside a function is <em>local</em> to that function: it lives in the call's frame and is invisible outside it. A name assigned at the top level of the program is <em>global</em>: a function may read it, but assigning to it inside a function makes a new local name instead.</p></div>
 <p>The first half means a function cannot accidentally overwrite your variables, and it is why <code>double</code> below cannot change <code>value</code>: the <code>n</code> in the function is a local name that starts out equal to the argument.</p>`,
-        { play: `def double(n):
+        { predict: true, play: `def double(n):
     n = n * 2       # changes only this frame's n
     return n
 
@@ -1092,7 +1122,7 @@ print("all tests passed")`, expectError: true, caption: 'The first two tests pas
 <h2>Errors you expect: try and except</h2>
 <p>Sometimes a runtime error is not a bug at all. If you ask a person for a number and they type "seven", then <code>int("seven")</code> raising <code>ValueError</code> is correct behaviour; what you want is to handle it gracefully instead of crashing.</p>
 <div class="stmt"><p><span class="kind">Rule (try and except).</span> <code>try:</code> followed by a block, then <code>except <i>ErrorKind</i>:</code> followed by a block. Python runs the <code>try</code> block. If an error of that kind happens inside it, the rest of the <code>try</code> block is skipped and the <code>except</code> block runs instead. If no error happens, the <code>except</code> block is skipped. An error of any other kind is not caught, and stops the program as usual.</p></div>`,
-        { play: `text = input("Type a whole number: ")
+        { predict: true, play: `text = input("Type a whole number: ")
 try:
     n = int(text)
     print("Double that is", n * 2)
@@ -1196,7 +1226,7 @@ print("total:", sum(scores.values()))`, caption: 'Keys come out in the order the
         `<details class="reveal"><summary>Puzzle: turn <code>ojibwe</code> round into an English-to-Ojibwe dictionary, <code>english</code>, so that <code>english["bear"]</code> is <code>"makwa"</code>. What could go wrong if two words had the same meaning?</summary><p>Start with <code>english = {}</code> and loop: <code>for word, meaning in ojibwe.items(): english[meaning] = word</code>. The keys and values swap places. If two Ojibwe words had the same meaning, they would compete for the same English key, and since each key appears once, the second would replace the first: one of them would be lost. Reversing a dictionary is only safe when no value appears twice.</p></details>
 <h2>The counting pattern</h2>
 <p>The most useful thing a dictionary does is count. How many times does each word appear in a text? Make each word a key, with its count so far as the value. This is Lesson 4's accumulator pattern, with a whole dictionary as the accumulator.</p>`,
-        { play: `text = "the cat sat on the mat and the cat slept"
+        { predict: true, play: `text = "the cat sat on the mat and the cat slept"
 counts = {}
 for word in text.split():
     counts[word] = counts.get(word, 0) + 1
@@ -1413,7 +1443,7 @@ print(fraction_at_least_five(3000))    # about 0.333`, caption: 'Calling random.
         `<p>The program uses <em>recursion</em>: a function that calls itself. At first that looks like a trick that should not work, like a dictionary that defines a word using the same word. It does work, and for some problems it is the most natural way to think.</p>
 <h2>A function that calls itself</h2>
 <p>The factorial of 5, written 5!, is 5 × 4 × 3 × 2 × 1 = 120. Notice that 4 × 3 × 2 × 1 is just 4!. So 5! = 5 × 4!, and in general <i>n</i>! = <i>n</i> × (<i>n</i> − 1)!, with 0! = 1 to get started. Write exactly that down in Python, and you are finished.</p>`,
-        { play: `def factorial(n):
+        { predict: true, play: `def factorial(n):
     if n == 0:                      # base case: small enough to answer directly
         return 1
     return n * factorial(n - 1)     # recursive case: a smaller problem, plus one step
@@ -1571,7 +1601,7 @@ print(count_char("banana", "a"))`, caption: 'Prints 21 and 3. Both shrink the in
 <p>An <em>algorithm</em> is a precise recipe for solving a problem, one that does not depend on any particular programming language. This lesson works through four classics, two for searching and two for sorting. They are short, but they bring in the question that decides whether a program finishes in a second or not in your lifetime: <em>how does the amount of work grow as the input grows?</em></p>
 <h2>Linear search</h2>
 <p>To find a value in a list, look at each item in turn. It is simple and always correct; if the value is not there, you have looked at everything. For a list of <i>n</i> items it takes up to <i>n</i> comparisons.</p>`,
-        { play: `def linear_search(xs, target):
+        { predict: true, play: `def linear_search(xs, target):
     for i in range(len(xs)):
         if xs[i] == target:
             return i          # found: report the position

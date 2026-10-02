@@ -255,6 +255,7 @@ body.tour-on { overflow-x: hidden; }
 .blk > pre.code { border-left: none; }
 .blk > .aside { border-left: none; padding-left: 0; }
 .blk-play .play-label { display: none; }
+.blk-play .after-guess .play-label { display: inline; }
 .blk .qc { border-left: 1px solid var(--rule); }
 /* sections are numbered and separated by a rule, and the numbers match the lesson map */
 .lesson-body { counter-reset: sec; }
@@ -275,6 +276,31 @@ body.tour-on { overflow-x: hidden; }
 .qc-opt.right .qc-letter { color: var(--ok); }
 .qc-why { margin: 0.6rem 0 0; font-size: 0.92rem; color: var(--ink-2); }
 .qc.done .qc-why { color: var(--ink); }
+.qc-opt.chosen { border-color: var(--ink-2); box-shadow: inset 3px 0 0 var(--ink-2); }
+.qc-sure { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.6rem; font-size: 0.9rem; }
+.qc-sure-q { color: var(--ink-2); margin-right: 0.2rem; }
+.qc-sure-btn { font: inherit; font-size: 0.88rem; color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 999px; padding: 0.2rem 0.75rem; cursor: pointer; }
+.qc-sure-btn:hover { border-color: var(--ink-2); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* Predict before you run: the guess box above the toolbar, and the line-by-line comparison under the output */
+.guess { margin: 0.5rem 0 0; padding: 0.6rem 0.8rem; border: 1px dashed var(--rule); border-radius: 4px; background: var(--paper-2); font-family: var(--sans); }
+.guess-q { display: block; font-size: 0.93rem; margin-bottom: 0.35rem; }
+.guess-text { display: block; width: 100%; font-family: var(--mono); font-size: 0.85rem; padding: 0.4rem 0.5rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); color: var(--ink); resize: vertical; }
+.guess.locked .guess-text { background: transparent; border-style: dashed; }
+.guess-row { display: flex; justify-content: flex-end; margin-top: 0.3rem; }
+.guess-skip { font-size: 0.85rem; }
+.guess.locked .guess-row { display: none; }
+.guess-nudge { margin: 0.35rem 0 0; font-size: 0.88rem; color: var(--err); }
+.play-cap.after-guess { margin-top: 0.5rem; border-top: 0; }
+.guess-result { margin-top: 0.5rem; padding: 0.6rem 0.8rem; border-left: 3px solid var(--ink-2); background: var(--paper-2); font-family: var(--sans); font-size: 0.92rem; }
+.guess-sum { margin: 0 0 0.4rem; }
+.guess-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; }
+.guess-lines li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; min-width: 0; }
+.guess-lines code { font-family: var(--mono); font-size: 0.84rem; white-space: pre-wrap; word-break: break-word; }
+.gl-mark { font-weight: 700; width: 1em; }
+.guess-lines .ok .gl-mark { color: var(--ok); }
+.guess-lines .bad .gl-mark { color: var(--err); }
+.gl-yours { color: var(--ink-3); font-size: 0.85rem; }
 .lesson-head { margin-bottom: 1.5rem; }
 .crumb { font-family: var(--sans); color: var(--ink-3); margin: 0 0 0.4rem; font-size: 0.95rem; }
 .crumb a { color: var(--accent); text-decoration: none; font-weight: 600; }
@@ -1165,6 +1191,70 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .course-code .head-icons .lang-icon { height: 2rem; max-width: 6rem; }
 .lang-btn .tab-icon { height: 1.05rem; margin-right: 0.4rem; vertical-align: -0.2em; }
 
+/* ---------- spaced review (#/today) and the skills map (src/review.js) ---------- */
+.today-link { display: inline-flex; align-items: center; gap: 0.35rem; }
+.today-badge { font-size: 0.72rem; font-weight: 700; line-height: 1; min-width: 1.35em; padding: 0.18rem 0.35rem; border-radius: 999px; background: var(--accent); color: var(--accent-ink, var(--paper)); text-align: center; font-variant-numeric: tabular-nums; }
+.today { max-width: 44rem; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; font-family: var(--sans); }
+.today-head h1 { margin: 0 0 0.4rem; }
+.today-head .lead { color: var(--ink-2); margin: 0 0 1.5rem; }
+.today-count { color: var(--ink-3); margin: 0 0 0.5rem; }
+.today-stage .toolbar { margin-top: 0.8rem; }
+.today-done { border: 1px solid var(--rule); border-radius: 4px; padding: 1rem 1.2rem; background: var(--paper-2); }
+.today-big { font-size: 1.15rem; font-weight: 600; margin: 0 0 0.4rem; }
+.today-skills { margin-top: 2.5rem; }
+.today-skills h2 { margin-bottom: 0.3rem; }
+.review-panel { margin: 1.5rem 0 0.5rem; padding: 1rem 1.2rem; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper-2); font-family: var(--sans); }
+.review-panel h2 { margin: 0 0 0.5rem; font-size: 1.15rem; }
+.review-panel p { margin: 0 0 0.6rem; }
+.skills-map { margin-top: 0.8rem; }
+.skills-map h3 { margin: 1.2rem 0 0.2rem; font-size: 1rem; }
+.sk-sum { color: var(--ink-3); margin: 0 0 0.4rem; }
+.skills { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: 0.35rem; }
+.sk a { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 0.5rem; padding: 0.35rem 0.55rem; border: 1px solid var(--rule); border-left-width: 4px; border-radius: 3px; text-decoration: none; color: var(--ink); background: var(--paper); font-size: 0.85rem; line-height: 1.25; }
+.sk a:hover { border-color: var(--ink-3); }
+.sk-num { grid-row: span 2; font-weight: 700; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.sk-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-state { font-size: 0.75rem; color: var(--ink-3); }
+.sk-practising a { border-left-color: var(--warn, #b7791f); }
+.sk-secure a { border-left-color: var(--ok); }
+.sk-secure .sk-state { color: var(--ok); font-weight: 600; }
+.sk-none a { border-left-color: var(--rule); }
+.recap-return { margin: 0.6rem 0 0; color: var(--ink-2); }
+.review-panel .btn { text-decoration: none; }
+
+/* ---------- trace tables (kind: 'trace') ---------- */
+.trace { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1rem; align-items: start; }
+@media (max-width: 760px) { .trace { grid-template-columns: minmax(0, 1fr); } }
+.trace-code { margin: 0; overflow-x: auto; }
+.trace-code code { display: block; }
+.tr-line { display: block; padding: 0 0.4rem; border-left: 3px solid transparent; }
+.tr-line.lit { background: var(--accent-soft); border-left-color: var(--accent); }
+.tr-num { display: inline-block; width: 1.8em; color: var(--ink-3); text-align: right; margin-right: 0.8em; user-select: none; font-variant-numeric: tabular-nums; }
+.trace-table td.tr-at { cursor: pointer; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.trace-table th code { font-size: 0.9em; }
+
+/* ---------- Parsons problems (kind: 'parsons') ---------- */
+.ps-how { color: var(--ink-2); margin: 0.4rem 0 0.6rem; }
+.ps-board { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.8rem; font-family: var(--sans); }
+.ps-col { min-width: 0; }
+.ps-head { margin: 0 0 0.3rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+.ps-pool, .ps-prog { list-style: none; margin: 0; padding: 0.4rem; border: 1px dashed var(--rule); border-radius: 4px; min-height: 3rem; display: grid; gap: 0.3rem; background: var(--paper-2); }
+.ps-pool { display: flex; flex-wrap: wrap; align-content: flex-start; }
+.ps-pool > li { max-width: 100%; }
+.ps-prog { border-style: solid; background: var(--code-bg, var(--paper)); }
+.ps-block { display: block; max-width: 100%; overflow-x: auto; text-align: left; font: inherit; padding: 0.35rem 0.55rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); color: var(--ink); cursor: pointer; }
+.ps-block:hover { border-color: var(--ink-3); }
+.ps-block code, .ps-text { font-family: var(--mono); font-size: 0.85rem; white-space: pre; }
+.ps-line { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.3rem 0.25rem 0.55rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); min-width: 0; }
+.ps-line:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ps-line.in-place { border-color: var(--ok); box-shadow: inset 3px 0 0 var(--ok); }
+.ps-text { flex: 1 1 auto; min-width: 0; overflow-x: auto; }
+.ps-tools { display: flex; gap: 0.15rem; flex: none; }
+.ps-tool { font: inherit; font-size: 0.8rem; line-height: 1; width: 1.7rem; height: 1.7rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper-2); color: var(--ink-2); cursor: pointer; }
+.ps-tool:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-3); }
+.ps-tool:disabled { opacity: 0.35; cursor: default; }
+.ps-empty { color: var(--ink-3); padding: 0.3rem; }
+
 </style>
 </head>
 <body>
@@ -1243,10 +1333,14 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
   <dl class="g-parts">
     <dt>Explanation</dt><dd>Short paragraphs that state each rule before showing it.</dd>
     <dt>Try it</dt><dd>A small program with a caption saying what to look for and what to change. Press Run, change something, run again. <em>Open in Code Lab</em> is there for students who want to keep going.</dd>
+    <dt>Predict</dt><dd>In the key example of each idea, a box asks what the program will print before it runs. The first run lays the guess beside the real output, line by line, and only then shows the explanation. Guessing first, even wrongly, is what makes the answer stick (the PRIMM approach: predict, run, investigate, modify, make). Students can choose <em>Run without guessing</em>; in classroom mode the box is skipped, so the class can guess aloud.</dd>
     <dt>Predict, then reveal</dt><dd>A question with a hidden answer. Ask students to commit to a prediction before they open it.</dd>
-    <dt>Quick check</dt><dd>Three per lesson: a one-question multiple choice after an idea, with instant feedback and a one-line reason. Nothing is recorded, so students can answer freely. In class they make good show-of-hands questions.</dd>
+    <dt>Quick check</dt><dd>Three per lesson: a one-question multiple choice after an idea. Students pick an answer and then say how sure they are (Sure, Think so, Guessing); that button checks it, with a one-line reason. A confident wrong answer and a lucky guess each get their own message, because noticing those is how students learn what they really know. The first answer goes into the student's review on their own device (below); no score is kept and nothing is sent anywhere, so students can answer freely. In classroom mode one tap checks, for show-of-hands questions, and nothing goes into the review of the computer at the front.</dd>
+    <dt>Today's review</dt><dd>Every quick check a student answers comes back on the <a href="index.html#/today">Review</a> page a day later, then after 3, 10, 30 and 90 days as long as they keep getting it right, and after a day again when they miss it. At most ten questions a day, mixed across lessons and courses, with the options shuffled. Remembering something after a gap is what makes it last, so a five-minute review at the start of class pays off. Each course page also shows a <b>skills map</b>: a lesson is <i>secure</i> once its exercises are done and its quick checks have been answered right at two reviews, days apart. The review is kept in the browser and goes into "Save my work to a file".</dd>
     <dt>Interactive figure</dt><dd>In most lessons: a diagram with Step and Play buttons, or something to drag or type into. Students should use it until they can predict the next step.</dd>
     <dt>Common mistakes</dt><dd>A box near the end listing the errors students make in this lesson. Read it before class: it is the list of things you will be asked about.</dd>
+    <dt>Trace the loop</dt><dd>In some lessons, before the writing exercises: a program with numbered lines and a table to fill in, the values of the variables each time a line has run. The line a box asks about lights up. Reading and tracing code is the skill that best predicts being able to write it, and tracing by hand is how programmers check a loop.</dd>
+    <dt>Put it in order</dt><dd>A Parsons problem: the lines of a program, shuffled, to put in order (and, in Python, indent). A few blocks may not belong. Students click or press Enter to add a block and use the arrow buttons to move it; nothing needs dragging. Where the exercise has tests, the built program is run, so any order that works is accepted. Research finds the same learning as writing the code in less time, which makes it a good ramp for students who freeze at an empty editor.</dd>
     <dt>Exercises</dt><dd>Two graded tasks. <em>Check answer</em> runs tests and says which passed. <em>Hint</em> gives hints one at a time. <em>Solution</em> shows a worked answer after two attempts. A green checkmark marks completion.</dd>
     <dt>In this lesson</dt><dd>A recap box. It doubles as an exit ticket: ask students to say one line of it back in their own words.</dd>
   </dl>

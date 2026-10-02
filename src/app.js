@@ -254,13 +254,13 @@
     const pre = el('pre', { class: 'out-text', tabindex: '0', 'aria-label': 'Program output' });
     const cursor = el('span', { class: 'term-cursor', 'aria-hidden': 'true' });
     box.append(bar, pre);
-    let t0 = 0;
+    let t0 = 0, printed = '';
     const put = (node) => { if (cursor.parentNode === pre) pre.insertBefore(node, cursor); else pre.appendChild(node); box.hidden = false; pre.scrollTop = pre.scrollHeight; };
     const line = (cls, s) => { put(el('span', { class: cls }, s)); put(document.createTextNode('\n')); };
     const setStatus = (cls, text) => { status.className = 'term-status' + (cls ? ' ' + cls : ''); status.textContent = text; };
     const api = {
       el: box,
-      clear() { pre.textContent = ''; box.hidden = false; box.classList.remove('has-error'); setStatus('', ''); },
+      clear() { pre.textContent = ''; printed = ''; box.hidden = false; box.classList.remove('has-error'); setStatus('', ''); },
       /** a run begins: the prompt line names the command, the status says running, the cursor blinks */
       start(cmd) { api.clear(); t0 = Date.now(); if (cmd) line('cmd', cmd); pre.appendChild(cursor); setStatus('running', 'running'); },
       /** a run ends: the cursor stops and the status pill says how it went */
@@ -271,8 +271,11 @@
         else if (box.classList.contains('has-error')) setStatus('fail', 'error' + (secs ? ' \u00b7 ' + secs : ''));
         else setStatus('ok', 'exit ' + (info.exit || 0) + (secs ? ' \u00b7 ' + secs : ''));
       },
-      write(s) { put(document.createTextNode(s)); },
-      value(s) { line('val', s); },
+      write(s) { printed += s; put(document.createTextNode(s)); },
+      value(s) { printed += s.replace(/^;Value: /, '') + '\n'; line('val', s); },
+      /** what the program printed (and, for Scheme, the values it showed) since the run began: for comparing with a prediction */
+      printed() { return printed; },
+      failed() { return box.classList.contains('has-error'); },
       error(s) { line('err', s); box.classList.add('has-error'); },
       note(s) { line('note', s); },
       hide() { box.hidden = true; if (cursor.parentNode === pre) pre.removeChild(cursor); },
@@ -590,6 +593,21 @@
       const tb = el('tbody'); let k = 0;
       for (const row of ex.rows) tb.append(el('tr', {}, ...row.map(c => (c && typeof c === 'object') ? el('td', { class: 'blank' }, mkInput(k++, c.placeholder, c.width || '4.5rem')) : el('td', { html: c == null ? '' : String(c) }))));
       t.append(tb); form.append(el('div', { class: 'table-wrap' }, t));
+    } else if (ex.kind === 'trace') {
+      // the program, line by line and numbered, beside a table of steps; the line a blank asks about is lit up while it has focus
+      const lang = ex.lang || (course && course.lang);
+      const lineEls = String(ex.code).split('\n').map((ln, i) => el('span', { class: 'tr-line', 'data-line': String(i + 1) }, el('span', { class: 'tr-num', 'aria-hidden': 'true' }, String(i + 1)), el('span', { class: 'tr-code', html: highlight(ln, lang) || ' ' })));
+      const listing = el('pre', { class: 'code trace-code', 'aria-label': 'The program, with line numbers' }, el('code', {}, lineEls));
+      const light = (n) => lineEls.forEach((x) => x.classList.toggle('lit', x.dataset.line === String(n)));
+      const T = MG.traceTable(ex);
+      const t = el('table', { class: 'fill trace-table' }, el('thead', {}, el('tr', {}, ...T.head.map((h, i) => el('th', {}, i > 1 ? el('code', {}, h) : h)))));
+      const tb = el('tbody'); let k = 0;
+      T.rows.forEach((row, r) => tb.append(el('tr', {}, ...row.map((c, ci) => {
+        if (c && typeof c === 'object') { const inp = mkInput(k++, '', '4rem'); inp.setAttribute('aria-label', 'Step ' + (r + 1) + ', after line ' + c.line + ': ' + T.head[ci]); inp.addEventListener('focus', () => light(c.line)); return el('td', { class: 'blank' }, inp); }
+        return el('td', { class: ci === 1 ? 'tr-at' : '', onclick: ci === 1 ? () => light(c) : null }, c == null ? '' : String(c));
+      }))));
+      t.append(tb);
+      form.append(el('div', { class: 'trace' }, listing, el('div', { class: 'table-wrap' }, t)));
     }
     const readAnswers = () => ex.kind === 'choice' ? inputs[0]() : read();
     const verdict = el('div', { class: 'verdict', hidden: '', role: 'status' });
@@ -670,35 +688,209 @@
     if (firstBad && !firstBad.err && ex.failTip) v.append(el('p', { class: 'v-tip' }, ex.failTip));
   }
 
+  // ---------- Parsons problems ----------
+  // { kind: 'parsons', lines: [the solution, one string per line, indented with 4 spaces a level], distractors?: [lines that do not
+  //   belong], tests?: as a code exercise, indent?: (default: true in Python, where indentation is part of the program), sampleStdin? }
+  // The student builds the program from shuffled blocks, by clicking or from the keyboard, never only by dragging. With tests, the
+  // program they built is run like a code exercise, so any order that works is accepted; without, the order and indentation must match
+  // the solution. Same learning as writing the code, in less time (Ericson et al. 2017): the ramp between reading code and writing it.
+  const P = () => window.PARSONS;   // the pure parts (src/parsons.js), shared with test_course.js
+  const parsonsIndent = (ex) => P().indent(ex), parsonsBlocks = (ex) => P().blocks(ex), parsonsCode = (ex, blocks, placed) => P().code(ex, blocks, placed);
+  const parsonsSolution = (ex) => P().solution(ex), parsonsProgram = (ex, saved) => P().program(ex, saved);
+  /** Grades a built program (also used by the portfolio to re-check it). */
+  async function parsonsGrade(ex, code) {
+    if (ex.tests && ex.tests.length) return grade(Object.assign({}, ex, { kind: undefined }), code);
+    const ok = P().orderOk(ex, code);
+    return { passed: ok, results: [{ name: 'The order of the lines', ok, got: '', msg: ok ? '' : 'Some lines are not in the right place yet.' }] };
+  }
+  function parsonsBlock(ex, course) {
+    const affirm = (course && Array.isArray(course.affirm) && course.affirm.length) ? course.affirm : null;
+    const B = parsonsBlocks(ex), indent = parsonsIndent(ex);
+    let placed = [];
+    try { const s = JSON.parse(Progress.getCode(ex.id) || 'null'); if (s && Array.isArray(s.p)) placed = s.p.filter((x) => Array.isArray(x) && Number.isInteger(x[0]) && x[0] >= 0 && x[0] < B.blocks.length && Number.isInteger(x[1])).map(([b, n]) => [b, Math.max(0, Math.min(8, n))]).filter((x, i, a) => a.findIndex((y) => y[0] === x[0]) === i); } catch (e) { placed = []; }
+    const box = el('section', { class: 'exercise parsons' + (Progress.isDone(ex.id) ? ' done' : ''), id: ex.id });
+    box.append(el('header', { class: 'ex-head' }, el('h3', {}, el('span', { class: 'ex-label' }, 'Exercise'), ' ', ex.title), el('span', { class: 'ex-check', title: 'Completed' }, checkSVG())),
+      el('div', { class: 'prose', html: ex.prompt }),
+      el('p', { class: 'ps-how small' }, 'Click a block, or press Enter on it, to add it to your program. In your program, use the arrow buttons' + (indent ? ' (or Alt+↑ ↓ to move and ← → to indent)' : ' (or Alt+↑ ↓)') + ', and ✕ to put a block back.' + ((ex.distractors || []).length ? ' Not every block belongs in the program.' : '')));
+    const pool = el('ul', { class: 'ps-pool', 'aria-label': 'Blocks to use' });
+    const prog = el('ol', { class: 'ps-prog', 'aria-label': 'Your program' });
+    const verdict = el('div', { class: 'verdict', hidden: '', role: 'status' });
+    const out = outputPanel();
+    const save = () => { Progress.setCode(ex.id, JSON.stringify({ p: placed })); };
+    let marks = null;   // after a failed check in order mode: which positions are right
+    const code = () => parsonsCode(ex, B.blocks, placed);
+    function draw(focusAt, focusPool) {
+      marks = null;
+      pool.replaceChildren(...B.order.filter((b) => !placed.some((x) => x[0] === b)).map((b) => el('li', {}, el('button', { class: 'ps-block', type: 'button', onclick: () => { placed.push([b, indent ? 0 : B.blocks[b].indent]); save(); draw(null, true); } }, el('code', {}, B.blocks[b].text)))));
+      if (!pool.children.length) pool.append(el('li', { class: 'ps-empty small' }, 'Every block is in your program.'));
+      const shown = code().split('\n');
+      prog.replaceChildren(...placed.map(([b, n], i) => {
+        const move = (d) => { const j = i + d; if (j < 0 || j >= placed.length) return; [placed[i], placed[j]] = [placed[j], placed[i]]; save(); draw(j); };
+        const ind = (d) => { if (!indent) return; placed[i][1] = Math.max(0, Math.min(8, n + d)); save(); draw(i); };
+        const back = () => { placed.splice(i, 1); save(); draw(Math.min(i, placed.length - 1)); };
+        const li = el('li', { class: 'ps-line', tabindex: '0', 'aria-label': 'Line ' + (i + 1) + (indent ? ', indented ' + n : '') + ': ' + B.blocks[b].text, onkeydown: (e) => {
+          if (e.altKey && e.key === 'ArrowUp') { e.preventDefault(); move(-1); } else if (e.altKey && e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+          else if (indent && e.key === 'ArrowLeft') { e.preventDefault(); ind(-1); } else if (indent && e.key === 'ArrowRight') { e.preventDefault(); ind(1); }
+          else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); back(); }
+        } },
+          el('code', { class: 'ps-text' }, shown[i]),
+          el('span', { class: 'ps-tools' },
+            el('button', { type: 'button', class: 'ps-tool', title: 'Move up', 'aria-label': 'Move up', onclick: () => move(-1), disabled: i === 0 ? '' : null }, '↑'),
+            el('button', { type: 'button', class: 'ps-tool', title: 'Move down', 'aria-label': 'Move down', onclick: () => move(1), disabled: i === placed.length - 1 ? '' : null }, '↓'),
+            indent ? el('button', { type: 'button', class: 'ps-tool', title: 'Indent less', 'aria-label': 'Indent less', onclick: () => ind(-1), disabled: n === 0 ? '' : null }, '←') : null,
+            indent ? el('button', { type: 'button', class: 'ps-tool', title: 'Indent more', 'aria-label': 'Indent more', onclick: () => ind(1) }, '→') : null,
+            el('button', { type: 'button', class: 'ps-tool', title: 'Put back', 'aria-label': 'Put back', onclick: back }, '✕')));
+        return li;
+      }));
+      if (!placed.length) prog.append(el('li', { class: 'ps-empty small' }, 'Your program is empty: add blocks from the list.'));
+      if (focusAt != null && prog.children[focusAt] && prog.children[focusAt].focus) prog.children[focusAt].focus();
+      else if (focusPool) { const f = pool.querySelector('button'); if (f) f.focus(); }
+    }
+    let attempts = 0;
+    const checkBtn = el('button', { class: 'btn primary', onclick: async () => {
+      if (!placed.length) { verdict.hidden = false; verdict.className = 'verdict fail'; verdict.replaceChildren(el('p', { class: 'v-title' }, 'Add some blocks to your program first.')); return; }
+      if (!indent) {   // braces that do not pair up give compiler errors about other things: say what is really wrong
+        const t = code(), open = (t.match(/\{/g) || []).length, close = (t.match(/\}/g) || []).length;
+        if (open !== close) { attempts++; verdict.hidden = false; verdict.className = 'verdict fail'; verdict.replaceChildren(el('p', { class: 'v-title' }, 'Not yet: every { needs a matching }.'), el('p', {}, 'Your program has ' + open + ' { and ' + close + ' }. Every block that opens with { closes with } further down.')); return; }
+      }
+      checkBtn.disabled = true; attempts++; out.hide(); verdict.hidden = false; verdict.className = 'verdict'; verdict.replaceChildren(el('p', { class: 'v-title' }, 'Checking…'));
+      try {
+        const program = code(), r = await parsonsGrade(ex, program);
+        verdict.replaceChildren();
+        if (ex.tests && ex.tests.length) renderVerdict(verdict, r, ex, attempts, affirm); else renderMathVerdict(verdict, r, ex, attempts, affirm);
+        if (r.passed) { box.classList.add('done'); Progress.markDone(ex.id, program); document.dispatchEvent(new CustomEvent('progress-changed')); }
+        else {
+          if (placed.some(([b]) => !B.blocks[b].real)) verdict.prepend(el('p', { class: 'v-tip' }, 'One of the blocks in your program does not belong in it. Some blocks are there to look right and be wrong.'));
+          if (!(ex.tests && ex.tests.length)) {   // order mode: show which lines are already in their place
+            const want = parsonsSolution(ex).split('\n'), have = program.split('\n');
+            [...prog.children].forEach((li, i) => li.classList.toggle('in-place', have[i] === want[i]));
+            const k = have.filter((l, i) => l === want[i]).length;
+            verdict.append(el('p', { class: 'v-tip' }, k + ' of ' + want.length + ' lines are in the right place (marked). ' + (have.length < want.length ? 'Some blocks are still missing.' : '')));
+          }
+        }
+      } catch (e) { verdict.className = 'verdict fail'; verdict.append(el('p', { class: 'v-title' }, 'The checker failed unexpectedly: ' + (e && e.message || e))); }
+      checkBtn.disabled = false;
+    } }, lbl('check'));
+    const runBtn = ex.tests && ex.tests.length ? el('button', { class: 'btn', onclick: () => runCell(ex.lang, code(), out, { stdin: ex.sampleStdin, runtime: ex.runtime }) }, 'Run') : null;
+    const resetBtn = el('button', { class: 'btn quiet', onclick: () => armConfirm(resetBtn, 'Start again?', () => { resetBtn.classList.remove('armed'); placed = []; save(); verdict.hidden = true; out.hide(); draw(); }) }, 'Start again');
+    let hintIdx = 0;
+    const hintBox = el('div', { class: 'hints' });
+    const hintBtn = el('button', { class: 'btn quiet', onclick: () => {
+      if (hintIdx < ex.hints.length) { hintBox.appendChild(el('p', { class: 'hint' }, el('b', {}, 'Hint ' + (hintIdx + 1) + '. '), ex.hints[hintIdx])); hintIdx++; }
+      hintBtn.textContent = hintIdx < ex.hints.length ? 'Hint (' + (ex.hints.length - hintIdx) + ' left)' : 'No more hints'; hintBtn.disabled = hintIdx >= ex.hints.length;
+    } }, ex.hints && ex.hints.length ? 'Hint (' + ex.hints.length + ')' : 'No hints');
+    if (!ex.hints || !ex.hints.length) hintBtn.disabled = true;
+    const solBox = el('div', { class: 'solution', hidden: '' });
+    const solBtn = el('button', { class: 'btn quiet', onclick: () => {
+      const show = () => { solBtn.classList.remove('armed'); solBox.hidden = !solBox.hidden; if (!solBox.hidden && !solBox.childNodes.length) solBox.append(el('p', {}, el('b', {}, 'Solution. '), 'Compare it with yours line by line.'), el('pre', { class: 'code' }, el('code', { html: highlight(parsonsSolution(ex), ex.lang) }))); };
+      if (attempts < 2 && solBox.hidden) armConfirm(solBtn, 'Show before trying twice?', show); else show();
+    } }, 'Solution');
+    box.append(el('div', { class: 'ps-board' }, el('div', { class: 'ps-col' }, el('p', { class: 'ps-head' }, 'Blocks'), pool), el('div', { class: 'ps-col' }, el('p', { class: 'ps-head' }, 'Your program'), prog)),
+      el('div', { class: 'toolbar' }, checkBtn, runBtn, resetBtn, el('span', { class: 'spacer' }), hintBtn, solBtn), out.el, verdict, hintBox, solBox);
+    draw();
+    return box;
+  }
+
   // ---------- playground block ----------
   function playgroundBlock(b) {
     const box = el('div', { class: 'play' });
-    if (b.caption) box.append(el('div', { class: 'play-cap' }, el('span', { class: 'play-label' }, lbl('tryIt')), el('span', { html: b.caption })));
+    // with a prediction to make, the caption (which often gives the answer away) waits until after the run, and then explains it
+    const cap = b.caption ? el('div', { class: 'play-cap' + (b.predict ? ' after-guess' : ''), hidden: b.predict ? '' : null }, el('span', { class: 'play-label' }, b.predict ? 'Why' : lbl('tryIt')), el('span', { html: b.caption })) : null;
+    if (cap && !b.predict) box.append(cap);
     const editor = makeEditor(b.lang, b.code);
     const out = outputPanel();
     const turtleMount = b.lang === 'python' && usesTurtle(b.code) ? el('div', { class: 'play-turtle', hidden: '' }) : null;
-    const runBtn = el('button', { class: 'btn primary', onclick: () => runCell(b.lang, editor.value, out, { stdin: b.stdin, runtime: b.runtime, turtleMount }) }, 'Run');
+    const guess = b.predict ? predictBox(b, editor, () => { if (cap) cap.hidden = false; }) : null;
+    const run = () => runCell(b.lang, editor.value, out, { stdin: b.stdin, runtime: b.runtime, turtleMount });
+    const runBtn = el('button', { class: 'btn primary', onclick: () => (guess ? guess.run(run, out) : run()) }, 'Run');
     const resetBtn = el('button', { class: 'btn quiet', onclick: () => { editor.value = b.code; out.hide(); } }, 'Reset');
     const labBtn = window.LAB ? el('button', { class: 'btn quiet lab-open', title: 'Copy this code into the Code Lab', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, runtime: b.runtime }) }, 'Open in Code Lab') : null;
     const substBtn = window.LAB && window.SUBST && (b.lang === 'lisp' || b.lang === 'scheme') && !b.expectError ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and watch each expression being rewritten, one step of the substitution model at a time', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, subst: true }) }, 'Show the substitution') : null;
     const memBtn = window.LAB && window.CPPSTEP && b.lang === 'cpp' && b.runtime !== 'full' ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and run it one line at a time, watching every variable, address and pointer', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, step: true, stdin: b.stdin }) }, 'Step through memory') : null;
-    box.append(editor.el, el('div', { class: 'toolbar' }, runBtn, resetBtn, b.stdin != null ? el('span', { class: 'stdin-note' }, 'input provided: ', el('code', {}, JSON.stringify(b.stdin))) : null, el('span', { class: 'spacer' }), memBtn, substBtn, labBtn), ...[turtleMount, out.el].filter(Boolean));   // append() prints a null as text
+    box.append(editor.el, ...(guess ? [guess.el] : []), el('div', { class: 'toolbar' }, runBtn, resetBtn, b.stdin != null ? el('span', { class: 'stdin-note' }, 'input provided: ', el('code', {}, JSON.stringify(b.stdin))) : null, el('span', { class: 'spacer' }), memBtn, substBtn, labBtn), ...[turtleMount, out.el, guess && guess.result, guess && cap].filter(Boolean));   // append() prints a null as text
     return box;
   }
 
+  // Predict before you run ({ play, predict: true | 'question' }). Guessing first and then seeing the answer is how an example becomes
+  // practice: a wrong guess, corrected at once, is remembered well (PRIMM; the prequestion and hypercorrection effects). The student
+  // writes what they expect the program to print; the first run of the unchanged program then lays the guess beside what it printed,
+  // line by line. Nothing is stored: the guess is part of reading the page. "Run without guessing" never blocks anyone, and in
+  // classroom mode the class guesses aloud, so Run just runs.
+  function predictBox(b, editor, reveal) {
+    const id = 'guess-' + Math.random().toString(36).slice(2, 9);
+    const area = el('textarea', { id, class: 'guess-text', rows: '3', spellcheck: 'false', autocomplete: 'off', placeholder: 'Type the output you expect, line by line' });
+    const nudge = el('p', { class: 'guess-nudge', role: 'status', hidden: '' }, 'Write your guess first: even a wrong one helps you remember the answer.');
+    const skip = el('button', { class: 'btn quiet guess-skip', type: 'button' }, 'Run without guessing');
+    const box = el('div', { class: 'guess' }, el('label', { class: 'guess-q', for: id }, el('b', {}, 'Predict. '), typeof b.predict === 'string' ? b.predict : 'Before you run it: what will it print?'), area, nudge, el('div', { class: 'guess-row' }, skip));
+    const result = el('div', { class: 'guess-result', hidden: '' });
+    let done = false;
+    const norm = (t) => String(t).replace(/\r/g, '').split('\n').map((l) => l.replace(/\s+$/, '')).join('\n').replace(/\n+$/, '').replace(/^\n+/, '');
+    async function runWith(run, out) {
+      const classroom = window.CLASSROOM && window.CLASSROOM.isOn && window.CLASSROOM.isOn();
+      if (done || classroom) { reveal(); return run(); }
+      if (!area.value.trim()) { nudge.hidden = false; area.focus(); return; }
+      done = true; nudge.hidden = true; area.readOnly = true; skip.hidden = true;
+      const unchanged = editor.value === b.code, mine = norm(area.value);
+      await run();
+      reveal();
+      if (!unchanged || out.failed()) { box.classList.add('locked'); return; }
+      const real = norm(out.printed()), want = real.split('\n'), have = mine.split('\n');
+      const right = want.filter((l, i) => have[i] !== undefined && have[i].trim() === l.trim()).length;
+      const exact = mine === real || (right === want.length && have.length === want.length);
+      result.textContent = '';
+      const rows = el('ol', { class: 'guess-lines' });
+      want.forEach((l, i) => {
+        const ok = have[i] !== undefined && have[i].trim() === l.trim();
+        rows.append(el('li', { class: ok ? 'ok' : 'bad' }, el('span', { class: 'gl-mark', 'aria-hidden': 'true' }, ok ? '✓' : '✗'), el('code', {}, l === '' ? ' ' : l),
+          ok ? el('span', { class: 'sr-only' }, ' (as you predicted)') : el('span', { class: 'gl-yours' }, have[i] === undefined || have[i] === '' ? 'you expected no line here' : 'you wrote: ', have[i] ? el('code', {}, have[i]) : null)));
+      });
+      const extra = have.length - want.length;
+      result.append(el('p', { class: 'guess-sum' }, exact ? el('b', {}, 'Exactly as you predicted. ') : el('b', {}, right + ' of ' + want.length + (want.length === 1 ? ' line' : ' lines') + ' as you predicted. '),
+        exact ? 'Your picture of what the program does matches the computer’s.' : 'Look at the lines that differ: each one is a place where the program does something you did not expect, and that is exactly what is worth working out.' + (extra > 0 ? ' (You also expected ' + extra + ' more ' + (extra === 1 ? 'line' : 'lines') + ' than it printed.)' : '')), rows);
+      result.hidden = false; box.classList.add('locked');
+    }
+    skip.addEventListener('click', () => { done = true; box.hidden = true; reveal(); box.closest('.play').querySelector('.toolbar .btn.primary').click(); });
+    return { el: box, result, run: runWith };
+  }
+
   // ---------- lesson rendering ----------
-  // A quick check: one question, a few options, instant feedback, nothing saved. { check, options[], answer (index), why }
-  function checkBlock(b) {
+  // A quick check: one question, a few options, instant feedback, nothing saved. { check, options[], answer (index), why, wrong?[] }
+  // Choosing an option only selects it; the student then says how sure they are, and that button checks the answer. Rating
+  // confidence before the feedback is what makes the feedback land: a confident wrong answer, corrected, is remembered especially
+  // well, and a lucky guess that turns out right is still worth reading the reason for (metacognition; the hypercorrection effect).
+  // After the first answer the remaining options check at once, and in classroom mode (the class answers aloud) so does the first.
+  const SURE = [['sure', 'Sure'], ['think', 'Think so'], ['guess', 'Guessing']];
+  // hooks.onFirstAnswer(correct, sure) hears the first answer (review.js schedules it); hooks.onRight() hears when it is answered right.
+  function checkBlock(b, hooks) {
+    hooks = hooks || {};
     const box = el('div', { class: 'qc', role: 'group', 'aria-label': 'Quick check' });
-    const why = el('p', { class: 'qc-why', hidden: '' });
+    const why = el('p', { class: 'qc-why', role: 'status', hidden: '' });
     const opts = el('div', { class: 'qc-opts' });
-    const btns = (b.options || []).map((o, i) => el('button', { class: 'qc-opt', type: 'button', onclick: () => {
-      if (box.classList.contains('done')) return;
-      if (i === b.answer) { box.classList.add('done'); btns[i].classList.add('right'); btns.forEach((x) => { x.disabled = true; }); why.innerHTML = '<b>Yes.</b> ' + (b.why || ''); why.hidden = false; }
-      else { btns[i].classList.add('wrong'); btns[i].disabled = true; why.innerHTML = '<b>Not that one.</b> ' + (b.wrong && b.wrong[i] ? b.wrong[i] : 'Try another.'); why.hidden = false; }
+    let chosen = -1, answered = false;
+    const judge = (i, sure) => {
+      chosen = -1; conf.hidden = true; btns.forEach((x) => x.classList.remove('chosen'));
+      if (!answered && hooks.onFirstAnswer) { try { hooks.onFirstAnswer(i === b.answer, sure); } catch (e) { console.error(e); } }
+      if (i === b.answer) {
+        box.classList.add('done'); btns[i].classList.add('right'); btns.forEach((x) => { x.disabled = true; x.removeAttribute('aria-pressed'); });
+        why.innerHTML = (sure === 'guess' ? '<b>Yes, though you were guessing.</b> Read why, so that next time you know it: ' : '<b>Yes.</b> ') + (b.why || '');
+        if (hooks.onRight) setTimeout(hooks.onRight, 0);
+      } else {
+        btns[i].classList.add('wrong'); btns[i].disabled = true; btns[i].removeAttribute('aria-pressed');
+        why.innerHTML = (sure === 'sure' ? '<b>Not that one, and you were sure.</b> That makes it the one most worth working out. ' : '<b>Not that one.</b> ') + (b.wrong && b.wrong[i] ? b.wrong[i] : 'Try another.');
+      }
+      answered = true; why.hidden = false;
+    };
+    const conf = el('div', { class: 'qc-sure', hidden: '' }, el('span', { class: 'qc-sure-q' }, 'How sure are you?'),
+      ...SURE.map(([k, label]) => el('button', { class: 'qc-sure-btn', type: 'button', onclick: () => { if (chosen >= 0) judge(chosen, k); } }, label)));
+    const btns = (b.options || []).map((o, i) => el('button', { class: 'qc-opt', type: 'button', 'aria-pressed': 'false', onclick: () => {
+      if (box.classList.contains('done') || btns[i].disabled) return;
+      const classroom = window.CLASSROOM && window.CLASSROOM.isOn && window.CLASSROOM.isOn();
+      if (answered || classroom) { judge(i, null); return; }
+      chosen = i; btns.forEach((x, k) => { x.classList.toggle('chosen', k === i); x.setAttribute('aria-pressed', String(k === i)); });
+      conf.hidden = false;
     } }, el('span', { class: 'qc-letter' }, String.fromCharCode(65 + i)), el('span', { html: o })));
     opts.append(...btns);
-    box.append(el('p', { class: 'qc-q', html: b.check }), opts, why);
+    box.append(el('p', { class: 'qc-q', html: b.check }), opts, conf, why);
     return box;
   }
   // A picture from img/ (build.js puts its credits in BUILD.images): { photo: 'id' | ['id', 'id'], caption }. It loads lazily, shows who
@@ -744,15 +936,15 @@
         const d = el('div', { class: 'prose', html: b });
         if (firstProse) { firstProse = false; const first = d.firstElementChild; if (first && first.tagName === 'P') { d.id = 'part-story'; part('part-story', 'Story', 'story'); } }
         d.querySelectorAll('h2').forEach((h) => { if (!h.id) h.id = 'sec-' + slug(h.textContent); part(h.id, h.textContent, 'section'); });
-        const recap = d.querySelector('.recap'); if (recap) { recap.id = 'part-recap'; part('part-recap', 'Recap', 'recap'); }
+        const recap = d.querySelector('.recap'); if (recap) { recap.id = 'part-recap'; part('part-recap', 'Recap', 'recap'); if (window.REVIEW && blocks.some((x) => x && x.check)) recap.append(el('p', { class: 'recap-return small' }, 'Coming back: the quick checks you answered in this lesson return in ', el('a', { href: '#/today' }, 'Today\u2019s review'), ' tomorrow, then after 3, 10, 30 and 90 days.')); }
         frag.append(d);
       }
-      else if (b.check) { checkCount++; frag.append(tagged('Quick check ' + checkCount, checkBlock(b), 'blk-check')); }
+      else if (b.check) { checkCount++; frag.append(tagged('Quick check ' + checkCount, checkBlock(b, { onFirstAnswer: (ok, sure) => window.REVIEW && window.REVIEW.fromLesson(course, b, ok, sure) }), 'blk-check')); }
       else if (b.play && (b.lang || course.lang) === 'shell' && window.TERMINAL) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], window.TERMINAL.playBlock(b, course), 'blk-play')); }
-      else if (b.play) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount }), 'blk-play')); }
+      else if (b.play) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, predict: b.predict, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount }), 'blk-play')); }
       else if (b.ex) {
         b.ex.lang = b.ex.lang || course.lang; b.ex.runtime = b.ex.runtime || course.runtime; exCount++;
-        const node = window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex, course) : b.ex.kind === 'shell' && window.TERMINAL ? window.TERMINAL.exerciseBlock(b.ex, course, lessonIdx) : exerciseBlock(b.ex, course, lessonIdx);
+        const node = window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex, course) : b.ex.kind === 'parsons' ? parsonsBlock(b.ex, course) : b.ex.kind === 'shell' && window.TERMINAL ? window.TERMINAL.exerciseBlock(b.ex, course, lessonIdx) : exerciseBlock(b.ex, course, lessonIdx);
         const wrap = tagged('Exercise ' + exCount, node, 'blk-ex');
         if (firstEx) { firstEx = false; wrap.id = 'part-exercises'; part('part-exercises', 'Exercises', 'exercises'); }
         frag.append(wrap);
@@ -832,7 +1024,7 @@
       else if (b.photo) { w += words(b.caption); t += 0.3; }
       else if (b.aside) w += words(b.aside);
       else if (b.check) { w += words(b.check) + words((b.options || []).join(' ')); t += 0.5; }
-      else if (b.ex) { w += words(b.ex.title) + words(b.ex.prompt); t += b.ex.kind ? 12 : 10; }
+      else if (b.ex) { w += words(b.ex.title) + words(b.ex.prompt); t += b.ex.kind === 'parsons' ? 5 : b.ex.kind === 'trace' ? 6 : b.ex.kind ? 12 : 10; }
     }
     return Math.round(w / (course.readingWpm || 130) + t);
   }
@@ -848,7 +1040,8 @@
         el('a', { href: '#/courses', class: 'courses-link' + (course === 'courses' || (course && course.id) ? ' current' : '') }, 'Courses'),
         window.ALGOS ? el('a', { href: '#/algorithms', class: 'algos-link' + (course === 'algorithms' ? ' current' : '') }, 'Algorithms') : null,
         window.APPLIED ? el('a', { href: '#/real-world', class: 'applied-link' + (course === 'applied' ? ' current' : '') }, 'Real world') : null,
-        el('a', { href: '#/lab', class: 'lab-link' + (course === 'lab' ? ' current' : '') }, 'Code Lab')),
+        el('a', { href: '#/lab', class: 'lab-link' + (course === 'lab' ? ' current' : '') }, 'Code Lab'),
+        window.REVIEW ? window.REVIEW.topLink(course === 'today') : null),   // appears once there is something to review (src/review.js)
       el('div', { class: 'top-tools' },   // the three small controls sit close together so the links keep their room
         window.TOUR ? window.TOUR.button() : null,   // a guided tour of the site (src/tour.js)
         window.CLASSROOM ? window.CLASSROOM.button() : null,
@@ -965,7 +1158,7 @@
         el('h2', {}, 'For teachers'),
         el('div', { class: 'prose' }, el('p', {}, 'Running a class with this site? ', el('a', { href: '#/guide' }, 'Read the guide for teachers'), ': how the lessons are built, a plan for an hour of coding, the Code Lab, and how to set assignments and collect students\u2019 work with nothing to install and no accounts.'))
       ),
-      el('footer', { class: 'foot' }, el('span', {}, SITE.footer), el('span', { class: 'foot-links' }, window.ABOUT ? [el('a', { href: '#/about' }, 'About and credits'), ' \u00b7 '] : null, el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Clear all saved progress and code? (Save it to a file first if you want it back.) Click again to confirm', () => { Progress.reset(); route(); }) }, 'Reset my progress')))
+      el('footer', { class: 'foot' }, el('span', {}, SITE.footer), el('span', { class: 'foot-links' }, window.ABOUT ? [el('a', { href: '#/about' }, 'About and credits'), ' \u00b7 '] : null, el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Clear all saved progress and code? (Save it to a file first if you want it back.) Click again to confirm', () => { Progress.reset(); if (window.REVIEW) window.REVIEW.reset(); route(); }) }, 'Reset my progress')))
     );
     return main;
   }
@@ -982,6 +1175,7 @@
       el('div', { class: 'course-grid' },
         el('div', { class: 'course-main' },
           el('div', { class: 'prose', html: course.description }),
+          window.REVIEW ? window.REVIEW.coursePanel(course) : null,
           el('h2', {}, lbl('lessons')),
           el('ol', { class: 'lessons' }, course.lessons.map((L, i) => {
             const ids = exerciseIds(L); const d = ids.filter(id => Progress.isDone(id)).length;
@@ -1036,6 +1230,7 @@
     if (parts[0] === 'ojibwe' && window.OJIBWE) { document.documentElement.setAttribute('data-course', ''); document.title = 'Ojibwemowin — ' + SITE.name; app.append(topBar('ojibwe'), window.OJIBWE.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'about' && window.ABOUT) { document.documentElement.setAttribute('data-course', ''); document.title = 'About and credits — ' + SITE.name; app.append(topBar('about'), window.ABOUT.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'portfolio' && window.PORTFOLIO) { document.documentElement.setAttribute('data-course', ''); document.title = 'Portfolio — ' + SITE.name; app.append(topBar('portfolio'), window.PORTFOLIO.page(query)); window.scrollTo(0, 0); return; }
+    if (parts[0] === 'today' && window.REVIEW) { document.documentElement.setAttribute('data-course', ''); document.title = 'Today\u2019s review — ' + SITE.name; app.append(topBar('today'), window.REVIEW.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'courses') { document.documentElement.setAttribute('data-course', ''); document.title = 'Courses — ' + SITE.name; app.append(topBar('courses'), coursesPage()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'algorithms' && window.ALGOS) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('algorithms'), window.ALGOS.page(parts[1])); window.scrollTo(0, 0); return; }
     if (parts[0] === 'real-world' && window.APPLIED) { document.documentElement.setAttribute('data-course', ''); document.title = 'Where it is used — ' + SITE.name; app.append(topBar('applied'), window.APPLIED.page(parts[1])); if (parts[1]) { const t = document.getElementById(parts[1]); if (t && t.scrollIntoView) { t.scrollIntoView(); return; } } window.scrollTo(0, 0); return; }
@@ -1051,5 +1246,5 @@
   window.addEventListener('hashchange', route);
   document.addEventListener('progress-changed', () => { /* sidebars re-render on next navigation */ });
   document.addEventListener('DOMContentLoaded', route);
-  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { langIcon, lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, checkSVG, lbl } };
+  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { checkBlock, parsonsGrade, parsonsSolution, parsonsProgram, langIcon, lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, checkSVG, lbl } };
 })();

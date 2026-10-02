@@ -61,6 +61,7 @@ const scripts = [
   'src/cppfull.js',
   'src/javautil.js',
   'src/runner.js',
+  'src/parsons.js',    // Parsons problems: blocks, order, program (also loaded by node: test_course.js)
   'src/app.js',
   'src/tour.js',       // the guided tour (the Tour button in the top bar)
   'src/shell.js',      // the practice shell and its file system (also loaded by node: test_shell.js)
@@ -71,6 +72,7 @@ const scripts = [
   'src/qr.js',
   'src/teach.js',
   'src/backup.js',
+  'src/review.js',     // spaced review (#/today) and the skills map
   'src/widgets.js',
   'src/portfolio.js',
   'src/classroom.js',

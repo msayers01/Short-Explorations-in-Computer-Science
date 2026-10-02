@@ -3,6 +3,9 @@
 //
 //   node test_lessons.js            check every course
 //   node test_lessons.js --update   also record new exercise ids in lint/exercise-ids.txt (ids are never renumbered or removed)
+//   node test_lessons.js --standard also report, for every lesson, which rules of LESSON_STANDARD.md it does not meet yet
+//
+// A course or a lesson that says standard: 1 is held to LESSON_STANDARD.md: its gaps are errors. Other lessons are only reported.
 'use strict';
 const fs = require('fs'), path = require('path');
 global.window = global;
@@ -50,6 +53,53 @@ function brokenString(code) {
   return 0;
 }
 
+// ---- LESSON_STANDARD.md, as far as a program can check it. Returns the gaps as [rule, message]; the rule names match the guide.
+const STD_WORDS = 450;   // words of reading (about three minutes) before the next thing to do
+function standardGaps(L, course) {
+  const gaps = [], B = L.blocks || [], gap = (rule, msg) => gaps.push([rule, msg]);
+  const isStr = (b) => typeof b === 'string';
+  const playground = course.lang !== 'shell' && course.lang !== 'none';
+  // S-question: the lesson asks before it tells: a question in the story, a prediction or a reveal before the first section
+  const firstH2 = B.findIndex((b) => isStr(b) && /<h2>/.test(b));
+  const before = (firstH2 < 0 ? B : B.slice(0, firstH2 + 1)).map((b) => (isStr(b) ? b.split('<h2>')[0] : b));
+  if (!before.some((b) => (isStr(b) ? /\?/.test(text(b)) || /class="reveal"/.test(b) : b.predict || b.check))) gap('S-question', 'the story never asks a question before the first section (end it on the question the lesson answers)');
+  // S-predict: each section with a runnable example asks for a prediction on at least one of them
+  if (playground) {
+    let section = '(before the first section)', plays = 0, predicted = 0;
+    const close = () => { if (plays && !predicted) gap('S-predict', 'section "' + section + '" has ' + plays + (plays === 1 ? ' example' : ' examples') + ' and none asks for a prediction (predict: true on the key one, or a "Guess first" reveal)'); plays = 0; predicted = 0; };
+    for (const b of B) {
+      if (isStr(b)) { const hs = [...b.matchAll(/<h2>([\s\S]*?)<\/h2>/g)]; if (hs.length) { close(); section = text(hs[hs.length - 1][1]).trim(); } if (/class="reveal"/.test(hs.length ? b.slice(hs[hs.length - 1].index) : b)) predicted++; }
+      else if (b.play !== undefined && !b.expectError) { plays++; if (b.predict) predicted++; }
+    }
+    close();
+  }
+  // S-do: something to do every few minutes of reading
+  let run = 0, longest = 0;
+  for (const b of B) {
+    if (isStr(b)) { if (/class="recap"/.test(b)) continue; const parts = b.split(/<details class="reveal"/); for (let i = 0; i < parts.length; i++) { if (i) run = 0; run += text(parts[i]).split(/\s+/).filter((w) => /[a-zA-Z]/.test(w)).length; longest = Math.max(longest, run); } }
+    else if (b.play !== undefined || b.check || b.fig || b.ex) run = 0;
+  }
+  if (longest > STD_WORDS) gap('S-do', longest + ' words of reading with nothing to do in between (at most ' + STD_WORDS + ': add an example, a check or a reveal)');
+  // S-checks: three quick checks, and every wrong option says what it gets wrong
+  const checks = B.filter((b) => b && b.check);
+  if (checks.length !== 3) gap('S-checks', checks.length + ' quick checks (three)');
+  checks.forEach((c, i) => { const miss = (c.options || []).map((o, k) => k).filter((k) => k !== c.answer && !(c.wrong && c.wrong[k])); if (miss.length) gap('S-checks', 'quick check ' + (i + 1) + ': option' + (miss.length > 1 ? 's ' : ' ') + miss.map((k) => String.fromCharCode(65 + k)).join(', ') + (miss.length > 1 ? ' have' : ' has') + ' no wrong[] reason (name the mistaken belief)'); });
+  // S-spacing: never two examples in a row
+  B.forEach((b, k) => { if (k && b && b.play !== undefined && B[k - 1] && B[k - 1].play !== undefined) gap('S-spacing', 'blocks ' + k + ' and ' + (k + 1) + ' are two examples in a row'); });
+  // S-short: examples a beginner can hold in mind
+  B.forEach((b) => { if (b && typeof b.play === 'string' && !b.long) { const n = b.play.split('\n').length; if (n > 25) gap('S-short', 'an example of ' + n + ' lines (at most 25: split it, make it a listing, or mark it long: true if a whole class needs the room)'); } });
+  // S-make: two graded exercises, each with hints and a stretch
+  const exs = B.filter((b) => b && b.ex).map((b) => b.ex);
+  if (exs.length < 2) gap('S-make', exs.length + ' graded exercise' + (exs.length === 1 ? '' : 's') + ' (at least two)');
+  for (const ex of exs) { if (!ex.hints || ex.hints.length < 2) gap('S-make', ex.id + ' has ' + ((ex.hints || []).length) + ' hint' + ((ex.hints || []).length === 1 ? '' : 's') + ' (at least two, from a nudge to the near-solution)'); if (!ex.followup) gap('S-make', ex.id + ' has no followup (a stretch task for those who finish)'); }
+  // S-recap: the lesson ends with a recap after the exercises
+  if (!(isStr(B[B.length - 1]) && /class="recap"/.test(B[B.length - 1])) && !B.some((b, i) => isStr(b) && /<h2>Stretch goals<\/h2>/.test(b) && i > B.findIndex((x) => x && x.ex))) gap('S-recap', 'the last block is not the recap');
+  // S-level: a course that sets readingGrade keeps its prose at or below it
+  if (course.readingGrade) { const fk = fkGrade(text(B.filter((b) => isStr(b) && !/class="recap"/.test(b)).join(' '))); if (fk && fk.grade > course.readingGrade + 0.5) gap('S-level', 'reading level grade ' + fk.grade.toFixed(1) + ' (the course sets ' + course.readingGrade + ')'); }
+  return gaps;
+}
+const STANDARD_REPORT = process.argv.includes('--standard'), stdRows = [];
+
 const allIds = new Map();
 // ---- pictures: img/<id>.json (made by scripts/fetch-image.js) beside img/<id>.jpg
 const IMG_DIR = path.join(__dirname, 'img'), pictures = new Map(), usedPictures = new Set();
@@ -74,6 +124,11 @@ for (const file of FILES) {
   if (!course.lessons.length) err(C, 'no lessons');
   course.lessons.forEach((L, li) => {
     const where = C + ' lesson ' + (li + 1);
+    {   // LESSON_STANDARD.md: errors for a course or lesson that opts in with standard: 1, a report for the rest
+      const gaps = standardGaps(L, course), strict = course.standard >= 1 || L.standard >= 1;
+      if (strict) for (const [rule, msg] of gaps) err(where, rule + ': ' + msg);
+      stdRows.push({ where, title: L.title, strict, gaps });
+    }
     const B = L.blocks || [];
     const kind = (b) => typeof b === 'string' ? (/class="recap"/.test(b) ? 'recap' : 'html') : b.play !== undefined ? 'play' : b.check ? 'check' : b.ex ? 'ex' : b.fig ? 'fig' : 'other';
     const ks = B.map(kind);
@@ -109,15 +164,35 @@ for (const file of FILES) {
       const ex = b.ex;
       if (!ex) return;
       const exAt = C + ' ' + ex.id;
+      const html = ex.kind && ex.kind !== 'parsons';   // a Parsons problem shows its hints and followup as text, like a code exercise
       // the lesson number in an id is the one it was written under: lessons have moved since, and ids never change
       if (!ex.id || !new RegExp('^' + prefix + '-\\d+-\\d+$').test(ex.id)) err(at, 'exercise id ' + JSON.stringify(ex.id) + ' should look like ' + prefix + '-<lesson>-<n>');
       if (allIds.has(ex.id)) err(exAt, 'id used twice (also in ' + allIds.get(ex.id) + ')'); allIds.set(ex.id, where);
       if (!ex.title) err(exAt, 'no title');
       if (!ex.prompt) err(exAt, 'no prompt'); else checkHtml(exAt + ' prompt', ex.prompt);
-      if (ex.followup) checkHtml(exAt + ' followup', ex.followup);
+      // like hints, a followup is HTML in answer and terminal exercises and plain text in code exercises (app.js renderVerdict)
+      if (ex.followup) { if (html) checkHtml(exAt + ' followup', ex.followup); else if (/<\/?(code|b|i|em|p|br|pre)\b[^>]*>|&(lt|gt|amp|nbsp);/.test(ex.followup)) err(exAt + ' followup', 'markup in a code exercise followup, which is shown as plain text'); }
       (ex.options || []).forEach((o, oi) => o && o.text && checkHtml(exAt + ' option ' + (oi + 1), o.text));
       // hints are HTML in answer and terminal exercises, plain text in code exercises (app.js), where markup would show as written
-      (ex.hints || []).forEach((h, hi) => { if (ex.kind) checkHtml(exAt + ' hint ' + (hi + 1), h); else if (/<\/?(code|b|i|em|p|br|pre)\b[^>]*>|&(lt|gt|amp|nbsp);/.test(h)) err(exAt + ' hint ' + (hi + 1), 'markup in a code exercise hint, which is shown as plain text: ' + JSON.stringify(h.slice(0, 60))); });
+      (ex.hints || []).forEach((h, hi) => { if (html) checkHtml(exAt + ' hint ' + (hi + 1), h); else if (/<\/?(code|b|i|em|p|br|pre)\b[^>]*>|&(lt|gt|amp|nbsp);/.test(h)) err(exAt + ' hint ' + (hi + 1), 'markup in a code exercise hint, which is shown as plain text: ' + JSON.stringify(h.slice(0, 60))); });
+      if (ex.kind === 'parsons') {   // put the lines in order: the solution's lines, distractors that are not among them, indentation in steps of 4
+        if (!Array.isArray(ex.lines) || ex.lines.length < 3 || ex.lines.some((l) => typeof l !== 'string' || !l.trim())) err(exAt, 'a Parsons problem needs lines: at least three non-empty strings, the solution in order');
+        else {
+          if (ex.lines.some((l) => l.match(/^ */)[0].length % 4)) err(exAt, 'indent the lines of a Parsons problem in steps of four spaces');
+          for (const d of ex.distractors || []) if (ex.lines.some((l) => l.trim() === String(d).trim())) err(exAt, 'distractor ' + JSON.stringify(d) + ' is also a line of the solution');
+          if (new Set(ex.lines.map((l) => l.trim())).size !== ex.lines.length && !ex.tests) err(exAt, 'two solution lines are the same text: give the problem tests, so either order is accepted');
+        }
+        if (!Array.isArray(ex.hints) || !ex.hints.length) warn(exAt, 'no hints');
+      }
+      if (ex.kind === 'trace') {   // a trace table: a program, the variables to follow, and one step per pass over a watched line
+        const n = String(ex.code || '').split('\n').length;
+        if (!ex.code || !Array.isArray(ex.vars) || !ex.vars.length || !Array.isArray(ex.steps) || !ex.steps.length) err(exAt, 'a trace needs code, vars and steps');
+        else ex.steps.forEach((st, k) => {
+          if (!Number.isInteger(st.line) || st.line < 1 || st.line > n) err(exAt, 'step ' + (k + 1) + ': line ' + st.line + ' is not a line of the program');
+          for (const v of ex.vars) if (!st.values || st.values[v] == null) err(exAt, 'step ' + (k + 1) + ' has no value for ' + v);
+        });
+        if (ex.steps && !ex.steps.some((st) => st.show !== true)) err(exAt, 'every step of the trace is shown: leave some blank for the student');
+      }
       if (!ex.kind) {   // a code exercise
         if (ex.solution == null) err(exAt, 'no solution');
         if (ex.starter == null && course.lang !== 'shell') err(exAt, 'no starter');
@@ -164,5 +239,12 @@ if (added.length) {
   else err('lint/exercise-ids.txt', added.length + ' new exercise ids are not recorded yet (' + added.slice(0, 5).join(', ') + (added.length > 5 ? ', ...' : '') + '): run node test_lessons.js --update and commit the file');
 }
 
+if (STANDARD_REPORT) {
+  console.log('\nLESSON_STANDARD.md: what each lesson still needs (rules: S-question S-predict S-do S-checks S-spacing S-short S-make S-recap S-level)');
+  for (const r of stdRows) console.log((r.gaps.length ? '  ' : 'OK') + ' ' + r.where + ' (' + r.title + ')' + (r.strict ? ' [standard]' : '') + (r.gaps.length ? '\n      ' + r.gaps.map(([rule, msg]) => rule + ': ' + msg).join('\n      ') : ''));
+  const meet = stdRows.filter((r) => !r.gaps.length).length, byRule = {};
+  for (const r of stdRows) for (const [rule] of r.gaps) byRule[rule] = (byRule[rule] || 0) + 1;
+  console.log(meet + ' of ' + stdRows.length + ' lessons meet the standard. Gaps by rule: ' + Object.entries(byRule).map(([k, v]) => k + ' ' + v).join(', '));
+}
 console.log(errors ? errors + ' errors, ' + warnings + ' warnings' : 'lessons OK (' + allIds.size + ' exercises in ' + FILES.length + ' courses, ' + pictures.size + ' pictures; ' + warnings + ' warnings)');
 process.exit(errors ? 1 : 0);

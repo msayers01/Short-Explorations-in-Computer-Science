@@ -135,5 +135,26 @@ check('broken storage does not throw', Object.keys(BACKUP.collect(broken, { teac
   }
 }
 
+// ---- the review schedule (review.js): round trip, merge by the copy answered last, and hostile items
+{
+  const fileOf = (data) => J({ app: 'short-explorations-backup', v: 1, saved: new Date().toISOString(), data });
+  const review = { v: 1, items: { 'python:abc123': { box: 2, due: 5000, n: 3, miss: 1, last: 4000 }, 'java:zz9': { box: 0, due: 900, n: 1, miss: 1, last: 800 } } };
+  const sr = store({ 'shortcourses.review.v1': J(review) });
+  const f = BACKUP.collect(sr, {});
+  check('review: collected into the file', f.data.review && Object.keys(f.data.review.items).length === 2 && f.data.review.items['python:abc123'].box === 2, f.data.review);
+  const p = BACKUP.parse(J(f));
+  check('review: a file with only review questions is not empty, and they are counted', p.summary.reviews === 2, p.summary);
+  const s0 = store(); BACKUP.apply(s0, p.data, 'replace');
+  check('review: round trip', J(s0.dump('shortcourses.review.v1').items) === J(review.items), s0.dump('shortcourses.review.v1'));
+  const here = store({ 'shortcourses.review.v1': J({ v: 1, items: { 'python:abc123': { box: 4, due: 9000, n: 6, miss: 1, last: 8000 }, 'cpp:q1': { box: 1, due: 10, n: 1, miss: 0, last: 5 } } }) });
+  BACKUP.apply(here, p.data, 'merge');
+  const m = here.dump('shortcourses.review.v1').items;
+  check('review: merge keeps the copy answered last, and adds what is missing', m['python:abc123'].box === 4 && m['java:zz9'] && m['cpp:q1'], m);
+  const evil = '{"app":"short-explorations-backup","v":1,"data":{"review":{"v":1,"items":{"__proto__":{"box":1},"constructor":{"box":1},"python:ok1":{"box":99,"due":-5,"n":"x","miss":null,"last":1e30},"Bad Id":{"box":1},"python:../x":{"box":1},"java:fine":[1,2],"x:y":"str"}}}}';
+  const ev = BACKUP.parse(evil);
+  const ei = ev.data.review.items;
+  check('review: hostile ids and values are dropped or bounded', Object.keys(ei).join() === 'python:ok1' && ei['python:ok1'].box === 4 && ei['python:ok1'].due === 0 && ei['python:ok1'].n === 0 && ei['python:ok1'].last === 1e15 && Object.getPrototypeOf(ei) === null, ei);
+}
+
 if (bad) { console.log(bad + ' problems'); process.exit(1); }
 console.log('backup OK');
