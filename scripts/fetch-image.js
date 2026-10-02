@@ -54,6 +54,20 @@ function search(q) {
   }
 }
 
+// Does the file begin as an SVG: an optional XML declaration, comments and an svg DOCTYPE, then <svg? Walked with indexOf rather
+// than one regular expression (repeated comment groups in a regex can backtrack exponentially).
+function startsAsSvg(t) {
+  let i = 0;
+  const skipWs = () => { while (i < t.length && /\s/.test(t[i])) i++; };
+  for (;;) {
+    skipWs();
+    if (t.startsWith('<?xml', i) || /^<!DOCTYPE svg/i.test(t.slice(i, i + 13))) { const e = t.indexOf('>', i); if (e < 0) return false; i = e + 1; }
+    else if (t.startsWith('<!--', i)) { const e = t.indexOf('-->', i + 4); if (e < 0) return false; i = e + 3; }
+    else break;
+  }
+  return /^<svg[\s>]/i.test(t.slice(i, i + 5));
+}
+
 const ICON_ALLOWED = (lic) => ALLOWED(lic) || /^(bsd|gpl|lgpl|apache|mit)\b/i.test(lic.trim());
 function icon(lang, file, name) {
   if (!/^[a-z]+$/.test(lang || '') || !/^File:.+\.svg$/i.test(file || '') || !name) { console.error('usage: --icon <lang> "File:Logo.svg" "name"'); process.exit(2); }
@@ -67,7 +81,7 @@ function icon(lang, file, name) {
   // PNG rendering, which it asks clients to use instead
   let fname = lang + '.svg', out = path.join(dir, fname), svg = '';
   try { curl(ii.url, out); svg = fs.readFileSync(out, 'utf8'); } catch (e) { svg = ''; }
-  const isSvg = /^\s*(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE svg[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*<svg[\s>]/i.test(svg);   // an HTML error page can contain an <svg> too
+  const isSvg = startsAsSvg(svg);   // an HTML error page can contain an <svg> too
   const plain = isSvg && !/<script|\bon\w+\s*=|<foreignObject|xlink:href\s*=\s*["']https?:|href\s*=\s*["']https?:/i.test(svg);
   if (!plain) {
     fs.rmSync(out, { force: true });
