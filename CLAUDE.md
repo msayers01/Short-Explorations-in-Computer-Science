@@ -40,7 +40,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - **Content Security Policy** is written by `build.js` into every page and `dist/_headers`: inline scripts allowed by hash only (all of
   `src/*.js` is ONE inline script, so the policy is three hashes; Cloudflare refuses a `_headers` line over 2000 characters, and build.js
   now fails rather than write one),
-  `connect-src 'self'` (only for the Full C++ download), `worker-src blob:`, no other origin. A new inline script needs nothing (its hash is
+  `connect-src 'self'` (only for the Full C++ download), `img-src 'self' data: blob:` (the lessons' pictures), `worker-src blob:`, no other origin. A new inline script needs nothing (its hash is
   computed); a new external resource must be added deliberately. Fonts are embedded as data URIs.
 - **Student code never runs in the page.** Python (Skulpt) and C++ (JSCPP) run in Web Workers built from inert `<script type="text/plain">`
   blocks (`src/runner.js`); turtle graphics in a sandboxed iframe without `allow-same-origin`. Scheme runs in the page (own interpreter,
@@ -136,6 +136,10 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   courses (`COURSE_GROUPS` in app.js: add a new course to a group). `#/algorithms` has 12 interactive demos (`src/algos.js` frame,
   `src/algo_{search,sort,paths,games}.js`, each with `selfTest()` run by `test_algos.js`). `#/real-world` (`src/applied.js`) has 30 topics,
   147 examples tagged by field, and links to the lessons. The tour's top-bar step describes these pages: update it when they change.
+- **Pictures** (ARCHITECTURE §9h): `{ photo: 'id' | ['a','b'], caption }` in a lesson; `img/<id>.jpg` + `img/<id>.json` made only by
+  `node scripts/fetch-image.js` (Wikimedia Commons; public domain, CC0, CC BY, CC BY-SA only; `--search` first). Look at each picture
+  before writing its alt text. Served from `dist/img/` (content-hashed, lazy); credits on About. Wikimedia rate-limits this machine: one
+  request at a time, and the script waits.
 - The DOM's own `append`/`replaceChildren` do not flatten arrays (they print `[object HTMLElement]`): spread them, or use `el()`, which does.
 - Ideas not started: C in the Code Lab (same compiler); lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
