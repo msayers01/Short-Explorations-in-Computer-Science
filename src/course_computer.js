@@ -27,8 +27,9 @@ window.COURSES.push({
       title: 'The parts of a computer', summary: 'Input, processing, memory, storage and output; what is in the case; hardware and software.',
       blocks: [
         `<p>In February 1946 the United States Army showed reporters a machine that filled a room at the University of Pennsylvania: ENIAC, the first general-purpose electronic computer. It weighed thirty tons, held about eighteen thousand vacuum tubes, and could add five thousand numbers in a second, which was faster than anything before it by a thousand times. It had no keyboard and no screen. It was programmed by six women, Kay McNulty, Betty Jennings, Betty Snyder, Marlyn Wescoff, Fran Bilas and Ruth Lichterman, who set thousands of switches and plugged cables into panels by hand, working from the wiring diagrams because there was no manual.</p>
-<p>The phone in your pocket is millions of times faster, and it is made of the same parts doing the same jobs. Learn the parts once and every computer, from ENIAC to a laptop to the chip in a washing machine, looks the same.</p>
-<h2>Four jobs</h2>
+<p>The phone in your pocket is millions of times faster, and it is made of the same parts doing the same jobs. Learn the parts once and every computer, from ENIAC to a laptop to the chip in a washing machine, looks the same.</p>`,
+        { photo: 'eniac', caption: 'ENIAC at the Army\'s Ballistic Research Laboratory. Betty Snyder, one of the six programmers, stands in front; Glen Beck works at the panels behind. A program was the pattern of these cables and switches.' },
+        `<h2>Four jobs</h2>
 <p>Whatever a computer is doing, it is doing four things. It takes something <em>in</em>. It <em>processes</em> it: calculates, compares, decides. It <em>stores</em> things, for a moment or for years. And it puts something <em>out</em>. Type a word, and the keyboard is input, the processor works out which letters you meant, memory holds the document, the screen shows the letters: output.</p>
 <div class="stmt"><p><span class="kind">Input</span> is anything that goes into the computer: keyboard, mouse, touchscreen, microphone, camera, a file arriving over the network.</p>
 <p><span class="kind">Processing</span> is the work: arithmetic, comparing, moving data about. The CPU does it.</p>

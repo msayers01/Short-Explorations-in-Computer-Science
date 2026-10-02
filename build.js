@@ -22,7 +22,7 @@ const FONTS = [
 const fontFaces = FONTS.map(([family, style, weight, file]) => `@font-face { font-family: '${family}'; font-style: ${style}; font-weight: ${weight}; font-display: swap; src: url(data:font/woff2;base64,${fs.readFileSync('node_modules/' + file).toString('base64')}) format('woff2'); }`).join('\n');
 const sha = (text) => "'sha256-" + crypto.createHash('sha256').update(text, 'utf8').digest('base64') + "'";
 const csp = (hashes, extra) => ["default-src 'none'", "script-src " + hashes.join(' ') + " 'unsafe-eval'", "style-src 'unsafe-inline'",
-  "font-src data:", "img-src data: blob:", "connect-src 'self'", "media-src 'none'", "frame-src 'none'", "worker-src blob:",
+  "font-src data:", "img-src 'self' data: blob:", "connect-src 'self'", "media-src 'none'", "frame-src 'none'", "worker-src blob:",
   "object-src 'none'", "base-uri 'none'", "form-action 'none'"].concat(extra || []).join('; ');
 const headFor = (hashes) => `<!DOCTYPE html>
 <html lang="en">
@@ -121,7 +121,22 @@ for (const [from, to] of clangFiles) {
   clangBytes += fs.statSync(dest).size;
 }
 console.log('copied the real-C++ compiler to dist/' + CLANG_DIR, (clangBytes / 1024 / 1024).toFixed(1), 'MB');
-const BUILD = { date: new Date().toISOString().slice(0, 10), thirdParty: THIRD_PARTY, clang: { path: CLANG_DIR, mb: Math.round(clangBytes / 1024 / 1024), llvm: CLANG_PKG.version,
+// Pictures for the lessons (img/: a JPEG and a JSON of its credits each; scripts/fetch-image.js makes both). They are files next to the
+// page, not data in it, so a lesson's pictures are downloaded only when it is read. The name carries a hash of the content, so a
+// picture can be cached forever; the credits (title, alt text, author, licence, source) go into the page as window.BUILD.images.
+const IMAGES = {};
+fs.rmSync('dist/img', { recursive: true, force: true });
+if (fs.existsSync('img')) {
+  fs.mkdirSync('dist/img', { recursive: true });
+  for (const f of fs.readdirSync('img').filter((f) => f.endsWith('.json')).sort()) {
+    const meta = JSON.parse(fs.readFileSync('img/' + f, 'utf8')), data = fs.readFileSync('img/' + meta.file);
+    const name = meta.id + '.' + crypto.createHash('sha256').update(data).digest('hex').slice(0, 10) + '.jpg';
+    fs.writeFileSync('dist/img/' + name, data);
+    IMAGES[meta.id] = { src: 'img/' + name, title: meta.title, alt: meta.alt, author: meta.author, license: meta.license, licenseUrl: meta.licenseUrl, source: meta.source, credit: meta.credit, date: meta.date || '', width: meta.width, height: meta.height };
+  }
+  console.log('copied', Object.keys(IMAGES).length, 'pictures to dist/img/');
+}
+const BUILD = { date: new Date().toISOString().slice(0, 10), thirdParty: THIRD_PARTY, images: IMAGES, clang: { path: CLANG_DIR, mb: Math.round(clangBytes / 1024 / 1024), llvm: CLANG_PKG.version,
   // The page checks the compiler script it downloads against this before running it. (The script then checks every compiler file it fetches against hashes it carries.)
   sha256: crypto.createHash('sha256').update(fs.readFileSync('dist/' + CLANG_DIR + 'toolchain.js')).digest('hex') } };
 // The same notices as a file at the repository root, for copies of the source and of dist/index.html.
@@ -169,7 +184,7 @@ if (gm) {
 // learning-management systems; to forbid that, add "frame-ancestors 'none'" to the policy below (csp's second argument).
 const common = ['X-Content-Type-Options: nosniff', 'Referrer-Policy: no-referrer', 'Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()'];
 const rule = (paths, hashes) => paths.map(p => p + '\n').join('') + ['Content-Security-Policy: ' + csp(hashes)].concat(common).map(h => '  ' + h + '\n').join('') + '\n';
-const immutable = '/' + CLANG_DIR + '*\n  Cache-Control: public, max-age=31536000, immutable\n  X-Content-Type-Options: nosniff\n\n';
+const immutable = ['/' + CLANG_DIR + '*', '/img/*'].map((p) => p + '\n  Cache-Control: public, max-age=31536000, immutable\n  X-Content-Type-Options: nosniff\n\n').join('');
 const headersText = '# Written by build.js. Do not edit.\n' + immutable + rule(['/', '/index.html'], indexHashes) + rule(['/teacher-guide', '/teacher-guide.html'], guideHashes);
 const longLine = headersText.split('\n').findIndex((l) => l.length > 2000);
 if (longLine >= 0) throw new Error('dist/_headers line ' + (longLine + 1) + ' is ' + headersText.split('\n')[longLine].length + ' characters; Cloudflare refuses lines over 2000');

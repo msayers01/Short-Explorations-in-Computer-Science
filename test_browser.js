@@ -271,6 +271,20 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   const realLinks = await page.evaluate(() => [...document.querySelectorAll('main a[href^="#/"]')].map((a) => a.getAttribute('href')).filter((h) => /^#\/[a-z]+\/\d+/.test(h)));
   const badLinks = await page.evaluate((hs) => hs.filter((h) => { const [, c, n] = h.match(/^#\/([a-z]+)\/(\d+)/); const course = window.COURSES.find((x) => x.id === c); return !course || !course.lessons[+n - 1]; }), realLinks);
   check('real world: the page lists topics, and every lesson it links to exists', realLinks.length >= 20 && badLinks.length === 0, badLinks.slice(0, 5));
+  // ---- pictures in lessons: they load (lazily), carry a credit, open larger and close with Esc; a missing file shows its description
+  await goto('#/computer/1');
+  const photo = page.locator('.blk-photo').first();
+  await photo.scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => { const i = document.querySelector('.blk-photo img'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 10000 }).catch(() => { });
+  const pinfo = await page.evaluate(() => { const i = document.querySelector('.blk-photo img'); return i && { w: i.naturalWidth, alt: i.alt, lazy: i.loading, credit: !!document.querySelector('.blk-photo .photo-credit a[href*="commons.wikimedia.org"]') }; });
+  check('pictures: a lesson picture loads, with alt text and a credit linking to its source', pinfo && pinfo.w > 0 && pinfo.alt.length > 20 && pinfo.lazy === 'lazy' && pinfo.credit, pinfo);
+  await page.click('.blk-photo .photo-open');
+  const zoomed = (await page.locator('.photo-zoom img').count()) === 1;
+  await page.keyboard.press('Escape');
+  check('pictures: tapping a picture opens it larger, and Esc closes it', zoomed && (await page.locator('.photo-zoom').count()) === 0);
+  await page.evaluate(() => { const i = document.querySelector('.blk-photo img'); i.src = 'img/missing.jpg'; });
+  await page.waitForSelector('.blk-photo .photo-missing', { timeout: 5000 }).catch(() => { });
+  check('pictures: a picture that cannot load is replaced by its title and description', (await page.locator('.blk-photo .photo-missing').count()) === 1);
   // ---- SC 099: no code; the figures render and the non-code exercises grade
   await goto('#/computer/2'); await page.waitForSelector('.cpu-fig');
   for (let i = 0; i < 4; i++) await page.locator('.fig-tools button:has-text("Step")').first().click();

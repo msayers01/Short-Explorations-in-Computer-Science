@@ -701,6 +701,38 @@
     box.append(el('p', { class: 'qc-q', html: b.check }), opts, why);
     return box;
   }
+  // A picture from img/ (build.js puts its credits in BUILD.images): { photo: 'id' | ['id', 'id'], caption }. It loads lazily, shows who
+  // made it and under which licence, and opens larger when tapped. If it cannot load (a copy opened from a file, or offline), a box
+  // with its title and description takes its place.
+  const IMAGES = (window.BUILD && window.BUILD.images) || {};
+  const photoCredit = (m) => {
+    const who = m.author && !/^unknown/i.test(m.author) ? m.author : (m.credit || 'Unknown');
+    return el('span', { class: 'photo-credit' }, who + ' · ', m.licenseUrl ? el('a', { href: m.licenseUrl, target: '_blank', rel: 'noopener noreferrer' }, m.license) : m.license, ' · ', el('a', { href: m.source, target: '_blank', rel: 'noopener noreferrer' }, 'source'));
+  };
+  function zoomPhoto(m) {
+    const close = () => { box.remove(); document.removeEventListener('keydown', onKey); if (opener) opener.focus(); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    const opener = document.activeElement;
+    const shut = el('button', { class: 'photo-zoom-close', type: 'button', 'aria-label': 'Close the picture', onclick: close }, '×');
+    const box = el('div', { class: 'photo-zoom', role: 'dialog', 'aria-modal': 'true', 'aria-label': m.title, onclick: (e) => { if (e.target === box) close(); } },
+      el('figure', {}, el('img', { src: m.src, alt: m.alt, width: m.width, height: m.height }), el('figcaption', {}, el('b', {}, m.title), m.date ? ' (' + m.date + ')' : '', '. ', photoCredit(m))), shut);
+    document.body.append(box); document.addEventListener('keydown', onKey); shut.focus();
+  }
+  function photoBlock(b) {
+    const ids = Array.isArray(b.photo) ? b.photo : [b.photo];
+    const row = el('div', { class: 'photo-row' + (ids.length > 1 ? ' several' : '') });
+    for (const id of ids) {
+      const m = IMAGES[id];
+      if (!m) { row.append(el('div', { class: 'photo-missing' }, 'Picture not found: ' + id)); continue; }
+      const img = el('img', { src: m.src, alt: m.alt, width: m.width, height: m.height, loading: 'lazy', decoding: 'async' });
+      img.addEventListener('error', () => { btn.replaceWith(el('div', { class: 'photo-missing', role: 'img', 'aria-label': m.alt }, el('b', {}, m.title), el('span', {}, m.alt), el('span', { class: 'photo-note' }, 'The picture appears when the site is opened from its web address.'))); });
+      const btn = el('button', { class: 'photo-open', type: 'button', title: 'Enlarge', 'aria-label': 'Enlarge the picture: ' + m.title, onclick: () => zoomPhoto(m) }, img);
+      row.append(el('div', { class: 'photo-item', style: ids.length > 1 ? 'flex: ' + (m.width / m.height).toFixed(3) + ' 1 0' : null }, btn));
+    }
+    const credits = ids.map((id) => IMAGES[id]).filter(Boolean);
+    return el('figure', { class: 'photo' }, row, el('figcaption', {}, b.caption ? el('span', { class: 'photo-caption', html: b.caption }) : null,
+      el('span', { class: 'photo-credits' }, credits.map((m, i) => [i ? '; ' : null, credits.length > 1 ? m.title + ': ' : null, photoCredit(m)]))));
+  }
   // Each kind of block gets a small label above it, so a reader can see what the next thing is before reading it.
   const tagged = (label, node, extraClass) => el('div', { class: 'blk' + (extraClass ? ' ' + extraClass : '') }, el('div', { class: 'blk-tag', 'aria-hidden': 'true' }, ...(Array.isArray(label) ? label : [label])), node);
   const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');   // from textContent: plain text, no tags to strip
@@ -740,6 +772,7 @@
       }
       else if (b.code) frag.append(tagged('Listing', el('pre', { class: 'code' + (b.caption ? ' captioned' : '') }, b.caption ? el('span', { class: 'code-cap' }, b.caption) : null, el('code', { html: highlight(b.code, b.lang || course.lang) })), 'blk-code'));
       else if (b.aside) frag.append(tagged('Watch out', el('aside', { class: 'aside', html: b.aside }), 'blk-aside'));
+      else if (b.photo) frag.append(tagged(Array.isArray(b.photo) && b.photo.length > 1 ? 'Pictures' : 'Picture', photoBlock(b), 'blk-photo'));
     }
     if (parts) parts.counts = { plays: playCount, checks: checkCount, exercises: exCount, figs: blocks.filter((x) => x.fig && x.fig !== 'blockquiz').length };
     return frag;
@@ -796,6 +829,7 @@
       else if (b.play) { w += words(b.caption); t += 2.5; }
       else if (b.code) w += words(b.caption);
       else if (b.fig) { w += words(b.caption); t += 2; }
+      else if (b.photo) { w += words(b.caption); t += 0.3; }
       else if (b.aside) w += words(b.aside);
       else if (b.check) { w += words(b.check) + words((b.options || []).join(' ')); t += 0.5; }
       else if (b.ex) { w += words(b.ex.title) + words(b.ex.prompt); t += b.ex.kind ? 12 : 10; }

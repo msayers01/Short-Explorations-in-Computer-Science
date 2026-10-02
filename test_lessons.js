@@ -51,6 +51,22 @@ function brokenString(code) {
 }
 
 const allIds = new Map();
+// ---- pictures: img/<id>.json (made by scripts/fetch-image.js) beside img/<id>.jpg
+const IMG_DIR = path.join(__dirname, 'img'), pictures = new Map(), usedPictures = new Set();
+const LICENCE_OK = (l) => /^(public domain|pd\b|pd-|cc0|cc[ -]by(-sa)?[ -]\d(\.\d)?|cc[ -]by(-sa)?$)/i.test(String(l || '').trim()) && !/\b(nc|nd)\b/i.test(l);
+if (fs.existsSync(IMG_DIR)) for (const f of fs.readdirSync(IMG_DIR).filter((f) => f.endsWith('.json'))) {
+  const where = 'img/' + f; let m;
+  try { m = JSON.parse(fs.readFileSync(path.join(IMG_DIR, f), 'utf8')); } catch (e) { err(where, 'not valid JSON'); continue; }
+  if (m.id + '.json' !== f) err(where, 'id ' + JSON.stringify(m.id) + ' does not match the file name');
+  if (!m.file || !fs.existsSync(path.join(IMG_DIR, m.file))) err(where, 'its picture ' + m.file + ' is missing');
+  else if (fs.statSync(path.join(IMG_DIR, m.file)).size > 250 * 1024) err(where, m.file + ' is over 250 KB: run it through scripts/fetch-image.js (960 px, quality 78)');
+  if (!m.alt || m.alt.length < 25) err(where, 'needs alt text that describes the picture (at least a sentence)');
+  if (!m.title) err(where, 'no title');
+  if (!LICENCE_OK(m.license)) err(where, 'licence ' + JSON.stringify(m.license) + ' is not public domain, CC0, CC BY or CC BY-SA');
+  if (!/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/.test(m.source || '')) err(where, 'source must be its Wikimedia Commons page');
+  if (!(m.width > 0 && m.height > 0)) err(where, 'width and height are needed (they keep the page from jumping as it loads)');
+  pictures.set(m.id, m);
+}
 for (const file of FILES) {
   window.COURSES = []; const mod = require.resolve('./src/course_' + file + '.js'); delete require.cache[mod]; require(mod);
   const course = window.COURSES[0], C = course.code || course.id;
@@ -75,6 +91,12 @@ for (const file of FILES) {
       const at = where + ' block ' + (bi + 1);
       if (typeof b === 'string') { checkHtml(at, b); return; }
       if (b.caption) checkHtml(at + ' caption', b.caption);
+      if (b.photo !== undefined) {
+        const ids = Array.isArray(b.photo) ? b.photo : [b.photo];
+        if (!ids.length || ids.length > 3) err(at, 'a picture block shows one to three pictures');
+        for (const id of ids) { if (!pictures.has(id)) err(at, 'picture ' + JSON.stringify(id) + ' is not in img/'); usedPictures.add(id); }
+        if (!b.caption) err(at, 'a picture needs a caption that says what it shows and why it is here');
+      }
       if (b.check) {   // a quick check: the answer is one of the options, and the explanation is there
         if (!Array.isArray(b.options) || b.options.length < 2) err(at, 'quick check with fewer than two options');
         else if (!Number.isInteger(b.answer) || b.answer < 0 || b.answer >= b.options.length) err(at, 'quick check answer ' + b.answer + ' is not one of the ' + b.options.length + ' options');
@@ -118,6 +140,8 @@ for (const file of FILES) {
   });
 }
 
+for (const id of pictures.keys()) if (!usedPictures.has(id)) err('img/' + id + '.json', 'this picture is not used by any lesson (remove it, or use it)');
+
 // ---- exercise ids are never renumbered or removed: progress and portfolios are keyed by them
 const known = fs.existsSync(IDS_FILE) ? fs.readFileSync(IDS_FILE, 'utf8').split('\n').map((s) => s.trim()).filter((s) => s && !s.startsWith('#')) : [];
 for (const id of known) if (!allIds.has(id)) err(id, 'this exercise id existed and is gone: ids are never removed or renumbered, because students\' progress is saved under them');
@@ -127,5 +151,5 @@ if (added.length) {
   else err('lint/exercise-ids.txt', added.length + ' new exercise ids are not recorded yet (' + added.slice(0, 5).join(', ') + (added.length > 5 ? ', ...' : '') + '): run node test_lessons.js --update and commit the file');
 }
 
-console.log(errors ? errors + ' errors, ' + warnings + ' warnings' : 'lessons OK (' + allIds.size + ' exercises in ' + FILES.length + ' courses; ' + warnings + ' warnings)');
+console.log(errors ? errors + ' errors, ' + warnings + ' warnings' : 'lessons OK (' + allIds.size + ' exercises in ' + FILES.length + ' courses, ' + pictures.size + ' pictures; ' + warnings + ' warnings)');
 process.exit(errors ? 1 : 0);
