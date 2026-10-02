@@ -1277,6 +1277,14 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .sk-chip a { display: inline-block; padding: 0.15rem 0.55rem; border: 1px solid var(--rule); border-left-width: 4px; border-radius: 3px; font-size: 0.85rem; color: var(--ink); text-decoration: none; }
 .sk-chip.sk-practising a { border-left-color: var(--warn, #b7791f); }
 .sk-chip.sk-secure a { border-left-color: var(--ok); font-weight: 600; }
+/* decision tree builder (widgets.js dtree) */
+.dt-tree ul { list-style: none; margin: 0; padding-left: 1.2rem; border-left: 2px solid var(--rule); }
+.dt-tree > ul { padding-left: 0; border-left: 0; }
+.dt-node { margin: 0.35rem 0; }
+.dt-head { font-family: var(--sans); font-size: 0.92rem; }
+.dt-pure > .dt-head { color: var(--ok); }
+.dt-leaf { font-weight: 600; }
+.dt-q { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; margin: 0.25rem 0 0.2rem; font-size: 0.9rem; }
 
 </style>
 </head>
@@ -1341,7 +1349,7 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
       <tr><td><b>SC 106 Introduction to Java</b><br><span class="g-muted">8 lessons so far</span></td><td>Grades 10–12, after Python or with some experience. The language of AP Computer Science A.</td><td>Read the compiler’s messages, declare typed variables, make decisions, read input, write loops and methods, use arrays, Strings and ArrayLists, and write classes. Checked with the real compiler’s own error messages, in the browser.</td></tr>
       <tr><td><b>SC 107 Data Structures and Algorithms</b><br><span class="g-muted">7 lessons so far</span></td><td>Grades 11–12, after Java or C++. The second course of every computer science degree.</td><td>Count the cost of code and name its order of growth; arrays and growing arrays; binary search; selection, insertion, merge sort and quicksort; linked lists, stacks and queues; recursion. Every structure as a figure to step through, code to write and a count to predict.</td></tr>
       <tr><td><b>SC 108 The Command Line</b><br><span class="g-muted">4 lessons so far</span></td><td>Grades 7–12. No experience needed; pairs with any course.</td><td>The Unix shell in a practice terminal: where am I, paths and cd; making, copying, moving and removing files, wildcards; reading, counting and searching files with cat, wc, grep and find; pipes and redirection. Later lessons: running programs, Windows, scripts.</td></tr>
-      <tr><td><b>SC 109 How Machines Learn</b><br><span class="g-muted">4 lessons so far</span></td><td>Grades 9–12, after SC 101 up to Dictionaries.</td><td>Build the models behind machine learning in Python, small enough to read every line: a spam filter that learns from labelled messages, k nearest neighbours, and the honest test (training and test sets, accuracy, the confusion table, overfitting). The first course written to the lesson standard: named skills, and a checkpoint lesson of mixed questions after every three lessons.</td></tr>
+      <tr><td><b>SC 109 How Machines Learn</b><br><span class="g-muted">8 lessons so far</span></td><td>Grades 9–12, after SC 101 up to Dictionaries.</td><td>Build the models behind machine learning in Python, small enough to read every line: a spam filter that learns from labelled messages, k nearest neighbours, the honest test (training and test sets, accuracy, the confusion table, overfitting), the perceptron, gradient descent, and decision trees built by information gain. The first course written to the lesson standard: named skills, and a checkpoint lesson of mixed questions after every three lessons.</td></tr>
     </tbody>
   </table>
   <p>Courses marked <b>Under development</b> on the site (From Scratch to Python, Modern C++, Java, Data Structures and Algorithms, The Command Line, How Machines Learn) are being written: their lessons are complete and checked, but more are coming and details may change.</p>

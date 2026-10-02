@@ -179,12 +179,17 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   written to LESSON_STANDARD.md from lesson 1. Unit one: 1 rules or examples (Paul Graham's *A Plan for Spam*, 2002: a hand-written rule,
   word counts, scoring), 2 nearest neighbours (Fix and Hodges, 1951: distance, 1-NN, k-NN), 3 is it any good? (Google Flu Trends, 2013:
   test sets, accuracy, the confusion table, overfitting), 4 Checkpoint one (`checkpoint: true`: eight mixed checks, a choice and a code
-  exercise). 11 exercises `ml-<n>-<k>` (two Parsons, one trace), 12 named skills (`course.skills`; every check and exercise has `skill`),
-  figure `knn` (drag the new fruit, choose k; `test: true` adds six test fruit and the training/test scores). Data stay tiny (Skulpt is slow);
-  never print a dict in a predict example or a test (Skulpt's key order may differ): print values or `sorted(d.items())`. Planned, from the
-  playbook: unit two (5 a perceptron, Rosenblatt 1958; 6 gradient descent; 7 decision trees by information gain), unit three (8 words as
-  numbers and Shannon's 1948 text generator; 9 a next-character model and temperature; 10 Checkpoint two), 11 who does it fail? (Gender
-  Shades, 2018), 12 project: your own model and a model card. Lesson 4's recap promises lesson 5 is the perceptron.
+  exercise). Unit two: 5 a line that learns (Rosenblatt's perceptron, 1958; XOR and Minsky-Papert 1969), 6 walking downhill (Cauchy 1847:
+  mean squared error, slope, gradient descent, learning rate), 7 twenty questions (Quinlan's ID3, 1986, on his 14 Saturday mornings:
+  entropy, information gain), 8 Checkpoint two. 22 exercises `ml-<n>-<k>` (Parsons in 1, 3, 7; traces in 2, 5, 6), 21 named skills
+  (`course.skills`; every check and exercise has `skill`), figures `knn` (drag the new fruit, choose k; `test: true` adds test fruit and
+  scores), `perceptron` (step through every mistake on the fruit), `descent` (the error valley, a learning-rate picker), `dtree` (build
+  Quinlan's tree by choosing questions, gains shown). Data stay tiny (Skulpt is slow); never print a dict in a predict example or a test
+  (Skulpt's key order may differ): print values or `sorted(d.items())`. Skulpt's `round(x, n)` can print 0.9399999999999999 where Python
+  prints 0.94 (it rounds 0.9403 wrong to 3 places): check every printed float in Skulpt (test_course.js does for tests; run the examples).
+  Planned, units of three plus a checkpoint (S-units): unit three (9 words as numbers and Shannon's 1948 text generator; 10 a next-character
+  model and temperature; 11 who does it fail? Gender Shades, 2018; 12 Checkpoint three), then 13 project: your own model and a model card.
+  Lesson 8's recap promises that unit three is about words.
 - **Checkpoints and named skills** (LESSON_STANDARD.md §2 and §4, `test_lessons.js`: S-checkpoint, S-skills, S-units; `review.js`:
   `skillParts`, `skillStatus`): a checkpoint has no rule box and at least six checks tagged with skills from every lesson of its unit; a
   course with `skills` must tag every check and exercise of its standard lessons.
