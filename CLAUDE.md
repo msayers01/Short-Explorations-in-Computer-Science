@@ -106,8 +106,10 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   end_fill, penup/pendown, goto, speed. Planned next: a dictionaries lesson (a Scratch list of pairs → dict) and a final "what next" lesson
   handing over to SC 101.
 - Courses still being written carry `status: 'developing'` (Scratch to Python, Modern C++, Java, DSA): an "Under development" tag (app.js `devTag`).
-- SC 106 Introduction to Java: the interpreter and the first 4 lessons (Hello Java and types; decisions and Scanner; loops; methods), 8 exercises.
-  Planned next: arrays; Strings; ArrayList; classes and objects; inheritance and interfaces; exceptions; HashMap; a project.
+- SC 106 Introduction to Java: the interpreter and 8 lessons (Hello Java and types; decisions and Scanner; loops; methods; arrays; Strings;
+  ArrayList; classes and objects), 16 exercises. Lessons 1, 4, 7 and 8 use Minecraft (stacks of 64, slotsNeeded, ItemStack/Inventory).
+  The interpreter lacks `String.chars()`, `codePointCount`, `"".formatted(...)`, and infers `List<Object>` for `new ArrayList<>(Arrays.asList(..))`
+  used directly as an argument (fine when assigned to a typed variable). Planned next: inheritance and interfaces; exceptions; HashMap; a project.
 - **The practice terminal** (ARCHITECTURE §9f): `src/shell.js` (a real shell: parser, pipelines, redirections, variables, loops, ~70 commands,
   virtual file system with caps, saved under `shortcourses.shell.v1`, in backups) and `src/terminal.js` (the Terminal panel in the Code Lab:
   history, Tab completion, nano, `edit`, the `~/lab` mirror). `g++`/`javac` compile through check-only modes of the sandboxes; `./prog`,
