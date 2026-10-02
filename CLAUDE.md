@@ -142,6 +142,9 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   `node scripts/fetch-image.js` (Wikimedia Commons; public domain, CC0, CC BY, CC BY-SA only; `--search` first). Look at each picture
   before writing its alt text. Served from `dist/img/` (content-hashed, lazy); credits on About. Wikimedia rate-limits this machine: one
   request at a time, and the script waits.
+- **Pictures show things and ideas, not people** (the owner's rule, October 2026): no portraits. The one exception the owner asked to keep
+  is Ada Lovelace in SC 101. A machine with someone standing beside it is fine; a person as the subject is not. Prefer a picture
+  that explains the concept (dice for Monte Carlo, a sieve for the Sieve of Eratosthenes, a plan for a class).
 - The DOM's own `append`/`replaceChildren` do not flatten arrays (they print `[object HTMLElement]`): spread them, or use `el()`, which does.
 - Ideas not started: C in the Code Lab (same compiler); lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
