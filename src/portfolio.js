@@ -40,8 +40,11 @@
   function parseAnswers(code) { try { const a = JSON.parse(code); return Array.isArray(a) ? a : null; } catch (e) { return null; } }
   // The lesson page saves a choice exercise as [[indices]] and the grader takes [indices].
   function answersFor(ex, code) { const a = parseAnswers(code) || []; return ex.kind === 'choice' ? a.flat().map(Number) : a; }
+  // a Parsons problem is saved as the blocks placed ({ p: [...] }) until it passes, then as the program: always show and check a program
+  const programOf = (ex, code) => (ex.kind === 'parsons' ? A().parsonsProgram(ex, code) : code);
   function started(ex, code) {
     if (code == null) return false;
+    if (ex.kind === 'parsons') return !!programOf(ex, code);
     if (isMath(ex)) { const a = parseAnswers(code); return !!(a && a.flat().some(v => v != null && String(v).trim() !== '')); }
     return code.trim() !== '' && code.trim() !== String(ex.starter || '').trim();
   }
@@ -85,6 +88,7 @@
     return String(text).split(/\n\s*\n/).map(p => el('p', {}, ...p.split('\n').flatMap((line, i) => i ? [el('br'), line] : [line])));
   }
   function mathAnswers(ex, code) {
+    if (ex.kind === 'trace' && window.MATHGRADE) ex = Object.assign({}, window.MATHGRADE.traceTable(ex), { title: ex.title });   // shown as its table
     const a = parseAnswers(code);
     const blank = (v) => (v == null || String(v).trim() === '') ? el('span', { class: 'pf-empty' }, 'no answer') : el('code', {}, String(v));
     if (!a) return el('p', { class: 'pf-empty' }, 'No answer saved.');
@@ -112,7 +116,8 @@
       el('h4', {}, ex.title),
       el('span', { class: 'pf-status' }, item.done ? ['Completed', fmtDate(item.done) ? ' ' + fmtDate(item.done) : ''] : 'Not finished yet')));
     if (P.tasks) box.append(el('div', { class: 'prose pf-task', html: ex.prompt }));
-    box.append(isMath(ex) ? mathAnswers(ex, item.code) : (item.code ? codeBlock(item.code, ex.lang) : el('p', { class: 'pf-empty' }, 'The program was not saved on this device.')));
+    const program = programOf(ex, item.code);
+    box.append(isMath(ex) ? mathAnswers(ex, item.code) : (program ? codeBlock(program, ex.lang) : el('p', { class: 'pf-empty' }, 'The program was not saved on this device.')));
     box.append(el('div', { class: 'pf-check', hidden: '' }));
     return box;
   }
@@ -169,7 +174,7 @@
     for (const it of items) {
       n++; status.textContent = 'Checking ' + n + ' of ' + items.length + '…';
       const { ex } = INDEX[it.id]; let r;
-      try { r = isMath(ex) ? window.MATHGRADE.grade(ex, answersFor(ex, it.code)) : await A().grade(ex, it.code || '', ex.runtime === 'full' ? status.parentElement || doc : undefined); }
+      try { r = isMath(ex) ? window.MATHGRADE.grade(ex, answersFor(ex, it.code)) : ex.kind === 'parsons' ? await A().parsonsGrade(ex, programOf(ex, it.code) || '') : await A().grade(ex, it.code || '', ex.runtime === 'full' ? status.parentElement || doc : undefined); }
       catch (e) { r = { passed: false, error: String(e && e.message || e), results: [] }; }
       const box = [...doc.querySelectorAll('.pf-item')].find(b => b.id === 'pf-' + it.id), slot = box && box.querySelector('.pf-check');
       if (it.done) { if (r.passed) pass++; else claimedBad.push(it); }

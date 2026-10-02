@@ -47,6 +47,7 @@ add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is w
     src/portfolio.js       the student portfolio (#/portfolio)
     src/classroom.js       classroom (projector) mode
     src/review.js          spaced review (#/today) and the skills map
+    src/parsons.js         Parsons problems: blocks, order and program (shared with test_course.js)
     src/tour.js            the guided tour behind the Tour button in the top bar
     src/guide.js           the guide for teachers (#/guide; also built to dist/teacher-guide.html)
     src/about.js           About and credits (#/about)

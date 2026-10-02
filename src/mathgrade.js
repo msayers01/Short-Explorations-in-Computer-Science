@@ -9,6 +9,11 @@
 //                   answers = array of selected option indexes
 //   kind: 'table'   head: [...], rows: [[ 'given', { a: 'F' | ['F','0'], why?: {match: msg} }, ... ]]
 //                   answers = one string per blank cell, in reading order
+//   kind: 'trace'   code: 'program text', lang?, vars: ['i', 'total'],
+//                   steps: [{ line: 3, values: { i: '0', total: ['0'] }, show?: true | ['i'], why?: { total: { '1': msg } } }]
+//                   A trace table: one row per time execution passes a watched line, the values of vars just after it ('-' for
+//                   a variable that does not exist yet). Graded as the table traceTable(ex) builds; test_course.js runs the program
+//                   with a capture after each watched line and checks that the steps are what really happens.
 (function () {
   const norm = s => String(s == null ? '' : s).trim().toLowerCase()
     .replace(/[\u2212\u2013\u2014]/g, '-').replace(/\u00d7/g, '*').replace(/\u00b7/g, '*')
@@ -32,11 +37,22 @@
   const list = x => (Array.isArray(x) ? x : [x]);
   const matches = (got, want, re) => list(want).some(w => same(got, w)) || (re instanceof RegExp && re.test(String(got == null ? '' : got).trim()));
 
+  // a trace as a table: Step, After line, then one column per variable; shown cells are given, the rest are blanks
+  function traceTable(ex) {
+    return { kind: 'table', head: ['Step', 'After line'].concat(ex.vars),
+      rows: ex.steps.map((s, k) => [String(k + 1), String(s.line)].concat(ex.vars.map((v) => {
+        const want = list(s.values[v]).map(String);
+        const shown = s.show === true || (Array.isArray(s.show) && s.show.includes(v));
+        return shown ? want[0] : { a: want, name: 'step ' + (k + 1) + ', ' + v, why: s.why && s.why[v], line: s.line };
+      }))) };
+  }
   function blanks(ex) {   // table: flat list of blank cells in reading order
+    if (ex.kind === 'trace') ex = traceTable(ex);
     const out = []; for (const row of ex.rows) for (const c of row) if (c && typeof c === 'object') out.push(c); return out;
   }
 
   function grade(ex, answers) {
+    if (ex.kind === 'trace') return grade(traceTable(ex), answers);
     answers = answers || [];
     const results = [];
     if (ex.kind === 'answer') {
@@ -81,16 +97,16 @@
   function reference(ex) {
     if (ex.kind === 'answer') return ex.parts.map(p => list(p.answer)[0]);
     if (ex.kind === 'choice') return ex.options.map((o, i) => o.ok ? i : -1).filter(i => i >= 0);
-    if (ex.kind === 'table') return blanks(ex).map(c => list(c.a)[0]);
+    if (ex.kind === 'table' || ex.kind === 'trace') return blanks(ex).map(c => list(c.a)[0]);
     return [];
   }
   function empty(ex) {
     if (ex.kind === 'choice') return [];
     if (ex.kind === 'answer') return ex.parts.map(() => '');
-    if (ex.kind === 'table') return blanks(ex).map(() => '');
+    if (ex.kind === 'table' || ex.kind === 'trace') return blanks(ex).map(() => '');
     return [];
   }
-  const api = { grade, reference, empty, blanks, isMath: ex => ['answer', 'choice', 'table'].includes(ex.kind) };
+  const api = { grade, reference, empty, blanks, traceTable, isMath: ex => ['answer', 'choice', 'table', 'trace'].includes(ex.kind) };
   if (typeof window !== 'undefined') window.MATHGRADE = api;
   if (typeof module !== 'undefined') module.exports = api;
 })();

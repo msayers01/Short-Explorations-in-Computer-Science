@@ -536,6 +536,24 @@ public class Main {
         { aside: `<p><b>Common mistakes in this lesson.</b> Off-by-one: <code>i &lt;= n</code> runs one pass more than <code>i &lt; n</code>; say the first and last values aloud. A <code>while</code> whose body never changes the variables in its condition, or changes them past the stopping point: prefer <code>&lt;</code> to <code>!=</code>. Forgetting to set an accumulator to 0 before the loop (Java will refuse to use an unset variable: <em>variable total might not have been initialized</em>). Using a <code>for</code> loop's variable after the loop: it no longer exists. A semicolon straight after the loop header, <code>for (…);</code> or <code>while (…);</code>, which gives the loop an empty body. Putting the <code>println</code> that ends a row inside the inner loop. <code>charAt(s.length())</code>: the last character is at <code>length() - 1</code>. A product or total in an <code>int</code> that quietly wraps around.</p>` },
         {
           ex: {
+            id: 'jv-3-3', kind: 'trace', title: 'Trace the loop',
+            prompt: `<p>Read the loop before you write one. Fill in the table: each row is the moment just after the line it names has run, with the values of <code>i</code> and <code>total</code> then. The first row is done for you. After the loop, <code>i</code> no longer exists: write <code>-</code> for it.</p>`,
+            code: `public class Main {\n    public static void main(String[] args) {\n        int total = 0;\n        for (int i = 1; i <= 4; i++) {\n            total = total + i * i;\n        }\n        System.out.println(total);\n    }\n}`,
+            vars: ['i', 'total'],
+            steps: [
+              { line: 5, values: { i: '1', total: '1' }, show: true },
+              { line: 5, values: { i: '2', total: '5' }, why: { total: { '4': 'total is not reset: it was 1, and 2 * 2 is added to it.' } } },
+              { line: 5, values: { i: '3', total: '14' } },
+              { line: 5, values: { i: '4', total: '30' } },
+              { line: 7, values: { i: '-', total: '30' }, why: { i: { '5': 'i was declared inside the for, so it exists only inside the loop. After it, there is no i at all.', '4': 'i was declared inside the for, so it exists only inside the loop. After it, there is no i at all.' } } }
+            ],
+            hints: ['Line 5 runs once per pass, with i going 1, 2, 3, 4. Each time it adds i * i to what total already holds.', 'The squares are 1, 4, 9 and 16, so total goes 1, 5, 14, 30. A variable declared in the for header lives only inside the loop.'],
+            solution: '<p>i: 1, 2, 3, 4, then no i. total: 1, 5, 14, 30, 30. The program prints <code>30</code>.</p>',
+            followup: 'Change i <= 4 to i < 4 and trace again before running: which row disappears? Then move int i = 1 out of the for header, above the loop, and check what is printed for i after it.'
+          }
+        },
+        {
+          ex: {
             id: 'jv-3-1', title: 'Digit sum',
             prompt: `<p>Read a whole number that is 0 or more and print the sum of its digits in exactly this form: for <code>4729</code> print <code>Digit sum: 22</code>. Do it with arithmetic, not by turning the number into text: <code>n % 10</code> is the last digit, and <code>n / 10</code> is the number with that digit removed. Repeat while <code>n</code> is greater than 0.</p>`,
             starter: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        int n = in.nextInt();\n        int sum = 0;\n        // your code here\n        System.out.println("Digit sum: " + sum);\n    }\n}`,
@@ -962,6 +980,17 @@ public class Main {
 }`, caption: 'Rows first, then columns. Try putting a # at map[0][7], then at map[4][0]. A Minecraft world is stored in much the same way, in chunks of 16 by 16 columns of blocks: an array with a third index for the height.' },
         `<details class="reveal"><summary>Puzzle: what does this print? <code>int[] a = new int[3]; a[a.length - 1] = a.length; a[0] = a[2] - 1; System.out.println(Arrays.toString(a));</code></summary><p><code>[2, 0, 3]</code>. <code>a.length</code> is 3, so <code>a[2]</code> becomes 3; then <code>a[0]</code> becomes <code>3 - 1</code>; <code>a[1]</code> was never set and is still 0. The last slot is always <code>a[a.length - 1]</code>.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> Using <code>a[a.length]</code> for the last slot, or <code>&lt;=</code> in the loop condition. Writing <code>a.length()</code> for an array or <code>s.length</code> for a String. Printing an array with <code>println</code> and getting <code>[I@…</code>. Expecting <code>b = a</code> to copy an array, or <code>a == b</code> to compare contents. Reading a slot of a <code>String[]</code> that was never filled, which is <code>null</code>, and calling a method on it: <code>NullPointerException</code>. Trying to make an array longer: make a new one with <code>Arrays.copyOf</code>. Changing the variable of a for-each loop and expecting the array to change.</p>` },
+        {
+          ex: {
+            id: 'jv-5-3', kind: 'parsons', title: 'Put it in order: the largest value',
+            prompt: `<p>Build the method</p><pre class="code">static int largest(int[] a)</pre><p>that returns the largest value in an array of at least one number. The braces set the indentation for you; you only choose the order. Two of the blocks are wrong: they would work for some arrays and not for others.</p>`,
+            lines: ['static int largest(int[] a) {', '    int best = a[0];', '    for (int i = 1; i < a.length; i++) {', '        if (a[i] > best) {', '            best = a[i];', '        }', '    }', '    return best;', '}'],
+            distractors: ['int best = 0;', 'for (int i = 1; i <= a.length; i++) {'],
+            tests: [{ call: 'largest(new int[] {3, 9, 2})', expect: '9' }, { call: 'largest(new int[] {-5, -2, -8})', expect: '-2' }, { call: 'largest(new int[] {7})', expect: '7' }, { call: 'largest(new int[] {1, 2, 3, 4})', expect: '4' }],
+            hints: ['Start with the best value seen so far. Starting at 0 looks natural, but what if every number is negative?', 'The loop must stop at the last slot, a.length - 1, so its condition uses <, not <=. Inside it, replace best when a[i] is bigger; after it, return best.'],
+            followup: 'Change the method to return the position of the largest value instead of the value itself: keep the index of the best so far, and compare a[i] with a[bestIndex].'
+          }
+        },
         {
           ex: {
             id: 'jv-5-1', title: 'Above average',

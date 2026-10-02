@@ -170,7 +170,9 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   --standard` reports the gaps of every lesson (SC 106 lessons 5-8 are the first to meet it). Quick checks ask Sure / Think so / Guessing
   before marking. **Spaced review** (`src/review.js`, ARCHITECTURE §9i): every quick check answered in a lesson comes back on `#/today`
   after 1, 3, 10, 30, 90 days (key `shortcourses.review.v1`, in backups); the skills map shows each lesson as not started / practising /
-  secure on the course page and `#/today`. `#/review` was already the Lab's teacher route, hence `#/today`. Still to build from the same
-  review, in order: tracing and Parsons exercise kinds; diagnostic feedback (whitespace-visible diffs, hand-written notes for common errors); exit codes and a class table for teachers;
+  secure on the course page and `#/today`. `#/review` was already the Lab's teacher route, hence `#/today`. **Trace and Parsons exercises** (ARCHITECTURE §6): `kind: 'trace'`
+  (graded by mathgrade.js; `test_course.js` runs the program and checks every value) and `kind: 'parsons'` (`src/parsons.js`; with
+  `tests` the built program is run). First uses: py-4-3, py-4-4, jv-3-3, jv-5-3. Still to build from the same
+  review, in order: diagnostic feedback (whitespace-visible diffs, hand-written notes for common errors); exit codes and a class table for teachers;
   a display panel and read-aloud; then SC 109 How Machines Learn.
 - A function-writing exercise in a Full C++ course: use `prelude` for includes, `main` (or `call`) tests, and `name` on each test.

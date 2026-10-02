@@ -191,7 +191,20 @@ Tests: Python `{call, expect}` (repr) or `{stdin, expect}`; Scheme `{call, expec
 `{setup, call, expect}` (checker supplies main) or `{name, main, expect}`; Java also `ex.classes: true` (see §9e).
 
 Math exercise (`kind`): `'answer'` (`parts[{label, answer, re, wrong[{match,msg}], exact}]`; `exact: true` compares as text, for digit strings such as `01`; table blank cells accept `exact` too), `'choice'`
-(`options[{text, ok, why}]`, `multi`), `'table'` (`head`, `rows` with `{a, why}` blank cells); `solution` is HTML.
+(`options[{text, ok, why}]`, `multi`), `'table'` (`head`, `rows` with `{a, why}` blank cells), `'trace'` (`code`, `vars[]`,
+`steps[{line, values: {var: value or [accepted]}, show?: true | [vars], why?: {var: {wrong: msg}}}]`: a trace table, one row per time
+execution passes a watched line, `'-'` for a variable that does not exist; graded as the table `MATHGRADE.traceTable` builds; the program
+is shown with numbered lines and the line a blank asks about is lit; `test_course.js` runs the program with a capture after every watched
+line and fails if a value, a step or a `'-'` is not what really happens); `solution` is HTML.
+
+Parsons problem (`kind: 'parsons'`, `src/parsons.js` shared with `test_course.js`, `app.js: parsonsBlock`): `{ lines[] (the solution,
+indented 4 spaces a level), distractors[]?, tests[]?, indent? (default: Python only), sampleStdin?, hints[], followup }`. Blocks are
+shuffled by the exercise id (never into the solution order); the student adds them by click or Enter and moves, indents and removes them
+with buttons or keys (Alt+↑/↓, ←/→, Delete), never only by dragging. With `tests`, the built program is graded like a code exercise (any
+order that works passes; a distractor in a failing program gets its own message); without, order and indent must equal the solution and
+the lines in place are marked. In brace languages the braces set the indentation, and unbalanced braces are reported before running.
+Saved as `{ p: [[block, indent]] }` until passed, then as the program (`markDone`); the portfolio shows and re-checks the program.
+Hints and followup are plain text, as in code exercises.
 
 **Lesson length.** `lessonMinutes(course, lesson)` (app.js) estimates a lesson's time from its content: reading at
 `course.readingWpm` words a minute (default 130; the mathematics course sets 60), 2.5 minutes per playground, 2 per

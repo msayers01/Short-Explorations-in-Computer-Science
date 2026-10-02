@@ -164,16 +164,35 @@ for (const file of FILES) {
       const ex = b.ex;
       if (!ex) return;
       const exAt = C + ' ' + ex.id;
+      const html = ex.kind && ex.kind !== 'parsons';   // a Parsons problem shows its hints and followup as text, like a code exercise
       // the lesson number in an id is the one it was written under: lessons have moved since, and ids never change
       if (!ex.id || !new RegExp('^' + prefix + '-\\d+-\\d+$').test(ex.id)) err(at, 'exercise id ' + JSON.stringify(ex.id) + ' should look like ' + prefix + '-<lesson>-<n>');
       if (allIds.has(ex.id)) err(exAt, 'id used twice (also in ' + allIds.get(ex.id) + ')'); allIds.set(ex.id, where);
       if (!ex.title) err(exAt, 'no title');
       if (!ex.prompt) err(exAt, 'no prompt'); else checkHtml(exAt + ' prompt', ex.prompt);
       // like hints, a followup is HTML in answer and terminal exercises and plain text in code exercises (app.js renderVerdict)
-      if (ex.followup) { if (ex.kind) checkHtml(exAt + ' followup', ex.followup); else if (/<\/?(code|b|i|em|p|br|pre)\b[^>]*>|&(lt|gt|amp|nbsp);/.test(ex.followup)) err(exAt + ' followup', 'markup in a code exercise followup, which is shown as plain text'); }
+      if (ex.followup) { if (html) checkHtml(exAt + ' followup', ex.followup); else if (/<\/?(code|b|i|em|p|br|pre)\b[^>]*>|&(lt|gt|amp|nbsp);/.test(ex.followup)) err(exAt + ' followup', 'markup in a code exercise followup, which is shown as plain text'); }
       (ex.options || []).forEach((o, oi) => o && o.text && checkHtml(exAt + ' option ' + (oi + 1), o.text));
       // hints are HTML in answer and terminal exercises, plain text in code exercises (app.js), where markup would show as written
-      (ex.hints || []).forEach((h, hi) => { if (ex.kind) checkHtml(exAt + ' hint ' + (hi + 1), h); else if (/<\/?(code|b|i|em|p|br|pre)\b[^>]*>|&(lt|gt|amp|nbsp);/.test(h)) err(exAt + ' hint ' + (hi + 1), 'markup in a code exercise hint, which is shown as plain text: ' + JSON.stringify(h.slice(0, 60))); });
+      (ex.hints || []).forEach((h, hi) => { if (html) checkHtml(exAt + ' hint ' + (hi + 1), h); else if (/<\/?(code|b|i|em|p|br|pre)\b[^>]*>|&(lt|gt|amp|nbsp);/.test(h)) err(exAt + ' hint ' + (hi + 1), 'markup in a code exercise hint, which is shown as plain text: ' + JSON.stringify(h.slice(0, 60))); });
+      if (ex.kind === 'parsons') {   // put the lines in order: the solution's lines, distractors that are not among them, indentation in steps of 4
+        if (!Array.isArray(ex.lines) || ex.lines.length < 3 || ex.lines.some((l) => typeof l !== 'string' || !l.trim())) err(exAt, 'a Parsons problem needs lines: at least three non-empty strings, the solution in order');
+        else {
+          if (ex.lines.some((l) => l.match(/^ */)[0].length % 4)) err(exAt, 'indent the lines of a Parsons problem in steps of four spaces');
+          for (const d of ex.distractors || []) if (ex.lines.some((l) => l.trim() === String(d).trim())) err(exAt, 'distractor ' + JSON.stringify(d) + ' is also a line of the solution');
+          if (new Set(ex.lines.map((l) => l.trim())).size !== ex.lines.length && !ex.tests) err(exAt, 'two solution lines are the same text: give the problem tests, so either order is accepted');
+        }
+        if (!Array.isArray(ex.hints) || !ex.hints.length) warn(exAt, 'no hints');
+      }
+      if (ex.kind === 'trace') {   // a trace table: a program, the variables to follow, and one step per pass over a watched line
+        const n = String(ex.code || '').split('\n').length;
+        if (!ex.code || !Array.isArray(ex.vars) || !ex.vars.length || !Array.isArray(ex.steps) || !ex.steps.length) err(exAt, 'a trace needs code, vars and steps');
+        else ex.steps.forEach((st, k) => {
+          if (!Number.isInteger(st.line) || st.line < 1 || st.line > n) err(exAt, 'step ' + (k + 1) + ': line ' + st.line + ' is not a line of the program');
+          for (const v of ex.vars) if (!st.values || st.values[v] == null) err(exAt, 'step ' + (k + 1) + ' has no value for ' + v);
+        });
+        if (ex.steps && !ex.steps.some((st) => st.show !== true)) err(exAt, 'every step of the trace is shown: leave some blank for the student');
+      }
       if (!ex.kind) {   // a code exercise
         if (ex.solution == null) err(exAt, 'no solution');
         if (ex.starter == null && course.lang !== 'shell') err(exAt, 'no starter');

@@ -343,6 +343,27 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await pp.locator('.guess-result').waitFor({ state: 'visible', timeout: 20000 }).catch(() => { });
   const sum = await pp.locator('.guess-sum').textContent().catch(() => '');
   check('an example with a prediction asks for a guess, then compares it line by line and shows the explanation', capHidden && nudged && /2 of 3 lines/.test(sum) && (await pp.locator('.guess-lines .bad').count()) === 1 && await pp.locator('.play-cap').isVisible(), sum);
+  // the new exercise kinds: a trace table and a Parsons problem in Python lesson 4
+  await goto('#/python/4');
+  const tr = page.locator('#py-4-3');
+  const trInputs = tr.locator('input.ans');
+  const trAnswers = ['7', '0', '0', '10', '7', '1', '3', '17', '2', '3', '17', '2'];
+  check('a trace shows the numbered program and one blank per unknown value', (await tr.locator('.tr-line').count()) === 7 && (await trInputs.count()) === trAnswers.length);
+  await trInputs.nth(4).focus();
+  const lit = await tr.locator('.tr-line.lit').getAttribute('data-line').catch(() => null);
+  for (let i = 0; i < trAnswers.length; i++) await trInputs.nth(i).fill(trAnswers[i]);
+  await tr.locator('button:has-text("Check")').click();
+  check('a trace lights up the line a blank asks about, and passes when filled in right', lit === '3' && (await tr.locator('.verdict.pass').count()) === 1, lit);
+  const ps = page.locator('#py-4-4');
+  await ps.locator('button:has-text("Check")').click();
+  const psEmpty = await ps.locator('.verdict').textContent();
+  const want = [['n = int(input())', 0], ['for i in range(2, n + 1):', 0], ['if i % 2 == 0:', 1], ['print(i)', 2], ['print("done")', 0]];
+  for (const [text] of want) await ps.locator('.ps-pool').getByText(text, { exact: true }).click();
+  for (let i = 0; i < want.length; i++) for (let k = 0; k < want[i][1]; k++) await ps.locator('.ps-prog .ps-line').nth(i).locator('button[aria-label="Indent more"]').click();
+  await ps.locator('button:has-text("Check")').click();
+  await ps.locator('.verdict.pass, .verdict.fail:not(:has-text("Add some blocks"))').waitFor({ timeout: 20000 }).catch(() => { });
+  const psText = await ps.locator('.verdict').textContent();
+  check('a Parsons problem refuses an empty program, then runs the built one against its tests and passes', /Add some blocks/.test(psEmpty) && (await ps.locator('.verdict.pass').count()) === 1 && (await ps.locator('.ps-pool .ps-block').count()) === 2, psText);
   await goto('#/scratch/4');
   check('a Scratch if-else block renders with an else arm', (await page.locator('.sb-c .sb-row:has-text("else")').count()) >= 1);
   const qc = page.locator('.qc').first();

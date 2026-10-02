@@ -1204,3 +1204,36 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .sk-none a { border-left-color: var(--rule); }
 .recap-return { margin: 0.6rem 0 0; color: var(--ink-2); }
 .review-panel .btn { text-decoration: none; }
+
+/* ---------- trace tables (kind: 'trace') ---------- */
+.trace { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1rem; align-items: start; }
+@media (max-width: 760px) { .trace { grid-template-columns: minmax(0, 1fr); } }
+.trace-code { margin: 0; overflow-x: auto; }
+.trace-code code { display: block; }
+.tr-line { display: block; padding: 0 0.4rem; border-left: 3px solid transparent; }
+.tr-line.lit { background: var(--accent-soft); border-left-color: var(--accent); }
+.tr-num { display: inline-block; width: 1.8em; color: var(--ink-3); text-align: right; margin-right: 0.8em; user-select: none; font-variant-numeric: tabular-nums; }
+.trace-table td.tr-at { cursor: pointer; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.trace-table th code { font-size: 0.9em; }
+
+/* ---------- Parsons problems (kind: 'parsons') ---------- */
+.ps-how { color: var(--ink-2); margin: 0.4rem 0 0.6rem; }
+.ps-board { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.8rem; font-family: var(--sans); }
+.ps-col { min-width: 0; }
+.ps-head { margin: 0 0 0.3rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+.ps-pool, .ps-prog { list-style: none; margin: 0; padding: 0.4rem; border: 1px dashed var(--rule); border-radius: 4px; min-height: 3rem; display: grid; gap: 0.3rem; background: var(--paper-2); }
+.ps-pool { display: flex; flex-wrap: wrap; align-content: flex-start; }
+.ps-pool > li { max-width: 100%; }
+.ps-prog { border-style: solid; background: var(--code-bg, var(--paper)); }
+.ps-block { display: block; max-width: 100%; overflow-x: auto; text-align: left; font: inherit; padding: 0.35rem 0.55rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); color: var(--ink); cursor: pointer; }
+.ps-block:hover { border-color: var(--ink-3); }
+.ps-block code, .ps-text { font-family: var(--mono); font-size: 0.85rem; white-space: pre; }
+.ps-line { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.3rem 0.25rem 0.55rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); min-width: 0; }
+.ps-line:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ps-line.in-place { border-color: var(--ok); box-shadow: inset 3px 0 0 var(--ok); }
+.ps-text { flex: 1 1 auto; min-width: 0; overflow-x: auto; }
+.ps-tools { display: flex; gap: 0.15rem; flex: none; }
+.ps-tool { font: inherit; font-size: 0.8rem; line-height: 1; width: 1.7rem; height: 1.7rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper-2); color: var(--ink-2); cursor: pointer; }
+.ps-tool:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-3); }
+.ps-tool:disabled { opacity: 0.35; cursor: default; }
+.ps-empty { color: var(--ink-3); padding: 0.3rem; }

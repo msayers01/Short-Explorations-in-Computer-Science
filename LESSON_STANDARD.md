@@ -18,7 +18,7 @@ once and always knows where they are.
 | 1 | **Story and question** | A short true story that ends on a question the lesson answers. | Curiosity comes from noticing a gap in what you know; a question asked before teaching helps the answer stick (the prequestion effect). |
 | 2 | **Warm-up review** *(not built yet)* | Three items due from earlier lessons, mixed. | Spaced, mixed retrieval is the best-supported way to make learning last. Arrives with the review queue. |
 | 3 | **For each main idea** (two or three per lesson) | See the next table. | |
-| 4 | **Put it in order** *(not built yet)* | A Parsons problem, or a program with blanks. | Same learning as writing code, in less time; the ramp anxious students need. Arrives with the Parsons exercise kind. |
+| 4 | **Trace and put in order** | A trace table (`kind: 'trace'`) on the lesson's main loop or method, and a Parsons problem (`kind: 'parsons'`), before the writing exercises. | Tracing predicts writing; Parsons problems give the same learning as writing code, in less time: the ramp anxious students need. |
 | 5 | **Make** | Two graded exercises on today's ideas. | Practising one idea at a time while it is new. |
 | 6 | **Explain it back** *(not built yet)* | One sentence explaining the student's own passing code, compared with a model answer. | Self-explanation; a third of students who write a working program cannot explain it. |
 | 7 | **Recap** | The rules again in general terms, and the answer to the opening question. | Moving from the examples back to the general rule. |
@@ -76,6 +76,15 @@ for example:
 
 Each `wrong` reason names the belief and corrects it in a sentence. Students rate how sure they are before seeing the result. A confident
 miss and a lucky guess each get their own message, so the reason must teach on its own.
+
+**Trace tables.** Pick the loop or method the lesson is about, 5 to 9 lines, and 4 to 6 steps; show the first row as the example. Watch a
+line inside the loop body, or the loop header (a header line is captured as its body starts). Use `'-'` for a variable that does not exist
+yet or any more, and add `why` messages for the two mistakes you expect (not adding yet; resetting an accumulator). The values must be
+what really happens: `test_course.js` runs the program and fails the build otherwise.
+
+**Parsons problems.** 5 to 9 lines. Give `tests` whenever the program can run, so any order that works is accepted. Add one or two
+distractors that encode a misconception (`range(2, n)` for "up to and including n"; `int best = 0` for the largest of negative numbers),
+and say in the prompt that not every block belongs.
 
 **Exercises.** Two per lesson, on today's ideas only.
 - **Prompt:** literal, with the exact expected output shown.

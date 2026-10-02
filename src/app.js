@@ -593,6 +593,21 @@
       const tb = el('tbody'); let k = 0;
       for (const row of ex.rows) tb.append(el('tr', {}, ...row.map(c => (c && typeof c === 'object') ? el('td', { class: 'blank' }, mkInput(k++, c.placeholder, c.width || '4.5rem')) : el('td', { html: c == null ? '' : String(c) }))));
       t.append(tb); form.append(el('div', { class: 'table-wrap' }, t));
+    } else if (ex.kind === 'trace') {
+      // the program, line by line and numbered, beside a table of steps; the line a blank asks about is lit up while it has focus
+      const lang = ex.lang || (course && course.lang);
+      const lineEls = String(ex.code).split('\n').map((ln, i) => el('span', { class: 'tr-line', 'data-line': String(i + 1) }, el('span', { class: 'tr-num', 'aria-hidden': 'true' }, String(i + 1)), el('span', { class: 'tr-code', html: highlight(ln, lang) || ' ' })));
+      const listing = el('pre', { class: 'code trace-code', 'aria-label': 'The program, with line numbers' }, el('code', {}, lineEls));
+      const light = (n) => lineEls.forEach((x) => x.classList.toggle('lit', x.dataset.line === String(n)));
+      const T = MG.traceTable(ex);
+      const t = el('table', { class: 'fill trace-table' }, el('thead', {}, el('tr', {}, ...T.head.map((h, i) => el('th', {}, i > 1 ? el('code', {}, h) : h)))));
+      const tb = el('tbody'); let k = 0;
+      T.rows.forEach((row, r) => tb.append(el('tr', {}, ...row.map((c, ci) => {
+        if (c && typeof c === 'object') { const inp = mkInput(k++, '', '4rem'); inp.setAttribute('aria-label', 'Step ' + (r + 1) + ', after line ' + c.line + ': ' + T.head[ci]); inp.addEventListener('focus', () => light(c.line)); return el('td', { class: 'blank' }, inp); }
+        return el('td', { class: ci === 1 ? 'tr-at' : '', onclick: ci === 1 ? () => light(c) : null }, c == null ? '' : String(c));
+      }))));
+      t.append(tb);
+      form.append(el('div', { class: 'trace' }, listing, el('div', { class: 'table-wrap' }, t)));
     }
     const readAnswers = () => ex.kind === 'choice' ? inputs[0]() : read();
     const verdict = el('div', { class: 'verdict', hidden: '', role: 'status' });
@@ -671,6 +686,109 @@
     v.append(list);
     const firstBad = r.results.find(x => !x.ok);
     if (firstBad && !firstBad.err && ex.failTip) v.append(el('p', { class: 'v-tip' }, ex.failTip));
+  }
+
+  // ---------- Parsons problems ----------
+  // { kind: 'parsons', lines: [the solution, one string per line, indented with 4 spaces a level], distractors?: [lines that do not
+  //   belong], tests?: as a code exercise, indent?: (default: true in Python, where indentation is part of the program), sampleStdin? }
+  // The student builds the program from shuffled blocks, by clicking or from the keyboard, never only by dragging. With tests, the
+  // program they built is run like a code exercise, so any order that works is accepted; without, the order and indentation must match
+  // the solution. Same learning as writing the code, in less time (Ericson et al. 2017): the ramp between reading code and writing it.
+  const P = () => window.PARSONS;   // the pure parts (src/parsons.js), shared with test_course.js
+  const parsonsIndent = (ex) => P().indent(ex), parsonsBlocks = (ex) => P().blocks(ex), parsonsCode = (ex, blocks, placed) => P().code(ex, blocks, placed);
+  const parsonsSolution = (ex) => P().solution(ex), parsonsProgram = (ex, saved) => P().program(ex, saved);
+  /** Grades a built program (also used by the portfolio to re-check it). */
+  async function parsonsGrade(ex, code) {
+    if (ex.tests && ex.tests.length) return grade(Object.assign({}, ex, { kind: undefined }), code);
+    const ok = P().orderOk(ex, code);
+    return { passed: ok, results: [{ name: 'The order of the lines', ok, got: '', msg: ok ? '' : 'Some lines are not in the right place yet.' }] };
+  }
+  function parsonsBlock(ex, course) {
+    const affirm = (course && Array.isArray(course.affirm) && course.affirm.length) ? course.affirm : null;
+    const B = parsonsBlocks(ex), indent = parsonsIndent(ex);
+    let placed = [];
+    try { const s = JSON.parse(Progress.getCode(ex.id) || 'null'); if (s && Array.isArray(s.p)) placed = s.p.filter((x) => Array.isArray(x) && Number.isInteger(x[0]) && x[0] >= 0 && x[0] < B.blocks.length && Number.isInteger(x[1])).map(([b, n]) => [b, Math.max(0, Math.min(8, n))]).filter((x, i, a) => a.findIndex((y) => y[0] === x[0]) === i); } catch (e) { placed = []; }
+    const box = el('section', { class: 'exercise parsons' + (Progress.isDone(ex.id) ? ' done' : ''), id: ex.id });
+    box.append(el('header', { class: 'ex-head' }, el('h3', {}, el('span', { class: 'ex-label' }, 'Exercise'), ' ', ex.title), el('span', { class: 'ex-check', title: 'Completed' }, checkSVG())),
+      el('div', { class: 'prose', html: ex.prompt }),
+      el('p', { class: 'ps-how small' }, 'Click a block, or press Enter on it, to add it to your program. In your program, use the arrow buttons' + (indent ? ' (or Alt+↑ ↓ to move and ← → to indent)' : ' (or Alt+↑ ↓)') + ', and ✕ to put a block back.' + ((ex.distractors || []).length ? ' Not every block belongs in the program.' : '')));
+    const pool = el('ul', { class: 'ps-pool', 'aria-label': 'Blocks to use' });
+    const prog = el('ol', { class: 'ps-prog', 'aria-label': 'Your program' });
+    const verdict = el('div', { class: 'verdict', hidden: '', role: 'status' });
+    const out = outputPanel();
+    const save = () => { Progress.setCode(ex.id, JSON.stringify({ p: placed })); };
+    let marks = null;   // after a failed check in order mode: which positions are right
+    const code = () => parsonsCode(ex, B.blocks, placed);
+    function draw(focusAt, focusPool) {
+      marks = null;
+      pool.replaceChildren(...B.order.filter((b) => !placed.some((x) => x[0] === b)).map((b) => el('li', {}, el('button', { class: 'ps-block', type: 'button', onclick: () => { placed.push([b, indent ? 0 : B.blocks[b].indent]); save(); draw(null, true); } }, el('code', {}, B.blocks[b].text)))));
+      if (!pool.children.length) pool.append(el('li', { class: 'ps-empty small' }, 'Every block is in your program.'));
+      const shown = code().split('\n');
+      prog.replaceChildren(...placed.map(([b, n], i) => {
+        const move = (d) => { const j = i + d; if (j < 0 || j >= placed.length) return; [placed[i], placed[j]] = [placed[j], placed[i]]; save(); draw(j); };
+        const ind = (d) => { if (!indent) return; placed[i][1] = Math.max(0, Math.min(8, n + d)); save(); draw(i); };
+        const back = () => { placed.splice(i, 1); save(); draw(Math.min(i, placed.length - 1)); };
+        const li = el('li', { class: 'ps-line', tabindex: '0', 'aria-label': 'Line ' + (i + 1) + (indent ? ', indented ' + n : '') + ': ' + B.blocks[b].text, onkeydown: (e) => {
+          if (e.altKey && e.key === 'ArrowUp') { e.preventDefault(); move(-1); } else if (e.altKey && e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+          else if (indent && e.key === 'ArrowLeft') { e.preventDefault(); ind(-1); } else if (indent && e.key === 'ArrowRight') { e.preventDefault(); ind(1); }
+          else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); back(); }
+        } },
+          el('code', { class: 'ps-text' }, shown[i]),
+          el('span', { class: 'ps-tools' },
+            el('button', { type: 'button', class: 'ps-tool', title: 'Move up', 'aria-label': 'Move up', onclick: () => move(-1), disabled: i === 0 ? '' : null }, '↑'),
+            el('button', { type: 'button', class: 'ps-tool', title: 'Move down', 'aria-label': 'Move down', onclick: () => move(1), disabled: i === placed.length - 1 ? '' : null }, '↓'),
+            indent ? el('button', { type: 'button', class: 'ps-tool', title: 'Indent less', 'aria-label': 'Indent less', onclick: () => ind(-1), disabled: n === 0 ? '' : null }, '←') : null,
+            indent ? el('button', { type: 'button', class: 'ps-tool', title: 'Indent more', 'aria-label': 'Indent more', onclick: () => ind(1) }, '→') : null,
+            el('button', { type: 'button', class: 'ps-tool', title: 'Put back', 'aria-label': 'Put back', onclick: back }, '✕')));
+        return li;
+      }));
+      if (!placed.length) prog.append(el('li', { class: 'ps-empty small' }, 'Your program is empty: add blocks from the list.'));
+      if (focusAt != null && prog.children[focusAt] && prog.children[focusAt].focus) prog.children[focusAt].focus();
+      else if (focusPool) { const f = pool.querySelector('button'); if (f) f.focus(); }
+    }
+    let attempts = 0;
+    const checkBtn = el('button', { class: 'btn primary', onclick: async () => {
+      if (!placed.length) { verdict.hidden = false; verdict.className = 'verdict fail'; verdict.replaceChildren(el('p', { class: 'v-title' }, 'Add some blocks to your program first.')); return; }
+      if (!indent) {   // braces that do not pair up give compiler errors about other things: say what is really wrong
+        const t = code(), open = (t.match(/\{/g) || []).length, close = (t.match(/\}/g) || []).length;
+        if (open !== close) { attempts++; verdict.hidden = false; verdict.className = 'verdict fail'; verdict.replaceChildren(el('p', { class: 'v-title' }, 'Not yet: every { needs a matching }.'), el('p', {}, 'Your program has ' + open + ' { and ' + close + ' }. Every block that opens with { closes with } further down.')); return; }
+      }
+      checkBtn.disabled = true; attempts++; out.hide(); verdict.hidden = false; verdict.className = 'verdict'; verdict.replaceChildren(el('p', { class: 'v-title' }, 'Checking…'));
+      try {
+        const program = code(), r = await parsonsGrade(ex, program);
+        verdict.replaceChildren();
+        if (ex.tests && ex.tests.length) renderVerdict(verdict, r, ex, attempts, affirm); else renderMathVerdict(verdict, r, ex, attempts, affirm);
+        if (r.passed) { box.classList.add('done'); Progress.markDone(ex.id, program); document.dispatchEvent(new CustomEvent('progress-changed')); }
+        else {
+          if (placed.some(([b]) => !B.blocks[b].real)) verdict.prepend(el('p', { class: 'v-tip' }, 'One of the blocks in your program does not belong in it. Some blocks are there to look right and be wrong.'));
+          if (!(ex.tests && ex.tests.length)) {   // order mode: show which lines are already in their place
+            const want = parsonsSolution(ex).split('\n'), have = program.split('\n');
+            [...prog.children].forEach((li, i) => li.classList.toggle('in-place', have[i] === want[i]));
+            const k = have.filter((l, i) => l === want[i]).length;
+            verdict.append(el('p', { class: 'v-tip' }, k + ' of ' + want.length + ' lines are in the right place (marked). ' + (have.length < want.length ? 'Some blocks are still missing.' : '')));
+          }
+        }
+      } catch (e) { verdict.className = 'verdict fail'; verdict.append(el('p', { class: 'v-title' }, 'The checker failed unexpectedly: ' + (e && e.message || e))); }
+      checkBtn.disabled = false;
+    } }, lbl('check'));
+    const runBtn = ex.tests && ex.tests.length ? el('button', { class: 'btn', onclick: () => runCell(ex.lang, code(), out, { stdin: ex.sampleStdin, runtime: ex.runtime }) }, 'Run') : null;
+    const resetBtn = el('button', { class: 'btn quiet', onclick: () => armConfirm(resetBtn, 'Start again?', () => { resetBtn.classList.remove('armed'); placed = []; save(); verdict.hidden = true; out.hide(); draw(); }) }, 'Start again');
+    let hintIdx = 0;
+    const hintBox = el('div', { class: 'hints' });
+    const hintBtn = el('button', { class: 'btn quiet', onclick: () => {
+      if (hintIdx < ex.hints.length) { hintBox.appendChild(el('p', { class: 'hint' }, el('b', {}, 'Hint ' + (hintIdx + 1) + '. '), ex.hints[hintIdx])); hintIdx++; }
+      hintBtn.textContent = hintIdx < ex.hints.length ? 'Hint (' + (ex.hints.length - hintIdx) + ' left)' : 'No more hints'; hintBtn.disabled = hintIdx >= ex.hints.length;
+    } }, ex.hints && ex.hints.length ? 'Hint (' + ex.hints.length + ')' : 'No hints');
+    if (!ex.hints || !ex.hints.length) hintBtn.disabled = true;
+    const solBox = el('div', { class: 'solution', hidden: '' });
+    const solBtn = el('button', { class: 'btn quiet', onclick: () => {
+      const show = () => { solBtn.classList.remove('armed'); solBox.hidden = !solBox.hidden; if (!solBox.hidden && !solBox.childNodes.length) solBox.append(el('p', {}, el('b', {}, 'Solution. '), 'Compare it with yours line by line.'), el('pre', { class: 'code' }, el('code', { html: highlight(parsonsSolution(ex), ex.lang) }))); };
+      if (attempts < 2 && solBox.hidden) armConfirm(solBtn, 'Show before trying twice?', show); else show();
+    } }, 'Solution');
+    box.append(el('div', { class: 'ps-board' }, el('div', { class: 'ps-col' }, el('p', { class: 'ps-head' }, 'Blocks'), pool), el('div', { class: 'ps-col' }, el('p', { class: 'ps-head' }, 'Your program'), prog)),
+      el('div', { class: 'toolbar' }, checkBtn, runBtn, resetBtn, el('span', { class: 'spacer' }), hintBtn, solBtn), out.el, verdict, hintBox, solBox);
+    draw();
+    return box;
   }
 
   // ---------- playground block ----------
@@ -826,7 +944,7 @@
       else if (b.play) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, predict: b.predict, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount }), 'blk-play')); }
       else if (b.ex) {
         b.ex.lang = b.ex.lang || course.lang; b.ex.runtime = b.ex.runtime || course.runtime; exCount++;
-        const node = window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex, course) : b.ex.kind === 'shell' && window.TERMINAL ? window.TERMINAL.exerciseBlock(b.ex, course, lessonIdx) : exerciseBlock(b.ex, course, lessonIdx);
+        const node = window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex, course) : b.ex.kind === 'parsons' ? parsonsBlock(b.ex, course) : b.ex.kind === 'shell' && window.TERMINAL ? window.TERMINAL.exerciseBlock(b.ex, course, lessonIdx) : exerciseBlock(b.ex, course, lessonIdx);
         const wrap = tagged('Exercise ' + exCount, node, 'blk-ex');
         if (firstEx) { firstEx = false; wrap.id = 'part-exercises'; part('part-exercises', 'Exercises', 'exercises'); }
         frag.append(wrap);
@@ -906,7 +1024,7 @@
       else if (b.photo) { w += words(b.caption); t += 0.3; }
       else if (b.aside) w += words(b.aside);
       else if (b.check) { w += words(b.check) + words((b.options || []).join(' ')); t += 0.5; }
-      else if (b.ex) { w += words(b.ex.title) + words(b.ex.prompt); t += b.ex.kind ? 12 : 10; }
+      else if (b.ex) { w += words(b.ex.title) + words(b.ex.prompt); t += b.ex.kind === 'parsons' ? 5 : b.ex.kind === 'trace' ? 6 : b.ex.kind ? 12 : 10; }
     }
     return Math.round(w / (course.readingWpm || 130) + t);
   }
@@ -1128,5 +1246,5 @@
   window.addEventListener('hashchange', route);
   document.addEventListener('progress-changed', () => { /* sidebars re-render on next navigation */ });
   document.addEventListener('DOMContentLoaded', route);
-  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { checkBlock, langIcon, lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, checkSVG, lbl } };
+  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { checkBlock, parsonsGrade, parsonsSolution, parsonsProgram, langIcon, lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, checkSVG, lbl } };
 })();

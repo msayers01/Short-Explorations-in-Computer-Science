@@ -61,6 +61,7 @@ const scripts = [
   'src/cppfull.js',
   'src/javautil.js',
   'src/runner.js',
+  'src/parsons.js',    // Parsons problems: blocks, order, program (also loaded by node: test_course.js)
   'src/app.js',
   'src/tour.js',       // the guided tour (the Tour button in the top bar)
   'src/shell.js',      // the practice shell and its file system (also loaded by node: test_shell.js)

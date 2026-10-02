@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Aut+He3DoDXhKvmsNNfisNoXm6qtYR0UnmsZ4kTyj7g=' 'sha256-6h9pLehQW3AkQDUxJJ2mS8KTggmXWqRMS6cVDo5sR68=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Aut+He3DoDXhKvmsNNfisNoXm6qtYR0UnmsZ4kTyj7g=' 'sha256-srmKjE3rTUgcQZsSkzKYC6vXAebHGu84Ath/kFK3Bps=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -1221,6 +1221,39 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .sk-none a { border-left-color: var(--rule); }
 .recap-return { margin: 0.6rem 0 0; color: var(--ink-2); }
 .review-panel .btn { text-decoration: none; }
+
+/* ---------- trace tables (kind: 'trace') ---------- */
+.trace { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1rem; align-items: start; }
+@media (max-width: 760px) { .trace { grid-template-columns: minmax(0, 1fr); } }
+.trace-code { margin: 0; overflow-x: auto; }
+.trace-code code { display: block; }
+.tr-line { display: block; padding: 0 0.4rem; border-left: 3px solid transparent; }
+.tr-line.lit { background: var(--accent-soft); border-left-color: var(--accent); }
+.tr-num { display: inline-block; width: 1.8em; color: var(--ink-3); text-align: right; margin-right: 0.8em; user-select: none; font-variant-numeric: tabular-nums; }
+.trace-table td.tr-at { cursor: pointer; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.trace-table th code { font-size: 0.9em; }
+
+/* ---------- Parsons problems (kind: 'parsons') ---------- */
+.ps-how { color: var(--ink-2); margin: 0.4rem 0 0.6rem; }
+.ps-board { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.8rem; font-family: var(--sans); }
+.ps-col { min-width: 0; }
+.ps-head { margin: 0 0 0.3rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+.ps-pool, .ps-prog { list-style: none; margin: 0; padding: 0.4rem; border: 1px dashed var(--rule); border-radius: 4px; min-height: 3rem; display: grid; gap: 0.3rem; background: var(--paper-2); }
+.ps-pool { display: flex; flex-wrap: wrap; align-content: flex-start; }
+.ps-pool > li { max-width: 100%; }
+.ps-prog { border-style: solid; background: var(--code-bg, var(--paper)); }
+.ps-block { display: block; max-width: 100%; overflow-x: auto; text-align: left; font: inherit; padding: 0.35rem 0.55rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); color: var(--ink); cursor: pointer; }
+.ps-block:hover { border-color: var(--ink-3); }
+.ps-block code, .ps-text { font-family: var(--mono); font-size: 0.85rem; white-space: pre; }
+.ps-line { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.3rem 0.25rem 0.55rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); min-width: 0; }
+.ps-line:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ps-line.in-place { border-color: var(--ok); box-shadow: inset 3px 0 0 var(--ok); }
+.ps-text { flex: 1 1 auto; min-width: 0; overflow-x: auto; }
+.ps-tools { display: flex; gap: 0.15rem; flex: none; }
+.ps-tool { font: inherit; font-size: 0.8rem; line-height: 1; width: 1.7rem; height: 1.7rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper-2); color: var(--ink-2); cursor: pointer; }
+.ps-tool:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-3); }
+.ps-tool:disabled { opacity: 0.35; cursor: default; }
+.ps-empty { color: var(--ink-3); padding: 0.3rem; }
 
 </style>
 </head>
@@ -4420,6 +4453,36 @@ print(digits)`, testStdin: '1234\n', caption: 'For 1234: the even numbers below 
         `<p>In the second part, <code>n // 10</code> drops the last digit (Lesson 1) and <code>n % 10</code> would give that digit. Notice that the loop changes <code>n</code> on every pass, towards 0: that is what makes it stop.</p>`,
         `<details class="reveal"><summary>Puzzle: what was Gauss's pattern? Write a loop that adds 1 to 100 and check his answer.</summary><p>Pair the numbers from the outside in: 1 + 100, 2 + 99, 3 + 98, and so on. Every pair adds to 101, and there are 50 pairs, so the total is 50 × 101 = 5050. The loop is <code>total = 0</code>, then <code>for i in range(1, 101): total += i</code>, and it agrees. In general the sum from 1 to <i>n</i> is <i>n</i>(<i>n</i> + 1)/2: one step instead of <i>n</i>. A loop always works; a formula, when you can find one, is faster.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> Off-by-one errors: <code>range(1, 10)</code> stops at 9, so "the numbers up to 10" is <code>range(1, 11)</code>. Starting an accumulator at the wrong value, such as 0 for a product. Indenting the final <code>print</code> so it runs on every pass instead of once at the end. A <code>while</code> loop whose block never changes the variable in its condition, or steps past the stopping point. Testing with <code>!=</code> when <code>&lt;</code> would be safer. Forgetting the colon at the end of a <code>for</code> or <code>while</code> line.</p>` },
+        {
+          ex: {
+            id: 'py-4-3', kind: 'trace', title: 'Trace the loop',
+            prompt: `<p>Before writing loops, read one. Work through this program by hand and fill in the table: each row is a moment just after the line it names has run, and the cells are the values of the variables then. The first row is done for you. Line 3 is reached once at the start of every pass through the loop.</p>`,
+            code: `total = 0\ncount = 0\nfor n in [4, 7, 10, 3]:\n    if n > 5:\n        total = total + n\n        count = count + 1\nprint(total, count)`,
+            vars: ['n', 'total', 'count'],
+            steps: [
+              { line: 3, values: { n: '4', total: '0', count: '0' }, show: true },
+              { line: 3, values: { n: '7', total: '0', count: '0' }, why: { total: { '4': '4 is not more than 5, so the if skipped lines 5 and 6: total is still 0.' } } },
+              { line: 3, values: { n: '10', total: '7', count: '1' }, why: { total: { '17': 'This row is the start of the pass for 10: line 3 has run, but line 5 has not added 10 yet.' } } },
+              { line: 3, values: { n: '3', total: '17', count: '2' } },
+              { line: 7, values: { n: '3', total: '17', count: '2' }, why: { n: { '-': 'After a for loop the loop variable keeps its last value: n is still 3.' } } }
+            ],
+            hints: ['Go pass by pass. At line 3, n takes the next value from the list; then the if decides whether lines 5 and 6 run.', 'Only 7 and 10 are more than 5, so total goes 0, 0, 7, 17 at the starts of the passes, and count 0, 0, 1, 2. After the loop, n keeps its last value.'],
+            solution: '<p>n: 4, 7, 10, 3, 3. total: 0, 0, 7, 17, 17. count: 0, 0, 1, 2, 2. The program prints <code>17 2</code>.</p>',
+            followup: 'Change the list to [6, 6, 6] and trace it again before running it. Tracing by hand is how programmers check a loop they are not sure of: it is slow, and it finds the mistake.'
+          }
+        },
+        {
+          ex: {
+            id: 'py-4-4', kind: 'parsons', title: 'Put it in order: even numbers',
+            prompt: `<p>Build a program that reads a whole number <code>n</code> and prints the even numbers from 2 up to and including <code>n</code>, one per line, and then the word <code>done</code>. For 6 it prints 2, 4, 6 and done. In Python the indentation is part of the program, so put each line at the right depth.</p>`,
+            lines: ['n = int(input())', 'for i in range(2, n + 1):', '    if i % 2 == 0:', '        print(i)', 'print("done")'],
+            distractors: ['for i in range(2, n):', 'if i % 2 == 1:'],
+            tests: [{ stdin: '6', expect: '2\n4\n6\ndone' }, { stdin: '3', expect: '2\ndone' }, { stdin: '2', expect: '2\ndone' }, { stdin: '9', expect: '2\n4\n6\n8\ndone' }],
+            sampleStdin: '6',
+            hints: ['"Up to and including n" needs the range to stop at n + 1, because range never includes its end.', 'The if belongs inside the loop, and the print(i) inside the if. "done" is printed once, after the loop, so it is not indented at all.'],
+            followup: 'Now write the same program from memory in the Code Lab, with a while loop instead of for. Then make it count by 2 from the start, with no if at all: range has a third argument, the step.'
+          }
+        },
         {
           ex: {
             id: 'py-4-1', title: 'Sum of multiples',
@@ -12648,6 +12711,24 @@ public class Main {
         { aside: `<p><b>Common mistakes in this lesson.</b> Off-by-one: <code>i &lt;= n</code> runs one pass more than <code>i &lt; n</code>; say the first and last values aloud. A <code>while</code> whose body never changes the variables in its condition, or changes them past the stopping point: prefer <code>&lt;</code> to <code>!=</code>. Forgetting to set an accumulator to 0 before the loop (Java will refuse to use an unset variable: <em>variable total might not have been initialized</em>). Using a <code>for</code> loop's variable after the loop: it no longer exists. A semicolon straight after the loop header, <code>for (…);</code> or <code>while (…);</code>, which gives the loop an empty body. Putting the <code>println</code> that ends a row inside the inner loop. <code>charAt(s.length())</code>: the last character is at <code>length() - 1</code>. A product or total in an <code>int</code> that quietly wraps around.</p>` },
         {
           ex: {
+            id: 'jv-3-3', kind: 'trace', title: 'Trace the loop',
+            prompt: `<p>Read the loop before you write one. Fill in the table: each row is the moment just after the line it names has run, with the values of <code>i</code> and <code>total</code> then. The first row is done for you. After the loop, <code>i</code> no longer exists: write <code>-</code> for it.</p>`,
+            code: `public class Main {\n    public static void main(String[] args) {\n        int total = 0;\n        for (int i = 1; i <= 4; i++) {\n            total = total + i * i;\n        }\n        System.out.println(total);\n    }\n}`,
+            vars: ['i', 'total'],
+            steps: [
+              { line: 5, values: { i: '1', total: '1' }, show: true },
+              { line: 5, values: { i: '2', total: '5' }, why: { total: { '4': 'total is not reset: it was 1, and 2 * 2 is added to it.' } } },
+              { line: 5, values: { i: '3', total: '14' } },
+              { line: 5, values: { i: '4', total: '30' } },
+              { line: 7, values: { i: '-', total: '30' }, why: { i: { '5': 'i was declared inside the for, so it exists only inside the loop. After it, there is no i at all.', '4': 'i was declared inside the for, so it exists only inside the loop. After it, there is no i at all.' } } }
+            ],
+            hints: ['Line 5 runs once per pass, with i going 1, 2, 3, 4. Each time it adds i * i to what total already holds.', 'The squares are 1, 4, 9 and 16, so total goes 1, 5, 14, 30. A variable declared in the for header lives only inside the loop.'],
+            solution: '<p>i: 1, 2, 3, 4, then no i. total: 1, 5, 14, 30, 30. The program prints <code>30</code>.</p>',
+            followup: 'Change i <= 4 to i < 4 and trace again before running: which row disappears? Then move int i = 1 out of the for header, above the loop, and check what is printed for i after it.'
+          }
+        },
+        {
+          ex: {
             id: 'jv-3-1', title: 'Digit sum',
             prompt: `<p>Read a whole number that is 0 or more and print the sum of its digits in exactly this form: for <code>4729</code> print <code>Digit sum: 22</code>. Do it with arithmetic, not by turning the number into text: <code>n % 10</code> is the last digit, and <code>n / 10</code> is the number with that digit removed. Repeat while <code>n</code> is greater than 0.</p>`,
             starter: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        int n = in.nextInt();\n        int sum = 0;\n        // your code here\n        System.out.println("Digit sum: " + sum);\n    }\n}`,
@@ -13074,6 +13155,17 @@ public class Main {
 }`, caption: 'Rows first, then columns. Try putting a # at map[0][7], then at map[4][0]. A Minecraft world is stored in much the same way, in chunks of 16 by 16 columns of blocks: an array with a third index for the height.' },
         `<details class="reveal"><summary>Puzzle: what does this print? <code>int[] a = new int[3]; a[a.length - 1] = a.length; a[0] = a[2] - 1; System.out.println(Arrays.toString(a));</code></summary><p><code>[2, 0, 3]</code>. <code>a.length</code> is 3, so <code>a[2]</code> becomes 3; then <code>a[0]</code> becomes <code>3 - 1</code>; <code>a[1]</code> was never set and is still 0. The last slot is always <code>a[a.length - 1]</code>.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> Using <code>a[a.length]</code> for the last slot, or <code>&lt;=</code> in the loop condition. Writing <code>a.length()</code> for an array or <code>s.length</code> for a String. Printing an array with <code>println</code> and getting <code>[I@…</code>. Expecting <code>b = a</code> to copy an array, or <code>a == b</code> to compare contents. Reading a slot of a <code>String[]</code> that was never filled, which is <code>null</code>, and calling a method on it: <code>NullPointerException</code>. Trying to make an array longer: make a new one with <code>Arrays.copyOf</code>. Changing the variable of a for-each loop and expecting the array to change.</p>` },
+        {
+          ex: {
+            id: 'jv-5-3', kind: 'parsons', title: 'Put it in order: the largest value',
+            prompt: `<p>Build the method</p><pre class="code">static int largest(int[] a)</pre><p>that returns the largest value in an array of at least one number. The braces set the indentation for you; you only choose the order. Two of the blocks are wrong: they would work for some arrays and not for others.</p>`,
+            lines: ['static int largest(int[] a) {', '    int best = a[0];', '    for (int i = 1; i < a.length; i++) {', '        if (a[i] > best) {', '            best = a[i];', '        }', '    }', '    return best;', '}'],
+            distractors: ['int best = 0;', 'for (int i = 1; i <= a.length; i++) {'],
+            tests: [{ call: 'largest(new int[] {3, 9, 2})', expect: '9' }, { call: 'largest(new int[] {-5, -2, -8})', expect: '-2' }, { call: 'largest(new int[] {7})', expect: '7' }, { call: 'largest(new int[] {1, 2, 3, 4})', expect: '4' }],
+            hints: ['Start with the best value seen so far. Starting at 0 looks natural, but what if every number is negative?', 'The loop must stop at the last slot, a.length - 1, so its condition uses <, not <=. Inside it, replace best when a[i] is bigger; after it, return best.'],
+            followup: 'Change the method to return the position of the largest value instead of the value itself: keep the index of the best so far, and compare a[i] with a[bestIndex].'
+          }
+        },
         {
           ex: {
             id: 'jv-5-1', title: 'Above average',
@@ -15835,6 +15927,11 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
 //                   answers = array of selected option indexes
 //   kind: 'table'   head: [...], rows: [[ 'given', { a: 'F' | ['F','0'], why?: {match: msg} }, ... ]]
 //                   answers = one string per blank cell, in reading order
+//   kind: 'trace'   code: 'program text', lang?, vars: ['i', 'total'],
+//                   steps: [{ line: 3, values: { i: '0', total: ['0'] }, show?: true | ['i'], why?: { total: { '1': msg } } }]
+//                   A trace table: one row per time execution passes a watched line, the values of vars just after it ('-' for
+//                   a variable that does not exist yet). Graded as the table traceTable(ex) builds; test_course.js runs the program
+//                   with a capture after each watched line and checks that the steps are what really happens.
 (function () {
   const norm = s => String(s == null ? '' : s).trim().toLowerCase()
     .replace(/[\u2212\u2013\u2014]/g, '-').replace(/\u00d7/g, '*').replace(/\u00b7/g, '*')
@@ -15858,11 +15955,22 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
   const list = x => (Array.isArray(x) ? x : [x]);
   const matches = (got, want, re) => list(want).some(w => same(got, w)) || (re instanceof RegExp && re.test(String(got == null ? '' : got).trim()));
 
+  // a trace as a table: Step, After line, then one column per variable; shown cells are given, the rest are blanks
+  function traceTable(ex) {
+    return { kind: 'table', head: ['Step', 'After line'].concat(ex.vars),
+      rows: ex.steps.map((s, k) => [String(k + 1), String(s.line)].concat(ex.vars.map((v) => {
+        const want = list(s.values[v]).map(String);
+        const shown = s.show === true || (Array.isArray(s.show) && s.show.includes(v));
+        return shown ? want[0] : { a: want, name: 'step ' + (k + 1) + ', ' + v, why: s.why && s.why[v], line: s.line };
+      }))) };
+  }
   function blanks(ex) {   // table: flat list of blank cells in reading order
+    if (ex.kind === 'trace') ex = traceTable(ex);
     const out = []; for (const row of ex.rows) for (const c of row) if (c && typeof c === 'object') out.push(c); return out;
   }
 
   function grade(ex, answers) {
+    if (ex.kind === 'trace') return grade(traceTable(ex), answers);
     answers = answers || [];
     const results = [];
     if (ex.kind === 'answer') {
@@ -15907,16 +16015,16 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
   function reference(ex) {
     if (ex.kind === 'answer') return ex.parts.map(p => list(p.answer)[0]);
     if (ex.kind === 'choice') return ex.options.map((o, i) => o.ok ? i : -1).filter(i => i >= 0);
-    if (ex.kind === 'table') return blanks(ex).map(c => list(c.a)[0]);
+    if (ex.kind === 'table' || ex.kind === 'trace') return blanks(ex).map(c => list(c.a)[0]);
     return [];
   }
   function empty(ex) {
     if (ex.kind === 'choice') return [];
     if (ex.kind === 'answer') return ex.parts.map(() => '');
-    if (ex.kind === 'table') return blanks(ex).map(() => '');
+    if (ex.kind === 'table' || ex.kind === 'trace') return blanks(ex).map(() => '');
     return [];
   }
-  const api = { grade, reference, empty, blanks, isMath: ex => ['answer', 'choice', 'table'].includes(ex.kind) };
+  const api = { grade, reference, empty, blanks, traceTable, isMath: ex => ['answer', 'choice', 'table', 'trace'].includes(ex.kind) };
   if (typeof window !== 'undefined') window.MATHGRADE = api;
   if (typeof module !== 'undefined') module.exports = api;
 })();
@@ -16227,6 +16335,53 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
     cancel: () => cpp.cancel()
   };
 })();
+
+;
+/* src/parsons.js */
+/* Parsons problems: the parts that need no page, shared by app.js (window.PARSONS) and test_course.js (module.exports).
+   An exercise { kind: 'parsons', id, lang, lines: [the solution, indented with 4 spaces a level], distractors?: [...], indent?, tests? }.
+   Blocks are the solution's lines (trimmed, with their indent level) followed by the distractors; their shuffled order depends only on
+   the exercise id, so it is the same on every visit, and is never the solution order. A placement is [[block index, indent level], ...]. */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.PARSONS = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+  /** Does the student set the indentation? Yes in Python, where it is part of the program; elsewhere braces decide it. */
+  const indent = (ex) => (ex.indent != null ? !!ex.indent : ex.lang === 'python');
+  function blocks(ex) {
+    const all = ex.lines.map((l) => ({ text: l.trim(), indent: Math.floor(l.match(/^ */)[0].length / 4), real: true }))
+      .concat((ex.distractors || []).map((l) => ({ text: l.trim(), indent: 0, real: false })));
+    let h = 2166136261; for (let i = 0; i < ex.id.length; i++) { h ^= ex.id.charCodeAt(i); h = Math.imul(h, 16777619); }
+    const rnd = () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return (h >>> 0) / 4294967296; };
+    const order = all.map((b, i) => i);
+    for (let tries = 0; tries < 5; tries++) {
+      for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+      if (order.some((b, i) => b !== i)) break;   // never hand out the answer in order
+    }
+    return { blocks: all, order };
+  }
+  /** placement → program text. Without student indentation, braces set it. */
+  function code(ex, all, placed) {
+    if (indent(ex)) return placed.map(([b, n]) => '    '.repeat(n) + all[b].text).join('\n');
+    let depth = 0;
+    return placed.map(([b]) => { const t = all[b].text; if (/^[}\])]/.test(t)) depth = Math.max(0, depth - 1); const line = '    '.repeat(depth) + t; if (/[{([]\s*$/.test(t)) depth++; return line; }).join('\n');
+  }
+  const solutionPlacement = (ex) => { const B = blocks(ex); return ex.lines.map((l, i) => [i, B.blocks[i].indent]); };
+  const solution = (ex) => code(ex, blocks(ex).blocks, solutionPlacement(ex));
+  /** what the page saved ({ p: placement } while unfinished, the program once passed) → program text */
+  function program(ex, saved) {
+    if (saved == null) return '';
+    let s = null; try { s = JSON.parse(saved); } catch (e) { return String(saved); }
+    if (!s || typeof s !== 'object' || !Array.isArray(s.p)) return String(saved);
+    const B = blocks(ex);
+    return code(ex, B.blocks, s.p.filter((x) => Array.isArray(x) && Number.isInteger(x[0]) && x[0] >= 0 && x[0] < B.blocks.length).map(([b, n]) => [b, Math.max(0, Math.min(8, n | 0))]));
+  }
+  const tidy = (c) => String(c).replace(/\r/g, '').split('\n').map((l) => l.replace(/\s+$/, '')).filter((l) => l !== '').join('\n');
+  /** without tests: the program must be the solution, line for line and indent for indent */
+  const orderOk = (ex, prog) => tidy(prog) === tidy(solution(ex));
+  return { indent, blocks, code, solution, solutionPlacement, program, orderOk };
+});
 
 ;
 /* src/app.js */
@@ -16825,6 +16980,21 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
       const tb = el('tbody'); let k = 0;
       for (const row of ex.rows) tb.append(el('tr', {}, ...row.map(c => (c && typeof c === 'object') ? el('td', { class: 'blank' }, mkInput(k++, c.placeholder, c.width || '4.5rem')) : el('td', { html: c == null ? '' : String(c) }))));
       t.append(tb); form.append(el('div', { class: 'table-wrap' }, t));
+    } else if (ex.kind === 'trace') {
+      // the program, line by line and numbered, beside a table of steps; the line a blank asks about is lit up while it has focus
+      const lang = ex.lang || (course && course.lang);
+      const lineEls = String(ex.code).split('\n').map((ln, i) => el('span', { class: 'tr-line', 'data-line': String(i + 1) }, el('span', { class: 'tr-num', 'aria-hidden': 'true' }, String(i + 1)), el('span', { class: 'tr-code', html: highlight(ln, lang) || ' ' })));
+      const listing = el('pre', { class: 'code trace-code', 'aria-label': 'The program, with line numbers' }, el('code', {}, lineEls));
+      const light = (n) => lineEls.forEach((x) => x.classList.toggle('lit', x.dataset.line === String(n)));
+      const T = MG.traceTable(ex);
+      const t = el('table', { class: 'fill trace-table' }, el('thead', {}, el('tr', {}, ...T.head.map((h, i) => el('th', {}, i > 1 ? el('code', {}, h) : h)))));
+      const tb = el('tbody'); let k = 0;
+      T.rows.forEach((row, r) => tb.append(el('tr', {}, ...row.map((c, ci) => {
+        if (c && typeof c === 'object') { const inp = mkInput(k++, '', '4rem'); inp.setAttribute('aria-label', 'Step ' + (r + 1) + ', after line ' + c.line + ': ' + T.head[ci]); inp.addEventListener('focus', () => light(c.line)); return el('td', { class: 'blank' }, inp); }
+        return el('td', { class: ci === 1 ? 'tr-at' : '', onclick: ci === 1 ? () => light(c) : null }, c == null ? '' : String(c));
+      }))));
+      t.append(tb);
+      form.append(el('div', { class: 'trace' }, listing, el('div', { class: 'table-wrap' }, t)));
     }
     const readAnswers = () => ex.kind === 'choice' ? inputs[0]() : read();
     const verdict = el('div', { class: 'verdict', hidden: '', role: 'status' });
@@ -16903,6 +17073,109 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
     v.append(list);
     const firstBad = r.results.find(x => !x.ok);
     if (firstBad && !firstBad.err && ex.failTip) v.append(el('p', { class: 'v-tip' }, ex.failTip));
+  }
+
+  // ---------- Parsons problems ----------
+  // { kind: 'parsons', lines: [the solution, one string per line, indented with 4 spaces a level], distractors?: [lines that do not
+  //   belong], tests?: as a code exercise, indent?: (default: true in Python, where indentation is part of the program), sampleStdin? }
+  // The student builds the program from shuffled blocks, by clicking or from the keyboard, never only by dragging. With tests, the
+  // program they built is run like a code exercise, so any order that works is accepted; without, the order and indentation must match
+  // the solution. Same learning as writing the code, in less time (Ericson et al. 2017): the ramp between reading code and writing it.
+  const P = () => window.PARSONS;   // the pure parts (src/parsons.js), shared with test_course.js
+  const parsonsIndent = (ex) => P().indent(ex), parsonsBlocks = (ex) => P().blocks(ex), parsonsCode = (ex, blocks, placed) => P().code(ex, blocks, placed);
+  const parsonsSolution = (ex) => P().solution(ex), parsonsProgram = (ex, saved) => P().program(ex, saved);
+  /** Grades a built program (also used by the portfolio to re-check it). */
+  async function parsonsGrade(ex, code) {
+    if (ex.tests && ex.tests.length) return grade(Object.assign({}, ex, { kind: undefined }), code);
+    const ok = P().orderOk(ex, code);
+    return { passed: ok, results: [{ name: 'The order of the lines', ok, got: '', msg: ok ? '' : 'Some lines are not in the right place yet.' }] };
+  }
+  function parsonsBlock(ex, course) {
+    const affirm = (course && Array.isArray(course.affirm) && course.affirm.length) ? course.affirm : null;
+    const B = parsonsBlocks(ex), indent = parsonsIndent(ex);
+    let placed = [];
+    try { const s = JSON.parse(Progress.getCode(ex.id) || 'null'); if (s && Array.isArray(s.p)) placed = s.p.filter((x) => Array.isArray(x) && Number.isInteger(x[0]) && x[0] >= 0 && x[0] < B.blocks.length && Number.isInteger(x[1])).map(([b, n]) => [b, Math.max(0, Math.min(8, n))]).filter((x, i, a) => a.findIndex((y) => y[0] === x[0]) === i); } catch (e) { placed = []; }
+    const box = el('section', { class: 'exercise parsons' + (Progress.isDone(ex.id) ? ' done' : ''), id: ex.id });
+    box.append(el('header', { class: 'ex-head' }, el('h3', {}, el('span', { class: 'ex-label' }, 'Exercise'), ' ', ex.title), el('span', { class: 'ex-check', title: 'Completed' }, checkSVG())),
+      el('div', { class: 'prose', html: ex.prompt }),
+      el('p', { class: 'ps-how small' }, 'Click a block, or press Enter on it, to add it to your program. In your program, use the arrow buttons' + (indent ? ' (or Alt+↑ ↓ to move and ← → to indent)' : ' (or Alt+↑ ↓)') + ', and ✕ to put a block back.' + ((ex.distractors || []).length ? ' Not every block belongs in the program.' : '')));
+    const pool = el('ul', { class: 'ps-pool', 'aria-label': 'Blocks to use' });
+    const prog = el('ol', { class: 'ps-prog', 'aria-label': 'Your program' });
+    const verdict = el('div', { class: 'verdict', hidden: '', role: 'status' });
+    const out = outputPanel();
+    const save = () => { Progress.setCode(ex.id, JSON.stringify({ p: placed })); };
+    let marks = null;   // after a failed check in order mode: which positions are right
+    const code = () => parsonsCode(ex, B.blocks, placed);
+    function draw(focusAt, focusPool) {
+      marks = null;
+      pool.replaceChildren(...B.order.filter((b) => !placed.some((x) => x[0] === b)).map((b) => el('li', {}, el('button', { class: 'ps-block', type: 'button', onclick: () => { placed.push([b, indent ? 0 : B.blocks[b].indent]); save(); draw(null, true); } }, el('code', {}, B.blocks[b].text)))));
+      if (!pool.children.length) pool.append(el('li', { class: 'ps-empty small' }, 'Every block is in your program.'));
+      const shown = code().split('\n');
+      prog.replaceChildren(...placed.map(([b, n], i) => {
+        const move = (d) => { const j = i + d; if (j < 0 || j >= placed.length) return; [placed[i], placed[j]] = [placed[j], placed[i]]; save(); draw(j); };
+        const ind = (d) => { if (!indent) return; placed[i][1] = Math.max(0, Math.min(8, n + d)); save(); draw(i); };
+        const back = () => { placed.splice(i, 1); save(); draw(Math.min(i, placed.length - 1)); };
+        const li = el('li', { class: 'ps-line', tabindex: '0', 'aria-label': 'Line ' + (i + 1) + (indent ? ', indented ' + n : '') + ': ' + B.blocks[b].text, onkeydown: (e) => {
+          if (e.altKey && e.key === 'ArrowUp') { e.preventDefault(); move(-1); } else if (e.altKey && e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+          else if (indent && e.key === 'ArrowLeft') { e.preventDefault(); ind(-1); } else if (indent && e.key === 'ArrowRight') { e.preventDefault(); ind(1); }
+          else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); back(); }
+        } },
+          el('code', { class: 'ps-text' }, shown[i]),
+          el('span', { class: 'ps-tools' },
+            el('button', { type: 'button', class: 'ps-tool', title: 'Move up', 'aria-label': 'Move up', onclick: () => move(-1), disabled: i === 0 ? '' : null }, '↑'),
+            el('button', { type: 'button', class: 'ps-tool', title: 'Move down', 'aria-label': 'Move down', onclick: () => move(1), disabled: i === placed.length - 1 ? '' : null }, '↓'),
+            indent ? el('button', { type: 'button', class: 'ps-tool', title: 'Indent less', 'aria-label': 'Indent less', onclick: () => ind(-1), disabled: n === 0 ? '' : null }, '←') : null,
+            indent ? el('button', { type: 'button', class: 'ps-tool', title: 'Indent more', 'aria-label': 'Indent more', onclick: () => ind(1) }, '→') : null,
+            el('button', { type: 'button', class: 'ps-tool', title: 'Put back', 'aria-label': 'Put back', onclick: back }, '✕')));
+        return li;
+      }));
+      if (!placed.length) prog.append(el('li', { class: 'ps-empty small' }, 'Your program is empty: add blocks from the list.'));
+      if (focusAt != null && prog.children[focusAt] && prog.children[focusAt].focus) prog.children[focusAt].focus();
+      else if (focusPool) { const f = pool.querySelector('button'); if (f) f.focus(); }
+    }
+    let attempts = 0;
+    const checkBtn = el('button', { class: 'btn primary', onclick: async () => {
+      if (!placed.length) { verdict.hidden = false; verdict.className = 'verdict fail'; verdict.replaceChildren(el('p', { class: 'v-title' }, 'Add some blocks to your program first.')); return; }
+      if (!indent) {   // braces that do not pair up give compiler errors about other things: say what is really wrong
+        const t = code(), open = (t.match(/\{/g) || []).length, close = (t.match(/\}/g) || []).length;
+        if (open !== close) { attempts++; verdict.hidden = false; verdict.className = 'verdict fail'; verdict.replaceChildren(el('p', { class: 'v-title' }, 'Not yet: every { needs a matching }.'), el('p', {}, 'Your program has ' + open + ' { and ' + close + ' }. Every block that opens with { closes with } further down.')); return; }
+      }
+      checkBtn.disabled = true; attempts++; out.hide(); verdict.hidden = false; verdict.className = 'verdict'; verdict.replaceChildren(el('p', { class: 'v-title' }, 'Checking…'));
+      try {
+        const program = code(), r = await parsonsGrade(ex, program);
+        verdict.replaceChildren();
+        if (ex.tests && ex.tests.length) renderVerdict(verdict, r, ex, attempts, affirm); else renderMathVerdict(verdict, r, ex, attempts, affirm);
+        if (r.passed) { box.classList.add('done'); Progress.markDone(ex.id, program); document.dispatchEvent(new CustomEvent('progress-changed')); }
+        else {
+          if (placed.some(([b]) => !B.blocks[b].real)) verdict.prepend(el('p', { class: 'v-tip' }, 'One of the blocks in your program does not belong in it. Some blocks are there to look right and be wrong.'));
+          if (!(ex.tests && ex.tests.length)) {   // order mode: show which lines are already in their place
+            const want = parsonsSolution(ex).split('\n'), have = program.split('\n');
+            [...prog.children].forEach((li, i) => li.classList.toggle('in-place', have[i] === want[i]));
+            const k = have.filter((l, i) => l === want[i]).length;
+            verdict.append(el('p', { class: 'v-tip' }, k + ' of ' + want.length + ' lines are in the right place (marked). ' + (have.length < want.length ? 'Some blocks are still missing.' : '')));
+          }
+        }
+      } catch (e) { verdict.className = 'verdict fail'; verdict.append(el('p', { class: 'v-title' }, 'The checker failed unexpectedly: ' + (e && e.message || e))); }
+      checkBtn.disabled = false;
+    } }, lbl('check'));
+    const runBtn = ex.tests && ex.tests.length ? el('button', { class: 'btn', onclick: () => runCell(ex.lang, code(), out, { stdin: ex.sampleStdin, runtime: ex.runtime }) }, 'Run') : null;
+    const resetBtn = el('button', { class: 'btn quiet', onclick: () => armConfirm(resetBtn, 'Start again?', () => { resetBtn.classList.remove('armed'); placed = []; save(); verdict.hidden = true; out.hide(); draw(); }) }, 'Start again');
+    let hintIdx = 0;
+    const hintBox = el('div', { class: 'hints' });
+    const hintBtn = el('button', { class: 'btn quiet', onclick: () => {
+      if (hintIdx < ex.hints.length) { hintBox.appendChild(el('p', { class: 'hint' }, el('b', {}, 'Hint ' + (hintIdx + 1) + '. '), ex.hints[hintIdx])); hintIdx++; }
+      hintBtn.textContent = hintIdx < ex.hints.length ? 'Hint (' + (ex.hints.length - hintIdx) + ' left)' : 'No more hints'; hintBtn.disabled = hintIdx >= ex.hints.length;
+    } }, ex.hints && ex.hints.length ? 'Hint (' + ex.hints.length + ')' : 'No hints');
+    if (!ex.hints || !ex.hints.length) hintBtn.disabled = true;
+    const solBox = el('div', { class: 'solution', hidden: '' });
+    const solBtn = el('button', { class: 'btn quiet', onclick: () => {
+      const show = () => { solBtn.classList.remove('armed'); solBox.hidden = !solBox.hidden; if (!solBox.hidden && !solBox.childNodes.length) solBox.append(el('p', {}, el('b', {}, 'Solution. '), 'Compare it with yours line by line.'), el('pre', { class: 'code' }, el('code', { html: highlight(parsonsSolution(ex), ex.lang) }))); };
+      if (attempts < 2 && solBox.hidden) armConfirm(solBtn, 'Show before trying twice?', show); else show();
+    } }, 'Solution');
+    box.append(el('div', { class: 'ps-board' }, el('div', { class: 'ps-col' }, el('p', { class: 'ps-head' }, 'Blocks'), pool), el('div', { class: 'ps-col' }, el('p', { class: 'ps-head' }, 'Your program'), prog)),
+      el('div', { class: 'toolbar' }, checkBtn, runBtn, resetBtn, el('span', { class: 'spacer' }), hintBtn, solBtn), out.el, verdict, hintBox, solBox);
+    draw();
+    return box;
   }
 
   // ---------- playground block ----------
@@ -17058,7 +17331,7 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
       else if (b.play) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, predict: b.predict, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount }), 'blk-play')); }
       else if (b.ex) {
         b.ex.lang = b.ex.lang || course.lang; b.ex.runtime = b.ex.runtime || course.runtime; exCount++;
-        const node = window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex, course) : b.ex.kind === 'shell' && window.TERMINAL ? window.TERMINAL.exerciseBlock(b.ex, course, lessonIdx) : exerciseBlock(b.ex, course, lessonIdx);
+        const node = window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex, course) : b.ex.kind === 'parsons' ? parsonsBlock(b.ex, course) : b.ex.kind === 'shell' && window.TERMINAL ? window.TERMINAL.exerciseBlock(b.ex, course, lessonIdx) : exerciseBlock(b.ex, course, lessonIdx);
         const wrap = tagged('Exercise ' + exCount, node, 'blk-ex');
         if (firstEx) { firstEx = false; wrap.id = 'part-exercises'; part('part-exercises', 'Exercises', 'exercises'); }
         frag.append(wrap);
@@ -17138,7 +17411,7 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
       else if (b.photo) { w += words(b.caption); t += 0.3; }
       else if (b.aside) w += words(b.aside);
       else if (b.check) { w += words(b.check) + words((b.options || []).join(' ')); t += 0.5; }
-      else if (b.ex) { w += words(b.ex.title) + words(b.ex.prompt); t += b.ex.kind ? 12 : 10; }
+      else if (b.ex) { w += words(b.ex.title) + words(b.ex.prompt); t += b.ex.kind === 'parsons' ? 5 : b.ex.kind === 'trace' ? 6 : b.ex.kind ? 12 : 10; }
     }
     return Math.round(w / (course.readingWpm || 130) + t);
   }
@@ -17360,7 +17633,7 @@ echo "status: $?"`, setup: 'lesson4', expectError: true, caption: 'The error mes
   window.addEventListener('hashchange', route);
   document.addEventListener('progress-changed', () => { /* sidebars re-render on next navigation */ });
   document.addEventListener('DOMContentLoaded', route);
-  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { checkBlock, langIcon, lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, checkSVG, lbl } };
+  window.__app = { route, Progress, makeEditor, outputPanel, runCell, grade, COMMANDS, internal: { checkBlock, parsonsGrade, parsonsSolution, parsonsProgram, langIcon, lessonMinutes, LONG_LESSON, el, esc, highlight, toLines, LANGS, Runners, outputPanel, tipFor, armConfirm, grade, renderVerdict, Progress, courseById, checkSVG, lbl } };
 })();
 
 ;
@@ -20653,6 +20926,8 @@ window.GUIDE = (function () {
     <dt>Today's review</dt><dd>Every quick check a student answers comes back on the <a href="#/today">Review</a> page a day later, then after 3, 10, 30 and 90 days as long as they keep getting it right, and after a day again when they miss it. At most ten questions a day, mixed across lessons and courses, with the options shuffled. Remembering something after a gap is what makes it last, so a five-minute review at the start of class pays off. Each course page also shows a <b>skills map</b>: a lesson is <i>secure</i> once its exercises are done and its quick checks have been answered right at two reviews, days apart. The review is kept in the browser and goes into "Save my work to a file".</dd>
     <dt>Interactive figure</dt><dd>In most lessons: a diagram with Step and Play buttons, or something to drag or type into. Students should use it until they can predict the next step.</dd>
     <dt>Common mistakes</dt><dd>A box near the end listing the errors students make in this lesson. Read it before class: it is the list of things you will be asked about.</dd>
+    <dt>Trace the loop</dt><dd>In some lessons, before the writing exercises: a program with numbered lines and a table to fill in, the values of the variables each time a line has run. The line a box asks about lights up. Reading and tracing code is the skill that best predicts being able to write it, and tracing by hand is how programmers check a loop.</dd>
+    <dt>Put it in order</dt><dd>A Parsons problem: the lines of a program, shuffled, to put in order (and, in Python, indent). A few blocks may not belong. Students click or press Enter to add a block and use the arrow buttons to move it; nothing needs dragging. Where the exercise has tests, the built program is run, so any order that works is accepted. Research finds the same learning as writing the code in less time, which makes it a good ramp for students who freeze at an empty editor.</dd>
     <dt>Exercises</dt><dd>Two graded tasks. <em>Check answer</em> runs tests and says which passed. <em>Hint</em> gives hints one at a time. <em>Solution</em> shows a worked answer after two attempts. A green checkmark marks completion.</dd>
     <dt>In this lesson</dt><dd>A recap box. It doubles as an exit ticket: ask students to say one line of it back in their own words.</dd>
   </dl>
@@ -23403,8 +23678,11 @@ xs mapped kept result`;
   function parseAnswers(code) { try { const a = JSON.parse(code); return Array.isArray(a) ? a : null; } catch (e) { return null; } }
   // The lesson page saves a choice exercise as [[indices]] and the grader takes [indices].
   function answersFor(ex, code) { const a = parseAnswers(code) || []; return ex.kind === 'choice' ? a.flat().map(Number) : a; }
+  // a Parsons problem is saved as the blocks placed ({ p: [...] }) until it passes, then as the program: always show and check a program
+  const programOf = (ex, code) => (ex.kind === 'parsons' ? A().parsonsProgram(ex, code) : code);
   function started(ex, code) {
     if (code == null) return false;
+    if (ex.kind === 'parsons') return !!programOf(ex, code);
     if (isMath(ex)) { const a = parseAnswers(code); return !!(a && a.flat().some(v => v != null && String(v).trim() !== '')); }
     return code.trim() !== '' && code.trim() !== String(ex.starter || '').trim();
   }
@@ -23448,6 +23726,7 @@ xs mapped kept result`;
     return String(text).split(/\n\s*\n/).map(p => el('p', {}, ...p.split('\n').flatMap((line, i) => i ? [el('br'), line] : [line])));
   }
   function mathAnswers(ex, code) {
+    if (ex.kind === 'trace' && window.MATHGRADE) ex = Object.assign({}, window.MATHGRADE.traceTable(ex), { title: ex.title });   // shown as its table
     const a = parseAnswers(code);
     const blank = (v) => (v == null || String(v).trim() === '') ? el('span', { class: 'pf-empty' }, 'no answer') : el('code', {}, String(v));
     if (!a) return el('p', { class: 'pf-empty' }, 'No answer saved.');
@@ -23475,7 +23754,8 @@ xs mapped kept result`;
       el('h4', {}, ex.title),
       el('span', { class: 'pf-status' }, item.done ? ['Completed', fmtDate(item.done) ? ' ' + fmtDate(item.done) : ''] : 'Not finished yet')));
     if (P.tasks) box.append(el('div', { class: 'prose pf-task', html: ex.prompt }));
-    box.append(isMath(ex) ? mathAnswers(ex, item.code) : (item.code ? codeBlock(item.code, ex.lang) : el('p', { class: 'pf-empty' }, 'The program was not saved on this device.')));
+    const program = programOf(ex, item.code);
+    box.append(isMath(ex) ? mathAnswers(ex, item.code) : (program ? codeBlock(program, ex.lang) : el('p', { class: 'pf-empty' }, 'The program was not saved on this device.')));
     box.append(el('div', { class: 'pf-check', hidden: '' }));
     return box;
   }
@@ -23532,7 +23812,7 @@ xs mapped kept result`;
     for (const it of items) {
       n++; status.textContent = 'Checking ' + n + ' of ' + items.length + '…';
       const { ex } = INDEX[it.id]; let r;
-      try { r = isMath(ex) ? window.MATHGRADE.grade(ex, answersFor(ex, it.code)) : await A().grade(ex, it.code || '', ex.runtime === 'full' ? status.parentElement || doc : undefined); }
+      try { r = isMath(ex) ? window.MATHGRADE.grade(ex, answersFor(ex, it.code)) : ex.kind === 'parsons' ? await A().parsonsGrade(ex, programOf(ex, it.code) || '') : await A().grade(ex, it.code || '', ex.runtime === 'full' ? status.parentElement || doc : undefined); }
       catch (e) { r = { passed: false, error: String(e && e.message || e), results: [] }; }
       const box = [...doc.querySelectorAll('.pf-item')].find(b => b.id === 'pf-' + it.id), slot = box && box.querySelector('.pf-check');
       if (it.done) { if (r.passed) pass++; else claimedBad.push(it); }

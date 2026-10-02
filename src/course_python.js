@@ -535,6 +535,36 @@ print(digits)`, testStdin: '1234\n', caption: 'For 1234: the even numbers below 
         { aside: `<p><b>Common mistakes in this lesson.</b> Off-by-one errors: <code>range(1, 10)</code> stops at 9, so "the numbers up to 10" is <code>range(1, 11)</code>. Starting an accumulator at the wrong value, such as 0 for a product. Indenting the final <code>print</code> so it runs on every pass instead of once at the end. A <code>while</code> loop whose block never changes the variable in its condition, or steps past the stopping point. Testing with <code>!=</code> when <code>&lt;</code> would be safer. Forgetting the colon at the end of a <code>for</code> or <code>while</code> line.</p>` },
         {
           ex: {
+            id: 'py-4-3', kind: 'trace', title: 'Trace the loop',
+            prompt: `<p>Before writing loops, read one. Work through this program by hand and fill in the table: each row is a moment just after the line it names has run, and the cells are the values of the variables then. The first row is done for you. Line 3 is reached once at the start of every pass through the loop.</p>`,
+            code: `total = 0\ncount = 0\nfor n in [4, 7, 10, 3]:\n    if n > 5:\n        total = total + n\n        count = count + 1\nprint(total, count)`,
+            vars: ['n', 'total', 'count'],
+            steps: [
+              { line: 3, values: { n: '4', total: '0', count: '0' }, show: true },
+              { line: 3, values: { n: '7', total: '0', count: '0' }, why: { total: { '4': '4 is not more than 5, so the if skipped lines 5 and 6: total is still 0.' } } },
+              { line: 3, values: { n: '10', total: '7', count: '1' }, why: { total: { '17': 'This row is the start of the pass for 10: line 3 has run, but line 5 has not added 10 yet.' } } },
+              { line: 3, values: { n: '3', total: '17', count: '2' } },
+              { line: 7, values: { n: '3', total: '17', count: '2' }, why: { n: { '-': 'After a for loop the loop variable keeps its last value: n is still 3.' } } }
+            ],
+            hints: ['Go pass by pass. At line 3, n takes the next value from the list; then the if decides whether lines 5 and 6 run.', 'Only 7 and 10 are more than 5, so total goes 0, 0, 7, 17 at the starts of the passes, and count 0, 0, 1, 2. After the loop, n keeps its last value.'],
+            solution: '<p>n: 4, 7, 10, 3, 3. total: 0, 0, 7, 17, 17. count: 0, 0, 1, 2, 2. The program prints <code>17 2</code>.</p>',
+            followup: 'Change the list to [6, 6, 6] and trace it again before running it. Tracing by hand is how programmers check a loop they are not sure of: it is slow, and it finds the mistake.'
+          }
+        },
+        {
+          ex: {
+            id: 'py-4-4', kind: 'parsons', title: 'Put it in order: even numbers',
+            prompt: `<p>Build a program that reads a whole number <code>n</code> and prints the even numbers from 2 up to and including <code>n</code>, one per line, and then the word <code>done</code>. For 6 it prints 2, 4, 6 and done. In Python the indentation is part of the program, so put each line at the right depth.</p>`,
+            lines: ['n = int(input())', 'for i in range(2, n + 1):', '    if i % 2 == 0:', '        print(i)', 'print("done")'],
+            distractors: ['for i in range(2, n):', 'if i % 2 == 1:'],
+            tests: [{ stdin: '6', expect: '2\n4\n6\ndone' }, { stdin: '3', expect: '2\ndone' }, { stdin: '2', expect: '2\ndone' }, { stdin: '9', expect: '2\n4\n6\n8\ndone' }],
+            sampleStdin: '6',
+            hints: ['"Up to and including n" needs the range to stop at n + 1, because range never includes its end.', 'The if belongs inside the loop, and the print(i) inside the if. "done" is printed once, after the loop, so it is not indented at all.'],
+            followup: 'Now write the same program from memory in the Code Lab, with a while loop instead of for. Then make it count by 2 from the start, with no if at all: range has a third argument, the step.'
+          }
+        },
+        {
+          ex: {
             id: 'py-4-1', title: 'Sum of multiples',
             prompt: `<p>Read a number <em>n</em> and print the sum of all multiples of 3 or 5 below <em>n</em>. For <em>n</em> = 10 the multiples are 3, 5, 6 and 9, and the sum is 23. A number that is a multiple of both, such as 15, is added once.</p>`,
             starter: `n = int(input("n: "))\ntotal = 0\nfor i in range(n):\n    ...\nprint(total)`,
