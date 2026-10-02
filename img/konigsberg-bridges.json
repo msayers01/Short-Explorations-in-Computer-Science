@@ -1,0 +1,16 @@
+{
+  "id": "konigsberg-bridges",
+  "file": "konigsberg-bridges.jpg",
+  "title": "Euler's map of Königsberg",
+  "alt": "Euler's line drawing of Königsberg: the river flows round the island A and joins another branch beside the land D; seven bridges, labelled a to g, connect the four land areas A, B, C and D.",
+  "author": "Leonhard Euler",
+  "license": "Public domain",
+  "licenseUrl": null,
+  "source": "https://commons.wikimedia.org/wiki/File:Solutio_problematis_ad_geometriam_situs_pertinentis%2C_Fig._1_-_Cleaned_Up.png",
+  "credit": "File:Solutio_problematis_ad_geometriam_situs_pertinentis,_Fig._1.png",
+  "description": "Figure 1 from Solutio problematis ad geometriam situs pertinentis by Leonhard Euler, better known as The Seven Bridges of Königsberg.",
+  "date": "1736",
+  "width": 960,
+  "height": 460,
+  "fetched": "2026-10-02"
+}

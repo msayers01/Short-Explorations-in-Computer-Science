@@ -1,0 +1,16 @@
+{
+  "id": "sicp-cover",
+  "file": "sicp-cover.jpg",
+  "title": "SICP, second edition",
+  "alt": "The cover of Structure and Interpretation of Computer Programs, second edition: a sorcerer holding a sphere labelled Eval and Apply faces a woman across a glowing Greek letter lambda.",
+  "author": "Harold Abelson and Gerald Jay Sussman with Julie Sussman; MIT Press",
+  "license": "CC BY-SA 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:SICP_cover.jpg",
+  "credit": "https://mitpress.mit.edu/sicp/full-text/book/cover.jpg (archived)",
+  "description": "Cover of the book Structure and Interpretation of Computer Programs (second edition).",
+  "date": "1996",
+  "width": 400,
+  "height": 579,
+  "fetched": "2026-10-02"
+}

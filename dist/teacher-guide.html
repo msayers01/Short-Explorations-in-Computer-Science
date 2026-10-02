@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-yJPYz7bv/uJQ0VUrAuTHlDYf61lh7fI4VqKtunGMU8o=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-yJPYz7bv/uJQ0VUrAuTHlDYf61lh7fI4VqKtunGMU8o=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>A guide for teachers — Short Explorations in Computer Science</title>
 <style>
@@ -245,6 +245,8 @@ body.tour-on { overflow-x: hidden; }
 .blk-aside { --blk: var(--k-warn); --blk-ink: var(--k-ink); --blk-glyph: "!"; }
 .blk-quiz { --blk: var(--k-quiz); --blk-ink: var(--k-ink); --blk-glyph: "\2261"; }
 .blk-code { --blk: var(--ink-3); --blk-ink: var(--paper); --blk-glyph: "{ }"; }
+.blk-photo { --blk: var(--rule); --blk-ink: var(--ink-2); --blk-glyph: "\25A3"; }
+.blk-photo .blk-tag { background: var(--paper-2); border: 1px solid var(--rule); }
 .blk-ex { --blk-glyph: "\270E"; border-left: none; padding-left: 0; }
 .blk-ex .blk-tag { margin-bottom: 0; border-radius: 3px 3px 0 0; }
 .blk-ex .exercise { margin-top: 0; border-top-color: var(--accent); }
@@ -1131,6 +1133,28 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .algo-pager { display: flex; justify-content: space-between; gap: 1rem; margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--rule); font-family: var(--sans); font-size: 0.92rem; }
 .algo-error { color: var(--err); }
 @media (max-width: 560px) { .algos-head h1, .algo-one h1, .courses-head h1 { font-size: 1.9rem; } .algo-status { margin-left: 0; width: 100%; } }
+
+/* ---------- pictures in lessons (app.js: photoBlock; img/ and scripts/fetch-image.js) */
+.photo { margin: 0; }
+.photo-row { display: flex; gap: 0.6rem; align-items: flex-start; }
+.photo-item { flex: 1 1 0; min-width: 0; }
+.photo-open { display: block; width: 100%; padding: 0; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper-2); cursor: zoom-in; line-height: 0; }
+.photo-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.photo-open img { display: block; width: 100%; height: auto; border-radius: 2px; }
+.photo figcaption { font-family: var(--sans); font-size: 0.88rem; color: var(--ink-2); margin-top: 0.45rem; line-height: 1.45; }
+.photo-caption { display: block; color: var(--ink); font-family: var(--serif); font-size: 0.98rem; margin-bottom: 0.2rem; }
+.photo-credits, .photo-credit { font-size: 0.8rem; color: var(--ink-3); }
+.photo-credits a, .photo-credit a { color: var(--ink-3); }
+.photo-missing { display: flex; flex-direction: column; gap: 0.3rem; padding: 1rem; border: 1px dashed var(--rule); border-radius: 3px; background: var(--paper-2); font-family: var(--sans); font-size: 0.9rem; color: var(--ink-2); }
+.photo-note { font-size: 0.8rem; color: var(--ink-3); }
+.photo-zoom { position: fixed; inset: 0; z-index: 1000; background: rgba(0, 0, 0, 0.82); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.photo-zoom figure { margin: 0; max-width: min(96vw, 1100px); max-height: 94vh; display: flex; flex-direction: column; align-items: center; }
+.photo-zoom img { max-width: 100%; max-height: calc(94vh - 4rem); width: auto; height: auto; object-fit: contain; background: #fff; }
+.photo-zoom figcaption { color: #eee; font-family: var(--sans); font-size: 0.9rem; margin-top: 0.6rem; text-align: center; }
+.photo-zoom figcaption .photo-credit, .photo-zoom figcaption a { color: #ccc; }
+.photo-zoom-close { position: absolute; top: 0.6rem; right: 0.8rem; font-size: 2rem; line-height: 1; background: none; border: 0; color: #fff; cursor: pointer; padding: 0.2rem 0.6rem; }
+.photo-zoom-close:focus-visible { outline: 2px solid #fff; }
+@media (max-width: 560px) { .photo-row.several { gap: 0.35rem; } }   /* side by side even on a phone: equal heights, and a tap enlarges each */
 
 </style>
 </head>

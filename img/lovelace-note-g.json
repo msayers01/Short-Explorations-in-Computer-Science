@@ -1,0 +1,16 @@
+{
+  "id": "lovelace-note-g",
+  "file": "lovelace-note-g.jpg",
+  "title": "Lovelace's Note G table",
+  "alt": "A printed table headed 'Diagram for the computation by the Engine of the Numbers of Bernoulli. See Note G.': 25 numbered operations, one per row, with a column for each of the Engine's variables.",
+  "author": "Ada Lovelace",
+  "license": "Public domain",
+  "licenseUrl": null,
+  "source": "https://commons.wikimedia.org/wiki/File:Diagram_for_the_computation_of_Bernoulli_numbers.jpg",
+  "credit": "http://www.sophiararebooks.com/pictures/3544a.jpg",
+  "description": "Diagram of an algorithm for the Analytical Engine for the computation of Bernoulli numbers, from Sketch of The Analytical Engine Invented by Charles Babbage by Luigi Menabrea with notes by Ada Lovelace",
+  "date": "1843",
+  "width": 960,
+  "height": 672,
+  "fetched": "2026-10-02"
+}
