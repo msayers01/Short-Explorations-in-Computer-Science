@@ -254,13 +254,13 @@
     const pre = el('pre', { class: 'out-text', tabindex: '0', 'aria-label': 'Program output' });
     const cursor = el('span', { class: 'term-cursor', 'aria-hidden': 'true' });
     box.append(bar, pre);
-    let t0 = 0;
+    let t0 = 0, printed = '';
     const put = (node) => { if (cursor.parentNode === pre) pre.insertBefore(node, cursor); else pre.appendChild(node); box.hidden = false; pre.scrollTop = pre.scrollHeight; };
     const line = (cls, s) => { put(el('span', { class: cls }, s)); put(document.createTextNode('\n')); };
     const setStatus = (cls, text) => { status.className = 'term-status' + (cls ? ' ' + cls : ''); status.textContent = text; };
     const api = {
       el: box,
-      clear() { pre.textContent = ''; box.hidden = false; box.classList.remove('has-error'); setStatus('', ''); },
+      clear() { pre.textContent = ''; printed = ''; box.hidden = false; box.classList.remove('has-error'); setStatus('', ''); },
       /** a run begins: the prompt line names the command, the status says running, the cursor blinks */
       start(cmd) { api.clear(); t0 = Date.now(); if (cmd) line('cmd', cmd); pre.appendChild(cursor); setStatus('running', 'running'); },
       /** a run ends: the cursor stops and the status pill says how it went */
@@ -271,8 +271,11 @@
         else if (box.classList.contains('has-error')) setStatus('fail', 'error' + (secs ? ' \u00b7 ' + secs : ''));
         else setStatus('ok', 'exit ' + (info.exit || 0) + (secs ? ' \u00b7 ' + secs : ''));
       },
-      write(s) { put(document.createTextNode(s)); },
-      value(s) { line('val', s); },
+      write(s) { printed += s; put(document.createTextNode(s)); },
+      value(s) { printed += s.replace(/^;Value: /, '') + '\n'; line('val', s); },
+      /** what the program printed (and, for Scheme, the values it showed) since the run began: for comparing with a prediction */
+      printed() { return printed; },
+      failed() { return box.classList.contains('has-error'); },
       error(s) { line('err', s); box.classList.add('has-error'); },
       note(s) { line('note', s); },
       hide() { box.hidden = true; if (cursor.parentNode === pre) pre.removeChild(cursor); },
@@ -673,32 +676,99 @@
   // ---------- playground block ----------
   function playgroundBlock(b) {
     const box = el('div', { class: 'play' });
-    if (b.caption) box.append(el('div', { class: 'play-cap' }, el('span', { class: 'play-label' }, lbl('tryIt')), el('span', { html: b.caption })));
+    // with a prediction to make, the caption (which often gives the answer away) waits until after the run, and then explains it
+    const cap = b.caption ? el('div', { class: 'play-cap' + (b.predict ? ' after-guess' : ''), hidden: b.predict ? '' : null }, el('span', { class: 'play-label' }, b.predict ? 'Why' : lbl('tryIt')), el('span', { html: b.caption })) : null;
+    if (cap && !b.predict) box.append(cap);
     const editor = makeEditor(b.lang, b.code);
     const out = outputPanel();
     const turtleMount = b.lang === 'python' && usesTurtle(b.code) ? el('div', { class: 'play-turtle', hidden: '' }) : null;
-    const runBtn = el('button', { class: 'btn primary', onclick: () => runCell(b.lang, editor.value, out, { stdin: b.stdin, runtime: b.runtime, turtleMount }) }, 'Run');
+    const guess = b.predict ? predictBox(b, editor, () => { if (cap) cap.hidden = false; }) : null;
+    const run = () => runCell(b.lang, editor.value, out, { stdin: b.stdin, runtime: b.runtime, turtleMount });
+    const runBtn = el('button', { class: 'btn primary', onclick: () => (guess ? guess.run(run, out) : run()) }, 'Run');
     const resetBtn = el('button', { class: 'btn quiet', onclick: () => { editor.value = b.code; out.hide(); } }, 'Reset');
     const labBtn = window.LAB ? el('button', { class: 'btn quiet lab-open', title: 'Copy this code into the Code Lab', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, runtime: b.runtime }) }, 'Open in Code Lab') : null;
     const substBtn = window.LAB && window.SUBST && (b.lang === 'lisp' || b.lang === 'scheme') && !b.expectError ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and watch each expression being rewritten, one step of the substitution model at a time', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, subst: true }) }, 'Show the substitution') : null;
     const memBtn = window.LAB && window.CPPSTEP && b.lang === 'cpp' && b.runtime !== 'full' ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and run it one line at a time, watching every variable, address and pointer', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, step: true, stdin: b.stdin }) }, 'Step through memory') : null;
-    box.append(editor.el, el('div', { class: 'toolbar' }, runBtn, resetBtn, b.stdin != null ? el('span', { class: 'stdin-note' }, 'input provided: ', el('code', {}, JSON.stringify(b.stdin))) : null, el('span', { class: 'spacer' }), memBtn, substBtn, labBtn), ...[turtleMount, out.el].filter(Boolean));   // append() prints a null as text
+    box.append(editor.el, ...(guess ? [guess.el] : []), el('div', { class: 'toolbar' }, runBtn, resetBtn, b.stdin != null ? el('span', { class: 'stdin-note' }, 'input provided: ', el('code', {}, JSON.stringify(b.stdin))) : null, el('span', { class: 'spacer' }), memBtn, substBtn, labBtn), ...[turtleMount, out.el, guess && guess.result, guess && cap].filter(Boolean));   // append() prints a null as text
     return box;
   }
 
+  // Predict before you run ({ play, predict: true | 'question' }). Guessing first and then seeing the answer is how an example becomes
+  // practice: a wrong guess, corrected at once, is remembered well (PRIMM; the prequestion and hypercorrection effects). The student
+  // writes what they expect the program to print; the first run of the unchanged program then lays the guess beside what it printed,
+  // line by line. Nothing is stored: the guess is part of reading the page. "Run without guessing" never blocks anyone, and in
+  // classroom mode the class guesses aloud, so Run just runs.
+  function predictBox(b, editor, reveal) {
+    const id = 'guess-' + Math.random().toString(36).slice(2, 9);
+    const area = el('textarea', { id, class: 'guess-text', rows: '3', spellcheck: 'false', autocomplete: 'off', placeholder: 'Type the output you expect, line by line' });
+    const nudge = el('p', { class: 'guess-nudge', role: 'status', hidden: '' }, 'Write your guess first: even a wrong one helps you remember the answer.');
+    const skip = el('button', { class: 'btn quiet guess-skip', type: 'button' }, 'Run without guessing');
+    const box = el('div', { class: 'guess' }, el('label', { class: 'guess-q', for: id }, el('b', {}, 'Predict. '), typeof b.predict === 'string' ? b.predict : 'Before you run it: what will it print?'), area, nudge, el('div', { class: 'guess-row' }, skip));
+    const result = el('div', { class: 'guess-result', hidden: '' });
+    let done = false;
+    const norm = (t) => String(t).replace(/\r/g, '').split('\n').map((l) => l.replace(/\s+$/, '')).join('\n').replace(/\n+$/, '').replace(/^\n+/, '');
+    async function runWith(run, out) {
+      const classroom = window.CLASSROOM && window.CLASSROOM.isOn && window.CLASSROOM.isOn();
+      if (done || classroom) { reveal(); return run(); }
+      if (!area.value.trim()) { nudge.hidden = false; area.focus(); return; }
+      done = true; nudge.hidden = true; area.readOnly = true; skip.hidden = true;
+      const unchanged = editor.value === b.code, mine = norm(area.value);
+      await run();
+      reveal();
+      if (!unchanged || out.failed()) { box.classList.add('locked'); return; }
+      const real = norm(out.printed()), want = real.split('\n'), have = mine.split('\n');
+      const right = want.filter((l, i) => have[i] !== undefined && have[i].trim() === l.trim()).length;
+      const exact = mine === real || (right === want.length && have.length === want.length);
+      result.textContent = '';
+      const rows = el('ol', { class: 'guess-lines' });
+      want.forEach((l, i) => {
+        const ok = have[i] !== undefined && have[i].trim() === l.trim();
+        rows.append(el('li', { class: ok ? 'ok' : 'bad' }, el('span', { class: 'gl-mark', 'aria-hidden': 'true' }, ok ? '✓' : '✗'), el('code', {}, l === '' ? ' ' : l),
+          ok ? el('span', { class: 'sr-only' }, ' (as you predicted)') : el('span', { class: 'gl-yours' }, have[i] === undefined || have[i] === '' ? 'you expected no line here' : 'you wrote: ', have[i] ? el('code', {}, have[i]) : null)));
+      });
+      const extra = have.length - want.length;
+      result.append(el('p', { class: 'guess-sum' }, exact ? el('b', {}, 'Exactly as you predicted. ') : el('b', {}, right + ' of ' + want.length + (want.length === 1 ? ' line' : ' lines') + ' as you predicted. '),
+        exact ? 'Your picture of what the program does matches the computer’s.' : 'Look at the lines that differ: each one is a place where the program does something you did not expect, and that is exactly what is worth working out.' + (extra > 0 ? ' (You also expected ' + extra + ' more ' + (extra === 1 ? 'line' : 'lines') + ' than it printed.)' : '')), rows);
+      result.hidden = false; box.classList.add('locked');
+    }
+    skip.addEventListener('click', () => { done = true; box.hidden = true; reveal(); box.closest('.play').querySelector('.toolbar .btn.primary').click(); });
+    return { el: box, result, run: runWith };
+  }
+
   // ---------- lesson rendering ----------
-  // A quick check: one question, a few options, instant feedback, nothing saved. { check, options[], answer (index), why }
+  // A quick check: one question, a few options, instant feedback, nothing saved. { check, options[], answer (index), why, wrong?[] }
+  // Choosing an option only selects it; the student then says how sure they are, and that button checks the answer. Rating
+  // confidence before the feedback is what makes the feedback land: a confident wrong answer, corrected, is remembered especially
+  // well, and a lucky guess that turns out right is still worth reading the reason for (metacognition; the hypercorrection effect).
+  // After the first answer the remaining options check at once, and in classroom mode (the class answers aloud) so does the first.
+  const SURE = [['sure', 'Sure'], ['think', 'Think so'], ['guess', 'Guessing']];
   function checkBlock(b) {
     const box = el('div', { class: 'qc', role: 'group', 'aria-label': 'Quick check' });
-    const why = el('p', { class: 'qc-why', hidden: '' });
+    const why = el('p', { class: 'qc-why', role: 'status', hidden: '' });
     const opts = el('div', { class: 'qc-opts' });
-    const btns = (b.options || []).map((o, i) => el('button', { class: 'qc-opt', type: 'button', onclick: () => {
-      if (box.classList.contains('done')) return;
-      if (i === b.answer) { box.classList.add('done'); btns[i].classList.add('right'); btns.forEach((x) => { x.disabled = true; }); why.innerHTML = '<b>Yes.</b> ' + (b.why || ''); why.hidden = false; }
-      else { btns[i].classList.add('wrong'); btns[i].disabled = true; why.innerHTML = '<b>Not that one.</b> ' + (b.wrong && b.wrong[i] ? b.wrong[i] : 'Try another.'); why.hidden = false; }
+    let chosen = -1, answered = false;
+    const judge = (i, sure) => {
+      chosen = -1; conf.hidden = true; btns.forEach((x) => x.classList.remove('chosen'));
+      if (i === b.answer) {
+        box.classList.add('done'); btns[i].classList.add('right'); btns.forEach((x) => { x.disabled = true; x.removeAttribute('aria-pressed'); });
+        why.innerHTML = (sure === 'guess' ? '<b>Yes, though you were guessing.</b> Read why, so that next time you know it: ' : '<b>Yes.</b> ') + (b.why || '');
+      } else {
+        btns[i].classList.add('wrong'); btns[i].disabled = true; btns[i].removeAttribute('aria-pressed');
+        why.innerHTML = (sure === 'sure' ? '<b>Not that one, and you were sure.</b> That makes it the one most worth working out. ' : '<b>Not that one.</b> ') + (b.wrong && b.wrong[i] ? b.wrong[i] : 'Try another.');
+      }
+      answered = true; why.hidden = false;
+    };
+    const conf = el('div', { class: 'qc-sure', hidden: '' }, el('span', { class: 'qc-sure-q' }, 'How sure are you?'),
+      ...SURE.map(([k, label]) => el('button', { class: 'qc-sure-btn', type: 'button', onclick: () => { if (chosen >= 0) judge(chosen, k); } }, label)));
+    const btns = (b.options || []).map((o, i) => el('button', { class: 'qc-opt', type: 'button', 'aria-pressed': 'false', onclick: () => {
+      if (box.classList.contains('done') || btns[i].disabled) return;
+      const classroom = window.CLASSROOM && window.CLASSROOM.isOn && window.CLASSROOM.isOn();
+      if (answered || classroom) { judge(i, null); return; }
+      chosen = i; btns.forEach((x, k) => { x.classList.toggle('chosen', k === i); x.setAttribute('aria-pressed', String(k === i)); });
+      conf.hidden = false;
     } }, el('span', { class: 'qc-letter' }, String.fromCharCode(65 + i)), el('span', { html: o })));
     opts.append(...btns);
-    box.append(el('p', { class: 'qc-q', html: b.check }), opts, why);
+    box.append(el('p', { class: 'qc-q', html: b.check }), opts, conf, why);
     return box;
   }
   // A picture from img/ (build.js puts its credits in BUILD.images): { photo: 'id' | ['id', 'id'], caption }. It loads lazily, shows who
@@ -749,7 +819,7 @@
       }
       else if (b.check) { checkCount++; frag.append(tagged('Quick check ' + checkCount, checkBlock(b), 'blk-check')); }
       else if (b.play && (b.lang || course.lang) === 'shell' && window.TERMINAL) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], window.TERMINAL.playBlock(b, course), 'blk-play')); }
-      else if (b.play) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount }), 'blk-play')); }
+      else if (b.play) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, predict: b.predict, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount }), 'blk-play')); }
       else if (b.ex) {
         b.ex.lang = b.ex.lang || course.lang; b.ex.runtime = b.ex.runtime || course.runtime; exCount++;
         const node = window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex, course) : b.ex.kind === 'shell' && window.TERMINAL ? window.TERMINAL.exerciseBlock(b.ex, course, lessonIdx) : exerciseBlock(b.ex, course, lessonIdx);

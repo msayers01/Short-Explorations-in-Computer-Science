@@ -175,11 +175,11 @@ reader with an IntersectionObserver (`watchParts`):
 | Block | Renders |
 |---|---|
 | `"<p>…</p>"` (string) | prose; may contain `<details class="reveal">`, `<div class="recap">`, `<div class="stmt">`, `<div class="proof [annotated]">`, `<table class="small">` |
-| `{ play, caption, stdin, expectError, testStdin, lang }` | runnable playground with "Open in Code Lab" |
+| `{ play, caption, stdin, expectError, testStdin, lang, predict? }` | runnable playground with "Open in Code Lab". `predict: true` (or a question string) asks for the expected output before the first run, compares it line by line after, and holds the caption back until then (it becomes the "Why"); not stored; skipped in classroom mode |
 | `{ code, caption, lang }` | static listing |
 | `{ fig, caption, ...params }` | `WIDGETS[fig]` figure |
 | `{ aside }` | "Common mistakes" aside |
-| `{ check, options[], answer, why, wrong[]? }` | a quick check: one multiple-choice question with instant feedback, nothing saved (every lesson has three, after an idea has been stated) |
+| `{ check, options[], answer, why, wrong[]? }` | a quick check: one multiple-choice question, nothing saved (every lesson has three, after an idea has been stated). Choosing selects; Sure / Think so / Guessing then checks, and the message differs for a confident miss and a lucky guess. Later attempts, and every attempt in classroom mode, check at once |
 | `{ ex: {...} }` | exercise (code kind or math kind, see below) |
 
 Code exercise: `{ id, title, prompt, starter, solution, hints[], tests[], mustContain[], mustNotContain[], followup, failTip, sampleStdin, prelude }`.

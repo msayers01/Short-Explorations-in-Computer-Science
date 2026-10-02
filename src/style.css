@@ -238,6 +238,7 @@ body.tour-on { overflow-x: hidden; }
 .blk > pre.code { border-left: none; }
 .blk > .aside { border-left: none; padding-left: 0; }
 .blk-play .play-label { display: none; }
+.blk-play .after-guess .play-label { display: inline; }
 .blk .qc { border-left: 1px solid var(--rule); }
 /* sections are numbered and separated by a rule, and the numbers match the lesson map */
 .lesson-body { counter-reset: sec; }
@@ -258,6 +259,31 @@ body.tour-on { overflow-x: hidden; }
 .qc-opt.right .qc-letter { color: var(--ok); }
 .qc-why { margin: 0.6rem 0 0; font-size: 0.92rem; color: var(--ink-2); }
 .qc.done .qc-why { color: var(--ink); }
+.qc-opt.chosen { border-color: var(--ink-2); box-shadow: inset 3px 0 0 var(--ink-2); }
+.qc-sure { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.6rem; font-size: 0.9rem; }
+.qc-sure-q { color: var(--ink-2); margin-right: 0.2rem; }
+.qc-sure-btn { font: inherit; font-size: 0.88rem; color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 999px; padding: 0.2rem 0.75rem; cursor: pointer; }
+.qc-sure-btn:hover { border-color: var(--ink-2); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* Predict before you run: the guess box above the toolbar, and the line-by-line comparison under the output */
+.guess { margin: 0.5rem 0 0; padding: 0.6rem 0.8rem; border: 1px dashed var(--rule); border-radius: 4px; background: var(--paper-2); font-family: var(--sans); }
+.guess-q { display: block; font-size: 0.93rem; margin-bottom: 0.35rem; }
+.guess-text { display: block; width: 100%; font-family: var(--mono); font-size: 0.85rem; padding: 0.4rem 0.5rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); color: var(--ink); resize: vertical; }
+.guess.locked .guess-text { background: transparent; border-style: dashed; }
+.guess-row { display: flex; justify-content: flex-end; margin-top: 0.3rem; }
+.guess-skip { font-size: 0.85rem; }
+.guess.locked .guess-row { display: none; }
+.guess-nudge { margin: 0.35rem 0 0; font-size: 0.88rem; color: var(--err); }
+.play-cap.after-guess { margin-top: 0.5rem; border-top: 0; }
+.guess-result { margin-top: 0.5rem; padding: 0.6rem 0.8rem; border-left: 3px solid var(--ink-2); background: var(--paper-2); font-family: var(--sans); font-size: 0.92rem; }
+.guess-sum { margin: 0 0 0.4rem; }
+.guess-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; }
+.guess-lines li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; min-width: 0; }
+.guess-lines code { font-family: var(--mono); font-size: 0.84rem; white-space: pre-wrap; word-break: break-word; }
+.gl-mark { font-weight: 700; width: 1em; }
+.guess-lines .ok .gl-mark { color: var(--ok); }
+.guess-lines .bad .gl-mark { color: var(--err); }
+.gl-yours { color: var(--ink-3); font-size: 0.85rem; }
 .lesson-head { margin-bottom: 1.5rem; }
 .crumb { font-family: var(--sans); color: var(--ink-3); margin: 0 0 0.4rem; font-size: 0.95rem; }
 .crumb a { color: var(--accent); text-decoration: none; font-weight: 600; }

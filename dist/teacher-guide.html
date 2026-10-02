@@ -255,6 +255,7 @@ body.tour-on { overflow-x: hidden; }
 .blk > pre.code { border-left: none; }
 .blk > .aside { border-left: none; padding-left: 0; }
 .blk-play .play-label { display: none; }
+.blk-play .after-guess .play-label { display: inline; }
 .blk .qc { border-left: 1px solid var(--rule); }
 /* sections are numbered and separated by a rule, and the numbers match the lesson map */
 .lesson-body { counter-reset: sec; }
@@ -275,6 +276,31 @@ body.tour-on { overflow-x: hidden; }
 .qc-opt.right .qc-letter { color: var(--ok); }
 .qc-why { margin: 0.6rem 0 0; font-size: 0.92rem; color: var(--ink-2); }
 .qc.done .qc-why { color: var(--ink); }
+.qc-opt.chosen { border-color: var(--ink-2); box-shadow: inset 3px 0 0 var(--ink-2); }
+.qc-sure { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.6rem; font-size: 0.9rem; }
+.qc-sure-q { color: var(--ink-2); margin-right: 0.2rem; }
+.qc-sure-btn { font: inherit; font-size: 0.88rem; color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 999px; padding: 0.2rem 0.75rem; cursor: pointer; }
+.qc-sure-btn:hover { border-color: var(--ink-2); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* Predict before you run: the guess box above the toolbar, and the line-by-line comparison under the output */
+.guess { margin: 0.5rem 0 0; padding: 0.6rem 0.8rem; border: 1px dashed var(--rule); border-radius: 4px; background: var(--paper-2); font-family: var(--sans); }
+.guess-q { display: block; font-size: 0.93rem; margin-bottom: 0.35rem; }
+.guess-text { display: block; width: 100%; font-family: var(--mono); font-size: 0.85rem; padding: 0.4rem 0.5rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); color: var(--ink); resize: vertical; }
+.guess.locked .guess-text { background: transparent; border-style: dashed; }
+.guess-row { display: flex; justify-content: flex-end; margin-top: 0.3rem; }
+.guess-skip { font-size: 0.85rem; }
+.guess.locked .guess-row { display: none; }
+.guess-nudge { margin: 0.35rem 0 0; font-size: 0.88rem; color: var(--err); }
+.play-cap.after-guess { margin-top: 0.5rem; border-top: 0; }
+.guess-result { margin-top: 0.5rem; padding: 0.6rem 0.8rem; border-left: 3px solid var(--ink-2); background: var(--paper-2); font-family: var(--sans); font-size: 0.92rem; }
+.guess-sum { margin: 0 0 0.4rem; }
+.guess-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; }
+.guess-lines li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; min-width: 0; }
+.guess-lines code { font-family: var(--mono); font-size: 0.84rem; white-space: pre-wrap; word-break: break-word; }
+.gl-mark { font-weight: 700; width: 1em; }
+.guess-lines .ok .gl-mark { color: var(--ok); }
+.guess-lines .bad .gl-mark { color: var(--err); }
+.gl-yours { color: var(--ink-3); font-size: 0.85rem; }
 .lesson-head { margin-bottom: 1.5rem; }
 .crumb { font-family: var(--sans); color: var(--ink-3); margin: 0 0 0.4rem; font-size: 0.95rem; }
 .crumb a { color: var(--accent); text-decoration: none; font-weight: 600; }
@@ -1243,8 +1269,9 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
   <dl class="g-parts">
     <dt>Explanation</dt><dd>Short paragraphs that state each rule before showing it.</dd>
     <dt>Try it</dt><dd>A small program with a caption saying what to look for and what to change. Press Run, change something, run again. <em>Open in Code Lab</em> is there for students who want to keep going.</dd>
+    <dt>Predict</dt><dd>In the key example of each idea, a box asks what the program will print before it runs. The first run lays the guess beside the real output, line by line, and only then shows the explanation. Guessing first, even wrongly, is what makes the answer stick (the PRIMM approach: predict, run, investigate, modify, make). Students can choose <em>Run without guessing</em>; in classroom mode the box is skipped, so the class can guess aloud.</dd>
     <dt>Predict, then reveal</dt><dd>A question with a hidden answer. Ask students to commit to a prediction before they open it.</dd>
-    <dt>Quick check</dt><dd>Three per lesson: a one-question multiple choice after an idea, with instant feedback and a one-line reason. Nothing is recorded, so students can answer freely. In class they make good show-of-hands questions.</dd>
+    <dt>Quick check</dt><dd>Three per lesson: a one-question multiple choice after an idea. Students pick an answer and then say how sure they are (Sure, Think so, Guessing); that button checks it, with a one-line reason. A confident wrong answer and a lucky guess each get their own message, because noticing those is how students learn what they really know. Nothing is recorded, so students can answer freely. In classroom mode one tap checks, for show-of-hands questions.</dd>
     <dt>Interactive figure</dt><dd>In most lessons: a diagram with Step and Play buttons, or something to drag or type into. Students should use it until they can predict the next step.</dd>
     <dt>Common mistakes</dt><dd>A box near the end listing the errors students make in this lesson. Read it before class: it is the list of things you will be asked about.</dd>
     <dt>Exercises</dt><dd>Two graded tasks. <em>Check answer</em> runs tests and says which passed. <em>Hint</em> gives hints one at a time. <em>Solution</em> shows a worked answer after two attempts. A green checkmark marks completion.</dd>
