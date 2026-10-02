@@ -1,0 +1,16 @@
+{
+  "id": "ibm-7094-console",
+  "file": "ibm-7094-console.jpg",
+  "title": "IBM 7094 console",
+  "alt": "The operator's console of an IBM 7094: grey panels covered in rows of small round lights, labelled INSTRUCTION COUNTER, ACCUMULATOR and STORAGE among others, with a long row of white and grey switches along the front.",
+  "author": "ArnoldReinhold",
+  "license": "CC BY 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:IBM_7094_console3.agr.jpg",
+  "credit": "Own work",
+  "description": "IBM 7094 operators console, circa 1962. Box on top adds displays for additional index registers. The 36 poker switches along the front represent one 36-bit word. The six gray rockers above them and to the right were called sense switces and could be interrogated by user programs, including in Fortran. There are four sense lights near the emergency off switch that were also controllable by software.",
+  "date": "circa 1962 (the console); photographed 2024",
+  "width": 960,
+  "height": 720,
+  "fetched": "2026-10-02"
+}

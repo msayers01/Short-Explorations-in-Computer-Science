@@ -1,0 +1,16 @@
+{
+  "id": "minetest",
+  "file": "minetest.jpg",
+  "title": "Minetest",
+  "alt": "A game world made of blocks: green grassy slopes, blocky trees, a patch of blue water and sky, with the player's hand holding a pickaxe in the corner.",
+  "author": "Kotolegokot",
+  "license": "CC BY-SA 3.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Minetest_screenshot_2.png",
+  "credit": "Own work",
+  "description": "This is a screenshot of Minetest game.",
+  "date": "2013-03-06 21:02:00",
+  "width": 960,
+  "height": 540,
+  "fetched": "2026-10-02"
+}
