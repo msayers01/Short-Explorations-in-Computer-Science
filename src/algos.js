@@ -10,7 +10,7 @@
    Nothing here runs student code; everything on these pages is drawn by the page itself. In node (test_algos.js) only the pure parts
    are used, so nothing touches the DOM until page() is called. */
 (function () {
-  const GROUPS = ['Searching', 'Sorting', 'Paths and graphs', 'Mazes', 'Games and adversarial search', 'More to explore'];
+  const GROUPS = ['Searching', 'Sorting', 'Paths and graphs', 'Mazes', 'Games and adversarial search', 'Puzzles and simulations', 'More to explore'];
   const demos = [];
   const register = (d) => { if (!d || !d.id || demos.some((x) => x.id === d.id)) return; demos.push(d); };
   const el = (...a) => window.__app.internal.el(...a);
@@ -104,7 +104,7 @@
     const main = el('main', { class: 'algos' });
     main.append(el('header', { class: 'algos-head' },
       el('h1', {}, 'Algorithms in motion'),
-      el('p', { class: 'tagline' }, 'Watch the algorithms from the courses work, one step at a time: searching and sorting, finding a way through a maze, and playing a game against a computer that looks ahead. Change the input, slow it down, and count what each one costs.')));
+      el('p', { class: 'tagline' }, 'Watch the algorithms from the courses work, one step at a time: searching and sorting, finding a way through a maze, playing a game against a computer that looks ahead, and puzzles to solve yourself. Bet on the races, change the input, slow it down, and count what each one costs.')));
     for (const g of GROUPS) {
       const list = demos.filter((d) => (GROUPS.includes(d.group) ? d.group : GROUPS[GROUPS.length - 1]) === g);
       if (!list.length) continue;

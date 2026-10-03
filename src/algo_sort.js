@@ -449,12 +449,21 @@
     let lanes = [], alive = true, dirty = true, raf = 0, tick = 0;
 
     const laneSel = picks.map((p, k) => select(el, 'Lane ' + (k + 1), (k >= 2 ? [['', '(empty)']] : []).concat(ALGS.map((x) => [x.id, x.short || x.name])), p,
-      (v) => { picks[k] = v; pl.reset(); }));
+      (v) => { picks[k] = v; betOptions(); pl.reset(); }));
+    // a bet on the winner, made before the race: guessing first makes the result stick (and is more fun)
+    let bet = '';
+    const betSel = el('select', { 'aria-label': 'Your bet', onchange: () => { bet = betSel.value; } });
+    function betOptions() {
+      const keep = bet;
+      betSel.replaceChildren(el('option', { value: '' }, 'no bet'), ...picks.map((p, k) => (p && byId[p] ? el('option', { value: p }, 'Lane ' + (k + 1) + ': ' + (byId[p].short || byId[p].name)) : null)).filter(Boolean));
+      betSel.value = keep && picks.includes(keep) ? keep : ''; bet = betSel.value;
+    }
+    betOptions();
     const fSize = select(el, 'Size', SIZES.map((x) => [x, String(x)]), n, (v) => { n = +v; fresh(); });
     const fShape = select(el, 'Input', SHAPES, shape, (v) => { shape = v; fresh(); });
     const fView = select(el, 'View', VIEWS.filter((v) => v[0] !== 'wheel'), view, (v) => { view = v; dirty = true; cv.redraw(); });
     const shuffleBtn = el('button', { class: 'btn', type: 'button', onclick: () => { seed = (seed * 1103515245 + 12345) >>> 0; fresh(); } }, 'New input');
-    host.append(el('div', { class: 'algo-controls' }, laneSel.map((s) => s.label)), el('div', { class: 'algo-controls' }, fSize.label, fShape.label, fView.label, shuffleBtn));
+    host.append(el('div', { class: 'algo-controls' }, laneSel.map((s) => s.label)), el('div', { class: 'algo-controls' }, fSize.label, fShape.label, fView.label, shuffleBtn, el('label', {}, 'Who will win? ', betSel)));
 
     function build() {
       tick = 0;
@@ -483,10 +492,11 @@
       onStep: () => { dirty = true; },
       onDone: () => {
         const order = lanes.slice().sort((x, y) => x.place - y.place);
-        pl.status('Finished: ' + order.map((ln) => PLACES[ln.place - 1] + ' ' + (ln.algo.short || ln.algo.name) + ' (' + fmt(ln.st.ops) + ' steps)').join(', ') + '.');
+        const mine = bet ? lanes.find((ln) => ln.algo.id === bet) : null;
+        pl.status((mine ? (mine.place === 1 ? 'Your bet won! ' : 'Your bet came ' + PLACES[mine.place - 1] + '. ') : '') + 'Finished: ' + order.map((ln) => PLACES[ln.place - 1] + ' ' + (ln.algo.short || ln.algo.name) + ' (' + fmt(ln.st.ops) + ' steps)').join(', ') + '.');
         dirty = true;
       },
-      onReset: () => { build(); dirty = true; pl.status(''); }
+      onReset: () => { build(); dirty = true; pl.status('Make your bet, then press Play.'); }
     });
     function* race() {
       let finished = 0, lastAt = -1, lastPlace = 0;
@@ -531,7 +541,7 @@
       raf = requestAnimationFrame(frame);
     }
     raf = requestAnimationFrame(frame);
-    if (!api.reducedMotion()) requestAnimationFrame(() => { if (alive) pl.play(); });
+    pl.status('Who will win? Make your bet, then press Play.');   // no autoplay: the bet comes first
     function cleanup() { if (!alive) return; alive = false; if (raf) cancelAnimationFrame(raf); pl.stop(); cv.stop(); }
     return cleanup;
   }
