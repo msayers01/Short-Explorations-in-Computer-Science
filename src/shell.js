@@ -11,7 +11,7 @@
    sh.prompt()                                       → 'student@lab:~$ '
    sh.cancel()                                       ends the command that is running (Ctrl+C)
 
-   What the shell knows: words with ' " and \ quoting, $VAR ${VAR} $? $# $@ $1, $(command), $((arithmetic)), {a,b} and {1..5}, ~, * ? [...] wildcards,
+   What the shell knows: words with ' " and \ quoting, $VAR ${VAR} (and ${x:-d} ${x#pat} ${x%pat} ${x/a/b} ${x^^} ${x:1:2}) $? $# $@ $1, $(command), $((arithmetic)), {a,b} and {1..5}, ~, * ? [...] wildcards,
    > >> < 2> 2>&1 | ; && || and !, if/elif/else/fi, for/in/do/done, while/until, scripts with #! lines, and the commands listed in COMMANDS below. */
 (function (factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -221,11 +221,18 @@
       const c = peek();
       if (c === '(') { i++; if (peek() === '(') { i++; parts.push({ x: 'arith', v: balanced('(', ')', true), q }); } else parts.push({ x: 'sub', v: balanced('(', ')'), q }); return; }
       if (c === '{') {
-        i++; const j = src.indexOf('}', i); if (j < 0) synErr('unexpected EOF while looking for matching `}\''); const body = src.slice(i, j); i = j + 1; let m;
-        // ${NAME}, ${#NAME} (its length), ${NAME:offset} and ${NAME:offset:length}, ${NAME:-word} ${NAME:=word} ${NAME:+word} (and the same without the colon); anything else is refused, as bash does
+        i++;
+        let j = -1;   // the matching }: a ${...} inside the pattern of another (${f%.${ext}}) has its own
+        for (let k = i, depth = 0; k < n; k++) { const ch = src[k]; if (ch === '\\') { k++; continue; } if (ch === '$' && src[k + 1] === '{') { depth++; k++; } else if (ch === '}') { if (!depth) { j = k; break; } depth--; } }
+        if (j < 0) synErr('unexpected EOF while looking for matching `}\''); const body = src.slice(i, j); i = j + 1; let m;
+        // ${NAME}, ${#NAME} (its length), ${NAME:offset} and ${NAME:offset:length} (either may be negative), ${NAME:-word} ${NAME:=word} ${NAME:+word} (and the same without the colon),
+        // ${NAME#pat} ${NAME##pat} ${NAME%pat} ${NAME%%pat}, ${NAME/pat/new} ${NAME//pat/new} ${NAME/#pat/new} ${NAME/%pat/new}, ${NAME^} ${NAME^^} ${NAME,} ${NAME,,}; anything else is refused, as bash does
         if (/^([A-Za-z_][A-Za-z0-9_]*|[0-9]+|[?#@*$!])$/.test(body)) parts.push({ x: 'var', v: body, q });
         else if ((m = body.match(/^#([A-Za-z_][A-Za-z0-9_]*|[0-9]+|[@*])$/))) parts.push({ x: 'len', v: m[1], q });
-        else if ((m = body.match(/^([A-Za-z_][A-Za-z0-9_]*|[0-9]+):(\d+)(?::(\d+))?$/))) parts.push({ x: 'slice', v: m[1], from: +m[2], len: m[3] === undefined ? null : +m[3], q });
+        else if ((m = body.match(/^([A-Za-z_][A-Za-z0-9_]*|[0-9]+): ?\(?(-?\d+)\)?(?::\(?(-?\d+)\)?)?$/))) parts.push({ x: 'slice', v: m[1], from: +m[2], len: m[3] === undefined ? null : +m[3], q });   // a negative offset needs the space or the brackets, as in bash
+        else if ((m = body.match(/^([A-Za-z_][A-Za-z0-9_]*|[0-9]+)(##?|%%?)([^]*)$/))) parts.push({ x: 'strip', v: m[1], op: m[2], pat: m[3], q });   // ${f%.txt} ${p##*/}: take a pattern off the start or the end
+        else if ((m = body.match(/^([A-Za-z_][A-Za-z0-9_]*|[0-9]+)\/(\/|#|%)?([^]*)$/))) { const cut = splitSubst(m[3]); parts.push({ x: 'subst', v: m[1], all: m[2] === '/', anchor: m[2] === '#' || m[2] === '%' ? m[2] : '', pat: cut[0], repl: cut[1], q }); }   // ${s/a/b} ${s//a/b}
+        else if ((m = body.match(/^([A-Za-z_][A-Za-z0-9_]*)(\^\^?|,,?)$/))) parts.push({ x: 'case', v: m[1], op: m[2], q });   // ${s^} ${s^^} ${s,} ${s,,}
         else if ((m = body.match(/^([A-Za-z_][A-Za-z0-9_]*|[0-9]+)(:?)([-=+])([^]*)$/))) parts.push({ x: 'def', v: m[1], colon: m[2] === ':', op: m[3], word: m[4], q });
         else parts.push({ x: 'bad', v: body, q });   // refused when it is expanded, as bash does
         return;
@@ -430,6 +437,65 @@
     return v;
   }
 
+  /* ---------------- ${NAME#pat} ${NAME/pat/new} and the like ---------------- */
+  // Unlike a file name pattern, * and ? here also match a slash. Quoted text and \x are literal. Returns a function: does the whole text match?
+  function paramPattern(text) {
+    let re = '', i = 0;
+    const lit = (c) => c.replace(/[.*+?^${}()|[\]\\\/-]/g, '\\$&');
+    while (i < text.length) {
+      const c = text[i];
+      if (c === '\\') { if (i + 1 < text.length) re += lit(text[i + 1]); i += 2; continue; }
+      if (c === "'" || c === '"') { const j = text.indexOf(c, i + 1); if (j > 0) { re += lit(text.slice(i + 1, j)); i = j + 1; continue; } }
+      if (c === '*') { re += '[\\s\\S]*'; i++; continue; }
+      if (c === '?') { re += '[\\s\\S]'; i++; continue; }
+      if (c === '[') { const j = text.indexOf(']', i + 2); if (j > 0) { let body = text.slice(i + 1, j); const neg = body[0] === '!' || body[0] === '^'; if (neg) body = body.slice(1); re += '[' + (neg ? '^' : '') + body.replace(/[\\\]^]/g, '\\$&') + ']'; i = j + 1; continue; } }
+      re += lit(c); i++;
+    }
+    const full = new RegExp('^(?:' + re + ')$');
+    return (t) => full.test(t);
+  }
+  // ${v/pat/repl}: the text after the first / that is not quoted or escaped is the replacement
+  function splitSubst(text) {
+    for (let i = 0, q = null; i < text.length; i++) {
+      const c = text[i];
+      if (c === '\\') { i++; continue; }
+      if (q) { if (c === q) q = null; continue; }
+      if (c === "'" || c === '"') { q = c; continue; }
+      if (c === '/') return [text.slice(0, i), text.slice(i + 1)];
+    }
+    return [text, null];
+  }
+  // The replacement: quotes and \x are literal, and (as in bash 5.2) an unquoted & stands for the text that matched.
+  function replacementText(text, matched) {
+    let out = '';
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (c === '\\' && i + 1 < text.length) { out += text[++i]; continue; }
+      if (c === "'" || c === '"') { const j = text.indexOf(c, i + 1); if (j > 0) { out += text.slice(i + 1, j); i = j; continue; } }
+      out += c === '&' ? matched : c;
+    }
+    return out;
+  }
+  function stripPattern(v, op, test) {
+    const n = v.length;
+    if (op[0] === '#') { if (op.length === 1) { for (let k = 0; k <= n; k++) if (test(v.slice(0, k))) return v.slice(k); } else { for (let k = n; k >= 0; k--) if (test(v.slice(0, k))) return v.slice(k); } }
+    else { if (op.length === 1) { for (let k = n; k >= 0; k--) if (test(v.slice(k))) return v.slice(0, k); } else { for (let k = 0; k <= n; k++) if (test(v.slice(k))) return v.slice(0, k); } }
+    return v;
+  }
+  function substitute(v, p, test, repl) {
+    if (p.pat === '') return v;
+    const n = v.length; let out = '', i = 0, did = false;
+    const longest = (s) => { for (let e = n; e > s; e--) if (test(v.slice(s, e))) return e; return -1; };   // an empty match is no match
+    if (p.anchor === '%') { for (let s = 0; s < n; s++) if (test(v.slice(s))) return v.slice(0, s) + repl(v.slice(s)); return v; }
+    while (i < n) {
+      const e = (p.anchor === '#' && i > 0) ? -1 : longest(i);
+      if (e < 0) { out += v[i]; i++; if (p.anchor === '#') { out += v.slice(i); return out; } continue; }
+      out += repl(v.slice(i, e)); i = e; did = true;
+      if (!p.all || p.anchor === '#') { out += v.slice(i); return out; }
+    }
+    return did ? out : v;
+  }
+
   /* ---------------- wildcards ---------------- */
   // A pattern is a string in which \ protects the next character (quoted text in the word). * ? [...] are the wildcards.
   const GLOB_CHARS = /[*?[]/;
@@ -526,7 +592,15 @@
         if (p.x === 'bad') { const e = new SyntaxError_('${' + p.v + '}: bad substitution'); e.exit = 1; throw e; }
         if (p.x === 'var') v = getVar(p.v, ctx);
         else if (p.x === 'len') v = String(p.v === '@' || p.v === '*' ? ctx.args.length : getVar(p.v, ctx).length);
-        else if (p.x === 'slice') { const cur = getVar(p.v, ctx); v = p.len === null ? cur.slice(p.from) : cur.substr(p.from, p.len); }
+        else if (p.x === 'slice') {
+          const cur = getVar(p.v, ctx), n = cur.length, from = p.from < 0 ? n + p.from : p.from;
+          if (from < 0 || from > n) v = '';   // an offset before the start or past the end gives nothing
+          else if (p.len === null) v = cur.slice(from);
+          else { const end = p.len < 0 ? n + p.len : from + p.len; if (end < from) { const e = new SyntaxError_(p.v + ': substring expression < 0'); e.exit = 1; throw e; } v = cur.slice(from, end); }
+        }
+        else if (p.x === 'strip') { v = stripPattern(getVar(p.v, ctx), p.op, paramPattern(expandVarsIn(p.pat, ctx))); }
+        else if (p.x === 'subst') { const repl = p.repl === null ? '' : expandVarsIn(p.repl, ctx); v = substitute(getVar(p.v, ctx), p, paramPattern(expandVarsIn(p.pat, ctx)), (m) => replacementText(repl, m)); }
+        else if (p.x === 'case') { const cur = getVar(p.v, ctx), up = p.op[0] === '^'; v = p.op.length === 2 ? (up ? cur.toUpperCase() : cur.toLowerCase()) : (up ? cur.slice(0, 1).toUpperCase() : cur.slice(0, 1).toLowerCase()) + cur.slice(1); }
         else if (p.x === 'def') {
           const cur = getVar(p.v, ctx), isSet = /^[0-9]+$/.test(p.v) ? +p.v <= ctx.args.length : has(sh.vars, p.v);
           const word = () => p.word.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*|[0-9?#])/g, (m, a, b) => getVar(a || b, ctx));
@@ -554,6 +628,8 @@
       }
       return out;
     }
+    // $x and ${x} inside the pattern or the replacement of a ${...} are replaced first (text in single quotes is left alone)
+    const expandVarsIn = (text, ctx) => text.replace(/'[^']*'|\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*|[0-9?#])/g, (m, a, b) => (m[0] === "'" ? m : getVar(a || b, ctx)));
     const expandAll = async (words, ctx, io) => { const out = []; for (const w of words) out.push(...await expandWord(w, ctx, io)); return out; };
     const expandOne = async (w, ctx, io) => (await expandWord(w, ctx, io)).join(' ');   // a redirection target or an assignment value: one field, no splitting
 

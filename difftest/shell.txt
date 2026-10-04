@@ -818,3 +818,37 @@ cp -r notes notes/sub
 s=hello; echo ${s:1:3} ${s:2} ${s:9}; echo after
 ===
 echo ${s/a/b}; echo after
+===
+f=archive.tar.gz; echo ${f%.gz} ${f%%.*} ${f#*.} ${f##*.} ${f%x*} ${f#zzz}
+===
+p=/home/student/notes/a.txt; echo ${p##*/} ${p%/*} ${p#/home} ${p%%/*}x ${p%/*/*}
+===
+s="hello world"; echo "${s/o/0}" "${s//o/0}" "${s/#h/J}" "${s/%d/D}" "${s/wor/}" "${s/l*o/X}" "${s//l/}"
+===
+s=banana; echo ${s/a/} ${s//a/} ${s/an/AN} ${s//an/AN} ${s/na*/X} ${s//[an]/_} ${s/#ba/} ${s/%na/} ${s/%nx/} ${s/#x/}
+===
+s=aaa; echo ${s/a/b} ${s//a/b} ${s//a*/b} ${s/*a/b} ${s/#a/b} ${s//#a/b} ${s/%a/b}
+===
+w=hello; echo ${w^} ${w^^} ${w,} ${w,,}; W=HELLO; echo ${W,,} ${W,} ${W^^}
+===
+s=hello; echo ${s: -3} ${s:(-3)} ${s: -3:2} ${s:1:-1} ${s:0:-2} ${s: -9} ${s:9}
+===
+d=txt; f=a.txt; echo ${f%.$d} ${f%.${d}}x ${f/$d/md}
+===
+f=a.txt; echo "${f%.txt}.md"; echo ${f%"t"}; echo ${f%'xt'}
+===
+x=; echo "[${x#a}]" "[${x/a/b}]" "[${x%a}]"; echo "[${unset%x}]" "[${unset/a/b}]"
+===
+for f in a.txt b.txt; do echo ${f%.txt}.md; done
+===
+set one.c two.h; echo ${1%.c} ${2##*.} ${1/o/0}
+===
+s='a/b/c'; echo ${s//\//-} ${s/\//_} ${s#*/} ${s##*/} ${s%/*} ${s%%/*}
+===
+s=abc; echo ${s/b/[&]} ${s/b/\&} ${s/b/'&'} ${s/b/&&}
+===
+f=photo.JPG; echo ${f%.*}.png ${f##*.} ${f,,}
+===
+s="two  words"; echo "${s// /_}" "${s/ /_}" ${s%% *} ${s##* }
+===
+n=12345; echo ${n:1:3} ${n#1} ${n%5} ${n/3/x} ${#n}

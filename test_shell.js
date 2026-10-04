@@ -430,7 +430,13 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('${#x} ${x:1:3}', await run('s=hello; echo ${#s} ${s:1:3} ${s:2}'), '5 ell llo\n', 0);
     eq('${x:-d}', await run('n=x; e=; echo ${n:-d} ${nope:-d} ${e:-d} ${e-d2}. "${n:+set}" ${z:=zz} $z'), 'x d d . set zz zz\n', 0);
     eq('${1:-d} in a script', await run('bash -c \'echo ${1:-none} ${2:-none}\' _ a'), 'a none\n', 0);
-    eq('bad substitution', await run('echo ${s/a/b}'), 'bash: ${s/a/b}: bad substitution\n', 1);
+    eq('bad substitution', await run('echo ${s!x}'), 'bash: ${s!x}: bad substitution\n', 1);
+    // ${x#pat} ${x%pat} ${x/pat/new} ${x^} (bash agrees on all of these: difftest/shell.txt)
+    eq('${f%.txt} ${p##*/} ${p%/*}', await run('f=a.txt; p=/x/y/z.c; echo ${f%.txt} ${p##*/} ${p%/*} ${p#/x} ${p%%/*}.'), 'a z.c /x/y /y/z.c .\n', 0);
+    eq('${s/a/b} ${s//a/b}', await run('s=banana; echo ${s/a/b} ${s//a/b} ${s//[an]/_} ${s/#ba/} ${s/%na/!}'), 'bbnana bbnbnb b_____ nana bana!\n', 0);
+    eq('${s^^} ${s,} ${s: -3}', await run('s=Hello; echo ${s^^} ${s,} ${s: -3} ${s:1:-1}'), 'HELLO hello llo ell\n', 0);
+    eq('a ${...} inside a pattern', await run('d=txt; f=a.txt; echo ${f%.${d}}x ${f%.$d} "${f/$d/md}"'), 'ax a a.md\n', 0);
+    eq('a pattern * also matches a slash', await run('p=a/b/c; echo ${p#*/} ${p##*/} ${p%/*} ${p%%/*} ${p//\\//-}'), 'b/c c a/b a a-b-c\n', 0);
     // sort -k N runs to the end of the line; -k N,M; -u compares keys
     eq('sort -k 2', await run("printf 'a x 2\\nb x 1\\n' | sort -k 2"), 'b x 1\na x 2\n', 0);
     eq('sort -k 2,2', await run("printf 'a x 2\\nb y 1\\nc x 1\\n' | sort -k 2,2"), 'a x 2\nc x 1\nb y 1\n', 0);

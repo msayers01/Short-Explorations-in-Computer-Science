@@ -49,7 +49,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   null-prototype dictionaries (a key may be `__proto__`), size-capped `unpack`. Add a hostile-input test with each new field (see
   `test_backup.js`).
 - Ids of exercises are never renumbered (progress and portfolios are keyed by them); `lint/exercise-ids.txt` and `test_lessons.js` enforce it.
-- Build nodes with `el()`; the DOM's `append` prints `null`/`false` as text.
+- Build nodes with `el()` (the DOM's own `append` prints `null`/`false` as text; `src/domsafe.js` is a net under that, not a licence).
 - JSCPP is patched (`patches/*.patch`, applied to node_modules by `scripts/patch-jscpp.js`, baked into `vendor/jscpp.min.js`).
 
 ## Java (ARCHITECTURE §9e)
@@ -61,7 +61,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - Not covered: user generics, lambdas, nested classes, enums, records, streams, files, threads, checked-exception analysis, switch
   expressions (`yield`); `==` on Strings compares text (so that trap is taught with a listing, not a runnable example).
 - Queue/Deque/ArrayDeque have their own method tables (no index methods; `remove(x)` removes a value, `remove()` the head), as in Java.
-  Comparator works only as a user class implementing `compare` (no lambdas). `%f %e %g` round the shortest decimal half-up, like
+  Comparator works only as a user class implementing `compare` (no lambdas), or `Collections.reverseOrder()`; `TreeSet`/`TreeMap` take one and then treat keys as the same when it says 0, as Java does. `%f %e %g` round the shortest decimal half-up, like
   `java.util.Formatter`. Exception messages follow JDK 21's wording. `test_java.js` expectations were produced by a real JDK: keep it so.
 - After changing `java.js` or `shell.js`, run `npm run test:diff` and a few extra seeds (`SEED=2 COUNT=40 node test_diff.js java`). A new
   difference is a bug to fix; only a deliberate one goes in `difftest/known.json`, with its reason.
@@ -84,8 +84,8 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 
 - Merged: everything below through PR #35 (`main` = `aea174b`), except SC 109, which is on the working branch. PRs #21-#26: the practice terminal, SC 108 lessons 1-4, the one-inline-script
   build, SC 099, Scratch lessons 8-9, the tour. PR #27 was a bug sweep (four reviews: shell against bash, Java against javac/java 21, the
-  app and Scheme, course text): see its commit messages. Bugs it found but left: Java `switch` with `yield`, `%1$s`, TreeSet/TreeMap with
-  a comparator; shell `${s/a/b}` and other unlisted `${...}` forms (they report "bad substitution"); Scheme character literals.
+  app and Scheme, course text): see its commit messages. Bugs it found but left: Java `switch` with `yield`; Scheme character literals. (Java `%1$s` / `%<s`
+  and `new TreeSet<>(comparator)` / `new TreeMap<>(comparator)` were fixed in October 2026: `difftest/java/probe-tc.java`.) (Shell `${s/a/b}`, `${f%.txt}`, `${p##*/}`, `${s^^}` and negative slices were added in October 2026 and are checked against bash in `difftest/shell.txt`; `${x@Q}`-style transforms and arrays still report "bad substitution".)
 - SC 105 Modern C++ has 8 lessons (string, vector, references, struct, class, algorithms/lambdas, map/set, gradebook project), 15 exercises.
 - SC 107 Data Structures and Algorithms (Java, `src/course_dsa.js`): lessons 1-7 (cost and arrays; searching; simple sorts; merge sort and
   quicksort; linked lists; stacks and queues; recursion), 24 exercises (code and `answer` kinds), figures growth, arrayops, dynarray, sortlab,
@@ -149,14 +149,14 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - **Pictures show things and ideas, not people** (the owner's rule, October 2026): no portraits. The one exception the owner asked to keep
   is Ada Lovelace in SC 101. A machine with someone standing beside it is fine; a person as the subject is not. Prefer a picture
   that explains the concept (dice for Monte Carlo, a sieve for the Sieve of Eratosthenes, a plan for a class).
-- The DOM's own `append`/`replaceChildren` do not flatten arrays (they print `[object HTMLElement]`): spread them, or use `el()`, which does.
+- The DOM's own `append`/`replaceChildren` used to print `null`/`false` and arrays as text: `src/domsafe.js` (first in the script) now makes them skip those and flatten arrays (the stray "null" in the Life demo, the bits and knn figures and the shell lesson's tree came from this). Still prefer `el()`.
 - Ideas not started: C in the Code Lab (same compiler); lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
   beside the single-page design and needs a policy change); splitting CI (about 4 minutes now); a Java step-through debugger like the C++ memory stepper.
 - Not verified: Full C++ on low-end devices (needs about 84 MB plus the program), and on the production URL since the security-review merge.
 
 - **Bot Arena** (ARCHITECTURE §9j, `src/tron.js`, `arena*.js`, `test_arena.js`): Tron bots in Python/Java/C++/Scheme at `#/arena` and `#/arena/tournament` (PR #40, merged).
-  All four phases of the owner's spec are built. **Persistent mode** needs cross-origin isolation: `dist/_headers` sends COOP `same-origin` and COEP `require-corp` for the main page (it loads nothing from another origin), so it is on in production and previews, off for a file or a framed copy; the worker side is `botio.js` (SharedArrayBuffer + `Atomics.wait`), the page side `botsession.js`, and `test_arena.js` runs the real worker source in node's `worker_threads`. Arena bots are in the backup file (not the match setup). Known gaps: no stderr in the sandboxes (so `LOG ` lines);
+  All four phases of the owner's spec are built. **Persistent mode** needs cross-origin isolation: `dist/_headers` sends COOP `same-origin` and COEP `require-corp` on a `/*` rule (a rule for `/` or `/index.html` does not reach the document on Cloudflare: `/index.html` only answers with a redirect; checked with curl on a PR preview, October 2026; the page's own `/` also gets none of the CSP *headers*, only the `<meta>` policy, which predates this and is left alone because a `/*` CSP rule would break the teacher guide's script hash). The page loads nothing from another origin, so persistent mode should be on in production and previews and is off for a file or a framed copy (not yet seen working on a deployed URL: this sandbox's Chromium cannot trust the proxy certificate); the worker side is `botio.js` (SharedArrayBuffer + `Atomics.wait`), the page side `botsession.js`, and `test_arena.js` runs the real worker source in node's `worker_threads`. Arena bots are in the backup file (not the match setup). Known gaps: no stderr in the sandboxes (so `LOG ` lines);
   the teaching C++ has no `string`/`vector` (the C++ bots use char arrays); Scheme has no vectors, so its Flood Fill uses lists; the first-legal-move starter beats Random only about
   55-65% of the time (the spec's 90 of 100 holds for the Flood Fill solutions). Scheme gained `read`, `read-line`, `eof-object` (stdin option).
 

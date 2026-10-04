@@ -118,14 +118,15 @@
     const main = el('main', { class: 'algos algo-one' });
     const host = el('div', { class: 'algo-host' });
     const i = demos.indexOf(d), prev = demos[i - 1], next = demos[i + 1];
-    main.append(
+    main.append(...[
       el('nav', { class: 'crumbs' }, el('a', { href: '#/algorithms' }, 'Algorithms'), ' / ', d.group),
       el('h1', {}, d.title),
       el('p', { class: 'tagline' }, d.blurb),
       host,
       d.about ? el('div', { class: 'prose algo-about', html: d.about }) : null,
       d.taught && d.taught.length ? el('p', { class: 'algo-taught' }, 'Taught in: ', d.taught.map((t, k) => [k ? ' · ' : null, el('a', { href: t.href }, t.text)])) : null,
-      el('nav', { class: 'algo-pager' }, prev ? el('a', { href: '#/algorithms/' + prev.id }, '← ' + prev.title) : el('span'), el('a', { href: '#/algorithms' }, 'All demonstrations'), next ? el('a', { href: '#/algorithms/' + next.id }, next.title + ' →') : el('span')));
+      el('nav', { class: 'algo-pager' }, prev ? el('a', { href: '#/algorithms/' + prev.id }, '← ' + prev.title) : el('span'), el('a', { href: '#/algorithms' }, 'All demonstrations'), next ? el('a', { href: '#/algorithms/' + next.id }, next.title + ' →') : el('span'))
+    ].filter(Boolean));   // the DOM's append prints null as text, so only what exists is appended
     // mount once the page is in the document, so the canvas can measure itself
     requestAnimationFrame(() => {
       if (!host.isConnected) return;   // the reader moved on before the first frame: nothing to start, nothing to clean up
