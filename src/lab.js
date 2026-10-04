@@ -313,7 +313,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     for (const l in LANG_INFO) { if (!Array.isArray(S.files[l])) S.files[l] = []; S.files[l] = S.files[l].filter(f => f && typeof f.name === 'string' && typeof f.code === 'string'); }
     for (const l in LANG_INFO) {
       if (!S.files[l] || !S.files[l].length) S.files[l] = [{ name: LANG_INFO[l].first, code: TEMPLATES[l][0].code }];
-      if (S.active[l] == null || S.active[l] >= S.files[l].length) S.active[l] = 0;
+      if (!Number.isInteger(S.active[l]) || S.active[l] < 0 || S.active[l] >= S.files[l].length) S.active[l] = 0;
     }
     if (!S.panels) S.panels = {};
     S.fullCpp = S.fullCpp === true;
@@ -330,7 +330,11 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     if (!query) return null;
     const q = new URLSearchParams(query);
     if (!q.get('c')) return null;
-    try { return { lang: hasLang(q.get('l')) ? q.get('l') : 'python', code: b64d(q.get('c')), name: q.get('n') || '' }; } catch (e) { return null; }
+    try {
+      const code = b64d(q.get('c'));
+      if (code.length > 1000000) return null;   // the same limits as a restored backup (backup.js cleanLabFile)
+      return { lang: hasLang(q.get('l')) ? q.get('l') : 'python', code, name: (q.get('n') || '').slice(0, 100) };
+    } catch (e) { return null; }
   }
 
   /* ---------------- the editor ---------------- */
@@ -579,7 +583,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const { el, Runners, outputPanel, tipFor, armConfirm } = A();
     load();
     const shared = kind === 'assign' || kind === 'review' ? null : parseShare(query);
-    if (shared) { S.lang = shared.lang; const name = shared.name || ('shared' + LANG_INFO[S.lang].ext); const files = S.files[S.lang]; let idx = files.findIndex(f => f.name === name && f.code === shared.code); if (idx < 0) { files.push({ name: uniqueName(S.lang, name), code: shared.code }); idx = files.length - 1; } S.active[S.lang] = idx; save(); history.replaceState(null, '', '#/lab'); }
+    if (shared) { S.lang = shared.lang; const name = shared.name || ('shared' + LANG_INFO[S.lang].ext); const files = S.files[S.lang]; let idx = files.findIndex(f => f.name === name && f.code === shared.code); if (idx < 0 && files.length < 200) { files.push({ name: uniqueName(S.lang, name), code: shared.code }); idx = files.length - 1; } if (idx >= 0) S.active[S.lang] = idx; save(); history.replaceState(null, '', '#/lab'); }
     document.documentElement.setAttribute('data-course', LANG_INFO[S.lang].accent);
 
     const main = el('main', { class: 'lab' });
@@ -801,7 +805,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const traceStop = el('button', { class: 'btn quiet', onclick: () => tracer && tracer.stop() }, 'Stop');
     const traceRestart = el('button', { class: 'btn quiet', onclick: () => { if (tracer) tracer.stop(); setTimeout(startTrace, 50); } }, 'Restart');
     const traceBox = el('div', { class: 'trace-box', hidden: '', tabindex: '0' }, el('div', { class: 'panel-head' }, el('b', {}, 'Step through'), traceMsg), el('div', { class: 'toolbar' }, traceNext, traceRun, traceRestart, traceStop, el('span', { class: 'panel-note' }, 'Enter or N: next line')), traceVars);
-    traceBox.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === 'n' || e.key === 'N') && tracer) { e.preventDefault(); tracer.next(); } });
+    traceBox.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.closest && e.target.closest('button')) return; if ((e.key === 'Enter' || e.key === 'n' || e.key === 'N') && tracer) { e.preventDefault(); tracer.next(); } });
     const repl = makeRepl();
     const replBox = el('div', { class: 'repl-box', hidden: S.lang !== 'scheme' ? '' : null }, el('div', { class: 'panel-head' }, el('b', {}, 'REPL'), el('span', { class: 'panel-note' }, 'Type an expression and press Enter. Run the file first to load its definitions. ↑ ↓ recall earlier lines.')), repl.el);
 
@@ -819,7 +823,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       const lang = S.lang, code = editor.value; out.start((window.__app.COMMANDS || {})[lang === 'cpp' && isFull() ? 'cppfull' : lang] || '');
       let exit = 0, stopped = false;
       const reads = lang === 'cpp' ? /\bcin\b/.test(code) : lang === 'java' ? /\bScanner\b/.test(code) : false;
-      if (reads) { stdinBox.hidden = false; if (!stdinTa.value.trim() && !stdinTa.dataset.warned) { stdinTa.dataset.warned = '1'; out.note('This program reads input with ' + (lang === 'java' ? 'a Scanner' : 'cin') + '. Type the values in the Program input box, one per line, then Run again.'); stdinTa.focus(); return; } }
+      if (reads) { stdinBox.hidden = false; if (!stdinTa.value.trim() && !stdinTa.dataset.warned) { stdinTa.dataset.warned = '1'; out.note('This program reads input with ' + (lang === 'java' ? 'a Scanner' : 'cin') + '. Type the values in the Program input box, one per line, then Run again.'); stdinTa.focus(); out.finish({ stopped: true }); return; } }
       setRunning(true);
       try {
         if (lang === 'python') {
@@ -896,6 +900,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     memSlider.addEventListener('input', () => memShow(+memSlider.value));
     memBox.addEventListener('keydown', (e) => {
       if (!memTrace || e.target === memSlider) return;
+      if (e.key === 'Enter' && e.target.closest && e.target.closest('button')) return;   // Enter on a button presses it
       if (e.key === 'Enter' || e.key === 'n' || e.key === 'N' || e.key === 'ArrowRight') { e.preventDefault(); memShow(memIdx + 1); }
       else if (e.key === 'b' || e.key === 'B' || e.key === 'ArrowLeft') { e.preventDefault(); memShow(memIdx - 1); }
     });
@@ -944,7 +949,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const substAll = el('button', { class: 'btn', onclick: () => substShow(Infinity) }, 'Show all');
     const substRestart = el('button', { class: 'btn quiet', onclick: () => startSubst() }, 'Restart');
     const substBox = el('div', { class: 'subst-box', hidden: '', tabindex: '0' }, el('div', { class: 'panel-head' }, el('b', {}, 'Substitution model'), substMsg), el('div', { class: 'toolbar' }, substNext, substAll, substRestart, el('button', { class: 'btn quiet', onclick: () => { substBox.hidden = true; } }, 'Close'), el('span', { class: 'panel-note' }, 'Enter or N: next step')), substList);
-    substBox.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === 'n' || e.key === 'N') { e.preventDefault(); substShow(1); } });
+    substBox.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.closest && e.target.closest('button')) return; if (e.key === 'Enter' || e.key === 'n' || e.key === 'N') { e.preventDefault(); substShow(1); } });
     let substQueue = [], substShown = 0;
     function startSubst() {
       if (!window.SUBST) return;

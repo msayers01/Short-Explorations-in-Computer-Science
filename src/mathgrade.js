@@ -26,7 +26,7 @@
     if (g === w) return true;
     const gn = asNum(got), wn = asNum(want);
     if (gn !== null && wn !== null) {
-      if (Number.isInteger(gn) && Number.isInteger(wn) && Math.abs(wn) > 2 ** 31) return gn === wn;   // a relative tolerance would accept off-by-one big integers
+      if (Number.isInteger(gn) && Number.isInteger(wn)) return gn === wn;   // a relative tolerance would accept off-by-one integers of a billion or more
       return Math.abs(gn - wn) <= Math.max(1e-12, 1e-9 * Math.abs(wn));
     }
     // true/false answers: yes/no/t/f are accepted, but only when the expected answer is itself such a word

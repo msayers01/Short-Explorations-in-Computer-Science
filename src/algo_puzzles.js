@@ -167,10 +167,10 @@
     injectCss();
     const el = api.el, snd = chime(), sound = soundToggle(el, snd);
     let n = 4, pegs = startPegs(n), held = -1, moves = 0, watching = false, wonShown = false, shake = 0;
-    const sizeSel = el('select', { 'aria-label': 'Number of discs', onchange: () => { n = +sizeSel.value; restart(); } }, [3, 4, 5, 6, 7, 8].map((k) => el('option', { value: String(k) }, k + ' discs')));
+    const sizeSel = el('select', { 'aria-label': 'Number of discs', onchange: () => { n = +sizeSel.value; pl.reset(); } }, [3, 4, 5, 6, 7, 8].map((k) => el('option', { value: String(k) }, k + ' discs')));
     sizeSel.value = String(n);
     const big = el('p', { class: 'pz-big', role: 'status' });
-    host.append(el('div', { class: 'algo-controls' }, el('label', {}, 'Size ', sizeSel), el('button', { class: 'btn', onclick: () => restart() }, 'Start again'), sound.button));
+    host.append(el('div', { class: 'algo-controls' }, el('label', {}, 'Size ', sizeSel), el('button', { class: 'btn', onclick: () => pl.reset() }, 'Start again'), sound.button));
     host.append(el('p', { class: 'ap-hint pz-hint' }, 'Move the whole tower to the right-hand peg. Click a peg to pick up its top disc, then click the peg to put it on (or press 1, 2 and 3). A disc may never sit on a smaller one.'));
     const cv = api.canvas(host, { label: 'Three pegs and a tower of discs', maxWidth: 900, height: (w) => Math.round(Math.max(200, Math.min(360, w * 0.42))), draw });
     cv.canvas.parentNode.classList.add('pz-canvas');
@@ -376,7 +376,7 @@
       start: () => (function* () { for (;;) yield 1; })(),
       onStep: () => {
         const x = rnd(), y = rnd(), hit = x * x + y * y <= 1; n++; if (hit) inside++;
-        recent.push([x, y, hit]); if (recent.length > 4000) recent.splice(0, recent.length - 4000);
+        recent.push([x, y, hit]); if (recent.length > 4500) recent.splice(0, recent.length - 4000);
         if (n <= 100 || n % Math.ceil(n / 200) === 0) history.push([n, 4 * inside / n]);
         if (history.length > 600) history = history.filter((_, k) => k % 2 === 0);
         later();

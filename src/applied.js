@@ -544,6 +544,7 @@
 
   // Move to a topic without rebuilding the page (so the filters stay as they are), and keep the address shareable.
   function jump(e, id) {
+    if (e.button || e.ctrlKey || e.metaKey || e.shiftKey) return;   // let the browser open a new tab
     const t = document.getElementById(id); if (!t) return;
     e.preventDefault();
     if (t.hidden) return;

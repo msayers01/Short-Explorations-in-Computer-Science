@@ -25,6 +25,8 @@
 
   const list = (...xs) => { let r = NIL; for (let i = xs.length - 1; i >= 0; i--) r = new Pair(xs[i], r); return r; };
   const fromArr = (xs, tail) => { let r = tail === undefined ? NIL : tail; for (let i = xs.length - 1; i >= 0; i--) r = new Pair(xs[i], r); return r; };
+  const MAX_ALLOC = 1e6, MAX_STR = 1e7;   // iota and string-append build their result in one step, so the step limit cannot stop them
+  const tooBig = () => new SchemeError(';Aborting!: out of memory');
   const MAX_LIST = 1e7;   // a circular list would otherwise loop forever
   const arr = (p) => { const out = []; while (p instanceof Pair) { out.push(p.car); p = p.cdr; if (out.length > MAX_LIST) throw new SchemeError('The object is a circular list, which this procedure cannot process.'); } if (p !== NIL) throw new SchemeError('The object ' + write(p) + ', passed as the last argument, is not a list.'); return out; };
   const isList = (p) => {   // Floyd's cycle detection: a circular list is not a list
@@ -482,7 +484,7 @@
     G.define(sym('system-global-environment'), G);
     def('eval', ([x]) => evaluate(x, G), 1, 2);
     def('apply', (a) => { const f = a[0]; const args = a.slice(1, -1).concat(arr(a[a.length - 1])); return apply(f, args); }, 2);
-    def('iota', ([n, start, step]) => { const s = start === undefined ? 0 : start, st = step === undefined ? 1 : step; const out = []; for (let i = 0; i < num(n, 'iota'); i++) out.push(s + i * st); return fromArr(out); }, 1, 3);
+    def('iota', ([n, start, step]) => { const s = start === undefined ? 0 : start, st = step === undefined ? 1 : step; const out = []; if (num(n, 'iota') > MAX_ALLOC) throw tooBig(); for (let i = 0; i < num(n, 'iota'); i++) out.push(s + i * st); return fromArr(out); }, 1, 3);
     def('display', ([x]) => { out(write(x, true)); return UNSPEC; }, 1, 2);
     def('write', ([x]) => { out(write(x, false)); return UNSPEC; }, 1, 2);
     def('newline', () => { out('\n'); return UNSPEC; }, 0, 1);
@@ -502,7 +504,7 @@
     const strCmp = (name, ok) => def(name, (a) => { a.forEach((s) => str(s, name)); for (let i = 1; i < a.length; i++) if (!ok(a[i - 1], a[i])) return false; return true; }, 1);
     def('symbol->string', ([s]) => { if (!(s instanceof Sym)) throw new SchemeError('The object ' + write(s) + ', passed as the first argument to symbol->string, is not the correct type.'); return s.name; }, 1, 1);
     def('string->symbol', ([s]) => sym(str(s, 'string->symbol')), 1, 1);
-    def('string-append', (a) => a.map((s) => str(s, 'string-append')).join(''), 0); def('string-length', ([s]) => str(s, 'string-length').length, 1, 1);
+    def('string-append', (a) => { const ss = a.map((s) => str(s, 'string-append')); if (ss.reduce((n, s) => n + s.length, 0) > MAX_STR) throw tooBig(); return ss.join(''); }, 0); def('string-length', ([s]) => str(s, 'string-length').length, 1, 1);
     strCmp('string=?', (a, b) => a === b); strCmp('string<?', (a, b) => a < b); strCmp('string>?', (a, b) => a > b);
     strCmp('string<=?', (a, b) => a <= b); strCmp('string>=?', (a, b) => a >= b);
     def('string-ref', ([s, k]) => { str(s, 'string-ref'); if (!Number.isInteger(k) || k < 0 || k >= s.length) throw new SchemeError('The object ' + write(k) + ', passed as the second argument to string-ref, is not in the correct range.'); return s[k]; }, 2, 2);

@@ -608,6 +608,7 @@
   function dstr(v, R, depth) {
     depth = depth || 0; if (depth > 20) return '...';
     if (v === null || v === undefined) return 'null';
+    if (typeof v === 'object' && v.classOf !== undefined && !(v instanceof JObj)) return 'class ' + qualified(v.classOf);   // what getClass() returns
     switch (typeof v) { case 'string': return v; case 'number': return String(v); case 'bigint': return v.toString(); case 'boolean': return String(v); }
     if (v instanceof JBox) return v.kind === 'D' ? fmtDouble(v.v) : v.kind === 'F' ? fmtFloat(v.v) : String.fromCharCode(v.v);
     if (v instanceof JObj) {

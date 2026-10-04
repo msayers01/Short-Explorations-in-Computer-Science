@@ -7,12 +7,14 @@
      shift is how many lines the checker put before the student's code (error messages are moved back by that much). */
 (function () {
   'use strict';
+  // the code with comments and string/char literals blanked, so a check for `class` or `main(` is not fooled by a word in a comment or a text
+  const stripCode = (code) => String(code).replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g, ' ');
   function harness(ex, code) {
     const tests = ex.tests || [];
     const calls = tests.filter((t) => t.call !== undefined || t.main !== undefined).length;
     if (calls && calls !== tests.length) return { error: 'This exercise mixes two kinds of test; the checker cannot run it.' };
     if (!calls) return { src: code, stdins: tests.map((t) => t.stdin || ''), shift: 0 };
-    if (/\bint\s+main\s*\(/.test(code)) return { error: 'For this exercise write only the function(s) — the checker supplies its own main() to call them.' };
+    if (/\bint\s+main\s*\(/.test(stripCode(code))) return { error: 'For this exercise write only the function(s) — the checker supplies its own main() to call them.' };
     const pre = ex.prelude || '#include <iostream>\nusing namespace std;\n';
     const cases = tests.map((t, i) => '    case ' + i + ': {\n' + (t.main !== undefined ? t.main : (t.setup || '') + '\n        cout << (' + t.call + ') << endl;') + '\n    } break;').join('\n');
     return {

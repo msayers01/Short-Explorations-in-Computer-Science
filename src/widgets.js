@@ -1579,7 +1579,7 @@ xs mapped kept result`;
     const toData = (e) => { const r = svg.getBoundingClientRect(), sx = W0 / r.width, sy = H0 / r.height; const px = (e.clientX - r.left) * sx, py = (e.clientY - r.top) * sy;
       return [Math.max(X0, Math.min(X1, X0 + (px - L) / (W0 - L - R) * (X1 - X0))), Math.max(Y0, Math.min(Y1, Y0 + (1 - (py - T) / (H0 - T - B)) * (Y1 - Y0)))]; };
     let dragging = false;
-    svg.addEventListener('pointerdown', (e) => { dragging = true; try { svg.setPointerCapture(e.pointerId); } catch (x) { /* old browser */ } q = toData(e); render(); e.preventDefault(); });
+    svg.addEventListener('pointerdown', (e) => { if (e.button) return; dragging = true; try { svg.setPointerCapture(e.pointerId); } catch (x) { /* old browser */ } q = toData(e); render(); e.preventDefault(); });
     svg.addEventListener('pointermove', (e) => { if (!dragging) return; q = toData(e); render(); });
     const end = () => { dragging = false; const f = svg.querySelector('.knn-new'); if (f && document.activeElement === document.body) f.focus({ preventScroll: true }); };
     svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);

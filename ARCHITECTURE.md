@@ -511,8 +511,8 @@ in the tests) wraps method-writing exercises in a class with a `main`.
 - **Not covered** (the parser says so in plain words): generics in user classes, lambdas and method references, nested/anonymous/local
   classes, enums, records, interfaces with default-method bodies on user classes are fine but `switch` patterns are not, try-with-resources,
   streams, threads, files, checked-exception analysis (`throws` is parsed and ignored). `==` between two Strings compares the text (Java
-  compares references), so lesson 2 shows that trap as a listing, not a runnable example. Recursion deeper than about 1200 calls is a
-  `StackOverflowError` (real Java allows about ten times more).
+  compares references), so lesson 2 shows that trap as a listing, not a runnable example. Recursion deeper than `MAX_DEPTH` (1200) calls is a
+  `StackOverflowError`, and in a browser the worker's JS stack gives out sooner, at about 270 calls (real Java allows about ten thousand).
 - **Limits and safety.** The worker's watchdog is 8 s and the interpreter's own `maxMs` 5 s (checked every 1024 steps); output is capped
   at 2 MB in the interpreter and the page; arrays over 50 million elements are an `OutOfMemoryError`. The interpreter never evaluates
   JavaScript text and is behind `lockdown.js` like the others. Speed: about 2 million simple loop iterations a second in Chromium

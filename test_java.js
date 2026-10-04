@@ -203,4 +203,7 @@ if (!/^Main\.java:2: error: cannot find symbol/.test(U.shiftLines(r2.err, h2.shi
 const h3 = U.harness({ classes: true }, 'class Dog {\n    String name;\n    Dog(String n) { name = n; }\n    String speak() { return name + " says Woof"; }\n}', { main: '        System.out.println(new Dog("Rex").speak());' });
 t('harness: class exercise', h3.src, 'Rex says Woof\n');
 if (!U.harness({}, 'public static void main(String[] args) {}', { call: 'x' }).error) { bad++; console.log('BAD  harness: a main in a method exercise is refused'); } else console.log('ok   harness: a main in a method exercise is refused');
+t('getClass() prints like Java', 'class Foo {}\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(new Foo().getClass());\n        System.out.println("s".getClass().getSimpleName());\n    }\n}\n', 'class Foo\nString\n');
+const hc = U.harness({}, '// the first class of the day, with a main(String[] a) in mind\nstatic int f(int x) { String s = "class Foo"; return x; }', { call: 'f(1)' });
+if (hc.error) { bad++; console.log('BAD  harness: a comment or a text is not a class', hc.error); } else console.log('ok   harness: a comment or a text is not a class');
 console.log(bad ? bad + ' problems' : 'all ok');

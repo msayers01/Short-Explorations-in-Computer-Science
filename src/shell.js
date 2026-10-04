@@ -20,7 +20,7 @@
   'use strict';
   const dict = () => Object.create(null);
   const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
-  const LIMITS = { files: 500, bytes: 2000000, fileBytes: 256000, depth: 32, name: 100, steps: 20000, out: 2000000, history: 500 };
+  const LIMITS = { files: 500, bytes: 2000000, fileBytes: 256000, depth: 32, name: 100, steps: 20000, dirs: 500, brace: 10000, vars: 256000, out: 2000000, history: 500 };
   const USER = 'student', HOST = 'lab', HOME = '/home/student';
   const MSG = { ENOENT: 'No such file or directory', ENOTDIR: 'Not a directory', EISDIR: 'Is a directory', EEXIST: 'File exists', ENOTEMPTY: 'Directory not empty',
     EACCES: 'Permission denied', ENOSPC: 'No space left on device', ENAMETOOLONG: 'File name too long', EINVAL: 'Invalid argument', EMFILE: 'Too many files', EFBIG: 'File too large' };
@@ -68,15 +68,16 @@
     const writable = (abs) => building || abs === '/home' || abs.startsWith('/home/') || abs === '/tmp' || abs.startsWith('/tmp/');
     const mustWrite = (abs) => { if (!writable(abs)) fail('EACCES', abs); if (parts(abs).length > LIMITS.depth) fail('ENAMETOOLONG', abs); };
     const count = (n, acc) => { if (n.t === 'd') { for (const k in n.c) count(n.c[k], acc); } else { acc.files++; acc.bytes += n.d.length; } return acc; };
+    const countDirs = (n) => { let c = 0; if (n.t === 'd') { c = 1; for (const k in n.c) c += countDirs(n.c[k]); } return c; };   // empty directories cost memory and a saved copy too
     fs.usage = () => { const acc = { files: 0, bytes: 0 }; for (const k of ['home', 'tmp']) if (has(root.c, k)) count(root.c[k], acc); return acc; };   // the student's files; the system does not count
-    const checkSpace = (extraFiles, extraBytes) => { const u = fs.usage(); if (u.files + extraFiles > LIMITS.files) fail('EMFILE'); if (u.bytes + extraBytes > LIMITS.bytes) fail('ENOSPC'); };
+    const checkSpace = (extraFiles, extraBytes, extraDirs) => { const u = fs.usage(); if (extraDirs) { let d = 0; for (const k of ['home', 'tmp']) if (has(root.c, k)) d += countDirs(root.c[k]); if (d + extraDirs > LIMITS.dirs) fail('EMFILE'); } if (u.files + extraFiles > LIMITS.files) fail('EMFILE'); if (u.bytes + extraBytes > LIMITS.bytes) fail('ENOSPC'); };
     const touchDir = (d) => { d.m = now(); };
     fs.mkdir = (abs, parents) => {
       if (parents) { let cur = ''; for (const p of parts(abs)) { cur += '/' + p; const n = fs.stat(cur); if (!n) fs.mkdir(cur, false); else if (n.t !== 'd') fail('ENOTDIR', cur); } return; }
       const { dir, name } = parent(abs);
       if (!validName(name)) fail(name.length > LIMITS.name ? 'ENAMETOOLONG' : 'EINVAL', abs);
       if (has(dir.c, name)) fail('EEXIST', abs);
-      mustWrite(abs);
+      mustWrite(abs); if (!building) checkSpace(0, 0, 1);
       dir.c[name] = mkdir(); touchDir(dir);
     };
     fs.read = (abs) => { const n = fs.stat(abs); if (!n) fail('ENOENT', abs); if (n.t === 'd') fail('EISDIR', abs); return n.d; };
@@ -113,7 +114,7 @@
       if (old && old.t === 'f' && s.t === 'd') fail('ENOTDIR', dst);
       if (!old && !validName(name)) fail('EINVAL', dst);
       mustWrite(dst);
-      const sz = sizeOf(s); checkSpace(sz.files, sz.bytes);
+      const sz = sizeOf(s); checkSpace(sz.files, sz.bytes, countDirs(s));
       if (old && old.t === 'f') { old.d = s.d; old.m = now(); old.bin = s.bin; }
       else if (old && old.t === 'd') { for (const k in s.c) old.c[k] = clone(s.c[k]); old.m = now(); }
       else { dir.c[name] = clone(s); touchDir(dir); }
@@ -152,7 +153,7 @@
         const f = mkfile(j.d, j.x === true, bin); f.m = typeof j.m === 'number' && isFinite(j.m) ? j.m : now(); return f;
       }
       if (j.t === 'd') {
-        if (depth >= LIMITS.depth) return null;
+        if (depth >= LIMITS.depth || (acc.dirs = (acc.dirs || 0) + 1) > LIMITS.dirs) return null;
         const d = mkdir(); d.m = typeof j.m === 'number' && isFinite(j.m) ? j.m : now();
         if (Array.isArray(j.c)) for (const e of j.c) { if (!Array.isArray(e) || !validName(e[0])) continue; const child = fromJSON(e[1], depth + 1, acc); if (child) d.c[e[0]] = child; }
         return d;
@@ -473,7 +474,12 @@
     else if (lr) { const a = lr[1].charCodeAt(0), b = lr[2].charCodeAt(0); items = []; for (let i = a; a <= b ? i <= b : i >= b; a <= b ? i++ : i--) items.push(String.fromCharCode(i)); }
     else if (body.includes(',')) items = body.split(',');
     else return [s];
-    return items.flatMap((it) => braceExpand(m[1] + it + m[3]));
+    // the items hold no braces, so only the rest of the word can expand further; several braces in a row multiply, so the product is capped
+    const tails = braceExpand(m[3]);
+    if (items.length * tails.length > LIMITS.brace) return [s];
+    const out = [];
+    for (const it of items) for (const t of tails) out.push(m[1] + it + t);
+    return out;
   }
 
   /* ---------------- running ---------------- */
@@ -498,7 +504,7 @@
       if (name === 'OLDPWD') return sh.oldpwd || '';
       return has(sh.vars, name) ? sh.vars[name] : '';
     };
-    const setVar = (name, v) => { if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) return; sh.vars[name] = String(v); };
+    const setVar = (name, v) => { if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) return; sh.vars[name] = cap(String(v), LIMITS.vars); };
     const tilde = (fsPath) => fsPath === HOME ? '~' : fsPath.startsWith(HOME + '/') ? '~' + fsPath.slice(HOME.length) : fsPath;
     sh.prompt = () => USER + '@' + HOST + ':' + tilde(fs.cwd) + '$ ';
     sh.cancel = () => { sh.cancelled = true; if (opts.cancel) opts.cancel(); };

@@ -92,7 +92,9 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   mergeviz, partition, linkedlist, stackqueue, callstack. The interpreter has no `java.util.Stack` (taught as legacy, not run); `ArrayDeque`
   works as stack, queue and deque. A `\n` inside a Java string in a lesson must be written `\\n` in the template literal.
   Linked-list exercises use `classes: true` with two top-level classes (no nested classes in the interpreter). The interpreter's recursion
-  limit is 1200 frames (`MAX_DEPTH`): keep worst-case quicksort demos at n <= 1000 and recursion demos shallower than that. Planned next:
+  limit is `MAX_DEPTH` = 1200 frames in node, but in Chromium's worker the JS stack runs out at about 270 Java frames (measured October 2026: a
+  `sum(a, i+1)` recursion fails between 250 and 300): keep recursion demos and exercise tests under about 200 deep, and check examples in
+  a browser, since node-based tests cannot see this. Fixing it properly means fewer JS frames per Java call in `java.js`. Planned next:
   hash tables; binary search trees; heaps and priority queues; graphs; a project. (Lesson text already points at hash tables as lesson 8,
   trees as 9, heaps as 10, graphs as 11.)
 - SC 100 From Scratch to Python (`src/course_scratch.js`, grades 5-8): lessons 1-9 (say and ask; variables; repeat, forever and the turtle;

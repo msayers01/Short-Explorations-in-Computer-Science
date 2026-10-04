@@ -58,8 +58,9 @@
     state.i = i; state.target = null; state.spot.classList.add('hidden'); state.card.classList.add('moving');
     if (location.hash !== step.route) { state.navigating = true; location.hash = step.route; await new Promise((r) => setTimeout(r, 50)); }
     const target = await waitFor(step.target, 4000);
+    if (!state) return;   // the tour was closed while the page loaded
     state.navigating = false;
-    if (!state || state.i !== i) return;
+    if (state.i !== i) return;
     if (!target) { if (step.optional) { go(i + dir); return; } render(step, null); return; }
     state.target = target;
     reveal(target, step);

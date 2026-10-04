@@ -11,17 +11,20 @@
   else root.JAVAUTIL = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
+  // the code with comments and string/char literals blanked, so a check for `class` or `main(` is not fooled by a word in a comment or a text
+  const stripCode = (code) => String(code).replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g, ' ');
   function harness(ex, code, test) {
     const prelude = ex.prelude ? ex.prelude.replace(/\s*$/, '\n') : '';
     const body = test.main !== undefined ? test.main : (test.setup ? test.setup + '\n' : '') + '        System.out.println(' + test.call + ');';
+    const bare = stripCode(code);   // the checks below look at code, not at comments or text
     if (ex.classes) {
       const several = /class[\s\S]*class/.test(ex.starter || '');
-      if (/\bstatic\s+void\s+main\s*\(/.test(code)) return { error: 'For this exercise write only the class' + (several ? 'es' : '') + ': the checker supplies its own main to test ' + (several ? 'them' : 'it') + '.' };
+      if (/\bstatic\s+void\s+main\s*\(/.test(bare)) return { error: 'For this exercise write only the class' + (several ? 'es' : '') + ': the checker supplies its own main to test ' + (several ? 'them' : 'it') + '.' };
       const head = prelude + 'class Check {\n    public static void main(String[] args) {\n' + body + '\n    }\n}\n';
       return { src: head + code, shift: head.split('\n').length - 1 };
     }
-    if (/\bstatic\s+void\s+main\s*\(/.test(code)) return { error: 'For this exercise write only the method: the checker supplies its own main() to call it.' };
-    if (/\bclass\s+\w+/.test(code)) return { error: 'For this exercise write only the method, without a class around it: the checker supplies the class and a main() to call it.' };
+    if (/\bstatic\s+void\s+main\s*\(/.test(bare)) return { error: 'For this exercise write only the method: the checker supplies its own main() to call it.' };
+    if (/\bclass\s+\w+/.test(bare)) return { error: 'For this exercise write only the method, without a class around it: the checker supplies the class and a main() to call it.' };
     const head = prelude + 'public class Main {\n';
     return { src: head + code + '\n\n    public static void main(String[] args) {\n' + body + '\n    }\n}\n', shift: head.split('\n').length - 1 };
   }
