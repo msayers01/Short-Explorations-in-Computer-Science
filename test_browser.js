@@ -323,7 +323,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await goto('#/python/8');
   const lessonStd = await page.evaluate(() => { const d = document.querySelector('.lesson-stds'); return d && { summary: d.querySelector('summary').textContent, link: !!d.querySelector('a[href="#/standards/3A-AP-17"]') }; });
   check('standards: a lesson shows its standards under the summary, linking to the standards page', lessonStd && /^Standards: \d+ CSTA/.test(lessonStd.summary) && lessonStd.link, lessonStd);
-  await goto('#/math/9');
+  await goto('#/math/11');
   check('standards: a lesson with no standard shows no box', (await page.locator('.lesson-stds').count()) === 0);
   // ---- pictures in lessons: they load (lazily), carry a credit, open larger and close with Esc; a missing file shows its description
   await goto('#/computer/1');

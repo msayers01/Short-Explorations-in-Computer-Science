@@ -565,7 +565,7 @@
     about: '<p>Every answer of "higher" or "lower" rules out about half of the numbers that were left. Guessing the middle each time is binary search, and it never needs more than ⌈log₂(N + 1)⌉ guesses: 4 for 1 to 10, 7 for 1 to 100, 10 for 1 to 1,000 and 20 for 1 to 1,000,000. That is O(log N).</p>' +
       '<p>No method can promise to do better. With k guesses you can tell apart at most 1 + 2 + 4 + … + 2<sup>k−1</sup> = 2<sup>k</sup> − 1 numbers: one you guess first, then one for each answer to that, and so on. So 100 numbers need 7 guesses in the worst case, because 2⁶ − 1 = 63 is too few.</p>' +
       '<p>The same idea is the game of twenty questions (2²⁰ is just over a million), and <code>git bisect</code>, which finds the commit that broke a program by testing the one halfway between a good version and a bad one.</p>',
-    taught: [{ href: '#/python/14', text: 'SC 101 lesson 14: Searching and sorting' }, { href: '#/dsa/2', text: 'SC 107 lesson 2: Searching' }, { href: '#/math/11', text: 'SC 104 lesson 11: Counting steps' }]
+    taught: [{ href: '#/python/14', text: 'SC 101 lesson 14: Searching and sorting' }, { href: '#/dsa/2', text: 'SC 107 lesson 2: Searching' }, { href: '#/math/13', text: 'SC 104 lesson 13: Counting steps' }]
   });
 
   // ---------- demo 3: interpolation search

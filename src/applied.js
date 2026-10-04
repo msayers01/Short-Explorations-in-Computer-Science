@@ -113,7 +113,7 @@
         { f: 'web', t: 'Caches keep recent answers so a site does not have to work them out again; they are hash tables keyed by the question. Memcached and Redis are well-known examples.' }
       ],
       jobs: ['Backend developer', 'Security engineer', 'DevOps engineer', 'Database engineer'],
-      learn: ['python/11', 'java/13', 'modern/7', 'math/11'],
+      learn: ['python/11', 'java/13', 'modern/7', 'math/13'],
       teach: 'Hook: explain why "Forgot your password?" sends a reset link instead of your old password. (The site does not know it: it only kept a hash.)'
     },
     {
@@ -127,7 +127,7 @@
         { f: 'eng', t: 'The Fast Fourier Transform (1965) does in about n log n steps what took n² before; it is used in audio, radio, medical imaging and more.' }
       ],
       jobs: ['Backend developer', 'Performance engineer', 'Site reliability engineer', 'Data engineer'],
-      learn: ['dsa/1', 'math/11', 'lisp/6', 'python/14'],
+      learn: ['dsa/1', 'math/13', 'lisp/6', 'python/14'],
       teach: 'Activity: time a program on n and on 2n items (the doubling experiment). Ask students to predict the second time before running it.'
     },
     {
@@ -156,7 +156,7 @@
         { f: 'games', t: 'Games collect events (key presses, network messages) in a queue and handle them in order each frame.' }
       ],
       jobs: ['Systems programmer', 'Backend developer', 'Exploit developer', 'Game developer'],
-      learn: ['dsa/7', 'dsa/8', 'python/13', 'math/8'],
+      learn: ['dsa/7', 'dsa/8', 'python/13', 'math/9'],
       teach: 'Discussion: which is fairer for a school cafeteria, a stack or a queue? Then: why does Undo use the other one?'
     },
     {
@@ -198,7 +198,7 @@
         { f: 'games', t: 'Characters in games find their way around a level with A* search on a grid or a "navigation mesh".' }
       ],
       jobs: ['Network engineer', 'Penetration tester', 'Backend developer', 'Game AI programmer'],
-      learn: ['math/5', 'dsa/7'],
+      learn: ['math/6', 'dsa/7'],
       teach: 'Activity: draw the classroom friendships (or the school\'s hallways) as a graph. Find the shortest path between two points by breadth-first search, one ring at a time.'
     },
     {
@@ -213,7 +213,7 @@
         { f: 'data', t: 'Decision trees, and "forests" of many of them, are among the most widely used machine-learning models for tables of data.' }
       ],
       jobs: ['Database engineer', 'Compiler engineer', 'Web developer', 'Machine-learning engineer'],
-      learn: ['shell/1', 'math/5', 'lisp/8', 'lisp/13'],
+      learn: ['shell/1', 'math/6', 'lisp/8', 'lisp/13'],
       teach: 'Hook: open a computer\'s file browser and follow a path such as /home/student/projects down from the root. Every folder has exactly one parent. Why can a folder not be inside itself?'
     },
     {
@@ -337,7 +337,7 @@
         { f: 'data', t: 'Machine-learning libraries work out derivatives automatically to train neural networks (automatic differentiation, a cousin of the symbolic differentiation in the Lisp course\'s project).' }
       ],
       jobs: ['Compiler engineer', 'Developer-tools engineer', 'Application security engineer'],
-      learn: ['lisp/1', 'lisp/12', 'lisp/13', 'math/9'],
+      learn: ['lisp/1', 'lisp/12', 'lisp/13', 'math/11'],
       teach: 'Discussion: a calculator app that runs whatever the user types as code works perfectly in a demo. Why is it dangerous on a website?'
     },
     {
@@ -350,7 +350,7 @@
         { f: 'swe', t: 'Testing every combination of settings explodes by the product rule: 10 on/off options make 2¹⁰ = 1,024 combinations, so testers choose a smaller set that still covers every pair of options (pairwise testing).' }
       ],
       jobs: ['Security analyst', 'Database developer', 'Data analyst', 'Test engineer'],
-      learn: ['math/2', 'math/11', 'modern/7'],
+      learn: ['math/2', 'math/13', 'modern/7'],
       teach: 'Hook: how many 4-digit phone PINs are there? How long would it take to try them all at one a second? What does a lockout after 10 tries change?'
     },
     {
@@ -377,7 +377,7 @@
         { f: 'sec', t: 'Simple substitution ciphers like Caesar\'s fall to letter counting (frequency analysis), a method described by the scholar al-Kindi in the 9th century.' }
       ],
       jobs: ['Cryptographer', 'Security engineer', 'Payments developer'],
-      learn: ['math/4', 'math/13', 'python/16', 'computer/10', 'cpp/13'],
+      learn: ['math/4', 'math/16', 'python/16', 'computer/10', 'cpp/13'],
       teach: 'Hook: check the last digit of an ISBN-10 from a book in the room (the instructions are short), or a test card number with the Luhn check. What kinds of typing mistake does it catch?'
     },
     {
@@ -392,7 +392,7 @@
         { f: 'web', t: 'Forms check what you type (a postal code, an email address) with regular expressions.' }
       ],
       jobs: ['Detection engineer', 'Protocol engineer', 'Compiler engineer', 'Embedded engineer'],
-      learn: ['math/6', 'math/7', 'math/8', 'shell/3'],
+      learn: ['math/7', 'math/8', 'math/9', 'shell/3'],
       teach: 'Activity: draw the states of a traffic light, or a turnstile (locked, unlocked; coin, push). What does each input do in each state?'
     },
     {
@@ -405,7 +405,7 @@
         { f: 'eng', t: 'Some safety-critical code follows rules such as "every loop has a fixed upper bound" and "no recursion" (NASA JPL\'s "Power of Ten"), in part so tools can check that it always finishes.' }
       ],
       jobs: ['Security researcher', 'Static-analysis developer', 'Programming-language designer'],
-      learn: ['math/9', 'math/10'],
+      learn: ['math/11', 'math/12'],
       teach: 'Discussion: a company sells "a program that finds every bug in your code". What should you ask them?'
     },
     {
@@ -418,7 +418,7 @@
         { f: 'data', t: 'Planning and scheduling problems in AI are often NP-hard, which is why they are solved by search with clever pruning.' }
       ],
       jobs: ['Operations-research analyst', 'Logistics software engineer', 'Cryptographer', 'Verification engineer'],
-      learn: ['math/12', 'math/11'],
+      learn: ['math/14', 'math/13'],
       teach: 'Hook: a Sudoku is quick to check and slow to solve. P versus NP is one of the Clay Mathematics Institute\'s seven Millennium Prize Problems, each with a one-million-dollar prize, and it is still open.'
     },
     {
