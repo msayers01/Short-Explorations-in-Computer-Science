@@ -515,8 +515,8 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   const http = require('http');
   const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.gz': 'application/gzip', '.md': 'text/plain' };
   const root = path.join(__dirname, 'dist');
-  // The page is served with the headers of dist/_headers (its rule for /index.html), so what ships is what is tested: cross-origin isolation among them.
-  const indexHeaders = {}; { let on = false; for (const line of fs.readFileSync(path.join(root, '_headers'), 'utf8').split('\n')) { if (!line.trim()) { on = false; continue; } if (!/^\s/.test(line)) { if (line.trim() === '/index.html') on = true; continue; } if (on) { const i = line.indexOf(':'); indexHeaders[line.slice(0, i).trim()] = line.slice(i + 1).trim(); } } }
+  // The page is served with the headers of dist/_headers (its rules for /index.html and /*), so what ships is what is tested: cross-origin isolation among them.
+  const indexHeaders = {}; { let on = false; for (const line of fs.readFileSync(path.join(root, '_headers'), 'utf8').split('\n')) { if (!line.trim()) { on = false; continue; } if (!/^\s/.test(line)) { if (line.trim() === '/index.html' || line.trim() === '/*') on = true; continue; } if (on) { const i = line.indexOf(':'); indexHeaders[line.slice(0, i).trim()] = line.slice(i + 1).trim(); } } }
   let tamper = false;   // when set, the server hands out a changed compiler script
   const server = http.createServer((req, res) => {
     const p = path.join(root, decodeURIComponent(req.url.split('?')[0]).replace(/^\/$/, '/index.html'));

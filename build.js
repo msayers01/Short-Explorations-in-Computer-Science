@@ -202,12 +202,16 @@ if (gm) {
 // learning-management systems; to forbid that, add "frame-ancestors 'none'" to the policy below (csp's second argument).
 const common = ['X-Content-Type-Options: nosniff', 'Referrer-Policy: no-referrer', 'Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()'];
 // The main page is also cross-origin isolated (COOP and COEP), which a SharedArrayBuffer needs: the Bot Arena's persistent mode shares memory with a worker
-// so that a bot can wait for its next turn. The page loads nothing from any other origin (see the policy), so COEP require-corp costs it nothing. In a frame
+// so that a bot can wait for its next turn (written as one rule for "/*", below). The page loads nothing from any other origin (see the policy), so COEP require-corp costs it nothing. In a frame
 // of another site, or opened from a file, the page is not isolated, and persistent mode says so and is off.
 const isolation = ['Cross-Origin-Opener-Policy: same-origin', 'Cross-Origin-Embedder-Policy: require-corp'];
 const rule = (paths, hashes, extra) => paths.map(p => p + '\n').join('') + ['Content-Security-Policy: ' + csp(hashes)].concat(common, extra || []).map(h => '  ' + h + '\n').join('') + '\n';
 const immutable = ['/' + CLANG_DIR + '*', '/img/*'].map((p) => p + '\n  Cache-Control: public, max-age=31536000, immutable\n  X-Content-Type-Options: nosniff\n\n').join('');
-const headersText = '# Written by build.js. Do not edit.\n' + immutable + rule(['/', '/index.html'], indexHashes, isolation) + rule(['/teacher-guide', '/teacher-guide.html'], guideHashes);
+// Cloudflare serves the page at "/" from index.html, and a rule written for "/" or "/index.html" is not applied to that response (a request for /index.html only gets
+// a redirect to "/", which carries the headers: the document itself does not), so the isolation headers are on "/*", which matches "/" too. They do no harm to the other
+// files (every page and file here is same-origin). The policy above stays in the page's <meta> as well, which is what applies at "/".
+const isolationRule = '/*\n' + isolation.map(h => '  ' + h + '\n').join('') + '\n';
+const headersText = '# Written by build.js. Do not edit.\n' + immutable + isolationRule + rule(['/', '/index.html'], indexHashes) + rule(['/teacher-guide', '/teacher-guide.html'], guideHashes);
 const longLine = headersText.split('\n').findIndex((l) => l.length > 2000);
 if (longLine >= 0) throw new Error('dist/_headers line ' + (longLine + 1) + ' is ' + headersText.split('\n')[longLine].length + ' characters; Cloudflare refuses lines over 2000');
 fs.writeFileSync('dist/_headers', headersText);
