@@ -60,17 +60,18 @@ async function javaPart() {
   for (const g of require('./difftest/javagen.js').generate(SEED, COUNT)) cases.push(g);
   console.log('java: ' + cases.length + ' programs (' + ver + '; generated from seed ' + SEED + ', ' + COUNT + ' of each kind)');
 
-  // every program in its own package, all compiled by one javac; a program javac rejects is compiled again alone for its message
+  // every program in its own package, all compiled by one javac (-Xmaxerrs: it stops reporting after 100 errors, and a program it did not name would never be dropped); a program javac rejects is compiled again alone for its message
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'difftest-'));
   try {
     cases.forEach((c, n) => { c.pkg = 'p' + n; const d = path.join(dir, 'src', c.pkg); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'Main.java'), 'package ' + c.pkg + '; ' + c.code); });   // one file may hold several top-level classes
     const out = path.join(dir, 'out'); fs.mkdirSync(out);
     let todo = cases.slice();
-    for (let round = 0; round < 3 && todo.length; round++) {
-      const r = cp.spawnSync('javac', ['-encoding', 'UTF-8', '-nowarn', '-g', '-d', out, ...todo.map((c) => path.join(dir, 'src', c.pkg, 'Main.java'))], { encoding: 'utf8', env: cleanEnv(), maxBuffer: 1 << 26 });
+    for (let round = 0; round < 8 && todo.length; round++) {   // javac reports syntax errors, then type errors, then flow errors (a missing return, an unset variable): one round for each
+      const r = cp.spawnSync('javac', ['-encoding', 'UTF-8', '-nowarn', '-g', '-Xmaxerrs', '100000', '-XDshould-stop.ifError=FLOW', '-d', out, ...todo.map((c) => path.join(dir, 'src', c.pkg, 'Main.java'))], { encoding: 'utf8', env: cleanEnv(), maxBuffer: 1 << 26 });
       if (r.status === 0) { todo = []; break; }
       const bad = new Set((r.stderr + r.stdout).split('\n').map((l) => (l.match(/src[\\/](p\d+)[\\/]Main\.java:\d+: error:/) || [])[1]).filter(Boolean));
       if (!bad.size) throw new Error('javac failed without naming a file:\n' + r.stderr);
+      if (VERBOSE) console.log('javac round ' + (round + 1) + ': ' + bad.size + ' programs rejected, ' + (todo.length - bad.size) + ' left');
       for (const c of todo) if (bad.has(c.pkg)) c.compileFailed = true;
       todo = todo.filter((c) => !c.compileFailed);
     }
