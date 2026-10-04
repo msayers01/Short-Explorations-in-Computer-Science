@@ -35398,27 +35398,31 @@ lodash/lodash.js:
   // HashMap iterates in the order of its buckets, and a program that prints a map shows that order; so the buckets are modelled
   // (hash spread, table size 16 doubling at 3/4 full), and within a bucket entries keep the order they were added in. TreeMap is sorted.
   class JMap {
-    constructor(sorted) { this.sorted = !!sorted; this.buckets = new Map(); this.size = 0; this.cap = 16; this.seq = 0; this.id = ++JObj.n; this.cache = null; }
-    find(key, R) { if (this.sorted && key === null) throwJ(R, 'NullPointerException', null); const h = jhash(key, R); const b = this.buckets.get(h); if (!b) return null; for (const e of b) if (jeq(e.key, key, R)) return e; return null; }
+    constructor(sorted, cmpFn) { this.sorted = !!sorted; this.cmpFn = cmpFn || null; this.buckets = new Map(); this.size = 0; this.cap = 16; this.seq = 0; this.id = ++JObj.n; this.cache = null; }
+    cmp(x, y, R) { return this.cmpFn ? this.cmpFn(x, y) : jcmp(x, y, R); }   // a TreeMap or TreeSet made with a Comparator orders, and tells keys apart, by that
+    find(key, R) {
+      if (this.cmpFn) { for (const e of this.entries(R)) if (this.cmpFn(e.key, key) === 0) return e; return null; }   // keys are the same when the comparator says 0, not when equals() does
+      if (this.sorted && key === null) throwJ(R, 'NullPointerException', null); const h = jhash(key, R); const b = this.buckets.get(h); if (!b) return null; for (const e of b) if (jeq(e.key, key, R)) return e; return null; }
     put(key, value, R) {
       const e = this.find(key, R); if (e) { const old = e.value; e.value = value; return old; }
-      if (this.sorted) jcmp(key, key, R);   // a key that is not Comparable is rejected, as in Java
+      if (this.sorted && !this.cmpFn) jcmp(key, key, R);   // a key that is not Comparable is rejected, as in Java
+      else if (this.cmpFn) this.cmpFn(key, key);   // and a comparator that cannot take the key
       const h = jhash(key, R); let b = this.buckets.get(h); if (!b) { b = []; this.buckets.set(h, b); }
       b.push({ key, value, h, seq: ++this.seq }); this.size++; this.cache = null;
       while (this.size > this.cap * 0.75 && this.cap < (1 << 30)) this.cap *= 2;
       return null;
     }
-    remove(key, R) { const h = jhash(key, R); const b = this.buckets.get(h); if (!b) return undefined; const i = b.findIndex(e => jeq(e.key, key, R)); if (i < 0) return undefined; const [e] = b.splice(i, 1); if (!b.length) this.buckets.delete(h); this.size--; this.cache = null; return e.value; }
+    remove(key, R) { let target = null; if (this.cmpFn) { target = this.find(key, R); if (!target) return undefined; key = target.key; } const h = jhash(key, R); const b = this.buckets.get(h); if (!b) return undefined; const i = b.findIndex(e => (target ? e === target : jeq(e.key, key, R))); if (i < 0) return undefined; const [e] = b.splice(i, 1); if (!b.length) this.buckets.delete(h); this.size--; this.cache = null; return e.value; }
     clear() { this.buckets = new Map(); this.size = 0; this.cache = null; }
     entries(R) {
       if (this.cache) return this.cache;
       const all = []; for (const b of this.buckets.values()) for (const e of b) all.push(e);
-      if (this.sorted) all.sort((x, y) => jcmp(x.key, y.key, R));
+      if (this.sorted) all.sort((x, y) => this.cmp(x.key, y.key, R));
       else { const n = this.cap; const idx = (h) => (h ^ (h >>> 16)) & (n - 1); all.sort((x, y) => (idx(x.h) - idx(y.h)) || (x.seq - y.seq)); }
       return (this.cache = all);
     }
   }
-  class JSet { constructor(sorted) { this.m = new JMap(sorted); this.id = ++JObj.n; } }
+  class JSet { constructor(sorted, cmpFn) { this.m = new JMap(sorted, cmpFn); this.id = ++JObj.n; } }
 
   class JScanner {
     constructor(src, more) { this.s = src; this.p = 0; this.closed = false; this.id = ++JObj.n; this.more = more || null; }   // more(): a program that stays running (Bot Arena) waits here for the next text; '' ends the input
@@ -35493,12 +35497,20 @@ lodash/lodash.js:
     const group = (intPart) => intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     const pad = (s, width, flags) => { if (!width || s.length >= width) return s; if (flags.includes('-')) return s + ' '.repeat(width - s.length); if (flags.includes('0') && /^[+\-( ]?[\d.,]/.test(s) && !/[a-zA-Z]/.test(s.replace(/^[+\-( ]?/, '').replace(/[eE][+-]\d+$/, ''))) { const sign = /^[+\-( ]/.test(s) ? s[0] : ''; /* zeros go after the sign, or after the ( of a negative */ return sign + '0'.repeat(width - s.length) + s.slice(sign.length); } return ' '.repeat(width - s.length) + s; };
     const bad = (conv, v) => throwJ(R, 'IllegalFormatConversionException', conv + ' != ' + qualified(runtimeClassName(v)));
-    return fmt.replace(/%([-#+ 0,(]*)(\d+)?(?:\.(\d+))?([a-zA-Z%])|%/g, (m, flags, width, prec, conv) => {
+    let last = -1;   // the argument the last specifier used, for %<s
+    return fmt.replace(/%(\d+\$|<)?([-#+ 0,(]*)(\d+)?(?:\.(\d+))?([a-zA-Z%])|%/g, (m, idx, flags, width, prec, conv) => {
       if (m === '%') throwJ(R, 'UnknownFormatConversionException', "Conversion = '%'");
       flags = flags || ''; width = width ? +width : 0; prec = prec === undefined ? null : +prec;
       if (conv === 'n') return '\n'; if (conv === '%') return pad('%', width, flags);
-      if (ai >= args.length) throwJ(R, 'MissingFormatArgumentException', "Format specifier '" + m + "'");
-      let v = args[ai++];
+      let v;
+      if (idx) {   // %2$s: the second argument, and the plain %s that follow keep counting from where they were; %<s: the one just used
+        const k = idx === '<' ? last : parseInt(idx, 10) - 1;
+        if (k < 0 || k >= args.length) throwJ(R, 'MissingFormatArgumentException', "Format specifier '" + m + "'");
+        v = args[k]; last = k;
+      } else {
+        if (ai >= args.length) throwJ(R, 'MissingFormatArgumentException', "Format specifier '" + m + "'");
+        last = ai; v = args[ai++];
+      }
       const signed = (s, neg) => { if (neg) return flags.includes('(') ? '(' + s + ')' : '-' + s; return flags.includes('+') ? '+' + s : flags.includes(' ') ? ' ' + s : s; };
       switch (conv) {
         case 'd': {
@@ -35706,7 +35718,7 @@ lodash/lodash.js:
     'entrySet()': ['Set<Entry<K,V>>', (m, a, R) => { const s = new JSet(false); s.ordered = m.entries(R).map(entryOf); for (const e of s.ordered) s.m.put(e, true, R); return s; }],
     'toString()': ['String', (m, a, R) => dstr(m, R)], 'equals(Object)': ['boolean', (m, a, R) => jeq(m, a[0], R)], 'hashCode()': ['int', (m, a, R) => jhash(m, R)],
     'firstKey()': ['K', (m, a, R) => { const e = m.entries(R); if (!e.length) throwJ(R, 'NoSuchElementException', null); return e[0].key; }], 'lastKey()': ['K', (m, a, R) => { const e = m.entries(R); if (!e.length) throwJ(R, 'NoSuchElementException', null); return e[e.length - 1].key; }],
-    'floorKey(K)': ['K', (m, a, R) => { let r = null; for (const e of m.entries(R)) if (jcmp(e.key, a[0], R) <= 0) r = e.key; return r; }], 'ceilingKey(K)': ['K', (m, a, R) => { for (const e of m.entries(R)) if (jcmp(e.key, a[0], R) >= 0) return e.key; return null; }]
+    'floorKey(K)': ['K', (m, a, R) => { let r = null; for (const e of m.entries(R)) if (m.cmp(e.key, a[0], R) <= 0) r = e.key; return r; }], 'ceilingKey(K)': ['K', (m, a, R) => { for (const e of m.entries(R)) if (m.cmp(e.key, a[0], R) >= 0) return e.key; return null; }]
   };
   def('Collection', { isInterface: true, tparams: ['E'], impl: ['Iterable'], methods: { 'iterator()': ['Iterator<E>', (c, a, R) => new JIter(collItems(R, c), c instanceof JSet && c.ordered ? null : c)], 'size()': ['int', (c, a, R) => (c instanceof JList ? c.a.length : c instanceof JSet ? c.m.size : 0)], 'isEmpty()': ['boolean', (c, a, R) => collItems(R, c).length === 0], 'contains(Object)': ['boolean', (c, a, R) => collItems(R, c).some(x => jeq(x, a[0], R))], 'add(E)': ['boolean', (c, a, R) => (c instanceof JList ? LIST_METHODS['add(E)'][1](c, a, R) : SET_METHODS['add(E)'][1](c, a, R))], 'remove(Object)': ['boolean', (c, a, R) => (c instanceof JList ? LIST_METHODS['remove(Object)'][1](c, a, R) : SET_METHODS['remove(Object)'][1](c, a, R))], 'clear()': ['void', (c, a, R) => (c instanceof JList ? c.a.length = 0 : c.m.clear())], 'toString()': ['String', (c, a, R) => dstr(c, R)], 'addAll(Collection<E>)': ['boolean', (c, a, R) => (c instanceof JList ? LIST_METHODS['addAll(Collection<E>)'][1](c, a, R) : SET_METHODS['addAll(Collection<E>)'][1](c, a, R))] } });
   def('List', { isInterface: true, tparams: ['E'], impl: ['Collection'], methods: LIST_METHODS, statics: { 'of(T...)': ['List<T>', (o, a) => { const l = new JList(a[0].a.slice()); l.immutable = true; return l; }], 'copyOf(Collection<T>)': ['List<T>', (o, a, R) => { const l = new JList(collItems(R, a[0])); l.immutable = true; return l; }] } });
@@ -35744,26 +35756,26 @@ lodash/lodash.js:
   def('HashSet', { tparams: ['E'], impl: ['Set'], ctors: { '': () => new JSet(false), 'int': () => new JSet(false), 'Collection<E>': (o, a, R) => { const s = new JSet(false); for (const x of collItems(R, a[0])) s.m.put(x, true, R); return s; } }, methods: SET_METHODS });
   // TreeSet and TreeMap navigation (headSet/headMap and the like return copies here, not live views)
   const keysOf = (m, R) => m.entries(R).map(e => e.key);
-  const navFind = (keys, x, R, test) => { for (const k of keys) if (test(jcmp(k, x, R))) return k; return null; };
-  const navLast = (keys, x, R, test) => { let r = null; for (const k of keys) if (test(jcmp(k, x, R))) r = k; return r; };
+  const navFind = (m, x, R, test) => { for (const k of keysOf(m, R)) if (test(m.cmp(k, x, R))) return k; return null; };
+  const navLast = (m, x, R, test) => { let r = null; for (const k of keysOf(m, R)) if (test(m.cmp(k, x, R))) r = k; return r; };
   const TREESET_METHODS = Object.assign({}, SET_METHODS, {
-    'higher(E)': ['E', (s, a, R) => navFind(keysOf(s.m, R), nn(R, a[0]), R, c => c > 0)], 'ceiling(E)': ['E', (s, a, R) => navFind(keysOf(s.m, R), nn(R, a[0]), R, c => c >= 0)],
-    'lower(E)': ['E', (s, a, R) => navLast(keysOf(s.m, R), nn(R, a[0]), R, c => c < 0)], 'floor(E)': ['E', (s, a, R) => navLast(keysOf(s.m, R), nn(R, a[0]), R, c => c <= 0)],
+    'higher(E)': ['E', (s, a, R) => navFind(s.m, nn(R, a[0]), R, c => c > 0)], 'ceiling(E)': ['E', (s, a, R) => navFind(s.m, nn(R, a[0]), R, c => c >= 0)],
+    'lower(E)': ['E', (s, a, R) => navLast(s.m, nn(R, a[0]), R, c => c < 0)], 'floor(E)': ['E', (s, a, R) => navLast(s.m, nn(R, a[0]), R, c => c <= 0)],
     'pollFirst()': ['E', (s, a, R) => { const k = keysOf(s.m, R); if (!k.length) return null; s.m.remove(k[0], R); return k[0]; }], 'pollLast()': ['E', (s, a, R) => { const k = keysOf(s.m, R); if (!k.length) return null; s.m.remove(k[k.length - 1], R); return k[k.length - 1]; }],
-    'headSet(E)': ['TreeSet<E>', (s, a, R) => { const r = new JSet(true); for (const k of keysOf(s.m, R)) if (jcmp(k, a[0], R) < 0) r.m.put(k, true, R); return r; }], 'tailSet(E)': ['TreeSet<E>', (s, a, R) => { const r = new JSet(true); for (const k of keysOf(s.m, R)) if (jcmp(k, a[0], R) >= 0) r.m.put(k, true, R); return r; }]
+    'headSet(E)': ['TreeSet<E>', (s, a, R) => { const r = new JSet(true, s.m.cmpFn); for (const k of keysOf(s.m, R)) if (s.m.cmp(k, a[0], R) < 0) r.m.put(k, true, R); return r; }], 'tailSet(E)': ['TreeSet<E>', (s, a, R) => { const r = new JSet(true, s.m.cmpFn); for (const k of keysOf(s.m, R)) if (s.m.cmp(k, a[0], R) >= 0) r.m.put(k, true, R); return r; }]
   });
-  def('TreeSet', { tparams: ['E'], impl: ['Set'], ctors: { '': () => new JSet(true), 'Collection<E>': (o, a, R) => { const s = new JSet(true); for (const x of collItems(R, a[0])) s.m.put(x, true, R); return s; } }, methods: TREESET_METHODS });
+  def('TreeSet', { tparams: ['E'], impl: ['Set'], ctors: { '': () => new JSet(true), 'Comparator<E>': (o, a, R) => new JSet(true, a[0] === null ? null : cmpWith(R, a[0])), 'Collection<E>': (o, a, R) => { const s = new JSet(true); for (const x of collItems(R, a[0])) s.m.put(x, true, R); return s; } }, methods: TREESET_METHODS });
   def('Entry', { isInterface: true, tparams: ['K', 'V'], methods: { 'getKey()': ['K', (e) => e.key], 'getValue()': ['V', (e) => e.value], 'setValue(V)': ['V', (e, a) => { const old = e.value; e.value = a[0]; if (e.src) e.src.value = a[0]; return old; }], 'toString()': ['String', (e, a, R) => dstr(e, R)], 'equals(Object)': ['boolean', (e, a, R) => jeq(e, a[0], R)], 'hashCode()': ['int', (e, a, R) => jhash(e, R)] } });
   def('Map', { isInterface: true, tparams: ['K', 'V'], methods: MAP_METHODS, statics: { 'of()': ['Map<K,V>', () => { const m = new JMap(false); m.immutable = true; return m; }], 'entry(K,V)': ['Entry<K,V>', (o, a) => new JEntry(a[0], a[1])] } });
   def('HashMap', { tparams: ['K', 'V'], impl: ['Map'], ctors: { '': () => new JMap(false), 'int': () => new JMap(false), 'Map<K,V>': (o, a, R) => { const m = new JMap(false); for (const e of nn(R, a[0]).entries(R)) m.put(e.key, e.value, R); return m; } }, methods: MAP_METHODS });
-  const subMap = (m, R, test) => { const r = new JMap(true); for (const e of m.entries(R)) if (test(e.key)) r.put(e.key, e.value, R); return r; };
+  const subMap = (m, R, test) => { const r = new JMap(true, m.cmpFn); for (const e of m.entries(R)) if (test(e.key)) r.put(e.key, e.value, R); return r; };
   const TREEMAP_METHODS = Object.assign({}, MAP_METHODS, {
     'firstEntry()': ['Entry<K,V>', (m, a, R) => { const e = m.entries(R); return e.length ? new JEntry(e[0].key, e[0].value) : null; }], 'lastEntry()': ['Entry<K,V>', (m, a, R) => { const e = m.entries(R); return e.length ? new JEntry(e[e.length - 1].key, e[e.length - 1].value) : null; }],
-    'higherKey(K)': ['K', (m, a, R) => navFind(keysOf(m, R), nn(R, a[0]), R, c => c > 0)], 'lowerKey(K)': ['K', (m, a, R) => navLast(keysOf(m, R), nn(R, a[0]), R, c => c < 0)],
+    'higherKey(K)': ['K', (m, a, R) => navFind(m, nn(R, a[0]), R, c => c > 0)], 'lowerKey(K)': ['K', (m, a, R) => navLast(m, nn(R, a[0]), R, c => c < 0)],
     'pollFirstEntry()': ['Entry<K,V>', (m, a, R) => { const e = m.entries(R); if (!e.length) return null; const r = new JEntry(e[0].key, e[0].value); m.remove(e[0].key, R); return r; }],
-    'headMap(K)': ['TreeMap<K,V>', (m, a, R) => subMap(m, R, k => jcmp(k, a[0], R) < 0)], 'tailMap(K)': ['TreeMap<K,V>', (m, a, R) => subMap(m, R, k => jcmp(k, a[0], R) >= 0)]
+    'headMap(K)': ['TreeMap<K,V>', (m, a, R) => subMap(m, R, k => m.cmp(k, a[0], R) < 0)], 'tailMap(K)': ['TreeMap<K,V>', (m, a, R) => subMap(m, R, k => m.cmp(k, a[0], R) >= 0)]
   });
-  def('TreeMap', { tparams: ['K', 'V'], impl: ['Map'], ctors: { '': () => new JMap(true), 'Map<K,V>': (o, a, R) => { const m = new JMap(true); for (const e of nn(R, a[0]).entries(R)) m.put(e.key, e.value, R); return m; } }, methods: TREEMAP_METHODS });
+  def('TreeMap', { tparams: ['K', 'V'], impl: ['Map'], ctors: { '': () => new JMap(true), 'Comparator<K>': (o, a, R) => new JMap(true, a[0] === null ? null : cmpWith(R, a[0])), 'Map<K,V>': (o, a, R) => { const m = new JMap(true); for (const e of nn(R, a[0]).entries(R)) m.put(e.key, e.value, R); return m; } }, methods: TREEMAP_METHODS });
   def('Iterator', { isInterface: true, tparams: ['E'], methods: { 'hasNext()': ['boolean', (it) => it.i < it.items.length], 'next()': ['E', (it, a, R) => { if (it.i >= it.items.length) throwJ(R, 'NoSuchElementException', null); it.last = it.i; return it.items[it.i++]; }],
     'remove()': ['void', (it, a, R) => {
       if (it.last < 0 || !it.src) throwJ(R, 'IllegalStateException', null);

@@ -61,7 +61,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - Not covered: user generics, lambdas, nested classes, enums, records, streams, files, threads, checked-exception analysis, switch
   expressions (`yield`); `==` on Strings compares text (so that trap is taught with a listing, not a runnable example).
 - Queue/Deque/ArrayDeque have their own method tables (no index methods; `remove(x)` removes a value, `remove()` the head), as in Java.
-  Comparator works only as a user class implementing `compare` (no lambdas). `%f %e %g` round the shortest decimal half-up, like
+  Comparator works only as a user class implementing `compare` (no lambdas), or `Collections.reverseOrder()`; `TreeSet`/`TreeMap` take one and then treat keys as the same when it says 0, as Java does. `%f %e %g` round the shortest decimal half-up, like
   `java.util.Formatter`. Exception messages follow JDK 21's wording. `test_java.js` expectations were produced by a real JDK: keep it so.
 - After changing `java.js` or `shell.js`, run `npm run test:diff` and a few extra seeds (`SEED=2 COUNT=40 node test_diff.js java`). A new
   difference is a bug to fix; only a deliberate one goes in `difftest/known.json`, with its reason.
@@ -84,8 +84,8 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 
 - Merged: everything below through PR #35 (`main` = `aea174b`), except SC 109, which is on the working branch. PRs #21-#26: the practice terminal, SC 108 lessons 1-4, the one-inline-script
   build, SC 099, Scratch lessons 8-9, the tour. PR #27 was a bug sweep (four reviews: shell against bash, Java against javac/java 21, the
-  app and Scheme, course text): see its commit messages. Bugs it found but left: Java `switch` with `yield`, `%1$s`, TreeSet/TreeMap with
-  a comparator; Scheme character literals. (Shell `${s/a/b}`, `${f%.txt}`, `${p##*/}`, `${s^^}` and negative slices were added in October 2026 and are checked against bash in `difftest/shell.txt`; `${x@Q}`-style transforms and arrays still report "bad substitution".)
+  app and Scheme, course text): see its commit messages. Bugs it found but left: Java `switch` with `yield`; Scheme character literals. (Java `%1$s` / `%<s`
+  and `new TreeSet<>(comparator)` / `new TreeMap<>(comparator)` were fixed in October 2026: `difftest/java/probe-tc.java`.) (Shell `${s/a/b}`, `${f%.txt}`, `${p##*/}`, `${s^^}` and negative slices were added in October 2026 and are checked against bash in `difftest/shell.txt`; `${x@Q}`-style transforms and arrays still report "bad substitution".)
 - SC 105 Modern C++ has 8 lessons (string, vector, references, struct, class, algorithms/lambdas, map/set, gradebook project), 15 exercises.
 - SC 107 Data Structures and Algorithms (Java, `src/course_dsa.js`): lessons 1-7 (cost and arrays; searching; simple sorts; merge sort and
   quicksort; linked lists; stacks and queues; recursion), 24 exercises (code and `answer` kinds), figures growth, arrayops, dynarray, sortlab,
