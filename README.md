@@ -75,6 +75,7 @@ add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is w
     test_course.js         checks every exercise and example of a course
     test_cppstep.js        checks the C++ memory stepper
     test_java.js           checks the Java interpreter against what javac and java print
+    test_typed.js          typed input: Java Scanner and C++ cin answered a line at a time, in the real workers
     test_subst.js          checks the substitution stepper
     test_security.js       checks the Python sandbox and the size limit on links
     test_backup.js         checks saving and restoring work to a file, including hostile files

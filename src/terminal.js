@@ -22,7 +22,8 @@
     const { el } = window.__h;
     const SHELL = window.SHELL;
     let fs = o.fs;
-    const hooks = Object.assign({ fs, run, compile, nano, cancel: () => { if (o.stop) o.stop(); } }, o.hooks || {});
+    const stopAll = () => { for (const k of ['PYRUN', 'JAVARUN', 'CPPRUN', 'CLANGRUN']) if (window[k]) window[k].cancel(); };   // a lesson's terminal has no Lab to ask
+    const hooks = Object.assign({ fs, run, compile, nano, typedInput, cancel: () => { if (o.stop) o.stop(); else stopAll(); } }, o.hooks || {});
     let sh = SHELL.makeShell(hooks);
     if (Array.isArray(o.history)) sh.history = o.history.filter((s) => typeof s === 'string' && s.length < 2000).slice(-SHELL.LIMITS.history);
     const save = () => { if (!o.persist) return; try { localStorage.setItem(o.persist, JSON.stringify({ v: 1, fs: fs.toJSON(), history: sh.history })); } catch (e) { /* storage full or off: the session still works */ } };
@@ -31,7 +32,7 @@
     const status = el('span', { class: 'term-status', role: 'status' });
     const resetBtn = o.onReset ? el('button', { class: 'linklike term-reset', title: o.resetTitle || 'Start again from the files this terminal began with', onclick: (e) => o.armConfirm(e.currentTarget, 'Reset the files? Click again to confirm', () => api.reset()) }, 'Reset files') : null;
     const closeBtn = o.onClose ? el('button', { class: 'linklike term-close', title: 'Close the terminal', onclick: () => o.onClose() }, '×') : null;
-    const bar = el('div', { class: 'term-bar' }, el('span', { class: 'term-dots', 'aria-hidden': 'true' }, el('span'), el('span'), el('span')), el('span', { class: 'term-title' }, o.title || 'Terminal'), status, resetBtn, closeBtn);
+    const bar = el('div', { class: 'term-bar' }, el('span', { class: 'term-title' }, o.title || 'Terminal'), status, resetBtn, closeBtn);
     const pre = el('pre', { class: 'out-text term-scroll', 'aria-live': 'polite', 'aria-label': 'Terminal output' });
     const ps1 = el('span', { class: 'term-ps1' });
     const inp = el('input', { class: 'term-inp', type: 'text', 'aria-label': 'Command line', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', placeholder: 'type a command, for example: help' });
@@ -53,7 +54,7 @@
 
     // program input: a prompt from input()/Scanner reuses the command line
     let asking = null;   // { resolve, prompt }
-    const ask = (prompt) => new Promise((resolve) => { flush(); asking = { resolve, prompt: prompt || '' }; ps1.textContent = asking.prompt; inp.placeholder = 'the program is waiting for input'; inp.focus(); });
+    const ask = (prompt) => new Promise((resolve) => { flush(); asking = { resolve, prompt: prompt || '' }; ps1.textContent = asking.prompt; inp.placeholder = 'the program is waiting for input (Ctrl+D: end of input)'; inp.focus(); });
 
     // ----- running a line
     let running = false;
@@ -122,6 +123,7 @@
       }
       if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); if (!running) complete(); return; }
       if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) { if (!running && inp.selectionStart !== inp.selectionEnd) return; e.preventDefault(); if (running) { sh.cancel(); if (asking) { const a = asking; asking = null; a.resolve(''); } } else { line(sh.prompt() + inp.value + '^C', 'cmd'); inp.value = ''; } return; }
+      if (e.ctrlKey && (e.key === 'd' || e.key === 'D') && asking && !inp.value) { e.preventDefault(); const a = asking; asking = null; inp.placeholder = ''; line(a.prompt + '^D', 'note'); ps1.textContent = ''; a.resolve(null); return; }   // end of input
       if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); io.clear(); return; }
       if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); inp.value = ''; return; }
     });
@@ -131,14 +133,19 @@
     async function run(lang, src, p) {
       const onOutput = (s) => p.onOutput(String(s));
       if (lang === 'python') { const r = await window.PYRUN.run(src, { stdin: p.stdin == null ? null : p.stdin, execLimit: 15000, onOutput, onInput: p.onInput ? (q) => p.onInput(q) : undefined }); return { err: r.err, exit: r.err ? (/^Stopped/.test(r.err) ? 130 : 1) : 0 }; }
-      if (lang === 'java') { const r = await R().java.run(src, { stdin: p.stdin == null ? '' : p.stdin, onOutput }); return { err: r.err, exit: r.err ? 1 : (r.exit || 0) }; }
+      // Java and the teaching C++ read typed input a line at a time as they ask (runner.js); a pipe or a file (< in.txt) is given all at once
+      const onInput = p.stdin == null && p.onInput ? (q) => p.onInput(q) : undefined;
+      if (lang === 'java') { const r = await R().java.run(src, { stdin: onInput ? null : (p.stdin == null ? '' : p.stdin), onOutput, onInput }); return { err: r.err, exit: r.err ? (r.exit === 130 ? 130 : 1) : (r.exit || 0) }; }
       if (lang === 'scheme') { const r = await R().scheme.run(src, { onOutput }); return { err: r.error ? ';' + String(r.error).replace(/^;/, '') : null, exit: r.error ? 1 : 0 }; }
       if (lang === 'cpp') {
         if (p.std) { const r = await R().cppFull.run(src, { stdin: p.stdin == null ? '' : p.stdin, std: p.std, onOutput, onNote: (s) => write(s + '\n', 'note'), host: box }); return { err: r.err, exit: r.err ? 1 : (r.exit || 0) }; }
-        const r = await R().cpp.run(src, { stdin: p.stdin == null ? '' : p.stdin, onOutput }); return { err: r.err, exit: r.err ? 1 : 0 };
+        const typed = onInput && typedInput('cpp', src, null);
+        const r = await R().cpp.run(src, { stdin: typed ? null : (p.stdin == null ? '' : p.stdin), onOutput, onInput: typed ? onInput : undefined }); return { err: r.err, exit: r.err ? (r.exit === 130 ? 130 : 1) : 0 };
       }
       return { err: lang + ': no way to run this here', exit: 126 };
     }
+    // which programs take their input a line at a time as they ask; the shell collects the others' input before they start
+    function typedInput(lang, src, std) { return lang === 'java' || (lang === 'cpp' && !std && !/\b(scanf|getchar)\b/.test(src)); }
     const stdOf = (s) => { const m = String(s || '').match(/(11|14|17|20|23)$/); return m ? 'gnu++' + m[1] : 'gnu++20'; };
     async function compile(lang, src, p) {
       if (lang === 'java') { const r = await window.JAVARUN.check(src); return { err: r.err }; }

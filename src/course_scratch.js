@@ -58,7 +58,7 @@ window.COURSES.push({
         `<p>Here is a secret. You already know how to program. You learned it in Scratch. Every idea in this course is one you have used before: say, ask, variables, repeat, if. The only new thing is how to <em>spell</em> them.</p>
 <p>Scratch was made at MIT, near Boston, by a team called Lifelong Kindergarten. It went online in 2007. The name comes from DJs: <em>scratching</em> is mixing bits of records together. Scratch lets you mix bits of programs. The blocks snap together, so you can never make a spelling mistake. That was the whole idea.</p>`,
         { photo: 'scratch-editor', caption: 'The Scratch editor. The blocks wait on the left. The script is in the middle. When the flag is clicked, the dinosaur plays a sound. The stage is on the right.' },
-        `<p>Python is older. A Dutch programmer, Guido van Rossum, started it as a holiday project at Christmas 1989. He named it after the comedy group Monty Python, because he wanted a language that was fun. Python has no blocks. You type. And when you type, you can make spelling mistakes. Luckily, Python tells you where.</p>
+        `<p>Python is older. A Dutch programmer, Guido van Rossum, started it as a holiday project at Christmas 1989. He was a big fan of the comedy group Monty Python, so he named it after them. Python has no blocks. You type. And when you type, you can make spelling mistakes. Luckily, Python tells you where.</p>
 <p>So what is the Python for a block you drag? That is today's question.</p>
 <h2>A program is a list of instructions</h2>
 <p>In Scratch, a script is a stack of blocks. The sprite does them from top to bottom. In Python, a program is a list of lines. The computer does them from top to bottom. Same thing, different clothes. Here is the first script everyone makes, both ways.</p>`,
@@ -93,7 +93,7 @@ print("Nice to meet you, " + name + "!")`, caption: 'When you run it, a box appe
         `<div class="stmt"><p><span class="kind">Rule 4.</span> <code>name = input("…")</code> asks the question and keeps the answer under the name <code>name</code>. You choose the name, just like making a variable in Scratch.</p>
 <p><span class="kind">Rule 5.</span> <code>+</code> between two pieces of text is the <code>join</code> block. Put the spaces you want inside the quotes.</p></div>
 <h2>Your sprite is a turtle</h2>
-<p>Python has no stage and no sprites built in. But it has something almost as old as computers: a <em>turtle</em>. It is a little arrow that moves when you tell it to, and draws a line as it goes. <code>move (100) steps</code> is <code>t.forward(100)</code>. <code>turn right (90) degrees</code> is <code>t.right(90)</code>. The first line, <code>import turtle</code>, fetches the turtle. The second makes one and calls it <code>t</code>. The last line says the drawing is finished.</p>`,
+<p>Python has no stage and no sprites built in. But it has something much older than Scratch: a <em>turtle</em>. It is a little arrow that moves when you tell it to, and draws a line as it goes. <code>move (100) steps</code> is <code>t.forward(100)</code>. <code>turn right (90) degrees</code> is <code>t.right(90)</code>. The first line, <code>import turtle</code>, fetches the turtle. The second makes one and calls it <code>t</code>. The last line says the drawing is finished.</p>`,
         { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['pen', 'pen down'], ['motion', 'move (100) steps'], ['motion', 'turn right (90) degrees'], ['motion', 'move (100) steps']], python: 'import turtle\nt = turtle.Turtle()\nt.forward(100)\nt.right(90)\nt.forward(100)\nturtle.done()', caption: 'The pen is already down: a turtle draws as it moves. In lesson 3, repeat turns these two lines into a square, and then into stars.' },
         { play: `import turtle
 t = turtle.Turtle()
@@ -151,7 +151,7 @@ turtle.done()`, caption: 'Run it and watch the canvas. Add one more t.right(90) 
       standards: ['2-AP-11'], standard: 1,
       title: 'Keeping score: variables', summary: 'set and change become =, numbers and words are different kinds of thing, the maths blocks become symbols, and a program keeps a score.',
       blocks: [
-        `<p>In 1972 a young engineer called Allan Alcorn built a game for a brand-new company, Atari. Two paddles, a ball, and two numbers at the top of the screen. The game was <em>Pong</em>. The numbers were the score. The story goes that the first machine went into a bar in California. Within days it stopped working, because the coin box was full.</p>`,
+        `<p>In 1972 a young engineer called Allan Alcorn built a game for a brand-new company, Atari. Two paddles, a ball, and two numbers at the top of the screen. The game was <em>Pong</em>. The numbers were the score. The story goes that the first machine went into a bar in California. Soon it stopped working, because the coin box was full.</p>`,
         { photo: 'pong-cabinet', caption: 'A Pong machine in a museum. Allan Alcorn signed it by the name. Players turned the two knobs. Coins went in the slot below.' },
         `<p>The score was not a small detail. Keeping count of something, and showing it, is the heart of almost every game. In Scratch, a score lives in a variable. You <code>set</code> it to 0 when the game starts. You <code>change</code> it by 1 when something good happens. Python has variables too. You used one in the last lesson: <code>name</code>. This lesson uses them for numbers. It also shows the one trap that catches everyone who comes from Scratch.</p>
 <p>So how does a program keep a score? And what is the trap?</p>
@@ -826,7 +826,7 @@ for i in range(6):
     t.color(colours[i])
     polygon(i + 3, 24)
     x = x + 58
-turtle.done()`, caption: 'A triangle, a square, a pentagon and so on, each in a colour from a list. polygon(sides, size) is every shape from lesson 3 in one function. jump_to moves without drawing. Everything in this course is in these twenty lines.' },
+turtle.done()`, caption: 'A triangle, a square, a pentagon and so on, each in a colour from a list. polygon(sides, size) is every shape from lesson 3 in one function. jump_to moves without drawing. Loops, lists and functions all fit in these few lines.' },
         `<details class="reveal"><summary>Puzzle: what does this print? <code>def f(a, b): return a - b</code> then <code>print(f(10, 3), f(3, 10))</code></summary><p><code>7 -7</code>. The values are matched to the parameters in order. In the first call a is 10 and b is 3. In the second, a is 3 and b is 10. Order matters, so name your parameters so that the order is obvious.</p></details>`,
         { aside: `<p><b>Mistakes everyone makes in this lesson.</b> Calling a function before its <code>def</code>. Forgetting the brackets when calling: <code>cheer</code> on its own does nothing. Forgetting the colon or the indenting under <code>def</code>. Printing inside the function when you needed <code>return</code>, so that <code>x = f(3)</code> leaves x empty (Python calls it <code>None</code>). Giving the wrong number of values when calling. Writing <code>return</code> inside a <code>for</code> loop and wondering why it stops after one time round.</p>` },
         { fig: 'blockquiz', items: [
@@ -978,7 +978,7 @@ health = fight(health)
 print("Health after the fight:", health)`, caption: 'Run it a few times. The health that comes back is different each time, and sometimes it is 0 or less: the goblin won. The line health = fight(health) is the broadcast.' },
         { check: "What is Scratch's <code>broadcast [fight]</code> in Python?", options: ["<code>def fight():</code>", "<code>fight()</code>", "<code>broadcast(\"fight\")</code>"], answer: 1, why: "broadcast is calling the function. when I receive is the def that defines it.", wrong: ["def is when I receive. It makes the function. The broadcast is the call that uses it.", null, "Python has no broadcast word. A broadcast is just calling the function: fight()."], skill: 'define-call' },
         `<h2>Putting it together</h2>
-<p>Here is the whole game: three rooms, a key, a goblin, and a treasure. It is about forty lines, and you have seen every one of them before. Read it top to bottom. Then play it with the moves in the box, then with your own.</p>
+<p>Here is the whole game: three rooms, a key, a goblin, and a treasure. It is about fifty lines, and you have seen every one of them before. Read it top to bottom. Then play it with the moves in the box, then with your own.</p>
 <details class="reveal"><summary>Guess first: in the moves below, the player types <code>open chest</code> before taking the key. What does the game print?</summary><p><code>The chest is locked.</code> (Unless the goblin won the fight first!) The key is not in the bag yet, so <code>"key" in bag</code> is False. The player has to go back for the key.</p></details>`,
         { long: true, play: `import random
 

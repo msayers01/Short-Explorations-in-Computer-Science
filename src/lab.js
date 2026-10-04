@@ -689,7 +689,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
         el('div', { class: 'ex-bar-text' }, el('span', { class: 'ex-label' }, 'Exercise'), ' ', el('b', {}, ex.title), el('span', { class: 'ex-bar-where' }, ' · ' + course.code + ', Lesson ' + (lessonIdx + 1) + ': ' + lesson.title + (A().Progress.isDone(ex.id) ? ' · completed ✓' : ''))),
         el('div', { class: 'toolbar' }, check, el('a', { class: 'btn quiet', href: '#/' + course.id + '/' + (lessonIdx + 1) + '/' + ex.id }, 'Open the lesson'), el('button', { class: 'btn quiet', onclick: () => { prompt.hidden = !prompt.hidden; } }, 'Show the task')),
         prompt);
-      if (ex.sampleStdin && (S.lang === 'cpp' || S.lang === 'java')) { stdinBox.hidden = false; if (!stdinTa.value) stdinTa.value = ex.sampleStdin; }
+      if (ex.sampleStdin && (S.lang === 'cpp' || S.lang === 'java')) { showStdin(S.lang); if (!stdinTa.value) stdinTa.value = ex.sampleStdin; }
     }
     // ----- teacher / assignment tools (src/teach.js)
     const asgHost = el('div');
@@ -717,6 +717,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const refBtn = el('button', { class: 'btn quiet', onclick: () => togglePanel('ref') }, 'Reference');
     const termBtn = el('button', { class: 'btn quiet', title: 'A command line: practise Unix commands on your own files, and run your programs from it', onclick: () => toggleTerm() }, 'Terminal');
     const findBtn = el('button', { class: 'btn quiet', title: 'Find and replace (Ctrl+F / Ctrl+H)', onclick: () => openFind(false) }, 'Find');
+    const inputBtn = el('button', { class: 'btn quiet', title: 'A box for the text the program reads (stdin), given all at once', onclick: () => { if (stdinBox.hidden) { showStdin(S.lang); stdinTa.focus(); } else stdinBox.hidden = true; } }, 'Input');
     const fontDown = el('button', { class: 'btn quiet font-btn', title: 'Smaller text', onclick: () => setFont(-1) }, 'A−');
     const fontUp = el('button', { class: 'btn quiet font-btn', title: 'Larger text', onclick: () => setFont(1) }, 'A+');
     // C++ has two engines: the teaching one (JSCPP; step-through memory, always available, works offline) and Full C++ (Clang; the whole language and library,
@@ -736,7 +737,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       endMem(); renderToolbar();
     }
     const fileInput = el('input', { type: 'file', accept: '.py,.cpp,.cc,.cxx,.h,.java,.scm,.ss,.rkt,.txt', hidden: '', onchange: openFiles });
-    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'python' ? stepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, findBtn, tplBtn, refBtn, window.TERMINAL ? termBtn : null, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
+    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'python' ? stepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, S.lang === 'cpp' || S.lang === 'java' ? inputBtn : null, findBtn, tplBtn, refBtn, window.TERMINAL ? termBtn : null, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
     function setFont(d) { S.fontSize = Math.min(24, Math.max(11, S.fontSize + d)); save(); editor.el.style.setProperty('--lab-font', S.fontSize + 'px'); editor.render(); }
 
     // ----- find / replace bar
@@ -795,7 +796,13 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     }) : null;
     function toggleTerm(force) { if (!term) return; const show = force != null ? force : term.el.hidden; if (show) term.show(!isTouch()); else term.hide(); termBtn.classList.toggle('on', show); S.panels.term = show; save(); if (show && term.el.scrollIntoView) term.el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
     const stdinTa = el('textarea', { class: 'stdin-ta', rows: 3, placeholder: 'Type each value the program will read, one per line, before pressing Run.', 'aria-label': 'Program input' });
-    const stdinBox = el('div', { class: 'stdin-box', hidden: '' }, el('div', { class: 'panel-head' }, el('b', {}, 'Program input'), el('span', { class: 'panel-note' }, 'This program reads input with cin. C++ programs read all of it at once, so give it here.')), stdinTa);
+    const stdinNote = el('span', { class: 'panel-note' });
+    const stdinBox = el('div', { class: 'stdin-box', hidden: '' }, el('div', { class: 'panel-head' }, el('b', {}, 'Program input'), stdinNote, el('button', { class: 'btn quiet', title: 'Hide the input box', 'aria-label': 'Hide the input box', onclick: () => { stdinBox.hidden = true; } }, '×')), stdinTa);
+    // Java and the teaching C++ ask for each line in the output panel as the program reads it (typed input, runner.js); text in this box is given
+    // instead, all at once, like a file piped in. Full C++ (and scanf or getchar in the teaching C++) read all of their input before they start,
+    // so for them the box is the only way in.
+    const typedOk = (lang, code) => lang === 'java' || (lang === 'cpp' && !isFull() && !/\b(scanf|getchar)\b/.test(code));
+    const showStdin = (lang) => { stdinNote.textContent = typedOk(lang, editor.value) ? 'Optional: text here is given to the program all at once, as if piped from a file. Leave it empty to type each line as the program asks.' : 'This program reads its input before it starts, so type it here, one value per line.'; stdinBox.hidden = false; };
     const turtleMount = el('div', { id: 'lab-turtle', class: 'turtle-mount' });
     const turtleBox = el('div', { class: 'turtle-box', hidden: '' }, el('div', { class: 'panel-head' }, el('b', {}, 'Turtle canvas'), el('button', { class: 'btn quiet', onclick: () => { turtleBox.hidden = true; } }, '×')), turtleMount);
     const traceVars = el('div', { class: 'trace-vars' });
@@ -822,8 +829,9 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       if (running) return; if (tracer) tracer.stop(); endMem();
       const lang = S.lang, code = editor.value; out.start((window.__app.COMMANDS || {})[lang === 'cpp' && isFull() ? 'cppfull' : lang] || '');
       let exit = 0, stopped = false;
-      const reads = lang === 'cpp' ? /\bcin\b/.test(code) : lang === 'java' ? /\bScanner\b/.test(code) : false;
-      if (reads) { stdinBox.hidden = false; if (!stdinTa.value.trim() && !stdinTa.dataset.warned) { stdinTa.dataset.warned = '1'; out.note('This program reads input with ' + (lang === 'java' ? 'a Scanner' : 'cin') + '. Type the values in the Program input box, one per line, then Run again.'); stdinTa.focus(); out.finish({ stopped: true }); return; } }
+      const typed = typedOk(lang, code) && (stdinBox.hidden || !stdinTa.value.trim());
+      const reads = lang === 'cpp' && !typed && /\b(cin|getline|scanf|getchar)\b/.test(code);
+      if (reads) { showStdin(lang); if (!stdinTa.value.trim() && !stdinTa.dataset.warned) { stdinTa.dataset.warned = '1'; out.note('This program reads its input before it starts. Type the values in the Program input box, one per line, then Run again.'); stdinTa.focus(); out.finish({ stopped: true }); return; } }
       setRunning(true);
       try {
         if (lang === 'python') {
@@ -844,11 +852,13 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
           if (r.exit) out.note('(the program ended with status ' + r.exit + ')');
           exit = r.exit || 0;
         } else if (lang === 'cpp') {
-          const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: stdinTa.value });
-          if (r.err) showError('cpp', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
+          const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: typed ? null : stdinTa.value, onInput: (p) => out.ask(p) });
+          stopped = r.err === 'Stopped.';
+          if (stopped) out.note('(stopped)'); else if (r.err) showError('cpp', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
         } else if (lang === 'java') {
-          const r = await Runners.java.run(code, { onOutput: (s) => out.write(s), stdin: stdinTa.value });
-          if (r.err) showError('java', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
+          const r = await Runners.java.run(code, { onOutput: (s) => out.write(s), stdin: typed ? null : stdinTa.value, onInput: (p) => out.ask(p) });
+          stopped = r.err === 'Stopped.';
+          if (stopped) out.note('(stopped)'); else if (r.err) showError('java', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
         }
       } catch (e) { out.error(String(e && e.message || e)); }
       out.finish({ exit, stopped });
@@ -907,7 +917,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     async function startMem() {
       if (running || !window.CPPSTEP || !window.CPPRUN) return; if (tracer) tracer.stop();
       const code = editor.value;
-      if (/\bcin\b/.test(code)) { stdinBox.hidden = false; if (!stdinTa.value.trim()) { out.clear(); out.note('This program reads input with cin. Type the values in the Program input box, one per line, then press Step through memory again.'); stdinTa.focus(); return; } }
+      if (/\bcin\b/.test(code)) { showStdin('cpp'); if (!stdinTa.value.trim()) { out.clear(); out.note('This program reads input with cin. Type the values in the Program input box, one per line, then press Step through memory again.'); stdinTa.focus(); return; } }
       const token = ++memToken;
       out.clear(); memBox.hidden = false; memView.innerHTML = ''; memMsg.textContent = 'running the program…'; setRunning(true);
       let r; try { r = await window.CPPRUN.trace(code, stdinTa.value, { maxSteps: 1500 }); } finally { setRunning(false); }
@@ -1056,7 +1066,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
 <li><b>Teacher tools</b> (the switch at the top) let a teacher write an assignment with tests and share it as a link or QR code; students <b>Check</b> their work against the visible tests and <b>Submit</b>, which makes a link carrying their program. The teacher opens submission links in her own Code Lab, where hidden tests run and a grade book collects the results. Nothing is sent to any server.</li>
 <li>Every code example and exercise in the courses has an <b>Open in Code Lab</b> button. A file opened from an exercise keeps its link to it: a bar above the editor lets you check your program against the exercise's tests, and passing counts as completing it in the course.</li>
 <li>C++: <b>Step through memory</b> runs the program one line at a time and shows every variable in memory: its type, its address and its value, with arrays drawn cell by cell and pointers showing what they point at. You can step backwards as well as forwards.</li>
-<li>C++: programs that read with <code>cin</code> take their input from the Program input box. C++ and Scheme programs stop themselves after a few seconds if they run too long.</li>
+<li>Input: a Python <code>input()</code>, a Java <code>Scanner</code> or a C++ <code>cin</code> asks for each line in the output panel as the program reads it; <b>Ctrl+D</b> on an empty line ends the input. <b>Input</b> (Java and C++) opens a box whose text is given to the program all at once instead, like a file. Full C++ reads all of its input before it starts, so it uses the box. C++, Java and Scheme programs stop themselves after a few seconds if they run too long.</li>
 <li><b>Terminal</b> opens a command line under the output: a practice Unix shell with its own files (saved on this device). Your Code Lab files appear in its <code>lab</code> folder, so <code>python lab/main.py</code> runs the file in the editor; <code>nano</code> edits a file there, <code>edit file.py</code> opens it in the editor above. Type <code>help</code> for the list of commands; <b>Tab</b> completes names, <b>↑ ↓</b> recall commands, <b>Ctrl+C</b> stops a program.</li>
 <li>On a phone or tablet, the <b>Indent</b> and <b>Outdent</b> buttons under the editor stand in for the Tab key, and <b>Wrap</b> keeps long lines on screen.</li></ul>` }));
     const editorArea = el('div', { class: 'lab-editor-area' }, tabs, findBar, editor.el, statusBar);
@@ -1066,7 +1076,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     if (term && S.panels.term) { term.show(false); termBtn.classList.add('on'); }
     if (pendingStep) {
       const ps = pendingStep; pendingStep = null;
-      if (ps.mode === 'mem' && S.lang === 'cpp') { if (ps.stdin != null) { stdinTa.value = ps.stdin; stdinBox.hidden = false; } setTimeout(startMem, 0); }
+      if (ps.mode === 'mem' && S.lang === 'cpp') { if (ps.stdin != null) { stdinTa.value = ps.stdin; showStdin('cpp'); } setTimeout(startMem, 0); }
       if (ps.mode === 'subst' && S.lang === 'scheme') setTimeout(startSubst, 0);
     }
     if (teach && (kind === 'assign' || kind === 'review' || /(^|&)b=/.test(query || ''))) setTimeout(() => teach.handleQuery(kind, query), 0);

@@ -8,8 +8,8 @@
 
    window.PYRUN.run(code, {stdin, execLimit, turtle:{mount,width,height}, onOutput, onInput}) → Promise<{out, err}>
    window.PYRUN.trace(code, {…, onStep}) → {done, next(), finish(), stop()}        window.PYRUN.cancel()
-   window.CPPRUN.run(code, {stdin, onOutput, maxMs}) → Promise<{out, err}>      window.CPPRUN.trace(code, stdin) → Promise<{trace, err}>
-   window.JAVARUN.run(code, {stdin, onOutput, maxMs}) → Promise<{out, err}>     (the site's own Java interpreter, src/java.js)
+   window.CPPRUN.run(code, {stdin, onOutput, onInput, maxMs}) → Promise<{out, err}>    window.CPPRUN.trace(code, stdin) → Promise<{trace, err}>
+   window.JAVARUN.run(code, {stdin, onOutput, onInput, maxMs}) → Promise<{out, err}>     (the site's own Java interpreter, src/java.js; onInput without stdin: typed input)
    window.CLANGRUN.run(code, {stdin, std, onOutput, onNote}) → Promise<{out, err, exit, notes}>   (real C++; see below: downloaded on demand)
    window.CLANGRUN.runMany(code, [stdin…]) → Promise<{err, parts:[{out, all, err, exit}]}>        compile once, run once for each input
    window.CPPRUN.check(code), window.JAVARUN.check(code), window.CLANGRUN.compile(code, {std}) → Promise<{err}>   compile only (the terminal's g++ and javac) */
@@ -145,7 +145,7 @@
       } else if (m.t === 'result' && m.trace && typeof m.trace === 'object') {
         r.result = m.trace;
       } else if (m.t === 'done') {
-        finish(r, { err: typeof m.err === 'string' ? m.err.slice(0, 20000) : null, exit: Number(m.exit) || 0, result: r.result });
+        finish(r, { err: typeof m.err === 'string' ? m.err.slice(0, 20000) : null, exit: Number(m.exit) || 0, result: r.result, needInput: m.needInput === true });
       }
     }
 
@@ -224,17 +224,49 @@
     },
     cancel: () => py.cancel()
   };
+  // Typed input for Java and the teaching C++ (no stdin given, and an opts.onInput to ask with): the worker cannot wait for the page, so each time
+  // the program wants a line nobody has typed yet the run ends, the student is asked, and the program runs again from the start with every line
+  // so far, the same random numbers and a clock that has moved on as it really did (javaworker.js, cppworker.js: typedInput). What is already
+  // on the screen is not printed twice. onInput(prompt) resolves with the line, or null for the end of the input (Ctrl+D). test_typed.js.
+  function typedRunner(engine) {
+    let gen = 0, wait = null;
+    async function run(code, opts, ms) {
+      const mine = gen, lines = [], times = [], t0 = Date.now(), seed = (Math.random() * 2147483647) | 0;
+      let out = '';
+      const onOutput = (s) => { out += s; if (opts.onOutput) opts.onOutput(s); };
+      for (;;) {
+        const r = await engine.run({ t: 'run', totalMs: ms + 3000, idleMs: ms + 3000, opts: { onOutput }, payload: { code: String(code), stdin: '', maxTimeout: ms, typed: { lines, times, t0, seed, skip: out.length } } });
+        if (mine !== gen) return { out, err: 'Stopped.', exit: 130 };
+        if (!r.needInput) return { out, err: r.err, exit: r.exit };
+        if (lines.length >= 5000) return { out, err: 'The program asked for more lines of input than it is allowed here.', exit: 1 };
+        const v = await new Promise((resolve) => { wait = resolve; Promise.resolve(opts.onInput('')).then(resolve, () => resolve(null)); });
+        wait = null;
+        if (mine !== gen) return { out, err: 'Stopped.', exit: 130 };
+        lines.push(v == null ? null : String(v)); times.push(Date.now());
+      }
+    }
+    return { run, cancel() { gen++; if (wait) { const w = wait; wait = null; w(null); } } };
+  }
+  const javaTyped = typedRunner(java), cppTyped = typedRunner(cpp);
   window.JAVARUN = {
     // opts.maxMs: the program's time limit (the Bot Arena gives a bot a few hundred milliseconds a move); the page waits 3 seconds longer before it ends the worker itself
-    run: (code, opts) => { opts = opts || {}; const ms = opts.maxMs || 5000; return java.run({ t: 'run', totalMs: ms + 3000, idleMs: ms + 3000, opts, payload: { code: String(code), stdin: opts.stdin == null ? '' : String(opts.stdin), maxTimeout: ms } }); },
+    run: (code, opts) => {
+      opts = opts || {}; const ms = opts.maxMs || 5000;
+      if (opts.stdin == null && typeof opts.onInput === 'function') return javaTyped.run(code, opts, ms);
+      return java.run({ t: 'run', totalMs: ms + 3000, idleMs: ms + 3000, opts, payload: { code: String(code), stdin: opts.stdin == null ? '' : String(opts.stdin), maxTimeout: ms } });
+    },
     check: (code) => java.run({ t: 'run', totalMs: 8000, idleMs: 8000, opts: {}, payload: { code: String(code), stdin: '', maxTimeout: 5000, checkOnly: true } }),
-    cancel: () => java.cancel()
+    cancel: () => { javaTyped.cancel(); java.cancel(); }
   };
   window.CPPRUN = {
-    run: (code, opts) => { opts = opts || {}; const ms = opts.maxMs || 4000; return cpp.run({ t: 'run', totalMs: ms + 3000, idleMs: ms + 3000, opts, payload: { code: String(code), stdin: opts.stdin == null ? '' : String(opts.stdin), maxTimeout: ms } }); },
+    run: (code, opts) => {
+      opts = opts || {}; const ms = opts.maxMs || 4000;
+      if (opts.stdin == null && typeof opts.onInput === 'function') return cppTyped.run(code, opts, ms);
+      return cpp.run({ t: 'run', totalMs: ms + 3000, idleMs: ms + 3000, opts, payload: { code: String(code), stdin: opts.stdin == null ? '' : String(opts.stdin), maxTimeout: ms } });
+    },
     trace: (code, stdin, opts) => { opts = opts || {}; return cpp.run({ t: 'trace', totalMs: 9000, idleMs: 9000, opts, payload: { code: String(code), stdin: String(stdin || ''), maxSteps: opts.maxSteps || 1500 } }); },
     check: (code) => cpp.run({ t: 'check', totalMs: 7000, idleMs: 7000, opts: {}, payload: { code: String(code), maxTimeout: 4000 } }),
-    cancel: () => cpp.cancel()
+    cancel: () => { cppTyped.cancel(); cpp.cancel(); }
   };
   // A program that stays running between turns (Bot Arena persistent mode, src/botsession.js): its own Web Worker, built from the same data block as the
   // interpreter's usual one, and a block of shared memory in which the page hands it each turn. That needs the site to be cross-origin isolated

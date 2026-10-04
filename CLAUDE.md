@@ -15,6 +15,7 @@ not written down there.
     npm test               # all node tests (pretest applies the JSCPP patches); about 2 minutes
     node test_course.js python|lisp|cpp|math|modern|java|ml   # one course; "modern" compiles with the real compiler, about 1.5 minutes
     node test_java.js      # the Java interpreter against what javac/java print (a few seconds)
+    node test_typed.js     # typed input (Scanner, cin answered as the program asks), in the real worker sources (a few seconds)
     node test_shell.js     # the practice shell: file system, parser, every command, limits, hostile saved copies (a second)
     node test_lessons.js   # the lesson linter (part of npm test); --update records new exercise ids in lint/exercise-ids.txt
     npm run test:diff      # java.js against a real JDK 21, shell.js against bash (about 35 s; SEED=n COUNT=n searches further)

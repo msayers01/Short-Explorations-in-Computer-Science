@@ -251,12 +251,12 @@
   const COMMANDS = { python: 'python main.py', scheme: 'scheme main.scm', cpp: 'g++ main.cpp -o main && ./main', cppfull: 'clang++ -std=c++20 main.cpp -o main && ./main', java: 'javac Main.java && java Main' };
   // A program waiting at input() is ended when its output panel is cleared or leaves the page; otherwise it would hold the engine's queue forever.
   const askers = new Set();
-  const abandonAsk = (a) => { askers.delete(a); a.resolve(''); if (window.PYRUN) window.PYRUN.cancel(); };
+  const abandonAsk = (a) => { askers.delete(a); a.resolve(null); for (const k of ['PYRUN', 'JAVARUN', 'CPPRUN']) if (window[k]) window[k].cancel(); };
   document.addEventListener('routed', () => { for (const a of [...askers]) if (!a.row.isConnected) abandonAsk(a); });
   function outputPanel() {
     const box = el('div', { class: 'out term', hidden: '' });
     const status = el('span', { class: 'term-status', role: 'status' });
-    const bar = el('div', { class: 'term-bar' }, el('span', { class: 'term-dots', 'aria-hidden': 'true' }, el('span'), el('span'), el('span')), el('span', { class: 'term-title' }, 'Output'), status);
+    const bar = el('div', { class: 'term-bar' }, el('span', { class: 'term-title' }, 'Output'), status);
     const pre = el('pre', { class: 'out-text', tabindex: '0', 'aria-label': 'Program output' });
     const cursor = el('span', { class: 'term-cursor', 'aria-hidden': 'true' });
     box.append(bar, pre);
@@ -272,6 +272,7 @@
       /** a run ends: the cursor stops and the status pill says how it went */
       finish(info) {
         info = info || {}; if (cursor.parentNode === pre) pre.removeChild(cursor);
+        for (const a of [...askers]) if (a.pre === pre) { askers.delete(a); a.row.replaceWith(el('span', {}, a.prompt, '\n')); a.resolve(null); }   // stopped while it waited for a line
         const secs = t0 ? ((Date.now() - t0) / 1000).toFixed(2) + ' s' : '';
         if (info.stopped) setStatus('fail', 'stopped' + (secs ? ' \u00b7 ' + secs : ''));
         else if (box.classList.contains('has-error')) setStatus('fail', 'error' + (secs ? ' \u00b7 ' + secs : ''));
@@ -285,14 +286,18 @@
       error(s) { line('err', s); box.classList.add('has-error'); },
       note(s) { line('note', s); },
       hide() { box.hidden = true; if (cursor.parentNode === pre) pre.removeChild(cursor); },
-      /** inline input() prompt; returns a promise resolved with the typed line */
+      /** inline input() prompt; returns a promise resolved with the typed line, or null for the end of the input (Ctrl+D) */
       ask(prompt) {
         return new Promise((resolve) => {
           const inp = el('input', { class: 'inline-input', type: 'text', 'aria-label': 'Program input', autocomplete: 'off', spellcheck: 'false' });
           const row = el('span', { class: 'input-line' }, prompt || '', inp);
           put(row); inp.focus();
-          const a = { row, pre, resolve }; askers.add(a);
-          inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { askers.delete(a); const v = inp.value; row.replaceWith(el('span', {}, prompt || '', el('span', { class: 'typed' }, v), '\n')); resolve(v); } });
+          const a = { row, pre, resolve, prompt: prompt || '' }; askers.add(a);
+          // Enter gives the line; Ctrl+D on an empty line is the end of the input, as in a terminal (a Java or C++ program reading until there is no more)
+          inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { askers.delete(a); const v = inp.value; row.replaceWith(el('span', {}, prompt || '', el('span', { class: 'typed' }, v), '\n')); resolve(v); }
+            else if (e.ctrlKey && (e.key === 'd' || e.key === 'D') && !inp.value) { e.preventDefault(); askers.delete(a); row.replaceWith(el('span', {}, prompt || '', el('span', { class: 'note' }, '^D'), '\n')); resolve(null); }
+          });
         });
       }
     };
@@ -316,7 +321,7 @@
       if (r.err) out.error(r.err);
       else if (!r.out && !turtle) out.note('(the program finished without printing anything)');
     } else if (lang === 'scheme') {
-      const r = await Runners.scheme.run(code, { onOutput: (s) => out.write(s) });
+      const r = await Runners.scheme.run(code, { onOutput: (s) => out.write(s), stepLimit: 2e7 });   // the Lab's REPL limit, so an example behaves as it does there
       for (const res of r.results) {
         if (res.form instanceof Scheme.Pair && res.form.car === Scheme.sym('define')) out.value(';Value: ' + res.text);
         else if (res.text !== '') out.value(';Value: ' + res.text);
@@ -330,11 +335,11 @@
       if (r.exit) out.note('(the program ended with status ' + r.exit + ')');
       return r.exit || 0;
     } else if (lang === 'cpp') {
-      const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: opts.stdin });
+      const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: opts.stdin, onInput: /\b(scanf|getchar)\b/.test(code) ? undefined : (p) => out.ask(p) });   // no stdin given: typed as the program asks
       if (r.err) out.error(r.err);
       else if (!r.out) out.note('(the program finished without printing anything)');
     } else if (lang === 'java') {
-      const r = await Runners.java.run(code, { onOutput: (s) => out.write(s), stdin: opts.stdin });
+      const r = await Runners.java.run(code, { onOutput: (s) => out.write(s), stdin: opts.stdin, onInput: (p) => out.ask(p) });
       if (r.err) { out.error(r.err); const tip = tipFor('java', r.err); if (tip) out.note('↳ ' + tip); }
       else if (!r.out) out.note('(the program finished without printing anything)');
     }

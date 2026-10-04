@@ -12,7 +12,8 @@
    methods and constructors are checked, as are catches that cannot happen).
 
    Exposed as window.JAVA (browser) or module.exports (node):
-     JAVA.run(code, stdin, { maxSteps, maxMs, write(text), more() }) → { out, err, exit }   err is the compile error or the uncaught exception text
+     JAVA.run(code, stdin, { maxSteps, maxMs, write(text), more(), random(), clock() }) → { out, err, exit, needInput? }   err is the compile error or the uncaught exception text
+       more() gives the next text once stdin is used up ('' ends the input); throwing JAVA.NEED_INPUT from it ends the run with needInput: true
    (src/javautil.js wraps a method-writing exercise in a class with a main, for the checker.) */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -569,6 +570,11 @@
     R.out = ''; R.outLen = 0; R.write = opts.write || null; R.maxOut = opts.maxOut || 2e6;
     R.steps = 0; R.maxSteps = opts.maxSteps || Infinity; R.deadline = opts.maxMs ? Date.now() + opts.maxMs : Infinity;
     R.stdin = typeof opts.stdin === 'string' ? opts.stdin : ''; R.stdinPos = 0; R.more = opts.more || null;
+    // System.in is one stream shared by every Scanner on it, handed out a line at a time as a console does: a method that makes a new Scanner each
+    // time it is called reads the next line, not the first one again. After the given text, more() is asked (Bot Arena turns, typed input).
+    R.sysin = () => { if (R.stdinPos < R.stdin.length) { const i = R.stdin.indexOf('\n', R.stdinPos), e = i < 0 ? R.stdin.length : i + 1, t = R.stdin.slice(R.stdinPos, e); R.stdinPos = e; return t; } return R.more ? R.more() : ''; };
+    R.rand = opts.random || Math.random;   // Math.random, shuffle and an unseeded Random: a run that is replayed (typed input) is given the same sequence each time
+    R.clock = opts.clock || null;          // and the same clock: milliseconds, as Date.now
     R.classes = null;   // filled by the checker: name → ClassInfo (user and library)
     R.frames = [];      // the Java call stack, for stack traces: {cls, name, line}
     R.exitCode = null;
@@ -577,6 +583,7 @@
   }
   class TooMuchOutput extends Error { }
   class TimeLimit extends Error { }
+  const NEED_INPUT = { needInput: true };   // thrown by an opts.more() that has no line yet; no Java catch or finally sees it
   class SystemExit extends Error { constructor(code) { super('exit'); this.code = code; } }
 
   const LIB_PKG = { String: 'java.lang', Object: 'java.lang', Integer: 'java.lang', Long: 'java.lang', Double: 'java.lang', Float: 'java.lang', Character: 'java.lang', Boolean: 'java.lang', Short: 'java.lang', Byte: 'java.lang', Number: 'java.lang', Math: 'java.lang', System: 'java.lang', StringBuilder: 'java.lang', Comparable: 'java.lang', CharSequence: 'java.lang', Iterable: 'java.lang', PrintStream: 'java.io', InputStream: 'java.io',
@@ -962,7 +969,7 @@
     'min(int,int)': ['int', (o, a) => Math.min(a[0], a[1])], 'min(long,long)': ['long', (o, a) => (a[0] < a[1] ? a[0] : a[1])], 'min(double,double)': ['double', (o, a) => Math.min(a[0], a[1])], 'min(float,float)': ['float', (o, a) => Math.min(a[0], a[1])],
     'pow(double,double)': ['double', (o, a) => Math.pow(a[0], a[1])], 'sqrt(double)': ['double', (o, a) => Math.sqrt(a[0])], 'cbrt(double)': ['double', (o, a) => Math.cbrt(a[0])], 'sinh(double)': ['double', (o, a) => Math.sinh(a[0])], 'cosh(double)': ['double', (o, a) => Math.cosh(a[0])], 'tanh(double)': ['double', (o, a) => Math.tanh(a[0])], 'log1p(double)': ['double', (o, a) => Math.log1p(a[0])], 'expm1(double)': ['double', (o, a) => Math.expm1(a[0])], 'hypot(double,double)': ['double', (o, a) => Math.hypot(a[0], a[1])],
     'floor(double)': ['double', (o, a) => Math.floor(a[0])], 'ceil(double)': ['double', (o, a) => Math.ceil(a[0])], 'round(double)': ['long', (o, a) => roundJ(a[0])], 'round(float)': ['int', (o, a) => d2i(Math.round(a[0]))], 'rint(double)': ['double', (o, a) => { const f = Math.floor(a[0]), d = a[0] - f, r = d < 0.5 ? f : d > 0.5 ? f + 1 : (f % 2 === 0 ? f : f + 1); return r === 0 && (a[0] < 0 || Object.is(a[0], -0)) ? -0 : r; }],   // a negative that rounds to zero is -0.0
-    'random()': ['double', () => Math.random()], 'sin(double)': ['double', (o, a) => Math.sin(a[0])], 'cos(double)': ['double', (o, a) => Math.cos(a[0])], 'tan(double)': ['double', (o, a) => Math.tan(a[0])], 'asin(double)': ['double', (o, a) => Math.asin(a[0])], 'acos(double)': ['double', (o, a) => Math.acos(a[0])], 'atan(double)': ['double', (o, a) => Math.atan(a[0])], 'atan2(double,double)': ['double', (o, a) => Math.atan2(a[0], a[1])],
+    'random()': ['double', (o, a, R) => R.rand()], 'sin(double)': ['double', (o, a) => Math.sin(a[0])], 'cos(double)': ['double', (o, a) => Math.cos(a[0])], 'tan(double)': ['double', (o, a) => Math.tan(a[0])], 'asin(double)': ['double', (o, a) => Math.asin(a[0])], 'acos(double)': ['double', (o, a) => Math.acos(a[0])], 'atan(double)': ['double', (o, a) => Math.atan(a[0])], 'atan2(double,double)': ['double', (o, a) => Math.atan2(a[0], a[1])],
     'exp(double)': ['double', (o, a) => Math.exp(a[0])], 'log(double)': ['double', (o, a) => Math.log(a[0])], 'log10(double)': ['double', (o, a) => Math.log10(a[0])], 'signum(double)': ['double', (o, a) => Math.sign(a[0])], 'toRadians(double)': ['double', (o, a) => a[0] / 180 * Math.PI], 'toDegrees(double)': ['double', (o, a) => a[0] * 180 / Math.PI],
     'floorDiv(int,int)': ['int', (o, a, R) => { if (a[1] === 0) throwJ(R, 'ArithmeticException', '/ by zero'); return Math.floor(a[0] / a[1]) | 0; }], 'floorMod(int,int)': ['int', (o, a, R) => { if (a[1] === 0) throwJ(R, 'ArithmeticException', '/ by zero'); return (((a[0] % a[1]) + a[1]) % a[1]) | 0; }],
     'floorDiv(long,long)': ['long', (o, a, R) => { if (a[1] === 0n) throwJ(R, 'ArithmeticException', '/ by zero'); let q = a[0] / a[1]; if ((a[0] % a[1] !== 0n) && ((a[0] < 0n) !== (a[1] < 0n))) q -= 1n; return q; }], 'floorMod(long,long)': ['long', (o, a, R) => { if (a[1] === 0n) throwJ(R, 'ArithmeticException', '/ by zero'); return ((a[0] % a[1]) + a[1]) % a[1]; }],
@@ -1125,7 +1132,7 @@
     'sort(List<T>)': ['void', (o, a, R) => { nn(R, a[0]); a[0].a = sortJ(R, a[0].a); }], 'sort(List<T>,Comparator<T>)': ['void', (o, a, R) => { nn(R, a[0]); a[0].a = sortJ(R, a[0].a, a[1]); }],
     'reverseOrder()': ['Comparator<T>', () => new JCmp(null, true)], 'reverseOrder(Comparator<T>)': ['Comparator<T>', (o, a) => new JCmp(a[0], true)],
     'max(Collection<T>,Comparator<T>)': ['T', (o, a, R) => { const it = collItems(R, a[0]); if (!it.length) throwJ(R, 'NoSuchElementException', null); const f = cmpWith(R, a[1]); return it.reduce((m, x) => (f(x, m) > 0 ? x : m)); }], 'min(Collection<T>,Comparator<T>)': ['T', (o, a, R) => { const it = collItems(R, a[0]); if (!it.length) throwJ(R, 'NoSuchElementException', null); const f = cmpWith(R, a[1]); return it.reduce((m, x) => (f(x, m) < 0 ? x : m)); }], 'reverse(List<T>)': ['void', (o, a, R) => { nn(R, a[0]).a.reverse(); }],
-    'shuffle(List<T>)': ['void', (o, a, R) => { const l = nn(R, a[0]).a; for (let i = l.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [l[i], l[j]] = [l[j], l[i]]; } }], 'shuffle(List<T>,Random)': ['void', (o, a, R) => { const l = nn(R, a[0]).a; for (let i = l.length; i > 1; i--) { const j = a[1].nextIntBound(i, R); [l[i - 1], l[j]] = [l[j], l[i - 1]]; } }],
+    'shuffle(List<T>)': ['void', (o, a, R) => { const l = nn(R, a[0]).a; for (let i = l.length - 1; i > 0; i--) { const j = Math.floor(R.rand() * (i + 1)); [l[i], l[j]] = [l[j], l[i]]; } }], 'shuffle(List<T>,Random)': ['void', (o, a, R) => { const l = nn(R, a[0]).a; for (let i = l.length; i > 1; i--) { const j = a[1].nextIntBound(i, R); [l[i - 1], l[j]] = [l[j], l[i - 1]]; } }],
     'max(Collection<T>)': ['T', (o, a, R) => { const it = collItems(R, a[0]); if (!it.length) throwJ(R, 'NoSuchElementException', null); return it.reduce((m, x) => (jcmp(x, m, R) > 0 ? x : m)); }], 'min(Collection<T>)': ['T', (o, a, R) => { const it = collItems(R, a[0]); if (!it.length) throwJ(R, 'NoSuchElementException', null); return it.reduce((m, x) => (jcmp(x, m, R) < 0 ? x : m)); }],
     'swap(List<T>,int,int)': ['void', (o, a, R) => { const l = nn(R, a[0]).a; lidx(R, l, a[1]); lidx(R, l, a[2]); [l[a[1]], l[a[2]]] = [l[a[2]], l[a[1]]]; }], 'frequency(Collection<T>,Object)': ['int', (o, a, R) => collItems(R, a[0]).filter(x => jeq(x, a[1], R)).length],
     'nCopies(int,T)': ['List<T>', (o, a, R) => { if (a[0] < 0) throwJ(R, 'IllegalArgumentException', 'List length = ' + a[0]); const l = new JList(new Array(a[0]).fill(a[1])); l.immutable = true; return l; }], 'unmodifiableList(List<T>)': ['List<T>', (o, a, R) => { const l = new JList(nn(R, a[0]).a); l.immutable = true; return l; }], 'emptyList()': ['List<T>', () => { const l = new JList(); l.immutable = true; return l; }]
@@ -1135,17 +1142,17 @@
     { 'println()': ['void', (ps, a, R) => R.print('\n')], 'printf(String,Object...)': ['PrintStream', (ps, a, R) => { R.print(jformat(nn(R, a[0]), a[1].a, R)); return ps; }], 'format(String,Object...)': ['PrintStream', (ps, a, R) => { R.print(jformat(nn(R, a[0]), a[1].a, R)); return ps; }], 'flush()': ['void', () => { }], 'write(int)': ['void', (ps, a, R) => R.print(String.fromCharCode(a[0] & 255))] }) });
   def('InputStream', { noNew: true, methods: {} });
   def('System', { noNew: true, fields: { out: ['PrintStream', SYSOUT], err: ['PrintStream', SYSERR], in: ['InputStream', SYSIN] }, statics: {
-    'currentTimeMillis()': ['long', () => BigInt(Date.now())], 'nanoTime()': ['long', () => BigInt(Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) * 1e6))], 'exit(int)': ['void', (o, a) => { throw new SystemExit(a[0]); }], 'lineSeparator()': ['String', () => '\n'],
+    'currentTimeMillis()': ['long', (o, a, R) => BigInt(Math.floor(R.clock ? R.clock() : Date.now()))], 'nanoTime()': ['long', (o, a, R) => BigInt(Math.round((R.clock ? R.clock() : typeof performance !== 'undefined' ? performance.now() : Date.now()) * 1e6))], 'exit(int)': ['void', (o, a) => { throw new SystemExit(a[0]); }], 'lineSeparator()': ['String', () => '\n'],
     'arraycopy(Object,int,Object,int,int)': ['void', (o, a, R) => { const [src, sp, dst, dp, n] = a; nn(R, src); nn(R, dst); if (!(src instanceof JArr) || !(dst instanceof JArr)) throwJ(R, 'ArrayStoreException', 'arraycopy: ' + (src instanceof JArr ? 'destination' : 'source') + ' type ' + qualified(runtimeClassName(src instanceof JArr ? dst : src)) + ' is not an array'); if (sp < 0 || dp < 0 || n < 0 || sp + n > src.a.length || dp + n > dst.a.length) throwJ(R, 'ArrayIndexOutOfBoundsException', 'arraycopy: last ' + (sp + n > src.a.length ? 'source' : 'destination') + ' index ' + (sp + n > src.a.length ? sp + n : dp + n) + ' out of bounds for length ' + (sp + n > src.a.length ? src.a.length : dst.a.length)); const tmp = src.a.slice(sp, sp + n); for (let i = 0; i < n; i++) dst.a[dp + i] = tmp[i]; }],
     'getProperty(String)': ['String', (o, a) => ({ 'line.separator': '\n', 'java.version': '21', 'user.name': 'student', 'os.name': 'Browser' }[a[0]] || null)], 'identityHashCode(Object)': ['int', (o, a) => (a[0] && a[0].id ? idHash(a[0].id) | 0 : 0)]
   } });
-  def('Scanner', { ctors: { 'InputStream': (o, a, R) => { if (a[0] !== SYSIN) throwJ(R, 'IllegalArgumentException', 'only System.in can be scanned here'); return new JScanner(R.stdin, R.more); }, 'String': (o, a, R) => new JScanner(nn(R, a[0])) }, methods: {
+  def('Scanner', { ctors: { 'InputStream': (o, a, R) => { if (a[0] !== SYSIN) throwJ(R, 'IllegalArgumentException', 'only System.in can be scanned here'); return new JScanner('', R.sysin); }, 'String': (o, a, R) => new JScanner(nn(R, a[0])) }, methods: {
     'nextInt()': ['int', (s, a, R) => s.typed(R, INT_RE, toInt)], 'nextLong()': ['long', (s, a, R) => s.typed(R, INT_RE, toLong)], 'nextDouble()': ['double', (s, a, R) => s.typed(R, DBL_RE, toDbl)], 'nextFloat()': ['float', (s, a, R) => Math.fround(s.typed(R, DBL_RE, toDbl))],
     'nextBoolean()': ['boolean', (s, a, R) => s.typed(R, BOOL_RE, (t) => t.toLowerCase() === 'true')], 'next()': ['String', (s, a, R) => s.next(R)], 'nextLine()': ['String', (s, a, R) => s.nextLine(R)],
     'hasNext()': ['boolean', (s) => !!s.peekToken()], 'hasNextInt()': ['boolean', (s) => s.hasTyped(INT_RE, toInt)], 'hasNextLong()': ['boolean', (s) => s.hasTyped(INT_RE, toLong)], 'hasNextDouble()': ['boolean', (s) => s.hasTyped(DBL_RE, toDbl)], 'hasNextBoolean()': ['boolean', (s) => s.hasTyped(BOOL_RE, () => true)], 'hasNextLine()': ['boolean', (s) => s.hasLine()],
     'close()': ['void', (s) => { s.closed = true; }], 'nextShort()': ['short', (s, a, R) => s.typed(R, INT_RE, (t) => { const v = toInt(t); return v === null || v < -32768 || v > 32767 ? null : v; })], 'nextByte()': ['byte', (s, a, R) => s.typed(R, INT_RE, (t) => { const v = toInt(t); return v === null || v < -128 || v > 127 ? null : v; })]
   } });
-  def('Random', { ctors: { '': () => new JRandom(), 'long': (o, a) => new JRandom(a[0]) }, methods: {
+  def('Random', { ctors: { '': (o, a, R) => new JRandom(R.rand === Math.random ? undefined : BigInt(Math.floor(R.rand() * 2 ** 48))), 'long': (o, a) => new JRandom(a[0]) }, methods: {
     'nextInt()': ['int', (r) => r.nextInt()], 'nextInt(int)': ['int', (r, a, R) => r.nextIntBound(a[0], R)], 'nextInt(int,int)': ['int', (r, a, R) => r.nextIntRange(a[0], a[1], R)], 'nextDouble()': ['double', (r) => r.nextDouble()], 'nextBoolean()': ['boolean', (r) => r.nextBoolean()],
     'nextLong()': ['long', (r) => r.nextLong()], 'nextFloat()': ['float', (r) => r.nextFloat()], 'nextGaussian()': ['double', (r) => r.nextGaussian()], 'setSeed(long)': ['void', (r, a) => { r.seed = (a[0] ^ MULT) & MASK48; r.haveNextGaussian = false; }]
   } });
@@ -2189,7 +2196,7 @@
             if (!jt && e instanceof RangeError) { try { throwJ(R, 'StackOverflowError', null); } catch (e2) { jt = e2; } }
             if (!jt) throw e;
             const c = s.catches.find(c => c.types.some(t => isInstance(jt.obj, t)));
-            if (!c) pending = jt; else { F.locals[c.slot] = jt.obj; try { result = exec(c.body, F); } catch (e3) { pending = e3; } }
+            if (!c) pending = jt; else { F.locals[c.slot] = jt.obj; try { result = exec(c.body, F); } catch (e3) { if (!(e3 instanceof JavaThrow)) throw e3; pending = e3; } }
           }
           if (s.fin) { const r = exec(s.fin, F); if (r) return r; }
           if (pending) throw pending;
@@ -2207,7 +2214,7 @@
   const fileNameGuess = (code) => { const m = String(code).match(/\bpublic\s+(?:final\s+|abstract\s+)*class\s+([A-Za-z_$][\w$]*)/) || String(code).match(/\bclass\s+([A-Za-z_$][\w$]*)/); return (m ? m[1] : 'Main') + '.java'; };
   function run(code, stdin, opts) {
     opts = opts || {};
-    const R = new Runtime({ stdin, more: opts.more, write: opts.write, maxSteps: opts.maxSteps, maxMs: opts.maxMs === undefined ? 5000 : opts.maxMs, maxOut: opts.maxOut });
+    const R = new Runtime({ stdin, more: opts.more, write: opts.write, maxSteps: opts.maxSteps, maxMs: opts.maxMs === undefined ? 5000 : opts.maxMs, maxOut: opts.maxOut, random: opts.random, clock: opts.clock });
     let chk;
     try { chk = Checker(parse(String(code))); }
     catch (e) { if (e instanceof CompileError) return { out: '', err: fileNameGuess(code) + ':' + e.line + ': error: ' + e.message, compile: true, line: e.line }; throw e; }
@@ -2220,9 +2227,10 @@
       if (e instanceof SystemExit) return { out: R.out, err: null, exit: e.code };
       if (e instanceof TimeLimit) return { out: R.out, err: 'Time limit exceeded: the program ran for too long. Is there a loop that never ends?', exit: 1 };
       if (e instanceof TooMuchOutput) return { out: R.out, err: 'The program printed more than it was allowed to and was stopped.', exit: 1 };
+      if (e === NEED_INPUT) return { out: R.out, err: null, exit: 0, needInput: true };   // more() threw it: the run ends here and is replayed with the next line (javaworker.js)
       if (e instanceof RangeError) return { out: R.out, err: 'Exception in thread "main" java.lang.StackOverflowError', exit: 1 };
       return { out: R.out, err: 'Internal error in the Java interpreter: ' + (e && e.message || e), exit: 1 };
     }
   }
-  return { run, parse, fmtDouble, strHash, jformat, CompileError, _internal: { lex, Checker, NATIVE } };
+  return { run, NEED_INPUT, parse, fmtDouble, strHash, jformat, CompileError, _internal: { lex, Checker, NATIVE } };
 });

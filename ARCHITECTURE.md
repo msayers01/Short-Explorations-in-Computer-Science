@@ -283,8 +283,18 @@ button and every Scheme playground not marked `expectError` a "Show the substitu
   holds only `pyboot.js`, and the interpreter arrives by `postMessage` and is run with `eval` (the CSP allows script by hash, and
   `'unsafe-eval'` for Skulpt). If a browser cannot make a worker, the same interpreter goes in a hidden sandboxed iframe.
   **`killableWhile/killableFor` must stay off — they hang.** The tracer runs with `debugging: true` and `Sk.debug` suspensions
-  (`$loc` at module level, `$tmps` inside functions) inside the sandbox and sends each pause as a `step` message. C++ takes stdin
-  from the Program input box.
+  (`$loc` at module level, `$tmps` inside functions) inside the sandbox and sends each pause as a `step` message.
+  **Typed input for Java and the teaching C++** (`runner.js: typedRunner`, `typedInput` in `javaworker.js` and `cppworker.js`, `test_typed.js`):
+  with no stdin and an `onInput`, a program that wants a line nobody has typed yet ends its run (`needInput`); the page asks in the output
+  panel (or the terminal's command line), and runs it again from the start with every line so far. A worker cannot wait for the page without
+  shared memory, which a copy opened from a file does not have, so replay works everywhere. The replay prints what the last run printed
+  because it gets the same random numbers (Java: a seeded `Math.random`, `shuffle` and unseeded `Random`; JSCPP's `rand` starts the same each
+  run) and a clock that jumps to each line's arrival time when the line is read (`currentTimeMillis`/`nanoTime`; C++ `time()`), so
+  `srand(time(0))` keeps its secret number. Output already shown is skipped by the worker (`skip`). A Java `catch`/`finally` never sees the
+  stop (`java.js: NEED_INPUT`). JSCPP's cin waits as a console does: `>>` until there is a word, `getline`/`get` until there is anything.
+  Ctrl+D (null) is end of input. The Program input box (the Lab's **Input** button) gives stdin all at once instead; Full C++ and
+  `scanf`/`getchar` read only from it. In `java.js`, System.in is one stream shared by every `Scanner` on it, handed out a line at a time, so a
+  method that makes a new Scanner per call reads the next line, as on a console.
   Scheme: `makeRepl()` keeps one evaluator; `loadProgram` runs the file into it; each REPL entry resets the step budget.
   The evaluator (scheme.js) keeps its own stack of continuation frames on the heap, so non-tail recursion is limited
   by `MAX_STACK` (200 000 frames, then "maximum recursion depth exceeded"), not by the JS call stack; `do`, named-let
@@ -554,7 +564,8 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   write a file with `bin: { lang, src, std }` and ELF-looking bytes; `./name` runs the source through the same sandbox as the Run button.
   `javac` checks with `JAVARUN.check` (`java.js: run(..., {checkOnly})`) and writes `Name.class`; `java Name` runs it; `java Name.java`
   compiles and runs. `python file.py` and `scheme file.scm` run the file. stdin: a pipe or `<` gives the text; otherwise Python's `input()`
-  asks on the command line, and a C++ or Java program that reads (`cin`, `Scanner`) is given its lines first (an empty line ends them).
+  asks on the command line, and so do a Java `Scanner` and the teaching C++'s `cin` (typed input, above; Ctrl+D ends it). Full C++, and `scanf`
+  or `getchar`, are given their lines first (an empty line ends them).
   stdout can go to a file or pipe. Exit status: the program's, or 1 on an error.
 - **Limits that stop runaway lines.** 20 000 simple commands per line typed (`while true; do :; done` ends with a message), 2 MB of output
   into a pipe or capture, 256 KB into a file, 10 000 keyboard lines for a command reading stdin at the terminal, Ctrl+C cancels (`^C`,

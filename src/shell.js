@@ -5,7 +5,7 @@
    this file is loaded in the page and in node (test_shell.js).
 
    const fs = SHELL.makeFS(saved?)                    the file system; fs.toJSON() to save it; SHELL.makeFS(json) checks everything it loads
-   const sh = SHELL.makeShell({ fs, run, compile, nano, edit, setup, now })
+   const sh = SHELL.makeShell({ fs, run, compile, nano, edit, setup, now, typedInput })   typedInput(lang, src, std): true when run() asks for each line itself
    await sh.exec('ls -l | head -3', io)              → exit status; io = { out(text, cls?), err(text), ask(prompt) → Promise<string>, clear(), tty: true }
    sh.complete(lineUpToCursor)                       → { start, items }   (tab completion)
    sh.prompt()                                       → 'student@lab:~$ '
@@ -775,7 +775,7 @@
     async function runProgram(bin, name, args, io) {
       if (!opts.run) { io.err(name + ': programs cannot run here\n'); return 126; }
       let stdin = io.stdin ? await readAll(io, name) : null;
-      if (stdin == null && bin.lang !== 'python' && readsInput(bin.lang, bin.src)) {
+      if (stdin == null && bin.lang !== 'python' && !(io.ask && opts.typedInput && opts.typedInput(bin.lang, bin.src, bin.std)) && readsInput(bin.lang, bin.src)) {   // typedInput: it asks a line at a time itself
         if (!io.ask) stdin = '';
         else { io.err('(this program reads input: type each value and press Enter; an empty line ends the input)\n'); const lines = []; while (lines.length < 10000) { const l = await io.ask(''); if (l === '' || l == null) break; lines.push(l); } stdin = lines.join('\n') + (lines.length ? '\n' : ''); }
       }
