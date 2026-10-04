@@ -1362,3 +1362,67 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .dt-pure > .dt-head { color: var(--ok); }
 .dt-leaf { font-weight: 600; }
 .dt-q { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; margin: 0.25rem 0 0.2rem; font-size: 0.9rem; }
+
+/* the hash table figure (widgets.js hashtable) */
+.ht-form .ht-input { width: 7.5rem; }
+.ht-form label { display: inline-flex; align-items: center; gap: 0.4rem; }
+.ht-calc { font-family: var(--mono); font-size: 0.82rem; color: var(--ink-2); min-height: 2.6em; margin: 0.2rem 0 0.4rem; overflow-wrap: anywhere; }
+.ht-calc .ht-line + .ht-line { color: var(--ink); }
+.ht-rows { list-style: none; margin: 0; padding: 0; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); }
+.ht-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem; padding: 0.2rem 0.5rem; border-bottom: 1px solid var(--rule); min-height: 2rem; font-family: var(--mono); font-size: 0.85rem; border-left: 4px solid transparent; }
+.ht-row:last-child { border-bottom: 0; }
+.ht-row.ht-hot { background: var(--accent-soft); border-left-color: var(--accent); }
+.ht-row.ht-coll:not(.ht-hot) { border-left-color: var(--warn); }
+.ht-i { display: inline-block; min-width: 1.6em; text-align: right; color: var(--ink-3); }
+.ht-slot { display: inline-block; min-width: 1.6em; text-align: center; border: 1px solid var(--ink-3); border-radius: 2px; color: var(--ink-3); background: var(--paper-2); }
+.ht-arrow { color: var(--ink-3); }
+.ht-node { display: inline-block; padding: 0 0.45rem; border: 1px solid var(--ink); border-radius: 3px; background: var(--paper); color: var(--ink); }
+.ht-node.ht-new { background: var(--ok-soft); border-color: var(--ok); }
+.ht-node.ht-moved { outline: 2px dashed var(--accent); outline-offset: 1px; }
+.ht-node.ht-seen { color: var(--ink-3); border-style: dashed; }
+.ht-node.ht-now { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.ht-node.ht-found { background: var(--ok-soft); border-color: var(--ok); font-weight: 700; }
+.ht-len { margin-left: auto; font-family: var(--sans); font-size: 0.78rem; color: var(--warn); }
+.ht-meter-wrap { margin: 0.6rem 0 0.2rem; }
+.ht-meter { position: relative; height: 0.7rem; border: 1px solid var(--ink-3); border-radius: 2px; background: var(--paper-2); }
+.ht-fill { height: 100%; background: var(--ok); transition: width 0.25s; }
+.ht-fill.ht-over { background: var(--warn); }
+.ht-limit { position: absolute; top: -3px; bottom: -3px; left: 75%; border-left: 2px solid var(--ink); }
+.ht-meter-txt { font-family: var(--mono); font-size: 0.82rem; color: var(--ink-2); margin-top: 0.25rem; }
+.ht-log { min-height: 2.8em; }
+.ht-key { font-family: var(--sans); font-size: 0.82rem; color: var(--ink-2); margin: 0.4rem 0 0; display: flex; flex-wrap: wrap; gap: 0.2rem 0.5rem; align-items: center; }
+@media (prefers-reduced-motion: reduce) { .ht-fill { transition: none; } }
+
+/* binary search tree figure (widgets.js bst) */
+.bst-wrap { margin: 0.4rem 0; }
+.bst-svg { display: block; width: 100%; max-width: 640px; height: auto; max-height: 26rem; margin: 0 auto; }
+.bst-edge { stroke: var(--ink-3); stroke-width: 1.5; }
+.bst-edge.bst-on { stroke: var(--accent); stroke-width: 2.5; }
+.bst-dash { stroke-dasharray: 4 3; }
+.bst-node circle { fill: var(--paper); stroke: var(--ink); stroke-width: 1.5; }
+.bst-node text { font: 600 13px var(--mono); fill: var(--ink); }
+.bst-node.bst-seen circle { fill: var(--accent-soft); stroke: var(--accent); }
+.bst-node.bst-done circle { fill: var(--ok-soft); stroke: var(--ok); }
+.bst-node.bst-new circle, .bst-node.bst-found circle { fill: var(--ok-soft); stroke: var(--ok); stroke-width: 3; }
+.bst-node.bst-cur circle { fill: var(--accent); stroke: var(--ink); stroke-width: 2.5; }
+.bst-node.bst-cur text { fill: var(--accent-ink); }
+.bst-slot { fill: var(--paper); stroke: var(--accent); stroke-width: 2; stroke-dasharray: 3 2; }
+.bst-nulltxt { font: 10px var(--mono); fill: var(--ink-2); }
+.bst-h { font: 600 12px var(--sans); fill: var(--ink-2); }
+.bst-stats { font-family: var(--sans); font-size: 0.88rem; color: var(--ink-2); margin: 0.2rem 0; }
+.bst-lbl { color: var(--ink-3); }
+
+
+/* the heap figure (DSA lesson 10): a min-heap as a tree and as an array */
+.hp-edge { stroke: var(--rule); stroke-width: 1.5; }
+.hp-node circle, .hp-cell rect { fill: var(--paper); stroke: var(--ink-3); stroke-width: 1.4; }
+.hp-cell.is-empty rect { fill: none; stroke: var(--rule); stroke-dasharray: 3 3; }
+.hp-val { font-family: var(--mono); font-size: 14px; fill: var(--ink); }
+.hp-idx { font-family: var(--mono); font-size: 10px; fill: var(--ink-3); }
+.hp-removed { font-family: var(--mono); font-size: 13px; font-weight: bold; fill: var(--err); }
+.hp-n.is-alt circle, .hp-n.is-alt rect { stroke: var(--accent); stroke-dasharray: 4 3; stroke-width: 2; }
+.hp-n.is-hot circle, .hp-n.is-hot rect { fill: var(--accent); stroke: var(--accent); }
+.hp-n.is-hot .hp-val { fill: var(--paper); }
+.hp-n.is-mover circle, .hp-n.is-mover rect { stroke: var(--ok); stroke-width: 3.5; }
+.hp-note { min-height: 3.6em; line-height: 1.4; }
+.hp-swaps { white-space: nowrap; }

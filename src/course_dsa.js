@@ -1590,6 +1590,998 @@ public class Main {
 <li>Hanoi takes 2ⁿ − 1 moves and no clever idea can reduce that; branching recursions are where loops need a stack of their own. And it answers the story's question: to move seven discs, move six, move the big one, move six again.</li>
 </ul></div>`
       ]
+    },
+    /* ================================================================== */
+    {
+      standard: 1,
+      standards: ['3A-DA-10', '3B-AP-12', '3B-AP-11'],
+      title: 'Hash tables', summary: 'Finding a key in about one step: a hash function that turns a key into an index, a table of buckets, collisions and chaining, the load factor and the doubling that keeps chains short, why "about one step" is an average, and when to use HashMap instead of writing your own.',
+      blocks: [
+        `<p>In 2003 two computer scientists at Rice University, Scott Crosby and Dan Wallach, published a paper with a plain title: "Denial of Service via Algorithmic Complexity Attacks". Its point was uncomfortable. Programs everywhere kept their data in hash tables, which find a key in about one step, and "about one step" is an <em>average</em>. Anyone who knows how a table decides where a key goes can choose keys that all go to the same place, and then the table is no faster than a list. At first little changed. Then in December 2011, at a conference in Berlin, Alexander Klink and Julian Wälde showed that the same trick worked against most of the web platforms of the day, among them PHP, Java, Python and Ruby.</p>
+<p>A web server keeps the parameters of each request it receives in a hash table. A request whose parameter names had all been chosen to collide made the server walk one ever-longer chain, and keep a processor busy for far longer than the request took to send. One fix was to make the hash function unpredictable: each run starts with a secret random number that is mixed into every hash, so that an attacker cannot know which keys will collide (Python, for one, does this by default now). So how can a table find a key without looking at the other keys, and how can a table that is usually instant be made slow on purpose?</p>
+<h2>Finding by key</h2>
+<p>A program keeps 100,000 names, each with a phone number. To find Ada's number, linear search (lesson 2) compares the names one by one: up to 100,000 steps, O(n). Keeping the names sorted lets binary search finish in at most 17 steps, but now every insertion shifts half the array (lesson 1). What we would like is the array's own trick: reach any slot in one step, however long the array is. An array does that when the key is a whole number, because the key <em>is</em> the index.</p>
+<p>Some keys can be turned into indices at once. A letter is one of 26, so a table of 26 slots can use the letter, minus <code>'a'</code>, as the slot number.</p>`,
+        { predict: true, play: `public class Main {
+    public static void main(String[] args) {
+        String word = "banana";
+        int[] count = new int[26];                      // one slot per letter: the key IS the index
+        for (int i = 0; i < word.length(); i++) {
+            count[word.charAt(i) - 'a']++;              // 'a' gives 0, 'b' gives 1, ... no searching
+        }
+        for (int k = 0; k < 26; k++) {
+            if (count[k] > 0) System.out.println((char) ('a' + k) + " " + count[k]);
+        }
+        System.out.println("n appears " + count['n' - 'a'] + " times");
+    }
+}`, caption: 'Three a, one b and two n, printed in the order of the slots. Finding how many times n appears took one step: <code>count[\'n\' - \'a\']</code>. Nothing was searched, and 26 slots cost the same however long the word is. Change the word, and add a <code>count[...]++</code> for capital letters: what goes wrong with <code>\'B\' - \'a\'</code>?' },
+        `<div class="stmt"><p><span class="kind">Direct addressing.</span> When every possible key is a small whole number, keep an array with one slot per key. Insert, find and remove are each one step: O(1).</p></div>
+<p>It does not scale to words. There are 26⁸ = 208,827,064,576 lowercase words of just eight letters, and no computer has a slot for each. The way out is to keep a table of modest size and to use a function that squeezes any key into the range of its indices.</p>
+<h2>Keys into numbers</h2>
+<div class="stmt"><p><span class="kind">Hash function.</span> A function that turns a key into an <code>int</code>, its <em>hash code</em>. The same key always gives the same number; equal keys give equal numbers; different keys should <em>usually</em> give different numbers, spread out evenly. The table then uses <code>index = hash code mod table length</code>.</p>
+<p><span class="kind">String.hashCode.</span> For a string <code>s</code> of <code>n</code> characters: <code>s[0]·31ⁿ⁻¹ + s[1]·31ⁿ⁻² + … + s[n−1]</code>, worked out in <code>int</code> arithmetic. Long strings overflow, so the result wraps round and can be negative.</p></div>
+<p>For "cat" that is (99·31 + 97)·31 + 116 = 98262, because the character codes of c, a and t are 99, 97 and 116. Every character changes the result and so does the order: "tac" gets a different number. Java uses 31, a small odd number, because it mixes well and <code>31·h</code> is cheap to compute.</p>
+<p>The step after the hash is the one that trips people up. Java's <code>%</code> keeps the sign of the left operand, so <code>-7 % 8</code> is <code>-7</code>, and a negative index throws an exception.</p>`,
+        { predict: 'One of these three words has a negative hash code. Which one, and what does h % 8 give for it?', play: `public class Main {
+    public static void main(String[] args) {
+        String[] words = {"cat", "owl", "elephant"};
+        for (String w : words) {
+            int h = w.hashCode();
+            System.out.println(w + ": hash " + h + ", h % 8 = " + (h % 8) + ", floorMod = " + Math.floorMod(h, 8));
+        }
+        int byHand = (99 * 31 + 97) * 31 + 116;         // 'c', 'a', 't'
+        System.out.println("cat by hand: " + byHand);
+    }
+}`, caption: '"elephant" has eight characters, and 31⁷ is already about 27 billion, so the sum overflowed an int and wrapped to −5491951. Then <code>h % 8</code> is −7, not a bucket, while <code>Math.floorMod(h, 8)</code> is 1. Hash codes are for hashing: never rely on one being positive.' },
+        `<p>Two more ways to get it wrong. <code>Math.abs(h) % n</code> looks fine, but <code>Math.abs(Integer.MIN_VALUE)</code> is still negative, since an <code>int</code> has no +2147483648; and <code>"polygenelubricants".hashCode()</code> is exactly <code>Integer.MIN_VALUE</code>. The safe forms are <code>Math.floorMod(h, n)</code> and <code>(h &amp; 0x7fffffff) % n</code>, which clears the sign bit first. (Java's own <code>HashMap</code> keeps its length a power of two and masks the bits with <code>h &amp; (length − 1)</code>, a cheaper way to do the same job.)</p>`,
+        { check: "A table has 8 buckets. Which expression always gives a legal index 0 to 7, whatever the hash code h is?", options: ["<code>h % 8</code>", "<code>Math.abs(h) % 8</code>", "<code>Math.floorMod(h, 8)</code>"], answer: 2, wrong: ["<code>%</code> keeps the sign of h: for a hash code of −13 it gives −5, and <code>table[-5]</code> throws an ArrayIndexOutOfBoundsException. Hash codes are often negative.", "It works for −13 (13 % 8 is 5), and nearly always. But <code>Math.abs(Integer.MIN_VALUE)</code> is still negative, and some keys really do hash to that. A rule that fails for one key in four billion is a bug someone can aim at.", null], why: "floorMod gives 0 to n − 1 for every int. <code>(h &amp; 0x7fffffff) % n</code> also works: it clears the sign bit before the remainder." },
+        `<h2>Buckets and chains</h2>
+<p>Squeezing many possible keys into a few indices has a price: two keys will sometimes get the same index. That is a <em>collision</em>, and it cannot be avoided, because there are more possible keys than buckets. It happens sooner than people expect: with 365 buckets, 23 keys are already more likely than not to include a collision (the birthday problem).</p>
+<div class="stmt"><p><span class="kind">Hash table with chaining.</span> An array of <em>buckets</em>; each bucket holds a linked list (lesson 5) of the keys whose index is that bucket. <b>put</b>: find the bucket by <code>index = floorMod(hash, length)</code>, walk its chain, replace the value if the key is there, otherwise add a node. <b>get</b>: find the bucket, walk its chain comparing keys with <code>equals</code>. The cost is the length of one chain, not the number of keys.</p></div>
+<p>Insert some words into the table below, one at a time, and step through each insertion: the hash, the index, the collision when two keys meet. Words that share a bucket join its chain, at the front.</p>`,
+        { fig: 'hashtable', caption: 'Insert cat, dog, bee, owl, fox, ant in that order (the Next word button fills them in). The fourth word, owl, lands in the bucket where dog already sits: a collision, and the chain is now two long. Then Search for owl and for emu, and count the comparisons.' },
+        `<p>The same table in Java is two short classes, built from the node of lesson 5. The program puts the six words in and prints each bucket.</p>`,
+        { long: true, predict: 'Which buckets will hold more than one key? (The hash codes are cat 98262, dog 99644, bee 97410, owl 110468, fox 101583, ant 96743; the figure above will tell you.)', play: `class Node {
+    String key;
+    int value;
+    Node next;
+    Node(String key, int value, Node next) { this.key = key; this.value = value; this.next = next; }
+}
+
+class Table {
+    Node[] buckets = new Node[8];
+    int size = 0;
+
+    int index(String key) { return Math.floorMod(key.hashCode(), buckets.length); }
+
+    void put(String key, int value) {
+        int i = index(key);
+        for (Node n = buckets[i]; n != null; n = n.next) {
+            if (n.key.equals(key)) { n.value = value; return; }    // already here: replace the value
+        }
+        buckets[i] = new Node(key, value, buckets[i]);              // new key: add to the front of the chain
+        size++;
+    }
+
+    int get(String key) {                                           // -1 when the key is absent
+        for (Node n = buckets[index(key)]; n != null; n = n.next) {
+            if (n.key.equals(key)) return n.value;
+        }
+        return -1;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Table t = new Table();
+        String[] words = {"cat", "dog", "bee", "owl", "fox", "ant"};
+        for (int i = 0; i < words.length; i++) t.put(words[i], i + 1);
+        for (int i = 0; i < t.buckets.length; i++) {
+            String line = i + ":";
+            for (Node n = t.buckets[i]; n != null; n = n.next) line += " " + n.key;
+            System.out.println(line);
+        }
+        t.put("dog", 40);
+        System.out.println(t.get("dog") + " " + t.get("owl") + " " + t.get("emu") + " size " + t.size);
+    }
+}`, caption: 'Buckets 4 and 7 hold two keys each; 0, 1, 3 and 5 are empty. owl is in front of dog because it came later and was added at the front. Putting dog again replaced its value (the size stayed 6), and get("emu") walked an empty bucket and gave −1. Change the words and see which pairs collide.' },
+        { check: "<code>get</code> for the key emu finds bucket 4, which holds the chain owl, dog. What does it do?", options: ["Returns owl's value, since the bucket was found by hashing emu", "Compares emu with owl, then with dog, reaches the end of the chain and reports that emu is absent", "Moves on to bucket 5 and looks there"], answer: 1, wrong: ["The hash only says <em>where to look</em>. Other keys share that bucket, so <code>get</code> must compare keys with <code>equals</code>; without that, every absent key would return somebody else's value.", null, "Trying the next bucket is a different design, open addressing (below). A chained table never leaves the bucket: the chain is the whole search."], why: "A bucket is a short list. get compares keys down the chain with equals, and stops at the match or at the end: the work is the length of one chain." },
+        `<h2>Growing the table</h2>
+<p>A chain is only short while the table is not crowded. Put a million keys into 8 buckets and every chain holds about 125,000 of them: a table of the right shape that is no better than a list. The measure is the <em>load factor</em>, the number of keys divided by the number of buckets, which is also the average length of a chain.</p>
+<div class="stmt"><p><span class="kind">Load factor and resizing.</span> load factor = keys ÷ buckets. When an insertion pushes it over a limit (0.75 is Java's choice), the table <b>doubles</b>: a new array twice as long, and <em>every</em> key placed again, because the index depends on the table's length. The chains halve in length, on average, each time.</p></div>
+<p>Placing every key again sounds expensive: O(n) in one insertion. But it is the dynamic array of lesson 1 over again: the table doubles only after it has doubled its keys, so the re-placing work is spread over all the insertions that came before it. Count it for tables that grow from 8 buckets.</p>`,
+        { predict: 'About how many keys are re-placed per insert, on average, when 1000 keys are added one by one?', play: `public class Main {
+    public static void main(String[] args) {
+        for (int n : new int[] {10, 100, 1000, 100000}) {
+            int buckets = 8, resizes = 0;
+            long replaced = 0;                          // keys re-placed by all the resizes together
+            for (int size = 1; size <= n; size++) {     // size = how many keys are in the table
+                if (size > 0.75 * buckets) {            // too full: double, and place every key again
+                    buckets *= 2;
+                    resizes++;
+                    replaced += size;
+                }
+            }
+            System.out.printf("%6d keys: %6d buckets, %2d resizes, %6d re-placed, %.2f per insert%n",
+                              n, buckets, resizes, replaced, (double) replaced / n);
+        }
+    }
+}`, caption: 'Between 0.7 and 2 re-placements per insert, and never more than 2, however many keys: 1000 keys cause 8 resizes and 1538 re-placements, and 100000 keys cause 15 resizes and 196617. The total is always under twice the number of keys, which is why a hash table\'s put is O(1) <em>amortised</em>. A single put now and then is slow; the average is not.' },
+        { check: "A table with 8 buckets holds 6 keys and its limit is a load factor of 0.75. A seventh key is added. What happens?", options: ["Nothing: seven keys still fit in eight buckets", "The table doubles to 16 buckets and every key is placed again, its index worked out afresh", "The table doubles to 16 buckets and the old chains are copied across to the same positions"], answer: 1, wrong: ["With chains the buckets never run out, so \"fits\" is the wrong question. The load factor is the question: 7/8 = 0.88 is over 0.75, so the chains are, on average, longer than the table allows.", null, "The index is the hash code mod the number of buckets, so it changes when the number of buckets does: a key that was in bucket 3 may belong in bucket 11 now. Copying the chains across would leave keys where <code>get</code> will not look."], why: "The index depends on the table's length, so doubling means working out every key's index again. That is the O(n) step, paid once per doubling." },
+        `<h2>Bad hashes and the library</h2>
+<p>With a good hash function the keys spread out, every chain is short, and put and get take O(1) <em>on average</em>. The word that matters is "average". A hash function can be bad by accident: the length of a word is a number, it is the same every time, and it puts all the three-letter words into one bucket. (Choose "length of the word" in the figure above and insert three words: the table is a list in disguise, and a search walks it. That is O(n) per operation, the <em>worst case</em>.) Or it can be bad on purpose, which is the story this lesson began with.</p>
+<p>The trick behind the 2011 attacks on Java is small enough to run. In <code>String.hashCode</code>, "Aa" and "BB" give the same number, because <code>'A'</code> is 65, <code>'a'</code> is 97 and <code>'B'</code> is 66: 65·31 + 97 = 66·31 + 66 = 2112. And if two strings have the same hash code, following each of them with the same text leaves their hash codes equal. So every string made of ten blocks, each "Aa" or "BB", has one hash code: 2¹⁰ = 1024 different keys that all collide.</p>`,
+        { predict: 'How many different hash codes do those 1024 keys have?', play: `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("Aa".hashCode() + " " + "BB".hashCode());
+        ArrayList<String> keys = new ArrayList<>();
+        for (int mask = 0; mask < 1024; mask++) {          // ten blocks, each "Aa" or "BB": 1024 keys
+            StringBuilder sb = new StringBuilder();
+            for (int b = 0; b < 10; b++) sb.append((mask >> b & 1) == 0 ? "Aa" : "BB");
+            keys.add(sb.toString());
+        }
+        HashSet<Integer> codes = new HashSet<>();
+        for (String k : keys) codes.add(k.hashCode());
+        System.out.println(keys.size() + " keys, " + codes.size() + " different hash code");
+        System.out.println(keys.get(0) + " " + keys.get(1) + " " + keys.get(1023));
+
+        HashMap<String, Integer> map = new HashMap<>();
+        for (int i = 0; i < keys.size(); i++) map.put(keys.get(i), i);
+        System.out.println(map.size() + " " + map.get("BBAaAaAaAaAaAaAaAaAa") + " " + map.containsKey("Aa"));
+    }
+}`, caption: 'One hash code for all 1024 keys. In a table that hashed them naively all 1024 would share one chain, and inserting them would take about 1024 × 1023 / 2 comparisons, half a million; twenty blocks would give a million keys and half a trillion comparisons. The library map still gives right answers (1024 keys, the key BBAa… is number 1, "Aa" is not in it): collisions slow a table down, they do not make it wrong. Java 8 and later also turn a very long chain into a balanced tree (lesson 9) to limit the harm.' },
+        `<p>Defences: a hash with a secret random seed (the fix from the story); limits on how many parameters or keys a server accepts; and chains that turn into trees. You choose none of these when you use the library, which is a reason to use it.</p>
+<div class="stmt"><p><span class="kind">The equals and hashCode contract.</span> If <code>a.equals(b)</code> then <code>a.hashCode() == b.hashCode()</code>. So a class that overrides <code>equals</code> must override <code>hashCode</code> too, from the same fields; otherwise two equal objects land in different buckets and a <code>HashSet</code> cannot find one by the other.</p></div>`,
+        { code: `class Point {
+    final int x, y;
+    Point(int x, int y) { this.x = x; this.y = y; }
+
+    public boolean equals(Object o) {
+        if (!(o instanceof Point)) return false;
+        Point p = (Point) o;
+        return x == p.x && y == p.y;
+    }
+    public int hashCode() { return 31 * x + y; }      // built from the same fields as equals
+}`, caption: 'Two Point objects with the same x and y are equal and have the same hash code. A different hash code for equal points would break every HashSet&lt;Point&gt;.' },
+        `<p>Chaining is one design. <em>Open addressing</em> keeps the keys in the array itself: when a slot is taken, try the next, and the next, until a free one is found. It uses less memory and is friendlier to the processor's cache, and Python's dictionaries work this way; Java's <code>HashMap</code> chains. Both have the same shape: a hash, an index, a short search, and a table that grows.</p>
+<p>When should you write a hash table yourself? Almost never: <code>HashMap&lt;K, V&gt;</code> and <code>HashSet&lt;E&gt;</code> (SC 106 lesson 11) are this lesson with the details done and tested. Use them for what they are good at, and notice what they do not give you.</p>
+<table class="growth-table"><thead><tr><th>Need</th><th>Unsorted array or list</th><th>Sorted array</th><th>HashMap or HashSet</th></tr></thead><tbody>
+<tr><td>Find a key</td><td>O(n)</td><td>O(log n)</td><td>O(1) on average</td></tr>
+<tr><td>Insert a key (no duplicates)</td><td>O(n): look first</td><td>O(n): shift</td><td>O(1) on average</td></tr>
+<tr><td>Remove a key</td><td>O(n)</td><td>O(n)</td><td>O(1) on average</td></tr>
+<tr><td>Go through the keys in sorted order</td><td>sort first: O(n log n)</td><td>O(n)</td><td>not possible; sort the keys, or use a tree (lesson 9)</td></tr>
+<tr><td>Find the smallest key</td><td>O(n)</td><td>O(1)</td><td>O(n): look at every key (a heap, lesson 10, does it in O(1))</td></tr>
+</tbody></table>
+<p>The order in which a <code>HashMap</code> prints its keys comes from the hash codes and the table size. The site's interpreter reproduces Java's order exactly, but it is not something to rely on: it can change with the keys, with the Java version, and with one added key that makes the table double. If order matters, use <code>TreeMap</code> or <code>LinkedHashMap</code>.</p>
+<details class="reveal"><summary>Puzzle: why does a table double its length instead of growing by a fixed 100 buckets each time?</summary><p>Adding a fixed amount means a resize after every 75 more keys, each placing all the keys again: the total work for n keys grows like n²/150, quadratic, and per insert it is O(n). Doubling means the sizes of the re-placements add up to under 2n, so the cost per insert is O(1) on average: the same argument that made the dynamic array of lesson 1 work.</p></details>`,
+        { aside: `<p><b>Common mistakes in this lesson.</b> Using <code>h % n</code> or <code>Math.abs(h) % n</code> for the index. Comparing keys with <code>==</code> instead of <code>equals</code> when walking a chain. Forgetting that <code>put</code> must first look for the key, so that the same key does not get two nodes. Forgetting to place every key again after doubling (copying the old chains over). Overriding <code>equals</code> without <code>hashCode</code>. Mutating a key after it has been put in a table, so that its hash code, and its bucket, change. Relying on the order in which a <code>HashMap</code> gives its keys.</p>` },
+        {
+          ex: {
+            id: 'ds-8-1', title: 'Which bucket?',
+            prompt: `<p>Write</p><pre class="code">static int bucketOf(String key, int buckets)</pre><p>that returns the index, from <code>0</code> to <code>buckets - 1</code>, of the bucket for <code>key</code>. Work out the hash code yourself with the formula from the lesson: start with <code>h = 0</code>, and for each character set <code>h = 31 * h + c</code>, in <code>int</code> arithmetic so that it wraps round just as Java's does. Then use <code>Math.floorMod</code>. Do not call <code>hashCode()</code>.</p>`,
+            starter: `static int bucketOf(String key, int buckets) {\n    int h = 0;\n    // for each character c of key: h = 31 * h + c\n    // then turn h into an index 0 .. buckets - 1\n    return 0;\n}`,
+            solution: `static int bucketOf(String key, int buckets) {\n    int h = 0;\n    for (int i = 0; i < key.length(); i++) {\n        h = 31 * h + key.charAt(i);\n    }\n    return Math.floorMod(h, buckets);\n}`,
+            mustNotContain: [{ re: /hashCode/, msg: 'Work out the hash yourself with a loop: do not call hashCode().' }],
+            hints: ['A loop over the characters: for (int i = 0; i < key.length(); i++) h = 31 * h + key.charAt(i); (a char is a number in arithmetic).', 'Do not use h % buckets: the hash of a long word is often negative. Math.floorMod(h, buckets) always gives 0 to buckets − 1.', 'Check by hand: "cat" is (99 * 31 + 97) * 31 + 116 = 98262, and 98262 mod 8 is 6.'],
+            tests: [
+              { call: 'bucketOf("cat", 8) + " " + bucketOf("owl", 8) + " " + bucketOf("dog", 8)', expect: '6 4 4', name: 'cat, owl and dog in 8 buckets' },
+              { call: 'bucketOf("", 8) + " " + bucketOf("a", 8)', expect: '0 1', name: 'the empty string has hash 0' },
+              { call: 'bucketOf("Aa", 16) + " " + bucketOf("BB", 16)', expect: '0 0', name: 'Aa and BB collide' },
+              { call: 'bucketOf("elephant", 8) + " " + bucketOf("elephant", 16)', expect: '1 1', name: 'elephant has a negative hash code' },
+              { call: 'bucketOf("Minecraft", 7) + " " + bucketOf("hash table", 10) + " " + bucketOf("hash table", 16)', expect: '5 2 12', name: 'negative hash codes, other table sizes' },
+              { call: 'bucketOf("hello", 100)', expect: '22', name: 'a table size that is not a power of two' }
+            ],
+            failTip: 'A negative answer means the sign was not dealt with: h % buckets keeps it. If elephant is wrong but cat is right, check that you use floorMod, not Math.abs, and that h is an int (a long would not wrap round).',
+            followup: 'Write a second method, static int collisions(String[] keys, int buckets), that returns how many keys land in a bucket that an earlier key has already used. Try it with the six words of the lesson and 8 buckets, then with 16.'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-8-2', title: 'contains, remove and longestChain',
+            prompt: `<p>Below are the <code>Node</code> and <code>Table</code> classes of the lesson, with <code>put</code>, <code>get</code> and a helper <code>chain(i)</code> that gives the keys of bucket <code>i</code> as text. Add three methods. <code>boolean contains(String key)</code> says whether the key is in the table; it must work for a key whose value is −1. <code>boolean remove(String key)</code> removes the key's node, reduces <code>size</code>, and returns <code>true</code>, or changes nothing and returns <code>false</code> when the key is absent; removing from a chain is removing from a linked list (lesson 5). <code>int longestChain()</code> returns the number of keys in the fullest bucket (0 for an empty table). The table has 8 buckets and does not grow. Write only the classes.</p>`,
+            classes: true,
+            starter: `class Node {\n    String key;\n    int value;\n    Node next;\n    Node(String key, int value, Node next) { this.key = key; this.value = value; this.next = next; }\n}\n\nclass Table {\n    Node[] buckets = new Node[8];\n    int size = 0;\n\n    int index(String key) { return Math.floorMod(key.hashCode(), buckets.length); }\n\n    void put(String key, int value) {\n        int i = index(key);\n        for (Node n = buckets[i]; n != null; n = n.next) {\n            if (n.key.equals(key)) { n.value = value; return; }\n        }\n        buckets[i] = new Node(key, value, buckets[i]);\n        size++;\n    }\n\n    int get(String key) {\n        for (Node n = buckets[index(key)]; n != null; n = n.next) {\n            if (n.key.equals(key)) return n.value;\n        }\n        return -1;\n    }\n\n    String chain(int i) {\n        String s = "";\n        for (Node n = buckets[i]; n != null; n = n.next) s += (s.isEmpty() ? "" : " ") + n.key;\n        return s;\n    }\n\n    boolean contains(String key) {\n        // walk the chain of the key's bucket\n        return false;\n    }\n\n    boolean remove(String key) {\n        // the first node of the chain is a special case: the bucket itself changes\n        // otherwise stop at the node BEFORE the one to remove\n        return false;\n    }\n\n    int longestChain() {\n        // count each bucket's chain, keep the biggest\n        return 0;\n    }\n}`,
+            solution: `class Node {\n    String key;\n    int value;\n    Node next;\n    Node(String key, int value, Node next) { this.key = key; this.value = value; this.next = next; }\n}\n\nclass Table {\n    Node[] buckets = new Node[8];\n    int size = 0;\n\n    int index(String key) { return Math.floorMod(key.hashCode(), buckets.length); }\n\n    void put(String key, int value) {\n        int i = index(key);\n        for (Node n = buckets[i]; n != null; n = n.next) {\n            if (n.key.equals(key)) { n.value = value; return; }\n        }\n        buckets[i] = new Node(key, value, buckets[i]);\n        size++;\n    }\n\n    int get(String key) {\n        for (Node n = buckets[index(key)]; n != null; n = n.next) {\n            if (n.key.equals(key)) return n.value;\n        }\n        return -1;\n    }\n\n    String chain(int i) {\n        String s = "";\n        for (Node n = buckets[i]; n != null; n = n.next) s += (s.isEmpty() ? "" : " ") + n.key;\n        return s;\n    }\n\n    boolean contains(String key) {\n        for (Node n = buckets[index(key)]; n != null; n = n.next) {\n            if (n.key.equals(key)) return true;\n        }\n        return false;\n    }\n\n    boolean remove(String key) {\n        int i = index(key);\n        Node n = buckets[i];\n        if (n == null) return false;\n        if (n.key.equals(key)) { buckets[i] = n.next; size--; return true; }\n        while (n.next != null && !n.next.key.equals(key)) n = n.next;\n        if (n.next == null) return false;\n        n.next = n.next.next;\n        size--;\n        return true;\n    }\n\n    int longestChain() {\n        int best = 0;\n        for (int i = 0; i < buckets.length; i++) {\n            int len = 0;\n            for (Node n = buckets[i]; n != null; n = n.next) len++;\n            if (len > best) best = len;\n        }\n        return best;\n    }\n}`,
+            mustNotContain: [{ re: /java\.util|HashMap|HashSet/, msg: 'Use the nodes and buckets of the table: no library maps or sets.' }],
+            hints: ['contains: the same walk as get, from buckets[index(key)] down the next links, comparing with equals. Return true at the match and false after the loop. (Do not use get(key) != -1: a stored value can be −1.)', 'remove: if the bucket is empty, return false. If the first node holds the key, the bucket becomes n.next. Otherwise walk with while (n.next != null && !n.next.key.equals(key)) n = n.next; then n.next = n.next.next.', 'Do size-- only when a node was really removed. longestChain: for each bucket count the nodes with a loop, and keep the largest count in best.'],
+            tests: [
+              { name: 'contains', main: '        Table t = new Table();\n        String[] ws = {"cat", "dog", "bee", "owl", "fox", "ant"};\n        for (int i = 0; i < ws.length; i++) t.put(ws[i], i + 1);\n        System.out.println(t.contains("owl") + " " + t.contains("emu") + " " + t.contains("ant") + " " + t.contains(""));\n        t.put("neg", -1);\n        System.out.println(t.contains("neg") + " " + t.get("neg"));', expect: 'true false true false\ntrue -1' },
+              { name: 'remove the first node, the last node and an absent key', main: '        Table t = new Table();\n        String[] ws = {"cat", "dog", "bee", "owl", "fox", "ant"};\n        for (int i = 0; i < ws.length; i++) t.put(ws[i], i + 1);\n        System.out.println(t.remove("owl") + " [" + t.chain(4) + "]");\n        System.out.println(t.remove("fox") + " [" + t.chain(7) + "]");\n        System.out.println(t.remove("emu") + " " + t.size);', expect: 'true [dog]\ntrue [ant]\nfalse 4' },
+              { name: 'remove the only node of a chain', main: '        Table t = new Table();\n        t.put("cat", 1); t.put("bee", 2);\n        System.out.println(t.remove("cat") + " [" + t.chain(6) + "] " + t.size + " " + t.contains("cat") + " " + t.contains("bee"));\n        System.out.println(t.remove("cat") + " " + t.size);', expect: 'true [] 1 false true\nfalse 1' },
+              { name: 'remove from the middle of a chain', main: '        Table t = new Table();\n        String[] ws = {"dog", "owl", "eel"};\n        for (int i = 0; i < ws.length; i++) t.put(ws[i], i + 1);\n        System.out.println("[" + t.chain(4) + "]");\n        System.out.println(t.remove("owl") + " [" + t.chain(4) + "] " + t.get("dog") + " " + t.get("eel") + " " + t.size);', expect: '[eel owl dog]\ntrue [eel dog] 1 3 2' },
+              { name: 'put after remove, and a replaced value', main: '        Table t = new Table();\n        t.put("cat", 1); t.remove("cat"); t.put("cat", 9); t.put("cat", 10);\n        System.out.println(t.get("cat") + " " + t.size + " [" + t.chain(6) + "]");', expect: '10 1 [cat]' },
+              { name: 'longestChain', main: '        Table t = new Table();\n        System.out.println(t.longestChain());\n        String[] ws = {"cat", "dog", "bee", "owl", "fox", "ant"};\n        for (int i = 0; i < ws.length; i++) t.put(ws[i], i + 1);\n        System.out.println(t.longestChain());\n        t.put("eel", 7);\n        System.out.println(t.longestChain());\n        t.remove("eel"); t.remove("owl"); t.remove("ant");\n        System.out.println(t.longestChain());', expect: '0\n2\n3\n1' }
+            ],
+            failTip: 'If removing a first node does nothing, the bucket itself must change: buckets[i] = n.next. If the size is wrong after removing an absent key, size-- is running when nothing was removed. If contains gives the wrong answer for a key stored with value −1, it is using get.',
+            followup: 'Add a method void resize() that makes a new array of buckets twice as long and puts every key in it again with put (the index depends on buckets.length, so the nodes cannot simply be moved), and call it from put when size becomes more than 0.75 times the number of buckets. Does longestChain fall after the doubling?'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-8-3', title: 'The first repeat',
+            prompt: `<p>Write</p><pre class="code">static int firstRepeat(int[] a)</pre><p>that scans the array from left to right and returns the first value that has already appeared earlier in the array, or <code>-1</code> if all the values are different (the values are never negative). For <code>{3, 1, 4, 1, 5, 9, 2, 6, 5}</code> the answer is <code>1</code>: the second 1 comes before the second 5. Make one pass using a <code>HashSet</code> of the values seen so far, so that the method takes O(n) on average: two nested loops would take minutes on the last test.</p>`,
+            prelude: 'import java.util.HashSet;',
+            starter: `static int firstRepeat(int[] a) {\n    HashSet<Integer> seen = new HashSet<>();\n    // for each value: if it is already in seen, return it; otherwise add it\n    return -1;\n}`,
+            solution: `static int firstRepeat(int[] a) {\n    HashSet<Integer> seen = new HashSet<>();\n    for (int x : a) {\n        if (seen.contains(x)) return x;\n        seen.add(x);\n    }\n    return -1;\n}`,
+            hints: ['One loop over the values: for (int x : a). Before adding x, ask seen.contains(x).', 'If it is there, return x at once; if not, seen.add(x). Return -1 only after the loop.', 'seen.add(x) returns false when x was already in the set, so if (!seen.add(x)) return x; does both jobs in one line.'],
+            tests: [
+              { call: 'firstRepeat(new int[] {3, 1, 4, 1, 5, 9, 2, 6, 5})', expect: '1', name: 'the example' },
+              { call: 'firstRepeat(new int[] {2, 1, 1, 2})', expect: '1', name: 'the first to repeat, not the first value that repeats' },
+              { call: 'firstRepeat(new int[] {1, 2, 3}) + " " + firstRepeat(new int[] {}) + " " + firstRepeat(new int[] {7, 7})', expect: '-1 -1 7', name: 'no repeat, empty, a pair' },
+              { name: 'fifty thousand values, a repeat at the very end', main: '        int[] a = new int[50000];\n        for (int i = 0; i < a.length; i++) a[i] = i;\n        a[49999] = 1234;\n        System.out.println(firstRepeat(a));', expect: '1234' },
+              { name: 'fifty thousand different values', main: '        int[] a = new int[50000];\n        for (int i = 0; i < a.length; i++) a[i] = i * 3;\n        System.out.println(firstRepeat(a));', expect: '-1' }
+            ],
+            failTip: 'If the last two tests time out, the method is comparing each value with all the earlier ones (a nested loop, O(n²)): 50,000 values mean over a billion comparisons. Asking a HashSet is O(1) on average.',
+            followup: 'Write static boolean hasPair(int[] a, int target), true when two values at different positions add up to target. For each x, ask whether target - x has been seen. The same one-pass idea turns a O(n²) search into O(n).'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-8-4', kind: 'answer', title: 'Trace the table',
+            prompt: `<p>A hash table of whole numbers has 8 buckets to begin with. The hash of a number is the number itself, so its bucket is <code>key % buckets</code>. Chains grow at the <em>end</em>. After an insertion the table doubles if keys ÷ buckets is <em>more than</em> 0.75, and every key is then placed again, bucket by bucket from 0 and each chain from front to back. The keys are inserted in this order: <b>17, 4, 25, 12, 9, 33, 20, 41</b>.</p>`,
+            parts: [
+              { label: '(a) Which bucket does 25 go to in the table of 8?', answer: '1', width: '6rem', wrong: [{ match: '25', msg: 'That is the key. The bucket is 25 % 8, the remainder.' }, { match: '3', msg: '25 ÷ 8 is 3 with remainder 1. The bucket is the remainder.' }] },
+              { label: '(b) After the first six keys (17, 4, 25, 12, 9, 33): how many of them collided, that is, landed in a bucket that was already in use?', answer: '4', width: '6rem', wrong: [{ match: '2', msg: 'Only two buckets are in use, but that is not the question. 17 and 4 started them; each of the other four landed in a used bucket.' }, { match: '6', msg: 'The first key into each bucket does not collide: 17 and 4 were first.' }] },
+              { label: '(c) How many buckets are there after the sixth key (33)?', answer: '8', width: '6rem', wrong: [{ match: '16', msg: '6 ÷ 8 = 0.75 is not more than 0.75, so the table has not doubled yet.' }] },
+              { label: '(d) How many buckets are there after the seventh key (20)?', answer: '16', width: '6rem', wrong: [{ match: '8', msg: '7 ÷ 8 = 0.875 is more than 0.75: the table doubled.' }, { match: '32', msg: 'It doubles once: 8 to 16. And 7 ÷ 16 is only 0.44.' }] },
+              { label: '(e) After the seventh key and the doubling, how many keys are in the longest chain?', answer: '2', width: '6rem', wrong: [{ match: '4', msg: '4 was the longest chain in the table of 8 (bucket 1: 17, 25, 9, 33). Place each key again with key % 16, and bucket 1 holds only 17 and 33.' }, { match: '3', msg: 'With key % 16 the seven keys land in buckets 1, 4, 9 and 12 only: 17 and 33 in bucket 1, 4 and 20 in bucket 4, 25 and 9 in bucket 9, 12 on its own.' }] },
+              { label: '(f) Now 41 is inserted (the eighth key). To find 41 again, how many keys are compared with it, counting the match itself?', answer: '3', width: '6rem', wrong: [{ match: '1', msg: '41 % 16 = 9, and bucket 9 already holds 25 and 9, with 41 added at the end. All three are compared.' }, { match: '8', msg: 'That would be a linear search. Only the keys in bucket 9 are compared: 25, 9 and 41.' }] }
+            ],
+            hints: ['Write the buckets down as a list: bucket 1: 17, 25, ... Each key goes to key % (number of buckets). A collision is a key that joins a bucket which already has one.', 'Doubling happens when the load factor is MORE than 0.75: exactly 0.75 is allowed. After doubling, use key % 16 for every key.'],
+            solution: `<p>(a) <b>1</b>. (b) <b>4</b>: bucket 1 gets 17, 25, 9 and 33; bucket 4 gets 4 and 12; the four keys that joined a used bucket are 25, 12, 9 and 33. (c) <b>8</b>: 6/8 = 0.75 is not over the limit. (d) <b>16</b>: 7/8 = 0.875 is over it. (e) <b>2</b>: with key % 16 the buckets are 1: 17, 33; 4: 4, 20; 9: 25, 9; 12: 12. (f) <b>3</b>: 41 % 16 = 9, and bucket 9 is now 25, 9, 41.</p>`,
+            followup: 'Insert 57 too. Which bucket does it join, and how long is that chain? What does that say about keys that differ by a multiple of the table length, and why does Java scramble the hash code before it uses the index?'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li><b>How does a table find a key without looking at the others?</b> A hash function turns the key into a number, the number into an index (<code>Math.floorMod(hash, length)</code>, never a bare <code>%</code>), and the key is in that bucket or nowhere: one step instead of n.</li>
+<li>Different keys sometimes get the same bucket, a collision. A chained table keeps a linked list in each bucket; get and put walk one chain, comparing with <code>equals</code>.</li>
+<li>The load factor (keys ÷ buckets) is the average chain length. Over 0.75 the table doubles and every key is placed again, which is O(1) per insert on average, as for the dynamic array of lesson 1.</li>
+<li><b>How can a table that is usually instant be made slow on purpose?</b> O(1) is an average that depends on the hash spreading the keys. A bad hash function, or an attacker who knows a good one, puts every key in one chain and the table becomes a list: O(n). Random seeds, limits and tree-shaped chains are the defences.</li>
+<li>Equal objects must have equal hash codes: override <code>equals</code> and <code>hashCode</code> together. A hash table has no order and no &quot;smallest&quot;; for those, use a tree or a heap.</li>
+<li>In practice use <code>HashMap</code> and <code>HashSet</code>, and know what is inside them.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      standard: 1,
+      standards: ['3B-AP-12', '3B-AP-11', '3B-AP-13'],
+      title: 'Binary search trees', summary: 'Nodes with two links; the rule that makes a tree searchable (smaller on the left, larger on the right); search, insert and in-order traversal; why the cost is the height and the order of arrival decides the height; deleting a key; and the self-balancing trees behind TreeMap.',
+      blocks: [
+        `<p>In 1962 two Soviet mathematicians, Georgy Adelson-Velsky and Evgenii Landis, published a short paper called <q>An algorithm for the organization of information</q> in the reports of the Soviet Academy of Sciences. It was about a problem that every program with a large sorted collection meets. A tree of keys kept in order can be searched by asking one question per level, but only while the tree is bushy; a tree that has grown long and thin is no better than a list. Their answer was a search tree that checks itself after every insertion and, when one side has grown more than one level taller than the other, turns a few of its links around to even them out. It was the first search tree that guaranteed to stay balanced, and it is still called the AVL tree, after their initials.</p>
+<p>This lesson builds the plain search tree that came before theirs, and finds out exactly how it fails. Here is the question to keep in mind: <em>what is it about a search tree that lets a few unlucky keys turn it into a list, and how can you tell before it happens?</em></p>
+<h2>Why a tree?</h2>
+<p>Lessons 2 and 5 left us with a puzzle. A <em>sorted array</em> can be searched by binary search in <code>log n</code> steps, but inserting into it shifts half the values. A <em>linked list</em> takes an insertion in two assignments, but finding the place means walking from the head. Each structure is good at one of the two jobs and bad at the other. Is there a structure where finding the place and making room are <em>both</em> cheap?</p>
+<p>There is, and it starts with a small change to the list node: give it <em>two</em> links instead of one. Binary search keeps cutting the range in two; a node with two links can point at the two halves.</p>
+<div class="stmt"><p><span class="kind">Tree.</span> A node holds a key and links to its <b>left child</b> and <b>right child</b>, either of which may be <code>null</code>. The node at the top is the <b>root</b>; a node with no children is a <b>leaf</b>. Each node is the <b>parent</b> of its children, and a child with everything below it is a <b>subtree</b>. A tree with at most two children per node is <b>binary</b>.</p>
+<p><span class="kind">Height.</span> In this lesson, the number of nodes on the longest path from the root down to a leaf. A single node has height 1 and the empty tree has height 0. (Many books count links instead and get a number one smaller; say which you mean.)</p></div>`,
+        { predict: true, play: `class Node {
+    int key;
+    Node left, right;
+    Node(int key) { this.key = key; }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Node root = new Node(8);
+        root.left = new Node(3);
+        root.right = new Node(10);
+        root.left.left = new Node(1);
+        root.left.right = new Node(6);
+        root.right.right = new Node(14);
+
+        System.out.println(root.key + " " + root.left.key + " " + root.right.key);
+        System.out.println(root.left.right.key);
+        System.out.println(root.right.left);
+        System.out.println(root.left.left.left == null);
+    }
+}`, caption: 'Four lines: <code>8 3 10</code>, then <code>6</code> (the right child of the left child of the root), then <code>null</code> (<code>root.right.left</code> was never set, so the link still holds <code>null</code>), then <code>true</code>. The tree has six nodes, three leaves (1, 6 and 14) and height 3. Notice that nothing in <code>Node</code> says "tree": a tree is only nodes whose links point down. Draw it on paper before you run it, if the last two lines surprised you.' },
+        `<h2>Search and insert</h2>
+<p>A tree could hold its keys in any arrangement. What makes it a <em>search</em> tree is one rule, kept true at every node.</p>
+<div class="stmt"><p><span class="kind">The binary search tree rule.</span> For every node, every key in its <b>left</b> subtree is smaller than the node's key, and every key in its <b>right</b> subtree is larger. (Here the keys are distinct, so a key is stored once.)</p>
+<p><span class="kind">Search.</span> Start at the root. If the key equals the node's key, found. If it is smaller, the answer can only be in the left subtree, so go left; if larger, go right. Reaching <code>null</code> means the key is absent.</p></div>
+<p>Every comparison throws away a whole subtree, exactly as one comparison in binary search throws away half the array. The tree in the example above obeys the rule: 3 and everything under it is smaller than 8, and 10 and everything under it is larger. Before you run the next program, work out which keys each of its three searches will look at.</p>`,
+        { predict: true, play: `class Node {
+    int key;
+    Node left, right;
+    Node(int key) { this.key = key; }
+    Node(int key, Node l, Node r) { this.key = key; left = l; right = r; }
+}
+
+public class Main {
+    static boolean contains(Node t, int key) {
+        while (t != null) {
+            System.out.print(t.key + " ");
+            if (key == t.key) return true;
+            t = key < t.key ? t.left : t.right;
+        }
+        return false;
+    }
+
+    public static void main(String[] args) {
+        Node root = new Node(8, new Node(3, new Node(1), new Node(6)), new Node(10, null, new Node(14)));
+        System.out.println(contains(root, 6));
+        System.out.println(contains(root, 7));
+        System.out.println(contains(root, 14));
+    }
+}`, caption: 'The three lines are <code>8 3 6 true</code>, <code>8 3 6 false</code> and <code>8 10 14 true</code>. Searching for 7 goes the same way as for 6 and then falls off the tree: 7 is larger than 6, and 6 has no right child, so the loop meets <code>null</code> and the answer is <code>false</code>. Each search looked at no more nodes than the tree is tall. Change 7 to 5 and to 0 and predict the path before you run.' },
+        { check: 'You search a search tree for 42. At the root, whose key is 50, you go left. What does that tell you?', options: ['If 42 is in the tree at all, it is in the left subtree; the whole right subtree can be ignored', '42 is in the left subtree', '42 is smaller than every key in the left subtree'], answer: 0, wrong: [null, 'Going left only says where 42 would have to be. It may not be in the tree at all; the search can still end at a null link.', 'It is smaller than the root, 50, but the left subtree holds keys below 50 of every size. 42 can be larger than many of them.'], why: 'The rule gives one fact: everything in the right subtree is larger than 50, so 42 cannot be there. Whether 42 is in the left subtree is what the rest of the search finds out.' },
+        `<p>To insert a key, <em>search for it</em>. If it is there, there is nothing to do. If not, the search ends at a <code>null</code> link, and that link is exactly where the key belongs: put a new node there. Insertion always adds a new leaf, and no existing node ever moves. Try it in the figure: watch the path, then watch the new node appear.</p>`,
+        { fig: 'bst', keys: [8, 3, 10, 1, 6, 14], caption: 'Type a number and press Insert, then Step through the comparisons. Try 7, then 5, then 13. Then press Search with a key that is not there and find the empty slot where it would go. Insert a key that is already present and see that nothing changes.' },
+        { play: `class Node {
+    int key;
+    Node left, right;
+    Node(int key) { this.key = key; }
+}
+
+public class Main {
+    static Node insert(Node t, int key) {
+        if (t == null) return new Node(key);               // an empty spot: the new node goes here
+        if (key < t.key) t.left = insert(t.left, key);
+        else if (key > t.key) t.right = insert(t.right, key);
+        return t;                                          // equal: already there, change nothing
+    }
+
+    static String shape(Node t) {
+        if (t == null) return ".";
+        return "(" + t.key + " " + shape(t.left) + " " + shape(t.right) + ")";
+    }
+
+    public static void main(String[] args) {
+        Node root = null;
+        for (int k : new int[] {8, 3, 10, 1, 6, 14, 4, 7, 13, 6}) root = insert(root, k);
+        System.out.println(shape(root));
+    }
+}`, caption: 'The method returns the subtree to hang in the link it was called on, so <code>t.left = insert(t.left, key)</code> either puts the same subtree back or, at <code>null</code>, the new leaf. <code>shape</code> prints the tree as <code>(key left right)</code> with <code>.</code> for an empty link: read it against the figure. The last key, 6, is a duplicate and changes nothing.' },
+        { code: `static Node insert(Node root, int key) {          // the same insertion as a loop, with no recursion
+    if (root == null) return new Node(key);
+    Node cur = root;
+    while (true) {
+        if (key == cur.key) return root;                // already present
+        if (key < cur.key) {
+            if (cur.left == null) { cur.left = new Node(key); return root; }
+            cur = cur.left;
+        } else {
+            if (cur.right == null) { cur.right = new Node(key); return root; }
+            cur = cur.right;
+        }
+    }
+}`, lang: 'java', caption: 'Iterative insertion: walk down, and stop at the node whose empty link the key belongs in. It uses no stack, so it works however tall the tree is; the recursive version needs one frame per level.' },
+        `<h2>Walking in order</h2>
+<p>How do you list all the keys? Visit the left subtree, then the node, then the right subtree, and do the same in every subtree. Everything in the left subtree is smaller than the node and everything in the right is larger, so the keys come out in increasing order. That is the <b>in-order traversal</b>, and sorting is built into the shape of the tree.</p>
+<p>Two other orders use the same recursion with the middle step moved. <b>Pre-order</b> visits the node first, then both subtrees: reinserting the keys in that order into an empty tree rebuilds the same shape, so it is how a tree is copied or saved. <b>Post-order</b> visits both subtrees first and the node last: it is how a tree is deleted or its total added up, because every child is finished before its parent.</p>
+<p>The smallest key is the leftmost node (keep going left until there is no left child) and the largest is the rightmost. Predict the output of this program before running it.</p>`,
+        { long: true, predict: true, play: `class Node {
+    int key;
+    Node left, right;
+    Node(int key) { this.key = key; }
+}
+
+public class Main {
+    static Node insert(Node t, int key) {
+        if (t == null) return new Node(key);
+        if (key < t.key) t.left = insert(t.left, key);
+        else if (key > t.key) t.right = insert(t.right, key);
+        return t;
+    }
+
+    static void inOrder(Node t, StringBuilder sb) {
+        if (t == null) return;
+        inOrder(t.left, sb);                               // everything smaller
+        sb.append(t.key).append(' ');                      // then this node
+        inOrder(t.right, sb);                              // then everything larger
+    }
+
+    public static void main(String[] args) {
+        Node root = null;
+        for (int k : new int[] {8, 3, 10, 1, 6, 14, 4, 7, 13}) root = insert(root, k);
+        StringBuilder sb = new StringBuilder();
+        inOrder(root, sb);
+        System.out.println("in order: " + sb.toString().trim());
+
+        Node low = root;
+        while (low.left != null) low = low.left;
+        Node high = root;
+        while (high.right != null) high = high.right;
+        System.out.println("min " + low.key + ", max " + high.key);
+    }
+}`, caption: 'The output is <code>in order: 1 3 4 6 7 8 10 13 14</code> and <code>min 1, max 14</code>: nine keys that went in as 8 3 10 1 6 14 4 7 13 come out sorted, without a sort. The min and max cost one step per level, not one per key. Move the <code>sb.append</code> line above the first recursive call and the keys come out in pre-order instead.' },
+        { check: 'You insert 5, 2, 8, 1 (in that order) into an empty search tree and walk it in order. What is printed?', options: ['5 2 8 1', '1 2 5 8', '5 2 1 8'], answer: 1, wrong: ['That is the order the keys arrived in. The shape of the tree depends on that order, but an in-order walk reads the keys by size, whatever the shape.', null, 'That is the pre-order walk (each node before its subtrees): 5, then the left subtree 2 and 1, then 8. In order puts each node between its subtrees.'], why: 'The tree is 5 at the root, 2 and 8 below it, and 1 under 2. In order reads the left subtree (1 2), then 5, then the right (8): 1 2 5 8.' },
+        `<h2>Shape is everything</h2>
+<p>Search, insert, min and max all follow one path down from the root. The most levels a path can have is the height. So every one of these costs <b>O(height)</b>, and the whole question of how fast a search tree is becomes: how tall is it? Two measurements are needed, and both are short recursions on the same idea: a tree's height is one more than the taller of its two subtrees, and its size is one plus the sizes of both.</p>
+<p>The height depends on the <em>order</em> the keys arrive in, not just on which keys there are. If each new key is larger than all before it, it always goes to the right of the last node, and the tree becomes a chain: a linked list, with <code>left</code> never used. The program below puts the same 63 keys in a tree three ways. Predict the three heights first.</p>`,
+        { long: true, predict: true, play: `import java.util.Random;
+
+class Node {
+    int key;
+    Node left, right;
+    Node(int key) { this.key = key; }
+}
+
+public class Main {
+    static Node insert(Node t, int key) {
+        if (t == null) return new Node(key);
+        if (key < t.key) t.left = insert(t.left, key);
+        else if (key > t.key) t.right = insert(t.right, key);
+        return t;
+    }
+
+    static int height(Node t) { return t == null ? 0 : 1 + Math.max(height(t.left), height(t.right)); }
+
+    static Node addMiddle(Node t, int lo, int hi) {        // insert the middle key first, then each half
+        if (lo > hi) return t;
+        int mid = (lo + hi) / 2;
+        t = insert(t, mid);
+        t = addMiddle(t, lo, mid - 1);
+        return addMiddle(t, mid + 1, hi);
+    }
+
+    public static void main(String[] args) {
+        int n = 63;
+        Node sorted = null;
+        for (int k = 1; k <= n; k++) sorted = insert(sorted, k);
+        Node middle = addMiddle(null, 1, n);
+
+        int[] a = new int[n];
+        for (int i = 0; i < n; i++) a[i] = i + 1;
+        Random rnd = new Random(42);
+        for (int i = n - 1; i > 0; i--) {                  // shuffle the same keys
+            int j = rnd.nextInt(i + 1);
+            int tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+        }
+        Node shuffled = null;
+        for (int k : a) shuffled = insert(shuffled, k);
+
+        System.out.println("increasing order: height " + height(sorted));
+        System.out.println("middle first:     height " + height(middle));
+        System.out.println("shuffled:         height " + height(shuffled));
+    }
+}`, caption: 'Increasing order gives height 63: a chain, so a search for 63 compares with all 63 keys. Inserting the middle first gives height 6, the smallest a tree of 63 nodes can have (2⁶ − 1 = 63: every level full). The shuffled order lands in between, much nearer to 6 than to 63: 12 for this shuffle (another shuffle gives another height). The shuffled height is the figure a real program sees: on average a key in a randomly built tree sits about 1.39 · log₂ n levels down, the same 1.39 as quicksort, and for the same reason (the first key is a random pivot).' },
+        { fig: 'bst', keys: [1, 2, 3, 4, 5, 6, 7], caption: 'This is the sorted sequence, a stick. Press Search for 7 and count the comparisons. Then press Balanced and search for any key, and Random a few times. The height is shown under the tree: it is the most comparisons any search can take.' },
+        { check: 'The keys 1, 2, 3, … 100 arrive in increasing order into an empty search tree with no balancing. About how many comparisons does a search for 100 take?', options: ['About 7, because log₂ 100 is about 7', '100', 'About 50, the middle'], answer: 1, wrong: ['Seven would be right for a balanced tree, but this tree is not balanced: every key is larger than all before it, so each one goes right of the last, and the tree is a chain of 100.', null, 'Fifty is the average over all the keys in the chain. The last key sits at the bottom, behind all 99 others, so searching for it compares with every one.'], why: 'Each key is larger than every key already there, so it is added to the right of the last one: a chain of 100 nodes. The search for 100 follows all of them. Sorted input, the most natural data there is, is the worst case.' },
+        `<table class="growth-table"><thead><tr><th></th><th>Search</th><th>Insert</th><th>Keys in order</th></tr></thead><tbody>
+<tr><td>Sorted array</td><td>O(log n)</td><td>O(n): shift</td><td>O(n)</td></tr>
+<tr><td>Linked list</td><td>O(n)</td><td>O(1) at the front, O(n) to keep it sorted</td><td>O(n) if kept sorted</td></tr>
+<tr><td>Search tree, balanced (height about log n)</td><td>O(log n)</td><td>O(log n)</td><td>O(n)</td></tr>
+<tr><td>Search tree, worst case (a chain)</td><td>O(n)</td><td>O(n)</td><td>O(n)</td></tr>
+</tbody></table>
+<p>A balanced search tree is the first structure in this course to be good at everything in the table at once. The cost is the word <em>balanced</em>, and a plain tree cannot promise it.</p>
+<h2>Deleting a key</h2>
+<p>Deleting is the hard one, because removing a node must leave the rule true. First find the node (a search). Then there are three cases.</p>
+<div class="stmt"><p><span class="kind">Delete a node.</span> <b>A leaf:</b> replace the link to it by <code>null</code>. <b>One child:</b> replace the link to it by that child's subtree; the child takes its place. <b>Two children:</b> you cannot hand two subtrees to one link. Instead find the node's <b>in-order successor</b>, the smallest key in its right subtree (go right once, then left as far as you can). Copy that key into the node, then delete the successor from the right subtree, which is one of the first two cases, because the successor has no left child.</p></div>
+<p>Why does the successor work? It is larger than everything in the left subtree and no larger than anything else in the right subtree, so it can sit in the node's place without breaking the rule. Predict which key will be at the root after the last removal below.</p>`,
+        { long: true, predict: true, play: `class Node {
+    int key;
+    Node left, right;
+    Node(int key) { this.key = key; }
+}
+
+public class Main {
+    static Node insert(Node t, int key) {
+        if (t == null) return new Node(key);
+        if (key < t.key) t.left = insert(t.left, key);
+        else if (key > t.key) t.right = insert(t.right, key);
+        return t;
+    }
+
+    static String shape(Node t) {
+        if (t == null) return ".";
+        return "(" + t.key + " " + shape(t.left) + " " + shape(t.right) + ")";
+    }
+
+    static Node remove(Node t, int key) {
+        if (t == null) return null;                        // not there: nothing to do
+        if (key < t.key) t.left = remove(t.left, key);
+        else if (key > t.key) t.right = remove(t.right, key);
+        else {
+            if (t.left == null) return t.right;            // a leaf, or only a right child
+            if (t.right == null) return t.left;            // only a left child
+            Node s = t.right;                              // two children: the in-order successor
+            while (s.left != null) s = s.left;
+            t.key = s.key;                                 // copy its key here...
+            t.right = remove(t.right, s.key);              // ...and delete it from the right subtree
+        }
+        return t;
+    }
+
+    public static void main(String[] args) {
+        Node root = null;
+        for (int k : new int[] {8, 3, 10, 1, 6, 14, 4, 7, 13}) root = insert(root, k);
+        System.out.println(shape(root));
+        root = remove(root, 1);                            // a leaf
+        System.out.println(shape(root));
+        root = remove(root, 14);                           // one child (13)
+        System.out.println(shape(root));
+        root = remove(root, 8);                            // two children: the root
+        System.out.println(shape(root));
+    }
+}`, caption: 'Removing 1 (a leaf) leaves 3 with only a right child. Removing 14 puts its only child, 13, in its place. Removing the root, 8, which has two children, takes the smallest key of its right subtree, 10, and puts it at the root; the old node for 10 had no left child, so deleting it just lifts its right subtree (13) into its place. The last line is <code>(10 (3 . (6 (4 . .) (7 . .))) (13 . .))</code>, and the keys still read in order. Change the last removal to 3 (two children) and predict the new key in its place.' },
+        `<h2>Staying balanced</h2>
+<p>Back to the opening question. A plain search tree has no defence against a bad order: all its cost is in its height and nothing keeps the height down. The fix, which Adelson-Velsky and Landis found in 1962, is for the tree to repair itself. After each insertion or deletion it checks the heights along the path it came down, and if two subtrees of a node differ by more than one level it applies a <b>rotation</b>: a few link changes that lift one node and lower another, keeping the search rule true while evening out the heights. An <b>AVL tree</b> keeps every node's two subtrees within one level of each other, which guarantees a height of at most about 1.44 · log₂ n. A <b>red-black tree</b> uses a looser rule, colouring nodes red or black to limit how lopsided it can get, for a height of at most 2 · log₂(n + 1) but fewer rotations. Either way search, insert and delete are all O(log n), <em>whatever the order of arrival</em>, with the same <code>Node</code> and the same search rule plus a little bookkeeping.</p>
+<p>You do not have to write one. Java's <code>TreeMap</code> is a red-black tree, and <code>TreeSet</code> is built on a <code>TreeMap</code>: the structure behind the sorted collections you met in SC 106. That is why they print in order and can answer "the largest key at or below 5" in O(log n), which a hash table cannot do.</p>`,
+        { predict: true, play: `import java.util.TreeSet;
+
+public class Main {
+    public static void main(String[] args) {
+        TreeSet<Integer> set = new TreeSet<>();
+        for (int k : new int[] {8, 3, 10, 1, 6, 14, 4, 7, 13}) set.add(k);
+        System.out.println(set);
+        System.out.println(set.first() + " " + set.last());
+        System.out.println(set.floor(5) + " " + set.ceiling(5));
+        System.out.println(set.contains(7) + " " + set.contains(9));
+    }
+}`, caption: 'The same nine keys as before. <code>[1, 3, 4, 6, 7, 8, 10, 13, 14]</code> is the in-order walk; <code>1 14</code> are the leftmost and rightmost nodes; <code>floor(5)</code> is the largest key at or below 5, which is 4, and <code>ceiling(5)</code> the smallest at or above, which is 6, so <code>4 6</code>; then <code>true false</code> from two searches. Every call walks one path down a balanced tree.' },
+        { aside: `<p><b>Common mistakes in this lesson.</b> Believing that "binary search tree" means "balanced": it means only the rule, and a tree built from sorted data obeys it perfectly as a chain. Checking only a node's two children when testing the rule: every key in the whole left subtree must be smaller, not only the child. Forgetting the <code>null</code> case at the top of a recursion, so that an empty subtree throws a <code>NullPointerException</code>. In <code>insert</code>, writing <code>insert(t.left, key)</code> without assigning the result to <code>t.left</code>, so the new node is made and lost. In delete, handling the two-children case but forgetting that the successor must then be removed from the right subtree, which leaves its key in the tree twice.</p>` },
+        { ex: {
+            id: 'ds-9-1', title: 'insert and contains',
+            prompt: `<p>Complete <code>IntBST</code>, a set of <code>int</code> keys held in a search tree. <code>Node</code> and the printing are finished. Write <code>boolean insert(int key)</code>, which adds the key as a new leaf in the right place, increases the size and returns <code>true</code>, or, if the key is already in the tree, changes nothing and returns <code>false</code>; and <code>boolean contains(int key)</code>. Write only the classes; the checker supplies its own <code>main</code>.</p>`,
+            classes: true,
+            starter: `class Node {\n    int key;\n    Node left, right;\n    Node(int key) { this.key = key; }\n}\n\nclass IntBST {\n    private Node root;\n    private int size;\n\n    int size() { return size; }\n\n    boolean insert(int key) {\n        // empty tree: the new node is the root\n        // otherwise walk down, going left or right, until the link you need is null\n        return false;\n    }\n\n    boolean contains(int key) {\n        return false;\n    }\n\n    public String toString() {                      // the keys in order, like [1, 3, 8]\n        StringBuilder sb = new StringBuilder("[");\n        inOrder(root, sb);\n        if (sb.length() > 1) sb.setLength(sb.length() - 2);\n        return sb.append("]").toString();\n    }\n\n    private void inOrder(Node t, StringBuilder sb) {\n        if (t == null) return;\n        inOrder(t.left, sb);\n        sb.append(t.key).append(", ");\n        inOrder(t.right, sb);\n    }\n}`,
+            solution: `class Node {\n    int key;\n    Node left, right;\n    Node(int key) { this.key = key; }\n}\n\nclass IntBST {\n    private Node root;\n    private int size;\n\n    int size() { return size; }\n\n    boolean insert(int key) {\n        if (root == null) { root = new Node(key); size++; return true; }\n        Node cur = root;\n        while (true) {\n            if (key == cur.key) return false;\n            if (key < cur.key) {\n                if (cur.left == null) { cur.left = new Node(key); size++; return true; }\n                cur = cur.left;\n            } else {\n                if (cur.right == null) { cur.right = new Node(key); size++; return true; }\n                cur = cur.right;\n            }\n        }\n    }\n\n    boolean contains(int key) {\n        Node cur = root;\n        while (cur != null) {\n            if (key == cur.key) return true;\n            cur = key < cur.key ? cur.left : cur.right;\n        }\n        return false;\n    }\n\n    public String toString() {\n        StringBuilder sb = new StringBuilder("[");\n        inOrder(root, sb);\n        if (sb.length() > 1) sb.setLength(sb.length() - 2);\n        return sb.append("]").toString();\n    }\n\n    private void inOrder(Node t, StringBuilder sb) {\n        if (t == null) return;\n        inOrder(t.left, sb);\n        sb.append(t.key).append(", ");\n        inOrder(t.right, sb);\n    }\n}`,
+            mustNotContain: [{ re: /java\.util|ArrayList|TreeSet|TreeMap|HashSet|int\s*\[\s*\]/, msg: 'Build the tree from Node objects only: no arrays and no library collections.' }],
+            hints: ['contains: start with Node cur = root; while (cur != null) { if the key equals cur.key, return true; otherwise move cur to cur.left when the key is smaller, to cur.right when it is larger }. If the loop ends, the key is absent.', 'insert: if root is null, make it the root. Otherwise walk the same way, and stop at the node whose link on the correct side is null: put the new Node there. Return false the moment the key equals a key on the way.', 'size++ in every branch that adds a node, and nowhere else. A recursive version also works: root = insert(root, key) on a helper that returns the subtree, but then you must find out whether a node was added.'],
+            tests: [
+              { name: 'keys come out in order', main: '        IntBST t = new IntBST();\n        for (int k : new int[] {8, 3, 10, 1, 6, 14, 4, 7, 13}) t.insert(k);\n        System.out.println(t + " " + t.size());', expect: '[1, 3, 4, 6, 7, 8, 10, 13, 14] 9' },
+              { name: 'insert reports whether it added', main: '        IntBST t = new IntBST();\n        System.out.println(t.insert(5) + " " + t.insert(5) + " " + t.insert(2) + " " + t.size());', expect: 'true false true 2' },
+              { name: 'duplicates change nothing', main: '        IntBST t = new IntBST();\n        for (int k : new int[] {4, 4, 2, 4, 2}) t.insert(k);\n        System.out.println(t + " " + t.size());', expect: '[2, 4] 2' },
+              { name: 'contains', main: '        IntBST t = new IntBST();\n        for (int k : new int[] {8, 3, 10, 1, 6, 14}) t.insert(k);\n        System.out.println(t.contains(6) + " " + t.contains(7) + " " + t.contains(14) + " " + t.contains(1) + " " + t.contains(0) + " " + t.contains(99));', expect: 'true false true true false false' },
+              { name: 'the empty tree', main: '        IntBST t = new IntBST();\n        System.out.println(t + " " + t.size() + " " + t.contains(1));', expect: '[] 0 false' },
+              { name: 'sorted input, a chain of sixty', main: '        IntBST t = new IntBST();\n        for (int k = 1; k <= 60; k++) t.insert(k);\n        for (int k = 60; k >= 1; k--) t.insert(k);\n        System.out.println(t.size() + " " + t.contains(60) + " " + t.contains(61));', expect: '60 true false' }
+            ],
+            failTip: 'If the tree prints with keys missing, insert probably made a new node but never linked it (cur.left = new Node(key), not just new Node(key)). If a duplicate is counted twice, the equal case is not checked before going left or right.',
+            followup: 'Add int minKey() and int maxKey() (throw IllegalStateException on the empty tree), then int depthOf(int key), the number of comparisons a search for the key makes, or -1 if the key is absent. Insert 1 to 8 in order, and then in the order 4 2 6 1 3 5 7 8, and compare the deepest depthOf.'
+          }
+        },
+        { ex: {
+            id: 'ds-9-2', title: 'Height and range',
+            prompt: `<p>The class below has <code>insert</code> finished. Add <code>int height()</code>, the number of nodes on the longest path from the root down (the empty tree is 0, a single node is 1), and <code>int countRange(int lo, int hi)</code>, the number of keys <code>k</code> with <code>lo &lt;= k &lt;= hi</code>. Both are naturally recursive: write a private helper that takes a <code>Node</code>. For <code>countRange</code>, do not visit a subtree that cannot hold a key in the range: if a node's key is below <code>lo</code>, nothing in its left subtree can count. Write only the classes.</p>`,
+            classes: true,
+            starter: `class Node {\n    int key;\n    Node left, right;\n    Node(int key) { this.key = key; }\n}\n\nclass IntBST {\n    private Node root;\n\n    void insert(int key) {\n        if (root == null) { root = new Node(key); return; }\n        Node cur = root;\n        while (true) {\n            if (key == cur.key) return;\n            if (key < cur.key) {\n                if (cur.left == null) { cur.left = new Node(key); return; }\n                cur = cur.left;\n            } else {\n                if (cur.right == null) { cur.right = new Node(key); return; }\n                cur = cur.right;\n            }\n        }\n    }\n\n    int height() {\n        // 0 for an empty tree; otherwise 1 + the taller of the two subtrees\n        return 0;\n    }\n\n    int countRange(int lo, int hi) {\n        // keys k with lo <= k <= hi; skip a subtree that cannot contain one\n        return 0;\n    }\n}`,
+            solution: `class Node {\n    int key;\n    Node left, right;\n    Node(int key) { this.key = key; }\n}\n\nclass IntBST {\n    private Node root;\n\n    void insert(int key) {\n        if (root == null) { root = new Node(key); return; }\n        Node cur = root;\n        while (true) {\n            if (key == cur.key) return;\n            if (key < cur.key) {\n                if (cur.left == null) { cur.left = new Node(key); return; }\n                cur = cur.left;\n            } else {\n                if (cur.right == null) { cur.right = new Node(key); return; }\n                cur = cur.right;\n            }\n        }\n    }\n\n    int height() { return heightOf(root); }\n\n    private int heightOf(Node t) {\n        if (t == null) return 0;\n        return 1 + Math.max(heightOf(t.left), heightOf(t.right));\n    }\n\n    int countRange(int lo, int hi) { return countIn(root, lo, hi); }\n\n    private int countIn(Node t, int lo, int hi) {\n        if (t == null) return 0;\n        if (t.key < lo) return countIn(t.right, lo, hi);\n        if (t.key > hi) return countIn(t.left, lo, hi);\n        return 1 + countIn(t.left, lo, hi) + countIn(t.right, lo, hi);\n    }\n}`,
+            mustNotContain: [{ re: /java\.util|ArrayList|TreeSet|TreeMap|HashSet|int\s*\[\s*\]/, msg: 'Work on the nodes: no arrays and no library collections.' }],
+            hints: ['height: the base case is the empty tree, 0. Otherwise it is 1 + Math.max(height of the left subtree, height of the right subtree). You need a private method that takes a Node, and height() just calls it with root.', 'countRange: for a node t, three cases. t.key < lo: nothing on the left can be in range, so the answer is the count in t.right. t.key > hi: the count in t.left. Otherwise t itself counts, and so may both sides: 1 + left + right.', 'Do not forget that both bounds are inclusive, and that lo > hi must give 0 (no key can satisfy it; your cases already cover this).'],
+            tests: [
+              { name: 'the empty tree', main: '        IntBST t = new IntBST();\n        System.out.println(t.height() + " " + t.countRange(0, 100));', expect: '0 0' },
+              { name: 'one node', main: '        IntBST t = new IntBST();\n        t.insert(7);\n        System.out.println(t.height() + " " + t.countRange(7, 7) + " " + t.countRange(8, 9));', expect: '1 1 0' },
+              { name: 'a small tree', main: '        IntBST t = new IntBST();\n        for (int k : new int[] {8, 3, 10, 1, 6, 14, 4, 7, 13}) t.insert(k);\n        System.out.println(t.height());', expect: '4' },
+              { name: 'ranges are inclusive', main: '        IntBST t = new IntBST();\n        for (int k : new int[] {8, 3, 10, 1, 6, 14, 4, 7, 13}) t.insert(k);\n        System.out.println(t.countRange(4, 10) + " " + t.countRange(0, 100) + " " + t.countRange(5, 5) + " " + t.countRange(6, 6) + " " + t.countRange(10, 3));', expect: '5 9 0 1 0' },
+              { name: 'a balanced tree', main: '        IntBST t = new IntBST();\n        for (int k : new int[] {4, 2, 6, 1, 3, 5, 7}) t.insert(k);\n        System.out.println(t.height() + " " + t.countRange(2, 6));', expect: '3 5' },
+              { name: 'a chain of eighty, both ways', main: '        IntBST up = new IntBST(), down = new IntBST();\n        for (int k = 1; k <= 80; k++) { up.insert(k); down.insert(81 - k); }\n        System.out.println(up.height() + " " + down.height() + " " + up.countRange(10, 19) + " " + down.countRange(70, 90));', expect: '80 80 10 11' }
+            ],
+            failTip: 'If height is off by one, the base case is wrong: the empty tree is 0 (not -1, not 1). If countRange is too large, check that a key above hi is not counted and that both bounds are tested; if it is too small, a node inside the range still needs both of its subtrees searched.',
+            followup: 'Make a counter field that goes up each time your countRange looks at a node, and compare it with the number of keys in the range on a tree of 63 balanced keys. A range with m keys in it should cost about m + the height. Why is the height there?'
+          }
+        },
+        { ex: {
+            id: 'ds-9-3', kind: 'answer', title: 'Read the tree',
+            prompt: `<p>Insert these keys, in this order, into an empty binary search tree, with no balancing: <code>41, 20, 65, 11, 29, 50, 91, 32, 72, 99</code>. Draw the tree on paper first. Give whole numbers or keys as digits.</p>`,
+            parts: [
+              { label: '(a) What is the height of the tree (nodes on the longest path)?', answer: '4', width: '6rem', wrong: [{ match: '3', msg: 'That is the number of links on the longest path. This lesson counts nodes: 41, 20, 29, 32 is four.' }, { match: '10', msg: 'Ten is the number of keys. The height is the number of levels.' }] },
+              { label: '(b) How many keys does a search for 32 compare it with, counting 32 itself?', answer: '4', width: '6rem', wrong: [{ match: '3', msg: 'The path is 41, 20, 29, 32, and the comparison that finds 32 is the fourth.' }] },
+              { label: '(c) You now insert 70. Which key becomes its parent?', answer: '72', width: '6rem', wrong: [{ match: ['65', '91'], msg: 'Follow it down: 70 > 41 right, 70 > 65 right, 70 < 91 left, 70 < 72 left, and 72 has no left child. The last key on the path is the parent.' }] },
+              { label: '(d) Which key comes immediately after 41 in an in-order walk (its in-order successor)?', answer: '50', width: '6rem', wrong: [{ match: ['65', '29'], msg: 'Go right once, to 65, then left as far as you can: 65 has a left child, 50, which has none. The successor is the leftmost key of the right subtree.' }] },
+              { label: '(e) Insert 10, 20, 30, 40, 50, 60, 70 in that order into a different, empty tree. What is its height?', answer: '7', width: '6rem', wrong: [{ match: ['3', '4'], msg: 'That would be a balanced tree. Each key here is larger than all before it, so each goes right of the last: a chain of seven.' }] },
+              { label: '(f) In that tree, how many keys is 70 compared with when it is inserted (not counting itself)?', answer: '6', width: '6rem', wrong: [{ match: '7', msg: '70 is not compared with itself: it is compared with 10, 20, 30, 40, 50 and 60, six keys, and then found a null link.' }] }
+            ],
+            hints: ['Insert one key at a time on paper: at each node go left if the new key is smaller and right if larger, and stop at the empty link. Write down the path of each insertion.', 'The tree has 41 at the root, 20 and 65 below it; 11 and 29 under 20; 50 and 91 under 65; 32 under 29; 72 and 99 under 91.', 'The in-order successor of a node with a right subtree: take one step right, then step left until you cannot.'],
+            solution: `<p>The tree: 41 at the root; 20 (left) with children 11 and 29, where 29 has right child 32; 65 (right) with children 50 and 91, where 91 has children 72 and 99. (a) <b>4</b>: 41, 20, 29, 32 or 41, 65, 91, 72. (b) <b>4</b>. (c) <b>72</b>: 70 goes right, right, left, left, and becomes the left child of 72. (d) <b>50</b>: right to 65, then left to 50. (e) <b>7</b>, a chain. (f) <b>6</b>.</p>`,
+            followup: 'Which of the ten keys, if it had arrived first, would have given the shortest tree for this set? (Think of the middle of the sorted list.) What would the height be?'
+          }
+        },
+        { ex: {
+            id: 'ds-9-4', title: 'remove',
+            prompt: `<p>The class below has a working <code>insert</code>, <code>contains</code>, <code>size</code> and <code>shape</code> (which prints the tree as <code>(key left right)</code>, with <code>.</code> for an empty link). Write <code>boolean remove(int key)</code>: if the key is not in the tree it returns <code>false</code> and changes nothing; otherwise it removes the key, reduces the size and returns <code>true</code>. Use the three cases from the lesson, and for a node with two children use its <b>in-order successor</b> (the smallest key in its right subtree), so that the shapes come out as expected. Write only the classes.</p>`,
+            classes: true,
+            starter: `class Node {\n    int key;\n    Node left, right;\n    Node(int key) { this.key = key; }\n}\n\nclass IntBST {\n    private Node root;\n    private int size;\n\n    int size() { return size; }\n\n    boolean contains(int key) {\n        Node cur = root;\n        while (cur != null) {\n            if (key == cur.key) return true;\n            cur = key < cur.key ? cur.left : cur.right;\n        }\n        return false;\n    }\n\n    void insert(int key) { if (contains(key)) return; root = insert(root, key); size++; }\n\n    private Node insert(Node t, int key) {\n        if (t == null) return new Node(key);\n        if (key < t.key) t.left = insert(t.left, key);\n        else if (key > t.key) t.right = insert(t.right, key);\n        return t;\n    }\n\n    boolean remove(int key) {\n        // false if the key is absent; otherwise root = remove(root, key), size--, true\n        return false;\n    }\n\n    private Node remove(Node t, int key) {\n        // returns the subtree that should now hang where t hung\n        return t;\n    }\n\n    String shape() { return shape(root); }\n\n    private String shape(Node t) {\n        if (t == null) return ".";\n        return "(" + t.key + " " + shape(t.left) + " " + shape(t.right) + ")";\n    }\n}`,
+            solution: `class Node {\n    int key;\n    Node left, right;\n    Node(int key) { this.key = key; }\n}\n\nclass IntBST {\n    private Node root;\n    private int size;\n\n    int size() { return size; }\n\n    boolean contains(int key) {\n        Node cur = root;\n        while (cur != null) {\n            if (key == cur.key) return true;\n            cur = key < cur.key ? cur.left : cur.right;\n        }\n        return false;\n    }\n\n    void insert(int key) { if (contains(key)) return; root = insert(root, key); size++; }\n\n    private Node insert(Node t, int key) {\n        if (t == null) return new Node(key);\n        if (key < t.key) t.left = insert(t.left, key);\n        else if (key > t.key) t.right = insert(t.right, key);\n        return t;\n    }\n\n    boolean remove(int key) {\n        if (!contains(key)) return false;\n        root = remove(root, key);\n        size--;\n        return true;\n    }\n\n    private Node remove(Node t, int key) {\n        if (t == null) return null;\n        if (key < t.key) t.left = remove(t.left, key);\n        else if (key > t.key) t.right = remove(t.right, key);\n        else {\n            if (t.left == null) return t.right;\n            if (t.right == null) return t.left;\n            Node s = t.right;\n            while (s.left != null) s = s.left;\n            t.key = s.key;\n            t.right = remove(t.right, s.key);\n        }\n        return t;\n    }\n\n    String shape() { return shape(root); }\n\n    private String shape(Node t) {\n        if (t == null) return ".";\n        return "(" + t.key + " " + shape(t.left) + " " + shape(t.right) + ")";\n    }\n}`,
+            mustNotContain: [{ re: /java\.util|ArrayList|TreeSet|TreeMap|HashSet|int\s*\[\s*\]/, msg: 'Work on the nodes: no arrays and no library collections.' }],
+            hints: ['Write the recursive helper first. It goes down like a search: key < t.key, assign t.left = remove(t.left, key); key > t.key, assign t.right = remove(t.right, key). The case where the keys are equal is where the three cases live. Return t at the end.', 'Equal keys: if t.left == null, return t.right (this covers a leaf, since t.right is then null too). Else if t.right == null, return t.left. Both present: find the successor, Node s = t.right; while (s.left != null) s = s.left.', 'Two children: copy the successor key up with t.key = s.key; then delete the successor from the right subtree with t.right = remove(t.right, s.key). The public remove(int) checks contains first, so it can reduce size once and return true.'],
+            tests: [
+              { name: 'remove a leaf', main: '        IntBST t = new IntBST();\n        for (int k : new int[] {8, 3, 10, 1, 6, 14, 4, 7, 13}) t.insert(k);\n        System.out.println(t.remove(1) + " " + t.shape() + " " + t.size());', expect: 'true (8 (3 . (6 (4 . .) (7 . .))) (10 . (14 (13 . .) .))) 8' },
+              { name: 'remove a node with one child', main: '        IntBST t = new IntBST();\n        for (int k : new int[] {8, 3, 10, 1, 6, 14, 4, 7, 13}) t.insert(k);\n        System.out.println(t.remove(14) + " " + t.shape() + " " + t.size());', expect: 'true (8 (3 (1 . .) (6 (4 . .) (7 . .))) (10 . (13 . .))) 8' },
+              { name: 'two children, below the root', main: '        IntBST t = new IntBST();\n        for (int k : new int[] {8, 3, 10, 1, 6, 14, 4, 7, 13}) t.insert(k);\n        System.out.println(t.remove(3) + " " + t.shape() + " " + t.size());', expect: 'true (8 (4 (1 . .) (6 . (7 . .))) (10 . (14 (13 . .) .))) 8' },
+              { name: 'two children, the root', main: '        IntBST t = new IntBST();\n        for (int k : new int[] {8, 3, 10, 1, 6, 14, 4, 7, 13}) t.insert(k);\n        System.out.println(t.remove(8) + " " + t.shape() + " " + t.size());', expect: 'true (10 (3 (1 . .) (6 (4 . .) (7 . .))) (14 (13 . .) .)) 8' },
+              { name: 'an absent key', main: '        IntBST t = new IntBST();\n        for (int k : new int[] {5, 2, 9}) t.insert(k);\n        System.out.println(t.remove(7) + " " + t.shape() + " " + t.size());\n        IntBST e = new IntBST();\n        System.out.println(e.remove(1) + " " + e.shape() + " " + e.size());', expect: 'false (5 (2 . .) (9 . .)) 3\nfalse . 0' },
+              { name: 'remove everything', main: '        IntBST t = new IntBST();\n        int[] keys = {8, 3, 10, 1, 6, 14, 4, 7, 13};\n        for (int k : keys) t.insert(k);\n        for (int k : keys) t.remove(k);\n        System.out.println(t.shape() + " " + t.size());\n        t.insert(5);\n        System.out.println(t.shape() + " " + t.size());', expect: '. 0\n(5 . .) 1' },
+              { name: 'a chain of seventy', main: '        IntBST t = new IntBST();\n        for (int k = 1; k <= 70; k++) t.insert(k);\n        t.remove(1); t.remove(70); t.remove(35);\n        System.out.println(t.size() + " " + t.contains(2) + " " + t.contains(35) + " " + t.contains(36));', expect: '67 true false true' }
+            ],
+            failTip: 'If a key is still found after remove, or appears twice, the two-children case copied the successor up but did not delete the successor node from the right subtree. If the whole tree vanishes, a recursive call is not assigned back (t.left = remove(t.left, key), not just remove(t.left, key)).',
+            followup: 'Write int removeMin(), which removes the smallest key and returns it (it is a special case of remove: go left until the node has no left child, and let its right subtree take its place). Then use it, in a loop, to print all the keys in order while emptying the tree. Is that faster or slower than an in-order walk on a tree that is a chain?'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li>A <b>binary search tree</b> is nodes with a key and two links, <code>left</code> and <code>right</code>, obeying one rule at every node: everything in the left subtree is smaller, everything in the right is larger.</li>
+<li><b>Search</b> and <b>insert</b> follow one path down from the root, going left or right at each node; a new key always becomes a new leaf at the <code>null</code> link where the search fell off. An <b>in-order</b> walk reads the keys sorted. Min and max are the leftmost and rightmost nodes.</li>
+<li><b>Delete</b> has three cases: a leaf (drop it), one child (the child takes its place), two children (copy the in-order successor up and delete that node from the right subtree).</li>
+<li>Every one of those costs <b>O(height)</b>. Height is about log n when the keys arrive in a mixed order and n when they arrive sorted, because then the tree is a linked list leaning to one side. That is the answer to the opening question: <em>the order of arrival decides the shape, and the shape is the whole cost</em>; you can see the danger in advance by computing the height.</li>
+<li>Self-balancing trees (AVL, 1962; red-black) repair the shape with rotations after every change and keep search, insert and delete at O(log n) whatever the order. Java's <code>TreeMap</code> and <code>TreeSet</code> are red-black trees. Heaps, later in the course, are trees too, with a different rule.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      standard: 1,
+      standards: ['3B-AP-12', '3B-AP-11', '3B-AP-10'],
+      title: 'Heaps and priority queues', summary: 'A queue that always serves the smallest item first; why neither a sorted nor an unsorted array can do it cheaply; the binary heap, a tree stored flat in an array; sift up and sift down in O(log n); heapsort; Java’s PriorityQueue; and the k-largest pattern.',
+      blocks: [
+        `<p>In 1964 J. W. J. Williams published a short paper in <em>Communications of the ACM</em> called &ldquo;Algorithm 232: Heapsort&rdquo;. Sorting was already well studied, but his method had a property that its rivals lacked. Merge sort needs a second array. Quicksort can slow to n&sup2; on an unlucky input. Williams&rsquo;s method needed no spare array and took n log n steps whatever the input. To do it he described a new way to arrange numbers, the <em>heap</em>: a tree with no pointers at all, stored flat in an ordinary array, with the smallest (or the largest) value always in the first cell.</p>
+<p>The heap turned out to be more useful than the sort it was invented for. Any program that must always deal with the most urgent thing next, while new things keep arriving, wants one. So how can a tree live in an array, and why does that make the smallest item both easy to find and cheap to take out?</p>
+<h2>Smallest first</h2>
+<div class="stmt"><p><span class="kind">Priority queue.</span> A collection with three operations: <code>add(x)</code> puts an item in; <code>peek()</code> shows the <em>smallest</em> item without removing it; <code>poll()</code> removes and returns the smallest. Unlike a queue, the order of arrival does not matter: what comes out next is decided by size (the &ldquo;priority&rdquo;), and the item that has waited longest is not necessarily next.</p></div>
+<p>It is an abstract data type, like the stack and the queue of lesson 6: a promise about behaviour, with the cost left open. Two arrays keep the promise, and both are slow somewhere.</p>
+<table class="growth-table"><thead><tr><th>Structure with n items</th><th><code>add</code></th><th><code>peek</code></th><th><code>poll</code></th></tr></thead><tbody>
+<tr><td>Unsorted array</td><td>O(1): append</td><td>O(n): look at every cell</td><td>O(n): find the smallest, then fill the hole</td></tr>
+<tr><td>Sorted array, smallest last</td><td>O(n): shift to make room</td><td>O(1)</td><td>O(1)</td></tr>
+<tr><td>Binary heap</td><td>O(log n)</td><td>O(1)</td><td>O(log n)</td></tr>
+</tbody></table>
+<p>For n adds followed by n polls, either array costs about n&sup2; steps, which is the n&sup2; of the simple sorts. The heap costs about n log n. It does not keep everything in order, only enough order to know the smallest. Java already has one, <code>PriorityQueue</code>, and this lesson builds it. First see what it does.</p>`,
+        { play: `import java.util.PriorityQueue;
+
+public class Main {
+    public static void main(String[] args) {
+        PriorityQueue<Integer> waiting = new PriorityQueue<>();   // the smallest comes out first
+        waiting.add(40); waiting.add(10); waiting.add(30); waiting.add(20);
+        System.out.println("next: " + waiting.peek() + ", waiting: " + waiting.size());
+        while (!waiting.isEmpty()) System.out.print(waiting.poll() + " ");
+        System.out.println();
+    }
+}`, predict: true, caption: 'It prints <code>next: 10, waiting: 4</code> and then <code>10 20 30 40</code>. The numbers went in as 40, 10, 30, 20 and came out by size. <code>peek</code> looked at the front and left it; each <code>poll</code> took it away. Add a fifth number smaller than all the others before the loop and watch it jump the queue.' },
+        `<h2>A tree in an array</h2>
+<p>A <em>binary tree</em> is made of nodes that each have at most two children. Trees are often built from nodes with a pointer to each child. A heap needs no pointers, because it is always a <em>complete</em> tree: every level is full except possibly the last, and the last is filled from the left with no gaps. Number the nodes level by level, from left to right, starting at 0, and put each in the array cell with its own number. Then the tree&rsquo;s shape is the array&rsquo;s length, and a node&rsquo;s neighbours are found by arithmetic.</p>
+<div class="stmt"><p><span class="kind">Index arithmetic.</span> The node at index <code>i</code> has its <em>left child</em> at <code>2i + 1</code>, its <em>right child</em> at <code>2i + 2</code>, and its <em>parent</em> at <code>(i − 1) / 2</code> (integer division). The root is index 0 and has no parent; a node has a child only if that index is less than the number of items.</p>
+<p><span class="kind">The heap rule.</span> In a <em>min-heap</em> every parent is less than or equal to each of its children. So the root is the smallest item of all. Nothing is promised about the two children of a node, or about cousins: a heap is much less ordered than a sorted array.</p></div>
+<p>Height is why this matters. A complete tree with n nodes has about log₂ n levels, so a walk from a leaf up to the root, or from the root down to a leaf, takes at most about log₂ n steps: a million items need only 20 levels.</p>`,
+        { play: `public class Main {
+    static boolean isHeap(int[] a) {
+        for (int i = 1; i < a.length; i++) {
+            int parent = (i - 1) / 2;
+            if (a[parent] > a[i]) return false;      // a parent larger than its child breaks the rule
+        }
+        return true;
+    }
+
+    public static void main(String[] args) {
+        int[] yes = {2, 5, 3, 9, 6, 4, 8};
+        int[] no  = {2, 5, 3, 9, 6, 1, 8};
+        System.out.println(isHeap(yes) + " " + isHeap(no));
+        for (int i = 0; i < 3; i++)
+            System.out.println("node " + i + " has children " + (2 * i + 1) + " and " + (2 * i + 2));
+        System.out.println("node 5 has parent " + (5 - 1) / 2);
+    }
+}`, predict: true, caption: 'It prints <code>true false</code>, then the children of nodes 0, 1 and 2 (<code>1 and 2</code>, <code>3 and 4</code>, <code>5 and 6</code>) and <code>node 5 has parent 2</code>. In the second array the 1 at index 5 sits under the 3 at index (5 − 1) / 2 = 2: a parent larger than its child. The loop asks only that question, once per item except the root, and that is all the heap rule is. Change a value in <code>yes</code> to break it.' },
+        { check: 'A heap is stored in a Java array. Where are the children of the item at index 3?', options: ['Indexes 6 and 7', 'Indexes 7 and 8', 'Indexes 4 and 5'], answer: 1, wrong: ['2i is the formula when counting starts at 1. Java arrays start at 0, so the children are at 2i + 1 and 2i + 2.', null, 'Those are only the cells next to 3. A whole level is stored before the next level begins, so the children of 3 are further along: 2·3 + 1 = 7 and 2·3 + 2 = 8.'], why: 'The left child of i is 2i + 1 = 7 and the right child is 2i + 2 = 8. Going the other way, the parent of 7 or 8 is (7 − 1) / 2 = 3 or (8 − 1) / 2 = 3: integer division gives the same parent for both.' },
+        `<h2>Insert: sift up</h2>
+<div class="stmt"><p><span class="kind">Insert.</span> Put the new item in the first free cell, at index <code>size</code>, so the tree stays complete. That may break the rule between it and its parent, and only there. While the item is smaller than its parent, swap them and move up. Stop at the root or when the parent is no larger. This is <em>sift up</em>.</p>
+<p><span class="kind">Cost.</span> Each swap moves the item up one level, so at most about log₂ n swaps: O(log n). Often fewer: a random new item usually stays near the bottom.</p></div>`,
+        { fig: 'heap', start: [2, 5, 3, 9, 6, 4, 8], caption: 'The heap from the last example, as a tree and as an array: the same cells are lit in both. Insert 1 and step: it is compared with its parent, swaps, and climbs three levels to the root. Then insert 7: it is no smaller than its parent, so nothing moves. Try a number larger than everything.' },
+        { play: `import java.util.Arrays;
+
+public class Main {
+    static int[] heap = new int[16];
+    static int size = 0;
+
+    static void insert(int x) {
+        int i = size++;
+        heap[i] = x;                                     // the first free cell
+        while (i > 0 && heap[(i - 1) / 2] > heap[i]) {   // sift up
+            int p = (i - 1) / 2;
+            int t = heap[p]; heap[p] = heap[i]; heap[i] = t;
+            i = p;
+        }
+    }
+
+    public static void main(String[] args) {
+        for (int x : new int[] {5, 3, 8, 1, 9, 2}) {
+            insert(x);
+            System.out.println("insert " + x + ": " + Arrays.toString(Arrays.copyOf(heap, size)));
+        }
+    }
+}`, predict: true, caption: 'It prints <code>[5]</code>, <code>[3, 5]</code>, <code>[3, 5, 8]</code>, <code>[1, 3, 8, 5]</code>, <code>[1, 3, 8, 5, 9]</code> and <code>[1, 3, 2, 5, 9, 8]</code>. Inserting 1 needed two swaps (index 3 → 1 → 0), and inserting 2 needed one (index 5 → 2, then the root 1 is smaller, so it stops). The array is never sorted, only a heap: 8 sits before 5. Remember this array, it comes back at the end of the lesson.' },
+        `<h2>Remove: sift down</h2>
+<div class="stmt"><p><span class="kind">Remove the smallest.</span> The smallest is the root, <code>heap[0]</code>. Removing it leaves a hole at the top and the array one cell too long. Fix both at once: move the <em>last</em> item into the root and shrink the size by one. The tree is complete again, but the rule may be broken at the root. While the item is larger than a child, swap it with its <em>smaller</em> child and move down. Stop at a leaf or when it is no larger than both children. This is <em>sift down</em>.</p>
+<p><span class="kind">Why the smaller child?</span> After the swap that child becomes the parent of the other one. If it were the larger, it would sit above a smaller sibling and break the rule.</p>
+<p><span class="kind">Cost.</span> One swap per level: at most about log₂ n, so O(log n). Reading the smallest, <code>peek</code>, is O(1).</p></div>`,
+        { fig: 'heap', start: [1, 3, 2, 5, 9, 8, 4, 7, 6, 10], caption: 'Remove min and step: the 1 leaves, the last item (10) takes the root, and it sinks, each time past the smaller of its two children (the other child is drawn with a dashed ring). Two swaps for ten items. Remove again and again to see the items leave in order.' },
+        { play: `import java.util.Arrays;
+
+public class Main {
+    static int[] heap = {1, 3, 2, 5, 9, 8, 4};
+    static int size = 7;
+    static int removeMin() {
+        int min = heap[0];
+        heap[0] = heap[--size];                      // the last item takes the root
+        int i = 0;
+        while (2 * i + 1 < size) {                   // sift down while i has a child
+            int c = 2 * i + 1;                       // the left child ...
+            if (c + 1 < size && heap[c + 1] < heap[c]) c++;   // ... or the right, if smaller
+            if (heap[i] <= heap[c]) break;           // the rule holds: stop
+            int t = heap[i]; heap[i] = heap[c]; heap[c] = t;
+            i = c;
+        }
+        return min;
+    }
+    public static void main(String[] args) {
+        for (int k = 0; k < 3; k++) {
+            int m = removeMin();
+            System.out.println("removed " + m + ": " + Arrays.toString(Arrays.copyOf(heap, size)));
+        }
+    }
+}`, predict: true, caption: 'It prints <code>removed 1: [2, 3, 4, 5, 9, 8]</code>, <code>removed 2: [3, 5, 4, 8, 9]</code> and <code>removed 3: [4, 5, 9, 8]</code>. The first removal moves 4 to the root, and 4 swaps with the 2, the smaller of 3 and 2. The items come out 1, 2, 3 in order, and each removal repaired the heap with at most a few swaps instead of re-sorting. The <code>c + 1 &lt; size</code> test is there because a node may have only a left child.' },
+        { check: 'Sifting down, an item <code>9</code> has two children, <code>7</code> (left) and <code>5</code> (right). Which does it swap with?', options: ['The left child, 7: always go left', 'The right child, 5: the smaller child', 'The left child, 7: the larger, so the big values stay near the top'], answer: 1, wrong: ['Left or right does not matter; the values do. After swapping with 7 the 7 would sit above the 5, a parent larger than its child, and the heap rule would break.', null, 'That is the rule for a <em>max</em>-heap, where the larger child goes up. In a min-heap the smaller child must go up, or it ends up under a larger parent.'], why: 'The smaller child, 5, moves up and becomes the parent of 7, which is larger than 5, so the rule holds there. Then the 9 carries on down from where the 5 was.' },
+        `<h2>Heapsort</h2>
+<p>A priority queue sorts for free: add everything, then poll until empty, and the items come out in order. That is n adds and n polls, O(n log n), but it uses a second array. Williams&rsquo;s trick was to do it in the <em>same</em> array. Use a <em>max</em>-heap (parent ≥ children, the largest at the root) and two phases.</p>
+<div class="stmt"><p><span class="kind">Heapsort.</span> <b>Build:</b> turn the array into a max-heap by sifting down every node that has a child, from the last of them, index <code>n/2 − 1</code>, back to 0. <b>Sort:</b> repeat n − 1 times: swap the root with the last cell of the heap, shrink the heap by one (that cell now holds its final value, the largest left), and sift the new root down.</p>
+<p><span class="kind">Cost.</span> The sort phase is n sift-downs of at most log n: O(n log n), whatever the input, and it needs only a few variables beyond the array. Building looks like another n log n but is only O(n): half the nodes are leaves and never move, a quarter move at most one level, and so on. The sort is not stable. In practice quicksort and merge sort usually run faster, which is why heapsort is mostly used as a guarantee: the fallback of lesson 4&rsquo;s introsort.</p></div>`,
+        { play: `import java.util.Arrays;
+
+public class Main {
+    static void siftDown(int[] a, int i, int n) {         // a MAX-heap: parent >= children
+        while (2 * i + 1 < n) {
+            int c = 2 * i + 1;
+            if (c + 1 < n && a[c + 1] > a[c]) c++;        // the larger child
+            if (a[i] >= a[c]) break;
+            int t = a[i]; a[i] = a[c]; a[c] = t;
+            i = c;
+        }
+    }
+
+    public static void main(String[] args) {
+        int[] a = {5, 3, 8, 1, 9, 2};
+        for (int i = a.length / 2 - 1; i >= 0; i--) siftDown(a, i, a.length);   // build the heap
+        System.out.println("max-heap: " + Arrays.toString(a));
+        for (int end = a.length - 1; end > 0; end--) {
+            int t = a[0]; a[0] = a[end]; a[end] = t;      // the largest goes to its final cell
+            siftDown(a, 0, end);                          // the heap is now a[0..end-1]
+        }
+        System.out.println("sorted:   " + Arrays.toString(a));
+    }
+}`, predict: true, caption: 'It prints <code>max-heap: [9, 5, 8, 1, 3, 2]</code> and <code>sorted:   [1, 2, 3, 5, 8, 9]</code>. Building made 9 the root. Each pass of the second loop then moved the biggest remaining value to the end, where the sorted part grows from the right while the heap shrinks on the left, all in one array. Add a <code>System.out.println</code> inside the loop to watch it.' },
+        `<h2>Java&rsquo;s PriorityQueue</h2>
+<p>You will not write a heap every time you need one. <code>java.util.PriorityQueue</code> is a binary heap in an array, as built above (a min-heap by default). <code>add</code> and <code>poll</code> are O(log n) and <code>peek</code> is O(1); <code>size</code> and <code>isEmpty</code> are O(1); <code>contains</code> and <code>remove(x)</code> must search, O(n). Printing one shows the heap&rsquo;s array, <em>not</em> the sorted order: the only promise is that the front is the smallest.</p>`,
+        { play: `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        PriorityQueue<Integer> pq = new PriorityQueue<>();
+        for (int x : new int[] {5, 3, 8, 1, 9, 2}) pq.add(x);
+        System.out.println(pq);                       // the heap's array, not sorted order
+        System.out.println(pq.poll() + " " + pq);
+        PriorityQueue<Integer> big = new PriorityQueue<>(Collections.reverseOrder());
+        big.addAll(pq);                               // a max-heap: the largest first
+        System.out.println(big.peek() + " " + big);
+    }
+}`, predict: true, caption: 'It prints <code>[1, 3, 2, 5, 9, 8]</code>, then <code>1 [2, 3, 8, 5, 9]</code>, then <code>9 [9, 8, 3, 2, 5]</code>. The first line is exactly the array of the insert example, because Java&rsquo;s own heap uses the same sift up; the second is the sift down of the remove example. <code>Collections.reverseOrder()</code> turns the min-heap into a max-heap, and the array order changes with it.' },
+        { check: '<code>PriorityQueue&lt;Integer&gt; pq</code> receives <code>add(5)</code>, <code>add(8)</code>, <code>add(3)</code>, in that order. What does <code>System.out.println(pq)</code> print?', options: ['<code>[3, 5, 8]</code>: it keeps its items sorted', '<code>[3, 8, 5]</code>: the heap’s array', '<code>[5, 8, 3]</code>: the order they were added'], answer: 1, wrong: ['A heap is only ordered enough to know the smallest. Printing shows the array: 5, 8, then 3 arrives at index 2 and swaps with its parent 5, giving [3, 8, 5].', null, 'The new 3 does not stay at the end: it is smaller than its parent 5 (index 0), so it climbs to the root.'], why: 'The array grows [5], [5, 8], and then 3 is added at index 2, smaller than its parent 5, so it swaps: [3, 8, 5]. The front is the smallest, but the rest is not in order. To get sorted order, poll repeatedly.' },
+        `<p>A priority queue needs to compare its items. <code>Integer</code> and <code>String</code> already know how. For your own class, implement <code>Comparable</code> (its <code>compareTo</code> returns a negative number when <em>this</em> item should come out first), or pass a <code>Comparator</code> object to the constructor: <code>new PriorityQueue&lt;&gt;(new ByUrgency())</code> for a class <code>ByUrgency</code> that implements <code>Comparator&lt;Task&gt;</code>. Two items that compare as equal come out in no promised order: a heap is not stable.</p>`,
+        { play: `import java.util.*;
+
+class Task implements Comparable<Task> {
+    String name; int urgency;
+    Task(String name, int urgency) { this.name = name; this.urgency = urgency; }
+    public int compareTo(Task other) { return Integer.compare(urgency, other.urgency); }   // smaller first
+}
+
+public class Main {
+    public static void main(String[] args) {
+        PriorityQueue<Task> todo = new PriorityQueue<>();
+        todo.add(new Task("homework", 3));
+        todo.add(new Task("feed the cat", 1));
+        todo.add(new Task("laundry", 5));
+        todo.add(new Task("exam notes", 2));
+        while (!todo.isEmpty()) { Task t = todo.poll(); System.out.println(t.urgency + " " + t.name); }
+    }
+}`, predict: true, caption: 'It prints <code>1 feed the cat</code>, <code>2 exam notes</code>, <code>3 homework</code>, <code>5 laundry</code>. The queue calls <code>compareTo</code> inside its sift up and sift down; nothing else about the class matters. Change <code>compareTo</code> to <code>Integer.compare(other.urgency, urgency)</code> and the most urgent number comes last-first.' },
+        `<p><span class="kind">The k largest.</span> A common job: of a million numbers, find the ten largest. Sorting them all costs n log n. Instead keep a <em>min</em>-heap of at most k items. Add each number; when the heap holds k + 1 items, poll, which throws away the smallest of them. What is left is the k largest seen so far.</p>
+<pre class="code"><code>PriorityQueue&lt;Integer&gt; best = new PriorityQueue&lt;&gt;();   // holds the k largest so far
+for (int x : data) {
+    best.add(x);
+    if (best.size() &gt; k) best.poll();                      // drop the smallest of k + 1
+}</code></pre>
+<p>Each number costs O(log k), so n numbers cost O(n log k), and memory is k, not n. It works on a stream you can only read once. A min-heap to find the largest looks backwards, but the item at risk of being thrown out is the smallest of the k, and that is what a min-heap has at its front.</p>
+<p><span class="kind">In real systems.</span> Schedulers that pick the next job by priority and simulations that always process the earliest event are usually built on a priority queue. The next lesson uses one for Dijkstra&rsquo;s shortest-path algorithm, and lesson 4&rsquo;s introsort falls back to heapsort.</p>`,
+        { aside: `<p><b>Common mistakes in this lesson.</b> Using <code>2i</code> and <code>2i + 1</code> for the children (that counts from 1; arrays count from 0). Reading <code>(i − 1) / 2</code> as a fraction: it is integer division, so 5 and 6 both have parent 2. Swapping with the larger child in a min-heap, or with the left child without comparing. Forgetting <code>c + 1 &lt; size</code>, so the right child reads past the end. Sifting up from the wrong index after a swap (set <code>i = p</code>). Expecting <code>println(pq)</code> or iteration over a PriorityQueue to be sorted. Calling <code>remove()</code> or <code>element()</code> on an empty queue, which throws <code>NoSuchElementException</code>; <code>poll()</code> and <code>peek()</code> return <code>null</code> instead.</p>` },
+        {
+          ex: {
+            id: 'ds-10-1', title: 'A min-heap of ints',
+            prompt: `<p>Complete the class <code>MinHeap</code>: a binary min-heap of <code>int</code> in an array that starts with 4 cells and doubles when full. <code>insert(x)</code> adds by sift up; <code>extractMin()</code> removes and returns the smallest by sift down; <code>peek()</code> returns it without removing it; <code>size()</code> is the number of items. <code>peek</code> and <code>extractMin</code> on an empty heap throw <code>IllegalStateException</code> with the message <code>empty heap</code>. Use loops, not recursion, and the layout of this lesson, so that <code>toString</code> (given) shows the same array as the examples. Write only the class.</p>`,
+            classes: true,
+            prelude: 'import java.util.Arrays;',
+            starter: `class MinHeap {
+    private int[] a = new int[4];
+    private int size = 0;
+
+    int size() { return size; }
+
+    public String toString() { return Arrays.toString(Arrays.copyOf(a, size)); }
+
+    int peek() {
+        // throw if empty; the smallest is at index 0
+        return 0;
+    }
+
+    void insert(int x) {
+        // double the array if full; write x at index size; sift up while the parent is larger
+    }
+
+    int extractMin() {
+        // throw if empty; save a[0]; move the last item to index 0; shrink; sift down by the smaller child
+        return 0;
+    }
+}`,
+            solution: `class MinHeap {
+    private int[] a = new int[4];
+    private int size = 0;
+
+    int size() { return size; }
+
+    public String toString() { return Arrays.toString(Arrays.copyOf(a, size)); }
+
+    int peek() {
+        if (size == 0) throw new IllegalStateException("empty heap");
+        return a[0];
+    }
+
+    void insert(int x) {
+        if (size == a.length) a = Arrays.copyOf(a, a.length * 2);
+        int i = size++;
+        a[i] = x;
+        while (i > 0 && a[(i - 1) / 2] > a[i]) {
+            int p = (i - 1) / 2;
+            int t = a[p]; a[p] = a[i]; a[i] = t;
+            i = p;
+        }
+    }
+
+    int extractMin() {
+        if (size == 0) throw new IllegalStateException("empty heap");
+        int min = a[0];
+        a[0] = a[--size];
+        int i = 0;
+        while (2 * i + 1 < size) {
+            int c = 2 * i + 1;
+            if (c + 1 < size && a[c + 1] < a[c]) c++;
+            if (a[i] <= a[c]) break;
+            int t = a[i]; a[i] = a[c]; a[c] = t;
+            i = c;
+        }
+        return min;
+    }
+}`,
+            mustNotContain: [{ re: /PriorityQueue|ArrayList|LinkedList|Arrays\.sort|Collections\.sort/, msg: 'Build the heap on a plain int array; the library classes are what you are learning to write.' }],
+            hints: ['insert: grow with Arrays.copyOf if size == a.length, then int i = size++; a[i] = x; and loop while i > 0 and a[(i - 1) / 2] > a[i]: swap them and set i to the parent.', 'extractMin: save a[0], then a[0] = a[--size] to move the last item to the root and shrink in one step, and sift it down.', 'Sift down: while (2 * i + 1 < size) pick c = 2 * i + 1, and c + 1 if it exists and is smaller; if a[i] <= a[c] stop; otherwise swap a[i] and a[c] and set i = c.'],
+            tests: [
+              { name: 'inserts make the array of the lesson', main: '        MinHeap h = new MinHeap();\n        for (int x : new int[] {5, 3, 8, 1, 9, 2}) h.insert(x);\n        System.out.println(h + " " + h.size() + " " + h.peek());', expect: '[1, 3, 2, 5, 9, 8] 6 1' },
+              { name: 'extractMin repairs the array', main: '        MinHeap h = new MinHeap();\n        for (int x : new int[] {5, 3, 8, 1, 9, 2}) h.insert(x);\n        System.out.println(h.extractMin() + " " + h + " " + h.extractMin() + " " + h);', expect: '1 [2, 3, 8, 5, 9] 2 [3, 5, 8, 9]' },
+              { name: 'a thousand in, a thousand out in order', main: '        MinHeap h = new MinHeap();\n        for (int i = 0; i < 1000; i++) h.insert((i * 37) % 1000);\n        int prev = -1, n = 0; boolean ok = true;\n        while (h.size() > 0) { int v = h.extractMin(); if (v < prev) ok = false; prev = v; n++; }\n        System.out.println(ok + " " + n + " " + prev);', expect: 'true 1000 999' },
+              { name: 'duplicates and negatives', main: '        MinHeap h = new MinHeap();\n        for (int x : new int[] {4, 4, 4, -2, 4, 0}) h.insert(x);\n        StringBuilder sb = new StringBuilder();\n        while (h.size() > 0) sb.append(h.extractMin()).append(" ");\n        System.out.println(sb.toString().trim());', expect: '-2 0 4 4 4 4' },
+              { name: 'peek does not remove', main: '        MinHeap h = new MinHeap();\n        h.insert(7); h.insert(3);\n        System.out.println(h.peek() + " " + h.peek() + " " + h.size());', expect: '3 3 2' },
+              { name: 'interleaved inserts and removals', main: '        MinHeap h = new MinHeap();\n        h.insert(5); h.insert(2); int a = h.extractMin(); h.insert(1); h.insert(9);\n        int b = h.extractMin(), c = h.extractMin(), d = h.extractMin();\n        System.out.println(a + " " + b + " " + c + " " + d + " " + h.size());', expect: '2 1 5 9 0' },
+              { name: 'an empty heap throws', main: '        MinHeap h = new MinHeap();\n        try { h.extractMin(); } catch (IllegalStateException e) { System.out.println("extractMin: " + e.getMessage()); }\n        try { h.peek(); } catch (IllegalStateException e) { System.out.println("peek: " + e.getMessage()); }\n        h.insert(1); h.extractMin();\n        try { h.extractMin(); } catch (IllegalStateException e) { System.out.println("again: " + e.getMessage()); }', expect: 'extractMin: empty heap\npeek: empty heap\nagain: empty heap' }
+            ],
+            failTip: 'If the first test shows [1, 3, 2, 5, 9, 8] wrong, insert is not sifting up from index size. If extractMin gives a right answer but the array is wrong, the sift down chose the left child instead of the smaller one. An ArrayIndexOutOfBounds error usually means c + 1 < size was not tested before reading a[c + 1].',
+            followup: 'Add a method that builds a heap from an int array in O(n): copy the array in, then sift down every index from size / 2 − 1 back to 0, the build phase of heapsort.'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-10-2', title: 'Heapsort',
+            prompt: `<p>Write</p><pre class="code">static void heapSort(int[] a)</pre><p>that sorts <code>a</code> into increasing order <em>in place</em>, by heapsort: build a max-heap by sifting down every node with a child, from index <code>n / 2 − 1</code> back to 0; then n − 1 times, swap the root with the last cell of the heap, shrink the heap, and sift the root down. The method <code>siftDown(a, i, n)</code> is given: it sifts <code>a[i]</code> down inside the first <code>n</code> cells of a max-heap. Do not use the library&rsquo;s sort or a second array.</p>`,
+            prelude: 'import java.util.Arrays;',
+            starter: `static void siftDown(int[] a, int i, int n) {
+    while (2 * i + 1 < n) {
+        int c = 2 * i + 1;
+        if (c + 1 < n && a[c + 1] > a[c]) c++;
+        if (a[i] >= a[c]) break;
+        int t = a[i]; a[i] = a[c]; a[c] = t;
+        i = c;
+    }
+}
+
+static void heapSort(int[] a) {
+    int n = a.length;
+    // build: sift down from n / 2 - 1 back to 0
+    // sort: swap a[0] with a[end], then sift down within the first end cells
+}`,
+            solution: `static void siftDown(int[] a, int i, int n) {
+    while (2 * i + 1 < n) {
+        int c = 2 * i + 1;
+        if (c + 1 < n && a[c + 1] > a[c]) c++;
+        if (a[i] >= a[c]) break;
+        int t = a[i]; a[i] = a[c]; a[c] = t;
+        i = c;
+    }
+}
+
+static void heapSort(int[] a) {
+    int n = a.length;
+    for (int i = n / 2 - 1; i >= 0; i--) siftDown(a, i, n);
+    for (int end = n - 1; end > 0; end--) {
+        int t = a[0]; a[0] = a[end]; a[end] = t;
+        siftDown(a, 0, end);
+    }
+}`,
+            mustNotContain: [{ re: /Arrays\.sort|Collections\.sort|\.sort\s*\(|PriorityQueue|new int\s*\[/, msg: 'Sort in place with the given siftDown: no library sort, no priority queue and no second array.' }],
+            hints: ['Build: for (int i = n / 2 - 1; i >= 0; i--) siftDown(a, i, n); this makes a[0] the largest.', 'Sort: for (int end = n - 1; end > 0; end--) swap a[0] with a[end], then siftDown(a, 0, end). The heap is now only the first end cells; a[end] is final.'],
+            tests: [
+              { setup: '        int[] a = {5, 2, 9, 1, 5, 6, 0}; heapSort(a);', call: 'Arrays.toString(a)', expect: '[0, 1, 2, 5, 5, 6, 9]', name: 'with a repeated value' },
+              { setup: '        int[] a = {1, 2, 3, 4, 5}; heapSort(a);', call: 'Arrays.toString(a)', expect: '[1, 2, 3, 4, 5]', name: 'already sorted' },
+              { setup: '        int[] a = {9, 7, 5, 3, 1, 0}; heapSort(a);', call: 'Arrays.toString(a)', expect: '[0, 1, 3, 5, 7, 9]', name: 'reversed' },
+              { setup: '        int[] a = {4}; heapSort(a); int[] b = {}; heapSort(b); int[] c = {2, 1}; heapSort(c);', call: 'Arrays.toString(a) + " " + Arrays.toString(b) + " " + Arrays.toString(c)', expect: '[4] [] [1, 2]', name: 'one value, none, two' },
+              { setup: '        int[] a = {-3, 10, -3, 0, 7, -8}; heapSort(a);', call: 'Arrays.toString(a)', expect: '[-8, -3, -3, 0, 7, 10]', name: 'negative values' },
+              { setup: '        int[] a = new int[3000]; for (int i = 0; i < a.length; i++) a[i] = (i * 7919) % 1000; heapSort(a); boolean ok = true; for (int i = 1; i < a.length; i++) if (a[i - 1] > a[i]) ok = false;', call: 'ok + " " + a[0] + " " + a[2999]', expect: 'true 0 999', name: 'three thousand values' }
+            ],
+            failTip: 'If the result is almost sorted with the largest values out of place, the build loop starts at n − 1 instead of n / 2 − 1, or the sort loop sifts down within n cells instead of end cells.',
+            followup: 'Count the comparisons siftDown makes on 1,000 random values, then on 1,000 already-sorted values. Unlike insertion sort, heapsort does about the same work for both.'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-10-3', title: 'The k largest',
+            prompt: `<p>Write</p><pre class="code">static int[] kLargest(int[] a, int k)</pre><p>that returns the <code>k</code> largest values of <code>a</code>, in <em>decreasing</em> order, using a <code>PriorityQueue</code> that never holds more than <code>k</code> items. If <code>a</code> has fewer than <code>k</code> values, return all of them; if <code>k</code> is 0, return an empty array. Do not sort <code>a</code> or copy it.</p>`,
+            prelude: 'import java.util.*;',
+            starter: `static int[] kLargest(int[] a, int k) {
+    PriorityQueue<Integer> best = new PriorityQueue<>();   // a min-heap of the k largest so far
+    for (int x : a) {
+        // add x; if the heap now holds more than k items, poll the smallest
+    }
+    int[] out = new int[best.size()];
+    // fill out from the END, polling the heap: the smallest comes out first
+    return out;
+}`,
+            solution: `static int[] kLargest(int[] a, int k) {
+    PriorityQueue<Integer> best = new PriorityQueue<>();
+    for (int x : a) {
+        best.add(x);
+        if (best.size() > k) best.poll();
+    }
+    int[] out = new int[best.size()];
+    for (int i = out.length - 1; i >= 0; i--) out[i] = best.poll();
+    return out;
+}`,
+            mustNotContain: [{ re: /Arrays\.sort|Collections\.sort|\.sort\s*\(|reverseOrder/, msg: 'Keep a min-heap of size k instead of sorting; the smallest of the k is the one to throw away.' }],
+            hints: ['Inside the loop: best.add(x); then if (best.size() > k) best.poll(); the poll removes the smallest of k + 1, so the k largest stay.', 'The heap is a min-heap, so polling gives increasing order. Fill out from the last index to the first: for (int i = out.length - 1; i >= 0; i--) out[i] = best.poll();'],
+            tests: [
+              { call: 'Arrays.toString(kLargest(new int[] {5, 1, 9, 3, 7, 9}, 3))', expect: '[9, 9, 7]', name: 'with a repeated largest' },
+              { call: 'Arrays.toString(kLargest(new int[] {5, 1, 9, 3, 7}, 1))', expect: '[9]', name: 'just the largest' },
+              { call: 'Arrays.toString(kLargest(new int[] {4, 2, 8}, 5))', expect: '[8, 4, 2]', name: 'k larger than the array' },
+              { call: 'Arrays.toString(kLargest(new int[] {4, 2, 8}, 0)) + " " + Arrays.toString(kLargest(new int[] {}, 3))', expect: '[] []', name: 'k = 0, and no values' },
+              { call: 'Arrays.toString(kLargest(new int[] {-5, -1, -9, -3}, 2))', expect: '[-1, -3]', name: 'negative values' },
+              { setup: '        int[] a = new int[3000]; for (int i = 0; i < a.length; i++) a[i] = (i * 7919) % 1000; int[] top = kLargest(a, 5);', call: 'Arrays.toString(top)', expect: '[999, 999, 999, 998, 998]', name: 'three thousand values' }
+            ],
+            failTip: 'If you get the right values in increasing order, you filled out from index 0; a min-heap polls the smallest first, so fill from the end. If the answer is the k smallest, the poll was done on the wrong side: poll when the heap has too many items, never when it has few.',
+            followup: 'Change it to return the k smallest in increasing order. Which kind of heap do you keep now, and which end of it do you throw away?'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-10-4', kind: 'answer', title: 'Work the heap by hand',
+            prompt: `<p>Use the min-heap exactly as in this lesson: sift up swaps with the parent while the parent is larger; sift down swaps with the smaller child while the item is larger than it. Give numbers separated by single spaces.</p>`,
+            parts: [
+              { label: '(a) Insert 7, 4, 9, 2, 6, in that order, into an empty min-heap. What is the array? (five numbers)', answer: '2 4 9 7 6', width: '10rem', wrong: [{ match: '2 4 6 7 9', msg: 'That is the sorted order, which a heap does not keep. Insert them one at a time: 7; 4 swaps over 7; 9 stays; 2 climbs two levels to the root; 6 stays under 4.' }, { match: '7 4 9 2 6', msg: 'That is the order of arrival. Each new item climbs while its parent is larger: 4 swaps with 7, and 2 climbs past 7 and 4.' }] },
+              { label: '(b) How many swaps did those five inserts make in total?', answer: '3', width: '6rem', wrong: [{ match: '5', msg: 'Not every insert swaps. 9 and 6 stay where they are. Count: 4 swaps once, 2 swaps twice.' }] },
+              { label: '(c) Now remove the minimum from that heap. What is the array afterwards? (four numbers)', answer: '4 6 9 7', width: '10rem', wrong: [{ match: '4 7 9 6', msg: 'After 6 takes the root, its children are 4 and 9. It swaps with the smaller, 4, and then its new children are 7 alone, and 6 ≤ 7, so it stops.' }, { match: '6 4 9 7', msg: 'That is the moment before sifting down: 6 has moved to the root but the heap rule is broken. 6 must sink past the smaller child, 4.' }] },
+              { label: '(d) How many swaps did that removal make?', answer: '1', width: '6rem' },
+              { label: '(e) In a heap stored in an array, which indexes are the children of the node at index 11? (two numbers)', answer: '23 24', width: '8rem', wrong: [{ match: '22 23', msg: '2i is the formula for arrays that start at 1. With index 0 as the root, the children are 2i + 1 and 2i + 2.' }] },
+              { label: '(f) Which index is the parent of the node at index 100?', answer: '49', width: '6rem', wrong: [{ match: ['50', '49.5'], msg: 'Integer division: (100 − 1) / 2 = 99 / 2 = 49, and the children of 49 are 99 and 100.' }] },
+              { label: '(g) A heap holds 1,000,000 items. At most how many swaps can one insert make? (The tree has levels 0, 1, 2, …; 2¹⁹ = 524,288 and 2²⁰ = 1,048,576. A new item is added at index 1,000,000.)', answer: '19', width: '6rem', wrong: [{ match: ['20', '21'], msg: 'Count levels from 0 for the root: the new item is on level 19 (levels 0 to 19 hold 1,048,575 cells), and it can climb to level 0 in 19 swaps.' }] },
+              { label: '(h) A Java <code>PriorityQueue&lt;Integer&gt;</code> gets <code>add(3)</code>, <code>add(1)</code>, <code>add(2)</code>. What does <code>println</code> of it show? (three numbers, without the brackets and commas)', answer: '1 3 2', width: '8rem', wrong: [{ match: '1 2 3', msg: 'That is the sorted order. 3 is added first; 1 swaps with it and takes the root; 2 goes at index 2 under the 1 and stays.' }] }
+            ],
+            hints: ['Draw the array after every insert and mark which index the new item climbs from. Sift up compares only with the parent, at (i − 1) / 2.', 'For (g), the new item sits at index 1,000,000. Each swap moves it to (i − 1) / 2, about half the index. How many times can you halve a million before reaching 0?'],
+            solution: `<p>(a) <b>2 4 9 7 6</b>: [7]; [4, 7]; [4, 7, 9]; 2 enters at index 3, swaps with 7 and then 4: [2, 4, 9, 7]; 6 enters at index 4 under 4 and stays. (b) <b>3</b> swaps: 1 for the 4 and 2 for the 2. (c) the 6 goes to the root of [6, 4, 9, 7], swaps with the smaller child 4, then 6 ≤ 7: <b>4 6 9 7</b>. (d) <b>1</b>. (e) <b>23 24</b>. (f) <b>49</b>. (g) <b>19</b>: the new item is on level 19, and each swap moves it up one level. (h) <b>1 3 2</b>.</p>`,
+            followup: 'For (g), what is the most swaps one removeMin can make in the same heap? Is it the same as for an insert? Say why, using the height of the tree.'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li>A priority queue gives back the smallest item first: <code>add</code>, <code>peek</code>, <code>poll</code>. An unsorted array makes poll O(n); a sorted array makes add O(n). A binary heap makes add and poll O(log n) and peek O(1).</li>
+<li>So how does a tree live in an array? Because a heap is always a <em>complete</em> tree, an item&rsquo;s place is its index, and its neighbours are arithmetic: children at <code>2i + 1</code> and <code>2i + 2</code>, parent at <code>(i − 1) / 2</code>. No pointers. And the rule, each parent no larger than its children, puts the smallest at index 0.</li>
+<li>Insert at the end and <em>sift up</em>; remove by moving the last item to the root and <em>sift down</em> past the smaller child. The tree has about log₂ n levels, so each takes at most about log₂ n swaps.</li>
+<li>Heapsort builds a max-heap in the array in O(n), then moves the largest to the end n − 1 times: O(n log n), in place, not stable.</li>
+<li>Java&rsquo;s <code>PriorityQueue</code> is a min-heap (<code>Collections.reverseOrder()</code> for a max-heap; <code>Comparable</code> or a <code>Comparator</code> for your own classes). Printing it shows the heap&rsquo;s array, not sorted order. To keep the k largest, keep a min-heap of size k.</li>
+<li>Next: graphs, and Dijkstra&rsquo;s algorithm, which asks a priority queue for the nearest unvisited place again and again.</li>
+</ul></div>`
+      ]
     }
   ]
 });

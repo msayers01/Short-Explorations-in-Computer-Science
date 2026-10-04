@@ -829,6 +829,353 @@ xs mapped kept result`;
       el('div', { class: 'fig-tools' }, btn('Run', run, 'primary'), btn('Undo', () => { if (timer) return; prog.pop(); state = null; msg = ''; draw(); }), btn('Clear', () => { stop(); prog = []; state = null; msg = ''; draw(); }, 'quiet')), say);
   };
 
+  /* ---------- 31. a hash table with chaining: insert and search words, see the hash, the collisions, the load factor and the doubling (DSA lesson 8) ---------- */
+  W.hashtable = function (mount, b) {
+    const LIMIT = 0.75, START = 8, MAXKEYS = 12;           // 12 keys fill 16 buckets exactly to the limit: the demo stops there
+    const WORDS = ['cat', 'dog', 'bee', 'owl', 'fox', 'ant', 'eel', 'hen', 'yak', 'gnu', 'emu', 'ram'];
+    const fm = (a, n) => ((a % n) + n) % n;                 // Math.floorMod
+    const javaHash = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0; return h; };   // String.hashCode, in 32 bits
+    let mode = b.bad ? 'len' : 'java', nb = START, rows, size, steps, ctl;
+    const hashOf = (s) => (mode === 'java' ? javaHash(s) : s.length);
+    const fresh = () => { nb = START; rows = Array.from({ length: nb }, () => []); size = 0; };
+    const snap = (r) => r.map((c) => c.slice());
+    const longest = (r) => r.reduce((m, c) => Math.max(m, c.length), 0);
+    const fill = (node, kids) => { node.textContent = ''; for (const k of kids) if (k) node.appendChild(k); };
+    // the arithmetic of the hash, as a line of text: ((99·31 + 97)·31 + 116) = 98262
+    function working(s) {
+      if (mode === 'len') return 'hash("' + s + '") = the number of letters = ' + s.length + '   (a bad hash: every 3-letter word gets the same number)';
+      let t = String(s.charCodeAt(0)), big = BigInt(s.charCodeAt(0));
+      for (let i = 1; i < s.length; i++) { t = '(' + t + '·31 + ' + s.charCodeAt(i) + ')'; big = big * 31n + BigInt(s.charCodeAt(i)); }
+      if (s.length > 1) t = t.slice(1, -1);
+      const wrapped = BigInt.asIntN(32, big) !== big;
+      return 'hash("' + s + '") = ' + t + ' = ' + (wrapped ? big + ', which wraps round in 32 bits to ' + javaHash(s) : javaHash(s));
+    }
+    const indexLine = (h, n) => 'index = floorMod(' + h + ', ' + n + ') = ' + fm(h, n);
+
+    const input = el('input', { type: 'text', value: WORDS[0], maxlength: '12', 'aria-label': 'a key to insert or search for', autocomplete: 'off', spellcheck: 'false', class: 'ht-input' });
+    const calc = el('div', { class: 'ht-calc', 'aria-hidden': 'true' });
+    const list = el('ul', { class: 'ht-rows', 'aria-label': 'the buckets of the table' });
+    const meterFill = el('div', { class: 'ht-fill' });
+    const meterTxt = el('div', { class: 'ht-meter-txt' });
+    const meter = el('div', { class: 'ht-meter', role: 'img', 'aria-label': 'load factor' }, meterFill, el('div', { class: 'ht-limit' }));
+    const log = el('div', { class: 'fig-status ht-log', role: 'status', 'aria-live': 'polite' });
+
+    function render(i) {
+      const st = steps[i];
+      fill(calc, (st.calc || []).map((l) => el('div', { class: 'ht-line' }, l)));
+      fill(list, st.rows.map((chain, bi) => {
+        const kids = [el('span', { class: 'ht-i' }, String(bi)), el('span', { class: 'ht-slot' }, chain.length ? '•' : '∅')];
+        chain.forEach((k, ci) => {
+          let cls = 'ht-node';
+          if (st.newKey === k && st.hot === bi) cls += ' ht-new';
+          if (st.moved && st.moved.has(k)) cls += ' ht-moved';
+          if (st.walk && st.walk.i === bi) { if (ci < st.walk.at) cls += ' ht-seen'; else if (ci === st.walk.at) cls += st.walk.found ? ' ht-found' : ' ht-now'; }
+          kids.push(el('span', { class: 'ht-arrow', 'aria-hidden': 'true' }, '→'), el('span', { class: cls }, k));
+        });
+        if (chain.length > 1) kids.push(el('span', { class: 'ht-len' }, chain.length + ' keys in one bucket: a collision'));
+        return el('li', { class: 'ht-row' + (bi === st.hot ? ' ht-hot' : '') + (chain.length > 1 ? ' ht-coll' : ''), 'aria-label': 'bucket ' + bi + (chain.length ? ': ' + chain.join(', ') : ': empty') }, kids);
+      }));
+      const load = st.count / st.nb;
+      meterFill.style.width = Math.min(100, Math.round(load * 100)) + '%';
+      meterFill.className = 'ht-fill' + (load > LIMIT ? ' ht-over' : '');
+      meter.setAttribute('aria-label', 'load factor ' + load.toFixed(2));
+      meterTxt.textContent = st.count + ' keys / ' + st.nb + ' buckets = load factor ' + load.toFixed(2) + (load > LIMIT ? ' (over ' + LIMIT + ')' : '') + '   ·   longest chain: ' + longest(st.rows);
+      log.textContent = st.msg;
+    }
+    const show = (list_) => { steps = list_; if (ctl) ctl.stop(); const old = ctl && ctl.el; ctl = stepper(steps.length, render, { interval: 800 }); if (old) old.replaceWith(ctl.el); };
+    const base = (extra) => Object.assign({ rows: snap(rows), nb, count: size, hot: -1 }, extra);
+    const nextWord = () => WORDS.find((w) => !rows.some((c) => c.includes(w))) || '';
+
+    function insert() {
+      const key = input.value.trim();
+      if (!key) { show([base({ msg: 'Type a word first.' })]); return; }
+      const h = hashOf(key), i = fm(h, nb), out = [];
+      const l1 = working(key), l2 = indexLine(h, nb);
+      if (rows[i].includes(key)) {
+        out.push(base({ calc: [l1], msg: 'Insert "' + key + '": the hash function turns the key into the number ' + h + '.' }), base({ calc: [l1, l2], hot: i, msg: 'The index is ' + i + ': look in bucket ' + i + '.' }),
+          base({ calc: [l1, l2], hot: i, walk: { i, at: rows[i].indexOf(key), found: true }, msg: '"' + key + '" is already in the chain: only its value would change. No new node, and the size stays ' + size + '.' }));
+        show(out); return;
+      }
+      if (size >= MAXKEYS) { show([base({ msg: 'This demo holds 12 keys at most: a real table would double to 32 buckets here. Press Reset to start again (you can still Search).' })]); return; }
+      out.push(base({ calc: [l1], msg: 'Insert "' + key + '": the hash function turns the key into the number ' + h + '.' }));
+      out.push(base({ calc: [l1, l2], hot: i, msg: 'The index is ' + i + (h < 0 ? '. The hash is negative, so a plain % would give a negative index; floorMod always gives 0 to ' + (nb - 1) + '.' : ': the key belongs in bucket ' + i + '.') }));
+      const before = rows[i].slice(), collided = before.length > 0;
+      rows[i].unshift(key); size++;
+      out.push(base({ calc: [l1, l2], hot: i, newKey: key, msg: collided ? 'Bucket ' + i + ' already holds ' + before.join(', ') + ': a collision. Two keys, one bucket: "' + key + '" joins the chain, at the front.' : 'Bucket ' + i + ' was empty: "' + key + '" goes straight in.' }));
+      const load = size / nb;
+      if (load <= LIMIT) out.push(base({ calc: [l1, l2], hot: i, msg: 'Load factor ' + size + '/' + nb + ' = ' + load.toFixed(2) + ', not over ' + LIMIT + ': no need to grow.' }));
+      else {
+        const old = snap(rows), n2 = nb * 2, fresh2 = Array.from({ length: n2 }, () => []), moved = new Set();
+        out.push(base({ hot: -1, msg: 'Load factor ' + size + '/' + nb + ' = ' + load.toFixed(2) + ' is over ' + LIMIT + ': chains are getting long. Double the table to ' + n2 + ' buckets, and place every key again, because floorMod(hash, ' + n2 + ') can differ from floorMod(hash, ' + nb + ').' }));
+        let placed = 0;
+        old.forEach((chain, bi) => chain.forEach((k) => {
+          const hk = hashOf(k), j = fm(hk, n2); fresh2[j].unshift(k); placed++;
+          if (j !== bi) moved.add(k);
+          out.push({ rows: snap(fresh2), nb: n2, count: placed, hot: j, newKey: k, moved: new Set(moved), calc: ['hash("' + k + '") = ' + hk, indexLine(hk, n2) + '    (it was in bucket ' + bi + ')'], msg: 'Place "' + k + '" again: bucket ' + j + (j !== bi ? ', not bucket ' + bi + ' as before.' : ', the same as before.') + '  ' + placed + ' of ' + size + ' placed.' });
+        }));
+        nb = n2; rows = fresh2;
+        out.push(base({ moved: new Set(moved), msg: 'The table now has ' + nb + ' buckets and all ' + size + ' keys are placed again; ' + moved.size + ' of them are in a different bucket from before (outlined). The longest chain is ' + longest(rows) + ', and the load factor is ' + (size / nb).toFixed(2) + '.' }));
+      }
+      input.value = nextWord();
+      show(out);
+    }
+    function search() {
+      const key = input.value.trim();
+      if (!key) { show([base({ msg: 'Type a word first.' })]); return; }
+      const h = hashOf(key), i = fm(h, nb), chain = rows[i], l1 = working(key), l2 = indexLine(h, nb);
+      const out = [base({ calc: [l1], msg: 'Search for "' + key + '": hash it, exactly as insert did: ' + h + '.' }), base({ calc: [l1, l2], hot: i, msg: 'Go straight to bucket ' + i + '. No other bucket is looked at.' })];
+      if (!chain.length) out.push(base({ calc: [l1, l2], hot: i, msg: 'Bucket ' + i + ' is empty, so "' + key + '" is not in the table. 0 keys compared.' }));
+      else for (let c = 0; c < chain.length; c++) {
+        const same = chain[c] === key;
+        out.push(base({ calc: [l1, l2], hot: i, walk: { i, at: c, found: same }, msg: 'Compare "' + key + '" with "' + chain[c] + '": ' + (same ? 'equal. Found, after ' + (c + 1) + ' comparison' + (c ? 's' : '') + '.' : 'different' + (c + 1 < chain.length ? '; try the next key in the chain.' : '; that was the end of the chain. "' + key + '" is not in the table (' + chain.length + ' comparison' + (chain.length > 1 ? 's' : '') + ').') ) }));
+        if (same) break;
+      }
+      show(out);
+    }
+    const insertBtn = el('button', { class: 'btn sm primary', type: 'submit' }, 'Insert');
+    const searchBtn = el('button', { class: 'btn sm', type: 'button', onclick: search }, 'Search');
+    const nextBtn = el('button', { class: 'btn sm quiet', type: 'button', onclick: () => { input.value = nextWord(); input.focus(); } }, 'Next word');
+    const resetBtn = el('button', { class: 'btn sm quiet', type: 'button', onclick: () => { fresh(); input.value = WORDS[0]; show([base({ msg: 'An empty table of ' + START + ' buckets. Insert words one at a time and step through the work.' })]); } }, 'Empty the table');
+    const pick = el('select', { 'aria-label': 'hash function', onchange: () => { mode = pick.value; fresh(); input.value = WORDS[0]; show([base({ msg: mode === 'java' ? 'Hash function: String.hashCode. A new empty table.' : 'Hash function: the length of the word. It is a number, it is the same every time, and it is a bad hash: try inserting three words.' })]); } },
+      el('option', { value: 'java' }, 'hash: String.hashCode'), el('option', { value: 'len' }, 'hash: length of the word (bad)'));
+    if (mode === 'len') pick.value = 'len';
+    const form = el('form', { class: 'fig-tools ht-form', onsubmit: (e) => { e.preventDefault(); insert(); } }, el('label', {}, 'key ', input), insertBtn, searchBtn, nextBtn, pick, resetBtn);
+    fresh();
+    show([base({ msg: 'An empty table of ' + START + ' buckets. Insert words one at a time and step through the work (or press Play).' })]);
+    mount.append(form, calc, list, el('div', { class: 'ht-meter-wrap' }, meter, meterTxt), log, ctl.el,
+      el('p', { class: 'ht-key' }, el('span', { class: 'ht-node ht-new' }, 'new'), ' just placed   ', el('span', { class: 'ht-node ht-moved' }, 'moved'), ' in a different bucket after doubling   ', el('span', { class: 'ht-node ht-now' }, 'compared'), ' during a search'));
+  };
+
+  /* ---------- 31. a binary search tree: insert and search one comparison at a time, an in-order walk, and the height beside it (DSA lesson 9) ---------- */
+  W.bst = function (mount, b) {
+    const MAXN = 15, DX = 36, DY = 46, PAD = 26, R = 15;
+    let keys = (b.keys || []).filter((k, i, a) => Number.isInteger(k) && a.indexOf(k) === i).slice(0, MAXN);   // in the order they were inserted
+    const build = (ks) => {
+      let root = null;
+      for (const k of ks) {
+        const n = { key: k, l: null, r: null };
+        if (!root) { root = n; continue; }
+        let c = root;
+        for (;;) { if (k < c.key) { if (!c.l) { c.l = n; break; } c = c.l; } else if (k > c.key) { if (!c.r) { c.r = n; break; } c = c.r; } else break; }
+      }
+      return root;
+    };
+    const height = (t) => t ? 1 + Math.max(height(t.l), height(t.r)) : 0;
+    const inorder = (t, out) => { if (t) { inorder(t.l, out); out.push(t.key); inorder(t.r, out); } return out; };
+    const pathTo = (root, k) => { const p = []; let c = root; while (c) { p.push(c.key); if (k === c.key) break; c = k < c.key ? c.l : c.r; } return p; };
+    const note = (root) => { const n = inorder(root, []).length, h = height(root); return n + (n === 1 ? ' key' : ' keys') + ', height ' + h + (n ? ': no search needs more than ' + h + (h === 1 ? ' comparison' : ' comparisons') : ''); };
+
+    const svg = sv('svg', { class: 'bst-svg', viewBox: '0 0 300 120', role: 'img', 'aria-label': 'A binary search tree' });
+    const log = el('div', { class: 'fig-status', role: 'status' });
+    const stats = el('div', { class: 'bst-stats' });
+    const num = el('input', { type: 'number', value: '7', min: '1', max: '99', 'aria-label': 'key, 1 to 99', onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); doInsert(); } } });
+    let steps = [];
+
+    function render(i) {
+      const st = steps[i], root = st.root;
+      const nodes = []; let ix = 0;
+      (function go(t, d) { if (!t) return; go(t.l, d + 1); t.ix = ix++; t.d = d; nodes.push(t); go(t.r, d + 1); })(root, 0);
+      const h = height(root), cols = Math.max(nodes.length, 6), W2 = PAD * 2 + (cols - 1) * DX, H2 = PAD * 2 + (Math.max(h, 3) - 1) * DY + 18;
+      const X = (t) => PAD + t.ix * DX + (cols - nodes.length) * DX / 2, Y = (t) => PAD + t.d * DY;
+      svg.replaceChildren();
+      svg.setAttribute('viewBox', '0 0 ' + W2 + ' ' + H2);
+      const visited = new Set(st.path || []), done = new Set(st.out || []);
+      const edge = (a, c, on) => svg.append(sv('line', { class: 'bst-edge' + (on ? ' bst-on' : ''), x1: X(a), y1: Y(a), x2: X(c), y2: Y(c) }));
+      for (const t of nodes) { if (t.l) edge(t, t.l, visited.has(t.key) && (visited.has(t.l.key) || st.cur === t.l.key)); if (t.r) edge(t, t.r, visited.has(t.key) && (visited.has(t.r.key) || st.cur === t.r.key)); }
+      if (st.slot) {   // the empty link where the search ended: the new key belongs here
+        const p = nodes.find((t) => t.key === st.slot.parent);
+        if (p) { const sx = X(p) + (st.slot.side === 'l' ? -1 : 1) * DX * 0.5, sy = Y(p) + DY; svg.append(sv('line', { class: 'bst-edge bst-on bst-dash', x1: X(p), y1: Y(p), x2: sx, y2: sy }), sv('rect', { class: 'bst-slot', x: sx - 16, y: sy - 9, width: 32, height: 18, rx: 3 }), sv('text', { class: 'bst-nulltxt', x: sx, y: sy + 4, 'text-anchor': 'middle' }, 'null')); }
+      }
+      for (const t of nodes) {
+        const cls = 'bst-node' + (st.cur === t.key ? ' bst-cur' : '') + (st.nu === t.key ? ' bst-new' : '') + (st.found === t.key ? ' bst-found' : '') + (visited.has(t.key) ? ' bst-seen' : '') + (done.has(t.key) ? ' bst-done' : '');
+        svg.append(sv('g', { class: cls }, sv('circle', { cx: X(t), cy: Y(t), r: R }), sv('text', { x: X(t), y: Y(t) + 4.5, 'text-anchor': 'middle' }, String(t.key))));
+      }
+      if (!nodes.length) svg.append(sv('text', { class: 'bst-nulltxt', x: W2 / 2, y: H2 / 2, 'text-anchor': 'middle' }, 'empty tree (root is null)'));
+      svg.append(sv('text', { class: 'bst-h', x: W2 - 6, y: 16, 'text-anchor': 'end' }, 'height ' + h));
+      if (st.out && st.out.length) svg.append(sv('text', { class: 'bst-h', x: 6, y: 16 }, 'out: ' + st.out.join(' ')));
+      const desc = nodes.length ? 'Tree of ' + nodes.length + ' keys, height ' + h + ', root ' + root.key + '. In order: ' + inorder(root, []).join(' ') + '.' : 'An empty tree.';
+      svg.setAttribute('aria-label', desc);
+      log.textContent = st.msg;
+      stats.textContent = note(root);
+    }
+    let ctl = stepper(1, () => {});
+    const show = (list) => { steps = list; ctl.stop(); const old = ctl.el; ctl = stepper(steps.length, render, { interval: 900 }); old.replaceWith(ctl.el); };
+    steps = [{ root: build(keys), msg: keys.length ? 'A search tree built by inserting ' + keys.join(', ') + ' in that order. Insert or Search a key, or walk the tree in order.' : 'An empty tree. Insert a key: it becomes the root.' }];
+    ctl.stop(); ctl = stepper(steps.length, render, { interval: 900 });
+
+    const val = () => { const x = Number(num.value); return Number.isInteger(x) && x >= 1 && x <= 99 && num.value.trim() !== '' ? x : null; };
+    const bad = () => show([{ root: build(keys), msg: 'Type a whole number from 1 to 99.' }]);
+    function trail(root, k, verb) {   // one step per comparison, then the last step is added by the caller
+      const p = pathTo(root, k), out = [];
+      p.forEach((q, j) => {
+        const eq = q === k;
+        out.push({ root, path: p.slice(0, j), cur: q, msg: 'Comparison ' + (j + 1) + ': ' + k + ' against ' + q + (eq ? ': equal, ' + (verb === 'insert' ? 'the key is already in the tree.' : 'found.') : (k < q ? ': less, so go left.' : ': greater, so go right.')) });
+      });
+      return { p, out };
+    }
+    function doInsert() {
+      const k = val(); if (k === null) return bad();
+      const root = build(keys), { p, out } = trail(root, k, 'insert');
+      if (!root) { keys = [k]; return show([{ root: build(keys), nu: k, msg: 'The tree is empty, so ' + k + ' becomes the root. No comparisons.' }]); }
+      const last = p[p.length - 1];
+      if (last === k) { out.push({ root, path: p.slice(0, -1), found: k, msg: 'Nothing to do: a search tree holds each key once. ' + p.length + ' comparisons.' }); return show(out); }
+      if (keys.length >= MAXN) return show([{ root, msg: 'The figure holds at most ' + MAXN + ' keys. Press Clear or load another tree.' }]);
+      const side = k < last ? 'l' : 'r';
+      out.push({ root, path: p, slot: { parent: last, side }, msg: 'The ' + (side === 'l' ? 'left' : 'right') + ' link of ' + last + ' is null: that is where ' + k + ' belongs.' });
+      keys = keys.concat(k);
+      const nr = build(keys), h = height(nr);
+      out.push({ root: nr, nu: k, msg: 'Insert ' + k + ' as a new leaf. It took ' + p.length + (p.length === 1 ? ' comparison' : ' comparisons') + '; no existing node moved. The tree now has height ' + h + '.' });
+      show(out);
+    }
+    function doSearch() {
+      const k = val(); if (k === null) return bad();
+      const root = build(keys);
+      if (!root) return show([{ root, msg: 'The tree is empty: ' + k + ' is not here. No comparisons.' }]);
+      const { p, out } = trail(root, k, 'search'), last = p[p.length - 1];
+      if (last === k) out.push({ root, path: p.slice(0, -1), found: k, msg: 'Found ' + k + ' after ' + p.length + (p.length === 1 ? ' comparison' : ' comparisons') + '.' });
+      else { const side = k < last ? 'l' : 'r'; out.push({ root, path: p, slot: { parent: last, side }, msg: 'The ' + (side === 'l' ? 'left' : 'right') + ' link of ' + last + ' is null: ' + k + ' is not in the tree. ' + p.length + ' comparisons, at most the height.' }); }
+      show(out);
+    }
+    function doWalk() {
+      const root = build(keys); if (!root) return show([{ root, msg: 'The tree is empty: there is nothing to walk.' }]);
+      const order = inorder(root, []), out = [{ root, out: [], msg: 'In-order: walk the left subtree, then visit the node, then walk the right subtree. Step to visit the keys.' }];
+      order.forEach((k, j) => out.push({ root, cur: k, out: order.slice(0, j + 1), msg: 'Visit ' + k + ': every key smaller than it has been visited already, and every larger one is still to come.' + (j === order.length - 1 ? ' Done: the keys came out in increasing order.' : '') }));
+      show(out);
+    }
+    function load(ks, what) {
+      keys = ks.slice(0, MAXN);
+      const root = build(keys);
+      if (!keys.length) return show([{ root, msg: 'An empty tree. Insert a key: it becomes the root.' }]);
+      show([{ root, msg: what + ' inserted in the order ' + keys.join(', ') + '. Height ' + height(root) + ' for ' + keys.length + (keys.length === 1 ? ' key.' : ' keys.') + (height(root) >= keys.length && keys.length > 3 ? ' A chain: every key went to the right of the last.' : '') }]);
+    }
+    const random = () => { const pool = []; for (let k = 1; k <= 99; k++) pool.push(k); const out = []; while (out.length < 9) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]); return out; };
+    const btn = (label, fn, cls) => el('button', { class: 'btn sm' + (cls ? ' ' + cls : ''), type: 'button', onclick: fn }, label);
+    const finish = btn('Finish', () => ctl.set(steps.length - 1), 'quiet');
+    mount.append(
+      el('div', { class: 'fig-tools' }, el('label', {}, 'key ', num), btn('Insert', doInsert, 'primary'), btn('Search', doSearch), btn('Walk in order', doWalk), finish),
+      el('div', { class: 'fig-scroll bst-wrap' }, svg), stats, log, ctl.el,
+      el('div', { class: 'fig-tools' }, el('span', { class: 'bst-lbl' }, 'load'),
+        btn('Balanced', () => load([40, 20, 60, 10, 30, 50, 70], 'Balanced example: keys'), 'quiet'),
+        btn('Random', () => load(random(), 'Random keys'), 'quiet'),
+        btn('Sorted 1–9', () => load([1, 2, 3, 4, 5, 6, 7, 8, 9], 'Sorted keys'), 'quiet'),
+        btn('Clear', () => load([], 'Empty tree'), 'quiet')));
+    ctl.el.setAttribute('aria-label', 'step through the operation');
+  };
+
+  /* ---------- 31. a binary min-heap as a tree and as an array: insert (sift up), remove the minimum (sift down) (DSA lesson 10) ---------- */
+  W.heap = function (mount, b) {
+    const CAP = 15, VW = 560, CW = 36, CX0 = (VW - CAP * CW) / 2, TREE_Y = 30, LEVEL_H = 50, ARR_Y = 232;
+    const presets = [
+      { name: 'Start heap', arr: Array.isArray(b.start) ? b.start.slice(0, CAP) : [2, 5, 3, 9, 6, 4, 8] },
+      { name: 'Empty', arr: [] },
+      { name: 'Full: 15 items', arr: [1, 3, 2, 6, 4, 5, 9, 8, 7, 10, 11, 12, 13, 14, 15] },
+      { name: 'Random: 10 items', random: true }
+    ];
+    function randomHeap() { const a = []; for (let i = 0; i < 10; i++) { a.push(1 + Math.floor(Math.random() * 40)); let k = a.length - 1; while (k > 0 && a[(k - 1) >> 1] > a[k]) { const p = (k - 1) >> 1; [a[p], a[k]] = [a[k], a[p]]; k = p; } } return a; }
+
+    /* every step of an operation is a frame: the array as it then stands, the cells being compared, the item that travels, and what to say */
+    function insertFrames(base, x) {
+      const a = base.slice(), fr = []; let swaps = 0, i = a.length;
+      a.push(x);
+      fr.push({ arr: a.slice(), hot: [], mover: i, swaps, note: 'Insert ' + x + ': write it in the first free cell, index ' + i + '. The tree is still complete, but ' + x + ' may be smaller than its parent, so it has to climb.' });
+      while (i > 0) {
+        const p = (i - 1) >> 1;
+        if (a[p] > a[i]) {
+          fr.push({ arr: a.slice(), hot: [p, i], mover: i, swaps, note: 'Compare ' + a[i] + ' (index ' + i + ') with its parent ' + a[p] + ' (index ' + p + ' = (' + i + ' − 1) / 2): the parent is larger, so they swap.' });
+          [a[p], a[i]] = [a[i], a[p]]; swaps++; i = p;
+          fr.push({ arr: a.slice(), hot: [], mover: i, swaps, note: 'Swapped: ' + x + ' is now at index ' + i + '. Swaps so far: ' + swaps + '.' });
+        } else {
+          fr.push({ arr: a.slice(), hot: [p, i], mover: i, swaps, note: 'Compare ' + a[i] + ' (index ' + i + ') with its parent ' + a[p] + ' (index ' + p + '): the parent is not larger, so the rule holds. Stop.' });
+          break;
+        }
+      }
+      if (i === 0 && a.length > 1) fr.push({ arr: a.slice(), hot: [0], mover: 0, swaps, note: x + ' reached the root, which has no parent. Stop.' });
+      fr.push({ arr: a.slice(), hot: [], mover: -1, swaps, done: true, note: 'Done: insert(' + x + ') made ' + swaps + ' swap' + (swaps === 1 ? '' : 's') + (a.length > 1 ? ', at most the height of the tree, about log₂ ' + a.length + ' = ' + Math.log2(a.length).toFixed(1) : '') + '.' });
+      return fr;
+    }
+    function removeFrames(base) {
+      const a = base.slice(), fr = [], min = a[0]; let swaps = 0;
+      fr.push({ arr: a.slice(), hot: [0], mover: -1, swaps, note: 'The smallest item is always the root: ' + min + '. Reading it (peek) is one step. To remove it, the root cell must be filled by something.' });
+      const last = a.pop();
+      if (!a.length) { fr.push({ arr: [], hot: [], mover: -1, swaps, removed: min, done: true, note: 'removeMin() returned ' + min + '. That was the only item: the heap is empty.' }); return fr; }
+      a[0] = last;
+      fr.push({ arr: a.slice(), hot: [], mover: 0, swaps, removed: min, note: 'Take the last item, ' + last + ', and put it at the root. The tree is complete again (one cell shorter), but ' + last + ' may be larger than its children, so it has to sink.' });
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1, r = l + 1;
+        if (l >= a.length) { fr.push({ arr: a.slice(), hot: [i], mover: i, swaps, removed: min, note: a[i] + ' (index ' + i + ') has no children: it is a leaf. Stop.' }); break; }
+        const c = r < a.length && a[r] < a[l] ? r : l, kids = r < a.length ? 'its children are ' + a[l] + ' and ' + a[r] + '; the smaller is ' + a[c] : 'its only child is ' + a[l];
+        if (a[i] > a[c]) {
+          fr.push({ arr: a.slice(), hot: [i, c], alt: r < a.length ? [l + r - c] : [], mover: i, swaps, removed: min, note: 'At index ' + i + ', ' + a[i] + ': ' + kids + ' (index ' + c + '). ' + a[c] + ' < ' + a[i] + ', so they swap. (Always the smaller child, or the other child would sit under a larger parent.)' });
+          const v = a[i]; [a[i], a[c]] = [a[c], a[i]]; swaps++; i = c;
+          fr.push({ arr: a.slice(), hot: [], mover: i, swaps, removed: min, note: 'Swapped: ' + v + ' is now at index ' + i + '. Swaps so far: ' + swaps + '.' });
+        } else {
+          fr.push({ arr: a.slice(), hot: [i, c], alt: r < a.length ? [l + r - c] : [], mover: i, swaps, removed: min, note: 'At index ' + i + ', ' + a[i] + ': ' + kids + ' (index ' + c + '). ' + a[i] + ' is not larger than it, so the rule holds. Stop.' });
+          break;
+        }
+      }
+      fr.push({ arr: a.slice(), hot: [], mover: -1, swaps, removed: min, done: true, note: 'Done: removeMin() returned ' + min + ' after ' + swaps + ' swap' + (swaps === 1 ? '' : 's') + ', at most the height of the tree, about log₂ ' + a.length + ' = ' + Math.log2(Math.max(1, a.length)).toFixed(1) + '.' });
+      return fr;
+    }
+
+    let frames = [{ arr: [], hot: [], mover: -1, swaps: 0, done: true, note: '' }], fi = 0, timer = null;
+    const svg = sv('svg', { viewBox: '0 0 ' + VW + ' 272', role: 'img' });
+    const note = el('div', { class: 'fig-status hp-note', role: 'status', 'aria-live': 'polite' });
+    const swapsOut = el('span', { class: 'fig-note hp-swaps' });
+    const val = el('input', { type: 'number', value: '4', min: '-99', max: '999', 'aria-label': 'value to insert' });
+    const sel = el('select', { 'aria-label': 'starting heap' }, presets.map((p, k) => el('option', { value: String(k) }, p.name)));
+    const base = () => frames[frames.length - 1].arr;
+    const pos = (i) => { const d = Math.floor(Math.log2(i + 1)), k = i + 1 - (1 << d), w = VW / (1 << d); return [(k + 0.5) * w, TREE_Y + d * LEVEL_H]; };
+    function render() {
+      const f = frames[fi], a = f.arr; svg.innerHTML = '';
+      const cls = (i) => 'hp-n' + (f.hot.includes(i) ? ' is-hot' : '') + (f.alt && f.alt.includes(i) ? ' is-alt' : '') + (f.mover === i ? ' is-mover' : '');
+      for (let i = 1; i < a.length; i++) { const [x1, y1] = pos((i - 1) >> 1), [x2, y2] = pos(i); svg.append(sv('line', { class: 'hp-edge', x1, y1, x2, y2 })); }
+      for (let i = 0; i < a.length; i++) {
+        const [x, y] = pos(i);
+        svg.append(sv('g', { class: 'hp-node ' + cls(i), 'data-i': i }, sv('circle', { cx: x, cy: y, r: 17 }), sv('text', { class: 'hp-val', x, y: y + 5, 'text-anchor': 'middle' }, String(a[i])), sv('text', { class: 'hp-idx', x: x + 18, y: y - 13, 'text-anchor': 'start' }, String(i))));
+      }
+      for (let i = 0; i < CAP; i++) {
+        const x = CX0 + i * CW, used = i < a.length;
+        svg.append(sv('text', { class: 'hp-idx', x: x + CW / 2, y: ARR_Y - 6, 'text-anchor': 'middle' }, String(i)));
+        svg.append(sv('g', { class: 'hp-cell ' + (used ? cls(i) : 'is-empty'), 'data-i': used ? i : null }, sv('rect', { x, y: ARR_Y, width: CW, height: 32 }), used ? sv('text', { class: 'hp-val', x: x + CW / 2, y: ARR_Y + 21, 'text-anchor': 'middle' }, String(a[i])) : null));
+      }
+      if (f.removed != null) svg.append(sv('text', { class: 'hp-removed', x: 8, y: 18 }, 'removed: ' + f.removed));
+      if (!a.length) svg.append(sv('text', { class: 'hp-idx', x: VW / 2, y: 90, 'text-anchor': 'middle' }, 'empty heap'));
+      svg.setAttribute('aria-label', 'A min-heap of ' + a.length + ' item' + (a.length === 1 ? '' : 's') + ', drawn as a tree and as an array' + (a.length ? ': ' + a.join(', ') : ''));
+      note.textContent = f.note || (a.length ? 'A min-heap: every parent is at most its children. Insert a number, or remove the minimum.' : 'An empty heap. Insert a number.');
+      swapsOut.textContent = 'swaps: ' + f.swaps + ' · items: ' + a.length;
+      back.disabled = fi === 0; fwd.disabled = fi === frames.length - 1; fin.disabled = fi === frames.length - 1;
+      if (fi === frames.length - 1) stop();
+    }
+    function stop() { if (timer) { clearInterval(timer); timer = null; play.textContent = 'Play'; } }
+    function show(fr) { stop(); frames = fr; fi = 0; render(); }
+    const say = (a, text) => show([{ arr: a, hot: [], mover: -1, swaps: 0, done: true, note: text }]);
+    function load(k) { const p = presets[k], a = p.random ? randomHeap() : p.arr.slice(); say(a, a.length ? 'A min-heap of ' + a.length + ' items. Insert a number, or remove the minimum.' : ''); }
+    function insert() {
+      const x = parseInt(val.value, 10);
+      if (!Number.isFinite(x)) return say(base(), 'Type a whole number to insert.');
+      if (base().length >= CAP) return say(base(), 'This picture holds ' + CAP + ' items. Remove one first (a real heap would double its array, as in lesson 1).');
+      show(insertFrames(base(), x));
+    }
+    function removeMin() {
+      if (!base().length) return say([], 'The heap is empty: removeMin() has nothing to give. A real one throws, or returns null.');
+      show(removeFrames(base()));
+    }
+    const ins = el('button', { class: 'btn sm primary', onclick: insert }, 'Insert');
+    const rem = el('button', { class: 'btn sm', onclick: removeMin }, 'Remove min');
+    const back = el('button', { class: 'btn sm', onclick: () => { stop(); fi = Math.max(0, fi - 1); render(); } }, 'Back');
+    const fwd = el('button', { class: 'btn sm primary', onclick: () => { stop(); fi = Math.min(frames.length - 1, fi + 1); render(); } }, 'Step');
+    const play = el('button', { class: 'btn sm', onclick: () => { if (timer) return stop(); if (fi === frames.length - 1) return; play.textContent = 'Pause'; timer = setInterval(() => { fi = Math.min(frames.length - 1, fi + 1); render(); }, 1000); } }, 'Play');
+    const fin = el('button', { class: 'btn sm quiet', onclick: () => { stop(); fi = frames.length - 1; render(); } }, 'Finish');
+    const reset = el('button', { class: 'btn sm quiet', onclick: () => load(parseInt(sel.value, 10)) }, 'Reset');
+    sel.addEventListener('change', () => load(parseInt(sel.value, 10)));
+    val.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); insert(); } });
+    mount.append(svg,
+      el('div', { class: 'fig-tools' }, el('label', {}, 'value ', val), ins, rem, el('label', {}, 'start from ', sel), reset),
+      el('div', { class: 'fig-tools' }, back, fwd, play, fin, swapsOut), note);
+    load(0);
+  };
+
   /* ---------- the directory tree of a shell lesson: click a name to see its paths; "go here" moves the marker ---------- */
   // params: tree (the same shape as a lesson's setup, keys as paths from the home directory), cwd ('~' or '~/x'), the home is /home/student
   W.fstree = function (mount, b) {
