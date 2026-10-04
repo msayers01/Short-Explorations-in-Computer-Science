@@ -19,16 +19,17 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
-      standards: ['2-AP-11', '7.3.6.3'],
+      standards: ['2-AP-11', '7.3.6.3'], standard: 1,
       title: 'Hello, Python', summary: 'What a program is, your first lines of Python, the kinds of values Python works with, and how to give a value a name.',
       blocks: [
-        `<p>In 1843, a century before the first electronic computer, Ada Lovelace published a step-by-step method for a machine that had not been built, Charles Babbage's Analytical Engine, to calculate a sequence of numbers called the Bernoulli numbers. It is often called the first computer program. Everything since, from phone apps to spacecraft, is the same idea: a list of exact instructions for a machine that does precisely what it is told. The language in this course was released in 1991 by Guido van Rossum, who named it not after the snake but after the British comedy show <i>Monty Python's Flying Circus</i>, which is why so many Python examples mention spam.</p>`,
+        `<p>In 1843, a century before the first electronic computer, Ada Lovelace published a step-by-step method for a machine that had not been built, Charles Babbage's Analytical Engine, to calculate a sequence of numbers called the Bernoulli numbers. It is often called the first computer program. Everything since, from phone apps to spacecraft, is the same idea: a list of exact instructions for a machine that does precisely what it is told. The language in this course was released in 1991 by Guido van Rossum, who named it not after the snake but after the British comedy show <i>Monty Python's Flying Circus</i>, which is why so many Python examples mention spam.</p>
+<p>A machine like that cannot guess what you meant. So what do you have to write down, and how, for it to do exactly what you intend?</p>`,
         { photo: ['ada-lovelace', 'lovelace-note-g'], caption: "Ada Lovelace, painted around 1840, and her table from Note G, published in 1843, which lists each operation the Analytical Engine would carry out to compute a Bernoulli number." },
         `<p>A <em>program</em> is a list of instructions written in a language a computer can follow. Python is one such language. It was designed to read almost like English, but there is one big difference from English: the computer follows your instructions <em>exactly</em>, and it follows them in order, from the top line to the bottom. It does not guess what you meant. This lesson is about writing instructions clearly enough that the computer does what you intend.</p>
 <h2>Your first program</h2>
 <p>Below is a complete Python program of two lines. Read it first, and predict what will appear. Then press <b>Run</b>.</p>`,
-        { play: `print("Hello, world!")
-print("I am a program.")`, caption: 'Change the words inside the quotes. Add a third line that prints something else. Run it again after each change.' },
+        { predict: true, play: `print("Hello, world!")
+print("I am a program.")`, caption: 'Two lines, in the order they are written: <code>Hello, world!</code> and then <code>I am a program.</code>. The quotes are not printed; they only mark where the text starts and ends. Change the words inside the quotes, or add a third line that prints something else, and run it again.' },
         `<p>Each line is one <em>instruction</em>, also called a <em>statement</em>. Python carried out line 1, then line 2, and then it was finished. Look at what one line is made of:</p>
 <div class="tbl-wrap"><table>
 <tr><th>piece</th><th>what it is</th></tr>
@@ -40,8 +41,8 @@ print("I am a program.")`, caption: 'Change the words inside the quotes. Add a t
 <details class="reveal"><summary>Predict: what happens if you write <code>print(Hello)</code> with no quotes?</summary><p>Python does not print the word. Without quotes, <code>Hello</code> is not text; it is a <em>name</em>, and Python looks for something called <code>Hello</code>, finds nothing, and stops with the message <code>NameError: name 'Hello' is not defined</code>. Try it in the box above. Errors like this are not damage; they are Python telling you exactly what it could not understand. The next lesson is about reading them.</p></details>
 <h2>Notes to yourself</h2>
 <p>Anything after a <code>#</code> on a line is a <em>comment</em>. Python ignores it completely. Comments are for people: they explain what the code is for, or why it is written the way it is. You will see them in every example in this course.</p>`,
-        { play: `# This whole line is a comment. Nothing happens.
-print("Comments explain code.")   # a comment can also follow an instruction`, caption: 'Both lines run; only one prints anything.' },
+        { predict: true, play: `# This whole line is a comment. Nothing happens.
+print("Comments explain code.")   # a comment can also follow an instruction`, caption: 'Only <code>Comments explain code.</code> appears. Line 1 is all comment, so Python skips it; line 2 runs, and the comment at its end is skipped too. Delete the <code>#</code> from line 1 and see what Python says.' },
         `<h2>Values and their types</h2>
 <p>Everything a program handles is a <em>value</em>: the text <code>"Hello"</code>, the number <code>7</code>, the answer <code>True</code>. Every value belongs to a <em>type</em>, which tells Python what the value is and what can be done with it. You can add two numbers; you cannot sensibly add a number to a piece of text. Four types come up constantly:</p>
 <div class="tbl-wrap"><table>
@@ -52,11 +53,11 @@ print("Comments explain code.")   # a comment can also follow an instruction`, c
 <tr><td><code>bool</code></td><td><code>True</code>, <code>False</code></td><td>yes/no answers (booleans)</td></tr>
 </table></div>
 <p>Two details worth noticing now. <code>2</code> and <code>2.0</code> are different values of different types, even though they are the same number: one is an <code>int</code>, the other a <code>float</code>. And <code>"7"</code> in quotes is text, not a number; it is the character 7, the same kind of thing as <code>"h"</code>. The function <code>type()</code> tells you the type of any value.</p>`,
-        { play: `print(type(7))
+        { predict: true, play: `print(type(7))
 print(type(2.0))
 print(type("7"))
-print(type(True))`, caption: 'Change 7 to "7" on the first line and run again.' },
-        { check: "What is the type of <code>\"7\"</code>, with the quotation marks?", options: ["int, a whole number", "str, a piece of text", "float, a decimal"], answer: 1, why: "Quotation marks make text, even when the characters are digits. <code>\"7\" + 1</code> is an error; <code>7 + 1</code> is 8." },
+print(type(True))`, caption: 'Four lines: <code>&lt;class \'int\'&gt;</code>, <code>&lt;class \'float\'&gt;</code>, <code>&lt;class \'str\'&gt;</code> and <code>&lt;class \'bool\'&gt;</code>. The <code>2.0</code> has a decimal point, so it is a float, and the <code>"7"</code> is in quotes, so it is text. Change 7 to "7" on the first line and run again: the first line changes to str.' },
+        { check: "What is the type of <code>\"7\"</code>, with the quotation marks?", options: ["int, a whole number", "str, a piece of text", "float, a decimal"], answer: 1, wrong: ["Looking like a number is not being one. The quotes make it text, the same kind of thing as <code>\"h\"</code>; <code>7</code> without quotes is the int.", null, "A float needs a decimal point and no quotes, like <code>7.0</code>. Quotes always make a str."], why: "Quotation marks make text, even when the characters are digits. <code>\"7\" + 1</code> is an error; <code>7 + 1</code> is 8." },
         `<h2>Arithmetic</h2>
 <p>Python is a very good calculator. Adding, subtracting and multiplying work as you expect; <code>*</code> is the multiplication sign. Python works out the value of each expression and <code>print</code> shows the result. When you give <code>print</code> several things separated by commas, it prints them on one line with spaces between.</p>`,
         { play: `print(7 + 3)
@@ -69,7 +70,7 @@ print(7 + 3, 7 - 3, 7 * 3)    # three values, one line`, caption: 'Change the nu
 print(7 // 2)
 print(7 % 2)
 print(10 / 2)`, caption: 'Try 17 // 5 and 17 % 5. Then 20 % 4.' },
-        { check: "What does <code>print(10 / 2)</code> show?", options: ["<code>5</code>", "<code>5.0</code>", "<code>5.00</code>"], answer: 1, why: "<code>/</code> always gives a float, even when the division is exact. <code>10 // 2</code> gives the int 5." },
+        { check: "What does <code>print(10 / 2)</code> show?", options: ["<code>5</code>", "<code>5.0</code>", "<code>5.00</code>"], answer: 1, wrong: ["That is the answer from <code>10 // 2</code>. The single slash always gives a float, even when the division is exact, so it shows a decimal part.", null, "Python never pads a float with extra zeros: it shows the shortest form, <code>5.0</code>. Two decimals needs a format you ask for explicitly."], why: "<code>/</code> always gives a float, even when the division is exact. <code>10 // 2</code> gives the int 5." },
         `<p>The remainder operator looks odd at first, but you will use it constantly. <code>n % 2</code> is 0 exactly when <code>n</code> is even. <code>n % 10</code> is the last digit of <code>n</code>. <code>n // 60</code> and <code>n % 60</code> turn seconds into minutes and leftover seconds. One more operator: <code>**</code> means "to the power of", so <code>2 ** 10</code> is 1024.</p>
 <p>Python follows the usual order of operations: powers first, then multiplication, division and remainder, then addition and subtraction, with parentheses overriding everything. <code>2 + 3 * 4</code> is 14, and <code>(2 + 3) * 4</code> is 20. When in doubt, add parentheses; they cost nothing and make your intention clear.</p>
 <h2>Giving a value a name</h2>
@@ -94,7 +95,8 @@ print(apples)`, caption: '7, then 10, then 20. Each line works out the right-han
         { fig: 'names', caption: 'Step through five assignments. Names are labels that can be moved; the values they point at do not change.' },
         `<p>The rules for names: letters, digits and underscores only, no spaces, and a name cannot begin with a digit. Capital letters count as different letters, so <code>Total</code> and <code>total</code> are two different names. Beyond the rules, there is one piece of advice: choose names that say what the value means. <code>price_per_apple</code> is better than <code>p</code>, because you will read your code far more often than you write it, and so will the person helping you find a bug.</p>
 <h2>Asking the person for a value</h2>
-<p>So far every value was typed into the program. <code>input()</code> lets the program ask: it shows a prompt, waits for the person to type something and press Enter, and hands back what they typed. One rule to memorise today, and understand fully in the next lesson: <b>what <code>input()</code> hands back is always a string</b>, even if the person typed digits. To use it as a number, convert it with <code>int()</code> for a whole number or <code>float()</code> for a number with a decimal point.</p>`,
+<p>So far every value was typed into the program. <code>input()</code> lets the program ask: it shows a prompt, waits for the person to type something and press Enter, and hands back what they typed. One rule to memorise today, and understand fully in the next lesson: <b>what <code>input()</code> hands back is always a string</b>, even if the person typed digits. To use it as a number, convert it with <code>int()</code> for a whole number or <code>float()</code> for a number with a decimal point.</p>
+<details class="reveal"><summary>Guess first: the person types <code>1990</code>. Is the result the number 1990 or the text "1990"?</summary><p>The text <code>"1990"</code>. That is why the program below wraps <code>input()</code> in <code>int()</code>: only then can it subtract the year from 2030.</p></details>`,
         { play: `name = input("What is your name? ")
 year = int(input("What year were you born? "))
 print("Hello,", name)
@@ -104,7 +106,7 @@ print("In 2030 you will be about", 2030 - year)`, caption: 'Run it and type your
         { play: `days = int(input("Days: "))
 hours = days * 24
 print(days, "days is", hours, "hours")`, caption: 'Three steps: read and convert, calculate, print. The commas in print put single spaces between the pieces.', testStdin: '3\n' },
-        { check: "After <code>x = 4</code> and then <code>x = x + 2</code>, what is <code>x</code>?", options: ["4, because <code>x = x + 2</code> is a false equation", "6", "An error: a name cannot appear on both sides"], answer: 1, why: "<code>=</code> means \"becomes\": the right side is worked out with the old value (4 + 2), and the name is attached to the result." },
+        { check: "After <code>x = 4</code> and then <code>x = x + 2</code>, what is <code>x</code>?", options: ["4, because <code>x = x + 2</code> is a false equation", "6", "An error: a name cannot appear on both sides"], answer: 1, wrong: ["This reads <code>=</code> as the equals sign of mathematics. It is an instruction: work out the right side first (4 + 2), then attach the name to the result.", null, "The name is allowed on both sides. On the right it means its current value; on the left it is the label being moved. Counters work this way."], why: "<code>=</code> means \"becomes\": the right side is worked out with the old value (4 + 2), and the name is attached to the result." },
         `<p>Notice how the pieces of the last line, joined by commas, produce <code>3 days is 72 hours</code> when the input is 3. Your exercises follow the same three steps.</p>`,
         `<details class="reveal"><summary>Puzzle: without running it, what does this print? <code>x = 3</code>, then <code>x = x * x</code>, then <code>x = x + 1</code>, then <code>print(x, "x")</code></summary><p><code>10 x</code>. The lines run in order, top to bottom. After the first line <code>x</code> is 3; the second works out 3 × 3 = 9 and gives <code>x</code> that value; the third works out 9 + 1 = 10. In the last line, <code>x</code> without quotes is the name, so its value is printed, while <code>"x"</code> in quotes is just the letter x.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> Forgetting the quotes around text: <code>print(Hello)</code> looks for a variable called Hello. Writing <code>Print</code> or <code>PRINT</code>: Python knows only <code>print</code>. Expecting <code>10 / 2</code> to give <code>5</code>: it gives <code>5.0</code>. Reading <code>=</code> as "equals" and then being puzzled by <code>x = x + 1</code>. Forgetting that <code>input()</code> gives text, so <code>input() + 1</code> fails.</p>` },
@@ -117,7 +119,8 @@ print(days, "days is", hours, "hours")`, caption: 'Three steps: read and convert
             solution: `celsius = float(input("Celsius: "))\nfahrenheit = celsius * 9 / 5 + 32\nprint(celsius, "C is", fahrenheit, "F")`,
             hints: ['Multiply celsius by 9, divide by 5, then add 32, and give the result a name such as fahrenheit.', 'print(celsius, "C is", fahrenheit, "F") prints the four pieces with single spaces between them, which is exactly the required format.'],
             tests: [{ stdin: '25', expect: '25.0 C is 77.0 F' }, { stdin: '0', expect: '0.0 C is 32.0 F' }, { stdin: '-40', expect: '-40.0 C is -40.0 F' }, { stdin: '100', expect: '100.0 C is 212.0 F' }],
-            failTip: 'Compare the two outputs character by character: the format must match exactly, including the spaces and the letters C and F.'
+            failTip: 'Compare the two outputs character by character: the format must match exactly, including the spaces and the letters C and F.',
+            followup: 'Go the other way: read a Fahrenheit temperature and print it in Celsius, in the form 77.0 F is 25.0 C. The formula is C = (F - 32) * 5 / 9.'
           }
         },
         {
@@ -127,11 +130,13 @@ print(days, "days is", hours, "hours")`, caption: 'Three steps: read and convert
             starter: `seconds = int(input("Seconds: "))\n`,
             solution: `seconds = int(input("Seconds: "))\nminutes = seconds // 60\nleft = seconds % 60\nprint(seconds, "seconds is", minutes, "minutes and", left, "seconds")`,
             hints: ['seconds // 60 gives the whole minutes; seconds % 60 gives what is left over.', 'Use int(), not float(), so the numbers print without ".0". Then print the six pieces separated by commas.'],
-            tests: [{ stdin: '135', expect: '135 seconds is 2 minutes and 15 seconds' }, { stdin: '60', expect: '60 seconds is 1 minutes and 0 seconds' }, { stdin: '59', expect: '59 seconds is 0 minutes and 59 seconds' }]
+            tests: [{ stdin: '135', expect: '135 seconds is 2 minutes and 15 seconds' }, { stdin: '60', expect: '60 seconds is 1 minutes and 0 seconds' }, { stdin: '59', expect: '59 seconds is 0 minutes and 59 seconds' }],
+            failTip: 'Use int(), not float(), so nothing prints with ".0", and compare your line with the example character by character.',
+            followup: 'Go one step further: for 3725 seconds print 3725 seconds is 1 hours, 2 minutes and 5 seconds. Use // and % twice: first for hours, then for the minutes in what is left.'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
-<li>A program is a list of statements that Python carries out in order, top to bottom. <code>print(...)</code> shows a value; <code>#</code> starts a comment.</li>
+<li>A machine cannot guess what you meant, so a program is a list of exact statements, and Python carries them out in order, top to bottom. <code>print(...)</code> shows a value; <code>#</code> starts a comment.</li>
 <li>Values have types: <code>int</code>, <code>float</code>, <code>str</code>, <code>bool</code>. <code>/</code> always gives a float; <code>//</code> and <code>%</code> give the quotient and remainder.</li>
 <li><code>=</code> means "becomes": work out the right side, then attach the name on the left to it. <code>x = x + 1</code> is an instruction, not an equation.</li>
 <li><code>input()</code> always gives a string; wrap it in <code>int()</code> or <code>float()</code> to get a number.</li>
@@ -140,18 +145,19 @@ print(days, "days is", hours, "hours")`, caption: 'Three steps: read and convert
     },
     /* ================================================================== */
     {
-      standards: ['2-AP-12', '2-AP-17'],
+      standards: ['2-AP-12', '2-AP-17'], standard: 1,
       title: 'How Python reads your program', summary: 'The rules Python applies to every line, the two moments a program can fail, and why the spaces at the start of a line are part of the language.',
       blocks: [
         `<p>"Time flies like an arrow; fruit flies like a banana." Read that twice: in the first half <i>flies</i> is a verb, in the second it is a noun, and <i>like</i> changes meaning too. English is full of sentences a person can read two ways and sorts out from context without noticing. A programming language cannot afford that: every line must have exactly one meaning, fixed by rules.</p>
 <p>People are forgiving readers. If a friend texts you "meet at 7 at the libary" you know what they meant. Python is not a forgiving reader. It has a small set of rules for what a line may look like, and if a line breaks a rule, Python stops and reports the problem rather than guessing. This is frustrating on the first day and a relief ever after: a program that runs at all is a program Python fully understood.</p>
-<p>This lesson collects the rules in one place. Most of them you have already used without being told. Knowing them as rules means that when a program fails, you will recognise which rule was broken.</p>
+<p>This lesson collects the rules in one place. Most of them you have already used without being told. So which rules does Python hold you to, and what exactly happens when a line breaks one?</p>
 <h2>Rule 1: one statement per line, in order</h2>
 <p>Python reads your program from the top. Each line is one statement, and Python finishes one before starting the next. A blank line means nothing at all; use blank lines freely to separate groups of related lines. Spaces <em>inside</em> a line mostly do not matter: <code>print(2+3)</code> and <code>print( 2 + 3 )</code> are the same statement. Spaces at the <em>start</em> of a line are a different matter, and they get their own rule below. The rule is older than Python: in the 1960s a program in the language Fortran was a deck of punched cards, one line of the program on each card.</p>`,
         { photo: 'fortran-card', caption: "One line of a program, on a card. Each column of holes is one character; this card holds the Fortran statement <code>12 PIFRA=(A(JB,37)-A(JB,99))/A(JB,47)</code>. A program was a box of these, read by the computer in order, top card first." },
         `<h2>Rule 2: capitals count</h2>
 <p><code>print</code>, <code>Print</code> and <code>PRINT</code> are three different names to Python, and it knows only the first. The same goes for your own names: <code>total</code> and <code>Total</code> are two different variables, and <code>True</code> must be written with a capital T. This rule is a common source of trouble for people who are used to spell-checkers.</p>
-<h2>Rule 3: text is marked by quotes; brackets come in pairs</h2>
+<details class="reveal"><summary>Guess first: will Python accept <code>Print("hello")</code>, with a capital P?</summary><p>No. <code>Print</code> is not a name Python knows, so it stops with <code>NameError: name 'Print' is not defined</code>. Only the all-lower-case <code>print</code> works.</p></details>
+<h2>Rule 3: quotes and brackets in pairs</h2>
 <p>Text must be wrapped in matching quotes, either <code>"double"</code> or <code>'single'</code>, and the two ends must match. Every opening parenthesis <code>(</code> needs a closing <code>)</code> on the same line. Python counts them. A missing quote or bracket is the single most common reason a beginner's program refuses to run.</p>
 <h2>The two moments a program can fail</h2>
 <p>This is the most useful idea in the lesson. Python deals with your program in two stages, and a mistake can be caught at either one.</p>
@@ -165,7 +171,7 @@ print("But this one is missing a quote)`, caption: 'Notice what does not appear:
 print("So does this one.")
 print(total)
 print("This line is never reached.")`, caption: 'Two lines print, then Python stops: total was never given a value.', expectError: true },
-        { check: "A program has a missing closing quote on line 8 and a misspelt variable name on line 3. What happens when you run it?", options: ["Lines 1 and 2 run, then the NameError on line 3 stops it", "Nothing runs: the SyntaxError on line 8 is reported first", "Both errors are reported together"], answer: 1, why: "Python reads the whole program before running any of it. A syntax error is found at the reading stage, so no line runs at all." },
+        { check: "A program has a missing closing quote on line 8 and a misspelt variable name on line 3. What happens when you run it?", options: ["Lines 1 and 2 run, then the NameError on line 3 stops it", "Nothing runs: the SyntaxError on line 8 is reported first", "Both errors are reported together"], answer: 1, wrong: ["This pictures Python running line by line from the start. It reads the whole program first, so it finds the line 8 syntax error before running line 1.", null, "Python stops at the first problem it meets, so you see one error at a time. And the NameError cannot even happen until the program reads correctly."], why: "Python reads the whole program before running any of it. A syntax error is found at the reading stage, so no line runs at all." },
         `<p><code>NameError: name 'total' is not defined</code>: a name was used that has no value. That happens with a typo in a name, with <code>Print</code> for <code>print</code>, with a forgotten quote around text (<code>print(Hello)</code>), or, most often later on, with a variable you meant to set earlier and did not. You will meet more kinds of runtime error as the course goes on; the lesson on finding and fixing bugs (Lesson 8) is about hunting them systematically. For now, the two-stage picture is what to hold on to.</p>
 <div class="tbl-wrap"><table>
 <tr><th>when</th><th>error looks like</th><th>meaning</th><th>what ran</th></tr>
@@ -200,17 +206,17 @@ print("this should be indented")`, caption: 'Add four spaces at the start of lin
         { play: `if True:
     print("four spaces")
    print("three spaces")`, caption: 'Make line 3 start with four spaces, like line 2.', expectError: true },
-        { check: "Which line ends a block?", options: ["The first line that is indented less than the block", "A line containing <code>end</code>", "A blank line"], answer: 0, why: "The block is the lines indented under the colon line. It ends where the indentation stops; blank lines do not matter." },
+        { check: "Which line ends a block?", options: ["The first line that is indented less than the block", "A line containing <code>end</code>", "A blank line"], answer: 0, wrong: [null, "Python has no <code>end</code> marker; that is how other languages close a block. Here the shape of the indentation does the job.", "Blank lines mean nothing to Python, so they cannot end a block. Only a line that is indented less does."], why: "The block is the lines indented under the colon line. It ends where the indentation stops; blank lines do not matter." },
         `<p>Two habits prevent nearly all of these. Always use exactly four spaces per level; the editor on this page inserts them when you press Tab, and it indents the next line for you after a colon. And never mix tabs with spaces: they can look identical on the screen and be different to Python.</p>
 <h2>Mixing text and numbers</h2>
 <p>One more rule, and it is about types rather than spelling. Remember from Lesson 1 that every value has a type. <code>+</code> means "add" for numbers and "join" for strings, but Python refuses to do either between a string and a number, because it will not guess which you wanted.</p>`,
         { play: `apples = 7
 print("Apples: " + apples)`, caption: 'This is a TypeError, caught at the running stage. Read the message, then look at the fixes below.', expectError: true },
         `<p>There are three good fixes, and you will use all of them.</p>`,
-        { play: `apples = 7
+        { predict: true, play: `apples = 7
 print("Apples:", apples)               # 1. commas: print adds a space between pieces
 print("Apples: " + str(apples))         # 2. str() turns the number into text, then + joins
-print(f"Apples: {apples}, next: {apples + 1}")   # 3. an f-string`, caption: 'Three lines, three ways. Look closely at the spacing each one produces.' },
+print(f"Apples: {apples}, next: {apples + 1}")   # 3. an f-string`, caption: 'The first two lines print the same thing, <code>Apples: 7</code>: the comma puts in the space itself, while in line 2 the space is part of the text before the <code>+</code>. The third prints <code>Apples: 7, next: 8</code>, because everything in braces is calculated and dropped into the text. Delete the space after the colon in line 2 and watch the two lines stop matching.' },
         `<p>The third form is an <em>f-string</em>: a string with the letter <code>f</code> in front of the opening quote. Inside it, anything in curly braces <code>{ }</code> is calculated and its result is dropped into the text at that spot. It can hold a name, or a whole expression such as <code>apples + 1</code>. f-strings give you exact control over spacing and punctuation, which the comma form does not, so they are the usual choice when a line must be formatted precisely.</p>
 <p>This is also the real reason behind the rule about <code>input()</code> from Lesson 1. Whatever the person types is text, so <code>input()</code> hands you a <code>str</code>. If you then write <code>age + 1</code>, that is a string plus a number: a <code>TypeError</code>. <code>int(input(...))</code> converts the text to a number first.</p>`,
         { play: `age = input("How old are you? ")
@@ -223,7 +229,7 @@ print(f"Next year you will be {int(age) + 1}")`, caption: 'The first print shows
 count = int(input("How many books? "))
 print(f"{name} has {count} books.")
 print(f"After buying two more: {count + 2}.")`, caption: 'Everything inside { } is calculated; everything outside is copied exactly, including the full stop.', testStdin: 'Ada\n4\n' },
-        { check: "<code>age = 12</code>. Which line prints <code>Age: 12</code> without an error?", options: ["<code>print(\"Age: \" + age)</code>", "<code>print(\"Age:\", age)</code>", "<code>print(\"Age: \" age)</code>"], answer: 1, why: "A comma in print joins pieces of any type with a space. <code>+</code> cannot join text to a number; you would need <code>str(age)</code> or an f-string." },
+        { check: "<code>age = 12</code>. Which line prints <code>Age: 12</code> without an error?", options: ["<code>print(\"Age: \" + age)</code>", "<code>print(\"Age:\", age)</code>", "<code>print(\"Age: \" age)</code>"], answer: 1, wrong: ["This tries to join text and a number with <code>+</code>, which Python refuses: a TypeError. You would need <code>str(age)</code>.", null, "Two pieces side by side need something between them: a comma or a <code>+</code>. With nothing there it is a SyntaxError."], why: "A comma in print joins pieces of any type with a space. <code>+</code> cannot join text to a number; you would need <code>str(age)</code> or an f-string." },
         `<details class="reveal"><summary>Puzzle: a four-line program has a missing closing bracket on line 3. Lines 1 and 2 are <code>print("one")</code> and <code>print("two")</code>. What appears when you press Run?</summary><p>Only the error message. Python reads the whole program before running any of it, so a syntax error anywhere means nothing runs at all, not even the correct lines above it. A runtime error is different: the lines before it do run, and only then does the program stop.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> Reading the error message's line number and then not looking at that line. Fixing the second error before the first. Indenting a line "to make it look nicer": in Python that changes the meaning. Forgetting the colon at the end of an <code>if</code> line. Forgetting the <code>f</code> in front of an f-string, so the braces are printed as they are. Adding text to a number with <code>+</code> instead of using commas, <code>str()</code> or an f-string.</p>` },
         {
@@ -237,7 +243,8 @@ Next year you will be 37.</code></pre>
             solution: `name = input("Name: ")\nage = int(input("Age: "))\nprint("Hello, " + name + "!")\nprint("Next year you will be " + str(age + 1) + ".")\n`,
             hints: ['The first error reported is the syntax error, because Python reads the whole program before running it. Look at the quotes on the last line, and at how that line starts.', 'Once the program reads, it will fail while running: Python does not know a function called Print. Then age + 1 must be turned into text before it can be joined, or use an f-string.'],
             tests: [{ stdin: 'Ada\n36', expect: 'Hello, Ada!\nNext year you will be 37.' }, { stdin: 'Grace\n9', expect: 'Hello, Grace!\nNext year you will be 10.' }],
-            failTip: 'Read the first error message and go to that line number. Fix one thing, then run again.'
+            failTip: 'Read the first error message and go to that line number. Fix one thing, then run again.',
+            followup: 'Rewrite the last line with an f-string instead of str() and +, and check that the output is exactly the same.'
           }
         },
         {
@@ -252,11 +259,12 @@ Total: 2.0</code></pre>
             hints: ['The first line is f"{quantity} x {item} at {price} each": the letter x and the words are copied exactly, the braces are filled in.', 'The total is quantity * price, and it can go straight inside the braces: f"Total: {quantity * price}".'],
             tests: [{ stdin: 'pencil\n0.5\n4', expect: '4 x pencil at 0.5 each\nTotal: 2.0' }, { stdin: 'notebook\n2.25\n3', expect: '3 x notebook at 2.25 each\nTotal: 6.75' }, { stdin: 'eraser\n1.0\n1', expect: '1 x eraser at 1.0 each\nTotal: 1.0' }],
             mustContain: [{ re: /f["']/, msg: 'Build the lines with f-strings: put the letter f before the opening quote.' }],
-            failTip: 'Compare your output with the expected output character by character, including the spaces around x and at.'
+            failTip: 'Compare your output with the expected output character by character, including the spaces around x and at.',
+            followup: 'Add a third line that takes 1.0 off the total, for example Discounted: 1.0 for the pencil example. Then try the same line with commas in print instead of an f-string and see what differs.'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
-<li>One statement per line, in order; capitals count; quotes and brackets must match.</li>
+<li>The rules Python holds you to: one statement per line, in order; capitals count; quotes and brackets must match; indentation is meaning. A line that breaks one makes Python stop and report it, never guess.</li>
 <li>A <code>SyntaxError</code> is found while <em>reading</em> and nothing runs. A runtime error such as <code>NameError</code> or <code>TypeError</code> happens while <em>running</em>, after the lines above it have run.</li>
 <li>A line ending in a colon opens a block; the block is the lines indented under it by four spaces; it ends where the indentation stops. Indentation is meaning, not decoration.</li>
 <li>Text and numbers cannot be joined with <code>+</code>. Use commas in <code>print</code>, <code>str()</code>, or an f-string, and convert <code>input()</code> with <code>int()</code> or <code>float()</code>.</li>
@@ -265,10 +273,10 @@ Total: 2.0</code></pre>
     },
     /* ================================================================== */
     {
-      standards: ['2-AP-12', '3A-AP-15'],
+      standards: ['2-AP-12', '3A-AP-15'], standard: 1,
       title: 'Making decisions', summary: 'True and False, comparisons, if, elif and else, combining conditions with and, or and not, and the order in which Python checks them.',
       blocks: [
-        `<p>Every time you press a button in a game, the program asks questions. Is the player touching the ground? Is there a wall to the left? Has the timer run out? A fast game asks thousands of such questions every second, and what happens next depends on each answer. Those yes-or-no questions, and the choices that follow them, are this lesson.</p>`,
+        `<p>Every time you press a button in a game, the program asks questions. Is the player touching the ground? Is there a wall to the left? Has the timer run out? A fast game asks thousands of such questions every second, and what happens next depends on each answer. Those yes-or-no questions, and the choices that follow them, are this lesson. So how do you ask a yes-or-no question in Python, and how does a program choose what to do with the answer?</p>`,
         { photo: 'minetest', caption: "Minetest, a free game of blocks much like Minecraft. Can the player walk forward, or is a tree in the way? Is the block underfoot solid, or water? Every step in a game like this is decided by questions like these." },
         `
 <p>So far every program ran the same lines every time. Real programs <em>branch</em>: they do one thing in one situation and something else in another. A thermostat turns the heat on or off, a game checks whether you have won, a website checks whether your password is right. Each of these asks a question with a yes-or-no answer and then chooses what to do. This lesson is about both halves: asking the question, and choosing.</p>
@@ -289,7 +297,8 @@ print(passed)`, caption: 'True, False, True, False, True, and then True again. T
 <h2>Choosing: if and else</h2>
 <div class="stmt"><p><span class="kind">Rule (if).</span> <code>if <i>condition</i>:</code> followed by an indented block runs the block when the condition is <code>True</code> and skips it when it is <code>False</code>.</p>
 <p><span class="kind">Rule (else).</span> An <code>if</code> block may be followed by <code>else:</code> and a second indented block, which runs exactly when the condition was <code>False</code>. Exactly one of the two blocks runs.</p></div>
-<p>This is Lesson 2's indentation rule at work: the line ending in a colon opens a block, and the indented lines under it are the block. With a real condition in place of Lesson 2's <code>True</code> and <code>False</code>, the program now decides for itself which block runs.</p>`,
+<p>This is Lesson 2's indentation rule at work: the line ending in a colon opens a block, and the indented lines under it are the block. With a real condition in place of Lesson 2's <code>True</code> and <code>False</code>, the program now decides for itself which block runs.</p>
+<details class="reveal"><summary>Guess first: in the program below, which lines print if the person types <code>9</code>?</summary><p>"Come back when you are 13." and then "Thanks for visiting.": 9 &gt;= 13 is <code>False</code>, so the <code>else</code> block runs instead of the first block. The last line is outside both blocks, so it always prints.</p></details>`,
         { play: `age = int(input("How old are you? "))
 
 if age >= 13:
@@ -299,11 +308,11 @@ else:
     print("Come back when you are 13.")
 
 print("Thanks for visiting.")`, testStdin: '15\n', caption: 'Run it with 15, then with 9, then with exactly 13. The last line is outside both blocks, so it runs every time.' },
-        { check: "What is wrong with <code>if x = 5:</code>?", options: ["Nothing: it checks whether x is 5", "A single <code>=</code> stores a value and cannot be a question; it needs <code>==</code>", "It should be <code>if x = 5 then</code>"], answer: 1, why: "<code>=</code> assigns, <code>==</code> compares. Python refuses the single <code>=</code> with a SyntaxError." },
+        { check: "What is wrong with <code>if x = 5:</code>?", options: ["Nothing: it checks whether x is 5", "A single <code>=</code> stores a value and cannot be a question; it needs <code>==</code>", "It should be <code>if x = 5 then</code>"], answer: 1, wrong: ["This reads <code>=</code> as \"equals\", the way it works in maths. In Python <code>=</code> stores a value; the question \"are these equal?\" is <code>==</code>.", null, "<code>then</code> belongs to other languages. Python ends the line with a colon and indents the block; and the single <code>=</code> would still be wrong."], why: "<code>=</code> assigns, <code>==</code> compares. Python refuses the single <code>=</code> with a SyntaxError." },
         `<p>Because the comparison is <code>&gt;=</code>, an age of exactly 13 joins. Had it been <code>&gt;</code>, 13 would have been turned away. When you write a condition, always ask what happens <em>at</em> the boundary.</p>
 <h2>More than two choices: elif</h2>
 <div class="stmt"><p><span class="kind">Rule (elif).</span> Between the <code>if</code> and the <code>else</code> you may put any number of <code>elif <i>condition</i>:</code> blocks ("else if"). Python checks the conditions from the top, one at a time, and runs the block of the <em>first</em> one that is <code>True</code>. Then it skips everything else in the chain, even if later conditions are also true. If none is <code>True</code>, the <code>else</code> block runs; if there is no <code>else</code>, nothing runs.</p></div>`,
-        { play: `temperature = 31
+        { predict: true, play: `temperature = 31
 
 if temperature > 30:
     print("Hot.")
@@ -315,15 +324,15 @@ elif temperature > 10:
 else:
     print("Cold.")
 
-print("This line runs no matter what.")`, caption: 'Change the temperature to 25, 15, 30 and -5, predicting each time. Exactly one branch runs.' },
-        { check: "In an <code>if … elif … else</code> chain, how many of the blocks run?", options: ["Every block whose condition is True", "Exactly one: the first whose condition is True, or else", "All of them, in order"], answer: 1, why: "Python checks from the top and runs the first true branch, then skips the rest of the chain, even if later conditions are also true." },
+print("This line runs no matter what.")`, caption: 'Three lines: <code>Hot.</code>, <code>Drink water.</code> and the last line. 31 &gt; 30 is True, so the first block runs and Python skips the rest of the chain, even though 31 &gt; 20 is true too. Change the temperature to 25, 15, 30 and -5, predicting each time: exactly one branch runs.' },
+        { check: "In an <code>if … elif … else</code> chain, how many of the blocks run?", options: ["Every block whose condition is True", "Exactly one: the first whose condition is True, or else", "All of them, in order"], answer: 1, wrong: ["That is true of separate <code>if</code> statements, but not of a chain. After the first true branch runs, Python skips the other <code>elif</code> and <code>else</code> blocks.", null, "A chain is a choice, not a list. Only one block runs, so the later ones are skipped even when their conditions would be true."], why: "Python checks from the top and runs the first true branch, then skips the rest of the chain, even if later conditions are also true." },
         `<p>Follow it for 31. The first condition, 31 &gt; 30, is <code>True</code>, so "Hot." and "Drink water." are printed, and Python jumps straight past the rest of the chain. It never checks 31 &gt; 20, although that is true too. Now follow 25: the first condition is <code>False</code>, the second is <code>True</code>, so "Pleasant." is printed. That second condition does not need to say "and not above 30", because it is only ever checked when the first one was <code>False</code>.</p>
-<details class="reveal"><summary>Predict: if the chain checked <code>temperature &gt; 10</code> first, what would 31 print?</summary><p>"Bring a jacket." 31 &gt; 10 is <code>True</code>, it is the first true condition, and the rest are skipped. In fact "Hot." could then never be printed, for any temperature. When the conditions overlap, put the hardest one to satisfy first and the catch-all <code>else</code> last.</p></details>
-<h2>Combining conditions: and, or, not</h2>
+<details class="reveal"><summary>Predict: if the chain checked <code>temperature &gt; 10</code> first, what would 31 print?</summary><p>"Bring a jacket." 31 &gt; 10 is <code>True</code>, it is the first true condition, and the rest are skipped. In fact "Hot." could then never be printed, for any temperature. When the conditions overlap, put the hardest one to satisfy first and the catch-all <code>else</code> last.</p></details>`,
+        `<h2>Combining conditions: and, or, not</h2>
 <div class="stmt"><p><span class="kind">Rule (and, or, not).</span> <code>a and b</code> is <code>True</code> when both are <code>True</code>. <code>a or b</code> is <code>True</code> when at least one is <code>True</code>, including when both are. <code>not a</code> is <code>True</code> when <code>a</code> is <code>False</code>. Without brackets, <code>not</code> is applied first, then <code>and</code>, then <code>or</code>; use brackets whenever you mix them.</p>
 <p><span class="kind">Rule (short circuit).</span> Python works out <code>and</code> and <code>or</code> from left to right and stops as soon as it knows the answer: if the left side of <code>and</code> is <code>False</code>, or the left side of <code>or</code> is <code>True</code>, the right side is never looked at.</p></div>
 <p>Python also lets you chain comparisons the way mathematicians write them: <code>3 &lt;= x &lt;= 10</code> means <code>3 &lt;= x and x &lt;= 10</code>. (Many other languages, C++ among them, do not allow this, so you will see the long form a lot.) Predict the five lines.</p>`,
-        { play: `x = 7
+        { predict: true, play: `x = 7
 print(x > 5 and x < 10)
 print(x < 5 or x == 7)
 print(not x > 5)
@@ -341,13 +350,13 @@ if x == 1 or x == 2:
     print("right version says yes")
 else:
     print("right version says no")`, caption: 'x is 5, and yet the first version says yes. Python reads it as (x == 1) or (2), and 2 on its own counts as True (the next section explains why). Always repeat the comparison: x == 1 or x == 2.' },
-        { check: "<code>x = 7</code>. What does <code>x == 1 or x == 2</code> give, and what does <code>x == 1 or 2</code> give?", options: ["False and False", "False and 2 (which counts as True)", "True and True"], answer: 1, why: "Each side of <code>or</code> is a separate expression. <code>x == 1 or 2</code> is <code>False or 2</code>, which is 2, and any non-zero number counts as True." },
+        { check: "<code>x = 7</code>. What does <code>x == 1 or x == 2</code> give, and what does <code>x == 1 or 2</code> give?", options: ["False and False", "False and 2 (which counts as True)", "True and True"], answer: 1, wrong: ["This reads <code>x == 1 or 2</code> the way English does, as \"x is 1 or 2\". Python takes the <code>2</code> as a whole condition of its own, and 2 counts as True.", null, "x is 7, so <code>x == 1 or x == 2</code> is False: neither comparison is true. Only the version with the lone <code>2</code> goes wrong."], why: "Each side of <code>or</code> is a separate expression. <code>x == 1 or 2</code> is <code>False or 2</code>, which is 2, and any non-zero number counts as True." },
         `<h2>Any value can be a condition</h2>
 <div class="stmt"><p><span class="kind">Rule (truth of other values).</span> When a value that is not <code>True</code> or <code>False</code> is used as a condition, Python treats <code>0</code>, <code>0.0</code>, the empty string <code>""</code> and a few other "empty" values as <code>False</code>, and every other value as <code>True</code>.</p></div>
 <p>This is why <code>2</code> counted as <code>True</code> above. It is also handy on purpose: <code>if name:</code> means "if the name is not empty". While you are learning, prefer writing the comparison out, <code>if name != "":</code>, so that the condition says exactly what you mean.</p>
 <h2>Blocks inside blocks</h2>
 <p>A block can contain another <code>if</code>. The inner one's block is indented one more level, four more spaces, and it is only reached when the outer condition was <code>True</code>. A <code>bool</code> variable can be used as a condition directly, as <code>raining</code> is here.</p>`,
-        { play: `day = "Saturday"
+        { predict: true, play: `day = "Saturday"
 raining = True
 
 if day == "Saturday" or day == "Sunday":
@@ -356,13 +365,14 @@ if day == "Saturday" or day == "Sunday":
     else:
         print("Weekend: go to the park.")
 else:
-    print("School day.")`, caption: 'Change raining to False, then change day to "Monday". The inner if/else is only checked on a weekend. Which else belongs to which if? Look at which column each one starts in.' },
+    print("School day.")`, caption: 'One line: <code>Weekend: read a book.</code> It is Saturday, so the outer condition is True and Python goes inside; <code>raining</code> is True, so the inner <code>if</code> block runs. Change raining to False, then change day to "Monday": the inner if/else is only checked on a weekend. Which else belongs to which if? Look at which column each one starts in.' },
         `<p>Each <code>else</code> belongs to the <code>if</code> in the same column above it. The indentation is the only thing that says so, which is why Lesson 2 made such a point of it. Nesting more than two or three levels deep gets hard to read; often <code>and</code> or <code>elif</code> can flatten it.</p>
 <h2>Two mistakes Python catches for you</h2>
 <p>Both of these are syntax errors, found while Python is reading, so nothing runs (Lesson 2's first stage). Run each, read the message, and fix it.</p>`,
         { play: `x = 5
 if x = 5:
     print("five")`, expectError: true, caption: 'One = inside an if. Python refuses, because = stores a value and cannot be a question. Change it to ==.' },
+        `<p>The second mistake is a forgotten colon.</p>`,
         { play: `x = 5
 if x > 3
     print("big")`, expectError: true, caption: 'The colon is missing at the end of line 2, so Python does not know a block is starting. Add the colon.' },
@@ -396,7 +406,7 @@ else:
             tests: [{ stdin: '2024', expect: 'leap' }, { stdin: '1900', expect: 'not leap' }, { stdin: '2000', expect: 'leap' }, { stdin: '2023', expect: 'not leap' }, { stdin: '2100', expect: 'not leap' }, { stdin: '2400', expect: 'leap' }],
             mustNotContain: [{ re: /\belif\b/, msg: 'Use a single if/else with one combined condition, no elif, for this one.' }],
             failTip: 'Check 1900 and 2000 by hand against your condition. Both are divisible by 4 and by 100; only 2000 is divisible by 400.',
-            followup: 'The brackets are not strictly needed, because and is applied before or, but they make the condition read the way the rule is said. Keep them.'
+            followup: 'The brackets are not strictly needed, because and is applied before or, but they make the condition read the way the rule is said. Keep them. Then write the same test again as an if/elif/else chain with no and or or, checking 400 first, then 100, then 4.'
           }
         },
         {
@@ -407,11 +417,12 @@ else:
             solution: `score = int(input("Score: "))\nif score >= 90:\n    print("A")\nelif score >= 80:\n    print("B")\nelif score >= 70:\n    print("C")\nelif score >= 60:\n    print("D")\nelse:\n    print("F")`,
             hints: ['Test the highest boundary first: if score >= 90 … elif score >= 80 … and so on.', 'Because earlier branches catch the higher scores, each elif only needs a lower bound, just like the ticket example.'],
             tests: [{ stdin: '95', expect: 'A' }, { stdin: '100', expect: 'A' }, { stdin: '90', expect: 'A' }, { stdin: '89', expect: 'B' }, { stdin: '70', expect: 'C' }, { stdin: '65', expect: 'D' }, { stdin: '60', expect: 'D' }, { stdin: '59', expect: 'F' }, { stdin: '12', expect: 'F' }],
-            failTip: 'Check the boundary scores 90, 60 and 59: >= includes the boundary itself, > does not.'
+            failTip: 'Check the boundary scores 90, 60 and 59: >= includes the boundary itself, > does not.',
+            followup: 'Add plus and minus grades: in the B, C and D bands, a last digit of 7, 8 or 9 gets a + and a last digit of 0, 1 or 2 gets a - (so 78 is C+ and 80 is B-). Use n % 10 for the last digit, and think about which tests must come first.'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
-<li>A comparison (<code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>) gives <code>True</code> or <code>False</code>. <code>==</code> asks; <code>=</code> stores.</li>
+<li>A yes-or-no question is a comparison (<code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>), which gives <code>True</code> or <code>False</code>; the program chooses with <code>if</code>. <code>==</code> asks; <code>=</code> stores.</li>
 <li><code>if</code> runs its block when the condition is <code>True</code>; <code>else</code> runs when it is <code>False</code>.</li>
 <li>In an <code>if</code>/<code>elif</code>/<code>else</code> chain only the first true branch runs, so put overlapping conditions hardest-first.</li>
 <li><code>and</code>, <code>or</code>, <code>not</code> combine conditions and stop as soon as the answer is known. Each side of <code>or</code> must be a whole condition.</li>
