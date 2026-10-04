@@ -29,19 +29,20 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
-      standards: ['2-AP-10', '2-AP-11'],
+      standards: ['2-AP-10', '2-AP-11'], standard: 1,
       title: 'Say it in Python', summary: 'You already know how to program. This lesson shows how to type it: say becomes print, ask becomes input, and the computer tells you when you make a typo.',
       blocks: [
         `<p>Here is a secret. You already know how to program. You learned it in Scratch. Every idea in this course is one you have used before: say, ask, variables, repeat, if. The only new thing is how to <em>spell</em> them.</p>
 <p>Scratch was made at MIT, near Boston, by a team called Lifelong Kindergarten. It went online in 2007. The name comes from DJs: <em>scratching</em> is mixing bits of records together. Scratch lets you mix bits of programs. The blocks snap together, so you can never make a spelling mistake. That was the whole idea.</p>`,
         { photo: 'scratch-editor', caption: 'The Scratch editor. The blocks wait on the left. The script is in the middle. When the flag is clicked, the dinosaur plays a sound. The stage is on the right.' },
         `<p>Python is older. A Dutch programmer, Guido van Rossum, started it as a holiday project at Christmas 1989. He named it after the comedy group Monty Python, because he wanted a language that was fun. Python has no blocks. You type. And when you type, you can make spelling mistakes. Luckily, Python tells you where.</p>
+<p>So what is the Python for a block you drag? That is today's question.</p>
 <h2>A program is a list of instructions</h2>
 <p>In Scratch, a script is a stack of blocks. The sprite does them from top to bottom. In Python, a program is a list of lines. The computer does them from top to bottom. Same thing, different clothes. Here is the first script everyone makes, both ways.</p>`,
         { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['looks', 'say [Hello!]'], ['looks', 'say [I am a Python program.]']], python: 'print("Hello!")\nprint("I am a Python program.")', caption: 'The green flag is the Run button. Python has no when-green-flag block: the program just starts at the top. say becomes print, and the words go in quotation marks instead of a white box.' },
         { play: `print("Hello!")
-print("I am a Python program.")`, caption: 'Press Run. Then change the words, add a third print line, and run again. Each print is one say block.' },
-        { check: "Which line is the Python for <code>say [Good morning]</code>?", options: ["<code>print(Good morning)</code>", "<code>print(\"Good morning\")</code>", "<code>say(\"Good morning\")</code>"], answer: 1, why: "say is print, and the words to show go in quotation marks inside the brackets." },
+print("I am a Python program.")`, predict: true, caption: 'Two lines, because there are two print lines. The computer did them from the top, one after the other. Now change the words, add a third print line, and run again. Each print is one say block.' },
+        { check: "Which line is the Python for <code>say [Good morning]</code>?", options: ["<code>print(Good morning)</code>", "<code>print(\"Good morning\")</code>", "<code>say(\"Good morning\")</code>"], answer: 1, why: "say is print, and the words to show go in quotation marks inside the brackets.", wrong: ["Without quotation marks, Python looks for a variable called Good. It does not see words to show.", null, "say is a Scratch word. Python's word for it is print."] },
         `<div class="stmt"><p><span class="kind">Rule 1.</span> One line is one block. The computer does the lines in order, from the top.</p>
 <p><span class="kind">Rule 2.</span> Words to show go inside quotation marks: <code>"like this"</code>. The quotation marks are the white box of a say block. They are not printed.</p>
 <p><span class="kind">Rule 3.</span> Spelling counts. So do capital letters. <code>print</code> works; <code>Print</code> and <code>pirnt</code> do not. In Scratch the blocks spelled themselves. Now you do.</p></div>
@@ -50,7 +51,7 @@ print("I am a Python program.")`, caption: 'Press Run. Then change the words, ad
         { play: `print("This line is fine")
 prnt("This line has a typo")
 print("This line never runs")`, expectError: true, caption: 'The message ends with: NameError: name \'prnt\' is not defined on line 2. Python does not know a block called prnt. Fix the spelling and run again. Now all three lines print.' },
-        { check: "A program has a typo on line 2 of 3. What prints?", options: ["Nothing at all", "Line 1, then an error message naming line 2", "Lines 1 and 3, skipping the bad one"], answer: 1, why: "Python runs the lines in order. Line 1 prints, line 2 stops the program with a NameError, and line 3 never runs." },
+        { check: "A program has a typo on line 2 of 3. What prints?", options: ["Nothing at all", "Line 1, then an error message naming line 2", "Lines 1 and 3, skipping the bad one"], answer: 1, why: "Python runs the lines in order. Line 1 prints, line 2 stops the program with a NameError, and line 3 never runs.", wrong: ["Line 1 is fine, so it runs and prints before Python reaches the typo.", null, "Python does not skip a bad line. It stops there, so line 3 never runs."] },
         `<p>Three complaints you will meet in this lesson, and what they mean:</p>
 <div class="tbl-wrap"><table>
 <tr><th>the message says</th><th>what happened</th><th>the fix</th></tr>
@@ -65,7 +66,7 @@ print("This line never runs")`, expectError: true, caption: 'The message ends wi
         { play: `name = input("What is your name? ")
 print("Hello, " + name)
 print("Nice to meet you, " + name + "!")`, caption: 'When you run it, a box appears in the output asking for your name. Type it and press Enter. Notice the space inside "Hello, ". The + glues the pieces exactly as they are, with no space of its own.' },
-        { check: "<code>name = \"Zoe\"</code>. What does <code>print(\"Hi,\" + name)</code> show?", options: ["<code>Hi, Zoe</code>", "<code>Hi,Zoe</code>", "<code>Hi, name</code>"], answer: 1, why: "+ glues the pieces exactly as they are. There is no space inside \"Hi,\", so none appears. Write \"Hi, \" with the space." },
+        { check: "<code>name = \"Zoe\"</code>. What does <code>print(\"Hi,\" + name)</code> show?", options: ["<code>Hi, Zoe</code>", "<code>Hi,Zoe</code>", "<code>Hi, name</code>"], answer: 1, why: "+ glues the pieces exactly as they are. There is no space inside \"Hi,\", so none appears. Write \"Hi, \" with the space.", wrong: ["The + adds no space of its own. Only the spaces you type inside the quotes show up.", null, "name has no quotation marks, so it is the variable. Python shows what is stored in it: Zoe."] },
         `<div class="stmt"><p><span class="kind">Rule 4.</span> <code>name = input("…")</code> asks the question and keeps the answer under the name <code>name</code>. You choose the name, just like making a variable in Scratch.</p>
 <p><span class="kind">Rule 5.</span> <code>+</code> between two pieces of text is the <code>join</code> block. Put the spaces you want inside the quotes.</p></div>
 <h2>Your sprite is a turtle</h2>
@@ -114,7 +115,7 @@ turtle.done()`, caption: 'Run it and watch the canvas. Add one more t.right(90) 
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
-<li>A Python program is a list of lines, done from the top, like a stack of blocks. Run is the green flag.</li>
+<li>The question was: what is the Python for a block you drag? Each block is one line you type, and the lines run from the top, like a stack. Run is the green flag.</li>
 <li><code>say</code> is <code>print("…")</code>. Words to show go in quotation marks. Spelling and capitals count.</li>
 <li>An error message names the line and the problem. Read it, fix the line, run again.</li>
 <li><code>ask and wait</code> is <code>name = input("…")</code>, and <code>join</code> is <code>+</code>.</li>
@@ -124,12 +125,13 @@ turtle.done()`, caption: 'Run it and watch the canvas. Add one more t.right(90) 
     },
     /* ================================================================== */
     {
-      standards: ['2-AP-11'],
+      standards: ['2-AP-11'], standard: 1,
       title: 'Keeping score: variables', summary: 'set and change become =, numbers and words are different kinds of thing, the maths blocks become symbols, and a program keeps a score.',
       blocks: [
-        `<p>In 1972 a young engineer called Allan Alcorn built a game for a brand-new company, Atari. Two paddles, a ball, and two numbers at the top of the screen. The game was <em>Pong</em>. The numbers were the score. The first machine went into a bar in California. Within days it stopped working. The coin box was full.</p>`,
+        `<p>In 1972 a young engineer called Allan Alcorn built a game for a brand-new company, Atari. Two paddles, a ball, and two numbers at the top of the screen. The game was <em>Pong</em>. The numbers were the score. The story goes that the first machine went into a bar in California. Within days it stopped working, because the coin box was full.</p>`,
         { photo: 'pong-cabinet', caption: 'A Pong machine in a museum. Allan Alcorn signed it by the name. Players turned the two knobs. Coins went in the slot below.' },
         `<p>The score was not a small detail. Keeping count of something, and showing it, is the heart of almost every game. In Scratch, a score lives in a variable. You <code>set</code> it to 0 when the game starts. You <code>change</code> it by 1 when something good happens. Python has variables too. You used one in the last lesson: <code>name</code>. This lesson uses them for numbers. It also shows the one trap that catches everyone who comes from Scratch.</p>
+<p>So how does a program keep a score? And what is the trap?</p>
 <h2>Set and change</h2>`,
         { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['variables', 'set [score] to (0)'], ['variables', 'change [score] by (1)'], ['variables', 'change [score] by (10)'], ['looks', 'say (score)']], python: 'score = 0\nscore = score + 1\nscore = score + 10\nprint(score)', caption: 'set is =. There is no change block. Instead you set the variable to its old value plus something. Read score = score + 1 as "the new score is the old score plus one". It is not a maths equation.' },
         { play: `score = 0
@@ -139,8 +141,8 @@ print("Caught a star:", score)
 score = score + 10
 print("Finished the level:", score)
 score = score - 3
-print("Hit a rock:", score)`, caption: 'Each line changes score and prints it. The comma in print puts a space between the words and the number. Add a line that doubles the score: score = score * 2.' },
-        { check: "<code>lives = 3</code>, then <code>lives = lives - 1</code>. What is <code>lives</code>?", options: ["3", "2", "An error: lives cannot be on both sides"], answer: 1, why: "The right side is worked out with the old value, 3 − 1, and the result becomes the new value. That is the change block." },
+print("Hit a rock:", score)`, predict: true, caption: 'The score goes 0, 1, 11, 8. Each line changes score and prints it. The comma in print puts a space between the words and the number. Add a line that doubles the score: score = score * 2.' },
+        { check: "<code>lives = 3</code>, then <code>lives = lives - 1</code>. What is <code>lives</code>?", options: ["3", "2", "An error: lives cannot be on both sides"], answer: 1, why: "The right side is worked out with the old value, 3 − 1, and the result becomes the new value. That is the change block.", wrong: ["Lives changed. The right side is worked out with the old 3, and the answer goes back into lives.", null, "= is not a maths equation. It means: work out the right side, then keep the result under the name on the left. Lives on both sides is fine."] },
         `<div class="stmt"><p><span class="kind">Rule 1.</span> <code>score = 0</code> is the <code>set</code> block. From now on the name <code>score</code> stands for 0. There is no "make a variable" step. The first <code>=</code> makes it.</p>
 <p><span class="kind">Rule 2.</span> <code>score = score + 1</code> is the <code>change</code> block. The right side is worked out first, with the old value. The result becomes the new value.</p>
 <p><span class="kind">Rule 3.</span> A variable's name has no quotation marks. <code>print(score)</code> shows the number. <code>print("score")</code> shows the word.</p></div>
@@ -155,7 +157,8 @@ print("Hit a rock:", score)`, caption: 'Each line changes score and prints it. T
 <tr><td><code>(a) mod (b)</code></td><td><code>a % b</code></td><td><code>7 % 2</code> is <code>1</code> (the remainder)</td></tr>
 <tr><td><code>round (a)</code></td><td><code>round(a)</code></td><td><code>round(3.7)</code> is <code>4</code></td></tr>
 <tr><td><code>pick random (1) to (6)</code></td><td><code>random.randint(1, 6)</code></td><td>needs <code>import random</code> at the top</td></tr>
-</table></div>`,
+</table></div>
+<details class="reveal"><summary>Guess first: the dice rolls a 5. What do the Double, Half and Remainder lines show?</summary><p><code>Double is 10</code>, <code>Half is 2.5</code> and <code>Remainder when divided by 4 is 1</code>. Divide always gives a number with a decimal point when it needs one. 5 divided by 4 is 1 with 1 left over, and <code>%</code> shows what is left over.</p></details>`,
         { play: `import random
 
 dice = random.randint(1, 6)
@@ -164,7 +167,7 @@ print("Double is", dice * 2)
 print("Half is", dice / 2)
 print("Remainder when divided by 4 is", dice % 4)
 print("Ten rolls would be about", 10 * 3.5, "points")`, caption: 'Run it several times. The roll changes. Scratch’s pick random is Python’s random.randint. Like the turtle, it has to be fetched with import first.' },
-        { check: "Which symbol is multiply in Python?", options: ["<code>x</code>", "<code>*</code>", "<code>×</code>"], answer: 1, why: "Keyboards have no ×, so Python uses the star. <code>x</code> would be a variable called x." },
+        { check: "Which symbol is multiply in Python?", options: ["<code>x</code>", "<code>*</code>", "<code>×</code>"], answer: 1, why: "Keyboards have no ×, so Python uses the star. <code>x</code> would be a variable called x.", wrong: ["x is a letter. Python would look for a variable called x, not multiply.", null, "That sign is not on a keyboard, and Python does not read it. Use the star."] },
         `<h2>The trap: words that look like numbers</h2>
 <p>Here is the thing that trips up everyone who comes from Scratch. In Scratch, if <code>answer</code> is 5, then <code>answer + 1</code> is 6. Scratch quietly turns text into a number when it has to. Python does not. What <code>input</code> gives you is always <em>text</em>, even if the player typed digits. The text <code>"5"</code> is not the number <code>5</code>. It is more like the word "five". Run this and read the message.</p>`,
         { play: `age = input("How old are you? ")
@@ -174,8 +177,8 @@ print("Next year you will be", age + 1)`, stdin: '12', expectError: true, captio
         { play: `age = int(input("How old are you? "))
 print("Next year you will be", age + 1)
 print("In dog years you are", age * 7)
-print("You have lived about", age * 365, "days")`, stdin: '12', caption: 'Change the input in the box below the code and run again. Then take the int( ) off and read the error, so you recognise it next time.' },
-        { check: "The player types <code>9</code> into <code>age = input(\"Age? \")</code>. What is <code>age</code>?", options: ["The number 9", "The text \"9\"", "Nothing until you press Run"], answer: 1, why: "input always gives text, even when the player types digits. Wrap it in int( ) to get a number you can do maths with." },
+print("You have lived about", age * 365, "days")`, stdin: '12', predict: true, caption: 'It prints 13, then 84, then 4380. The int( ) turned the text "12" into the number 12, so the maths works. Change the input in the box below the code and run again. Then take the int( ) off and read the error, so you recognise it next time.' },
+        { check: "The player types <code>9</code> into <code>age = input(\"Age? \")</code>. What is <code>age</code>?", options: ["The number 9", "The text \"9\"", "Nothing until you press Run"], answer: 1, why: "input always gives text, even when the player types digits. Wrap it in int( ) to get a number you can do maths with.", wrong: ["Scratch turns typed digits into a number for you. Python does not: input gives text.", null, "age gets its value as soon as the player answers. It is text at once."] },
         `<div class="stmt"><p><span class="kind">Rule 4.</span> <code>input</code> always gives text. For a whole number write <code>int(input("…"))</code>. For a number with a decimal point, <code>float(input("…"))</code>.</p>
 <p><span class="kind">Rule 5.</span> In <code>print</code>, a comma between pieces prints them with a space between. It is happy to mix words and numbers. <code>+</code> only joins text with text, or adds number to number.</p></div>
 <h2>Naming things</h2>
@@ -218,10 +221,12 @@ print("Score:", total)`, caption: 'Three variables, two kinds of thing. The scor
             solution: `score = 0\npoints = int(input("Points? "))\nscore = score + points\npoints = int(input("Points? "))\nscore = score + points\npoints = int(input("Points? "))\nscore = score + points\nprint("Final score:", score)`,
             hints: ['Copy the two lines that ask and change, twice more. The same variable points can be used each time.', 'Each score = score + points is one change-by block.'],
             tests: [{ stdin: '10\n15\n5', expect: 'Final score: 30' }, { stdin: '0\n0\n0', expect: 'Final score: 0' }, { stdin: '100\n-50\n7', expect: 'Final score: 57' }],
+            failTip: 'If you see "cannot concatenate" or "unsupported operand", the points are still text: wrap input in int( ). Check that all three answers are added to score, not only the last one.',
             followup: 'Three copies of the same two lines. That is exactly what a repeat block is for. The next lesson gets rid of the copies.'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
+<li>The questions were: how does a program keep a score, and what is the trap? A score is a variable. The trap is that <code>input</code> gives text, so you need <code>int</code>.</li>
 <li><code>set [score] to (0)</code> is <code>score = 0</code>. <code>change [score] by (1)</code> is <code>score = score + 1</code>: old value on the right, new value on the left.</li>
 <li>The maths blocks are <code>+ - * / %</code> and <code>round( )</code>. <code>pick random</code> is <code>random.randint(a, b)</code> after <code>import random</code>.</li>
 <li><code>input</code> gives text. To do maths with it, write <code>int(input("…"))</code>. Scratch converted for you. Python asks you to say so.</li>
@@ -231,13 +236,14 @@ print("Score:", total)`, caption: 'Three variables, two kinds of thing. The scor
     },
     /* ================================================================== */
     {
-      standards: ['2-AP-12'],
+      standards: ['2-AP-12'], standard: 1,
       title: 'Repeat and forever', summary: 'The repeat block becomes a for loop, forever becomes while, the turtle draws squares, stars and spirals, and the lines inside a loop are marked by indenting them.',
       blocks: [
-        `<p>Before Scratch there was Logo. And before the turtle on your screen, there was a real one. In 1967 a team in Massachusetts, with a mathematician called Seymour Papert, made a language for children called Logo. A couple of years later they gave it a robot. It was a round machine on wheels, about the size of a cake tin, with a pen underneath. Children typed <code>FORWARD 100</code> and <code>RIGHT 90</code>. The robot drove across big sheets of paper on the floor and drew. Papert called it the turtle.</p>
+        `<p>Before Scratch there was Logo. And before the turtle on your screen, there was a real one. In 1967 a team in Massachusetts, with a mathematician called Seymour Papert, made a language for children called Logo. A couple of years later they gave it a robot. It was a round machine on wheels, with a pen underneath. Children typed <code>FORWARD 100</code> and <code>RIGHT 90</code>. The robot drove across big sheets of paper on the floor and drew. Papert called it the turtle.</p>
 <p>When screens became cheap, the turtle moved onto them. Forty years later, Papert's students at MIT made Scratch. The sprite that moves in steps and turns in degrees is the same turtle, wearing a cat costume.</p>`,
         { photo: 'valiant-turtle', caption: 'This turtle robot is the Valiant Turtle, from 1983. It came after Papert\'s first turtle. It drew these spirals with pens. Soon you will draw spirals too.' },
         `<p>So the turtle in Python is not a toy. It is the original. And it is the best way to see what a loop does, because a loop that draws leaves footprints. This lesson's blocks are <code>repeat</code> and <code>forever</code>. Most of its programs draw.</p>
+<p>So how can a loop draw a whole star from a few lines?</p>
 <h2>Repeat</h2>
 <p>To draw a square in Scratch, you put <code>move</code> and <code>turn</code> inside a <code>repeat (4)</code>. In Python, the C-shaped block becomes a line ending in a colon. The blocks inside the C become lines that are <em>indented</em>: pushed in by four spaces. The indenting is how Python knows which lines are inside the loop. It is the one thing that has no block, so look closely.</p>`,
         { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['control', 'repeat (4)', [['motion', 'move (100) steps'], ['motion', 'turn right (90) degrees']]]], python: 'import turtle\nt = turtle.Turtle()\nfor i in range(4):\n    t.forward(100)\n    t.right(90)\nturtle.done()', caption: 'repeat (4) is for i in range(4): with a colon at the end. The two indented lines are inside the C. turtle.done() is not indented, so it runs once, after the loop.' },
@@ -247,7 +253,7 @@ for i in range(4):
     t.forward(100)
     t.right(90)
 turtle.done()`, caption: 'A square. Change range(4) to range(3) and right(90) to right(120): a triangle. Then range(5) with right(144): a star. The turns must add up to a full circle, or a whole number of circles.' },
-        { check: "Which line is <code>repeat (6)</code> in Python?", options: ["<code>repeat 6:</code>", "<code>for i in range(6):</code>", "<code>for i in range(1, 6):</code>"], answer: 1, why: "range(6) counts 0, 1, 2, 3, 4, 5: six times. range(1, 6) would be only five." },
+        { check: "Which line is <code>repeat (6)</code> in Python?", options: ["<code>repeat 6:</code>", "<code>for i in range(6):</code>", "<code>for i in range(1, 6):</code>"], answer: 1, why: "range(6) counts 0, 1, 2, 3, 4, 5: six times. range(1, 6) would be only five.", wrong: ["Python has no word repeat. The loop word is for, with range.", null, "range(1, 6) counts 1, 2, 3, 4, 5. That is only five times."] },
         `<div class="stmt"><p><span class="kind">Rule 1.</span> <code>for i in range(n):</code> is <code>repeat (n)</code>. The line ends with a colon.</p>
 <p><span class="kind">Rule 2.</span> The lines inside the loop are indented by four spaces, all by the same amount. The first line that is not indented is outside the loop, like the first block below the C.</p>
 <p><span class="kind">Rule 3.</span> <code>i</code> counts the repeats, starting at 0. The first time round it is 0, then 1, then 2. Scratch has no counter unless you make one. Python gives you one free.</p></div>
@@ -265,7 +271,7 @@ turtle.done()`, caption: 'The first line is 0 steps, then 5, 10, 15, … A squar
 print("Done!")
 for i in range(1, 11):
     print(i, "times 7 is", i * 7)`, caption: 'Without a turtle, the counter is plain to see: 0, 1, 2, 3, 4. range(1, 11) counts from 1 up to 10. The second number is where it stops, and it is not included.' },
-        { check: "What does <code>for i in range(3): print(i)</code> print?", options: ["1, 2, 3", "0, 1, 2", "0, 1, 2, 3"], answer: 1, why: "The counter starts at 0 and stops before 3. Three lines, but the last one is 2." },
+        { check: "What does <code>for i in range(3): print(i)</code> print?", options: ["1, 2, 3", "0, 1, 2", "0, 1, 2, 3"], answer: 1, why: "The counter starts at 0 and stops before 3. Three lines, but the last one is 2.", wrong: ["The counter starts at 0, not 1.", null, "range(3) stops before 3, so 3 is never printed. Three numbers in all: 0, 1, 2."] },
         `<div class="stmt"><p><span class="kind">Rule 4.</span> <code>range(n)</code> counts 0, 1, …, n−1. That is <code>n</code> times. <code>range(a, b)</code> counts from <code>a</code> up to, but not including, <code>b</code>. <code>range(10, 0, -1)</code> counts down: 10, 9, …, 1.</p></div>
 <h2>Loops that count things</h2>
 <p>Remember the score keeper from lesson 2, with the same two lines copied three times? A loop does the copying. This is the most common loop in the world. Set a variable to 0 before the loop. Change it inside. Show it after.</p>`,
@@ -274,7 +280,7 @@ for i in range(1, 11):
 for i in range(3):
     points = int(input("Points? "))
     total = total + points
-print("Total:", total)`, stdin: '10\n15\n5', caption: 'Three answers are typed in the box below. Change range(3) to range(5) and add two more lines of input.' },
+print("Total:", total)`, stdin: '10\n15\n5', predict: true, caption: 'It prints Total: 30. The loop asked three times and added each answer to total. Change range(3) to range(5) and add two more lines of input in the box.' },
         `<h2>Forever</h2>
 <p>Scratch's <code>forever</code> block runs until you press the stop sign. Python's version is <code>while True:</code>. But a program on this page has no stop sign. A forever loop here just runs until the site stops it. Run this one once, to see what "forever" looks like from the outside.</p>`,
         { play: `count = 0
@@ -283,6 +289,7 @@ while True:
 print("never printed")`, expectError: true, caption: 'After a few seconds the site says Time limit exceeded. In Scratch you would press the stop sign. Here nothing can stop a loop that has no way out, so the page stops it for you.' },
         `<p>Most "forever" loops in real programs are really "repeat until" loops. Keep going <em>while</em> something is true. Scratch writes that as <code>repeat until &lt;…&gt;</code>. Python writes it as <code>while</code>, with the condition the other way round: keep going while the player has lives, instead of until the lives run out.</p>`,
         { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['variables', 'set [lives] to (3)'], ['control', 'repeat until <(lives) = (0)>', [['looks', 'say (join [Lives: ] (lives))'], ['variables', 'change [lives] by (-1)']]], ['looks', 'say [Game over]']], python: 'lives = 3\nwhile lives > 0:\n    print("Lives:", lives)\n    lives = lives - 1\nprint("Game over")', caption: 'repeat until lives = 0 is while lives > 0. Scratch says when to stop. Python says when to keep going. Something inside the loop must change lives, or it is a forever loop.' },
+        `<details class="reveal"><summary>Guess first: lives starts at 3. What are the lines the first loop below prints?</summary><p><code>Lives: 3</code>, <code>Lives: 2</code>, <code>Lives: 1</code>, then <code>Game over</code>. It never prints <code>Lives: 0</code>, because 0 &gt; 0 is false and the loop stops first.</p></details>`,
         { play: `lives = 3
 while lives > 0:
     print("Lives:", lives)
@@ -294,7 +301,7 @@ while countdown > 0:
     print(countdown)
     countdown = countdown - 1
 print("Blast off!")`, caption: 'Two while loops. Each has a variable that moves towards the stopping point every time round. Delete the countdown = countdown - 1 line and think about what would happen, before you run it.' },
-        { check: "<code>repeat until &lt;(lives) = (0)&gt;</code> becomes which line?", options: ["<code>while lives == 0:</code>", "<code>while lives &gt; 0:</code>", "<code>until lives == 0:</code>"], answer: 1, why: "Scratch says when to stop; Python says when to keep going. Keep going while lives is more than 0." },
+        { check: "<code>repeat until &lt;(lives) = (0)&gt;</code> becomes which line?", options: ["<code>while lives == 0:</code>", "<code>while lives &gt; 0:</code>", "<code>until lives == 0:</code>"], answer: 1, why: "Scratch says when to stop; Python says when to keep going. Keep going while lives is more than 0.", wrong: ["That keeps going only while lives is 0, the opposite. Python says when to keep going, not when to stop.", null, "Python has no word until. Use while, and say when to keep going."] },
         `<div class="stmt"><p><span class="kind">Rule 5.</span> <code>while condition:</code> repeats the indented lines as long as the condition is true. Use it when you do not know in advance how many times. Make sure something inside the loop changes the condition.</p>
 <p><span class="kind">Rule 6.</span> Use <code>for</code> when you know how many times. Use <code>while</code> when you are waiting for something to happen.</p></div>
 <h2>Loops inside loops</h2>
@@ -347,26 +354,27 @@ turtle.done()`, caption: 'The inner loop (j) draws one square. The outer loop (i
 <li><code>i</code> counts 0, 1, …, n−1 for free. <code>range(1, 11)</code> is 1 to 10. <code>range(10, 0, -1)</code> counts down.</li>
 <li><code>forever</code> is <code>while True:</code>. <code>repeat until</code> is <code>while</code> with the condition turned round. Something inside must move the condition towards stopping.</li>
 <li>Set a total to 0 before a loop, change it inside, show it after: the loop everyone writes most.</li>
-<li>A turtle leaves footprints. A square is four forwards and four right turns. A star is five and 144 degrees. A loop inside a loop draws a shape of shapes.</li>
+<li>The question was: how can a loop draw a whole star from a few lines? A turtle leaves footprints. A star is one move and one turn of 144 degrees, repeated five times. A loop inside a loop draws a shape of shapes.</li>
 </ul></div>`
       ]
     },
     /* ================================================================== */
     {
-      standards: ['2-AP-12'],
+      standards: ['2-AP-12'], standard: 1,
       title: 'If, then, else', summary: 'The if block becomes if with a colon, else and else-if become else and elif, = becomes ==, and, or and not stay as words, and a program answers back depending on what you typed.',
       blocks: [
         `<p>In 1966 a computer scientist at MIT called Joseph Weizenbaum wrote a program that could hold a conversation. He named it ELIZA. You typed a sentence. It typed one back. One version played the part of a therapist, a kind of doctor you talk to about your worries. People found it amazingly good at it. Weizenbaum's own secretary had watched him build it. She knew exactly what it was. One day she asked him to leave the room, so she could talk to it in private.</p>`,
         { photo: 'ibm-7094-console', caption: 'The control desk of an IBM 7094. ELIZA ran on one of these at MIT. Each little light shows a 0 or a 1.' },
-        `<p>ELIZA was not thinking. It was checking. If your sentence had the word "mother" in it, it said "Tell me more about your family." If your sentence began "I am", it took the rest and asked "How long have you been" that. If nothing matched, it said "Please go on." The whole program was a long list of <em>if this, then say that</em>. That is the block this lesson is about. By the end, you will write a tiny ELIZA of your own.</p>
+        `<p>ELIZA was not thinking. It was checking. If your sentence had the word "mother" in it, it asked about your family. If nothing matched, it said something like "Please go on." Much of the program was a list of <em>if this, then say that</em>. That is the block this lesson is about. By the end, you will write a tiny ELIZA of your own.</p>
+<p>So how does a program decide what to say back?</p>
 <h2>If</h2>
 <p>Scratch's <code>if &lt;&gt; then</code> is a C-shaped block with a pointy hole for a condition. Python's is a line that starts with <code>if</code>, has the condition, and ends with a colon. The blocks inside the C become indented lines, exactly like <code>repeat</code>.</p>`,
         { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['sensing', 'ask [Password?] and wait'], ['control', 'if <(answer) = [turtle]> then', [['looks', 'say [Welcome!]']]]], python: 'answer = input("Password? ")\nif answer == "turtle":\n    print("Welcome!")', caption: 'The = block becomes ==, two equals signs. One = means "set this variable". Two mean "are these the same?". Mixing them up is the most common mistake in all of Python, so look twice.' },
         { play: `answer = input("Password? ")
 if answer == "turtle":
     print("Welcome!")
-print("Goodbye.")`, stdin: 'turtle', caption: 'Change the input in the box below to something else and run again. The Welcome! line is skipped. Goodbye. prints either way, because it is not indented.' },
-        { check: "Which line asks \"is answer the same as yes?\"", options: ["<code>if answer = \"yes\":</code>", "<code>if answer == \"yes\":</code>", "<code>if answer is yes:</code>"], answer: 1, why: "One = sets a variable. Two == compare. Python refuses a single = in an if." },
+print("Goodbye.")`, stdin: 'turtle', predict: true, caption: 'The password matches, so both lines print: Welcome! and then Goodbye. Change the input in the box below to something else and run again. The Welcome! line is skipped. Goodbye. prints either way, because it is not indented.' },
+        { check: "Which line asks \"is answer the same as yes?\"", options: ["<code>if answer = \"yes\":</code>", "<code>if answer == \"yes\":</code>", "<code>if answer is yes:</code>"], answer: 1, why: "One = sets a variable. Two == compare. Python refuses a single = in an if.", wrong: ["One = sets a variable. In an if, Python wants two equals signs to compare.", null, "yes has no quotation marks, so Python looks for a variable called yes. Use == and put the word in quotes."] },
         `<div class="stmt"><p><span class="kind">Rule 1.</span> <code>if condition:</code> runs the indented lines only when the condition is true. Colon at the end, four spaces inside, like a loop.</p>
 <p><span class="kind">Rule 2.</span> Scratch's <code>=</code> block is <code>==</code> in Python. <code>&lt;</code> and <code>&gt;</code> are the same as in Scratch. Two more: <code>&lt;=</code> (less than or equal) and <code>!=</code> (not equal).</p></div>
 <p>What happens if you type one equals sign by mistake? Python refuses to run, and tells you the line. Run this one to see the message, so you recognise it later.</p>`,
@@ -393,8 +401,8 @@ elif temp > 15:
 elif temp > 5:
     print("Chilly.")
 else:
-    print("Cold.")`, stdin: '18', caption: 'Four choices with two elifs. Try 30, 10 and -3. Then swap the first two if lines round (temp > 15 first) and try 30 again. Why does it say Nice.?' },
-        { check: "<code>if temp &gt; 15:</code> says Nice, then <code>elif temp &gt; 25:</code> says Hot. What does 30 print?", options: ["Hot!", "Nice.", "Both"], answer: 1, why: "Python runs the first true branch and skips the rest. 30 is more than 15, so it says Nice and never reaches the Hot line. Put the strictest condition first." },
+    print("Cold.")`, stdin: '18', predict: true, caption: 'It prints Nice. 18 is not more than 25, but it is more than 15. Four choices with two elifs. Try 30, 10 and -3. Then swap the first two if lines round (temp > 15 first) and try 30 again. Why does it say Nice.?' },
+        { check: "<code>if temp &gt; 15:</code> says Nice, then <code>elif temp &gt; 25:</code> says Hot. What does 30 print?", options: ["Hot!", "Nice.", "Both"], answer: 1, why: "Python runs the first true branch and skips the rest. 30 is more than 15, so it says Nice and never reaches the Hot line. Put the strictest condition first.", wrong: ["The first true branch wins. 30 is more than 15, so Python says Nice and stops. The Hot line never gets a turn.", null, "Only one branch of an if-elif runs, never two."] },
         `<div class="stmt"><p><span class="kind">Rule 3.</span> <code>if … elif … elif … else</code> is one block with several parts. Python tries the conditions from the top and runs the first true one. <code>else</code> has no condition and catches everything else. Put the strictest condition first.</p></div>
 <h2>And, or, not</h2>
 <p>Scratch's green <code>&lt;&gt; and &lt;&gt;</code>, <code>&lt;&gt; or &lt;&gt;</code> and <code>not &lt;&gt;</code> blocks are the same three words in Python. There are no brackets to drag them into.</p>`,
@@ -406,8 +414,8 @@ if age >= 12 and has_ticket == "yes":
 elif not has_ticket == "yes":
     print("You need a ticket.")
 else:
-    print("Sorry, you must be 12 or over.")`, stdin: '14\nyes', caption: 'Try 14 with no, and 9 with yes. not has_ticket == "yes" is the same as has_ticket != "yes". Both are fine; use whichever reads best.' },
-        { check: "Which condition is true for Saturday <em>and</em> Sunday only?", options: ["<code>day == \"Saturday\" or \"Sunday\"</code>", "<code>day == \"Saturday\" or day == \"Sunday\"</code>", "<code>day == \"Saturday\" and day == \"Sunday\"</code>"], answer: 1, why: "Each side of or needs its own complete comparison. The first option is always true; the last can never be true, because day cannot be both." },
+    print("Sorry, you must be 12 or over.")`, stdin: '14\nyes', predict: true, caption: 'It prints Come in! Both halves of the and are true: 14 is at least 12, and the answer is yes. Try 14 with no, and 9 with yes. not has_ticket == "yes" is the same as has_ticket != "yes". Both are fine; use whichever reads best.' },
+        { check: "Which condition is true for Saturday <em>and</em> Sunday only?", options: ["<code>day == \"Saturday\" or \"Sunday\"</code>", "<code>day == \"Saturday\" or day == \"Sunday\"</code>", "<code>day == \"Saturday\" and day == \"Sunday\"</code>"], answer: 1, why: "Each side of or needs its own complete comparison. The first option is always true; the last can never be true, because day cannot be both.", wrong: ["The lone word \"Sunday\" counts as true all by itself, so this is true on every day.", null, "A day cannot be Saturday and Sunday at the same time, so this is never true."] },
         `<h2>Checking what someone typed</h2>
 <p>Scratch has a <code>[list] contains [thing]?</code> block for lists. Scratch also has a green <code>(apple) contains (a)?</code> block for words. Python's <code>in</code> does both jobs. <code>"cat" in sentence</code> is true if the letters c-a-t appear somewhere in the sentence. That is all ELIZA needed.</p>`,
         { play: `print("Hello. Tell me what is on your mind.")
@@ -461,21 +469,24 @@ else:
 <li>Scratch's <code>=</code> is <code>==</code>. One equals sign sets a variable. Two compare. Also <code>&lt; &gt; &lt;= &gt;= !=</code>.</li>
 <li><code>elif</code> replaces an if-else nested inside an else. Python runs the first true branch and skips the rest.</li>
 <li><code>and</code>, <code>or</code> and <code>not</code> are the same words as the green blocks. Each side of <code>or</code> needs its own complete comparison.</li>
-<li><code>"word" in text</code> is true if the word appears anywhere in the text. That is the whole secret of ELIZA.</li>
+<li><code>"word" in text</code> is true if the word appears anywhere in the text.</li>
+<li>The question was: how does a program decide what to say back? It checks conditions with <code>if</code>, <code>elif</code> and <code>else</code>, and the first one that is true gives the reply. That is the main trick of ELIZA.</li>
 </ul></div>`
       ]
     },
     /* ================================================================== */
     {
-      standards: ['2-AP-11', '3A-AP-14'],
+      standards: ['2-AP-11', '3A-AP-14'], standard: 1,
       title: 'Lists', summary: 'Scratch lists become Python lists in square brackets, add becomes append, item 1 becomes [0] because Python counts from zero, length of is len, contains is in, and a loop can walk through every item.',
       blocks: [
-        `<p>The oldest writing in the world is lists. In the ruins of Uruk, a city in what is now Iraq, people dug up thousands of clay tablets. They are about five thousand years old. When the tablets were finally read, they were not stories or prayers. They were records. So many sacks of barley. So many jars of beer. Who got them. People invented writing because there were too many things to keep in their heads. A list on a tablet does not forget.</p>`,
+        `<p>The oldest writing in the world is lists. In the ruins of Uruk, a city in what is now Iraq, people dug up thousands of clay tablets. They are about five thousand years old. When the tablets were finally read, they were not stories or prayers. They were records. So many sacks of barley. So many jars of beer. Who got them. Many scholars think writing began because there were too many things to keep in anyone's head. A list on a tablet does not forget.</p>`,
         { photo: 'clay-tablet-barley', caption: 'A clay tablet from about 3100 BC, over five thousand years ago. It is a record of barley and wheat being handed out.' },
         `<p>Programs are the same. A score is one variable. But a class register, a high-score table or a shopping list is a <em>list</em>: one name for many things, in order. Scratch has lists in its Variables palette, with blocks like <code>add [thing] to [list]</code> and <code>item (1) of [list]</code>. Python has them too. They are one of the best things about it.</p>
+<p>So how can one name hold a whole list of things?</p>
 <h2>Making a list and adding to it</h2>
 <p>In Scratch you click "Make a List", give it a name, and use <code>add</code> to put things in. In Python a list is written in square brackets, with commas between the items. <code>.append()</code> adds one to the end.</p>`,
         { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['variables', 'delete all of [shopping]'], ['variables', 'add [milk] to [shopping]'], ['variables', 'add [eggs] to [shopping]'], ['variables', 'add [bread] to [shopping]'], ['looks', 'say (shopping)']], python: 'shopping = []\nshopping.append("milk")\nshopping.append("eggs")\nshopping.append("bread")\nprint(shopping)', caption: '[] is an empty list. append puts a new item at the end. Printing a list shows all the items in brackets, with quotes round the words. That is how Python writes a list, so you can tell it from a sentence.' },
+        `<details class="reveal"><summary>Guess first: the list has milk, eggs and bread. Then apples is appended. What does the line with <code>len</code> print?</summary><p><code>There are 4 things to buy.</code> Three items, plus apples, make four. len counts every item in the list.</p></details>`,
         { play: `shopping = ["milk", "eggs", "bread"]
 print(shopping)
 shopping.append("apples")
@@ -484,7 +495,7 @@ print("There are", len(shopping), "things to buy.")
 scores = [12, 40, 7, 33]
 print(scores)
 print("Best:", max(scores), " Worst:", min(scores), " Total:", sum(scores))`, caption: 'You can write the items straight into the brackets instead of appending one by one. len gives the length. max, min and sum do what they say, on a list of numbers.' },
-        { check: "Which line adds <code>\"jam\"</code> to the end of the list <code>shopping</code>?", options: ["<code>shopping.add(\"jam\")</code>", "<code>shopping.append(\"jam\")</code>", "<code>shopping + \"jam\"</code>"], answer: 1, why: "add is append in Python. It puts the item at the end of the list." },
+        { check: "Which line adds <code>\"jam\"</code> to the end of the list <code>shopping</code>?", options: ["<code>shopping.add(\"jam\")</code>", "<code>shopping.append(\"jam\")</code>", "<code>shopping + \"jam\"</code>"], answer: 1, why: "add is append in Python. It puts the item at the end of the list.", wrong: ["add is the Scratch word. A Python list calls it append.", null, "A list and a word cannot be joined with +, and it would not change the list anyway. Use append."] },
         `<div class="stmt"><p><span class="kind">Rule 1.</span> A list is written <code>[item, item, item]</code>. <code>[]</code> is an empty list. Items can be words (in quotes) or numbers.</p>
 <p><span class="kind">Rule 2.</span> <code>add [thing] to [list]</code> is <code>list.append(thing)</code>. <code>length of [list]</code> is <code>len(list)</code>. <code>[list] contains [thing]?</code> is <code>thing in list</code>.</p></div>
 <h2>Item number… zero?</h2>
@@ -499,11 +510,12 @@ print(pets[-1])
 pets[1] = "parrot"
 print(pets)
 print(pets[4])`, expectError: true, caption: 'The last line asks for position 4 in a list whose positions are 0 to 3. IndexError: list index out of range. Scratch would quietly say nothing. Python stops and tells you. pets[1] = "parrot" is the replace item block.' },
-        { check: "<code>pets = [\"cat\", \"dog\", \"fish\"]</code>. What is <code>pets[1]</code>?", options: ["<code>cat</code>", "<code>dog</code>", "<code>fish</code>"], answer: 1, why: "Python counts positions from 0. Position 1 is the second item. pets[0] is cat and pets[-1] is fish." },
+        { check: "<code>pets = [\"cat\", \"dog\", \"fish\"]</code>. What is <code>pets[1]</code>?", options: ["<code>cat</code>", "<code>dog</code>", "<code>fish</code>"], answer: 1, why: "Python counts positions from 0. Position 1 is the second item. pets[0] is cat and pets[-1] is fish.", wrong: ["cat is pets[0]. Python counts from 0, so position 1 is the second item.", null, "fish is the last item, pets[2] or pets[-1]. Position 1 is the second one."] },
         `<div class="stmt"><p><span class="kind">Rule 3.</span> <code>item (n) of [list]</code> is <code>list[n − 1]</code>. Python counts from 0. <code>list[-1]</code> is the last item. <code>replace item (n) of [list] with [thing]</code> is <code>list[n − 1] = thing</code>.</p>
 <p><span class="kind">Rule 4.</span> Asking for a position that does not exist is an error, not a blank.</p></div>
 <h2>Going through every item</h2>
-<p>In Scratch, to do something with every item, you make a counter variable, set it to 1, and <code>repeat (length of list)</code> with <code>change counter by 1</code> inside. Python's <code>for</code> loop can walk straight along a list. <code>for pet in pets:</code> runs the indented lines once for each item, with <code>pet</code> set to that item each time. No counter needed.</p>`,
+<p>In Scratch, to do something with every item, you make a counter variable, set it to 1, and <code>repeat (length of list)</code> with <code>change counter by 1</code> inside. Python's <code>for</code> loop can walk straight along a list. <code>for pet in pets:</code> runs the indented lines once for each item, with <code>pet</code> set to that item each time. No counter needed.</p>
+<details class="reveal"><summary>Guess first: <code>pets</code> has four animals. How many lines does <code>for pet in pets: print("I have a", pet)</code> print?</summary><p>Four, one for each pet: <code>I have a cat</code>, <code>I have a dog</code>, <code>I have a fish</code> and <code>I have a hamster</code>. The loop runs once for each item.</p></details>`,
         { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['variables', 'set [n] to (1)'], ['control', 'repeat (length of [pets])', [['looks', 'say (join [I have a ] (item (n) of [pets]))'], ['variables', 'change [n] by (1)']]]], python: 'for pet in pets:\n    print("I have a", pet)', caption: 'Four blocks become two lines. Read it aloud: for each pet in pets, print "I have a" and the pet. The name after for can be anything. pet is just clearer than i.' },
         { play: `pets = ["cat", "dog", "fish", "hamster"]
 for pet in pets:
@@ -517,8 +529,9 @@ print("Total:", total, " (sum says", sum(scores), ")")
 
 for i in range(len(pets)):
     print(i + 1, pets[i])`, caption: 'Three loops. The second adds up the scores by hand, the way Scratch would, and sum agrees. The third uses range(len(pets)) when you want the position as well as the item. i is 0, 1, 2, 3, so i + 1 gives the numbers people expect.' },
-        { check: "What does <code>for pet in pets:</code> do?", options: ["Runs the indented lines once, with pet set to the whole list", "Runs the indented lines once for each item, with pet set to that item", "Counts how many pets there are"], answer: 1, why: "The loop walks along the list. Each time round, pet is the next item. No counter needed." },
-        `<h2>Taking things out, and asking what is there</h2>`,
+        { check: "What does <code>for pet in pets:</code> do?", options: ["Runs the indented lines once, with pet set to the whole list", "Runs the indented lines once for each item, with pet set to that item", "Counts how many pets there are"], answer: 1, why: "The loop walks along the list. Each time round, pet is the next item. No counter needed.", wrong: ["pet is one item at a time, never the whole list.", null, "A for loop does something for each item. Counting them is len(pets)."] },
+        `<h2>Taking things out, and asking what is there</h2>
+<details class="reveal"><summary>Guess first: <code>["milk", "eggs", "bread", "apples"]</code>. After <code>shopping.remove("eggs")</code>, what does <code>print(shopping)</code> show?</summary><p><code>['milk', 'bread', 'apples']</code>. The eggs are gone and the others keep their order.</p></details>`,
         { play: `shopping = ["milk", "eggs", "bread", "apples"]
 shopping.remove("eggs")
 print(shopping)
@@ -543,7 +556,7 @@ while True:
     names.append(name)
 print("You entered", len(names), "names:")
 for n in sorted(names):
-    print("-", n)`, stdin: 'Zoe\nAli\nMia\ndone', caption: 'break jumps out of a loop at once. It is the stop sign, from inside the program. sorted puts the names in alphabetical order without changing the list. Add more names in the box, with done at the end.' },
+    print("-", n)`, stdin: 'Zoe\nAli\nMia\ndone', predict: true, caption: 'It prints You entered 3 names: and then Ali, Mia, Zoe, each after a dash. The names are sorted, not in the order typed. break jumps out of a loop at once. It is the stop sign, from inside the program. sorted puts the names in alphabetical order without changing the list. Add more names in the box, with done at the end.' },
         `<h2>A magic 8-ball</h2>
 <p>Pick a random item from a list and you have a fortune teller. <code>random.choice(list)</code> is the Scratch trick of <code>item (pick random 1 to length) of list</code>, in one word.</p>`,
         { play: `import random
@@ -585,7 +598,7 @@ print("The 8-ball says:", random.choice(answers))`, stdin: 'Will I get a dog?', 
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
-<li>A list is <code>[item, item, item]</code>. <code>add</code> is <code>.append()</code>. <code>length of</code> is <code>len()</code>. <code>contains</code> is <code>in</code>.</li>
+<li>The question was: how can one name hold a whole list of things? A list is <code>[item, item, item]</code>. <code>add</code> is <code>.append()</code>. <code>length of</code> is <code>len()</code>. <code>contains</code> is <code>in</code>.</li>
 <li>Python counts positions from 0. <code>item (1)</code> is <code>[0]</code>, and <code>[-1]</code> is the last. A position past the end is an error.</li>
 <li><code>for item in list:</code> visits every item without a counter. <code>for i in range(len(list)):</code> when you need the position too.</li>
 <li><code>remove</code>, <code>pop</code>, <code>insert</code>, <code>index</code> and <code>sorted</code> are the rest of the list palette. <code>max</code>, <code>min</code> and <code>sum</code> work on a list of numbers. <code>random.choice</code> picks one.</li>
@@ -595,16 +608,18 @@ print("The 8-ball says:", random.choice(answers))`, stdin: 'Will I get a dog?', 
     },
     /* ================================================================== */
     {
-      standards: ['2-AP-14', '2-AP-19'],
+      standards: ['2-AP-14', '2-AP-19'], standard: 1,
       title: 'My blocks: functions', summary: 'A define block becomes def, its inputs become parameters, a block that reports an answer uses return, and a turtle draws a garden from one flower function.',
       blocks: [
-        `<p>In 1949, at Cambridge University in England, a computer called EDSAC started working. It was one of the first in the world that could store its own program. Writing for it was slow. Every program had to be punched onto paper tape, hole by hole. Even printing a number took dozens of instructions.</p>`,
+        `<p>In 1949, at Cambridge University in England, a computer called EDSAC started working. It was one of the first in the world that could store its own program. Writing for it was slow. Every program had to be punched onto paper tape, hole by hole.</p>`,
         { photo: 'edsac-renwick', caption: 'EDSAC at Cambridge, nearly finished. W. Renwick, one of its builders, stands at the left. Every shelf is full of glass valves.' },
-        `<p>The team noticed they were punching the same pieces over and over. So a student called David Wheeler worked out a trick. A program could jump into a saved piece of tape, do the job, and jump back to where it left off. They kept the saved tapes together and called the collection the library. Nobody at Cambridge wrote "print a number" twice again.</p>
+        `<p>The team noticed they were punching the same pieces over and over. So a student called David Wheeler worked out a trick. A program could jump into a saved piece of tape, do the job, and jump back to where it left off. They kept the saved tapes together and called the collection the library. After that, nobody had to punch the same job twice.</p>
 <p>Wheeler's trick is called a <em>subroutine</em>, and every language has it. In Scratch it is the pink <code>define</code> block under My Blocks. You make a block once and use it as many times as you like. In Python it is <code>def</code>. It is one of the biggest ideas in all of coding.</p>
+<p>So how do you make a block of your own?</p>
 <h2>Define becomes def</h2>`,
         { fig: 'blocks', stack: [['myblocks', 'define [cheer]'], ['looks', 'say [Hip hip]'], ['looks', 'say [Hooray!]']], python: 'def cheer():\n    print("Hip hip")\n    print("Hooray!")', caption: 'define becomes def. The name is followed by empty brackets and a colon. The blocks under the hat are indented under it. Defining a function does not run it. A define block does nothing until you use the block it defines.' },
         { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['myblocks', 'cheer'], ['myblocks', 'cheer'], ['myblocks', 'cheer']], python: 'cheer()\ncheer()\ncheer()', caption: 'Using the block is calling the function: its name with brackets. Three calls, six lines printed.' },
+        `<details class="reveal"><summary>Guess first: how many lines does the program below print in all?</summary><p>Seven. Each <code>cheer()</code> prints two lines, and it is called three times: that is six. Add the line <code>Now once more, louder:</code> and you have seven.</p></details>`,
         { play: `def cheer():
     print("Hip hip")
     print("Hooray!")
@@ -613,12 +628,13 @@ cheer()
 cheer()
 print("Now once more, louder:")
 cheer()`, caption: 'The def comes first, then the calls. Try moving the first cheer() above the def. Python complains that cheer is not defined, because it reads from the top and has not met the def yet.' },
-        { check: "A program has <code>def wave():</code> with two prints under it, and nothing else. What prints when you run it?", options: ["The two lines", "Nothing: defining a function does not run it", "An error"], answer: 1, why: "A def is a define block. Nothing happens until you use the block: wave() with brackets." },
+        { check: "A program has <code>def wave():</code> with two prints under it, and nothing else. What prints when you run it?", options: ["The two lines", "Nothing: defining a function does not run it", "An error"], answer: 1, why: "A def is a define block. Nothing happens until you use the block: wave() with brackets.", wrong: ["A def only makes the block. Nothing runs until you call wave().", null, "A def with a proper body is fine. It is just never used."] },
         `<div class="stmt"><p><span class="kind">Rule 1.</span> <code>define [name]</code> is <code>def name():</code>. The lines under it are indented. Defining does nothing by itself.</p>
 <p><span class="kind">Rule 2.</span> Using the block is <code>name()</code>: the name with brackets. The brackets are what make it run. Define before you call.</p></div>
 <h2>Inputs become parameters</h2>
 <p>When you make a block in Scratch, you can tick "Add an input". The define block grows a slot that you can drag into the blocks below. In Python the slot is a name inside the brackets. It is called a <em>parameter</em>. Whatever you put in the brackets when you call the function is what that name means while it runs.</p>`,
         { fig: 'blocks', stack: [['myblocks', 'define [greet] (name)'], ['looks', 'say (join [Hello, ] (name))'], ['looks', 'say [Nice to meet you.]']], python: 'def greet(name):\n    print("Hello,", name)\n    print("Nice to meet you.")', caption: 'The input slot (name) becomes the parameter name in the brackets. Inside the function, name means whatever was passed in.' },
+        `<details class="reveal"><summary>Guess first: what is the first line <code>times_table(7)</code> prints in the program below?</summary><p><code>7 x 1 = 7</code>. The parameter <code>n</code> is 7 and the loop starts at 1.</p></details>`,
         { play: `def greet(name):
     print("Hello,", name)
     print("Nice to meet you.")
@@ -631,7 +647,7 @@ greet("Ada")
 greet("Linus")
 times_table(7)
 times_table(12)`, caption: 'Two functions, each used twice with different inputs. The times table from lesson 3 is now a block you can use on any number. A function can have more than one parameter: def rectangle(width, height): takes two, with a comma between.' },
-        { check: "<code>def greet(name):</code> then <code>greet(\"Mia\")</code>. Inside the function, what is <code>name</code>?", options: ["The word name", "<code>\"Mia\"</code>", "Nothing until it is set"], answer: 1, why: "The parameter name stands for whatever was passed in: the input slot filled with Mia." },
+        { check: "<code>def greet(name):</code> then <code>greet(\"Mia\")</code>. Inside the function, what is <code>name</code>?", options: ["The word name", "<code>\"Mia\"</code>", "Nothing until it is set"], answer: 1, why: "The parameter name stands for whatever was passed in: the input slot filled with Mia.", wrong: ["name is a placeholder. It is not the word name. It stands for whatever was passed in.", null, "The call greet(\"Mia\") sets it for you, as soon as the function starts."] },
         `<h2>Reporting an answer: return</h2>
 <p>Scratch's round reporter blocks, like <code>(pick random)</code> and <code>(length of)</code>, give you a value to drop into another block. But Scratch does not let you make your own reporters. Python does. It is the one truly new thing in this lesson. The word <code>return</code> ends the function and hands a value back to whoever called it. So you can write <code>x = double(21)</code>, and <code>x</code> is 42.</p>`,
         `<details class="reveal"><summary>Guess first: in the program below, what is <code>x</code>?</summary><p><code>22</code>. double(5) is 10 and double(6) is 12. The two answers are added. A function with return can be used inside a sum, just like a reporter block drops into a + block.</p></details>`,
@@ -647,7 +663,8 @@ print(x)
 message = greeting("Zoe")
 print(message)
 print(greeting("Sam").upper())`, caption: 'A function with return is a reporter. You can print its answer, store it, add two of them, or call another function on it. print shows a value; return hands it back. They look alike at first, and they are completely different. A function that only prints cannot be used in a sum.' },
-        { check: "<code>def double(n): print(n * 2)</code>, then <code>x = double(4)</code>. What is <code>x</code>?", options: ["8", "<code>None</code>: the function printed but did not return", "4"], answer: 1, why: "print shows a value. return hands it back. Without return, the function gives back nothing." },
+        { check: "<code>def double(n): print(n * 2)</code>, then <code>x = double(4)</code>. What is <code>x</code>?", options: ["8", "<code>None</code>: the function printed but did not return", "4"], answer: 1, why: "print shows a value. return hands it back. Without return, the function gives back nothing.", wrong: ["print only shows 8 on the screen. It does not hand 8 back, so x does not get it.", null, "4 is what went in. x gets what comes out, and nothing comes out without return."] },
+        `<p>A function can make choices too. Here each <code>return</code> sits inside an <code>if</code>. The first one that runs ends the function.</p>`,
         { play: `def grade(score):
     if score >= 90:
         return "A"
@@ -690,6 +707,7 @@ t.pendown()
 t.color("orange")
 flower(40, 12)
 turtle.done()`, caption: 'square draws one square of any size. flower calls square petals times, turning 360 / petals each time. Change the numbers: flower(80, 3), flower(30, 36). penup and pendown lift the pen between flowers, like the pen up block.' },
+        `<p>One more garden. This one has a function with two inputs, <code>polygon</code>, and a second function, <code>jump_to</code>, that moves the turtle without drawing.</p>`,
         { play: `import turtle
 t = turtle.Turtle()
 t.speed(0)
@@ -747,7 +765,7 @@ turtle.done()`, caption: 'A triangle, a square, a pentagon and so on, each in a 
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
-<li><code>define [name]</code> is <code>def name():</code>. Using the block is <code>name()</code>. Define first, call after.</li>
+<li>The question was: how do you make a block of your own? <code>define [name]</code> is <code>def name():</code>. Using the block is <code>name()</code>. Define first, call after.</li>
 <li>Inputs are parameters, the names in the brackets. The values you call with are matched to them in order.</li>
 <li><code>return</code> hands a value back, so your function becomes a reporter block, something Scratch could not do. <code>print</code> shows; <code>return</code> gives.</li>
 <li>Build big things from small functions: a square, then a flower made of squares, then a garden made of flowers.</li>
@@ -757,15 +775,17 @@ turtle.done()`, caption: 'A triangle, a square, a pentagon and so on, each in a 
     },
     /* ================================================================== */
     {
-      standards: ['2-AP-12', '2-AP-13', '2-AP-15', '2-AP-17'],
+      standards: ['2-AP-12', '2-AP-13', '2-AP-15', '2-AP-17'], standard: 1,
       title: 'Project: your own adventure game', summary: 'Everything from the course in one program: rooms with if and elif, a bag that is a list, a monster fight with while and random, and broadcasts that become functions. You build it piece by piece, then make it yours.',
       blocks: [
-        `<p>In 1976 a programmer called Will Crowther wrote a game for his two daughters. He loved exploring caves, and he had helped map a real one in Kentucky. His game had no pictures at all. It printed <em>You are standing at the end of a road before a small brick building</em>, and waited. You typed <code>go north</code> or <code>take lamp</code>, and it printed what happened next. He called it <em>Adventure</em>. Another programmer, Don Woods, added more rooms and a dragon the next year. Thousands of people played it on university computers, and it started a whole kind of game.</p>`,
+        `<p>In the mid-1970s a programmer called Will Crowther wrote a game for his two daughters. He loved exploring caves, and he had helped map a real one in Kentucky. His game had no pictures at all. It printed <em>You are standing at the end of a road before a small brick building</em>, and waited. You typed <code>go north</code> or <code>take lamp</code>, and it printed what happened next. He called it <em>Adventure</em>. Another programmer, Don Woods, added many more rooms and puzzles soon after. Thousands of people played it on university computers. It started a whole kind of game.</p>`,
         { photo: 'adventure-vt100', caption: 'Adventure on an old VT100 screen, in 2014. The player typed GET LAMP. Then they gave up with QUIT!' },
         `<p>You are going to write one. Not with the cave, but with your own rooms, your own treasure and your own monster. It uses every block from this course: <code>if</code> for the rooms, a list for your bag, <code>while</code> for the fight, <code>random</code> for the dice, and functions for the places. You build it one piece at a time, and each piece runs on its own.</p>
+<p>So how do you build a whole world from the blocks you know?</p>
 <h2>Piece 1: rooms</h2>
 <p>A room is just a variable that says where you are. Each turn the game prints the room, asks which way to go, and changes the variable. In Scratch you might do this with a <code>room</code> variable and a big <code>if-else</code>. Python is the same, with <code>elif</code>.</p>`,
         { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['variables', 'set [room] to [hall]'], ['control', 'repeat until <(room) = [outside]>', [['sensing', 'ask [Which way?] and wait'], ['control', 'if <<(room) = [hall]> and <(answer) = [north]>> then', [['variables', 'set [room] to [kitchen]']]]]]], python: 'room = "hall"\nwhile room != "outside":\n    way = input("Which way? ")\n    if room == "hall" and way == "north":\n        room = "kitchen"', caption: 'One room, one way out. The real game has several of these ifs in a row. The loop keeps going until the room is "outside": that is how you win.' },
+        `<details class="reveal"><summary>Guess first: the player types <code>north</code>, then <code>up</code>. Which room is the player in after <code>up</code>?</summary><p>Still the kitchen. No door matches <code>up</code>, so the <code>else</code> prints <code>You can't go that way.</code> and the room does not change.</p></details>`,
         { play: `room = "hall"
 while room != "outside":
     print("You are in the", room + ".")
@@ -781,7 +801,7 @@ while room != "outside":
     else:
         print("You can't go that way.")
 print("You escaped!")`, stdin: 'north\nup\nsouth\neast\neast', caption: 'Three rooms and a way out. The typed moves are in the box below: try your own. Each elif is one door. Add a room: a new elif that sets room to it, and another that leads back.' },
-        { check: "The player is in the hall and types <code>west</code>. No elif matches. Which line runs?", options: ["The first elif", "The <code>else</code> at the end: \"You can't go that way.\"", "None, and the game crashes"], answer: 1, why: "else catches everything that no door matched. The loop then asks again." },
+        { check: "The player is in the hall and types <code>west</code>. No elif matches. Which line runs?", options: ["The first elif", "The <code>else</code> at the end: \"You can't go that way.\"", "None, and the game crashes"], answer: 1, why: "else catches everything that no door matched. The loop then asks again.", wrong: ["Each elif needs its own room and its own way. \"west\" fits none of them, so none of them runs.", null, "else is made for this. The game prints a message and asks again. It does not crash."] },
         `<div class="stmt"><p><span class="kind">Rule 1.</span> A game loop is a <code>while</code> loop that asks, decides and repeats. It ends when something changes: the room, the lives, or the word "quit".</p>
 <p><span class="kind">Rule 2.</span> Each door is one <code>elif</code> with two conditions joined by <code>and</code>: where you are, and which way you said. The <code>else</code> at the end catches everything that is not a door.</p></div>
 <h2>Piece 2: a bag</h2>
@@ -807,9 +827,10 @@ while room == "cellar":
     else:
         print("I don't understand", way)
 print("You climb the stairs.")`, stdin: 'open door\nlook\ntake key\ninventory\nopen door', caption: 'The order of the elifs matters. The "open door with key" line comes before the plain "open door" line, so it gets first go. Swap them and the door never opens. Add a "drop key" command that removes it.' },
-        { check: "Which check is true only when the key is in the bag?", options: ["<code>\"key\" in bag</code>", "<code>bag == \"key\"</code>", "<code>bag.append(\"key\")</code>"], answer: 0, why: "in asks whether the item is somewhere in the list. The contains block." },
+        { check: "Which check is true only when the key is in the bag?", options: ["<code>\"key\" in bag</code>", "<code>bag == \"key\"</code>", "<code>bag.append(\"key\")</code>"], answer: 0, why: "in asks whether the item is somewhere in the list. The contains block.", wrong: [null, "bag is a whole list. A list is never equal to one word. Use in.", "append puts a key into the bag. It does not ask whether one is there."] },
         `<h2>Piece 3: a monster</h2>
-<p>A fight is a loop that goes round until someone runs out of health. Each turn, both sides roll a dice: that is <code>random.randint</code>. In Scratch you would use <code>repeat until</code> and <code>pick random</code>.</p>`,
+<p>A fight is a loop that goes round until someone runs out of health. Each turn, both sides roll a dice: that is <code>random.randint</code>. In Scratch you would use <code>repeat until</code> and <code>pick random</code>.</p>
+<details class="reveal"><summary>Guess first: the goblin has 6 health. Each of your hits takes 1 to 4. What is the fewest hits that can beat it? And the most?</summary><p>Two hits at the fewest (4 + 4 is 8, which is enough). Six at the most (six hits of 1). That is why every fight is different.</p></details>`,
         { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['variables', 'set [health] to (10)'], ['variables', 'set [monster] to (6)'], ['control', 'repeat until <<(health) < (1)> or <(monster) < (1)>>', [['variables', 'change [monster] by (pick random (1) to (4)) * (-1)'], ['variables', 'change [health] by (pick random (1) to (3)) * (-1)']]]], python: 'health = 10\nmonster = 6\nwhile health > 0 and monster > 0:\n    monster = monster - random.randint(1, 4)\n    health = health - random.randint(1, 3)', caption: 'repeat until A or B is while not A and not B: keep fighting while both are above zero. Turn the condition round, like lesson 3.' },
         { play: `import random
 
@@ -831,10 +852,26 @@ else:
         `<h2>Piece 4: broadcasts become functions</h2>
 <p>In a big Scratch game you use <code>broadcast [fight]</code> and a script that starts <code>when I receive [fight]</code>. In Python that script is a function, and the broadcast is calling it. Put the fight in <code>def fight():</code> and the game can call it from any room.</p>`,
         { fig: 'blocks', stack: [['event', 'when I receive [fight]'], ['looks', 'say [A goblin jumps out!]'], ['control', 'repeat until <(monster) < (1)>', [['variables', 'change [monster] by (-1)']]]], python: 'def fight():\n    print("A goblin jumps out!")\n    monster = 6\n    while monster > 0:\n        monster = monster - 1', caption: 'when I receive is def. broadcast [fight] is fight(). One difference: a variable made inside a function belongs to that function. To change the player’s health from inside fight, the function should return the new health.' },
-        { check: "What is Scratch's <code>broadcast [fight]</code> in Python?", options: ["<code>def fight():</code>", "<code>fight()</code>", "<code>broadcast(\"fight\")</code>"], answer: 1, why: "broadcast is calling the function. when I receive is the def that defines it." },
-        `<h2>Putting it together</h2>
-<p>Here is the whole game: three rooms, a key, a goblin, and a treasure. It is about forty lines, and you have seen every one of them before. Read it top to bottom. Then play it with the moves in the box, then with your own.</p>`,
+        `<details class="reveal"><summary>Guess first: can the health that <code>fight</code> returns ever be bigger than the 10 that went in?</summary><p>No. The goblin only bites, so health only goes down or stays the same. The health goes in as a parameter, and the new health comes back out with <code>return</code>.</p></details>`,
         { play: `import random
+
+def fight(health):
+    print("A goblin blocks the way!")
+    monster = 6
+    while health > 0 and monster > 0:
+        monster = monster - random.randint(1, 4)
+        if monster > 0:
+            health = health - random.randint(1, 3)
+    return health
+
+health = 10
+health = fight(health)
+print("Health after the fight:", health)`, caption: 'Run it a few times. The health that comes back is different each time, and sometimes it is 0 or less: the goblin won. The line health = fight(health) is the broadcast.' },
+        { check: "What is Scratch's <code>broadcast [fight]</code> in Python?", options: ["<code>def fight():</code>", "<code>fight()</code>", "<code>broadcast(\"fight\")</code>"], answer: 1, why: "broadcast is calling the function. when I receive is the def that defines it.", wrong: ["def is when I receive. It makes the function. The broadcast is the call that uses it.", null, "Python has no broadcast word. A broadcast is just calling the function: fight()."] },
+        `<h2>Putting it together</h2>
+<p>Here is the whole game: three rooms, a key, a goblin, and a treasure. It is about forty lines, and you have seen every one of them before. Read it top to bottom. Then play it with the moves in the box, then with your own.</p>
+<details class="reveal"><summary>Guess first: in the moves below, the player types <code>open chest</code> before taking the key. What does the game print?</summary><p><code>The chest is locked.</code> (Unless the goblin won the fight first!) The key is not in the bag yet, so <code>"key" in bag</code> is False. The player has to go back for the key.</p></details>`,
+        { long: true, play: `import random
 
 def fight(health):
     print("A goblin blocks the way!")
@@ -930,7 +967,7 @@ if health <= 0:
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
-<li>A game is a <code>while</code> loop that asks, decides with <code>if</code>/<code>elif</code>, and repeats until something changes.</li>
+<li>The question was: how do you build a whole world from the blocks you know? A game is a <code>while</code> loop that asks, decides with <code>if</code>/<code>elif</code>, and repeats until something changes.</li>
 <li>Rooms are a variable; doors are <code>elif</code> lines with <code>and</code>; the bag is a list checked with <code>in</code>; the fight is a loop with <code>random.randint</code>.</li>
 <li><code>broadcast</code> is a function call and <code>when I receive</code> is <code>def</code>. A function that changes a number takes it in and returns it.</li>
 <li>Build one piece, run it, add the next. The order of <code>elif</code> lines matters.</li>
@@ -940,11 +977,12 @@ if health <= 0:
     },
     /* ================================================================== */
     {
-      standards: ['2-AP-12', '2-AP-14', '2-AP-16'],
+      standards: ['2-AP-12', '2-AP-14', '2-AP-16'], standard: 1,
       title: 'Project: turtle art', summary: 'Shapes become functions, colours and fills make them pretty, and loops turn one shape into a flower, a spiral and a sky full of stars.',
       blocks: [
         `<p>Remember Seymour Papert from lesson 3? He made Logo, a language for kids. His team gave it a robot with a pen underneath. Kids typed <code>FORWARD 50</code> and it rolled forward and drew a line. They typed <code>RIGHT 90</code> and it turned. Papert called it the turtle. He said kids should teach the computer, not the other way round. Scratch was made by his students, years later, with the same idea.</p>`,
         `<p>Your turtle is the same turtle, on a screen. In lesson 3 you drew squares and stars with <code>repeat</code>. Now you have functions. That changes everything. A shape becomes one word. One word, repeated and turned, becomes art.</p>
+<p>So what art can one function make?</p>
 <h2>A shape is a function</h2>
 <p>You know how to draw a square: four times, move and turn. Put that inside a <code>def</code> and the square gets a name. Then you can draw ten of them with one loop.</p>`,
         { fig: 'blocks', stack: [['myblocks', 'define square'], ['control', 'repeat (4)', [['motion', 'move (80) steps'], ['motion', 'turn right (90) degrees']]]], python: 'def square():\n    for i in range(4):\n        t.forward(80)\n        t.right(90)', caption: 'A define block becomes def. The turtle is called t, like in lesson 3. Call square() and you get a square wherever the turtle is.' },
@@ -981,7 +1019,7 @@ polygon(5, 100)
 polygon(6, 100)
 polygon(8, 100)
 turtle.done()`, caption: 'Five shapes from one function, all starting at the same corner. Add polygon(40, 10): forty tiny sides look like a circle.' },
-        { check: 'The turtle draws a shape with 10 sides. How many degrees does it turn at each corner?', options: ['10', '36', '90'], answer: 1, why: '360 ÷ 10 = 36. All the turns together always add up to 360, one full circle, whatever the shape.' },
+        { check: 'The turtle draws a shape with 10 sides. How many degrees does it turn at each corner?', options: ['10', '36', '90'], answer: 1, why: '360 ÷ 10 = 36. All the turns together always add up to 360, one full circle, whatever the shape.', wrong: ['10 is the number of sides, not the turn. The turn is 360 divided by the sides.', null, '90 is the turn for a square, which has 4 sides. For 10 sides it is 360 ÷ 10.'] },
         `<h2>Colour and fill</h2>
 <p>A turtle has a pen, and the pen has a colour. <code>t.color("red")</code> sets it. Lots of colour names work: <code>"blue"</code>, <code>"orange"</code>, <code>"purple"</code>, <code>"gold"</code>, <code>"hotpink"</code>. <code>t.pensize(3)</code> makes the line thicker. And a shape can be filled in: say <code>t.begin_fill()</code> before you draw it and <code>t.end_fill()</code> after.</p>`,
         { fig: 'blocks', stack: [['pen', 'set pen color to [blue]'], ['pen', 'set pen size to (3)'], ['looks', 'say [fill the next shape]']], python: 't.color("blue")\nt.pensize(3)\nt.begin_fill()\nsquare()\nt.end_fill()', caption: 'Scratch has no fill block, so there is nothing to translate for begin_fill: it is new. The fill is the pen colour too.' },
@@ -999,7 +1037,8 @@ t.begin_fill()
 star(150)
 t.end_fill()
 turtle.done()`, caption: 'A gold star, filled in. A five-point star turns 144 degrees at each point: 5 × 144 = 720, two full turns, which is why the lines cross. Change the colour. Try star(60) three times with a turn between them.' },
-        `<p>Colours can live in a list, and a loop can go through them. Here is a spiral that changes colour as it grows. Each line is a little longer than the last, and each one is the next colour.</p>`,
+        `<details class="reveal"><summary>Guess first: in the spiral below, what colour is the line drawn when <code>i</code> is 6?</summary><p>Red. <code>6 % 6</code> is 0, because 6 goes into 6 once with nothing left over. So the colour is <code>colours[0]</code>, the first one, and the colours start again.</p></details>
+<p>Colours can live in a list, and a loop can go through them. Here is a spiral that changes colour as it grows. Each line is a little longer than the last, and each one is the next colour.</p>`,
         { play: `import turtle
 t = turtle.Turtle()
 t.speed(0)
@@ -1010,7 +1049,7 @@ for i in range(60):
     t.forward(i * 3)
     t.right(59)
 turtle.done()`, caption: 'i % 6 is the remainder when i is divided by 6: 0, 1, 2, 3, 4, 5, 0, 1 … so the colours go round and round. i * 3 makes each line longer. Change 59 to 90, to 120, to 61. Each gives a different spiral.' },
-        { check: 'In <code>colours[i % 6]</code>, what is <code>i % 6</code> when i is 13?', options: ['2', '1', '13'], answer: 1, why: '13 = 2 × 6 + 1, so the remainder is 1 and the colour is colours[1], orange. The % trick keeps a number inside the list, however big i gets.' },
+        { check: 'In <code>colours[i % 6]</code>, what is <code>i % 6</code> when i is 13?', options: ['2', '1', '13'], answer: 1, why: '13 = 2 × 6 + 1, so the remainder is 1 and the colour is colours[1], orange. The % trick keeps a number inside the list, however big i gets.', wrong: ['13 ÷ 6 is 2 with 1 left over. 2 is how many times 6 fits in. % gives what is left over.', null, '% gives the remainder, not the number itself. The remainder is always smaller than 6.'] },
         `<h2>A flower, and some randomness</h2>
 <p>Put the two rules together. A petal is a function. A flower is a loop that draws petals round in a circle. Pick the colours with <code>random.choice</code> and no two flowers are the same.</p>`,
         { play: `import turtle
@@ -1053,7 +1092,7 @@ for i in range(15):
     star(random.randint(10, 40))
     t.end_fill()
 turtle.done()`, caption: 'Fifteen stars, random places, random sizes, random colours. goto(x, y) uses the middle of the screen as (0, 0). Make the sky: more stars, smaller sizes, and one big one.' },
-        { check: 'Why does the program say <code>t.penup()</code> before <code>t.goto()</code>?', options: ['So the turtle moves faster', 'So it does not draw a line on the way to the next star', 'goto does not work with the pen down'], answer: 1, why: 'With the pen down, every move draws. penup lifts the pen, goto moves, pendown puts it back for the star.' },
+        { check: 'Why does the program say <code>t.penup()</code> before <code>t.goto()</code>?', options: ['So the turtle moves faster', 'So it does not draw a line on the way to the next star', 'goto does not work with the pen down'], answer: 1, why: 'With the pen down, every move draws. penup lifts the pen, goto moves, pendown puts it back for the star.', wrong: ['Pen up does not change the speed. It only stops the line.', null, 'goto works with the pen down or up. With the pen down, it draws a line as it goes.'] },
         { fig: 'blockquiz', items: [
           { stack: [['myblocks', 'define hexagon']], answer: 'def hexagon():', hint: 'def, the name, brackets, a colon.' },
           { stack: [['myblocks', 'hexagon']], answer: 'hexagon()', hint: 'Calling a block is its name with brackets.' },
@@ -1089,7 +1128,7 @@ turtle.done()`, caption: 'Fifteen stars, random places, random sizes, random col
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
-<li>A shape is a <code>def</code>. Give it inputs for size and sides, and one function draws them all.</li>
+<li>The question was: what art can one function make? A shape is a <code>def</code>. Give it inputs for size and sides, and one function draws them all.</li>
 <li>Shapes go round in a circle when <em>repeats × turn = 360</em>. A shape's corners add up to 360 too, so each turn is <code>360 / sides</code>.</li>
 <li><code>t.color("gold")</code>, <code>t.pensize(3)</code>, <code>t.begin_fill()</code> and <code>t.end_fill()</code> make it pretty. A list of colours and <code>i % 6</code> cycle through them.</li>
 <li><code>t.penup()</code>, <code>t.goto(x, y)</code>, <code>t.pendown()</code> move without drawing. <code>random.choice</code> and <code>random.randint</code> make every run different.</li>
@@ -1098,10 +1137,11 @@ turtle.done()`, caption: 'Fifteen stars, random places, random sizes, random col
     },
     /* ================================================================== */
     {
-      standards: ['2-AP-11'],
+      standards: ['2-AP-11'], standard: 1,
       title: 'Words and letters', summary: 'join, letter of and length of become +, square brackets and len; a loop can go through a word one letter at a time; and words can be shouted, reversed and searched.',
       blocks: [
-        `<p>In 1966 a programmer called Joseph Weizenbaum wrote a program that talked. You typed a sentence. It found a word in it, turned your sentence around, and asked a question. Type <em>I feel sad</em> and it said <em>Why do you feel sad?</em> He called it ELIZA. Some people thought it understood them. It did not understand a thing. It only played with words: cutting them, joining them, swapping them. That is what this lesson is about.</p>`,
+        `<p>In 1966 a programmer called Joseph Weizenbaum wrote a program that talked. You typed a sentence. It found a word in it, turned your sentence around, and asked a question. Type <em>I feel sad</em> and it might ask <em>Why do you feel sad?</em> He called it ELIZA. Some people thought it understood them. It did not understand a thing. It only played with words: cutting them, joining them, swapping them.</p>
+<p>So how can a program play with words like that?</p>`,
         { photo: 'eliza-conversation', caption: 'A copy of ELIZA, made in 2005. Read the fourth ELIZA line. It swaps my for your. It swaps me for you.' },
         `<p>In Scratch, words live in the green operators blocks: <code>join</code>, <code>letter of</code>, <code>length of</code>. Python has all three, and a few more. A word in Python is called a <em>string</em>: a string of letters.</p>
 <h2>Join, length, letter</h2>`,
@@ -1124,7 +1164,7 @@ print(word[3:6])
 print(word.upper())
 print(word.lower())
 print("fly" in word)`, caption: 'A slice is [start:stop], stopping before stop. .upper() shouts, .lower() whispers. in asks whether a smaller string is inside: True or False. That is the contains block.' },
-        { check: '<code>word = "python"</code>. What is <code>word[1:4]</code>?', options: ['<code>"pyt"</code>', '<code>"yth"</code>', '<code>"ytho"</code>'], answer: 1, why: 'Letters 1, 2 and 3: y, t, h. The slice stops before 4. Letter 0, p, is left out.' },
+        { check: '<code>word = "python"</code>. What is <code>word[1:4]</code>?', options: ['<code>"pyt"</code>', '<code>"yth"</code>', '<code>"ytho"</code>'], answer: 1, why: 'Letters 1, 2 and 3: y, t, h. The slice stops before 4. Letter 0, p, is left out.', wrong: ['That is word[0:3]. Counting starts at 0, so this slice starts at letter 1, which is y.', null, 'The slice stops before 4, so letter 4 (o) is not in it.'] },
         `<h2>A loop through the letters</h2>
 <p>A string is like a list of letters, so <code>for</code> can walk through it. In Scratch you would need a counter and <code>letter (i) of</code>. Python just says <code>for letter in word</code>.</p>`,
         { fig: 'blocks', stack: [['variables', 'set [i] to (1)'], ['control', 'repeat (length of (word))', [['looks', 'say (letter (i) of (word))'], ['variables', 'change [i] by (1)']]]], python: 'for letter in word:\n    print(letter)', caption: 'Four Scratch blocks become two lines. The loop hands you one letter at a time, so you never need the counter.' },
@@ -1143,7 +1183,7 @@ for letter in word:
     backwards = letter + backwards
 print(backwards)`, caption: 'Three loops. The first prints each letter twice. The second counts vowels: letter in "aeiou" is True for a, e, i, o, u. The third builds the word backwards by putting each new letter in front. (There is a shortcut: word[::-1]. Try it.)' },
         `<details class="reveal"><summary>Guess first: in the backwards loop, what is <code>backwards</code> after the first three letters?</summary><p><code>"iar"</code>. Start with "". Add r in front: "r". Add a in front: "ar". Add i in front: "iar". Each letter goes to the front, so the word turns round.</p></details>`,
-        { check: 'Which line is True when the word has a letter z in it?', options: ['<code>"z" in word</code>', '<code>word == "z"</code>', '<code>len(word) == "z"</code>'], answer: 0, why: 'in looks for one string inside another. word == "z" is only True if the whole word is z.' },
+        { check: 'Which line is True when the word has a letter z in it?', options: ['<code>"z" in word</code>', '<code>word == "z"</code>', '<code>len(word) == "z"</code>'], answer: 0, why: 'in looks for one string inside another. word == "z" is only True if the whole word is z.', wrong: [null, '== asks whether the whole word is z. It does not look inside the word.', 'len gives a number. A number is never equal to the text "z".'] },
         `<h2>Playing with words</h2>
 <p>A few more tools, and you can build ELIZA's tricks. <code>.replace(old, new)</code> swaps every old for new. <code>.count(x)</code> counts how often x appears. <code>.split()</code> cuts a sentence into a list of words at the spaces. And <code>*</code> with a number repeats a string.</p>`,
         { play: `line = "I feel sad today"
@@ -1155,7 +1195,7 @@ print(len(words), "words")
 print("ha" * 5)
 print("-" * 20)`, caption: 'ELIZA\'s best trick is the first line: swap "I feel" for "Why do you feel" and add a question mark. split() turns a sentence into a list, so everything from lesson 5 works on it. "-" * 20 draws a line.' },
         `<details class="reveal"><summary>Guess first: what is <code>"abc" * 3</code>? And <code>"abc" + 3</code>?</summary><p><code>"abcabcabc"</code>: a string times a number repeats it. <code>"abc" + 3</code> is an error: you cannot join a string and a number. Turn the number into a string first: <code>"abc" + str(3)</code> is "abc3". That is why lesson 5 had str().</p></details>`,
-        { check: 'What does <code>"hello world".split()</code> give?', options: ['<code>"helloworld"</code>', '<code>["hello", "world"]</code>', '<code>11</code>'], answer: 1, why: 'split() cuts at the spaces and gives a list of the pieces. Two words, so a list of two strings.' },
+        { check: 'What does <code>"hello world".split()</code> give?', options: ['<code>"helloworld"</code>', '<code>["hello", "world"]</code>', '<code>11</code>'], answer: 1, why: 'split() cuts at the spaces and gives a list of the pieces. Two words, so a list of two strings.', wrong: ['split cuts a sentence apart. It does not glue it together.', null, '11 is the length of the whole text. split gives a list of the pieces, not a count.'] },
         { fig: 'blockquiz', items: [
           { stack: [['looks', 'say (join [Hi ] (name))']], answer: ['print("Hi " + name)', "print('Hi ' + name)"], hint: 'join is +: print("Hi " + name)' },
           { stack: [['looks', 'say (length of (word))']], answer: 'print(len(word))', hint: 'length of is len()' },
@@ -1188,7 +1228,7 @@ print("-" * 20)`, caption: 'ELIZA\'s best trick is the first line: swap "I feel"
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
-<li>A string is letters in quotes. <code>+</code> joins, <code>*</code> repeats, <code>len()</code> counts.</li>
+<li>The question was: how can a program play with words? A string is letters in quotes. <code>+</code> joins, <code>*</code> repeats, <code>len()</code> counts.</li>
 <li><code>word[0]</code> is the first letter and <code>word[-1]</code> the last; <code>word[1:4]</code> is a slice that stops before 4.</li>
 <li><code>for letter in word</code> walks through the letters. <code>"a" in word</code> is the contains block.</li>
 <li><code>.upper()</code>, <code>.lower()</code>, <code>.replace()</code>, <code>.count()</code> and <code>.split()</code> are the tools ELIZA was made of.</li>
