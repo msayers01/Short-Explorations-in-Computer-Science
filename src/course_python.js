@@ -1427,13 +1427,14 @@ print(top_scorer({"Ada": 92, "Grace": 95, "Linus": 95}))`, caption: "It prints 3
     /* ================================================================== */
     {
       standards: ['2-AP-16', '2-DA-09', '3A-DA-12', '3B-DA-07', '6.1.2.3', '7.1.2.2', '7.1.2.5', '7.1.2.6'],
-      title: 'Randomness and simulation', summary: 'Dice, coins and shuffled decks from the random module, repeatable randomness with seeds, and answering "how likely is that?" by running the experiment thousands of times, including two famous puzzles that fool almost everyone.',
+      standard: 1, title: 'Randomness and simulation', summary: 'Dice, coins and shuffled decks from the random module, repeatable randomness with seeds, and answering "how likely is that?" by running the experiment thousands of times, including two famous puzzles that fool almost everyone.',
       blocks: [
-        `<p>Here is a question to try on your friends. In a class of 23 people, how likely is it that two of them share a birthday? Most people guess something small, perhaps one chance in 15, since there are 365 days to choose from. The true answer is just over one half. Nearly everyone's intuition gets this wrong, and a program can settle the argument in a few lines, without any probability theory, by simply trying it thousands of times. That trick, and the randomness it needs, is this lesson.</p>
+        `<p>Here is a question to try on your friends. In a class of 23 people, how likely is it that two of them share a birthday? Most people guess something small, since there are 365 days to choose from. The true answer is just over one half. Nearly everyone's intuition gets this wrong, and a program can settle the argument in a few lines, without any probability theory, by simply trying it thousands of times. But a computer follows its instructions exactly. So how can it produce chance at all, and can trying something thousands of times really settle a question?</p>
 <h2>The random module</h2>
 <div class="stmt"><p><span class="kind">Rule (the random module).</span> After <code>import random</code> at the top of a program:</p>
 <p><code>random.randint(<i>a</i>, <i>b</i>)</code> gives a whole number from <i>a</i> to <i>b</i>, <em>including both ends</em>, each equally likely. <code>random.choice(<i>xs</i>)</code> gives one item of the list <i>xs</i>. <code>random.shuffle(<i>xs</i>)</code> puts the items of <i>xs</i> in a random order, changing the list in place and giving back <code>None</code>. <code>random.random()</code> gives a decimal from 0 up to, but not including, 1.</p></div>
-<p>Watch the ends. <code>randint(1, 6)</code> can give 6, but <code>range(1, 6)</code> stops at 5 (Lesson 4). It is an inconsistency in Python that catches everyone once.</p>`,
+<p>Watch the ends. <code>randint(1, 6)</code> can give 6, but <code>range(1, 6)</code> stops at 5 (Lesson 4). It is an inconsistency in Python that catches everyone once.</p>
+<details class="reveal"><summary>Guess first: in the example below, what can change from run to run, and what can never change?</summary><p>The values change on every run, so you cannot predict them. But their shape is fixed: the first two lines are whole numbers from 1 to 6 (and 6 can appear), line 3 is one of the three words, line 4 is a decimal that is at least 0 and below 1, and line 5 always holds all five cards, each once, only in a different order.</p></details>`,
         { play: `import random
 
 print(random.randint(1, 6))        # a die: 1 to 6, both included
@@ -1443,12 +1444,13 @@ print(random.random())             # a decimal from 0 up to 1
 
 deck = ["A", "K", "Q", "J", "10"]
 random.shuffle(deck)               # changes deck itself
-print(deck)`, caption: 'Run it several times: different answers each time is the point. Like append in Lesson 5, shuffle changes the list and gives back None, so write random.shuffle(deck), never deck = random.shuffle(deck).' },
-        { check: "Which values can <code>random.randint(1, 6)</code> give?", options: ["1 to 5, like range", "1 to 6, including both ends", "0 to 6"], answer: 1, why: "Unlike range, randint includes both ends: a dice roll is exactly <code>randint(1, 6)</code>." },
+print(deck)`, caption: 'Run it several times: different values each time, but always the same shape. Like append in Lesson 5, shuffle changes the list and gives back None, so write random.shuffle(deck), never deck = random.shuffle(deck).' },
+        { check: "Which values can <code>random.randint(1, 6)</code> give?", options: ["1 to 5, like range", "1 to 6, including both ends", "0 to 6"], answer: 1, why: "Unlike range, randint includes both ends: a dice roll is exactly <code>randint(1, 6)</code>.", wrong: ["Mixes randint up with <code>range(1, 6)</code>, which stops before 6. randint is the odd one out: it includes its last number.", null, "Counts from 0 as lists do. randint starts exactly where you tell it: <code>randint(1, 6)</code> never gives 0."] },
         `<h2>Numbers that only look random</h2>
 <p>A computer follows instructions exactly, so it cannot really produce chance. What <code>random</code> produces are <em>pseudorandom</em> numbers: a long sequence computed by a fixed rule from a starting value called the <em>seed</em>, designed so that no pattern shows. When the numbers must be truly unpredictable, as for the secret keys that protect web traffic, they need a physical source of chance: the internet company Cloudflare films a wall of lava lamps and mixes the pictures into its random numbers. Normally Python picks the seed from the clock, so every run is different. You can choose it yourself.</p>`,
         { photo: 'lava-lamps', caption: "The wall of lava lamps at Cloudflare. The blobs of wax never move the same way twice." },
-        `<div class="stmt"><p><span class="kind">Rule (seeds).</span> <code>random.seed(<i>s</i>)</code> sets the seed. After the same seed, the random functions give exactly the same sequence of results.</p></div>`,
+        `<div class="stmt"><p><span class="kind">Rule (seeds).</span> <code>random.seed(<i>s</i>)</code> sets the seed. After the same seed, the random functions give exactly the same sequence of results.</p></div>
+<details class="reveal"><summary>Guess first: the example below sets seed 7, prints three numbers, sets seed 7 again and prints three more. Will the two lines match? And a line after seed 8?</summary><p>The two seed-7 lines match exactly: the seed decides the whole sequence. Seed 8 starts a different sequence, so its line is almost surely different (three numbers from 1 to 100 match by luck about once in a million tries). The numbers you see depend on Python's rule for turning seeds into numbers, and the site's Python may not print the same ones as your own computer's.</p></details>`,
         { play: `import random
 
 random.seed(7)
@@ -1457,10 +1459,11 @@ random.seed(7)
 print(random.randint(1, 100), random.randint(1, 100), random.randint(1, 100))
 random.seed(8)
 print(random.randint(1, 100), random.randint(1, 100), random.randint(1, 100))`, caption: 'The same seed replays the same numbers; a different seed gives different ones. Games use this to share a level ("try seed 4471"), and scientists so that others can repeat their results exactly.' },
-        { check: "Two runs of a program both start with <code>random.seed(42)</code>. What do their random numbers look like?", options: ["Different each run, as random numbers should be", "Exactly the same sequence in both runs", "The same only for the first number"], answer: 1, why: "The numbers are pseudorandom: the seed decides the whole sequence. The same seed replays it exactly, which is useful for debugging and sharing." },
+        { check: "Two runs of a program both start with <code>random.seed(42)</code>. What do their random numbers look like?", options: ["Different each run, as random numbers should be", "Exactly the same sequence in both runs", "The same only for the first number"], answer: 1, why: "The numbers are pseudorandom: the seed decides the whole sequence. The same seed replays it exactly, which is useful for debugging and sharing.", wrong: ["Believes the computer produces real chance. It only follows a fixed rule from the seed, so the same seed always gives the same numbers; the clock usually chooses a different seed each run, which is why runs look different.", null, "Thinks the seed only affects the start. It decides the entire sequence, every number after the first as well."] },
         `<p>Seeds are also a debugging tool (Lesson 8): a bug that appears only with certain random numbers is maddening, but fix the seed and the bug happens the same way every time, so you can reproduce it, shrink it and fix it.</p>
 <h2>Counting what comes up</h2>
-<p>A loop and <code>randint</code> make a dice machine; Lesson 9's counting pattern tallies the faces. A fair die shows each face with probability 1/6, so in 600 rolls each should appear about 100 times, but not exactly.</p>`,
+<p>A loop and <code>randint</code> make a dice machine; Lesson 9's counting pattern tallies the faces. A fair die shows each face with probability 1/6, so in 600 rolls each should appear about 100 times, but not exactly.</p>
+<details class="reveal"><summary>Guess first: will all six fractions be close to 0.167 with 60 rolls? With 6000?</summary><p>With 60 rolls, no: each face comes up only about 10 times, and chance moves that by a few either way, so fractions a few hundredths away from 0.167 are normal. With 6000 rolls they are usually within about 0.01. The program prints three lines, one for each number of rolls, so you can compare.</p></details>`,
         { play: `import random
 
 for rolls in [60, 600, 6000]:
@@ -1470,7 +1473,7 @@ for rolls in [60, 600, 6000]:
         counts[face] = counts.get(face, 0) + 1
     fractions = [round(counts.get(face, 0) / rolls, 3) for face in range(1, 7)]
     print(rolls, "rolls:", fractions)`, caption: 'Every fraction should be about 0.167. With 60 rolls some are far off; with 6000 all are close. Run it again and compare.' },
-        { check: "To estimate the probability of rolling a double six, a program repeats the experiment 10,000 times. What does it compute at the end?", options: ["The number of double sixes", "The number of double sixes divided by 10,000", "10,000 divided by the number of double sixes"], answer: 1, why: "Monte Carlo: repeat the experiment, count the successes, divide by the number of trials. The estimate settles as the trials grow." },
+        { check: "To estimate the probability of rolling a double six, a program repeats the experiment 10,000 times. What does it compute at the end?", options: ["The number of double sixes", "The number of double sixes divided by 10,000", "10,000 divided by the number of double sixes"], answer: 1, why: "Monte Carlo: repeat the experiment, count the successes, divide by the number of trials. The estimate settles as the trials grow.", wrong: ["Forgets that a probability is a fraction of the trials. A count of, say, 280 depends on how many trials were run; 280 out of 10,000 is the same as 0.028 whatever the number of trials.", null, "Turns the fraction upside down. That gives about 36 (trials per success), not the chance of success."] },
         `<p>That the fractions settle down as the number of trials grows is called the <em>law of large numbers</em>. But they settle slowly. The typical error of an estimate from <i>n</i> trials shrinks in proportion to 1/√<i>n</i>, so to make an estimate ten times more precise you need a <em>hundred</em> times as many trials. Keep that in mind whenever a simulation gives you a number: it is an estimate with a wobble, not an exact answer.</p>
 <h2>Answering a question by simulation</h2>
 <p>Here is the trick promised at the start. To find how likely something is, you do not need to calculate: run the experiment many times, count how often it happens, and divide by the number of trials. This is called a <em>Monte Carlo simulation</em>, after the casino, and it is used for real, to price insurance, forecast weather and plan space missions. Back to the birthdays.</p>`,
@@ -1504,7 +1507,8 @@ for t in range(trials):
 print("stay:", stay_wins / trials, " switch:", switch_wins / trials)`, caption: 'Switching wins about two thirds of the time. The program did not even need to act out the host: it only needed to notice when each strategy wins.' },
         `<details class="reveal"><summary>Why does switching win two thirds of the time?</summary><p>Your first pick is right with probability 1/3. If it was right, switching loses. If it was wrong, which happens with probability 2/3, the car is behind one of the two other doors, and the host has just opened the one with the goat, so the remaining door must hold the car: switching wins. So switching wins exactly when your first pick was wrong, with probability 2/3. Writing the program forced exactly this reasoning, which is one reason simulations are good for thinking.</p></details>
 <h2>Before the exercises</h2>
-<p>The first exercise builds a list of rolls with a loop, so the <code>randint</code> call must be <em>inside</em> the loop: one call per roll. The second is a complete simulation, with the pattern of every example above: repeat, count the successes, divide by the number of trials. Here is a worked example of each shape.</p>`,
+<p>The first exercise builds a list of rolls with a loop, so the <code>randint</code> call must be <em>inside</em> the loop: one call per roll. The second is a complete simulation, with the pattern of every example above: repeat, count the successes, divide by the number of trials. Here is a worked example of each shape.</p>
+<details class="reveal"><summary>Guess first: how long is the list that <code>flips(8)</code> gives, and what will the last line be close to?</summary><p>The list always has 8 items, each <code>"H"</code> or <code>"T"</code>, in no predictable order. The last line is the fraction of 3000 die rolls showing 5 or 6: two faces out of six, so close to 0.333, give or take about 0.01.</p></details>`,
         { play: `import random
 
 def flips(n):                          # a list of n coin flips
@@ -1529,10 +1533,11 @@ print(fraction_at_least_five(3000))    # about 0.333`, caption: 'Calling random.
             prompt: `<p>Write <code>roll(n)</code>, which returns a list of <code>n</code> dice rolls, each a whole number from 1 to 6. The tests cannot know which numbers you will roll, so they check the <em>shape</em> of your answer: the right length, every value in range, and, over many rolls, every face appearing.</p>`,
             starter: `import random\n\ndef roll(n):\n    rolls = []\n    ...\n    return rolls\n\nprint(roll(5))`,
             solution: `import random\n\ndef roll(n):\n    rolls = []\n    for i in range(n):\n        rolls.append(random.randint(1, 6))\n    return rolls\n\nprint(roll(5))`,
-            hints: ['Loop n times, like flips above; each time append random.randint(1, 6) to the list.', 'The randint call must be inside the loop, so that each roll is fresh.'],
+            hints: ['Loop n times, like flips above; each time append random.randint(1, 6) to the list.', 'The randint call must be inside the loop, so that each roll is fresh.', 'The body of the loop is one line: rolls.append(random.randint(1, 6)). Then return rolls after the loop.'],
             tests: [{ call: 'len(roll(10))', expect: '10' }, { call: 'len(roll(0))', expect: '0' }, { call: 'all(1 <= x <= 6 for x in roll(300))', expect: 'True' }, { call: 'all(type(x) == int for x in roll(20))', expect: 'True' }, { call: 'sorted(set(roll(600)))', expect: '[1, 2, 3, 4, 5, 6]' }],
             mustContain: [{ re: /random\.(randint|choice|randrange)/, msg: 'Use the random module to roll each die.' }],
-            failTip: 'If the last test fails, some face never appears: check that each roll is a new call to randint inside the loop, and that the range is 1 to 6.'
+            failTip: 'If the last test fails, some face never appears: check that each roll is a new call to randint inside the loop, and that the range is 1 to 6.',
+            followup: 'Add a second parameter, sides, so that roll(5, 20) rolls five twenty-sided dice. Then use your roll to find how often the total of two dice is 7: it is the most common total, 6 times in 36.'
           }
         },
         {
@@ -1541,7 +1546,7 @@ print(fraction_at_least_five(3000))    # about 0.333`, caption: 'Calling random.
             prompt: `<p>Write <code>double_six_fraction(trials)</code>: roll two dice <code>trials</code> times, count how often <em>both</em> show 6, and return the count divided by <code>trials</code>. The exact probability is 1/36, about 0.028, so with 5000 trials your answer should land between 0.015 and 0.045 nearly every time.</p>`,
             starter: `import random\n\ndef double_six_fraction(trials):\n    hits = 0\n    for i in range(trials):\n        ...\n    return hits / trials\n\nprint(double_six_fraction(5000))`,
             solution: `import random\n\ndef double_six_fraction(trials):\n    hits = 0\n    for i in range(trials):\n        a = random.randint(1, 6)\n        b = random.randint(1, 6)\n        if a == 6 and b == 6:\n            hits += 1\n    return hits / trials\n\nprint(double_six_fraction(5000))`,
-            hints: ['Roll two separate dice inside the loop, with two randint calls.', 'Count a hit only when a == 6 and b == 6.'],
+            hints: ['Roll two separate dice inside the loop, with two randint calls.', 'Count a hit only when a == 6 and b == 6.', 'Inside the loop: a = random.randint(1, 6), then b = random.randint(1, 6), then if a == 6 and b == 6: hits += 1. After the loop, return hits / trials.'],
             tests: [{ call: '0.015 < double_six_fraction(5000) < 0.045', expect: 'True' }, { call: '0.015 < double_six_fraction(5000) < 0.045', expect: 'True' }, { call: 'double_six_fraction(1) in (0.0, 1.0)', expect: 'True' }],
             mustContain: [{ re: /random\./, msg: 'Simulate it with the random module rather than calculating 1/36 directly.' }],
             failTip: 'If the answer is far from 0.028, check that both dice are rolled again on every pass, and that the test uses and, not or.',
@@ -1549,6 +1554,7 @@ print(fraction_at_least_five(3000))    # about 0.333`, caption: 'Calling random.
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
+<li>The opening question: a computer cannot produce real chance, but pseudorandom numbers are good enough to simulate it, and repeating an experiment thousands of times and counting gives a trustworthy estimate (with a small wobble).</li>
 <li><code>import random</code>; <code>randint(a, b)</code> includes both ends; <code>choice</code>, <code>shuffle</code> (in place, gives back <code>None</code>) and <code>random()</code>.</li>
 <li>The numbers are pseudorandom: <code>random.seed(s)</code> replays the same sequence, which helps debugging and sharing.</li>
 <li>Monte Carlo: to estimate a probability, repeat the experiment, count the successes, divide by the trials.</li>
@@ -1560,9 +1566,9 @@ print(fraction_at_least_five(3000))    # about 0.333`, caption: 'Calling random.
     /* ================================================================== */
     {
       standards: ['3B-AP-10', '3B-AP-13', '9.3.7.4'],
-      title: 'Recursion', summary: 'Functions that call themselves: base cases and progress, what the call stack does, why trusting the recursive call is justified, recursion on lists and strings, the Tower of Hanoi, and making slow recursion fast with a dictionary.',
+      standard: 1, title: 'Recursion', summary: 'Functions that call themselves: base cases and progress, what the call stack does, why trusting the recursive call is justified, recursion on lists and strings, the Tower of Hanoi, and making slow recursion fast with a dictionary.',
       blocks: [
-        `<p>In 1883 the French mathematician Édouard Lucas sold a puzzle with a story attached. In a temple, the story went, priests are moving a tower of 64 golden discs from one peg to another, one disc at a time, never putting a larger disc on a smaller one, using a third peg to help. When they finish, the world will end. Should we worry? By the end of this lesson you will have written a five-line program that solves the puzzle for any number of discs, and worked out exactly how long the priests need.</p>`,
+        `<p>In 1883 the French mathematician Édouard Lucas sold a puzzle with a story attached. In a temple, the story went, priests are moving a tower of 64 golden discs from one peg to another, one disc at a time, never putting a larger disc on a smaller one, using a third peg to help. When they finish, the world will end. Should we worry? How long would the priests really need, and how could a program that never plans more than one move ahead solve the puzzle for any number of discs? By the end of this lesson you will have written that program and worked out the answer.</p>`,
         { photo: ['hanoi-bremen', 'hanoi-1884'], caption: "Left: a wooden Tower of Hanoi, photographed in Bremen in Germany, partway through a game. Right: the puzzle as Popular Science Monthly drew it in 1884-85, at the start, partway through and finished: the whole tower moved from peg A to peg B." },
         `<p>The program uses <em>recursion</em>: a function that calls itself. At first that looks like a trick that should not work, like a dictionary that defines a word using the same word. It does work, and for some problems it is the most natural way to think.</p>
 <h2>A function that calls itself</h2>
@@ -1582,7 +1588,7 @@ print(factorial(20))`, caption: '120, then 2432902008176640000. The function nev
     return n * factorial(n - 1)
 
 print(factorial(-1))`, expectError: true, caption: 'RecursionError. From -1 the calls go -2, -3, -4, … moving away from 0, until Python runs out of room for waiting calls. A base case of n <= 0 would have stopped it.' },
-        { check: "What are the two things every recursive function needs?", options: ["A loop and a return", "A base case, and progress towards it on every call", "Two parameters"], answer: 1, why: "Without a base case, or without progress towards it, the calls never stop and Python runs out of room: RecursionError." },
+        { check: "What are the two things every recursive function needs?", options: ["A loop and a return", "A base case, and progress towards it on every call", "Two parameters"], answer: 1, why: "Without a base case, or without progress towards it, the calls never stop and Python runs out of room: RecursionError.", wrong: ["Thinks recursion is a kind of loop. The factorial above has no loop at all, and a return alone does not make the calls stop.", null, "Mixes up the shape of the function with its structure. factorial has one parameter and count_down one; what matters is where the calls stop."] },
         `<h2>What actually happens</h2>
 <p>Lesson 7 showed that every call gets its own frame. A recursive call is no different: <code>factorial(3)</code> gets a frame, and inside it <code>factorial(2)</code> gets another, each with its own <code>n</code>. The frames stack up until the base case answers without calling again; then they finish one by one, most recent first. Step through it.</p>`,
         {
@@ -1609,7 +1615,7 @@ print(factorial(-1))`, expectError: true, caption: 'RecursionError. From -1 the 
 <p>That is also how to <em>write</em> a recursive function. Ask: what is the smallest input, and what is its answer? Then: if I already had the answer for a slightly smaller input, how would I get the answer for this one?</p>
 <h2>Recursion on lists and strings</h2>
 <p>The same questions work on sequences. A list is either empty, the smallest possible list, or a first item followed by a smaller list, <code>xs[1:]</code>. So the sum of a list is 0 if it is empty, and otherwise the first item plus the sum of the rest.</p>`,
-        { play: `def sum_list(xs):
+        { predict: true, play: `def sum_list(xs):
     if len(xs) == 0:                  # the smallest list; its sum is 0
         return 0
     return xs[0] + sum_list(xs[1:])   # first item, plus the sum of the rest
@@ -1623,11 +1629,12 @@ def count_down(n):
     print(n)
     count_down(n - 1)
 
-count_down(5)`, caption: 'sum_list gives 14. In count_down, try moving print(n) below the recursive call: the numbers come out in the opposite order, because each print now happens while the frames finish.' },
-        { check: "<code>def sum_list(xs): return xs[0] + sum_list(xs[1:])</code>, with base case <code>if xs == []: return 0</code>. Why 0 and not <code>xs[0]</code>?", options: ["Because the empty list has no xs[0], and 0 is the sum of nothing", "Because recursion always ends with 0", "It makes no difference"], answer: 0, why: "The base case must answer the smallest input correctly: the sum of an empty list is 0, and the empty list has no first item to return." },
+count_down(5)`, caption: 'sum_list gives 14: 3 + 1 + 4 + 1 + 5. count_down prints 5, 4, 3, 2, 1 and then Liftoff!, each number printed before the next call. Try moving print(n) below the recursive call: the numbers come out in the opposite order, because each print now happens while the frames finish.' },
+        { check: "<code>def sum_list(xs): return xs[0] + sum_list(xs[1:])</code>, with base case <code>if xs == []: return 0</code>. Why 0 and not <code>xs[0]</code>?", options: ["Because the empty list has no xs[0], and 0 is the sum of nothing", "Because recursion always ends with 0", "It makes no difference"], answer: 0, why: "The base case must answer the smallest input correctly: the sum of an empty list is 0, and the empty list has no first item to return.", wrong: [null, "Believes every base case returns 0. The base case answers whatever the smallest input needs: factorial's returns 1, because 0! is 1.", "Thinks any value will do. Every answer includes the base case's value, so a wrong one is added into every sum, and xs[0] on an empty list is an IndexError."] },
         `<details class="reveal"><summary>Predict: why must the base case of <code>sum_list</code> return 0, and not, say, the first item?</summary><p>Every sum eventually adds the sum of the empty list, so that value is added to every answer. Only 0 leaves the answers unchanged. And the empty list has no first item at all: <code>xs[0]</code> would be an <code>IndexError</code>.</p></details>
 <h2>The Tower of Hanoi</h2>
-<p>Back to the priests. To move a tower of <i>n</i> discs from peg A to peg C, using B as the spare: first move the top <i>n</i> − 1 discs from A to B (using C as the spare), then move the biggest disc from A to C, then move the <i>n</i> − 1 discs from B onto it on C (using A). The two smaller moves are the same puzzle with one disc fewer, so the function calls itself twice. The base case: moving zero discs takes no moves at all.</p>`,
+<p>Back to the priests. To move a tower of <i>n</i> discs from peg A to peg C, using B as the spare: first move the top <i>n</i> − 1 discs from A to B (using C as the spare), then move the biggest disc from A to C, then move the <i>n</i> − 1 discs from B onto it on C (using A). The two smaller moves are the same puzzle with one disc fewer, so the function calls itself twice. The base case: moving zero discs takes no moves at all.</p>
+<details class="reveal"><summary>Guess first: for three discs, which disc moves first, and how many moves will the program print?</summary><p>The smallest disc, disc 1, moves first, because the biggest cannot move until the two above it are out of the way. And the program prints 7 moves. Check it against the output below.</p></details>`,
         { play: `def hanoi(n, source, target, spare):
     if n == 0:
         return 0                                    # no discs: no moves
@@ -1642,7 +1649,7 @@ print(hanoi(3, "A", "C", "B"), "moves")`, caption: 'Seven moves for three discs,
 <h2>When recursion branches</h2>
 <p>The Fibonacci numbers are 0, 1, 1, 2, 3, 5, 8, 13, …, each the sum of the two before it. Written recursively, <code>fib(n)</code> calls <code>fib(n - 1)</code> <em>and</em> <code>fib(n - 2)</code>, so the calls form a tree, like the Tower of Hanoi's.</p>`,
         { fig: 'fibtree', n: 5, lang: 'python', caption: 'The tree of calls for fib(5). Filled circles are base cases. The same small values are computed again and again, which is why this version gets slow quickly.' },
-        { play: `def fib(n):
+        { predict: true, play: `def fib(n):
     if n < 2:
         return n
     return fib(n - 1) + fib(n - 2)
@@ -1650,8 +1657,8 @@ print(hanoi(3, "A", "C", "B"), "moves")`, caption: 'Seven moves for three discs,
 for i in range(10):
     print(fib(i), end=" ")
 print()
-print(fib(25))`, caption: 'fib(25) is 75025, but getting there takes over 240,000 calls, because the tree recomputes the same values. fib(30) would take over two and a half million.' },
-        { check: "Why is the plain recursive <code>fib</code> so slow?", options: ["Recursion is always slower than loops", "The same small values are computed again and again, because the calls branch", "Python limits recursion to 1000 calls"], answer: 1, why: "Each call makes two more, and both branches recompute the same sub-problems. Storing each answer in a dictionary (memoisation) removes the repeats." },
+print(fib(25))`, caption: 'The first line is 0 1 1 2 3 5 8 13 21 34: each number is the sum of the two before it. Then 75025, which is fib(25). Getting there takes over 240,000 calls, because the tree recomputes the same values. fib(30) would take over two and a half million.' },
+        { check: "Why is the plain recursive <code>fib</code> so slow?", options: ["Recursion is always slower than loops", "The same small values are computed again and again, because the calls branch", "Python limits recursion to 1000 calls"], answer: 1, why: "Each call makes two more, and both branches recompute the same sub-problems. Storing each answer in a dictionary (memoisation) removes the repeats.", wrong: ["Believes recursion itself is the slow part. The memoised version below is also recursive and is instant; the cost here is the repeated work.", null, "Mistakes the depth limit for the cost. Python does cap how deep calls can nest, but fib(25) is never more than 25 deep: the slowness is the number of calls, about 240,000."] },
         `<p>The cure uses Lesson 9. Keep a dictionary of answers already worked out, and before computing <code>fib(n)</code>, look it up. Each value is then computed only once. This trick is called <em>memoisation</em>, from "memo", a note to yourself.</p>`,
         { play: `memo = {}
 
@@ -1664,10 +1671,10 @@ def fib(n):
     return memo[n]
 
 print(fib(30))
-print(fib(90))`, caption: 'Both instant. fib(90) is a 19-digit number that the tree version could not finish in a human lifetime; with the dictionary it takes 89 additions. (The function changes memo\u2019s contents, not the name memo itself, so Lesson 7\u2019s UnboundLocalError does not arise.)' },
+print(fib(50))`, caption: 'Prints 832040 and 12586269025, both instantly. The tree version would need over 40 billion calls for fib(50); with the dictionary it takes 49 additions. (The function changes memo\u2019s contents, not the name memo itself, so Lesson 7\u2019s UnboundLocalError does not arise.)' },
         `<h2>Before the exercises</h2>
 <p>Both exercises are recursion with one smaller call, like <code>factorial</code> and <code>sum_list</code>. For each, answer the two questions first: what is the smallest input and its answer, and how do you get the answer for this input from the answer for a slightly smaller one? Here are two worked examples, one on numbers and one on strings.</p>`,
-        { play: `def sum_digits(n):
+        { predict: true, play: `def sum_digits(n):
     if n < 10:                        # one digit: it is its own sum
         return n
     return n % 10 + sum_digits(n // 10)   # last digit, plus the sum of the rest
@@ -1681,8 +1688,25 @@ def count_char(s, c):
     return rest
 
 print(sum_digits(1974))
-print(count_char("banana", "a"))`, caption: 'Prints 21 and 3. Both shrink the input on every call: n // 10 drops a digit, and s[1:] drops a character.' },
+print(count_char("banana", "a"))`, caption: 'Prints 21 (1 + 9 + 7 + 4) and 3 (banana has three a\u2019s). Both shrink the input on every call: n // 10 drops the last digit, and s[1:] drops the first character, so each reaches its base case.' },
         { aside: `<p><b>Common mistakes in this lesson.</b> No base case, or one the calls can skip past. A recursive call on the <em>same</em> input instead of a smaller one. Forgetting to <code>return</code> the result of the recursive call, so the answer is thrown away and the function returns <code>None</code>. The wrong answer for the base case, such as 1 for an empty sum. Trying to follow every frame in your head instead of checking the base case and trusting the recursive call.</p>` },
+        {
+          ex: {
+            id: 'py-11-3', kind: 'trace', title: 'Trace the calls',
+            prompt: `<p>Before writing recursion, read some. Each row is a moment just after line 5 has run, in one of the calls of <code>sum_to</code>. The rows come in the order the calls reach line 5, and the first row is done for you. Remember which call finishes first.</p>`,
+            code: `def sum_to(n):\n    if n == 0:\n        return 0\n    rest = sum_to(n - 1)\n    answer = n + rest\n    return answer\n\nprint(sum_to(4))`,
+            vars: ['n', 'rest', 'answer'],
+            steps: [
+              { line: 5, values: { n: '1', rest: '0', answer: '1' }, show: true },
+              { line: 5, values: { n: '2', rest: '1', answer: '3' }, why: { n: { '4': 'sum_to(4) cannot reach line 5 until sum_to(3) has answered, so it comes last, not second.', '3': 'After sum_to(1) finishes, the call waiting for it is sum_to(2), the next one up.' } } },
+              { line: 5, values: { n: '3', rest: '3', answer: '6' }, why: { rest: { '2': 'rest is the answer of the smaller call, sum_to(2), which was 3 (the answer in the row above), not 2.' } } },
+              { line: 5, values: { n: '4', rest: '6', answer: '10' } }
+            ],
+            hints: ['The innermost call, sum_to(1), reaches line 5 first, then sum_to(2), and so on outwards. Each rest is the answer the previous row ended with.', 'n goes 1, 2, 3, 4 and answer goes 1, 3, 6, 10: each answer is n plus the answer in the row above, and that row\u2019s answer is this row\u2019s rest.'],
+            solution: '<p>n: 1, 2, 3, 4. rest: 0, 1, 3, 6. answer: 1, 3, 6, 10. The program prints <code>10</code>. The call with the biggest n starts first and finishes last.</p>',
+            followup: 'Change the last line to print(sum_to(5)) and write the table before running it: how many rows will it have, and what is the last answer? Then explain why sum_to(n) always needs n rows.'
+          }
+        },
         {
           ex: {
             id: 'py-11-1', title: 'Recursive power',
@@ -1702,10 +1726,11 @@ print(count_char("banana", "a"))`, caption: 'Prints 21 and 3. Both shrink the in
             prompt: `<p>Write <code>reverse(s)</code> that returns the string backwards, using recursion only: no loops, no <code>[::-1]</code>, no <code>reversed</code>. Like <code>count_char</code>, think of a string as a first character followed by a shorter string. The reverse of the whole is the reverse of the rest, with the first character stuck on the end.</p>`,
             starter: `def reverse(s):\n    ...\n\nprint(reverse("stressed"))`,
             solution: `def reverse(s):\n    if len(s) == 0:\n        return ""\n    return reverse(s[1:]) + s[0]\n\nprint(reverse("stressed"))`,
-            hints: ['Base case: the empty string reverses to the empty string.', 'Recursive case: reverse(s[1:]) + s[0]. Trust that reverse(s[1:]) is right, then add one character.'],
+            hints: ['Base case: the empty string reverses to the empty string.', 'Recursive case: the answer is built from reverse(s[1:]) and the first character s[0]. Trust that reverse(s[1:]) is right.', 'Return reverse(s[1:]) + s[0]: the reversed rest, then the first character stuck on the end.'],
             tests: [{ call: 'reverse("stressed")', expect: "'desserts'" }, { call: 'reverse("")', expect: "''" }, { call: 'reverse("a")', expect: "'a'" }, { call: 'reverse("abc")', expect: "'cba'" }, { call: 'reverse("Ojibwe")', expect: "'ewbijO'" }],
             mustNotContain: [{ re: /\bfor\b|\bwhile\b|\[\s*:\s*:\s*-1\s*\]|\breversed\s*\(/, msg: 'Recursion only: no loops, no [::-1], no reversed().' }],
-            failTip: 'If the answer is the original string, the first character is being added at the front: it belongs at the end, after the reversed rest.'
+            failTip: 'If the answer is the original string, the first character is being added at the front: it belongs at the end, after the reversed rest.',
+            followup: 'Use your reverse to write is_palindrome(s), which says whether a word reads the same backwards, such as "level". Then try it on a whole sentence: what has to be done to the spaces and capitals first?'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
@@ -1720,7 +1745,7 @@ print(count_char("banana", "a"))`, caption: 'Prints 21 and 3. Both shrink the in
     /* ================================================================== */
     {
       standards: ['3B-AP-10', '3B-AP-11'],
-      title: 'Searching and sorting', summary: 'Your first real algorithms and the question that separates programs that finish from programs that never do: how does the work grow? Linear and binary search, bubble sort, and merge sort, with exact step counts.',
+      standard: 1, title: 'Searching and sorting', summary: 'Your first real algorithms and the question that separates programs that finish from programs that never do: how does the work grow? Linear and binary search, bubble sort, and merge sort, with exact step counts.',
       blocks: [
         `<p>Think of a number from 1 to a million, and I will find it with twenty yes-or-no questions. Every time. The trick is to ask "is it bigger than 500,000?", and whatever you answer, half of the possibilities are gone; after twenty questions, a million possibilities are down to one. That strategy is <em>binary search</em>, and it is one of the algorithms in this lesson.</p>
 <p>An <em>algorithm</em> is a precise recipe for solving a problem, one that does not depend on any particular programming language. This lesson works through four classics, two for searching and two for sorting. They are short, but they bring in the question that decides whether a program finishes in a second or not in your lifetime: <em>how does the amount of work grow as the input grows?</em></p>
@@ -1740,7 +1765,7 @@ print(linear_search(data, 7))`, caption: 'Prints 9, the position of 61, then -1.
 <div class="stmt"><p><span class="kind">Binary search.</span> Keep two positions, <code>lo</code> and <code>hi</code>, marking the part of the sorted list still in play; at first, the whole list. Look at the middle item. If it is the target, you are done. If it is smaller than the target, the target can only be to its right, so move <code>lo</code> past it; if it is bigger, move <code>hi</code> before it. When <code>lo</code> passes <code>hi</code>, nothing is left in play, and the target is not in the list.</p></div>
 <p>Why is that right? Because at every moment this stays true: <em>if the target is in the list at all, it is between</em> <code>lo</code> <em>and</em> <code>hi</code>. It is true at the start, and each step keeps it true, since the list is sorted: if the middle item is too small, so is everything to its left. A fact that stays true every time round a loop is called an <em>invariant</em>, and it is how programmers convince themselves that a loop is right.</p>`,
         { fig: 'search', caption: 'Enter any target and step through. Sixteen items need at most 5 comparisons; a million items need at most 20. Try 7 to see the "not found" case.' },
-        { play: `def binary_search(xs, target):
+        { predict: true, play: `def binary_search(xs, target):
     lo = 0
     hi = len(xs) - 1
     while lo <= hi:                 # something is still in play
@@ -1755,14 +1780,15 @@ print(linear_search(data, 7))`, caption: 'Prints 9, the position of 61, then -1.
 
 data = [2, 5, 8, 12, 16, 23, 38, 42, 56, 61, 72, 79, 85, 91, 97, 104]
 print(binary_search(data, 61))
-print(binary_search(data, 7))`, caption: 'Same answers as linear search, with far fewer comparisons. The // matters: (lo + hi) / 2 would give a decimal, and a list position must be a whole number.' },
-        { check: "Binary search is run on a list that is not sorted. What happens?", options: ["It still finds the item, more slowly", "It can give a wrong answer with no error", "Python raises an error"], answer: 1, why: "Binary search relies on the invariant that the target, if present, lies between lo and hi. On unsorted data that is simply false, and nothing checks it." },
+print(binary_search(data, 7))`, caption: 'Prints 9 and -1, the same answers as linear search, but with far fewer comparisons: for 61 the middle items looked at are 42, 79, 61 (3 comparisons, not 10). The // matters: (lo + hi) / 2 would give a decimal, and a list position must be a whole number.' },
+        { check: "Binary search is run on a list that is not sorted. What happens?", options: ["It still finds the item, more slowly", "It can give a wrong answer with no error", "Python raises an error"], answer: 1, why: "Binary search relies on the invariant that the target, if present, lies between lo and hi. On unsorted data that is simply false, and nothing checks it.", wrong: ["Thinks binary search falls back to a slower search. It never looks at the half it threw away, so it can miss an item that is there.", null, "Thinks Python checks that the list is sorted. It does not, and the loop has nothing that could notice, so the wrong answer comes back quietly."] },
         `<h2>Why halving is a big deal</h2>
 <p>Each comparison at least halves the part still in play. The number of times you can halve <i>n</i> before reaching 1 is about log<sub>2</sub> <i>n</i>, the power you must raise 2 to in order to get <i>n</i>, so binary search needs at most about log<sub>2</sub> <i>n</i> + 1 comparisons. For a phone book of a million names that is 20 comparisons, against up to a million for linear search.</p>
 <details class="reveal"><summary>Predict: how many comparisons does binary search need, at most, for a billion items? And for two billion?</summary><p>About 30, since 2<sup>30</sup> is just over a billion. For two billion, 31: doubling the input adds a <em>single</em> comparison. Linear search on two billion items could take two billion.</p></details>
 <p>Computer scientists name the shape of this growth with a notation called <em>big-O</em>: linear search is O(<i>n</i>), meaning its work grows in proportion to <i>n</i>, and binary search is O(log <i>n</i>). Constant factors are ignored, and only the shape matters, because for large inputs the shape wins every time.</p>
 <h2>Bubble sort</h2>
-<p>Binary search needs sorted data, so sorting is worth understanding. <em>Bubble sort</em> is the easiest to watch. Sweep through the list comparing neighbours, and swap any pair that is out of order. After one sweep the largest value has "bubbled" to the end, where it belongs. Repeat on the rest.</p>`,
+<p>Binary search needs sorted data, so sorting is worth understanding. <em>Bubble sort</em> is the easiest to watch. Sweep through the list comparing neighbours, and swap any pair that is out of order. After one sweep the largest value has "bubbled" to the end, where it belongs. Repeat on the rest.</p>
+<details class="reveal"><summary>Guess first: after one sweep of [7, 3, 9, 1, 6, 8, 2, 5, 4], where is the 9, and what does the list look like?</summary><p>The 9 is at the end: it is carried along every time it meets a smaller neighbour, so one sweep gives [3, 7, 1, 6, 8, 2, 5, 4, 9]. Only the 9 is certain to be in its final place; the rest are only slightly more in order. That is why bubble sort needs many sweeps.</p></details>`,
         { fig: 'sort', algo: 'bubble', caption: 'Compared neighbours are highlighted; green means a swap just happened; grey bars have reached their final places. Shuffle and play again.' },
         { play: `def bubble_sort(xs):
     n = len(xs)
@@ -1773,12 +1799,12 @@ print(binary_search(data, 7))`, caption: 'Same answers as linear search, with fa
     return xs
 
 print(bubble_sort([7, 3, 9, 1, 6, 8, 2, 5, 4]))`, caption: 'The swap line exchanges two values at once, a Python speciality: both right-hand values are worked out before either is stored.' },
-        { check: "About how many comparisons does binary search need for a million sorted items, at most?", options: ["About 20", "About 1,000", "About 500,000"], answer: 0, why: "Each comparison halves the part still in play, and a million halves to 1 in about 20 steps: 2²⁰ is just over a million." },
+        { check: "About how many comparisons does binary search need for a million sorted items, at most?", options: ["About 20", "About 1,000", "About 500,000"], answer: 0, why: "Each comparison halves the part still in play, and a million halves to 1 in about 20 steps: 2²⁰ is just over a million.", wrong: [null, "Forgets that the work halves each time. 1,000 is about the square root of a million, but every comparison throws away half of what is left, so far fewer are needed.", "Thinks of the average cost of linear search, half the list. Binary search never walks along the list: it jumps to the middle."] },
         `<p>Count the work exactly. The first sweep makes <i>n</i> − 1 comparisons, the next <i>n</i> − 2, and so on down to 1, which adds up to <i>n</i>(<i>n</i> − 1)/2. That is O(<i>n</i>²). For 10 items it is 45 comparisons, nothing at all. For a million items it is about 500 billion, which even a fast computer needs many minutes for, and Python much longer. Doubling the input quadruples the work.</p>
 <h2>Merge sort: divide and conquer</h2>
-<p>A far better idea uses Lesson 11's recursion. To sort a list, split it in half, sort each half (by calling yourself), and then <em>merge</em> the two sorted halves into one, by repeatedly taking the smaller of the two front items. A list of one item is already sorted: that is the base case.</p>`,
+<p>A far better idea uses Lesson 11's recursion. To sort a list, split it in half, sort each half (by calling yourself), and then <em>merge</em> the two sorted halves into one, by repeatedly taking the smaller of the two front items. A list of one item is already sorted: that is the base case.</p>
+<details class="reveal"><summary>Guess first: the program below merge-sorts 1,000 random numbers. Will it print True or False for "sorted correctly"? Will the comparison count be nearer 1,000, 10,000 or 500,000?</summary><p>True: merge sort is correct for every input. The count is nearer 10,000, about 8,700: roughly <i>n</i> × log<sub>2</sub> <i>n</i> = 1,000 × 10. It differs a little with each random list, so your number will not be exactly the same. The last line is the 499,500 that bubble sort would need.</p></details>`,
         { play: `import random
-
 def merge(a, b, counter):
     result = []
     i = j = 0
@@ -1797,19 +1823,18 @@ def merge_sort(xs, counter):
         return xs                        # base case: already sorted
     mid = len(xs) // 2
     return merge(merge_sort(xs[:mid], counter), merge_sort(xs[mid:], counter), counter)
-
 counter = [0]
 xs = [random.randint(1, 10000) for i in range(1000)]
 ys = merge_sort(xs, counter)
 print("sorted correctly:", ys == sorted(xs))
 print("merge sort comparisons:", counter[0])
-print("bubble sort would make:", 1000 * 999 // 2)`, caption: 'About 8,700 comparisons against 499,500. The counter is a one-item list so that every call can add to the same count: changing counter[0] changes the one list they all share, as in Lesson 5.' },
-        { check: "Bubble sort on 1,000 items takes about 1 second. Roughly how long on 10,000 items?", options: ["About 10 seconds", "About 100 seconds", "About 1,000 seconds"], answer: 1, why: "Bubble sort is O(n²): ten times the items means a hundred times the comparisons. Merge sort, at n log n, would take about 13 times as long." },
+print("bubble sort would make:", 1000 * 999 // 2)`, caption: 'About 8,700 comparisons against 499,500 (the exact count depends on the random list). The counter is a one-item list so that every call can add to the same count: changing counter[0] changes the one list they all share, as in Lesson 5.' },
+        { check: "Bubble sort on 1,000 items takes about 1 second. Roughly how long on 10,000 items?", options: ["About 10 seconds", "About 100 seconds", "About 1,000 seconds"], answer: 1, why: "Bubble sort is O(n²): ten times the items means a hundred times the comparisons. Merge sort, at n log n, would take about 13 times as long.", wrong: ["Assumes work grows in step with the number of items. Bubble sort compares pairs, about n × n / 2 of them, so ten times the items is a hundred times the work.", null, "Cubes the growth. The comparisons grow with the square of n, so ten times the items gives 10 × 10 = 100 times the work, not 1,000."] },
         `<details class="reveal"><summary>Why does merge sort need only about <i>n</i> log<sub>2</sub> <i>n</i> comparisons?</summary><p>Picture the splitting as layers. The top layer is the whole list; the next has two halves; the next, four quarters; and so on down to single items, which takes about log<sub>2</sub> <i>n</i> layers, the number of halvings. At each layer, merging all the pieces makes at most one comparison per item, so at most <i>n</i> per layer. That is about <i>n</i> × log<sub>2</sub> <i>n</i> in all: for a million items, about 20 million comparisons instead of 500 billion.</p></details>
 <p>Python's built-in <code>sorted()</code> uses <em>Timsort</em>, written by Tim Peters for Python in 2002, which is a refined merge sort that also takes advantage of any stretches of the list that are already in order. The lesson is not "never write bubble sort"; it is that the <em>choice of algorithm</em> can matter far more than the speed of the computer. A fast machine running an O(<i>n</i>²) sort loses to a slow machine running an O(<i>n</i> log <i>n</i>) one, once the list is big enough.</p>
 <h2>Before the exercises</h2>
 <p>The first exercise adds a counter to binary search, so that you can see the logarithm for yourself. The second is <em>selection sort</em>: for each position, find the smallest item among those not yet placed, and swap it into that position. Its invariant: after the pass for position <i>i</i>, the first <i>i</i> + 1 items are the smallest ones, in order. Here is a worked example of its inner step, finding the position of the smallest item from a given position onwards, and a checker for any sort.</p>`,
-        { play: `def position_of_smallest(xs, start):
+        { predict: true, play: `def position_of_smallest(xs, start):
     best = start                       # best position seen so far
     for j in range(start + 1, len(xs)):
         if xs[j] < xs[best]:
@@ -1824,7 +1849,7 @@ def is_sorted(xs):
 
 print(position_of_smallest([7, 3, 9, 1, 6], 0))
 print(position_of_smallest([7, 3, 9, 1, 6], 4))
-print(is_sorted([1, 3, 3, 8]), is_sorted([3, 1, 2]))`, caption: 'Prints 3 (the 1 is at position 3), then 4, then True False. The "best so far" pattern of Lesson 4, remembering a position instead of a value.' },
+print(is_sorted([1, 3, 3, 8]), is_sorted([3, 1, 2]))`, caption: 'Prints 3 (the 1 is at position 3), then 4 (from position 4 on there is only the 6, so it is the smallest), then True False (the first list has no neighbours out of order, the second has 3 before 1). This is the "best so far" pattern of Lesson 4, remembering a position instead of a value.' },
         { aside: `<p><b>Common mistakes in this lesson.</b> Running binary search on an unsorted list: it gives wrong answers with no error. <code>mid = (lo + hi) / 2</code>, which gives a decimal; use <code>//</code>. Starting <code>hi</code> at <code>len(xs)</code> instead of <code>len(xs) - 1</code>. Moving <code>lo</code> to <code>mid</code> instead of <code>mid + 1</code>, so the range stops shrinking and the loop never ends. Swapping with two separate assignments, <code>xs[i] = xs[j]</code> then <code>xs[j] = xs[i]</code>, which loses a value; use the one-line swap. Judging an algorithm by timing it on ten items.</p>` },
         {
           ex: {
@@ -1832,7 +1857,7 @@ print(is_sorted([1, 3, 3, 8]), is_sorted([3, 1, 2]))`, caption: 'Prints 3 (the 1
             prompt: `<p>Write <code>binary_search_steps(xs, target)</code> that performs a binary search on the sorted list <code>xs</code> and returns <em>how many comparisons with</em> <code>xs[mid]</code> it made before finding the target or giving up. Count one per pass of the loop. For the sixteen-item list above and target 61, the answer is 3.</p>`,
             starter: `def binary_search_steps(xs, target):\n    lo = 0\n    hi = len(xs) - 1\n    steps = 0\n    while lo <= hi:\n        ...\n    return steps\n\ndata = [2, 5, 8, 12, 16, 23, 38, 42, 56, 61, 72, 79, 85, 91, 97, 104]\nprint(binary_search_steps(data, 61))`,
             solution: `def binary_search_steps(xs, target):\n    lo = 0\n    hi = len(xs) - 1\n    steps = 0\n    while lo <= hi:\n        mid = (lo + hi) // 2\n        steps += 1\n        if xs[mid] == target:\n            return steps\n        elif xs[mid] < target:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return steps\n\ndata = [2, 5, 8, 12, 16, 23, 38, 42, 56, 61, 72, 79, 85, 91, 97, 104]\nprint(binary_search_steps(data, 61))`,
-            hints: ['Copy the body of binary_search and add steps += 1 at the start of each pass.', 'Return steps both when the target is found and after the loop ends.'],
+            hints: ['Copy the body of binary_search and add steps += 1 at the start of each pass.', 'Return steps both when the target is found and after the loop ends.', 'Inside the while loop: mid = (lo + hi) // 2, then steps += 1, then if xs[mid] == target: return steps; otherwise move lo or hi as before.'],
             tests: [{ call: 'binary_search_steps([2, 5, 8, 12, 16, 23, 38, 42, 56, 61, 72, 79, 85, 91, 97, 104], 61)', expect: '3' }, { call: 'binary_search_steps([2, 5, 8, 12, 16, 23, 38, 42, 56, 61, 72, 79, 85, 91, 97, 104], 42)', expect: '1' }, { call: 'binary_search_steps([2, 5, 8, 12, 16, 23, 38, 42, 56, 61, 72, 79, 85, 91, 97, 104], 7)', expect: '4' }, { call: 'binary_search_steps(list(range(1000000)), 3)', expect: '20' }, { call: 'binary_search_steps([5], 5)', expect: '1' }],
             failTip: 'If the million-item test gives a much bigger number, check that lo and hi move past mid (mid + 1 and mid - 1), so each pass throws away at least half.',
             followup: 'Twenty comparisons to search a million items, as the guessing game promised: log₂ of a million is just under 20.'
@@ -1844,7 +1869,7 @@ print(is_sorted([1, 3, 3, 8]), is_sorted([3, 1, 2]))`, caption: 'Prints 3 (the 1
             prompt: `<p>Implement <code>selection_sort(xs)</code>: for each position <code>i</code> from 0 to the end, find the position of the smallest item in <code>xs[i:]</code>, as <code>position_of_smallest</code> did, and swap it into position <code>i</code>. Return the list. Do not use <code>sorted</code> or <code>.sort()</code>.</p>`,
             starter: `def selection_sort(xs):\n    n = len(xs)\n    for i in range(n):\n        smallest = i\n        for j in range(i + 1, n):\n            ...\n        # swap xs[i] and xs[smallest]\n    return xs\n\nprint(selection_sort([7, 3, 9, 1, 6]))`,
             solution: `def selection_sort(xs):\n    n = len(xs)\n    for i in range(n):\n        smallest = i\n        for j in range(i + 1, n):\n            if xs[j] < xs[smallest]:\n                smallest = j\n        xs[i], xs[smallest] = xs[smallest], xs[i]\n    return xs\n\nprint(selection_sort([7, 3, 9, 1, 6]))`,
-            hints: ['Inside the inner loop: if xs[j] < xs[smallest], remember j as the new smallest.', 'After the inner loop, swap with the one-line swap: xs[i], xs[smallest] = xs[smallest], xs[i].'],
+            hints: ['Inside the inner loop: if xs[j] < xs[smallest], remember j as the new smallest.', 'After the inner loop, swap with the one-line swap: xs[i], xs[smallest] = xs[smallest], xs[i].', 'The whole inner loop body is: if xs[j] < xs[smallest]: smallest = j. The swap line goes after the inner loop, inside the outer one.'],
             tests: [{ call: 'selection_sort([7, 3, 9, 1, 6])', expect: '[1, 3, 6, 7, 9]' }, { call: 'selection_sort([])', expect: '[]' }, { call: 'selection_sort([2, 2, 1])', expect: '[1, 2, 2]' }, { call: 'selection_sort([5, 4, 3, 2, 1, 0])', expect: '[0, 1, 2, 3, 4, 5]' }, { call: 'selection_sort([-3, 10, -3, 0])', expect: '[-3, -3, 0, 10]' }],
             mustNotContain: [{ re: /\bsorted\s*\(|\.sort\s*\(/, msg: 'Implement the sort yourself: no sorted() or .sort().' }],
             failTip: 'If values are lost or duplicated, the swap was split into two assignments. Use the one-line swap.',
@@ -1863,9 +1888,9 @@ print(is_sorted([1, 3, 3, 8]), is_sorted([3, 1, 2]))`, caption: 'Prints 3 (the 1
     /* ================================================================== */
     {
       standards: ['2-NI-06', '3A-AP-13', '3A-DA-09', '3B-DA-05'],
-      title: 'Project: the Caesar cipher', summary: 'Encrypt, decrypt, and then break a 2,000-year-old cipher, first by trying every key and then by frequency analysis, the method that sent a queen to her execution.',
+      standard: 1, title: 'Project: the Caesar cipher', summary: 'Encrypt, decrypt, and then break a 2,000-year-old cipher, first by trying every key and then by frequency analysis, the method that sent a queen to her execution.',
       blocks: [
-        `<p>In 1586, Mary, Queen of Scots, was imprisoned in England, and she and her supporters wrote to each other in cipher about a plot to put her on the English throne. The letters were intercepted, and Thomas Phelippes, a codebreaker working for Queen Elizabeth's spymaster, broke the cipher by counting how often each symbol appeared. The decoded letters were used at Mary's trial, and she was executed the next year. The counting method he used had been described some seven hundred years earlier by al-Kindi, a scholar in Baghdad, in the first known book on codebreaking.</p>`,
+        `<p>In 1586, Mary, Queen of Scots, was imprisoned in England, and she and her supporters wrote to each other in cipher about a plot to put her on the English throne. The letters were intercepted, and Thomas Phelippes, a codebreaker working for Queen Elizabeth's spymaster, broke the cipher by counting how often each symbol appeared. The decoded letters were used at Mary's trial, and she was executed the next year. The counting method he used had been described some seven hundred years earlier by al-Kindi, a scholar in Baghdad, in the earliest known account of it. How can simply counting letters give away a secret message?</p>`,
         { photo: ['babington-cipher', 'al-kindi-manuscript'], caption: "From the Babington plot of 1586: a postscript in the plotters' cipher that was forged and added to one of Mary's letters to Anthony Babington, and below it the key to the cipher, signed by Babington. Beside it, a page of al-Kindi's book on secret writing, from a manuscript kept in the Süleymaniye Library in Istanbul." },
         `<p>This project starts with an even older cipher, the one the Roman historian Suetonius says Julius Caesar used: shift every letter a fixed number of places along the alphabet. With a shift of 3, A becomes D, B becomes E, and X wraps round to A. You will build the cipher, then break it twice, once by brute force and once with al-Kindi's counting, using nothing but what this course has taught: loops over strings, string building, functions, dictionaries of counts and the "best so far" pattern.</p>`,
         { fig: 'caesar', caption: 'Drag the shift and type a message. Notice how the end of the alphabet wraps round to the start.' },
@@ -1873,7 +1898,7 @@ print(is_sorted([1, 3, 3, 8]), is_sorted([3, 1, 2]))`, caption: 'Prints 3 (the 1
 <p>Inside the computer, every character is a number, its <em>code</em>. Python converts between the two.</p>
 <div class="stmt"><p><span class="kind">Rule (character codes).</span> <code>ord(<i>ch</i>)</code> gives the code of a one-character string, and <code>chr(<i>n</i>)</code> gives the character with code <i>n</i>. The capital letters A to Z have the consecutive codes 65 to 90, and the lower-case letters a to z have 97 to 122.</p></div>
 <p>To shift a capital letter by <i>k</i>: turn it into its position in the alphabet, from 0 to 25, by subtracting <code>ord("A")</code>; add <i>k</i>; take the remainder mod 26, so that 26 wraps round to 0; and turn the position back into a letter by adding <code>ord("A")</code>. Lower-case letters work the same way from <code>ord("a")</code>, and anything that is not a letter passes through unchanged.</p>`,
-        { play: `print(ord("A"), ord("B"), ord("a"))
+        { predict: true, play: `print(ord("A"), ord("B"), ord("a"))
 print(chr(65), chr(90))
 
 def shift_letter(ch, k):
@@ -1885,8 +1910,8 @@ def shift_letter(ch, k):
 
 print(shift_letter("A", 3), shift_letter("x", 3), shift_letter("!", 3))
 print(shift_letter("D", -3))    # shifting back
-print(-1 % 26)`, caption: 'X shifted by 3 wraps to a: its position is 23, and (23 + 3) % 26 = 0. The last line shows why shifting back works: in Python, -1 % 26 is 25, never a negative number.' },
-        { check: "What is <code>chr(ord(\"A\") + 2)</code>?", options: ["<code>\"A2\"</code>", "<code>\"C\"</code>", "<code>67</code>"], answer: 1, why: "ord gives the code of A, 65; adding 2 gives 67; chr turns 67 back into the character C." },
+print(-1 % 26)`, caption: 'Prints 65 66 97, then A Z, then D a !, then A, then 25. B comes right after A, and a lower-case letter has a different code from its capital. In the third line x wraps to a: its position is 23, and (23 + 3) % 26 = 0, while ! is not a letter, so it passes through. D shifted by -3 is A, and the last line shows why shifting back works: in Python, -1 % 26 is 25, never a negative number.' },
+        { check: "What is <code>chr(ord(\"A\") + 2)</code>?", options: ["<code>\"A2\"</code>", "<code>\"C\"</code>", "<code>67</code>"], answer: 1, why: "ord gives the code of A, 65; adding 2 gives 67; chr turns 67 back into the character C.", wrong: ["Reads + as gluing text together. ord(\"A\") is the number 65, so + 2 adds 2 to a number, and chr then turns it into a letter.", null, "Stops one step early. 67 is the code, but chr turns a code back into a character, so the answer is \"C\", not a number."] },
         `<p>Why does shifting by <i>k</i> and then by −<i>k</i> always give back the original letter? A letter at position <i>p</i> goes to (<i>p</i> + <i>k</i>) mod 26 and then to ((<i>p</i> + <i>k</i>) mod 26 − <i>k</i>) mod 26, which is the same as (<i>p</i> + <i>k</i> − <i>k</i>) mod 26 = <i>p</i>: adding and taking remainders can be done in any order, as the mathematics course proves in its Lesson 4. Python's rule that <code>%</code> never gives a negative answer, when dividing by a positive number, is exactly what makes the negative shift land back inside 0 to 25.</p>
 <details class="reveal"><summary>Predict: what are <code>chr(ord("A") + 1)</code>, <code>shift_letter("Z", 1)</code> and <code>shift_letter("m", 26)</code>?</summary><p><code>"B"</code>; then <code>"A"</code>, since Z is position 25 and (25 + 1) % 26 = 0; then <code>"m"</code> again, because a shift of 26 goes all the way round. So only the shifts 1 to 25 actually change anything.</p></details>
 <h2>Part 2: whole messages</h2>
@@ -1904,7 +1929,8 @@ print(-1 % 26)`, caption: 'X shifted by 3 wraps to a: its position is 23, and (2
           }
         },
         `<h2>Part 3: breaking it by brute force</h2>
-<p>The fatal weakness of the Caesar cipher is that it has only 25 useful keys. An enemy who knows the method, and Caesar's enemies soon did, can simply try them all. A computer does it instantly.</p>`,
+<p>The fatal weakness of the Caesar cipher is that it has only 25 useful keys. An enemy who knows the method can simply try them all. A computer does it instantly.</p>
+<details class="reveal"><summary>Guess first: how many lines will the program below print, and which key gives English? (Hint: the three-letter word <code>Wkh</code> is probably <code>The</code>.)</summary><p>25 lines, one for each key from 1 to 25. W is three places after T in the alphabet, so the key is 3: line 3 reads "The secret to getting ahead is getting started." The other 24 lines are nonsense.</p></details>`,
         { play: `def shift_letter(ch, k):
     if "A" <= ch <= "Z":
         return chr((ord(ch) - ord("A") + k) % 26 + ord("A"))
@@ -1921,10 +1947,11 @@ def decrypt(message, k):
 secret = "Wkh vhfuhw wr jhwwlqj dkhdg lv jhwwlqj vwduwhg."
 for k in range(1, 26):
     print(k, decrypt(secret, k))`, caption: 'All 25 candidates. Your eye finds the English one at once. To break the cipher automatically, the program must do what your eye just did.' },
-        { check: "Why can a Caesar cipher be broken by trying every key?", options: ["Because the alphabet is known", "Because there are only 25 possible shifts", "Because computers are fast"], answer: 1, why: "A shift of 26 is no shift at all, so there are only 25 keys to try, and a reader (or a program) picks the one that gives English." },
+        { check: "Why can a Caesar cipher be broken by trying every key?", options: ["Because the alphabet is known", "Because there are only 25 possible shifts", "Because computers are fast"], answer: 1, why: "A shift of 26 is no shift at all, so there are only 25 keys to try, and a reader (or a program) picks the one that gives English.", wrong: ["Thinks knowing the alphabet is the weakness. Any cipher on this alphabet has the same letters; what matters is how many keys there are to try.", null, "Thinks speed is the weakness. Even by hand, 25 tries is easy; with 2^128 keys the fastest computers would still fail. The problem is the tiny number of keys."] },
         `<p>Trying every key is called a <em>brute-force attack</em>, and the defence against it is simply to have more keys than anyone could try. Modern ciphers have keys with 128 binary digits or more, so there are at least 2<sup>128</sup> of them, about 3 × 10<sup>38</sup>, and trying them all would take every computer on Earth far longer than the age of the universe.</p>
 <h2>Part 4: breaking it by counting</h2>
-<p>Here is al-Kindi's idea. In ordinary English text, the letters do not appear equally often: <code>e</code> is by far the most common, followed by <code>t</code>, <code>a</code>, <code>o</code>, <code>i</code> and <code>n</code>. A Caesar shift moves every letter by the same amount, so it relabels the counts but does not change them. Whatever letter is most common in the ciphertext is probably the disguised <code>e</code>, and the distance from <code>e</code> to it is probably the key. Lesson 9's counting pattern does the work.</p>`,
+<p>Here is al-Kindi's idea. In ordinary English text, the letters do not appear equally often: <code>e</code> is by far the most common, followed by <code>t</code>, <code>a</code>, <code>o</code>, <code>i</code> and <code>n</code>. A Caesar shift moves every letter by the same amount, so it relabels the counts but does not change them. Whatever letter is most common in the ciphertext is probably the disguised <code>e</code>, and the distance from <code>e</code> to it is probably the key. Lesson 9's counting pattern does the work.</p>
+<details class="reveal"><summary>Guess first: the program below prints a row of stars for each letter. If the longest row turns out to be <code>l</code>, what shift will it print? (Count positions from 0: <code>e</code> is 4 and <code>l</code> is 11.)</summary><p>7, because (11 − 4) % 26 = 7: the program assumes the commonest letter stands for e. Run it and see that l does tower over the others.</p></details>`,
         { play: `secret = "Tlla tl ulhy aol vsk ayll ha zlclu aopz lclupun. Wslhzl iypun aol slaalyz, huk alss uv vul lszl dolyl dl hyl nvpun."
 
 counts = {}
@@ -1942,7 +1969,7 @@ for letter in sorted(counts):
 
 guess = (ord(best) - ord("e")) % 26
 print("most common letter:", best, "  so the shift is probably", guess)`, caption: 'The letter l towers over the others. If l is the disguised e, the shift is (11 − 4) % 26 = 7. Decrypt with 7 and read the message. (best is None is the test for "nothing chosen yet"; None is Python\u2019s value for "no value".)' },
-        { check: "A ciphertext's most common letter is <code>k</code>. If plain English's most common letter is <code>e</code>, what shift was probably used?", options: ["6", "7", "11"], answer: 0, why: "k is at position 10 and e at position 4; (10 − 4) % 26 = 6. Decrypt with 6 and check that the text reads as English." },
+        { check: "A ciphertext's most common letter is <code>k</code>. If plain English's most common letter is <code>e</code>, what shift was probably used?", options: ["6", "7", "11"], answer: 0, why: "k is at position 10 and e at position 4; (10 − 4) % 26 = 6. Decrypt with 6 and check that the text reads as English.", wrong: [null, "Counts k from 1 (the 11th letter) but e from 0. Both must be counted the same way, from 0: k is 10 and e is 4, so 10 − 4 = 6.", "Takes the position of k, counted from 1, as the shift. The shift is the distance from e to k, which means subtracting the position of e."] },
         `<p>On a sentence or two, the single most common letter can mislead. A sturdier method, and the one the second exercise uses, gives each of the 26 candidate decryptions a score for how English it looks, counting how many of its letters are among the commonest in English, <code>etaoinshr</code>, and picks the highest. That combines both attacks: brute force supplies the candidates, and counting chooses between them. It is real cryptanalysis, and on any ordinary sentence it almost never fails.</p>`,
         {
           ex: {
@@ -1959,7 +1986,7 @@ print("most common letter:", best, "  so the shift is probably", guess)`, captio
         `<h2>Stretch goals</h2>
 <p>Make complete programs: one that asks for a message and a shift with <code>input</code> and prints the encryption, and one that asks only for a secret and cracks it. Improve the scoring with a dictionary of real English letter frequencies, such as <code>{"e": 12.7, "t": 9.1, "a": 8.2, …}</code>, adding up the frequency of every letter in a candidate instead of counting. And try a stronger cipher. The <em>Vigenère cipher</em> uses a keyword, shifting the first letter by the keyword's first letter, the second by its second, and so on, repeating the keyword. For three hundred years it was called <em>le chiffre indéchiffrable</em>, the unbreakable cipher, until Charles Babbage in the 1850s and Friedrich Kasiski in 1863 found how to break it: work out the keyword's length, then treat every letter in the same position of the keyword as one Caesar cipher, and crack each with counting.</p>
 <h2>Where to go from here</h2>
-<p>You now know enough Python to be dangerous: you can turn a description into a program, trace what it does, find its bugs, test it, and choose an algorithm that will finish. Good next steps are a longer project of your own, such as a to-do list, a text adventure, a grade calculator or a simulation of something you are curious about, or the other short courses here. <a href="#/lisp">Introduction to Lisp</a> will change how you think about the functions you just wrote, <a href="#/cpp">Introduction to C++</a> shows what Python has been quietly hiding from you about the machine, and <a href="#/math">the mathematics course</a> explains why the cipher that protects this website today cannot be broken the way you just broke Caesar's.</p>`
+<p>So how can counting letters give away a secret? Because a shift (or any one-for-one swap of letters) changes which letter stands for which but never how often each one appears, so the commonest letter of the message still shows through. You now know enough Python to be dangerous: you can turn a description into a program, trace what it does, find its bugs, test it, and choose an algorithm that will finish. Good next steps are a longer project of your own, such as a to-do list, a text adventure, a grade calculator or a simulation of something you are curious about, or the other short courses here. <a href="#/lisp">Introduction to Lisp</a> will change how you think about the functions you just wrote, <a href="#/cpp">Introduction to C++</a> shows what Python has been quietly hiding from you about the machine, and <a href="#/math">the mathematics course</a> explains why the cipher that protects this website today cannot be broken the way you just broke Caesar's.</p>`
       ]
     }
   ]
