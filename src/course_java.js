@@ -2,36 +2,42 @@
 // This course runs on the site's own Java interpreter (src/java.js): it checks programs the way javac does and runs them like the JVM.
 window.COURSES = window.COURSES || [];
 window.COURSES.push({
-  id: 'java', code: 'SC 106', short: 'Java', lang: 'java', status: 'developing',
+  id: 'java', code: 'SC 106', short: 'Java', lang: 'java',
   title: 'Introduction to Java',
   grades: 'Grades 10–12 · after Python, or with some experience',
-  audience: `<p><b>Grades 10–12</b>, after the Python course or a semester of any language. Java is the language of the AP Computer Science A exam, of Android apps, and of much of the software that runs banks, airlines and large web sites. It is also the language most university first-year courses use. Expect the ceremony of a typed, compiled language, and in return a compiler that catches a whole class of mistakes before your program runs.</p><p>Each lesson is a self-contained Hour of Code activity. The course is being written: the first eight lessons are here, and more follow.</p>`,
-  tagline: 'Classes, types, decisions, loops, methods and objects: the language of AP Computer Science and of Android, run and checked in your browser.',
+  audience: `<p><b>Grades 10–12</b>, after the Python course or a semester of any language. Java is the language of the AP Computer Science A exam, of Android apps, and of much of the software that runs banks, airlines and large web sites. It is also the language most university first-year courses use. Expect the ceremony of a typed, compiled language, and in return a compiler that catches a whole class of mistakes before your program runs.</p><p>Each lesson is a self-contained Hour of Code activity. Twelve lessons take you from your first program to a finished one: types, decisions, loops, methods, arrays, Strings, lists, classes, inheritance, exceptions, maps and a project.</p>`,
+  tagline: 'Types, decisions, loops, methods, objects, inheritance, exceptions and maps, ending in a project: the language of AP Computer Science and of Android, run and checked in your browser.',
   description: `<p>Java was designed in the 1990s to run the same everywhere, and it did: the same program runs on a laptop, a phone and a server without being changed. That promise made it the language of Android apps, of <em>Minecraft</em>, of the systems behind banks and airlines, and of most university introductions to programming. It is the language of the AP Computer Science A exam.</p>
 <p>Java is a cousin of C++ with the sharp edges filed off. It has types that the compiler checks, so a whole class of mistakes is caught before anything runs, but no pointers to misuse and no memory to free by hand. If you have done the Python course, every idea here will be familiar: values and names, decisions, loops, functions (called <em>methods</em>), lists. What changes is that you must say more, and that the compiler reads what you say with a critical eye.</p>
-<p>The programs on these pages run in an interpreter built into this site that checks your code the way the real Java compiler does, with the same error messages, and runs it the way the Java virtual machine does. Nothing is installed, and what you write stays on your device. The parts of Java it does not cover (lambdas, generics in your own classes, files, threads) are not needed in this course.</p>`,
+<p>The programs on these pages run in an interpreter built into this site that checks your code the way the real Java compiler does, with the same error messages, and runs it the way the Java virtual machine does. Nothing is installed, and what you write stays on your device. The parts of Java it does not cover (lambdas, generics in your own classes, nested classes, enums, files, threads) are not needed in this course. It does enforce Java\u2019s rule for checked exceptions, so a method that throws one must say so, as the real compiler insists.</p>
+<p>The course has twelve lessons. The first eight cover the core of the language, up to your own classes. Lesson 9 builds classes from other classes, with inheritance, abstract classes and interfaces. Lesson 10 is about what to do when something goes wrong: exceptions, and the rules for throwing and catching them. Lesson 11 introduces maps and sets, the collections that find things by name. Lesson 12 is a project, a crafting table for a game, which uses all of it.</p>`,
   outcomes: [
     'Explain what the Java compiler and the virtual machine each do, and read the compiler’s error messages',
     'Declare typed variables and predict the result of arithmetic on int, double and char values',
     'Write conditions, if/else chains and loops in Java, and read input with a Scanner',
     'Trace loops that count, accumulate and nest, and spot the off-by-one and overflow mistakes',
     'Write and call methods with parameters and return values',
-    'Use arrays, Strings and ArrayLists, and define classes with fields, constructors and methods'
+    'Use arrays, Strings and ArrayLists, and define classes with fields, constructors and methods',
+    'Build one class from another with extends and super, override methods, and use an abstract class or an interface so that one variable can hold many kinds of object',
+    'Read a stack trace, catch exceptions with try, catch and finally, throw your own, and tell checked exceptions from unchecked ones',
+    'Store and find data by key with HashMap and TreeMap, count with a map, and keep each item once with a set',
+    'Plan and build a program of several classes in stages, testing each stage before the next'
   ],
   howItWorks: `<h3>How to use these pages</h3><p>Each lesson has runnable code. Press <b>Run</b> and read the output; change something and run again. When a program is wrong, the message you see is the one the real Java compiler (<code>javac</code>) gives, so learning to read it here pays off everywhere. Exercises are checked by running your program on hidden inputs, so read the expected output carefully. Your work is saved in this browser.</p><p>Each lesson stands on its own as an <b>Hour of Code</b> activity: read, run, predict, and finish the two exercises in about 45–60 minutes.</p>`,
   lessons: [
     /* ================================================================== */
     {
       standards: ['2-AP-11', '3A-CS-02'],
-      title: 'Hello, Java', summary: 'Where Java came from, the shape every Java program has, what the compiler checks, and the types a variable can have.',
+      standard: 1, title: 'Hello, Java', summary: 'Where Java came from, the shape every Java program has, what the compiler checks, and the types a variable can have.',
       blocks: [
         `<p>In 1991 a small team at Sun Microsystems in California, led by James Gosling, set out to write software for the gadgets they expected to fill living rooms: television set-top boxes, handheld controllers, devices that did not yet exist. Every such device would have a different chip inside, so a program written for one would have to be rewritten for the next. Gosling's answer was a language whose programs were not translated for any particular chip. Instead they were translated into instructions for an imaginary machine, the <em>Java virtual machine</em>, and any real device that could pretend to be that machine could run every Java program ever written. He called the language Oak, after a tree outside his office window. The set-top boxes never came. The World Wide Web did, and in 1995 the language, renamed Java, was released to run the same program on every computer on the Internet. Its slogan was "write once, run anywhere".</p>`,
-        `<p>It worked. Today the same Java program runs on a laptop, a phone and a rack of servers. Android apps are written in it, and so are large parts of the systems behind banks, airlines and the biggest web sites. So was a game you may know. Markus Persson, a Swedish programmer, began <em>Minecraft</em> in his spare time and released the first version to the public in 2009, written in Java. Minecraft: Java Edition is still a Java program, and the mods that players write for it, adding new blocks, creatures and machines, are Java programs too. (The Bedrock Edition, for consoles and phones, is written in C++.)</p>`,
+        `<p>It worked. Today the same Java program runs on a laptop, a phone and a rack of servers. Android apps are written in it, and so are large parts of the systems behind banks, airlines and the biggest web sites. So was a game you may know. Markus Persson, a Swedish programmer, began <em>Minecraft</em> in his spare time and released the first version to the public in 2009, written in Java. Minecraft: Java Edition is still a Java program, and the mods that players write for it, adding new blocks, creatures and machines, are Java programs too. (The Bedrock Edition, for consoles and phones, is written in C++.)</p>
+<p>So what has to happen between the text you write and a program that runs the same way everywhere?</p>`,
         { photo: ['minecraft-cave-game-2009', 'minecraft-beta-landscape'], caption: 'Minecraft in 2009, in an early version then called <i>Cave Game</i>, and two years later in Beta 1.8.1, with a river, trees, and the row of nine inventory slots at the bottom of the screen. Every block in both pictures was drawn by a Java program.' },
         `<p>It is the language of the AP Computer Science A exam and of most university first-year courses. If you learned Python first, Java will feel like Python with its rules written out in full: every value has a type, every statement ends with a mark, and a compiler reads your whole program before any of it runs. This lesson is about reading those rules so they stop looking like noise.</p>
 <h2>The first program</h2>
 <p>Here is the traditional first program. It is five lines where Python needed one. Run it, then read the table below, which takes it apart line by line.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         System.out.println("Hello, world!");
     }
@@ -65,7 +71,7 @@ window.COURSES.push({
         System.out.println("So nothing at all is printed");
     }
 }`, expectError: true, caption: 'Main.java:4: error: \';\' expected. A compiler reports the problem and refuses to go on; even the correct first line does not run. Fix line 4 and run again.' },
-        { check: "A Java program has a missing semicolon on line 4 of 6. What runs?", options: ["Lines 1 to 3", "Nothing: the compiler refuses the whole program", "Everything except line 4"], answer: 1, why: "javac checks and translates the whole program before anything runs. One error, and nothing runs." },
+        { check: "A Java program has a missing semicolon on line 4 of 6. What runs?", options: ["Lines 1 to 3", "Nothing: the compiler refuses the whole program", "Everything except line 4"], answer: 1, wrong: ["That is how an interpreter such as Python behaves: it runs line by line until it meets a problem. javac checks the whole program first.", null, "javac does not skip a bad line and carry on: it reports the error and translates nothing."], why: "javac checks and translates the whole program before anything runs. One error, and nothing runs." },
         `<h2>Types</h2>
 <p>In Python a name can hold anything, and the interpreter checks what it is each time it is used. In Java every variable has a type, fixed when the variable is created, and the compiler uses the type to decide what <code>+</code>, <code>/</code> and <code>println</code> mean for it. Five types cover nearly everything in this course.</p>
 <div class="tbl-wrap"><table>
@@ -77,7 +83,7 @@ window.COURSES.push({
 <tr><td><code>String</code></td><td>text, any length</td><td><code>"Hello"</code>, <code>""</code></td><td>a capital S: <code>String</code> is a class, not a built-in type, which is why it can do things like <code>.length()</code></td></tr>
 </table></div>
 <p>A variable is <em>declared</em> by writing its type and then its name, usually with a starting value: <code>int age = 17;</code>. From then on <code>age</code> is an <code>int</code> and nothing else. Assigning text to it is a compile error, not a runtime surprise.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         int students = 28;
         double average = 86.5;
@@ -95,7 +101,7 @@ window.COURSES.push({
 }`, caption: 'Declare once with a type, then use. Try students = "many"; and read what the compiler says: incompatible types: String cannot be converted to int.' },
         `<h2>Arithmetic</h2>
 <p>The operators are <code>+ - * / %</code>, and the type of the answer follows the types of the operands. When both are <code>int</code> the answer is an <code>int</code>: <code>7 / 2</code> is <code>3</code>, because <em>integer division</em> throws the fraction away, and <code>7 % 2</code> is <code>1</code>, the remainder. If either operand is a <code>double</code>, the whole calculation is done in <code>double</code> and <code>7 / 2.0</code> is <code>3.5</code>. This is the first place Java and Python part ways, and it is the cause of a great many wrong averages.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         System.out.println(7 / 2);        // integer division: 3
         System.out.println(7 % 2);        // remainder: 1
@@ -112,7 +118,7 @@ window.COURSES.push({
         System.out.println(Math.max(3, 9) + Math.abs(-4));
     }
 }`, caption: 'A cast, (double) total, makes a copy of the value as a double before the division. The line that prints 4.0 shows the classic mistake: casting the result instead of an operand.' },
-        { check: "What does <code>7 / 2</code> give in Java?", options: ["3.5", "3", "4"], answer: 1, why: "int divided by int is an int: the fraction is dropped, not rounded. 7 / 2.0 gives 3.5." },
+        { check: "What does <code>7 / 2</code> give in Java?", options: ["3.5", "3", "4"], answer: 1, wrong: ["That is what 7 / 2.0 gives, or what / gives in Python 3. Both operands here are int, so the answer is an int and the .5 is dropped.", null, "Java does not round: integer division throws the fraction away, so 3.5 becomes 3."], why: "int divided by int is an int: the fraction is dropped, not rounded. 7 / 2.0 gives 3.5." },
         `<div class="stmt"><p><span class="kind">Rule (division).</span> <code>int / int</code> is an <code>int</code>: the fraction is dropped, not rounded. To get a decimal answer, make one operand a <code>double</code> first, with a cast or by writing <code>2.0</code> instead of <code>2</code>.</p>
 <p><span class="kind">Rule (mixing).</span> When an <code>int</code> meets a <code>double</code>, the <code>int</code> is converted and the answer is a <code>double</code>. Going the other way needs a cast, <code>(int) 3.99</code>, which gives <code>3</code>: the fraction is cut off, not rounded. Storing a <code>double</code> in an <code>int</code> without a cast is a compile error: <em>possible lossy conversion from double to int</em>.</p></div>
 <p>Dropping the fraction sounds like a nuisance, but often it is exactly the question. In Minecraft one inventory slot holds a <em>stack</em> of up to 64 blocks of dirt or stone (eggs stack only to 16). How many full stacks do 200 blocks make, and how many are left over? That is <code>/</code> and <code>%</code>.</p>`,
@@ -148,7 +154,7 @@ window.COURSES.push({
         `<div class="stmt"><p><span class="kind">Trap.</span> <code>"x" + 1 + 2</code> is <code>x12</code>, but <code>1 + 2 + "x"</code> is <code>3x</code>. Java works from left to right and only starts joining text once it meets a <code>String</code>. Put the arithmetic in parentheses when you mean it: <code>"x" + (1 + 2)</code>.</p></div>
 <h2>Reading input</h2>
 <p>To read what the user types, Java uses an object called a <code>Scanner</code>. The recipe has three lines, and for now you can copy them without understanding every word; lesson 8, on objects, explains them. The first line, before the class, says where <code>Scanner</code> lives; the second makes a scanner that reads the keyboard; the third reads one whole number.</p>`,
-        { check: "What does <code>\"Total: \" + 1 + 2</code> give?", options: ["<code>Total: 3</code>", "<code>Total: 12</code>", "A compile error"], answer: 1, why: "Java works left to right. Once a String is involved, every later + joins text. Write \"Total: \" + (1 + 2)." },
+        { check: "What does <code>\"Total: \" + 1 + 2</code> give?", options: ["<code>Total: 3</code>", "<code>Total: 12</code>", "A compile error"], answer: 1, wrong: ["That would need (1 + 2). Read left to right, \"Total: \" + 1 is already text, so + 2 joins the text \"2\" on the end.", null, "Adding a number to a String is allowed: the number is turned into text."], why: "Java works left to right. Once a String is involved, every later + joins text. Write \"Total: \" + (1 + 2)." },
         { play: `import java.util.Scanner;
 
 public class Main {
@@ -165,7 +171,7 @@ public class Main {
         { aside: `<p><b>Common mistakes in this lesson.</b> A missing semicolon: the error points at the line where the compiler noticed, often one after the mistake. A missing brace: <em>reached end of file while parsing</em>. Spelling <code>system</code>, <code>Println</code> or <code>string</code> with the wrong capitals. Writing <code>'</code> and <code>"</code> interchangeably: <code>'A'</code> is a <code>char</code>, <code>"A"</code> is a <code>String</code>. Expecting <code>7 / 2</code> to be 3.5. Forgetting that <code>+</code> puts no spaces between the things it joins. Forgetting <code>import java.util.Scanner;</code>, after which <code>Scanner</code> "cannot be found". Declaring a variable twice, or using one before declaring it.</p>` },
         {
           ex: {
-            id: 'jv-1-1', title: 'A rectangle',
+            id: 'jv-1-1', followup: "Read a third whole number, the depth, and also print the volume and the surface area of the box. Then find the largest sides you can give it before the volume stops being right, and say why it goes wrong.", title: 'A rectangle',
             prompt: `<p>Read two whole numbers, the width and height of a rectangle, and print its area and perimeter on two lines in exactly this form:</p><pre class="code">Area: 12\nPerimeter: 14</pre><p>(That is the output for width 3 and height 4.)</p>`,
             starter: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        int width = in.nextInt();\n        int height = in.nextInt();\n        // your code here\n    }\n}`,
             solution: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        int width = in.nextInt();\n        int height = in.nextInt();\n        int area = width * height;\n        int perimeter = 2 * (width + height);\n        System.out.println("Area: " + area);\n        System.out.println("Perimeter: " + perimeter);\n    }\n}`,
@@ -199,13 +205,14 @@ public class Main {
     /* ================================================================== */
     {
       standards: ['2-AP-12', '3A-AP-15'],
-      title: 'Making decisions', summary: 'Comparisons and boolean, if and else, combining conditions, comparing text with equals, and reading input you cannot trust.',
+      standard: 1, title: 'Making decisions', summary: 'Comparisons and boolean, if and else, combining conditions, comparing text with equals, and reading input you cannot trust.',
       blocks: [
         `<p>In February 2014 Apple shipped a fix for a bug in the code that checked whether a web site's security certificate was genuine, in every iPhone, iPad and Mac. The code, written in C, Java's older cousin, had a sequence of tests, each of the form <em>if this check fails, go to the failure handler</em>. One line, <code>goto fail;</code>, had been typed twice. The second copy was not inside any <code>if</code>; it ran every time, unconditionally, skipping the remaining checks and reporting success. Because C lets you leave out the braces around an <code>if</code> body, the extra line looked like part of the test above it, and it sat there, indented like its neighbour, for over a year. Anyone sitting between a user and a web site could pretend to be that site, and the device would believe them.</p>
 <p>The lesson is not that decisions are dangerous. It is that a program's decisions must be written so that what the compiler sees is what the reader sees. Java inherited C's syntax for <code>if</code>, braces optional and all. In this lesson you will learn it, and you will learn to always write the braces.</p>
+<p>So how do you write a decision so that the reader and the compiler cannot disagree about it?</p>
 <h2>Conditions have a type</h2>
 <p>A comparison such as <code>age &gt;= 18</code> is an expression like any other, and its value has a type: <code>boolean</code>, which is <code>true</code> or <code>false</code>. You can store it in a variable, print it, and hand it to an <code>if</code>. The comparison operators are <code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code> and <code>&gt;=</code>. Note the two equals signs: <code>=</code> assigns, <code>==</code> compares.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         int age = 17;
         boolean adult = age >= 18;
@@ -220,7 +227,7 @@ public class Main {
 }`, caption: 'A boolean is a value, not a special part of an if. The 7 / 2 lines are a reminder from lesson 1; the char line uses the fact that letters are numbered in alphabetical order.' },
         `<h2>if, else, else if</h2>
 <p>An <code>if</code> runs a block when its condition is true. The condition goes in parentheses, which are required, and the block in braces. An <code>else</code> block runs when the condition was false. A chain of <code>else if</code> tests one condition after another and runs the first block whose condition holds, then skips the rest.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         int temperature = 31;
         if (temperature > 30) {
@@ -235,13 +242,13 @@ public class Main {
         System.out.println("Done");
     }
 }`, caption: 'Change the temperature to 25, 15 and -5. Exactly one block runs, the first whose condition is true; Done is printed every time because it is after the whole chain.' },
-        { check: "What does Java say about <code>if (x = 5)</code>?", options: ["It compiles and is always true", "It does not compile: int cannot be converted to boolean", "It compiles and checks whether x is 5"], answer: 1, why: "The condition of an if must be a boolean. The assignment has type int, so the compiler refuses it. In C the typo compiles." },
+        { check: "What does Java say about <code>if (x = 5)</code>?", options: ["It compiles and is always true", "It does not compile: int cannot be converted to boolean", "It compiles and checks whether x is 5"], answer: 1, wrong: ["That is what C does, where any number can be a condition and the typo compiles. Java wants a boolean, and x = 5 is an int.", null, "= assigns and == compares. x = 5 would set x to 5, and the value of that expression is the int 5, not a boolean."], why: "The condition of an if must be a boolean. The assignment has type int, so the compiler refuses it. In C the typo compiles." },
         `<p>The order of a chain matters. Because each test is only reached if every test above it failed, <code>temperature &gt; 20</code> really means "above 20 and not above 30". Reverse the first two tests and every hot day is reported as merely warm.</p>
 <div class="stmt"><p><span class="kind">Rule (braces).</span> Java lets you leave the braces out when the block is a single statement: <code>if (x &gt; 0) System.out.println(x);</code>. Do not. Write the braces every time, even for one line. A second statement added later, indented to look like part of the block, will otherwise run unconditionally, exactly as in Apple's code. The compiler cannot tell what you meant; only the braces say it.</p>
 <p><span class="kind">Rule (conditions are boolean).</span> The condition of an <code>if</code> must be a <code>boolean</code>. <code>if (x = 5)</code> does not compile: <em>incompatible types: int cannot be converted to boolean</em>. In C this famous typo compiles and is always true; Java's type checker catches it for you.</p></div>
 <h2>Combining conditions</h2>
 <p>Conditions combine with <code>&amp;&amp;</code> (and), <code>||</code> (or) and <code>!</code> (not). A range such as "between 1 and 10" is <code>1 &lt;= x &amp;&amp; x &lt;= 10</code>; there is no <code>1 &lt;= x &lt;= 10</code>, which does not even compile in Java. The two-character operators are evaluated from left to right and stop early: <code>a &amp;&amp; b</code> never looks at <code>b</code> when <code>a</code> is false, and <code>a || b</code> never looks at <code>b</code> when <code>a</code> is true. That lets you write a check and a use in one condition: <code>count != 0 &amp;&amp; total / count &gt; 50</code> never divides by zero.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         int hour = 14;
         boolean weekend = false;
@@ -282,8 +289,8 @@ if (answer.equalsIgnoreCase("YES")) { ... }   // true for yes, Yes, YES`, captio
         `<div class="stmt"><p><span class="kind">Rule (strings).</span> Compare text with <code>.equals</code>, never with <code>==</code>. To put the ordering of two strings into a number, <code>a.compareTo(b)</code> is negative when <code>a</code> comes first in dictionary order, zero when they are equal, and positive otherwise.</p></div>
 <h2>Reading what the user types</h2>
 <p>Lesson 1 read numbers with <code>nextInt()</code>. A <code>Scanner</code> can also read a single word, <code>next()</code>, or a whole line, <code>nextLine()</code>. The difference matters, and there is a trap where the two meet. <code>nextInt()</code> reads the digits and stops: the end-of-line character the user typed after the number is still waiting. A <code>nextLine()</code> straight afterwards reads <em>that</em>, and comes back with an empty string. The fix is to call <code>nextLine()</code> once to throw the leftover away, or to read everything with <code>nextLine()</code> and convert with <code>Integer.parseInt</code>.</p>`,
-        { check: "How do you compare two Strings for equal text?", options: ["<code>a == b</code>", "<code>a.equals(b)</code>", "<code>a = b</code>"], answer: 1, why: "== on strings asks \"same object?\", which is usually no. equals compares the characters." },
-        { play: `import java.util.Scanner;
+        { check: "How do you compare two Strings for equal text?", options: ["<code>a == b</code>", "<code>a.equals(b)</code>", "<code>a = b</code>"], answer: 1, wrong: ["== on objects asks whether they are the very same object, not whether the text matches. Two equal Strings are often different objects, so this is usually false.", null, "a = b is an assignment: it makes a refer to b's text, and it is not a condition at all."], why: "== on strings asks \"same object?\", which is usually no. equals compares the characters." },
+        { predict: true, play: `import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
@@ -339,13 +346,13 @@ public class Main {
         System.out.println(result);
     }
 }`, caption: 'The arrow form of switch (Java 14 and later) runs exactly one case; several statements go in braces. The last lines show cond ? a : b, an if/else squeezed into one expression; use it for a simple choice between two values and nothing more.' },
-        { check: "What does <code>int big = x &gt; 10 ? 1 : 0;</code> do?", options: ["Sets big to 1 if x &gt; 10, otherwise 0", "Sets big to x", "Does not compile"], answer: 0, why: "cond ? a : b is an if/else squeezed into one expression: the value is a when the condition holds, b otherwise." },
+        { check: "What does <code>int big = x &gt; 10 ? 1 : 0;</code> do?", options: ["Sets big to 1 if x &gt; 10, otherwise 0", "Sets big to x", "Does not compile"], answer: 0, wrong: [null, "The ? : picks between the two values after it, 1 and 0. The condition itself is not the result.", "It compiles: cond ? a : b is an expression, so it can sit on the right of an =."], why: "cond ? a : b is an if/else squeezed into one expression: the value is a when the condition holds, b otherwise." },
         `<p>You will also meet the older form of <code>switch</code> in textbooks: <code>case 1:</code> with a colon, statements, and a <code>break;</code> at the end of each case. Without the <code>break</code>, execution <em>falls through</em> into the next case, a trap the arrow form removes. Read the old form when you see it; write the new one.</p>`,
         `<details class="reveal"><summary>Puzzle: what does this print? <code>int x = 5; if (x &gt; 3) if (x &gt; 10) System.out.println("big"); else System.out.println("small");</code></summary><p><code>small</code>. The <code>else</code> belongs to the nearest <code>if</code>, the inner one (<code>x &gt; 10</code>), not to the outer one as the layout might suggest. With braces around each block the question would not arise, which is the point of the rule above.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> <code>=</code> where <code>==</code> was meant (Java refuses it, with <em>int cannot be converted to boolean</em>). Comparing strings with <code>==</code>. Leaving out the braces, then adding a second line to the block. <code>3 &lt;= x &lt;= 10</code> for a range: write <code>3 &lt;= x &amp;&amp; x &lt;= 10</code>. <code>x == 1 || 2</code>: write <code>x == 1 || x == 2</code>. <code>!x &gt; 5</code> for "not greater than 5": write <code>!(x &gt; 5)</code>. A semicolon straight after the condition, <code>if (x &gt; 3);</code>, which gives the <code>if</code> an empty statement to control, so the block after it runs every time. Overlapping conditions in the wrong order in an <code>else if</code> chain. <code>nextLine()</code> straight after <code>nextInt()</code>.</p>` },
         {
           ex: {
-            id: 'jv-2-1', title: 'Letter grades',
+            id: 'jv-2-1', followup: "Make a score below 0 or above 100 print Invalid score instead of a grade. Where in the chain of tests must that check go, and why must it come first?", title: 'Letter grades',
             prompt: `<p>Read a whole-number score from 0 to 100 and print its letter grade on one line in exactly this form: <code>Grade: B</code>. The grades are A for 90 and above, B for 80 to 89, C for 70 to 79, D for 60 to 69, and F below 60.</p>`,
             starter: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        int score = in.nextInt();\n        char grade = 'F';\n        // your code here\n        System.out.println("Grade: " + grade);\n    }\n}`,
             solution: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        int score = in.nextInt();\n        char grade = 'F';\n        if (score >= 90) {\n            grade = 'A';\n        } else if (score >= 80) {\n            grade = 'B';\n        } else if (score >= 70) {\n            grade = 'C';\n        } else if (score >= 60) {\n            grade = 'D';\n        }\n        System.out.println("Grade: " + grade);\n    }\n}`,
@@ -379,9 +386,10 @@ public class Main {
     /* ================================================================== */
     {
       standards: ['2-AP-12', '3A-AP-15'],
-      title: 'Repetition', summary: 'while and for loops, counting and accumulating, nested loops, loops over the characters of a string, and the mistakes at the edges.',
+      standard: 1, title: 'Repetition', summary: 'while and for loops, counting and accumulating, nested loops, loops over the characters of a string, and the mistakes at the edges.',
       blocks: [
-        `<p>In 1994 Thomas Nicely, a mathematics professor at Lynchburg College in Virginia, set a new Pentium computer to work on a problem that needed a great deal of repetition: adding up the reciprocals of the twin primes, pairs of primes two apart like 11 and 13, as far as the machine could reach. His program ran through hundreds of millions of numbers, dividing 1 by each. In June he noticed that its answers disagreed with results he had computed on older machines. By October he had narrowed the difference down to a single division, 1 divided by 824633702441, which the new chip got wrong in the tenth digit. The Pentium's floating-point division unit had a flaw in a lookup table, and it had taken a loop running billions of times to find the handful of inputs that exposed it. Intel eventually offered to replace every affected chip, at a cost of about 475 million dollars.</p>`,
+        `<p>In 1994 Thomas Nicely, a mathematics professor at Lynchburg College in Virginia, set a new Pentium computer to work on a problem that needed a great deal of repetition: adding up the reciprocals of the twin primes, pairs of primes two apart like 11 and 13, as far as the machine could reach. His program ran through hundreds of millions of numbers, dividing 1 by each. In June he noticed that its answers disagreed with results he had computed on older machines. By October he had narrowed the difference down to a single division, 1 divided by 824633702441, which the new chip got wrong in the tenth digit. The Pentium's floating-point division unit had a flaw in a lookup table, and it had taken a loop running billions of times to find the handful of inputs that exposed it. Intel eventually offered to replace every affected chip, at a cost of about 475 million dollars.</p>
+<p>So how does a program repeat a step a million times, and how do you know that it repeats the right number?</p>`,
         { photo: 'pentium-fdiv', caption: 'An early 66 MHz Pentium. Chips of this batch, marked SX837, have the division flaw that Nicely found.' },
         `<p>Repetition is the thing computers do that people cannot: the same step, billions of times, without tiring and without a single slip, so that when a slip does appear it is worth 475 million dollars. In Python you wrote loops with <code>while</code> and <code>for</code>. Java has both, and its <code>for</code> is a more general tool than Python's. This lesson is about writing loops that stop where you meant them to, which is where most loop bugs live.</p>
 <h2>while</h2>
@@ -414,7 +422,7 @@ public class Main {
         }
     }
 }`, expectError: true, caption: 'After about five seconds this site stops the program with "Time limit exceeded". n goes 1, 3, 5, 7, 9, 11, …: always odd, so it is never 10. Change != to < and it stops at 11.' },
-        { check: "Why prefer <code>n &lt; 10</code> to <code>n != 10</code> as a loop test?", options: ["It is faster", "A counter that steps past 10 ends a &lt; loop and never ends a != one", "It makes no difference"], answer: 1, why: "If n goes 1, 3, 5, …, it is never exactly 10. The < test stops at 11; the != test runs forever." },
+        { check: "Why prefer <code>n &lt; 10</code> to <code>n != 10</code> as a loop test?", options: ["It is faster", "A counter that steps past 10 ends a &lt; loop and never ends a != one", "It makes no difference"], answer: 1, wrong: ["Both tests take the same time. The reason is what happens when the counter skips over 10.", null, "They differ whenever the counter can step over 10: with != the loop then never ends."], why: "If n goes 1, 3, 5, …, it is never exactly 10. The < test stops at 11; the != test runs forever." },
         `<h2>for</h2>
 <p>Most loops count: start somewhere, test, step. Java's <code>for</code> puts those three parts on one line, separated by semicolons, so the whole shape of the loop can be read at a glance: <code>for (start; keep going while; step)</code>. The variable declared in the start part belongs to the loop and does not exist after it.</p>`,
         { predict: true, play: `public class Main {
@@ -439,12 +447,12 @@ public class Main {
         System.out.println(sum);
     }
 }`, caption: 'Python’s range(0, 5) is for (int i = 0; i < 5; i++): the end is not included. The third loop is the accumulator pattern: a total declared as 0 before the loop, added to inside it, used after it.' },
-        { check: "How many times does <code>for (int i = 0; i &lt;= 5; i++)</code> run?", options: ["5", "6", "4"], answer: 1, why: "i takes 0, 1, 2, 3, 4, 5: six values. With &lt; 5 it would be five." },
+        { check: "How many times does <code>for (int i = 0; i &lt;= 5; i++)</code> run?", options: ["5", "6", "4"], answer: 1, wrong: ["That would be i < 5. With <= the loop runs for i equal to 5 as well.", null, "Count 0, 1, 2, 3, 4, 5: six values. Nothing in the loop skips one."], why: "i takes 0, 1, 2, 3, 4, 5: six values. With &lt; 5 it would be five." },
         `<div class="stmt"><p><span class="kind">Rule (choosing).</span> Use <code>for</code> when you know how many times, or over what range, before the loop starts. Use <code>while</code> when the loop ends on a condition you discover as you go: a balance reaching a target, the user typing <code>quit</code>, a number becoming 0.</p>
 <p><span class="kind">Trap (off by one).</span> <code>i &lt;= n</code> runs one time more than <code>i &lt; n</code>. Starting at 1 and starting at 0 differ by one too. There is no rule that fixes this for you: for each loop, say what the first value is, what the last value is, and how many times the body runs.</p></div>
 <h2>Loops inside loops</h2>
 <p>A loop body can hold another loop. The inner loop runs completely for every single pass of the outer one, so two loops of ten produce a hundred steps. Tables, grids and "every pair" problems all have this shape.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         for (int row = 1; row <= 5; row++) {
             for (int col = 1; col <= 5; col++) {
@@ -463,7 +471,7 @@ public class Main {
 }`, caption: 'The println that ends a row sits in the outer loop, after the inner one. Move it inside the inner loop and see what happens. In the triangle, the inner loop’s limit depends on the outer variable: that is allowed, and common.' },
         `<h2>Leaving early</h2>
 <p><code>break</code> leaves the loop at once; <code>continue</code> skips the rest of the body and goes to the next test. Both are legitimate and both are easy to overuse: a loop whose condition tells the whole truth is easier to read than one that leaves from the middle. A search is the classic good use of <code>break</code>: stop as soon as the thing is found.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         int target = 91;
         int found = -1;
@@ -489,7 +497,7 @@ public class Main {
 }`, caption: 'Change target to 97. The found = -1 before the loop is a sentinel: a value that cannot be a real answer, so after the loop it means "nothing was found".' },
         `<h2>do while, and loops over text</h2>
 <p>A <code>do { … } while (condition);</code> loop runs its body first and tests afterwards, so the body always runs at least once. It is the natural shape for "ask until the answer is acceptable". A <code>String</code> is a sequence of characters, numbered from 0, and <code>s.charAt(i)</code> gives the one at position <code>i</code>; <code>s.length()</code> is how many there are, so the last is at <code>s.length() - 1</code>. A <code>for</code> over those positions visits every character.</p>`,
-        { play: `import java.util.Scanner;
+        { long: true, predict: true, play: `import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
@@ -534,7 +542,7 @@ public class Main {
         System.out.println(Integer.MAX_VALUE + 1);
     }
 }`, caption: '13! does not fit in an int: the value printed is wrong from there on, with no error. The long gets 20! right. Read the last two lines slowly.' },
-        { check: "An int holding 2,147,483,647 is incremented. What happens?", options: ["An exception is thrown", "It wraps round to −2,147,483,648 with no warning", "It becomes a long"], answer: 1, why: "Java ints are 32 bits and wrap silently. Use long for big totals and products." },
+        { check: "An int holding 2,147,483,647 is incremented. What happens?", options: ["An exception is thrown", "It wraps round to −2,147,483,648 with no warning", "It becomes a long"], answer: 1, wrong: ["Java does not check integer arithmetic: nothing is thrown, and the program carries on with a wrong number. (Math.addExact is the method that does throw.)", null, "A variable keeps its declared type, int, for ever, so it cannot grow into a long."], why: "Java ints are 32 bits and wrap silently. Use long for big totals and products." },
         `<details class="reveal"><summary>Puzzle: how many times does the body run? <code>for (int i = 0; i &lt; 10; i++)</code>, <code>for (int i = 1; i &lt;= 10; i++)</code>, <code>for (int i = 10; i &gt; 0; i -= 3)</code>, <code>for (int i = 0; i &lt; 10; i += 0)</code></summary><p>10, 10, 4 (i is 10, 7, 4, 1) and forever: the last loop never changes <code>i</code>, so this site stops it with "Time limit exceeded" and a real machine runs until you kill it.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> Off-by-one: <code>i &lt;= n</code> runs one pass more than <code>i &lt; n</code>; say the first and last values aloud. A <code>while</code> whose body never changes the variables in its condition, or changes them past the stopping point: prefer <code>&lt;</code> to <code>!=</code>. Forgetting to set an accumulator to 0 before the loop (Java will refuse to use an unset variable: <em>variable total might not have been initialized</em>). Using a <code>for</code> loop's variable after the loop: it no longer exists. A semicolon straight after the loop header, <code>for (…);</code> or <code>while (…);</code>, which gives the loop an empty body. Putting the <code>println</code> that ends a row inside the inner loop. <code>charAt(s.length())</code>: the last character is at <code>length() - 1</code>. A product or total in an <code>int</code> that quietly wraps around.</p>` },
         {
@@ -570,7 +578,7 @@ public class Main {
         },
         {
           ex: {
-            id: 'jv-3-2', title: 'Counting vowels',
+            id: 'jv-3-2', followup: "Print the number of vowels, consonants and other characters, with one loop and one if / else if / else chain, ignoring the difference between small and capital letters.", title: 'Counting vowels',
             prompt: `<p>Read one whole line of text and print how many vowels it contains, in exactly this form: for <code>Hello, World</code> print <code>Vowels: 3</code>. Count a, e, i, o and u in both small and capital letters. Read the line with <code>nextLine()</code>, and go through it one character at a time with a <code>for</code> loop and <code>charAt</code>.</p>`,
             starter: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        String line = in.nextLine();\n        int vowels = 0;\n        // your code here\n        System.out.println("Vowels: " + vowels);\n    }\n}`,
             solution: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        String line = in.nextLine();\n        int vowels = 0;\n        for (int i = 0; i < line.length(); i++) {\n            char c = Character.toLowerCase(line.charAt(i));\n            if (c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u') {\n                vowels++;\n            }\n        }\n        System.out.println("Vowels: " + vowels);\n    }\n}`,
@@ -592,9 +600,10 @@ public class Main {
     /* ================================================================== */
     {
       standards: ['2-AP-14', '3A-AP-17', '3A-AP-18'],
-      title: 'Methods', summary: 'Writing a method once and calling it many times: parameters, return values, void, why a method cannot change your variables, and overloading.',
+      standard: 1, title: 'Methods', summary: 'Writing a method once and calling it many times: parameters, return values, void, why a method cannot change your variables, and overloading.',
       blocks: [
-        `<p>In 1949 the EDSAC at Cambridge University became one of the first computers that stored its program in memory alongside its data. Its users soon noticed that they were writing the same pieces of code over and over: a routine to print a number, a routine to take a square root, a routine to read paper tape. David Wheeler, a research student on the project, worked out how a program could jump into such a routine, let it do its work, and come back to the place it had left, with the routine none the wiser about who had called it. The trick is still called the Wheeler jump. By 1951 Wheeler, Maurice Wilkes and Stanley Gill had published the first textbook of programming, and most of it was about a library of these <em>subroutines</em>, kept on paper tape in a cabinet, that any program could borrow.</p>`,
+        `<p>In 1949 the EDSAC at Cambridge University became one of the first computers that stored its program in memory alongside its data. Its users soon noticed that they were writing the same pieces of code over and over: a routine to print a number, a routine to take a square root, a routine to read paper tape. David Wheeler, a research student on the project, worked out how a program could jump into such a routine, let it do its work, and come back to the place it had left, with the routine none the wiser about who had called it. The trick is still called the Wheeler jump. By 1951 Wheeler, Maurice Wilkes and Stanley Gill had published the first textbook of programming, and most of it was about a library of these <em>subroutines</em>, kept on paper tape in a cabinet, that any program could borrow.</p>
+<p>So how do you write a step once, and use it as often as you like?</p>`,
         { photo: 'edsac-renwick', caption: 'EDSAC at Cambridge, nearly complete, with W. Renwick standing beside it. Each rack is shelf after shelf of valves; programs and the subroutine library were fed in on paper tape.' },
         `<p>Every language since has had them under some name: subroutines, procedures, functions. Java calls them <em>methods</em>, and you have been using them from the first line you wrote: <code>println</code> is a method, so are <code>nextInt</code> and <code>Math.sqrt</code>, and the program itself lives in one called <code>main</code>. This lesson is about writing your own, and the reason is the one Wheeler saw: a piece of code that does one job, written once, named, and called from wherever it is needed.</p>
 <h2>Defining and calling</h2>
@@ -634,7 +643,7 @@ public class Main {
         System.out.println(sign(5));
     }
 }`, expectError: true, caption: 'Main.java:8: error: missing return statement. For n equal to 0 neither branch returns, so the method would fall off its end. Add return 0; before the closing brace, or make the last branch a plain else.' },
-        { check: "An int method has an if that returns and an else-if that returns, and no else. What does the compiler say?", options: ["Nothing: it compiles", "missing return statement: some path reaches the end without returning", "It returns 0 by default"], answer: 1, why: "A non-void method must return on every path. The compiler can see a way to the closing brace, so it refuses." },
+        { check: "An int method has an if that returns and an else-if that returns, and no else. What does the compiler say?", options: ["Nothing: it compiles", "missing return statement: some path reaches the end without returning", "It returns 0 by default"], answer: 1, wrong: ["The compiler looks at every path, and one of them reaches the closing brace without a return.", null, "Java never invents a return value. Falling off the end of a non-void method is a compile error."], why: "A non-void method must return on every path. The compiler can see a way to the closing brace, so it refuses." },
         `<p>Here is a method with two parameters that a Minecraft player could use. An inventory slot holds one stack: up to 64 blocks of dirt, but only 16 eggs, and a sword does not stack at all. How many slots does a pile of items need? Lesson 1 found the full stacks with <code>/</code>; a part stack needs a slot too, so this time the division must round <em>up</em>. Adding <code>stackSize - 1</code> before dividing does that, and once it is in a method nobody has to remember the trick again.</p>`,
         { play: `public class Main {
     static int slotsNeeded(int items, int stackSize) {
@@ -652,7 +661,7 @@ public class Main {
 }`, caption: 'A player\u2019s inventory has 36 slots. Check the rounding by hand: 200 + 63 = 263, and 263 / 64 is 4. Try slotsNeeded(0, 64): no items need no slots.' },
         `<h2>Methods that do something: void</h2>
 <p>Not every method hands back a value. One that prints, or draws, or changes a list, has the return type <code>void</code>, "nothing". A <code>void</code> method is called as a statement on its own, not inside an expression, and may end with a bare <code>return;</code> or simply by reaching its closing brace. <code>main</code> is one.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     static void printLine(int length) {
         for (int i = 0; i < length; i++) {
             System.out.print("-");
@@ -691,7 +700,7 @@ public class Main {
         System.out.println("after plusTen: " + score);
     }
 }`, caption: 'addTen changes its own copy and the change is lost. plusTen returns the new value, and main stores it: that is the Java way to "change" a number through a method. (Arrays and objects behave differently; lesson 5 explains.)' },
-        { check: "<code>static void addTen(int n) { n += 10; }</code>, then <code>int x = 5; addTen(x);</code>. What is x?", options: ["15", "5: the method changed its own copy", "An error"], answer: 1, why: "Parameters are copies. To change the caller's number, return the new value and store it." },
+        { check: "<code>static void addTen(int n) { n += 10; }</code>, then <code>int x = 5; addTen(x);</code>. What is x?", options: ["15", "5: the method changed its own copy", "An error"], answer: 1, wrong: ["That would change the caller's x, but the method got a copy of the value. n += 10 changed the copy, and the copy was thrown away.", null, "It compiles and runs: changing a parameter is legal, but the change does not reach the caller."], why: "Parameters are copies. To change the caller's number, return the new value and store it." },
         `<h2>Each method has its own variables</h2>
 <p>A variable declared inside a method, including its parameters, exists only while that method runs and is invisible to every other method. <code>main</code> cannot see <code>x</code> inside <code>square</code>, and <code>square</code> cannot see <code>n</code> inside <code>main</code>. If two methods need to share a value, one passes it to the other as an argument. This is the point of methods, not a limitation: you can read <code>square</code> on its own and know everything about it.</p>`,
         { play: `public class Main {
@@ -708,7 +717,7 @@ public class Main {
 }`, expectError: true, caption: 'Main.java:10: error: cannot find symbol: variable result. The result inside twice belongs to twice. Note that both methods have a variable called value, and they are two different variables.' },
         `<h2>Several methods with one name</h2>
 <p>Java lets you define two methods with the same name as long as their parameters differ in number or type. The compiler picks the one whose parameters match the arguments. This is called <em>overloading</em>, and the library uses it everywhere: <code>println</code> is a dozen methods, one for each type it can print, and <code>Math.abs</code> works for <code>int</code> and <code>double</code> alike. Use it when the methods really do the same job for different inputs; two unrelated methods with one name confuse everyone.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     static double area(double radius) {
         return Math.PI * radius * radius;
     }
@@ -733,10 +742,10 @@ public class Main {
         System.out.println(describe(7 / 2));
     }
 }`, caption: 'area(1) matches the one-parameter version; the int 1 widens to double. In the last line the argument is an int, so the first describe runs: overloads are chosen by the types in the call, before anything runs.' },
-        { check: "There are <code>describe(int)</code> and <code>describe(double)</code>. Which runs for <code>describe(3)</code>?", options: ["describe(int)", "describe(double)", "Both, in order"], answer: 0, why: "The compiler picks the overload from the argument types at compile time. 3 is an int, so the int version is chosen." },
+        { check: "There are <code>describe(int)</code> and <code>describe(double)</code>. Which runs for <code>describe(3)</code>?", options: ["describe(int)", "describe(double)", "Both, in order"], answer: 0, wrong: [null, "3 is an int, and an exact match beats a conversion to double. The double version runs only when there is no int version.", "Overloading picks exactly one method for each call, by the types of the arguments."], why: "The compiler picks the overload from the argument types at compile time. 3 is an int, so the int version is chosen." },
         `<h2>A method that calls itself</h2>
 <p>Nothing stops a method from calling itself, provided each call works on a smaller problem and some case stops without calling. The factorial of <code>n</code> is <code>n</code> times the factorial of <code>n − 1</code>, and the factorial of 0 is 1. Written out, that definition <em>is</em> the method. This is <em>recursion</em>; the Lisp course is built on it, and here it is a first look.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     static long factorial(int n) {
         if (n == 0) {
             return 1;
@@ -761,7 +770,7 @@ public class Main {
 }`, caption: 'factorial(3) calls factorial(2), which calls factorial(1), which calls factorial(0); that returns 1 and the results multiply back up. Remove the if and run: StackOverflowError, the method called itself until the machine ran out of room to remember the calls.' },
         `<h2>Dividing a program into methods</h2>
 <p>The exercises in lesson 3 were each one <code>main</code>. The same work reads better as methods with names, each doing one thing, with <code>main</code> reduced to the story of what happens. Compare this with the vowel counter you wrote; the test for a vowel now has a name, and could be used by any other method.</p>`,
-        { play: `import java.util.Scanner;
+        { predict: true, play: `import java.util.Scanner;
 
 public class Main {
     static boolean isVowel(char c) {
@@ -792,7 +801,7 @@ public class Main {
         { aside: `<p><b>Common mistakes in this lesson.</b> Forgetting the return type, or a parameter's type, in the declaration. Writing the type in the call, <code>square(int 7)</code>. A non-<code>void</code> method that can reach its closing brace without returning. Calling a method and ignoring the value it returns, then wondering why nothing changed. Expecting a method to change the variable you passed in; return the new value instead. Putting the "not found" <code>return</code> inside the loop, so a search stops after one try. Forgetting <code>static</code> (the message is <em>non-static method cannot be referenced from a static context</em>). Defining a method inside <code>main</code>, or inside another method: methods live side by side in the class. A recursive method with no base case.</p>` },
         {
           ex: {
-            id: 'jv-4-1', title: 'Prime or not',
+            id: 'jv-4-1', followup: "Use isPrime to write static int nextPrime(int n), the smallest prime greater than n. How many numbers does it have to test after 89?", title: 'Prime or not',
             prompt: `<p>Write a method</p><pre class="code">static boolean isPrime(int n)</pre><p>that returns <code>true</code> if <code>n</code> is a prime number and <code>false</code> otherwise. A prime is a whole number greater than 1 whose only divisors are 1 and itself, so 2, 3, 5, 7 and 11 are prime; 1, 0, negative numbers, 4 and 9 are not. Write only the method; the checker supplies <code>main</code>.</p>`,
             starter: `static boolean isPrime(int n) {\n    // numbers below 2 are not prime; then look for a divisor\n    return false;\n}`,
             solution: `static boolean isPrime(int n) {\n    if (n < 2) {\n        return false;\n    }\n    for (int d = 2; d * d <= n; d++) {\n        if (n % d == 0) {\n            return false;\n        }\n    }\n    return true;\n}`,
@@ -1681,6 +1690,661 @@ public class Main {
 <li>Object variables hold references: assignment shares the object, <code>==</code> asks whether two references are the same object, and <code>null</code> refers to none (calling a method on it is a <code>NullPointerException</code>).</li>
 <li>Programs are objects working together, each class doing one job: an <code>Inventory</code> holds <code>ItemStack</code>s and asks them to add, and each stack keeps its own rules.</li>
 </ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      standards: ['3A-AP-17', '3B-AP-14', '3A-CS-01'],
+      standard: 1, title: 'Inheritance and interfaces', summary: 'Building one class from another with extends and super, overriding methods, one variable that can hold many kinds of object, abstract classes, and interfaces that a class promises to keep.',
+      blocks: [
+        `<p>In 1987 Barbara Liskov, a professor at the Massachusetts Institute of Technology, gave a keynote talk at the main conference on object-oriented programming. By then programmers had found that building a new class from an old one saved a great deal of work, and also caused a new kind of bug: a program written for the old class could break when it was handed an object of the new one. Liskov asked a precise question: when is it safe to use an object of one class where a program expects another? Her answer, known today as the Liskov substitution principle, is that a new class must keep every promise the old one made. In 2008 she received the Turing Award, the highest honour in computing, for her work on how programs are built from abstractions.</p>
+<p>Java was built around this idea. So how does a program use many kinds of object through one name, and what must a new kind promise?</p>`,
+        `<h2>One class from another</h2>
+<p>In lesson 8 you wrote <code>ItemStack</code>. A Minecraft inventory also holds tools, and a tool is an item with something extra: it wears out. Copying all of Item into a new class called Tool would work, and the next change to Item would have to be made twice. Java lets one class be built <em>from</em> another instead. <code>class Tool extends Item</code> says that a Tool is an Item: it has everything an Item has, and you add or change only what is different.</p>`,
+        { long: true, predict: true, play: `class Item {
+    protected String name;
+
+    Item(String name) {
+        this.name = name;
+    }
+
+    String describe() {
+        return name;
+    }
+}
+
+class Tool extends Item {
+    private int uses;
+
+    Tool(String name, int uses) {
+        super(name);
+        this.uses = uses;
+    }
+
+    void use() {
+        uses--;
+    }
+
+    @Override
+    String describe() {
+        return name + " with " + uses + " uses left";
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Item stick = new Item("stick");
+        Tool pick = new Tool("pickaxe", 3);
+        pick.use();
+        System.out.println(stick.describe());
+        System.out.println(pick.describe());
+        System.out.println(pick.name);
+    }
+}`, caption: 'Tool never declares name, yet pick.name works: it is inherited from Item. The Tool constructor starts with super(name), which runs the Item constructor to set the name; then it sets its own field. describe is written in both classes, and each object uses its own class’s version: the stick prints just its name, the pickaxe prints the longer text. Try deleting @Override: it still works, but then a typo such as describ() would make a new method instead of replacing the old one, and the annotation is what makes the compiler catch that.' },
+        `<div class="stmt"><p><span class="kind">Rule (extends).</span> <code>class B extends A</code> makes B a <b>subclass</b> of the <b>superclass</b> A. Every B object has A's fields and methods, except private ones, which belong to A alone: use <code>protected</code> (visible to subclasses) or a method to share them. A subclass constructor must begin with <code>super(...)</code>, which runs A's constructor; if you leave it out, Java inserts <code>super()</code> and complains if A has no constructor without parameters. A method in B with the same name and parameters as one in A <b>overrides</b> it, and <code>@Override</code> asks the compiler to check that it really does. A class can extend only one class.</p></div>`,
+        { check: `In the Tool constructor, what does <code>super(name)</code> do?`, options: [`It runs the Item constructor, which sets the name`, `It makes a second Item object inside the tool`, `It runs the Tool constructor again`, `Nothing: it is a comment about the parent class`], answer: 0, wrong: [null, `There is only one object: the tool. super(...) runs the parent’s constructor on that same object, to set up the part that came from Item.`, `That would never end. super is the <em>parent</em> class, and its constructor sets the fields the parent declares.`, `It is a real statement, and the one that sets name. Without it, Java would try to call an Item constructor with no arguments, which does not exist.`], why: `The object being built is a Tool and an Item at once. super(name) hands the name to Item's constructor so that the Item part is set up before Tool adds its own.` },
+        `<p>The compiler insists on that first line. Take it away and see:</p>`,
+        { play: `class Item {
+    String name;
+
+    Item(String name) {
+        this.name = name;
+    }
+}
+
+class Tool extends Item {
+    int uses;
+
+    Tool(String name, int uses) {
+        this.uses = uses;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Tool pick = new Tool("pickaxe", 3);
+        System.out.println(pick.name);
+    }
+}`, expectError: true, caption: 'Item has only a constructor that takes a name, and Tool\'s constructor does not say which Item constructor to call, so Java tries Item() and finds none. The cure is super(name) as the first line.' },
+        `<h2>One variable, many kinds</h2>
+<p>A Tool is an Item, so a variable of type <code>Item</code> may refer to a Tool. That is Liskov's substitution at work, and it makes one kind of list possible: an array of <code>Item</code> can hold a stick, a pickaxe and a loaf of bread, and the code that walks it never needs to ask which is which. When it calls <code>describe()</code>, Java uses the version belonging to the <em>object</em>, not to the variable.</p>`,
+        { long: true, predict: true, play: `class Item {
+    protected String name;
+
+    Item(String name) {
+        this.name = name;
+    }
+
+    String describe() {
+        return name;
+    }
+}
+
+class Tool extends Item {
+    private int uses;
+
+    Tool(String name, int uses) {
+        super(name);
+        this.uses = uses;
+    }
+
+    void use() {
+        uses--;
+    }
+
+    @Override
+    String describe() {
+        return name + " with " + uses + " uses left";
+    }
+}
+
+class Food extends Item {
+    private int hunger;
+
+    Food(String name, int hunger) {
+        super(name);
+        this.hunger = hunger;
+    }
+
+    @Override
+    String describe() {
+        return name + " (restores " + hunger + ")";
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Item[] bag = { new Item("stick"), new Tool("pickaxe", 3), new Food("bread", 5) };
+        for (Item it : bag) {
+            if (it instanceof Tool t) {
+                t.use();
+            }
+            System.out.println(it.describe());
+        }
+    }
+}`, caption: 'Each element of bag is declared as Item, but it.describe() runs the Item, Tool or Food version, whichever the object is. The pickaxe was used once before it was described, so it prints 2 uses left. it.use() would not compile, because Item has no use method; instanceof asks what the object really is, and Tool t both tests and names it. This choosing of a method while the program runs is called polymorphism, "many shapes".' },
+        `<div class="stmt"><p><span class="kind">Rule (polymorphism).</span> A variable of a class type may refer to an object of that class or of any subclass. The <b>type of the variable</b> decides which methods you may call: only those the class declares or inherits. The <b>object</b> decides which version of an overridden method runs, when the program runs. <code>x instanceof Tool t</code> is true if x refers to a Tool, and then names it t, so that you can use Tool's own methods.</p></div>`,
+        { check: `<code>Item it = new Tool("axe", 5);</code> then <code>System.out.println(it.describe());</code> Which <code>describe</code> runs?`, options: [`Item's, because the variable is an Item`, `Tool's, because the object is a Tool`, `Both, one after the other`, `Neither: it does not compile`], answer: 1, wrong: [`The variable's type only decides what you may <em>call</em>. Which version runs is decided by the object.`, null, `Only one version runs, the one nearest the object's own class. A subclass can call the parent's version with super.describe(), but that has to be written.`, `It compiles: Item declares describe, so it may be called through an Item variable.`], why: `The object is a Tool, so Tool's describe runs. That is why one loop can print a stick, a pickaxe and a loaf of bread, each in its own way.` },
+        `<h2>Abstract classes and interfaces</h2>
+<p>Some classes should never be made on their own. There is no such thing in the game as "a mob" alone, only zombies, skeletons and creepers. Mark the class <code>abstract</code> and Java refuses <code>new Mob(...)</code>. It may also contain <b>abstract methods</b>, which have a heading and no body: every subclass must supply one, so every mob is guaranteed to have <code>attack()</code> even though Mob cannot say what it does.</p>
+<p>An <b>interface</b> goes further: it is only a list of methods a class promises to have, and no code at all. A class can extend just one parent, but it may <code>implement</code> as many interfaces as it likes, so unrelated classes can share an ability. Here two things that have nothing else in common can both be eaten.</p>`,
+        { long: true, predict: true, play: `interface Edible {
+    int hunger();
+}
+
+class Apple implements Edible {
+    public int hunger() {
+        return 4;
+    }
+}
+
+class Stew implements Edible {
+    private int bowls;
+
+    Stew(int bowls) {
+        this.bowls = bowls;
+    }
+
+    public int hunger() {
+        return 6 * bowls;
+    }
+}
+
+public class Main {
+    static int total(Edible[] meal) {
+        int sum = 0;
+        for (Edible e : meal) {
+            sum += e.hunger();
+        }
+        return sum;
+    }
+
+    public static void main(String[] args) {
+        Edible[] lunch = { new Apple(), new Stew(2), new Apple() };
+        System.out.println(total(lunch));
+    }
+}`, caption: 'total knows nothing about apples or stew: it only knows that everything it is given can say its hunger. The two classes are not related, but both promised hunger(), so both fit in an Edible array. 4 + 12 + 4 is 20. Interface methods are public, so the methods that implement them must say public: leave it off and the compiler refuses.' },
+        `<div class="stmt"><p><span class="kind">Rule (abstract and interface).</span> An <b>abstract class</b> cannot be instantiated; it may have abstract methods (no body) that each concrete subclass must write. An <b>interface</b> lists method headings; a class that <code>implements</code> it must write all of them, as <code>public</code>. A class extends at most one class and implements any number of interfaces. A variable may have an interface type and hold any object whose class implements it.</p></div>`,
+        { check: `Which of these can one Java class do?`, options: [`Extend two classes at once`, `Extend one class and implement several interfaces`, `Implement only one interface`, `Neither extend a class nor implement an interface`], answer: 1, wrong: [`Java allows only one parent class; mixing two parents causes trouble when both have a method of the same name. Interfaces are the way to combine abilities.`, null, `There is no limit: class A implements B, C, D is fine.`, `Every class extends something: if you write no extends, it extends Object. And a class may implement any interfaces it likes.`], why: `One parent for what the thing <em>is</em>, as many interfaces as you like for what it <em>can do</em>.` },
+        `<p>Two more facts. Every class you write extends <code>Object</code> without saying so, which is where <code>toString()</code> comes from (lesson 8) and why a class that does not override it prints as <code>Item@1b6d3586</code>. And a subclass can call its parent's version of a method it has overridden by writing <code>super.describe()</code>, so that it adds to the parent's work instead of replacing it.</p>`,
+        { aside: `<p><b>Common mistakes in this lesson.</b> Leaving out <code>super(...)</code> when the parent has no constructor without parameters: <em>constructor Item in class Item cannot be applied to given types</em>. Making a field <code>private</code> in the parent and then using it by name in a subclass: <em>name has private access in Item</em>; use <code>protected</code> or a getter. Calling a subclass-only method through a parent variable: <em>cannot find symbol</em>; test with <code>instanceof</code> first. Forgetting <code>public</code> on a method that implements an interface method: <em>attempting to assign weaker access privileges</em>. Writing <code>@Override</code> on a method whose name or parameters differ from the parent's: <em>method does not override or implement a method from a supertype</em>, which is exactly the typo the annotation exists to catch.</p>` },
+        {
+          ex: {
+            id: 'jv-9-1', title: 'Mobs',
+            classes: true,
+            prompt: `<p>The class <code>Mob</code> is written for you. Every mob has a name and health, can be hurt, and can attack; how hard it attacks depends on the kind. Write two subclasses:</p><ul><li><code>Zombie</code>, with a constructor <code>Zombie(String name)</code>: health 20, and an attack that does 3 damage;</li><li><code>Creeper</code>, with a constructor <code>Creeper(String name)</code>: health 10, and an attack that does 20 damage and then makes the creeper explode, which sets its own health to 0.</li></ul><p>Send the constructors' health up to <code>Mob</code> with <code>super</code>, and override <code>attack()</code> in each.</p>`,
+            starter: `abstract class Mob {\n    protected String name;\n    protected int health;\n\n    Mob(String name, int health) {\n        this.name = name;\n        this.health = health;\n    }\n\n    abstract int attack();      // the damage one attack does\n\n    void hurt(int damage) {\n        health = Math.max(0, health - damage);\n    }\n\n    boolean isAlive() {\n        return health > 0;\n    }\n\n    public String toString() {\n        return name + " (" + health + ")";\n    }\n}\n\nclass Zombie extends Mob {\n    // constructor and attack\n}\n\nclass Creeper extends Mob {\n    // constructor and attack\n}`,
+            solution: `abstract class Mob {\n    protected String name;\n    protected int health;\n\n    Mob(String name, int health) {\n        this.name = name;\n        this.health = health;\n    }\n\n    abstract int attack();      // the damage one attack does\n\n    void hurt(int damage) {\n        health = Math.max(0, health - damage);\n    }\n\n    boolean isAlive() {\n        return health > 0;\n    }\n\n    public String toString() {\n        return name + " (" + health + ")";\n    }\n}\n\nclass Zombie extends Mob {\n    Zombie(String name) {\n        super(name, 20);\n    }\n\n    @Override\n    int attack() {\n        return 3;\n    }\n}\n\nclass Creeper extends Mob {\n    Creeper(String name) {\n        super(name, 10);\n    }\n\n    @Override\n    int attack() {\n        health = 0;\n        return 20;\n    }\n}`,
+            hints: ['Each constructor is one line: super(name, 20); for the zombie. The name goes up to Mob, together with the starting health.', 'attack() must be written in both subclasses, because Mob declared it abstract. The zombie just returns 3.', 'The creeper has to change health as well as return a number: set health to 0 first (health is protected, so a subclass may use it), then return 20.'],
+            tests: [
+              { name: 'a zombie', main: '        Zombie z = new Zombie("Zed");\n        System.out.println(z + " " + z.attack());', expect: 'Zed (20) 3' },
+              { name: 'a creeper explodes', main: '        Creeper c = new Creeper("Boom");\n        System.out.println(c + " " + c.isAlive());\n        System.out.println(c.attack());\n        System.out.println(c + " " + c.isAlive());', expect: 'Boom (10) true\n20\nBoom (0) false' },
+              { name: 'one array of mobs', main: '        Mob[] mobs = { new Zombie("a"), new Creeper("b"), new Zombie("c") };\n        int total = 0;\n        for (Mob m : mobs) {\n            total += m.attack();\n        }\n        System.out.println(total);\n        System.out.println(mobs[0].isAlive() + " " + mobs[1].isAlive());', expect: '26\ntrue false' },
+              { name: 'hurting a mob', main: '        Mob z = new Zombie("Zed");\n        z.hurt(5);\n        System.out.println(z);\n        z.hurt(100);\n        System.out.println(z + " " + z.isAlive());', expect: 'Zed (15)\nZed (0) false' }
+            ],
+            failTip: 'If the compiler says a class "is not abstract and does not override abstract method attack()", one of the subclasses has no attack(), or it is not spelled exactly as in Mob (int attack(), no parameters).',
+            followup: 'Add a class Skeleton whose attack does 4 damage and which has only 6 health. Then write a method static int totalDamage(Mob[] mobs) that adds up all the attacks, so you never have to ask which kind of mob each one is.'
+          }
+        },
+        {
+          ex: {
+            id: 'jv-9-2', title: 'Fuel for the furnace',
+            classes: true,
+            prompt: `<p>A furnace burns different fuels for different times. Write:</p><ul><li>an interface <code>Burnable</code> with one method, <code>int burnTime()</code>, the seconds it burns;</li><li>a class <code>Coal</code> (no fields) that implements it and burns for 80 seconds;</li><li>a class <code>Plank</code> (no fields) that burns for 15 seconds;</li><li>a class <code>Stick</code> with a constructor <code>Stick(int count)</code>, a bundle of sticks that burns 5 seconds for each stick in it;</li><li>a class <code>Furnace</code> with a method <code>static int totalTime(Burnable[] fuel)</code> that adds up the burn time of everything in the array (0 for an empty array).</li></ul>`,
+            starter: `interface Burnable {\n    // burnTime\n}\n\nclass Coal implements Burnable {\n}\n\nclass Plank implements Burnable {\n}\n\nclass Stick implements Burnable {\n    Stick(int count) {\n    }\n}\n\nclass Furnace {\n    static int totalTime(Burnable[] fuel) {\n        return 0;\n    }\n}`,
+            solution: `interface Burnable {\n    int burnTime();\n}\n\nclass Coal implements Burnable {\n    public int burnTime() {\n        return 80;\n    }\n}\n\nclass Plank implements Burnable {\n    public int burnTime() {\n        return 15;\n    }\n}\n\nclass Stick implements Burnable {\n    private int count;\n\n    Stick(int count) {\n        this.count = count;\n    }\n\n    public int burnTime() {\n        return 5 * count;\n    }\n}\n\nclass Furnace {\n    static int totalTime(Burnable[] fuel) {\n        int sum = 0;\n        for (Burnable b : fuel) {\n            sum += b.burnTime();\n        }\n        return sum;\n    }\n}`,
+            hints: ['The interface is one line: int burnTime(); with no body. In each class the method must be public: public int burnTime() { ... }', 'Stick has to remember its count in a private field, so that burnTime can use it: 5 * count.', 'totalTime is a loop over the array that adds b.burnTime() for each element b. It does not need to know which class each one is.'],
+            tests: [
+              { name: 'single fuels', main: '        Burnable c = new Coal();\n        Burnable p = new Plank();\n        System.out.println(c.burnTime() + " " + p.burnTime() + " " + new Stick(4).burnTime());', expect: '80 15 20' },
+              { name: 'a mixed lot', main: '        Burnable[] lot = { new Coal(), new Plank(), new Plank(), new Stick(3) };\n        System.out.println(Furnace.totalTime(lot));', expect: '125' },
+              { name: 'nothing to burn', main: '        System.out.println(Furnace.totalTime(new Burnable[0]));', expect: '0' }
+            ],
+            failTip: 'If the compiler says "attempting to assign weaker access privileges; was public", a burnTime method is missing the word public.',
+            followup: 'Add a class Log that burns 15 seconds and a class Bucket of lava that burns 1,000. Does totalTime need to change? Why is that a good sign about the design?'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li><code>class B extends A</code> builds B from A: B inherits A's non-private fields and methods and adds or <b>overrides</b> its own. A subclass constructor begins with <code>super(...)</code>; <code>@Override</code> lets the compiler catch a method that does not really override.</li>
+<li>A variable of type A can refer to a B. The variable's type says what you may call; the object's class says which version runs: <b>polymorphism</b>. <code>instanceof</code> asks what an object really is.</li>
+<li>An <b>abstract</b> class cannot be instantiated and may demand methods from its subclasses. An <b>interface</b> is a list of promised methods; a class extends one class but implements any number of interfaces.</li>
+<li>Liskov's rule of thumb: a subclass should keep every promise its parent made, so that code written for the parent still works.</li>
+</ul><p>So how does one name stand for many kinds? Because each kind is an A as well, and each keeps A's promises while doing them its own way.</p></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      standards: ['3A-CS-03', '2-AP-17'],
+      standard: 1, title: 'Exceptions', summary: 'What Java does when something goes wrong: exceptions and stack traces, catching them with try, catch and finally, throwing your own, and the compiler’s rule for checked exceptions.',
+      blocks: [
+        `<p>Until the 1960s a function that could not do its job had few ways to say so. The usual one was to return a special number, such as −1, and hope that whoever called it checked. They often did not, and the program carried on with the answer to a question nobody had really answered. Languages began to add something better. PL/I, designed at IBM in 1964, let a program say what to do when a named condition arose, and in 1975 a computer scientist named John Goodenough published a paper arguing that every language should let a program keep what it does when all goes well apart from what it does when something goes wrong.</p>
+<p>Java, in 1995, made that idea central. So what should a method do when it is asked to do something it cannot?</p>`,
+        `<h2>What an exception is</h2>
+<p>You have met exceptions already: <code>ArrayIndexOutOfBoundsException</code> when an index is too big, <code>NullPointerException</code> when a method is called on <code>null</code>, <code>NumberFormatException</code> when text is not a number. Each is an <em>object</em> that Java <b>throws</b> at the moment something goes wrong. The method that is running stops at once. Java looks for a handler in the method that called it, then in the method that called that, and so on up the chain of calls. If nobody handles it, the program stops and prints a <b>stack trace</b>.</p>`,
+        { predict: true, play: `public class Main {
+    static int average(int total, int count) {
+        return total / count;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(average(10, 2));
+        System.out.println(average(10, 0));
+        System.out.println("done");
+    }
+}`, expectError: true, caption: 'The first call prints 5. The second divides by zero, so Java throws an ArithmeticException, and nothing handles it: the program stops, and "done" never prints. The trace names the exception and its message, then lists the calls from the one that threw to the first: the exception happened on line 3, in average, which was called from line 8, in main. Read a trace from the top: the first line of code that is yours is usually where to look.' },
+        `<div class="stmt"><p><span class="kind">Rule (exceptions).</span> An <b>exception</b> is an object describing what went wrong. When one is <b>thrown</b>, the current method stops at once, and the exception travels up through the callers until one handles it. An exception nobody handles ends the program with a <b>stack trace</b>: the exception's type and message, and the line of each call it passed through, innermost first.</p></div>`,
+        { check: `A program ends with this message:<pre class="code">Exception in thread "main" java.lang.ArithmeticException: / by zero
+\tat Main.average(Main.java:3)
+\tat Main.main(Main.java:8)</pre>Which line of the program called <code>average</code>?`, options: [`Line 3`, `Line 8`, `Neither: the trace does not say`, `Line 1`], answer: 1, wrong: [`Line 3 is where the division happened, inside average: that is the top of the trace, the place the exception was thrown.`, null, `The trace lists every call it passed through. Each line below the top names the caller and the line the call was made from.`, `The trace begins with the message and then lists lines of code: line 1 is not in it.`], why: `The lines are in order from the place the exception was thrown to the first call: average was running line 3, and main called it from line 8.` },
+        `<h2>try and catch</h2>
+<p>A program that expects trouble can handle it. Put the risky statements in a <code>try</code> block and say, in a <code>catch</code> block, what to do if a particular kind of exception is thrown. Here, text that is not a number is skipped instead of ending the program.</p>`,
+        { predict: true, play: `import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner in = new Scanner(System.in);
+        int total = 0;
+        while (in.hasNextLine()) {
+            String line = in.nextLine();
+            try {
+                int n = Integer.parseInt(line);
+                total += n;
+                System.out.println("added " + n);
+            } catch (NumberFormatException e) {
+                System.out.println("skipped \\"" + line + "\\"");
+            }
+        }
+        System.out.println("total " + total);
+    }
+}`, stdin: '12\nabc\n7\n3.5\n', caption: 'Integer.parseInt throws a NumberFormatException for "abc" and for "3.5" (it takes whole numbers only). The rest of the try block is skipped at once, so those lines are never added; the catch block runs, and the loop goes on with the next line. The total is 19 and the program never crashed. Change the catch type to ArithmeticException and run again: now nothing handles the exception and the program stops.' },
+        `<div class="stmt"><p><span class="kind">Rule (try and catch).</span> In <code>try { ... } catch (SomeException e) { ... }</code>, if a statement in the try block throws, the rest of the block is skipped and the first catch whose type matches (the exception is of that class or a subclass) runs, with the exception in <code>e</code>; <code>e.getMessage()</code> is its message. Then the program carries on after the whole statement. A <code>finally</code> block, if there is one, runs last whatever happened, which is the place to tidy up. List catches from the most specific class to the most general; a catch that an earlier one already covers is a compile error.</p></div>`,
+        { check: `What does this print?<pre class="code">try {
+    System.out.print("A ");
+    int x = 5 / 0;
+    System.out.print("B ");
+} catch (ArithmeticException e) {
+    System.out.print("C ");
+}
+System.out.println("D");</pre>`, options: [`A B C D`, `A C D`, `A D`, `A C`], answer: 1, wrong: [`B is the statement after the one that threw. Once 5 / 0 throws, the rest of the try block is skipped.`, null, `The exception was thrown and caught, so the catch block ran and printed C.`, `The program does not stop: after the catch, execution continues with the line after the try statement, which prints D.`], why: `A prints, then 5 / 0 throws; B is skipped; the catch prints C; and the program carries on to D.` },
+        `<h2>Throwing your own</h2>
+<p>A method that is given something it cannot use can throw an exception itself, with <code>throw new ...</code>, instead of returning a made-up answer. Java's own classes cover many cases: <code>IllegalArgumentException</code> for a bad argument, <code>IllegalStateException</code> for a call at the wrong moment. For a problem of your own, make a new exception class by extending <code>RuntimeException</code> and passing the message up with <code>super</code>.</p>`,
+        { long: true, predict: true, play: `class OutOfRoomException extends RuntimeException {
+    OutOfRoomException(String message) {
+        super(message);
+    }
+}
+
+class Slot {
+    private int count;
+    private int max;
+
+    Slot(int max) {
+        this.max = max;
+    }
+
+    void add(int n) {
+        if (n < 0) {
+            throw new IllegalArgumentException("cannot add " + n);
+        }
+        if (count + n > max) {
+            throw new OutOfRoomException("only room for " + (max - count));
+        }
+        count += n;
+    }
+
+    int getCount() {
+        return count;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Slot s = new Slot(64);
+        try {
+            s.add(60);
+            s.add(10);
+            System.out.println("added both");
+        } catch (OutOfRoomException e) {
+            System.out.println("problem: " + e.getMessage());
+        } finally {
+            System.out.println("count is " + s.getCount());
+        }
+    }
+}`, caption: 'The first add succeeds. The second would pass 64, so it throws before changing anything; "added both" is skipped, the catch prints the message, and the finally block runs last, either way, printing 60. Because add checks first and changes later, the slot is never left half-changed. Change add(10) to add(-1) to see an exception that this catch does not handle.' },
+        `<p>When is throwing better than returning <code>false</code>, as lesson 8's <code>withdraw</code> did?</p>`,
+        `<details class="reveal"><summary>Guess first: a bank is asked to take out a negative amount. Is that a refusal or a bug?</summary><p>It is the caller's bug: nobody can sensibly withdraw −5. A method that returns <code>false</code> to say "not allowed" is right for something that can reasonably happen, such as too little money. A method that is given nonsense should throw <code>IllegalArgumentException</code>, because a quiet <code>false</code> that nobody checks hides the bug, and a thrown exception cannot be ignored by accident.</p></details>`,
+        `<h2>Checked exceptions</h2>
+<p>Java has one more rule, which most other languages dropped. Exceptions that extend <code>RuntimeException</code> (and <code>Error</code>) are <b>unchecked</b>: they are usually bugs, and nothing forces you to deal with them. Every other kind of <code>Exception</code>, including any class you write that extends <code>Exception</code> directly, is <b>checked</b>: the compiler makes sure it is handled. A method that might throw one must either catch it or announce it with <code>throws</code> in its heading, and then its callers have the same choice.</p>`,
+        { play: `class BrokenToolException extends Exception {
+    BrokenToolException(String message) {
+        super(message);
+    }
+}
+
+public class Main {
+    static void mine(int durability) {
+        if (durability <= 0) {
+            throw new BrokenToolException("the pickaxe broke");
+        }
+        System.out.println("mined");
+    }
+
+    public static void main(String[] args) {
+        mine(3);
+    }
+}`, expectError: true, caption: 'BrokenToolException extends Exception, so it is checked, and mine neither catches it nor says that it throws it. The compiler refuses: "unreported exception BrokenToolException; must be caught or declared to be thrown". Everything this lesson has thrown so far was unchecked, which is why no such message appeared.' },
+        `<p>Announce it with <code>throws</code>, and the callers must decide:</p>`,
+        { predict: true, play: `class BrokenToolException extends Exception {
+    BrokenToolException(String message) {
+        super(message);
+    }
+}
+
+public class Main {
+    static void mine(int durability) throws BrokenToolException {
+        if (durability <= 0) {
+            throw new BrokenToolException("the pickaxe broke");
+        }
+        System.out.println("mined with " + durability);
+    }
+
+    public static void main(String[] args) {
+        try {
+            mine(5);
+            mine(0);
+            mine(3);
+        } catch (BrokenToolException e) {
+            System.out.println("stopped: " + e.getMessage());
+        }
+    }
+}`, caption: 'mine says throws BrokenToolException, so main must put the calls in a try with a matching catch (or declare throws itself). The first call works; the second throws, and the third never runs. Remove the try and catch and the compiler complains again, this time about main.' },
+        { check: `Which of these exceptions must a method catch or declare with <code>throws</code>?`, options: [`ArithmeticException`, `NullPointerException`, `A class you wrote with <code>extends Exception</code>`, `IllegalArgumentException`], answer: 2, wrong: [`ArithmeticException extends RuntimeException, so it is unchecked: the compiler does not insist, though it can still be thrown.`, `NullPointerException is unchecked: it is nearly always a bug, and the fix is to correct the code, not to catch it.`, null, `IllegalArgumentException extends RuntimeException, so it is unchecked.`], why: `Only Exception and its subclasses other than RuntimeException are checked. A class that extends Exception directly is checked; one that extends RuntimeException is not.` },
+        { aside: `<p><b>Common mistakes in this lesson.</b> An empty catch block, <code>catch (Exception e) { }</code>, which swallows the problem and leaves no trace of what went wrong: at least print the message. Catching <code>Exception</code> when a more specific class would do, so that real bugs are caught by accident. Listing a general catch before a specific one: <em>exception NumberFormatException has already been caught</em>. Catching a checked exception that nothing in the try block can throw: <em>exception BrokenToolException is never thrown in body of corresponding try statement</em>. Putting statements that must run after a failure inside the try instead of in <code>finally</code>. Writing <code>throw</code> where <code>throws</code> is meant: <code>throw</code> throws one exception here and now, <code>throws</code> in a heading announces what a method may throw.</p>` },
+        {
+          ex: {
+            id: 'jv-10-1', title: 'A number or a fallback',
+            prompt: `<p>Write a method</p><pre class="code">static int parseOr(String s, int fallback)</pre><p>that returns the whole number written in <code>s</code>, or <code>fallback</code> if <code>s</code> does not hold a whole number that fits in an <code>int</code>. It must never throw an exception. <code>Integer.parseInt(s)</code> does the conversion, and throws a <code>NumberFormatException</code> if it cannot.</p>`,
+            starter: `static int parseOr(String s, int fallback) {\n    // try the conversion; catch the exception\n    return fallback;\n}`,
+            solution: `static int parseOr(String s, int fallback) {\n    try {\n        return Integer.parseInt(s);\n    } catch (NumberFormatException e) {\n        return fallback;\n    }\n}`,
+            hints: ['Put the call, return Integer.parseInt(s);, inside a try block.', 'The catch block is for NumberFormatException, and returns the fallback. A return in a try block is fine.', 'You do not need to check the text yourself, and checking is hard: let parseInt decide, and catch what it throws. It also rejects "", "3.5" and a number too big for an int.'],
+            tests: [{ call: 'parseOr("42", 0)', expect: '42' }, { call: 'parseOr("-12", 0)', expect: '-12' }, { call: 'parseOr("abc", -1)', expect: '-1' }, { call: 'parseOr("", 7)', expect: '7' }, { call: 'parseOr("3.5", 9)', expect: '9' }, { call: 'parseOr("2147483648", 5)', expect: '5' }, { call: 'parseOr("2147483647", 5)', expect: '2147483647' }],
+            failTip: 'If the program stops with a NumberFormatException, the catch does not name that class, or the parseInt call is outside the try.',
+            followup: 'Add a second method static int sumOf(String[] parts) that adds up every part that is a number and skips the rest, using parseOr. Why is it a bad idea to use a fallback of 0 if some of the parts might really be "0"?'
+          }
+        },
+        {
+          ex: {
+            id: 'jv-10-2', title: 'Taking items out',
+            classes: true,
+            prompt: `<p>Write two classes. First, an exception <code>NotEnoughException</code> that extends <code>RuntimeException</code>, with a constructor that takes a message and passes it up. Second, a class <code>ItemStack</code> with a constructor <code>ItemStack(String item, int count)</code>, <code>int getCount()</code>, and <code>void remove(int n)</code>, which takes <code>n</code> items out of the stack, but:</p><ul><li>if <code>n</code> is 0 or less, throws an <code>IllegalArgumentException</code> with the message <code>must remove at least 1</code>;</li><li>if <code>n</code> is more than the count, throws a <code>NotEnoughException</code> whose message is <code>have</code>, the count, <code>, need</code> and <code>n</code> written like this: <code>have 10, need 20</code>.</li></ul><p>A failed call must leave the count as it was.</p>`,
+            starter: `class NotEnoughException extends RuntimeException {\n    // a constructor taking a message\n}\n\nclass ItemStack {\n    private String item;\n    private int count;\n\n    ItemStack(String item, int count) {\n        this.item = item;\n        this.count = count;\n    }\n\n    int getCount() {\n        return count;\n    }\n\n    void remove(int n) {\n        // check, then change\n    }\n}`,
+            solution: `class NotEnoughException extends RuntimeException {\n    NotEnoughException(String message) {\n        super(message);\n    }\n}\n\nclass ItemStack {\n    private String item;\n    private int count;\n\n    ItemStack(String item, int count) {\n        this.item = item;\n        this.count = count;\n    }\n\n    int getCount() {\n        return count;\n    }\n\n    void remove(int n) {\n        if (n <= 0) {\n            throw new IllegalArgumentException("must remove at least 1");\n        }\n        if (n > count) {\n            throw new NotEnoughException("have " + count + ", need " + n);\n        }\n        count -= n;\n    }\n}`,
+            hints: ['The exception class is a constructor and one line: super(message);', 'In remove, check the two bad cases first, each with a throw, and only then change count. After a throw the method stops, so no else is needed.', 'The message is "have " + count + ", need " + n. Check the n <= 0 case before the n > count case, so that remove(0) gets the right message.'],
+            tests: [
+              { name: 'a normal removal', main: '        ItemStack s = new ItemStack("dirt", 10);\n        s.remove(3);\n        s.remove(7);\n        System.out.println(s.getCount());', expect: '0' },
+              { name: 'too many', main: '        ItemStack s = new ItemStack("dirt", 10);\n        try {\n            s.remove(20);\n            System.out.println("no exception");\n        } catch (NotEnoughException e) {\n            System.out.println(e.getMessage() + " / " + s.getCount());\n        }', expect: 'have 10, need 20 / 10' },
+              { name: 'zero and negative', main: '        ItemStack s = new ItemStack("dirt", 10);\n        try {\n            s.remove(0);\n        } catch (IllegalArgumentException e) {\n            System.out.println(e.getMessage());\n        }\n        try {\n            s.remove(-4);\n        } catch (IllegalArgumentException e) {\n            System.out.println(e.getMessage() + " " + s.getCount());\n        }', expect: 'must remove at least 1\nmust remove at least 1 10' },
+              { name: 'it is an unchecked exception', main: '        RuntimeException e = new NotEnoughException("x");\n        System.out.println(e instanceof NotEnoughException);\n        System.out.println(e.getMessage());', expect: 'true\nx' }
+            ],
+            failTip: 'If a failed removal changes the count, the subtraction happens before the check: do the checks first.',
+            followup: 'Write a method static boolean tryRemove(ItemStack s, int n) that calls remove and returns true if it worked and false if it threw a NotEnoughException, and think about when you would rather have this version, and when the one that throws.'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li>An <b>exception</b> is an object thrown when something goes wrong. The method stops and the exception travels up through the callers; one that nobody handles ends the program with a <b>stack trace</b>, which lists the calls from the top down.</li>
+<li><code>try { ... } catch (Type e) { ... }</code> handles it: the rest of the try block is skipped, the first matching catch runs, and the program carries on after. <code>finally</code> always runs. Order catches from specific to general.</li>
+<li><code>throw new SomeException("message")</code> reports a problem. Choose a Java class such as <code>IllegalArgumentException</code>, or extend <code>RuntimeException</code> for your own. Check first, change later, so a failure leaves nothing half-done.</li>
+<li><b>Checked</b> exceptions (Exception and its subclasses other than RuntimeException) must be caught or declared with <code>throws</code>; <b>unchecked</b> ones, which are usually bugs, need not be.</li>
+</ul><p>So what should a method do when it cannot do its job? Say so, with an exception that names the problem, and let a caller that knows how to recover decide what happens next.</p></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      standards: ['3A-DA-10', '3B-AP-12', '3B-AP-16'],
+      standard: 1, title: 'HashMap and HashSet', summary: 'Looking things up by name instead of by position: maps from keys to values, counting with a map, looping over one, and sets that keep each thing once.',
+      blocks: [
+        `<p>In January 1953 Hans Peter Luhn, an engineer at IBM, wrote an internal memo about a way to find a record almost at once. Searching a list means starting at the top and looking at every entry until you reach the right one, and the longer the list, the longer it takes. Luhn's idea was to do some arithmetic on the key you are looking for, a name or an account number, to get a number, and to use that number to say where the record is kept. To find it again, do the same arithmetic. The arithmetic came to be called <em>hashing</em>, and it is inside the dictionaries of Python and the maps of Java today. A year after the memo Luhn applied for a patent on another idea, the check digit still used to catch typing mistakes in credit card numbers.</p>
+<p>So how can a program find one name among a million without looking at them all?</p>`,
+        `<h2>Looking up by name</h2>
+<p>An <code>ArrayList</code> finds things by position: item 0, item 1. Often what you have is a name: how many <code>"dirt"</code> are in the inventory? A <b>map</b> stores pairs, a <b>key</b> and the <b>value</b> that goes with it, and finds the value from the key. In Java the usual map is <code>HashMap</code>. Its type has two parameters: <code>Map&lt;String, Integer&gt;</code> is a map from <code>String</code> keys to <code>Integer</code> values.</p>`,
+        { predict: true, play: `import java.util.HashMap;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) {
+        Map<String, Integer> inv = new HashMap<>();
+        inv.put("dirt", 64);
+        inv.put("egg", 5);
+        inv.put("apple", 12);
+        System.out.println(inv.get("egg"));
+        System.out.println(inv.get("diamond"));
+        System.out.println(inv.containsKey("apple") + " " + inv.size());
+        inv.put("egg", 6);
+        inv.remove("dirt");
+        System.out.println(inv.get("egg") + " " + inv.size() + " " + inv.getOrDefault("dirt", 0));
+    }
+}`, caption: 'put adds a pair, or replaces the value if the key is already there (egg goes from 5 to 6, and the size stays the same). get returns the value, or null for a key that is not in the map: asking about "diamond" is not an error. getOrDefault gives a value of your choice for a missing key, which is why it prints 0 for dirt after dirt was removed. The map holds no more than one value per key.' },
+        `<div class="stmt"><p><span class="kind">Rule (map).</span> A <code>Map&lt;K, V&gt;</code> holds pairs of a key of type K and a value of type V; each key appears at most once, and the values may repeat. <code>put(k, v)</code> adds or replaces; <code>get(k)</code> returns the value or <code>null</code>; <code>containsKey(k)</code>, <code>remove(k)</code>, <code>size()</code> and <code>getOrDefault(k, d)</code> do what they say. A <code>HashMap</code> finds a key in about the same time whether it holds ten pairs or ten million. Keys and values must be objects: <code>Integer</code> for <code>int</code>, <code>Character</code> for <code>char</code>, converted for you.</p></div>`,
+        { check: `<code>inv</code> has no key <code>"diamond"</code>. What happens at <code>int n = inv.get("diamond");</code>?`, options: [`n becomes 0`, `It throws a NullPointerException`, `It does not compile`, `n becomes −1`], answer: 1, wrong: [`get returns null for a missing key, and null cannot be turned into a number. 0 is what getOrDefault("diamond", 0) would give.`, null, `It compiles, because get returns an Integer and Java converts it to int for you. The trouble comes when the program runs.`, `Nothing in Java picks −1: the method returns null, and unboxing null fails.`], why: `get returns null for a missing key, and converting null to an int throws. Use containsKey first, or getOrDefault.` },
+        `<h2>Counting with a map</h2>
+<p>The job maps are best known for is counting. Walk through some data, and for each item add one to its count. The first time an item appears it has no count yet, which is what <code>getOrDefault</code> is for.</p>`,
+        { predict: true, play: `import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.TreeMap;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner in = new Scanner(System.in);
+        Map<String, Integer> counts = new HashMap<>();
+        while (in.hasNext()) {
+            String word = in.next();
+            counts.put(word, counts.getOrDefault(word, 0) + 1);
+        }
+        System.out.println(counts.get("the") + " " + counts.size());
+        System.out.println(counts);
+        Map<String, Integer> sorted = new TreeMap<>(counts);
+        System.out.println(sorted);
+    }
+}`, stdin: 'the cat and the dog and the bird\n', caption: 'For each word, put replaces the old count with the old count plus one; a new word starts from 0. "the" appears 3 times and there are 5 different words. A HashMap prints its pairs in an order of its own, set by the keys\' hash numbers, which is neither the order they arrived nor alphabetical. The same keys always give the same order, but you cannot choose it. A TreeMap keeps its keys sorted, so copying the counts into one gives alphabetical order.' },
+        `<div class="stmt"><p><span class="kind">Rule (counting).</span> To count with a map, <code>counts.put(key, counts.getOrDefault(key, 0) + 1)</code> for every item. <b>Order:</b> a <code>HashMap</code> has no order you can rely on; a <code>TreeMap</code> keeps keys sorted; a <code>LinkedHashMap</code> remembers the order in which keys were first put. They all have the same methods, so you can change one word and keep the rest.</p></div>`,
+        { check: `<code>counts</code> is an empty map. After <code>counts.put("a", counts.getOrDefault("a", 0) + 1);</code> has run twice, what is <code>counts.get("a")</code>?`, options: [`1`, `2`, `0`, `null`], answer: 1, wrong: [`The second run starts from the 1 that the first run stored: put replaces the value with the old one plus 1.`, null, `0 is only the starting value for a key that is missing. After the first put the key is there.`, `null is what get returns for a missing key, and "a" was put in the map.`], why: `The first run stores 0 + 1; the second reads that 1 and stores 2.` },
+        `<h2>Looping over a map</h2>
+<p>A map is not a list, so there is no index to loop with. Loop over its keys, <code>keySet()</code>, over its values, <code>values()</code>, or over both together, <code>entrySet()</code>, where each entry is a <code>Map.Entry</code> with <code>getKey()</code> and <code>getValue()</code>.</p>`,
+        { predict: true, play: `import java.util.Map;
+import java.util.TreeMap;
+
+public class Main {
+    public static void main(String[] args) {
+        Map<String, Integer> inv = new TreeMap<>();
+        inv.put("stick", 20);
+        inv.put("apple", 12);
+        inv.put("dirt", 64);
+        for (String item : inv.keySet()) {
+            System.out.println(item + ": " + inv.get(item));
+        }
+        int total = 0;
+        for (int n : inv.values()) {
+            total += n;
+        }
+        System.out.println("total " + total);
+        for (Map.Entry<String, Integer> e : inv.entrySet()) {
+            if (e.getValue() > 15) {
+                System.out.println(e.getKey() + " is plentiful");
+            }
+        }
+    }
+}`, caption: 'A TreeMap is used so that the order is alphabetical and you can predict it. keySet gives the keys, values the numbers, and entrySet each pair at once, which avoids a second lookup. Do not add or remove keys while looping over a map: Java throws a ConcurrentModificationException, as it does for a list.' },
+        `<h2>Sets</h2>
+<p>Sometimes only the keys matter: which words appeared, which items are in the bag. A <b>set</b> is a collection with no duplicates, and its main question is <code>contains</code>. <code>HashSet</code> is the fast one and <code>TreeSet</code> keeps its members sorted. <code>add</code> returns <code>true</code> if the item was new and <code>false</code> if it was already there.</p>`,
+        { predict: true, play: `import java.util.HashSet;
+import java.util.Set;
+import java.util.TreeSet;
+
+public class Main {
+    public static void main(String[] args) {
+        String[] words = { "the", "cat", "and", "the", "dog", "and", "the" };
+        Set<String> seen = new HashSet<>();
+        int repeats = 0;
+        for (String w : words) {
+            if (!seen.add(w)) {
+                repeats++;
+            }
+        }
+        System.out.println(seen.size() + " distinct, " + repeats + " repeats");
+        Set<String> sorted = new TreeSet<>(seen);
+        System.out.println(sorted);
+        System.out.println(seen.contains("cat") + " " + seen.contains("bird"));
+    }
+}`, caption: 'Seven words, but only four different ones, so the set holds four. add returned false three times: for the second "the", the second "and" and the third "the". Copying the set into a TreeSet sorts it. contains is as quick as a map lookup, which a search through an ArrayList is not.' },
+        { check: `You want to know which different words appear in a text, and you do not care how often. Which structure fits best?`, options: [`A <code>HashSet&lt;String&gt;</code>`, `A <code>HashMap&lt;String, Integer&gt;</code>`, `An <code>ArrayList&lt;String&gt;</code>`, `A <code>String[]</code>`], answer: 0, wrong: [null, `A map would work, but the counts would be wasted: a set is the structure for "have I seen this?", and it says so.`, `A list keeps duplicates, and finding out whether a word is already in it means looking at every entry.`, `An array has a fixed size, keeps duplicates and cannot be searched quickly.`], why: `A set keeps each thing once and answers "is it in?" at once, which is exactly the question.` },
+        { aside: `<p><b>Common mistakes in this lesson.</b> Reading a missing key into an <code>int</code>: <code>int n = map.get(k)</code> throws a <code>NullPointerException</code>. Forgetting that <code>put</code> replaces: a second <code>put</code> of the same key throws the old value away. Expecting a <code>HashMap</code> or <code>HashSet</code> to print in the order the items went in. Using your own class as a key without writing <code>equals</code> and <code>hashCode</code>: two objects with the same contents then count as different keys. (<code>String</code>, <code>Integer</code>, <code>Character</code> and the other library classes already have both.) Changing the map in a loop that is running over it. Writing <code>Map&lt;int, String&gt;</code>: the key type must be an object type, <code>Integer</code>.</p>` },
+        {
+          ex: {
+            id: 'jv-11-1', title: 'Letter counts',
+            prelude: 'import java.util.*;\n',
+            prompt: `<p>Write a method</p><pre class="code">static Map&lt;Character, Integer&gt; letterCounts(String s)</pre><p>that returns a map from each character of <code>s</code> to the number of times it occurs. Count every character exactly as it is, so that <code>'a'</code> and <code>'A'</code> are different keys. For the empty string, return an empty map. The tests print the map through a <code>TreeMap</code> so that the order is alphabetical.</p>`,
+            starter: `static Map<Character, Integer> letterCounts(String s) {\n    Map<Character, Integer> counts = new HashMap<>();\n    // count each character\n    return counts;\n}`,
+            solution: `static Map<Character, Integer> letterCounts(String s) {\n    Map<Character, Integer> counts = new HashMap<>();\n    for (int i = 0; i < s.length(); i++) {\n        char c = s.charAt(i);\n        counts.put(c, counts.getOrDefault(c, 0) + 1);\n    }\n    return counts;\n}`,
+            hints: ['Loop over the characters with an index and s.charAt(i), as in lesson 6.', 'For each character c, put its count back one higher: counts.put(c, counts.getOrDefault(c, 0) + 1);', 'A char is turned into a Character for the key for you. A character that has not been seen yet counts as 0.'],
+            tests: [{ call: 'new TreeMap<Character, Integer>(letterCounts("banana"))', expect: '{a=3, b=1, n=2}' }, { call: 'letterCounts("").size()', expect: '0' }, { call: 'new TreeMap<Character, Integer>(letterCounts("aAa"))', expect: '{A=1, a=2}' }, { call: 'new TreeMap<Character, Integer>(letterCounts("hello world"))', expect: '{ =1, d=1, e=1, h=1, l=3, o=2, r=1, w=1}' }, { call: 'letterCounts("mississippi").get(\'s\')', expect: '4' }],
+            failTip: 'If every count is 1, the put replaces the count with 1 each time: add 1 to the old count, which getOrDefault gives you.',
+            followup: 'Write a second method static char mostCommon(String s) that returns the character with the highest count, using letterCounts. What should it return for a tie? Make the answer the smallest character, and say why a program is easier to test when ties are settled by a rule.'
+          }
+        },
+        {
+          ex: {
+            id: 'jv-11-2', title: 'The first repeat',
+            prelude: 'import java.util.*;\n',
+            prompt: `<p>Write a method</p><pre class="code">static String firstRepeat(String[] words)</pre><p>that returns the first word in the array that has already appeared earlier in it, and the text <code>none</code> if no word is repeated. For <code>{"a", "b", "c", "b", "a"}</code> the answer is <code>b</code>: it is the first word whose second copy turns up (the second <code>a</code> comes later).</p>`,
+            starter: `static String firstRepeat(String[] words) {\n    // remember what you have seen\n    return "none";\n}`,
+            solution: `static String firstRepeat(String[] words) {\n    Set<String> seen = new HashSet<>();\n    for (String w : words) {\n        if (!seen.add(w)) {\n            return w;\n        }\n    }\n    return "none";\n}`,
+            hints: ['Keep a Set<String> of the words seen so far.', 'add returns false when the word was already in the set: that is the moment you have found a repeat, and you can return at once.', 'After the loop, no repeat was found: return "none".'],
+            tests: [{ call: 'firstRepeat(new String[]{"a", "b", "c", "b", "a"})', expect: 'b' }, { call: 'firstRepeat(new String[]{"x", "y", "z"})', expect: 'none' }, { call: 'firstRepeat(new String[]{})', expect: 'none' }, { call: 'firstRepeat(new String[]{"x", "x"})', expect: 'x' }, { call: 'firstRepeat(new String[]{"to", "be", "or", "not", "to", "be"})', expect: 'to' }],
+            failTip: 'If the first test gives "a", you are returning the first word that is repeated anywhere in the array. The answer is the first word that turns out to be a repeat as you read from the left: the second b comes before the second a.',
+            followup: 'Write static int countDistinct(String[] words) using a set, and then do the same job with an ArrayList and contains. For a million words, which would you wait for?'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li>A <b>map</b> holds key-value pairs and finds a value from its key: <code>put</code>, <code>get</code> (null for a missing key), <code>containsKey</code>, <code>remove</code>, <code>getOrDefault</code>, <code>size</code>. Each key is there once; <code>put</code> replaces. Keys and values are objects, so <code>Integer</code> and <code>Character</code>.</li>
+<li>Count with <code>counts.put(k, counts.getOrDefault(k, 0) + 1)</code>.</li>
+<li>Loop with <code>keySet()</code>, <code>values()</code> or <code>entrySet()</code>. A <code>HashMap</code> has no reliable order, a <code>TreeMap</code> is sorted by key, a <code>LinkedHashMap</code> keeps the order of insertion.</li>
+<li>A <b>set</b> keeps each member once: <code>HashSet</code> is fast, <code>TreeSet</code> is sorted, and <code>add</code> returns false for a repeat. A hash lookup takes about the same time for ten items or ten million.</li>
+</ul><p>So how can a program find one name among a million? By doing arithmetic on the name to learn where to look, which is what hashing is, instead of looking at every entry.</p></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      standards: ['3B-AP-17', '3A-AP-13', '3B-AP-14'],
+      standard: 1, title: 'Project: a crafting table', summary: 'Put the course together: a text-mode crafting table in which items are collected and combined by recipes. Classes, a map, exceptions and a command loop, built in three stages and tested by the commands you give it.',
+      blocks: [
+        `<p>In 2009 a Swedish programmer, Markus Persson, put an early version of a game called <em>Minecraft</em> online. It was written in Java. At its centre is a small, strict set of rules: a player collects blocks and items, and a crafting table turns a handful of them into something new, so that three planks and two sticks make a pickaxe, and a player who has only one stick makes nothing. Behind that table is exactly what you have learned in this course: classes that hold things, a map to find them by name, and exceptions for the moments when the rules say no.</p>
+<p>Can you build the crafting table of a game from the pieces of this course?</p>`,
+        `<h2>The plan</h2>
+<p>This project teaches no new Java. It asks you to choose where each tool you already have belongs. The finished program reads commands, one to a line, from the keyboard:</p>
+<ul><li><code>add log 2</code> puts two logs in the inventory; <code>show</code> lists what is in it, in alphabetical order, or says <code>empty</code>;</li><li><code>craft plank</code> uses a recipe: one log makes 4 planks; <code>craft stick</code>: 2 planks make 4 sticks; <code>craft pickaxe</code>: 3 planks and 2 sticks make 1 pickaxe;</li><li>a command it does not understand, a number that is not a whole number above 0, a recipe that does not exist, or ingredients that are missing: each gets a one-line message, and the program goes on; <code>quit</code> ends it.</li></ul>
+<p>Build it in three stages, and test each before starting the next. <b>Stage 1</b> is an <code>Inventory</code> class, which holds the counts in a map and refuses to take out more than it has. <b>Stage 2</b> is the crafting: a recipe checks that every ingredient is there and only then takes them. <b>Stage 3</b> is the loop that reads commands and turns each into a call.</p>`,
+        `<h2>Stage 1: the inventory</h2>
+<p>An inventory is a map from an item's name to how many there are. A <code>TreeMap</code> keeps the names sorted, which makes <code>show</code> easy. It offers three jobs: <code>add</code>, <code>remove</code> and <code>count</code>. The decisions are all about what can go wrong. Adding a number below 1 is a caller's mistake, so throw an <code>IllegalArgumentException</code>. Removing more than there is also fails, but in a way a game expects, so give it its own exception, <code>NotEnoughException</code>, that says how many you have and how many you needed. A count that falls to 0 should disappear from the map, so that <code>show</code> never lists an item that is not there. The first exercise is this class.</p>`,
+        { check: `Who should <b>catch</b> a <code>NotEnoughException</code> thrown by <code>Inventory.remove</code>?`, options: [`Nobody: an exception is always an error and the program should stop`, `The Inventory itself, so that the rest of the program never sees it`, `The code that knows what to do about it, such as the command loop, which can tell the player`, `Whoever wrote the exception class`], answer: 2, wrong: [`This one is expected: running out of an item is part of the game, and a good program turns it into a message.`, `The Inventory does not know what to do: it could say nothing, or print, but only the code that talks to the player knows what to tell them. Its job is to refuse and say why.`, null, `The class only describes the problem. The place to handle it is wherever there is something sensible to do next.`], why: `The inventory throws because it cannot continue; the loop catches because it knows how to tell the player. Each class does one job.` },
+        `<h2>Stage 2: crafting</h2>
+<p>A recipe lists what it needs, makes some number of an item, and has one rule that matters more than any other: <b>if anything is missing, nothing is taken</b>. Think what happens otherwise. A pickaxe needs 3 planks and 2 sticks; a player with 3 planks and 0 sticks must not lose the planks and get nothing. So check every ingredient first, and only when all are there take them away. This is the "check first, change later" you used in lesson 10, now with several things to check. Here it is on bare maps, to see the shape:</p>`,
+        { long: true, predict: true, play: `import java.util.HashMap;
+import java.util.Map;
+
+public class Main {
+    static boolean craftPickaxe(Map<String, Integer> inv) {
+        if (inv.getOrDefault("plank", 0) < 3 || inv.getOrDefault("stick", 0) < 2) {
+            return false;
+        }
+        inv.put("plank", inv.get("plank") - 3);
+        inv.put("stick", inv.get("stick") - 2);
+        inv.put("pickaxe", inv.getOrDefault("pickaxe", 0) + 1);
+        return true;
+    }
+
+    public static void main(String[] args) {
+        Map<String, Integer> inv = new HashMap<>();
+        inv.put("plank", 3);
+        System.out.println(craftPickaxe(inv) + " " + inv.get("plank"));
+        inv.put("stick", 2);
+        System.out.println(craftPickaxe(inv) + " " + inv.get("plank") + " " + inv.get("stick") + " " + inv.get("pickaxe"));
+    }
+}`, caption: 'The first call fails: there are planks but no sticks, and the method returns before changing anything, so the planks are still 3. After two sticks are added the second call succeeds and takes 3 planks and 2 sticks, leaving 0 and 0, and makes 1 pickaxe. In your program, instead of returning false, a failed recipe should throw a NotEnoughException that names the first ingredient that is short; and instead of three recipes spelled out by hand, one Recipe class holds a list of ingredients, so a new recipe is one more line of data.' },
+        { check: `Why must a recipe check <em>all</em> its ingredients before it takes any?`, options: [`So that a failed craft leaves the inventory exactly as it was`, `Because Java does not allow a map to change inside an if`, `To make the program run faster`, `So that the recipe can make more than one item`], answer: 0, wrong: [null, `Java allows changing a map anywhere. The reason is about what the player is left with.`, `Checking first does a little more work, not less. The reason is correctness.`, `The number of items made has nothing to do with checking.`], why: `Take the planks and then find the sticks missing, and the player has lost something and made nothing. Checking first means a refusal changes nothing.` },
+        `<h2>Stage 3: the command loop</h2>
+<p>Last, the part that talks to the player. Read a line, cut it into words with <code>split(" ")</code>, and look at the first word to decide what it asks for. Check that the line has the right number of words, convert a number with <code>Integer.parseInt</code>, and catch the exceptions that are the player's mistakes. Here is the skeleton, for <code>add</code> only:</p>`,
+        { long: true, predict: true, play: `import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner in = new Scanner(System.in);
+        while (in.hasNextLine()) {
+            String line = in.nextLine().trim();
+            if (line.isEmpty()) {
+                continue;
+            }
+            String[] parts = line.split(" ");
+            if (parts[0].equals("quit")) {
+                break;
+            } else if (parts[0].equals("add") && parts.length == 3) {
+                try {
+                    int n = Integer.parseInt(parts[2]);
+                    System.out.println("would add " + n + " " + parts[1]);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("bad number: " + parts[2]);
+                }
+            } else {
+                System.out.println("unknown command: " + line);
+            }
+        }
+    }
+}`, stdin: 'add dirt 5\n\nadd egg two\nadd 3\nquit\nadd dirt 1\n', caption: 'A blank line is skipped, and quit ends the loop, so the last line is never read. "add egg two" makes parseInt throw a NumberFormatException, which is a kind of IllegalArgumentException and is caught by the same catch; in the finished program, inv.add throws that exception too for a number below 1, so one catch covers both kinds of bad number. "add 3" has the wrong number of words, so it falls through to the last branch. Whatever the player types, the program answers and goes on.' },
+        { check: `<code>NumberFormatException</code> is a subclass of <code>IllegalArgumentException</code>. What does <code>catch (IllegalArgumentException e)</code> do about it?`, options: [`It catches it as well, because a subclass object is also its parent's kind`, `It ignores it: only exact matches are caught`, `It does not compile`, `It catches it only if the exception is also listed`], answer: 0, wrong: [null, `A catch matches the named class and every subclass, the same way a variable of a parent type may hold a subclass object (lesson 9).`, `It compiles: a catch of a parent type is legal and common.`, `The match is by class: a subclass needs no separate mention. That is why order matters when you list several catches.`], why: `A catch matches the exception's class and all its subclasses, which is polymorphism once more.` },
+        { aside: `<p><b>Common mistakes in this project.</b> Reporting the wrong ingredient: check them in the recipe's order, and report the first that is short. Taking the first ingredient and then discovering the second is missing. Leaving an item with a count of 0 in the map so that <code>show</code> prints it. Looking at <code>parts[1]</code> before checking that the line has at least two words, which throws <code>ArrayIndexOutOfBoundsException</code>. Comparing strings with <code>==</code> instead of <code>equals</code>. Printing from inside <code>Inventory</code>: it should throw, and let the loop do the talking.</p>` },
+        {
+          ex: {
+            id: 'jv-12-1', title: 'The inventory',
+            classes: true,
+            prelude: 'import java.util.*;\n',
+            prompt: `<p>Write the two classes of stage 1. (The line <code>import java.util.*;</code> is already there for you.)</p><ul><li><code>NotEnoughException</code>, extending <code>RuntimeException</code>, with a constructor that takes a message;</li><li><code>Inventory</code>, with a no-argument constructor and: <code>void add(String item, int n)</code>; <code>int count(String item)</code>, which is 0 for an item that is not there; <code>void remove(String item, int n)</code>; and <code>String show()</code>.</li></ul><p><code>add</code> and <code>remove</code> throw an <code>IllegalArgumentException</code> with the message <code>bad amount</code> if <code>n</code> is below 1. <code>remove</code> throws a <code>NotEnoughException</code> with a message like <code>not enough dirt: have 5, need 9</code> if there are fewer than <code>n</code>; and when a count falls to 0 the item is removed from the inventory. <code>show()</code> returns one line <code>item: count</code> for each item, sorted by name and joined with newline characters, or the text <code>empty</code> if there is nothing.</p>`,
+            starter: `class NotEnoughException extends RuntimeException {\n    // a constructor taking a message\n}\n\nclass Inventory {\n    private Map<String, Integer> items = new TreeMap<>();\n\n    void add(String item, int n) {\n    }\n\n    int count(String item) {\n        return 0;\n    }\n\n    void remove(String item, int n) {\n    }\n\n    String show() {\n        return "";\n    }\n}`,
+            solution: `class NotEnoughException extends RuntimeException {\n    NotEnoughException(String message) {\n        super(message);\n    }\n}\n\nclass Inventory {\n    private Map<String, Integer> items = new TreeMap<>();\n\n    void add(String item, int n) {\n        if (n < 1) {\n            throw new IllegalArgumentException("bad amount");\n        }\n        items.put(item, count(item) + n);\n    }\n\n    int count(String item) {\n        return items.getOrDefault(item, 0);\n    }\n\n    void remove(String item, int n) {\n        if (n < 1) {\n            throw new IllegalArgumentException("bad amount");\n        }\n        int have = count(item);\n        if (have < n) {\n            throw new NotEnoughException("not enough " + item + ": have " + have + ", need " + n);\n        }\n        if (have == n) {\n            items.remove(item);\n        } else {\n            items.put(item, have - n);\n        }\n    }\n\n    String show() {\n        if (items.isEmpty()) {\n            return "empty";\n        }\n        String text = "";\n        for (Map.Entry<String, Integer> e : items.entrySet()) {\n            if (!text.isEmpty()) {\n                text += "\\n";\n            }\n            text += e.getKey() + ": " + e.getValue();\n        }\n        return text;\n    }\n}`,
+            hints: ['count is one line: return items.getOrDefault(item, 0); add and remove can use it.', 'add: check n < 1 first, then items.put(item, count(item) + n). remove: check n < 1, then compare count(item) with n and throw NotEnoughException if it is less, then either items.remove(item) when the count would reach 0, or put the smaller count back.', 'The message is "not enough " + item + ": have " + have + ", need " + n. For show, loop over items.entrySet(): a TreeMap gives the names sorted, and you add a "\\n" before every line but the first.'],
+            tests: [
+              { name: 'adding and counting', main: '        Inventory inv = new Inventory();\n        inv.add("dirt", 5);\n        inv.add("dirt", 3);\n        inv.add("egg", 1);\n        System.out.println(inv.count("dirt") + " " + inv.count("egg") + " " + inv.count("gold"));', expect: '8 1 0' },
+              { name: 'removing', main: '        Inventory inv = new Inventory();\n        inv.add("dirt", 8);\n        inv.remove("dirt", 3);\n        System.out.println(inv.count("dirt"));\n        inv.remove("dirt", 5);\n        System.out.println(inv.count("dirt") + " " + inv.show());', expect: '5\n0 empty' },
+              { name: 'show is sorted', main: '        Inventory inv = new Inventory();\n        System.out.println(inv.show());\n        inv.add("stick", 2);\n        inv.add("apple", 1);\n        inv.add("dirt", 64);\n        System.out.println(inv.show());', expect: 'empty\napple: 1\ndirt: 64\nstick: 2' },
+              { name: 'not enough', main: '        Inventory inv = new Inventory();\n        inv.add("dirt", 5);\n        try {\n            inv.remove("dirt", 9);\n        } catch (NotEnoughException e) {\n            System.out.println(e.getMessage() + " / " + inv.count("dirt"));\n        }\n        try {\n            inv.remove("gold", 1);\n        } catch (NotEnoughException e) {\n            System.out.println(e.getMessage());\n        }', expect: 'not enough dirt: have 5, need 9 / 5\nnot enough gold: have 0, need 1' },
+              { name: 'bad amounts', main: '        Inventory inv = new Inventory();\n        inv.add("dirt", 2);\n        try {\n            inv.add("dirt", 0);\n        } catch (IllegalArgumentException e) {\n            System.out.println(e.getMessage());\n        }\n        try {\n            inv.remove("dirt", -1);\n        } catch (IllegalArgumentException e) {\n            System.out.println(e.getMessage() + " " + inv.count("dirt"));\n        }', expect: 'bad amount\nbad amount 2' },
+              { name: 'the exception is unchecked', main: '        RuntimeException e = new NotEnoughException("x");\n        System.out.println((e instanceof NotEnoughException) + " " + e.getMessage());', expect: 'true x' }
+            ],
+            failTip: 'If show lists an item with 0, the count was put back as 0 instead of removing the item. If a failed removal changes a count, the subtraction happens before the check.',
+            followup: 'Add a method int total() that returns the number of items of all kinds together. Then a method boolean has(String item, int n) that says whether remove(item, n) would succeed, without changing anything. Where in the crafting stage would has be useful?'
+          }
+        },
+        {
+          ex: {
+            id: 'jv-12-2', title: 'The crafting table',
+            prompt: `<p>Write the whole program. The classes <code>NotEnoughException</code> and <code>Inventory</code> from stage 1 are in the starter, finished, so you can build on them whether or not your own passed. Complete <code>main</code> so that it reads commands from the keyboard until <code>quit</code> or the end of the input, and for each line:</p><ul><li>blank line: do nothing;</li><li><code>add &lt;item&gt; &lt;n&gt;</code>: add <code>n</code> of the item and print <code>added &lt;n&gt; &lt;item&gt;</code>; if <code>n</code> is not a whole number, or is below 1, print <code>bad number: &lt;n as typed&gt;</code>;</li><li><code>craft &lt;name&gt;</code>, with the recipes <code>plank</code> (1 log makes 4 plank), <code>stick</code> (2 plank make 4 stick) and <code>pickaxe</code> (3 plank and 2 stick make 1 pickaxe): if every ingredient is there, take them, add the result and print <code>crafted &lt;number made&gt; &lt;item&gt;</code>; if the name is not a recipe, print <code>no recipe for &lt;name&gt;</code>; if an ingredient is short, change nothing and print the inventory's message for the first short ingredient in the order listed;</li><li><code>show</code>: print the inventory as <code>show()</code> gives it;</li><li>any other line, or one with the wrong number of words: print <code>unknown command: &lt;the line&gt;</code>.</li></ul>`,
+            starter: `import java.util.Map;\nimport java.util.Scanner;\nimport java.util.TreeMap;\n\nclass NotEnoughException extends RuntimeException {\n    NotEnoughException(String message) {\n        super(message);\n    }\n}\n\nclass Inventory {\n    private Map<String, Integer> items = new TreeMap<>();\n\n    void add(String item, int n) {\n        if (n < 1) {\n            throw new IllegalArgumentException("bad amount");\n        }\n        items.put(item, count(item) + n);\n    }\n\n    int count(String item) {\n        return items.getOrDefault(item, 0);\n    }\n\n    void remove(String item, int n) {\n        if (n < 1) {\n            throw new IllegalArgumentException("bad amount");\n        }\n        int have = count(item);\n        if (have < n) {\n            throw new NotEnoughException("not enough " + item + ": have " + have + ", need " + n);\n        }\n        if (have == n) {\n            items.remove(item);\n        } else {\n            items.put(item, have - n);\n        }\n    }\n\n    String show() {\n        if (items.isEmpty()) {\n            return "empty";\n        }\n        String text = "";\n        for (Map.Entry<String, Integer> e : items.entrySet()) {\n            if (!text.isEmpty()) {\n                text += "\\n";\n            }\n            text += e.getKey() + ": " + e.getValue();\n        }\n        return text;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Inventory inv = new Inventory();\n        Scanner in = new Scanner(System.in);\n        // read lines; split each one into words; act on the first word\n    }\n}`,
+            solution: `import java.util.Map;\nimport java.util.Scanner;\nimport java.util.TreeMap;\n\nclass NotEnoughException extends RuntimeException {\n    NotEnoughException(String message) {\n        super(message);\n    }\n}\n\nclass Inventory {\n    private Map<String, Integer> items = new TreeMap<>();\n\n    void add(String item, int n) {\n        if (n < 1) {\n            throw new IllegalArgumentException("bad amount");\n        }\n        items.put(item, count(item) + n);\n    }\n\n    int count(String item) {\n        return items.getOrDefault(item, 0);\n    }\n\n    void remove(String item, int n) {\n        if (n < 1) {\n            throw new IllegalArgumentException("bad amount");\n        }\n        int have = count(item);\n        if (have < n) {\n            throw new NotEnoughException("not enough " + item + ": have " + have + ", need " + n);\n        }\n        if (have == n) {\n            items.remove(item);\n        } else {\n            items.put(item, have - n);\n        }\n    }\n\n    String show() {\n        if (items.isEmpty()) {\n            return "empty";\n        }\n        String text = "";\n        for (Map.Entry<String, Integer> e : items.entrySet()) {\n            if (!text.isEmpty()) {\n                text += "\\n";\n            }\n            text += e.getKey() + ": " + e.getValue();\n        }\n        return text;\n    }\n}\n\nclass Recipe {\n    private String result;\n    private int made;\n    private String[] needs;\n    private int[] amounts;\n\n    Recipe(String result, int made, String[] needs, int[] amounts) {\n        this.result = result;\n        this.made = made;\n        this.needs = needs;\n        this.amounts = amounts;\n    }\n\n    String craft(Inventory inv) {\n        for (int i = 0; i < needs.length; i++) {\n            if (inv.count(needs[i]) < amounts[i]) {\n                throw new NotEnoughException("not enough " + needs[i] + ": have " + inv.count(needs[i]) + ", need " + amounts[i]);\n            }\n        }\n        for (int i = 0; i < needs.length; i++) {\n            inv.remove(needs[i], amounts[i]);\n        }\n        inv.add(result, made);\n        return "crafted " + made + " " + result;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Map<String, Recipe> recipes = new TreeMap<>();\n        recipes.put("plank", new Recipe("plank", 4, new String[] { "log" }, new int[] { 1 }));\n        recipes.put("stick", new Recipe("stick", 4, new String[] { "plank" }, new int[] { 2 }));\n        recipes.put("pickaxe", new Recipe("pickaxe", 1, new String[] { "plank", "stick" }, new int[] { 3, 2 }));\n        Inventory inv = new Inventory();\n        Scanner in = new Scanner(System.in);\n        while (in.hasNextLine()) {\n            String line = in.nextLine().trim();\n            if (line.isEmpty()) {\n                continue;\n            }\n            String[] parts = line.split(" ");\n            if (parts[0].equals("quit")) {\n                break;\n            } else if (parts[0].equals("add") && parts.length == 3) {\n                try {\n                    int n = Integer.parseInt(parts[2]);\n                    inv.add(parts[1], n);\n                    System.out.println("added " + n + " " + parts[1]);\n                } catch (IllegalArgumentException e) {\n                    System.out.println("bad number: " + parts[2]);\n                }\n            } else if (parts[0].equals("craft") && parts.length == 2) {\n                Recipe r = recipes.get(parts[1]);\n                if (r == null) {\n                    System.out.println("no recipe for " + parts[1]);\n                } else {\n                    try {\n                        System.out.println(r.craft(inv));\n                    } catch (NotEnoughException e) {\n                        System.out.println(e.getMessage());\n                    }\n                }\n            } else if (parts[0].equals("show") && parts.length == 1) {\n                System.out.println(inv.show());\n            } else {\n                System.out.println("unknown command: " + line);\n            }\n        }\n    }\n}`,
+            hints: ['The loop: while (in.hasNextLine()) { String line = in.nextLine().trim(); ... }. Skip an empty line with continue, and cut the others with line.split(" "). parts[0] is the command; check parts.length before looking at parts[1] or parts[2].', 'For add: Integer.parseInt(parts[2]) throws NumberFormatException for text, and inv.add throws IllegalArgumentException for a number below 1; NumberFormatException is a kind of IllegalArgumentException, so one catch (IllegalArgumentException e) prints "bad number: " + parts[2] for both.', 'For craft, make a Recipe class (result, how many it makes, and two arrays of ingredient names and amounts) with a craft(Inventory) method that first loops over the ingredients and throws NotEnoughException for the first short one, then loops again to remove them, then adds the result. Keep the recipes in a Map<String, Recipe>; get returns null for an unknown name.'],
+            tests: [
+              { name: 'adding and showing', stdin: 'add log 2\nshow\nquit\n', expect: 'added 2 log\nlog: 2' },
+              { name: 'a chain of crafts', stdin: 'add log 1\ncraft plank\ncraft stick\nshow\n', expect: 'added 1 log\ncrafted 4 plank\ncrafted 4 stick\nplank: 2\nstick: 4' },
+              { name: 'a pickaxe, and what is missing', stdin: 'add plank 3\ncraft pickaxe\nshow\nadd stick 2\ncraft pickaxe\nshow\n', expect: 'added 3 plank\nnot enough stick: have 0, need 2\nplank: 3\nadded 2 stick\ncrafted 1 pickaxe\npickaxe: 1' },
+              { name: 'the first short ingredient is reported', stdin: 'craft pickaxe\nadd stick 5\ncraft pickaxe\nshow\n', expect: 'not enough plank: have 0, need 3\nadded 5 stick\nnot enough plank: have 0, need 3\nstick: 5' },
+              { name: 'bad input', stdin: 'add dirt x\nadd dirt 0\nadd dirt -3\nadd dirt\ncraft sword\ndance\n\nshow\n', expect: 'bad number: x\nbad number: 0\nbad number: -3\nunknown command: add dirt\nno recipe for sword\nunknown command: dance\nempty' },
+              { name: 'items run out, and quit stops', stdin: 'add log 1\ncraft plank\ncraft plank\nquit\nadd log 9\nshow\n', expect: 'added 1 log\ncrafted 4 plank\nnot enough log: have 0, need 1' }
+            ],
+            failTip: 'If a failed pickaxe takes the planks, the recipe removes ingredients while it is still checking them: check all, then remove all. If the program stops with an ArrayIndexOutOfBoundsException, a line with too few words reached parts[1] or parts[2].',
+            followup: 'Add a command recipes that lists every recipe in alphabetical order, one per line, such as "pickaxe: 3 plank, 2 stick". Keep the recipes as data so that you do not have to write each line by hand.'
+          }
+        },
+        `<h2>Stretch goals</h2>
+<p>Turn the table into a game. Give each item a stack limit (64 for most things, 16 for eggs) and have <code>add</code> refuse what does not fit, using your own exception. Make <code>Tool</code> a subclass of an <code>Item</code> class with durability, so that a pickaxe wears out as it is used with a <code>use pickaxe</code> command. Add a <code>smelt</code> recipe that needs fuel, with an interface <code>Burnable</code>, as in lesson 9. Count how many of each recipe were crafted, with a second map. Read the recipes from the input, one per line, so that nothing about them is written in the program.</p>
+<h2>Where to go from here</h2>
+<p>You now know the core of Java: types, decisions, loops, methods, arrays, Strings, lists, classes, inheritance, exceptions and maps. What is left in the language is mostly more of the same idea: your own generic classes, nested classes, <code>enum</code> types for fixed choices like a recipe's kind, lambdas and streams for working on collections, and files for keeping data between runs. The best next step is a project of your own. After that, <a href="#/dsa">Data Structures and Algorithms</a> builds the structures inside <code>ArrayList</code> and <code>HashMap</code> yourself, and <a href="#/modern">Modern C++</a> shows the same ideas with the machine showing through.</p>`
       ]
     }
   ]

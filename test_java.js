@@ -111,6 +111,20 @@ ce('end of file', 'public class Main { public static void main(String[] args) { 
 ce('outside a class', 'int x = 5;', /class, interface, enum, or record expected/);
 ce('list indexed like an array', M('ArrayList<Integer> xs = new ArrayList<>(); xs[0] = 1;'), /array required, but ArrayList<Integer> found/);
 ce('duplicate case', M('int x = 1; switch (x) { case 1: break; case 1: break; }'), /duplicate case label/);
+// ---- checked exceptions (javac's "unreported exception" and "never thrown" errors) and LinkedHashMap / LinkedHashSet (outputs and first errors are what JDK 21 gives)
+const probe = (f) => require('fs').readFileSync(require('path').join(__dirname, 'difftest/java', f), 'utf8');
+ce('checked: throw new X in a method without throws', probe('probe-x1.java'), /^Main\.java:7: error: unreported exception BrokenToolException; must be caught or declared to be thrown$/);
+ce('checked: calling a method that declares throws', probe('probe-x2.java'), /^Main\.java:12: error: unreported exception BrokenToolException; must be caught or declared to be thrown$/);
+ce('checked: catching an exception that cannot be thrown', probe('probe-x3.java'), /^Main\.java:8: error: exception BrokenToolException is never thrown in body of corresponding try statement$/);
+ce('checked: a constructor that throws', probe('probe-x4.java'), /^Main\.java:8: error: unreported exception Exception; must be caught or declared to be thrown$/);
+ce('checked: a catch of the subclass does not handle the superclass', probe('probe-x6.java'), /^Main\.java:7: error: unreported exception FirstException; must be caught or declared to be thrown$/);
+ce('checked: a throw inside a catch block is not handled by that try', probe('probe-x7.java'), /^Main\.java:8: error: unreported exception SecondException; must be caught or declared to be thrown$/);
+t('checked exceptions that are declared or caught run normally', probe('probe-x5.java'),
+  'tried dirt\nstored dirt\ntried \nbad: no item given\ntried sand\nstored sand\ntried glass\nchest is full (1 too many)\ncaught NoRoomException: chest is full\nwrapped / chest is full\nmulti chest is full\nruntime\n',
+  /^Exception in thread "main" NoRoomException: chest is full\n\tat Chest\.put\(Main\.java:16\)\n\tat Main\.fill\(Main\.java:23\)\n\tat Main\.main\(Main\.java:60\)$/);
+t('LinkedHashMap and LinkedHashSet keep the order of first insertion', probe('probe-lh.java'),
+  '{apple=9, mango=3, zebra=4} [apple, mango, zebra] [9, 3, 4] 3\n[a, b, z, c] true\napple9 mango3 zebra4 new0 \ntrue\n');
+
 // ---- regressions found by comparing with the real JDK 21 (expected outputs are what javac + java print)
 t("printf rounds the shortest decimal half-up", M("System.out.println(String.format(\"%.2f %.2f %.1f %.1f %.2f %.2f %.0f %.0f\", 2.675, 1.005, 0.15, 0.35, 0.015, 1.115, 0.5, 2.5)); System.out.println(String.format(\"%.20f|%.3e|%.2e|%e|%.3g|%.1g|%g\", 0.1, 9.9995, 1234.5, 0.0, 9.995, 0.0000972, 0.0001234)); System.out.printf(\"%.2f %.3f %,.2f %10.3f|%n\", 1.005f, 0.2285f, 1234567.125, -2.0005); System.out.println(Double.MIN_VALUE + \" \" + Float.MIN_VALUE + \" \" + String.format(\"%e\", Double.MIN_VALUE));"),
   "2.68 1.01 0.2 0.4 0.02 1.12 1 3\n0.10000000000000000000|1.000e+01|1.23e+03|0.000000e+00|10.0|0.0001|0.000123400\n1.00 0.228 1,234,567.13     -2.001|\n4.9E-324 1.4E-45 4.900000e-324\n");

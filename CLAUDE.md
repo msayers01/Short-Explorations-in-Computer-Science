@@ -58,7 +58,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   (`src/javaworker.js`, data block `java-src`), `JAVARUN` in `runner.js`, harness for method exercises in `src/javautil.js`.
 - Error messages are javac's words; outputs match real Java (number formatting, HashMap order, Random sequence, stack traces). When adding
   a lesson example, make sure its expected output is what a real JVM would print, not what seems reasonable.
-- Not covered: user generics, lambdas, nested classes, enums, records, streams, files, threads, checked-exception analysis; `==` on Strings compares text (so that trap is taught with a listing, not a runnable example).
+- Not covered: user generics, lambdas, nested classes, enums, records, streams, files, threads; `==` on Strings compares text (so that trap is taught with a listing, not a runnable example).
 - Queue/Deque/ArrayDeque have their own method tables (no index methods; `remove(x)` removes a value, `remove()` the head), as in Java.
   Comparator works only as a user class implementing `compare` (no lambdas), or `Collections.reverseOrder()`; `TreeSet`/`TreeMap` take one and then treat keys as the same when it says 0, as Java does. `%f %e %g` round the shortest decimal half-up, like
   `java.util.Formatter`. Exception messages follow JDK 21's wording. `test_java.js` expectations were produced by a real JDK: keep it so.
@@ -107,10 +107,22 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   end_fill, penup/pendown, goto, speed. Planned next: a dictionaries lesson (a Scratch list of pairs → dict) and a final "what next" lesson
   handing over to SC 101.
 - Courses still being written carry `status: 'developing'` (Scratch to Python, Modern C++, Java, DSA): an "Under development" tag (app.js `devTag`).
-- SC 106 Introduction to Java: the interpreter and 8 lessons (Hello Java and types; decisions and Scanner; loops; methods; arrays; Strings;
-  ArrayList; classes and objects), 16 exercises. Lessons 1, 4, 7 and 8 use Minecraft (stacks of 64, slotsNeeded, ItemStack/Inventory).
-  The interpreter lacks `String.chars()`, `codePointCount`, `"".formatted(...)`, and infers `List<Object>` for `new ArrayList<>(Arrays.asList(..))`
-  used directly as an argument (fine when assigned to a typed variable). Planned next: inheritance and interfaces; exceptions; HashMap; a project.
+- SC 106 Introduction to Java (finished October 2026): the interpreter and 12 lessons (Hello Java and types; decisions and Scanner; loops; methods;
+  arrays; Strings; ArrayList; classes and objects; 9 inheritance and interfaces; 10 exceptions; 11 HashMap and HashSet; 12 project, a text-mode
+  Minecraft crafting table), 22 exercises (`jv-<n>-<k>`). Every lesson has `standard: 1` (lesson level: no course-level skills or checkpoints, so no
+  renumbering). Lessons 1, 4, 7, 8, 9, 10, 12 use Minecraft. The interpreter lacks `String.chars()`, `codePointCount`, `"".formatted(...)`, and infers
+  `List<Object>` for `new ArrayList<>(Arrays.asList(..))` used directly as an argument (fine when assigned to a typed variable). Exercises that use
+  `classes: true` get their imports from `ex.prelude` (the harness puts a `Check` class before the student's code, so the student must not write imports).
+  **Checked exceptions** (added October 2026): `throws` is now parsed and enforced like javac does for what can be seen in the source: `throw new X`
+  where X is checked, and calls of the program's own methods and constructors that declare `throws`; plus "exception X is never thrown in body of
+  corresponding try statement". Not checked: `throw e` of a variable (precise rethrow), overriding rules for `throws`, initializer blocks. The lessons
+  teach custom exceptions as `extends RuntimeException` and show `extends Exception` once, with `throws`. `LinkedHashMap` and `LinkedHashSet` exist.
+  Probes: `difftest/java/probe-x1..x8.java`, `probe-lh.java`.
+- SC 102 Introduction to Lisp (`src/course_lisp.js`, 11 lessons after SICP 1.1-2.3 plus the symbolic-differentiation project, 22 exercises `ls-<n>-<k>`):
+  every lesson has `standard: 1` (lesson level, October 2026: stories end on a question, `predict: true` on the key example of each section with the
+  caption rewritten as the explanation, `wrong` reasons on all 33 quick checks, followups on every exercise). Not done: course-level skills and
+  checkpoint lessons (they would renumber lessons that other pages link to as `lisp/N`), a networks of ideas beyond SICP (vectors, `set!` and
+  state, streams), and Scheme character literals. The captions' computed values were checked by running the examples.
 - **The practice terminal** (ARCHITECTURE §9f): `src/shell.js` (a real shell: parser, pipelines, redirections, variables, loops, ~70 commands,
   virtual file system with caps, saved under `shortcourses.shell.v1`, in backups) and `src/terminal.js` (the Terminal panel in the Code Lab:
   history, Tab completion, nano, `edit`, the `~/lab` mirror). `g++`/`javac` compile through check-only modes of the sandboxes; `./prog`,

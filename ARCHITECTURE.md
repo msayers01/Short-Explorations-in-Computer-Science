@@ -513,7 +513,7 @@ in the tests) wraps method-writing exercises in a class with a `main`.
   Exception messages use JDK 21's wording (`Index 5 out of bounds for length 3`, `Range [2, 1) out of bounds for length 3`).
 - **Not covered** (the parser says so in plain words): generics in user classes, lambdas and method references, nested/anonymous/local
   classes, enums, records, interfaces with default-method bodies on user classes are fine but `switch` patterns are not, try-with-resources,
-  streams, threads, files, checked-exception analysis (`throws` is parsed and ignored). `==` between two Strings compares the text (Java
+  streams, threads, files, checked-exception analysis beyond what is written in the source (`throws` is enforced for `throw new X` and for calls of the program's own methods and constructors: `checkedExceptions` in java.js). `==` between two Strings compares the text (Java
   compares references), so lesson 2 shows that trap as a listing, not a runnable example. Recursion deeper than `MAX_DEPTH` (1200) calls is a
   `StackOverflowError`, and in a browser the worker's JS stack gives out sooner, at about 270 calls (real Java allows about ten thousand).
 - **Limits and safety.** The worker's watchdog is 8 s and the interpreter's own `maxMs` 5 s (checked every 1024 steps); output is capped
