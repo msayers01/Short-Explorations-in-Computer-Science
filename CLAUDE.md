@@ -136,7 +136,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   it pulses until opened once, `shortcourses.tour.v1`) spotlights twelve real elements across `#/`, `#/python/1` and `#/lab`. Steps are
   `{route, target, title, text, place?, optional?}`; a target that moves or is renamed breaks its step silently (the card says the part is
   not on the page), so keep the browser check in `test_browser.js` passing. The step texts describe the UI: update them when it changes.
-- **Courses, Algorithms, Real world** (ARCHITECTURE §9g): the top bar is Courses / Algorithms / Real world / Code Lab. `#/courses` groups the
+- **Courses, Algorithms, Real world** (ARCHITECTURE §9g): the top bar is Courses / Algorithms / Real world / Arena / Code Lab. `#/courses` groups the
   courses (`COURSE_GROUPS` in app.js: add a new course to a group). `#/algorithms` has 17 interactive demos (`src/algos.js` frame,
   `src/algo_{search,sort,paths,games,puzzles}.js`, each with `selfTest()` run by `test_algos.js`). The owner reports that students loved
   the sorting race: races with a bet first (sorting, maze), things to play against the computer (Hanoi, the tour) and long-running
@@ -155,7 +155,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   beside the single-page design and needs a policy change); splitting CI (about 4 minutes now); a Java step-through debugger like the C++ memory stepper.
 - Not verified: Full C++ on low-end devices (needs about 84 MB plus the program), and on the production URL since the security-review merge.
 
-- **Bot Arena** (ARCHITECTURE §9j, `src/tron.js`, `arena*.js`, `test_arena.js`): Tron bots in Python/Java/C++/Scheme at `#/arena` and `#/arena/tournament`; on the working branch, not yet merged.
+- **Bot Arena** (ARCHITECTURE §9j, `src/tron.js`, `arena*.js`, `test_arena.js`): Tron bots in Python/Java/C++/Scheme at `#/arena` and `#/arena/tournament` (PR #40, merged).
   Phases 1-3 of the owner's spec are built; **phase 4 (persistent mode) is not**. Known gaps: arena bots are not in the backup file; no stderr in the sandboxes (so `LOG ` lines);
   the teaching C++ has no `string`/`vector` (the C++ bots use char arrays); Scheme has no vectors, so its Flood Fill uses lists; the first-legal-move starter beats Random only about
   55-65% of the time (the spec's 90 of 100 holds for the Flood Fill solutions). Scheme gained `read`, `read-line`, `eof-object` (stdin option).
