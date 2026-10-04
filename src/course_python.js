@@ -433,11 +433,11 @@ else:
     /* ================================================================== */
     {
       standards: ['2-AP-12', '3A-AP-15'],
-      title: 'Repetition', summary: 'for loops and range, while loops, loops that never end, and the accumulator pattern behind most loops you will ever write.',
+      title: 'Repetition', standard: 1, summary: 'for loops and range, while loops, loops that never end, and the accumulator pattern behind most loops you will ever write.',
       blocks: [
         `<p>A famous story tells of a teacher in Germany in the 1780s who kept a class busy by asking them to add up all the whole numbers from 1 to 100. Within moments a boy named Carl Friedrich Gauss, who became one of the greatest mathematicians in history, wrote down 5050. He had not added a hundred numbers; he had spotted a pattern. A computer has no such insight, but it does not need one: it can add a hundred numbers, or a hundred million, without getting bored or making a slip. That is what loops are for. Until the 1960s much of that patient arithmetic was done by people whose job title was <em>computer</em>, such as Katherine Johnson, who worked out the flight paths of America's first astronauts at NASA.</p>`,
         { photo: 'friden-calculator', caption: "A Friden mechanical calculator of the kind on a human computer's desk. It did one multiplication or division at a time; the repetition, step after step, was the person's job, and it is exactly what a loop does." },
-        `<p>Computers are valuable because they repeat things without getting bored or careless. Adding up a million numbers, checking every word in a book, redrawing a game's screen sixty times a second: all of these are loops. Python has two kinds. A <code>for</code> loop goes through a collection of items, one at a time. A <code>while</code> loop keeps going for as long as a condition stays true. This lesson gives the exact rule for each, the one pattern that most loops follow, and the three mistakes that most loop bugs come from.</p>
+        `<p>Computers are valuable because they repeat things without getting bored or careless. Adding up a million numbers, checking every word in a book, redrawing a game's screen sixty times a second: all of these are loops. Python has two kinds. A <code>for</code> loop goes through a collection of items, one at a time. A <code>while</code> loop keeps going for as long as a condition stays true. This lesson gives the exact rule for each, the one pattern that most loops follow, and the three mistakes that most loop bugs come from. So here is the question for the lesson: how do you tell a computer to repeat something a hundred times, or until something happens, without writing it out a hundred times?</p>
 <h2>for loops and range</h2>
 <div class="stmt"><p><span class="kind">Rule (for).</span> <code>for <i>name</i> in <i>collection</i>:</code> followed by an indented block runs the block once for each item in the collection, in order. Before each run, the name is set to the next item.</p>
 <p><span class="kind">Rule (range).</span> <code>range(<i>b</i>)</code> gives the whole numbers 0, 1, …, <i>b</i> − 1. <code>range(<i>a</i>, <i>b</i>)</code> gives <i>a</i>, <i>a</i> + 1, …, <i>b</i> − 1: it starts at <i>a</i> and stops <em>before</em> <i>b</i>, so it gives exactly <i>b</i> − <i>a</i> numbers. <code>range(<i>a</i>, <i>b</i>, <i>step</i>)</code> counts from <i>a</i> in jumps of <i>step</i>, still stopping before <i>b</i>.</p></div>
@@ -453,7 +453,7 @@ for i in range(2, 8, 2):    # start at 2, stop before 8, jump by 2
 <p>A <code>for</code> loop can go through other collections too. A list of values, written in square brackets, is one; Lesson 5 is about lists, and for now it is enough to know that the loop visits the values in the order they are written.</p>`,
         { predict: true, play: `for word in ["red", "green", "blue"]:
     print(word, "has", len(word), "letters")`, caption: 'The name word takes each value in turn. len gives the number of characters in a piece of text.' },
-        { check: "How many numbers does <code>range(3, 8)</code> give, and what is the last one?", options: ["6 numbers, ending at 8", "5 numbers, ending at 7", "5 numbers, ending at 8"], answer: 1, why: "<code>range(a, b)</code> starts at a and stops before b: 3, 4, 5, 6, 7, which is b − a = 5 numbers." },
+        { check: "How many numbers does <code>range(3, 8)</code> give, and what is the last one?", options: ["6 numbers, ending at 8", "5 numbers, ending at 7", "5 numbers, ending at 8"], answer: 1, wrong: ["This counts the end as included (3 to 8 inclusive is 6 numbers), but range stops before 8, so it gives 5 numbers ending at 7.", null, "The count is right (8 \u2212 3), but the last number is not: range never gives its end value, so the numbers run 3 to 7."], why: "<code>range(a, b)</code> starts at a and stops before b: 3, 4, 5, 6, 7, which is b − a = 5 numbers." },
         `<h2>The accumulator pattern</h2>
 <p>The most common job for a loop is to build up an answer one step at a time: a total, a count, a largest value. It always takes the same three steps.</p>
 <div class="stmt"><p><span class="kind">The accumulator pattern.</span> <em>Before</em> the loop, create a variable holding the answer for "nothing seen yet". <em>Inside</em> the loop, update it using the current item. <em>After</em> the loop, use it.</p></div>
@@ -478,7 +478,7 @@ for i in range(2, 8, 2):    # start at 2, stop before 8, jump by 2
         },
         `<p>Two things decide whether an accumulator is right. The starting value must be the answer for "nothing seen yet": 0 for a total or a count, 1 for a product (multiplying by 0 would wipe everything out), and <code>""</code> for text. And the update must be <em>inside</em> the loop, indented, while the final <code>print</code> is <em>outside</em>. Indent the <code>print</code> and it runs on every pass, printing 1, 3, 6, 10 and 15.</p>
 <p>Several accumulators can share one loop. This one counts the even numbers and keeps track of the largest number seen so far.</p>`,
-        { play: `count = 0
+        { predict: true, play: `count = 0
 biggest = 0
 for n in [3, 17, 4, 12, 9]:
     if n % 2 == 0:
@@ -486,13 +486,13 @@ for n in [3, 17, 4, 12, 9]:
     if n > biggest:
         biggest = n
 print("even numbers:", count)
-print("biggest:", biggest)`, caption: 'The counter goes up only when the condition is true; biggest is replaced only when a bigger number arrives. Prints 2 and 17.' },
-        { check: "You want the product of the numbers in a list. What should the accumulator start at?", options: ["0", "1", "The first number, with the loop over the rest"], answer: 1, why: "The accumulator holds the answer for \"nothing seen yet\". For a product that is 1; starting at 0 makes every product 0. (Starting at the first item also works, if the list is not empty.)" },
+print("biggest:", biggest)`, caption: 'It prints even numbers: 2 and biggest: 17. Only 4 and 12 are even, so count went up twice; biggest was replaced by 3, then 17, and nothing bigger came. Two accumulators can share one loop, each with its own if. Add 20 to the end of the list and predict both lines again.' },
+        { check: "You want the product of the numbers in a list. What should the accumulator start at?", options: ["0", "1", "The first number, with the loop over the rest"], answer: 1, wrong: ["0 is the natural start for a total or a count, so it feels right here too, but a product that starts at 0 stays 0 whatever follows.", null, "This does work for a list that is not empty, and Lesson 5 uses it for the largest. But the accumulator should start as the answer for \"nothing seen yet\", which for a product is 1; that also covers an empty list, where the first number would be an error."], why: "The accumulator holds the answer for \"nothing seen yet\". For a product that is 1; starting at 0 makes every product 0. (Starting at the first item also works, if the list is not empty.)" },
         `<details class="reveal"><summary>Predict: what does this program say is the biggest if the list is <code>[-5, -2, -9]</code>?</summary><p>It says <code>0</code>, which is not in the list at all. No number beats the starting value 0, so it is never replaced. The starting value must be the answer for "nothing seen yet", and for "largest" there is no such number. The fix is to start with the first value in the list itself; Lesson 5 shows how to get it.</p></details>
 <h2>while loops</h2>
 <div class="stmt"><p><span class="kind">Rule (while).</span> <code>while <i>condition</i>:</code> followed by an indented block checks the condition. If it is <code>False</code>, the loop is over. If it is <code>True</code>, the block runs, and then Python goes back and checks the condition again.</p></div>
 <p>Two consequences follow. The condition is checked <em>before</em> every pass, including the first, so if it is <code>False</code> at the start the block never runs. And a <code>while</code> loop stops only when its condition becomes <code>False</code>, which can only happen if something in the block changes it. Use <code>while</code> when you cannot know in advance how many passes are needed. Here is a famous example: halve the number if it is even, otherwise triple it and add 1, until it reaches 1.</p>`,
-        { play: `n = 6
+        { predict: true, play: `n = 6
 steps = 0
 while n != 1:
     if n % 2 == 0:
@@ -500,7 +500,7 @@ while n != 1:
     else:
         n = 3 * n + 1
     steps = steps + 1
-print("reached 1 after", steps, "steps")`, caption: 'For 6: 3, 10, 5, 16, 8, 4, 2, 1, so 8 steps. Try 27 (111 steps) and 97. Nobody has ever proved that every starting number reaches 1; this is the unsolved Collatz problem.' },
+print("reached 1 after", steps, "steps")`, caption: 'It prints reached 1 after 8 steps. From 6, n goes 3, 10, 5, 16, 8, 4, 2, 1: halved when even, tripled plus 1 when odd, and the loop ends when n is 1. Try 27 (111 steps) and 97. Nobody has ever proved that every starting number reaches 1; this is the unsolved Collatz problem.' },
         `<details class="reveal"><summary>Trace it by hand: what is <code>n</code> each time the condition is checked, starting from 6?</summary><table class="small"><tr><th>check</th><th><code>n</code></th><th><code>n != 1</code>?</th><th><code>steps</code> after the pass</th></tr><tr><td>1</td><td>6</td><td>True</td><td>1</td></tr><tr><td>2</td><td>3</td><td>True</td><td>2</td></tr><tr><td>3</td><td>10</td><td>True</td><td>3</td></tr><tr><td>4</td><td>5</td><td>True</td><td>4</td></tr><tr><td>5</td><td>16</td><td>True</td><td>5</td></tr><tr><td>6</td><td>8</td><td>True</td><td>6</td></tr><tr><td>7</td><td>4</td><td>True</td><td>7</td></tr><tr><td>8</td><td>2</td><td>True</td><td>8</td></tr><tr><td>9</td><td>1</td><td>False</td><td>(loop ends)</td></tr></table><p>Nine checks, eight passes. A table with one row per check is the most reliable way to find out what any loop does.</p></details>
 <h2>A loop that never ends</h2>
 <p>Every <code>while</code> loop needs three things: a variable given a value before the loop, a condition that tests it, and a line in the block that changes it so that the condition eventually becomes <code>False</code>. Leave out the third, or change the variable in a way that never reaches the stopping point, and the loop runs for ever.</p>`,
@@ -514,7 +514,7 @@ print(n)`, expectError: true, caption: 'After a few seconds the page stops it wi
 <h2>Shortcuts: +=, break and continue</h2>
 <div class="stmt"><p><span class="kind">Rule (shortcuts).</span> <code>total += i</code> means <code>total = total + i</code>, and likewise <code>-=</code>, <code>*=</code> and <code>//=</code>. Inside a loop, <code>break</code> leaves the loop immediately, and <code>continue</code> skips the rest of the block and goes on to the next pass.</p></div>
 <p><code>break</code> and <code>continue</code> are handy and easy to overuse. If you find yourself writing <code>while True:</code> with a <code>break</code> inside, ask whether the reason for stopping could simply be the <code>while</code> condition. Here is the same search written both ways.</p>`,
-        { play: `# The first number above 100 that is divisible by 7
+        { predict: true, play: `# The first number above 100 that is divisible by 7
 n = 101
 while True:
     if n % 7 == 0:
@@ -526,8 +526,8 @@ print(n)
 n = 101
 while n % 7 != 0:
     n += 1
-print(n)`, caption: 'Both print 105. The second is shorter and says when the loop ends in one place.' },
-        { check: "A <code>while</code> loop's condition is False the very first time it is checked. How many times does its block run?", options: ["Once", "Zero times", "It is an error"], answer: 1, why: "<code>while</code> checks before every pass, including the first. A false condition at the start means the block never runs." },
+print(n)`, caption: 'Both print 105: 101 to 104 are not multiples of 7, and 105 is 15 times 7. The first loop is while True with a break inside; the second puts the reason for stopping in the condition, which is shorter and says when the loop ends in one place. Change 101 to 200 and predict the answer first (203).' },
+        { check: "A <code>while</code> loop's condition is False the very first time it is checked. How many times does its block run?", options: ["Once", "Zero times", "It is an error"], answer: 1, wrong: ["This is the belief that the block runs first and the test comes after. Python's while tests first, so a false condition means no pass at all.", null, "A loop whose block never runs is perfectly legal; it simply does nothing, and the program carries on after it."], why: "<code>while</code> checks before every pass, including the first. A false condition at the start means the block never runs." },
         `<h2>Before the exercises</h2>
 <p>The first exercise is an accumulator inside a <code>for</code> loop over a range, with an <code>if</code> deciding which numbers to add. The second repeats "until nothing is left", so it needs a <code>while</code> loop. Here is a worked example of each shape. Plan the three accumulator steps first: what the answer is before anything is seen, how one item changes it, and what to do at the end.</p>`,
         { play: `n = int(input("n: "))
@@ -600,10 +600,12 @@ print(digits)`, testStdin: '1234\n', caption: 'For 1234: the even numbers below 
             tests: [{ stdin: '1234', expect: '10' }, { stdin: '9', expect: '9' }, { stdin: '999999', expect: '54' }, { stdin: '1000', expect: '1' }, { stdin: '907', expect: '16' }],
             mustContain: [{ re: /\bwhile\b/, msg: 'Use a while loop for this one, as the exercise asks.' }],
             mustNotContain: [{ re: /str\s*\(\s*n/, msg: 'Do the arithmetic version: no converting the number to a string.' }],
-            failTip: 'If the program never finishes, check that n gets smaller on every pass: n = n // 10 must be inside the loop.'
+            failTip: 'If the program never finishes, check that n gets smaller on every pass: n = n // 10 must be inside the loop.',
+            followup: 'Make the program print how many digits there are as well as their sum. Then think about what it prints for 0: the loop never runs, so is that the answer you want?'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
+<li>The answer to the opening question: write the repeated steps once, indented under a <code>for</code> (when you know what to go through) or a <code>while</code> (when you repeat until something happens), and the computer does the repeating.</li>
 <li><code>for <i>name</i> in <i>collection</i>:</code> runs its block once per item. <code>range(<i>a</i>, <i>b</i>)</code> gives <i>a</i> up to but not including <i>b</i>: exactly <i>b</i> − <i>a</i> numbers.</li>
 <li><code>while <i>condition</i>:</code> checks before every pass, so its block may run zero times, and something in the block must move the condition towards <code>False</code>.</li>
 <li>Accumulator: start with the answer for "nothing seen yet", update inside the loop, use it after.</li>
@@ -615,20 +617,20 @@ print(digits)`, testStdin: '1234\n', caption: 'For 1234: the even numbers below 
     /* ================================================================== */
     {
       standards: ['3A-AP-14', '3A-DA-10', '3B-AP-12'],
-      title: 'Lists', summary: 'Many values under one name: positions that start at 0, slices, looping, changing a list in place, and the famous surprise when two names share one list.',
+      title: 'Lists', standard: 1, summary: 'Many values under one name: positions that start at 0, slices, looping, changing a list in place, and the famous surprise when two names share one list.',
       blocks: [
-        `<p>A single variable holds one value. Real programs juggle many: a playlist of 2,000 songs, the ten best scores in a game, every word in a message. Python keeps an ordered collection of values under one name in a <em>list</em>. By the end of this lesson you will be able to pick out any song in a playlist, slice out the chorus of a list, and explain a bug that has confused programmers for as long as Python has existed.</p>
+        `<p>A single variable holds one value. Real programs juggle many: a playlist of 2,000 songs, the ten best scores in a game, every word in a message. Python keeps an ordered collection of values under one name in a <em>list</em>. By the end of this lesson you will be able to pick out any song in a playlist, slice out the chorus of a list, and explain a surprise that catches almost every beginner. So here is the question for the lesson: how does Python find one song among two thousand, and what goes wrong when two names share one playlist?</p>
 <h2>Making a list, and finding things in it</h2>
 <div class="stmt"><p><span class="kind">Rule (lists).</span> A list is written as values between square brackets, separated by commas: <code>[88, 92, 79]</code>. The empty list is <code>[]</code>. <code>len(xs)</code> is the number of items in <code>xs</code>.</p>
 <p><span class="kind">Rule (positions).</span> The items are numbered from 0: <code>xs[0]</code> is the first item and <code>xs[len(xs) - 1]</code> is the last. Negative positions count from the end: <code>xs[-1]</code> is the last item and <code>xs[-2]</code> the one before it. Any other position is an error, an <code>IndexError</code>.</p></div>
 <p>Here is a playlist of five made-up songs. Predict each line before you run it.</p>`,
-        { play: `playlist = ["Moon Socks", "Tiny Robot", "Rain on Tin", "Lemon Tree Radio", "Goodnight Pixel"]
+        { predict: true, play: `playlist = ["Moon Socks", "Tiny Robot", "Rain on Tin", "Lemon Tree Radio", "Goodnight Pixel"]
 print(len(playlist))
 print(playlist[0])      # the first song
 print(playlist[2])      # the third song
 print(playlist[-1])     # the last song
-print(playlist[len(playlist) - 1])   # also the last song`, caption: '5, then Moon Socks, Rain on Tin, and Goodnight Pixel twice. Add print(playlist[5]) and read the error: there is no position 5 in a list of five.' },
-        { check: "<code>xs = [10, 20, 30, 40]</code>. What is <code>xs[-1]</code>, and what is <code>xs[4]</code>?", options: ["40 and 40", "40 and an IndexError", "10 and 40"], answer: 1, why: "Negative positions count from the end, so −1 is the last item. Positions run 0 to 3; 4 is one past the end." },
+print(playlist[len(playlist) - 1])   # also the last song`, caption: 'It prints 5, then Moon Socks, Rain on Tin, and Goodnight Pixel twice. Position 0 is the first song, so position 2 is the third; both -1 and len(playlist) - 1 name the last one. Add print(playlist[5]) and read the error: there is no position 5 in a list of five.' },
+        { check: "<code>xs = [10, 20, 30, 40]</code>. What is <code>xs[-1]</code>, and what is <code>xs[4]</code>?", options: ["40 and 40", "40 and an IndexError", "10 and 40"], answer: 1, wrong: ["This treats position 4 as the last item, but positions start at 0, so a list of four has positions 0 to 3 and xs[4] is one past the end.", null, "This takes -1 to mean the first item. Negative positions count from the end, so -1 is the last."], why: "Negative positions count from the end, so −1 is the last item. Positions run 0 to 3; 4 is one past the end." },
         `<details class="reveal"><summary>Why start counting at 0? It seems backwards.</summary><p>Think of a position as "how many steps from the front". The first song is zero steps from the front, the second is one step, and so on. Counting this way makes <code>range(len(xs))</code>, from Lesson 4, give exactly the valid positions, 0 up to <code>len(xs) - 1</code>. Almost every programming language counts from 0 for the same reason. (C++ has an even more concrete one, as its Lesson 6 shows.)</p></details>
 <h2>Slices</h2>
 <div class="stmt"><p><span class="kind">Rule (slices).</span> <code>xs[<i>a</i>:<i>b</i>]</code> is a <em>new</em> list containing the items at positions <i>a</i>, <i>a</i> + 1, …, <i>b</i> − 1: it starts at <i>a</i> and stops <em>before</em> <i>b</i>, exactly like <code>range(<i>a</i>, <i>b</i>)</code>. Leave out <i>a</i> to start from the beginning, and <i>b</i> to go to the end. <code>xs[<i>a</i>:<i>b</i>:<i>step</i>]</code> takes every <i>step</i>-th item. A slice never raises an error: positions past the end are simply treated as the end.</p></div>
@@ -642,11 +644,11 @@ print(days[::2])          # every second day
 print(days[::-1])         # a step of -1 walks backwards
 print(days[5:100])        # past the end: no error
 print("Wed" in days, "Funday" in days)`, caption: '<code>in</code> asks "is this value somewhere in the list?" and gives True or False.' },
-        { check: "<code>days = [\"Mon\", \"Tue\", \"Wed\", \"Thu\", \"Fri\"]</code>. What is <code>days[1:3]</code>?", options: ["<code>[\"Tue\", \"Wed\", \"Thu\"]</code>", "<code>[\"Tue\", \"Wed\"]</code>", "<code>[\"Mon\", \"Tue\", \"Wed\"]</code>"], answer: 1, why: "A slice starts at the first position and stops before the second, like range: positions 1 and 2." },
+        { check: "<code>days = [\"Mon\", \"Tue\", \"Wed\", \"Thu\", \"Fri\"]</code>. What is <code>days[1:3]</code>?", options: ["<code>[\"Tue\", \"Wed\", \"Thu\"]</code>", "<code>[\"Tue\", \"Wed\"]</code>", "<code>[\"Mon\", \"Tue\", \"Wed\"]</code>"], answer: 1, wrong: ["This includes the item at position 3, but a slice stops before its second number, so position 3 is left out.", null, "This counts the positions from 1, as people do, so 1 to 3 becomes the first three items. Python counts from 0: position 1 is Tue."], why: "A slice starts at the first position and stops before the second, like range: positions 1 and 2." },
         `<details class="reveal"><summary>Slice challenge: using <code>days</code>, write one slice for each of these. The weekdays. The middle three days. Every day except the first and the last.</summary><p><code>days[:5]</code>, then <code>days[2:5]</code> (Wed, Thu, Fri), then <code>days[1:-1]</code>. The last one works because −1 names the gap before the last item. Each slice has <i>b</i> − <i>a</i> items when both ends are inside the list: 5, 3, and 7 − 2 = 5.</p></details>
 <h2>Looping over a list</h2>
 <p>Lesson 4's <code>for</code> loop goes through any collection, and a list is the most common one. Looping over the items directly is usually clearer than looping over positions. When you need both the position and the item, <code>enumerate</code> hands you the pair.</p>`,
-        { play: `playlist = ["Moon Socks", "Tiny Robot", "Rain on Tin", "Lemon Tree Radio"]
+        { predict: true, play: `playlist = ["Moon Socks", "Tiny Robot", "Rain on Tin", "Lemon Tree Radio"]
 
 for song in playlist:
     print("Now playing:", song)
@@ -658,11 +660,11 @@ scores = [88, 92, 79, 95]
 total = 0
 for s in scores:
     total += s
-print("average:", total / len(scores))`, caption: 'The last loop is the accumulator pattern from Lesson 4, now over a list. Dividing by len(scores) instead of 4 keeps it right when the list changes length.' },
+print("average:", total / len(scores))`, caption: 'It prints four Now playing lines, then 1 Moon Socks down to 4 Lemon Tree Radio, then average: 88.5 (the scores add up to 354, and 354 / 4 is 88.5). The last loop is the accumulator pattern from Lesson 4, now over a list. Dividing by len(scores) instead of 4 keeps it right when the list changes length.' },
         `<p>Lesson 4 left a puzzle: to find the largest number, what should the accumulator start at? 0 fails for a list of negative numbers. Now we can do it properly: start with the first item, <code>xs[0]</code>, which is certainly one of the candidates, and let the loop replace it whenever something bigger comes along. That is the first exercise.</p>
 <h2>Changing a list</h2>
 <div class="stmt"><p><span class="kind">Rule (changing a list in place).</span> <code>xs[<i>i</i>] = <i>v</i></code> replaces the item at position <i>i</i>. <code>xs.append(<i>v</i>)</code> adds <i>v</i> at the end. <code>xs.pop()</code> removes the last item and gives it back; <code>xs.pop(<i>i</i>)</code> removes the item at position <i>i</i>. <code>xs.insert(<i>i</i>, <i>v</i>)</code> puts <i>v</i> at position <i>i</i>, moving the rest along. <code>xs.sort()</code> puts the items in order. These change the list itself, and <code>append</code>, <code>insert</code> and <code>sort</code> give back nothing, the special value <code>None</code>.</p></div>`,
-        { play: `queue = ["Ada", "Grace", "Alan"]
+        { predict: true, play: `queue = ["Ada", "Grace", "Alan"]
 queue.append("Katherine")     # joins at the back
 print(queue)
 first = queue.pop(0)          # leaves from the front
@@ -670,7 +672,7 @@ print(first, "is served;", queue, "are waiting")
 queue.insert(1, "Tim")        # pushes in at position 1
 print(queue)
 queue[0] = "Grace H."         # replaces an item
-print(queue)`, caption: 'A queue at a ticket office. pop(0) removes and gives back the first person; everyone behind moves up one position.' },
+print(queue)`, caption: 'A queue at a ticket office. It prints the four names, then Ada is served with three left waiting, then Tim squeezed in at position 1, then the front of the queue renamed Grace H. pop(0) removes and gives back the first person, and everyone behind moves up one position. Change pop(0) to pop() and predict who is served.' },
         `<p>That last sentence of the rule causes a classic mistake. Because <code>append</code> gives back <code>None</code>, writing <code>xs = xs.append(4)</code> changes the list and then throws it away, replacing it with <code>None</code>. The same goes for <code>xs = xs.sort()</code>. If you want a sorted <em>copy</em> and to keep the original, use <code>sorted(xs)</code>, which gives back a new list.</p>`,
         { play: `xs = [5, 3, 9, 1]
 print(sorted(xs), xs)    # a sorted copy; xs is unchanged
@@ -691,7 +693,7 @@ print("fridge: ", fridge)
 print("sister: ", sister)
 print("brother:", brother)
 print(sister is fridge, brother is fridge)`, caption: 'fridge and sister both show cake: they are two names for one list. brother\u2019s copy was made before cake was added, and it is a separate list.' },
-        { check: "After <code>a = [1, 2, 3]</code>, <code>b = a</code>, <code>b.append(4)</code>, what is <code>a</code>?", options: ["<code>[1, 2, 3]</code>: b is a copy", "<code>[1, 2, 3, 4]</code>: a and b name the same list", "An error: a cannot be changed through b"], answer: 1, why: "<code>b = a</code> does not copy. Both names refer to one list, so a change through either is seen through both. <code>b = a[:]</code> would have made a copy." },
+        { check: "After <code>a = [1, 2, 3]</code>, <code>b = a</code>, <code>b.append(4)</code>, what is <code>a</code>?", options: ["<code>[1, 2, 3]</code>: b is a copy", "<code>[1, 2, 3, 4]</code>: a and b name the same list", "An error: a cannot be changed through b"], answer: 1, wrong: ["This is the belief that b = a copies the list, as it would copy a number. For a list it only adds a second name; a[:] would copy.", null, "Python has no rule that stops one name from changing a list another name also uses; both names reach the same list, so the change is allowed and seen by both."], why: "<code>b = a</code> does not copy. Both names refer to one list, so a change through either is seen through both. <code>b = a[:]</code> would have made a copy." },
         `<details class="reveal"><summary>Predict: after <code>a = [1, 2, 3]</code>, <code>b = a</code>, <code>b[0] = 99</code>, what is <code>a</code>? And what if the second line had been <code>b = a[:]</code>?</summary><p><code>[99, 2, 3]</code>: <code>a</code> and <code>b</code> are the same list, so changing it through <code>b</code> changes what <code>a</code> sees. With <code>b = a[:]</code>, <code>b</code> is a copy, and <code>a</code> stays <code>[1, 2, 3]</code>. Numbers and text never cause this surprise, because they cannot be changed in place: <code>x = x + 1</code> makes a new number, as Lesson 1's picture of names and values showed.</p></details>
 <h2>Handy built-ins</h2>
 <div class="tbl-wrap"><table>
@@ -708,7 +710,7 @@ print(sister is fridge, brother is fridge)`, caption: 'fridge and sister both sh
 <p>The exercises ask you to write two of these yourself. That is on purpose: knowing what <code>max</code> does inside is what lets you write the things Python has <em>no</em> built-in for.</p>
 <h2>Before the exercises</h2>
 <p>Both exercises are written as small <em>functions</em>, which Lesson 7 covers properly. For now you need only three facts. <code>def name(xs):</code> starts a function that receives a list called <code>xs</code>. Its indented block is the recipe. And <code>return value</code> hands the answer back, so that <code>print(name([3, 1, 2]))</code> prints it. Here are two worked examples, one for each kind of accumulator you will need: a number, and a new list.</p>`,
-        { play: `def count_above(xs, limit):
+        { predict: true, play: `def count_above(xs, limit):
     count = 0                    # before: nothing counted yet
     for x in xs:
         if x > limit:
@@ -723,8 +725,26 @@ def evens(xs):
     return result
 
 print(count_above([88, 92, 79, 95], 90))
-print(evens([3, 8, 5, 6, 2]))`, caption: 'Prints 2 and [8, 6, 2]. The second function builds a brand-new list and leaves its input alone.' },
+print(evens([3, 8, 5, 6, 2]))`, caption: 'Prints 2 (92 and 95 are above 90) and [8, 6, 2]. The second function builds a brand-new list and leaves its input alone. Change the limit to 80 and predict the first answer (3).' },
         { aside: `<p><b>Common mistakes in this lesson.</b> <code>xs[len(xs)]</code> is one past the end and raises <code>IndexError</code>; the last item is <code>xs[-1]</code>. Forgetting that positions start at 0, so the third item is <code>xs[2]</code>. Writing <code>xs = xs.append(v)</code> or <code>xs = xs.sort()</code>, which sets <code>xs</code> to <code>None</code>. Thinking <code>b = a</code> copies a list. Starting a "largest so far" accumulator at 0 instead of at the first item. Changing a list while a <code>for</code> loop is going through it, which skips or repeats items; loop over a copy, <code>for x in xs[:]</code>, instead.</p>` },
+        {
+          ex: {
+            id: 'py-5-3', kind: 'trace', title: 'Trace the position of the best',
+            prompt: `<p>This program finds the <em>position</em> of the highest score, not the score itself. Fill in the table: each row is a moment when line 3 starts a pass of the loop (and the last row, after line 6), with the values of <code>i</code> and <code>best</code> then. The first row is done for you.</p>`,
+            code: `scores = [88, 92, 79, 95]\nbest = 0\nfor i in range(len(scores)):\n    if scores[i] > scores[best]:\n        best = i\nprint(best)`,
+            vars: ['i', 'best'],
+            steps: [
+              { line: 3, values: { i: '0', best: '0' }, show: true },
+              { line: 3, values: { i: '1', best: '0' }, why: { best: { '1': 'This row is the start of the pass for i = 1: line 5 has not run yet, so best has not moved to 1.' } } },
+              { line: 3, values: { i: '2', best: '1' }, why: { best: { '0': 'In the pass for i = 1, 92 was more than scores[0], 88, so best became 1.' } } },
+              { line: 3, values: { i: '3', best: '1' }, why: { best: { '2': '79 is not more than scores[1], 92, so best did not change: it is a position, not a score.' } } },
+              { line: 6, values: { i: '3', best: '3' }, why: { best: { '1': 'In the pass for i = 3, 95 was more than scores[1], 92, so best became 3.' } } }
+            ],
+            hints: ['best is a position in the list, not a score. It changes only when scores[i] is more than the score at position best.', 'best is 0 at the start of the passes for positions 0 and 1 (it becomes 1 inside the pass for position 1), stays 1 for 79, and becomes 3 inside the pass for 95.'],
+            solution: '<p>i: 0, 1, 2, 3, 3. best: 0, 0, 1, 1, 3. The program prints <code>3</code>: the highest score, 95, is at position 3.</p>',
+            followup: 'Change 95 to 92 and trace it again before running it. Which position does it print, and why does the strict > matter?'
+          }
+        },
         {
           ex: {
             id: 'py-5-1', title: 'Largest without max()',
@@ -747,7 +767,8 @@ print(evens([3, 8, 5, 6, 2]))`, caption: 'Prints 2 and [8, 6, 2]. The second fun
             hints: ['The test you need is: if x not in result.', 'Then result.append(x) on its own line. Do not assign the result of append to anything.'],
             tests: [{ call: 'unique([3, 1, 3, 2, 1])', expect: '[3, 1, 2]' }, { call: 'unique([])', expect: '[]' }, { call: 'unique(["a", "b", "a"])', expect: "['a', 'b']" }, { call: 'unique([7, 7, 7, 7])', expect: '[7]' }, { call: 'unique([1, 2, 3])', expect: '[1, 2, 3]' }],
             mustNotContain: [{ re: /\bset\s*\(/, msg: 'Build the result with a loop rather than set(): the point is to see the pattern.' }],
-            failTip: 'If the answer is None, look for result = result.append(x): append changes the list and gives back None.'
+            failTip: 'If the answer is None, look for result = result.append(x): append changes the list and gives back None.',
+            followup: 'Change the function so that it returns the values that appear more than once, each listed once. Which list does your if test now look in, xs or result?'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
@@ -756,13 +777,14 @@ print(evens([3, 8, 5, 6, 2]))`, caption: 'Prints 2 and [8, 6, 2]. The second fun
 <li><code>for x in xs:</code> visits every item; <code>enumerate</code> gives positions too. Accumulators work over lists, and "largest so far" starts at <code>xs[0]</code>.</li>
 <li><code>append</code>, <code>pop</code>, <code>insert</code> and <code>sort</code> change the list itself; <code>append</code> and <code>sort</code> give back <code>None</code>.</li>
 <li><code>b = a</code> gives the same list a second name; <code>a[:]</code> makes a copy.</li>
+<li>The answer to the opening question: every item has a position counted from 0, so <code>playlist[1371]</code> goes straight to that song without counting the ones before it; and two names for one list is the surprise to remember, because a change through either name shows through both.</li>
 </ul></div>`
       ]
     },
     /* ================================================================== */
     {
       standards: ['2-AP-11', '3A-AP-14'],
-      title: 'Strings', summary: 'Text is a sequence too: positions and slices, why a string can never change, the methods worth knowing, splitting and joining, and building text piece by piece.',
+      title: 'Strings', standard: 1, summary: 'Text is a sequence too: positions and slices, why a string can never change, the methods worth knowing, splitting and joining, and building text piece by piece.',
       blocks: [
         `<p>Read this little poem, then read only the first letter of each line, top to bottom.</p>
 <pre class="code"><code>Cats sleep on warm windows.
@@ -770,10 +792,10 @@ Owls blink at the moon.
 Dogs dream of long walks.
 Every fish forgets.
 Someone left the door open.</code></pre>
-<p>A message hidden in the first letters of lines is called an <em>acrostic</em>, and by the end of this lesson a four-line program will find one for you. Nearly every program handles text: names, messages, files, web pages, passwords. In Python, text is a <em>string</em>, and a string is a sequence of characters, so almost everything Lesson 5 taught about lists works on strings too. The one big difference is the most important rule in this lesson.</p>
+<p>A message hidden in the first letters of lines is called an <em>acrostic</em>, and by the end of this lesson a four-line program will find one for you. Nearly every program handles text: names, messages, files, web pages, passwords. In Python, text is a <em>string</em>, and a string is a sequence of characters, so almost everything Lesson 5 taught about lists works on strings too. There is one big difference, and it is the most important rule in this lesson. So here is the question: if a string is a sequence just like a list, why does <code>word[0] = "P"</code> fail?</p>
 <h2>A string is a sequence</h2>
 <div class="stmt"><p><span class="kind">Rule (strings as sequences).</span> A string is a sequence of characters. <code>len(s)</code>, positions <code>s[i]</code> (from 0, and negative from the end), slices <code>s[a:b]</code>, <code>in</code>, and <code>for ch in s:</code> all work exactly as they do for lists. Each character is itself a string of length 1.</p></div>`,
-        { play: `word = "python"
+        { predict: true, play: `word = "python"
 print(word[0], word[-1])
 print(word[1:4])
 print(word[:3] + "|" + word[3:])
@@ -782,12 +804,12 @@ print(len(word))
 print("y" in word, "thon" in word, "z" in word)
 
 for ch in "abc":
-    print(ch, "->", ch.upper())`, caption: 'Predict every line first. For strings, in also finds a whole piece of text: "thon" in word is True.' },
+    print(ch, "->", ch.upper())`, caption: 'It prints p n, then yth, then pyt|hon, then nohtyp, then 6, then True True False, and finally a -> A, b -> B, c -> C on three lines. Positions and slices work as they do for lists: word[1:4] stops before position 4, and a step of -1 walks backwards. For strings, in also finds a whole piece of text: "thon" in word is True. Change word to your own name and predict again.' },
         `<h2>A string can never change</h2>
 <div class="stmt"><p><span class="kind">Rule (strings are immutable).</span> A string cannot be changed in place. Assigning to a position, <code>s[0] = "P"</code>, is an error. Every string operation, including every method, makes a <em>new</em> string and leaves the original exactly as it was.</p></div>`,
         { play: `word = "python"
 word[0] = "P"`, expectError: true, caption: 'TypeError: \'str\' does not support item assignment. Lists can be changed in place; strings cannot.' },
-        { check: "<code>word = \"python\"</code> and then <code>word.upper()</code>. What is <code>word</code> now?", options: ["<code>\"PYTHON\"</code>", "<code>\"python\"</code>: the method made a new string that was not stored", "An error"], answer: 1, why: "Strings never change. Every method returns a new string; to keep it, write <code>word = word.upper()</code>." },
+        { check: "<code>word = \"python\"</code> and then <code>word.upper()</code>. What is <code>word</code> now?", options: ["<code>\"PYTHON\"</code>", "<code>\"python\"</code>: the method made a new string that was not stored", "An error"], answer: 1, wrong: ["This treats upper() as changing the string in place, as a list's sort() does. A string can never change, so word is still lower case.", null, "Calling upper() is perfectly legal; it gives back a shouting copy. The only mistake would be expecting word itself to change."], why: "Strings never change. Every method returns a new string; to keep it, write <code>word = word.upper()</code>." },
         `<p>So how does anything ever change? You make a new string and store it, perhaps under the same name. <code>word.upper()</code> does not shout <code>word</code>; it hands you a shouting copy, and if you want to keep it you must store it.</p>`,
         { predict: true, play: `word = "python"
 shout = word.upper()
@@ -800,11 +822,11 @@ print(word)`, caption: 'python PYTHON, then python (the line in the middle did n
 <details class="reveal"><summary>Predict: after <code>s = "abc"</code> and <code>t = s</code> and <code>s = s + "d"</code>, what are <code>s</code> and <code>t</code>?</summary><p><code>s</code> is <code>"abcd"</code> and <code>t</code> is still <code>"abc"</code>. <code>s + "d"</code> built a new string, and the assignment moved the name <code>s</code> to it. <code>t</code> still names the old one, which never changed.</p></details>
 <h2>Quotes and special characters</h2>
 <div class="stmt"><p><span class="kind">Rule (quotes and escapes).</span> A string may be written in single or double quotes. Inside it, a backslash starts an <em>escape</em>: <code>\\n</code> is a newline, <code>\\"</code> and <code>\\'</code> are quote marks, and <code>\\\\</code> is one backslash. Each escape is one character. Three quote marks, <code>"""…"""</code>, allow a string to run over several lines.</p></div>`,
-        { play: `print("She said \\"hi\\" and left.")
+        { predict: true, play: `print("She said \\"hi\\" and left.")
 print('It\\'s easy with the other quotes: "hi"')
 print("one\\ntwo")
-print(len("a\\nb"))`, caption: 'The newline escape prints as a line break, and "a\\nb" has length 3: a, the newline, b.' },
-        { check: "What is <code>len(\"hi\\n\")</code>?", options: ["2", "3", "4"], answer: 1, why: "An escape is one character: h, i and the newline. The backslash is not stored." },
+print(len("a\\nb"))`, caption: 'It prints She said "hi" and left., then It\'s easy with the other quotes: "hi", then one and two on separate lines, then 3. A backslash before a quote puts the quote inside the string without ending it, the newline escape prints as a line break, and "a\\nb" has length 3: a, the newline, b.' },
+        { check: "What is <code>len(\"hi\\n\")</code>?", options: ["2", "3", "4"], answer: 1, wrong: ["This counts only the letters you can see. The newline escape is a character too, even though it prints as a line break.", null, "This counts the backslash and the n as two characters. An escape is written with two keys but stored as one character."], why: "An escape is one character: h, i and the newline. The backslash is not stored." },
         `<h2>The methods worth knowing</h2>
 <p>A <em>method</em> is a function that belongs to a value, called with a dot: <code>text.upper()</code>. Strings have dozens of methods; these earn their keep. By the immutability rule, every one of them gives back something new and changes nothing.</p>
 <div class="tbl-wrap"><table>
@@ -819,7 +841,7 @@ print(len("a\\nb"))`, caption: 'The newline escape prints as a line break, and "
 <tr><td><code>s.startswith(t)</code>, <code>s.isdigit()</code></td><td><code>True</code> or <code>False</code> answers about the string</td></tr>
 </table></div>
 <p>Methods can be <em>chained</em>: <code>line.strip().split()</code> strips first, and then splits the stripped result, because each method is called on the value the one before it gave back.</p>`,
-        { play: `line = "  Hello, Wonderful World  "
+        { predict: true, play: `line = "  Hello, Wonderful World  "
 words = line.strip().split()
 print(words)
 print(len(words), "words")
@@ -829,12 +851,12 @@ print(line.replace("World", "Duluth"))
 
 record = "Ada,Lovelace,London"
 first, last, city = record.split(",")
-print(last + ", " + first + " (" + city + ")")`, caption: 'split turns text into a list, and join turns a list back into text: they are opposites. The last part splits one line of a spreadsheet file into its three fields.' },
-        { check: "What does <code>\"a b  c\".split()</code> give?", options: ["<code>[\"a\", \"b\", \"\", \"c\"]</code>", "<code>[\"a\", \"b\", \"c\"]</code>", "<code>\"a\", \"b\", \"c\"</code>"], answer: 1, why: "<code>split()</code> with no argument splits on runs of white space and drops empty pieces. <code>split(\" \")</code> would keep the empty piece between the two spaces." },
+print(last + ", " + first + " (" + city + ")")`, caption: 'It prints [\'Hello,\', \'Wonderful\', \'World\'], then 3 words, then Hello,-Wonderful-World, then 3 (three letters o in the lower-case line), then the line with Duluth in place of World (its spaces are still there, because only strip removes them), then Lovelace, Ada (London). split turns text into a list, and join turns a list back into text: they are opposites. The last part splits one line of a spreadsheet file into its three fields.' },
+        { check: "What does <code>\"a b  c\".split()</code> give?", options: ["<code>[\"a\", \"b\", \"\", \"c\"]</code>", "<code>[\"a\", \"b\", \"c\"]</code>", "<code>\"a\", \"b\", \"c\"</code>"], answer: 1, wrong: ["This is what split(\" \") gives, cutting at every single space. Plain split() treats a run of spaces as one cut and drops the empty piece.", null, "split gives back one list, not three loose strings; the square brackets and the quotes around each word are part of the answer."], why: "<code>split()</code> with no argument splits on runs of white space and drops empty pieces. <code>split(\" \")</code> would keep the empty piece between the two spaces." },
         `<details class="reveal"><summary>Predict: what are <code>"a,,b".split(",")</code> and <code>"a,,b".split()</code>?</summary><p><code>['a', '', 'b']</code> and <code>['a,,b']</code>. Splitting at commas is exact: between the two commas there is an empty piece. Plain <code>split()</code> splits only at spaces and newlines, and there are none, so the whole string is one piece. Choosing the wrong <code>split</code> is a common source of bugs when reading data files.</p></details>
 <h2>Building text piece by piece</h2>
 <p>Because strings cannot change, text is built with Lesson 4's accumulator pattern: start with the empty string <code>""</code>, and use <code>+=</code> to make a new, longer string on each pass. Here are three accumulators over one sentence: a count, a filtered copy, and the first letters of the words.</p>`,
-        { play: `sentence = "the quick brown fox"
+        { predict: true, play: `sentence = "the quick brown fox"
 
 vowels = 0
 for ch in sentence:
@@ -851,7 +873,7 @@ print(no_vowels)
 initials = ""
 for word in sentence.split():
     initials += word[0].upper()
-print(initials)`, caption: 'Prints vowels: 5, then th qck brwn fx, then TQBF. In the last loop the accumulator collects one character per word.' },
+print(initials)`, caption: 'Prints vowels: 5, then th qck brwn fx, then TQBF. The sentence has e, u, i, o and o, so five vowels; the second loop keeps every character that is not a vowel; in the last loop the accumulator collects one character per word. Change the sentence and predict again.' },
         `<p>And here is the acrostic finder from the top of the lesson: split the poem into lines at the newlines, and collect the first character of each line.</p>`,
         { play: `poem = """Cats sleep on warm windows.
 Owls blink at the moon.
@@ -865,15 +887,15 @@ for line in poem.split("\\n"):
 print(secret)`, caption: 'Write your own five-line acrostic in poem and run it. What goes wrong if one of the lines is empty?' },
         `<h2>Formatting numbers</h2>
 <p>An f-string, from Lesson 2, can also control how a value looks. After the expression, add a colon and a format: <code>.2f</code> means "two decimal places", <code>,</code> adds thousands separators, and <code>&gt;8</code> right-aligns in a space eight characters wide.</p>`,
-        { play: `price = 3.14159
+        { predict: true, play: `price = 3.14159
 print(f"Price: {price:.2f}")
 print(f"Big: {1234567:,}")
 print(f"[{'left':<8}][{'right':>8}]")
 for i in range(1, 4):
-    print(f"{i} squared is {i * i:>3}")`, caption: 'Formats line up columns of numbers, which is most of what a neat report needs.' },
+    print(f"{i} squared is {i * i:>3}")`, caption: 'It prints Price: 3.14, then Big: 1,234,567, then [left    ][   right], then three lines such as 1 squared is   1. The format after the colon is the whole trick: .2f rounds to two places, the comma adds separators, and &lt; and &gt; pad to a width, left or right. Formats line up columns of numbers, which is most of what a neat report needs. Change .2f to .1f and predict.' },
         `<h2>Before the exercises</h2>
 <p>The first exercise is Lesson 4's "biggest so far" accumulator, applied to the <em>lengths</em> of the words from <code>split()</code>. The second cleans a string up and then compares it with a changed copy of itself. Here is a worked example of that second shape: two phrases are <em>anagrams</em> if they use exactly the same letters, like "listen" and "silent". Clean both (lower case, no spaces), then compare their letters in sorted order. <code>sorted</code> works on a string and gives a sorted list of its characters.</p>`,
-        { play: `def same_letters(a, b):
+        { predict: true, play: `def same_letters(a, b):
     a_clean = a.lower().replace(" ", "")
     b_clean = b.lower().replace(" ", "")
     return sorted(a_clean) == sorted(b_clean)
@@ -882,6 +904,24 @@ print(same_letters("Listen", "Silent"))
 print(same_letters("Dormitory", "dirty room"))
 print(same_letters("hello", "world"))`, caption: 'True, True, False. Cleaning first means capitals and spaces cannot spoil the comparison, and == on two lists compares them item by item.' },
         { aside: `<p><b>Common mistakes in this lesson.</b> Calling <code>word.upper()</code> and expecting <code>word</code> to change; store the result. Trying to assign to a position in a string. Comparing <code>"5" == 5</code>, which is <code>False</code>, because one is text and one is a number. Forgetting that <code>split()</code> gives a list: <code>line.split()[0]</code> is the first word, but <code>line.split()</code> is not a string. Using <code>split()</code> where <code>split(",")</code> was needed, or the other way round. Taking <code>s[0]</code> of an empty string, which is an <code>IndexError</code>.</p>` },
+        {
+          ex: {
+            id: 'py-6-3', kind: 'trace', title: 'Trace the vowel counter',
+            prompt: `<p>This program counts the vowels in a word by going through its positions. Fill in the table: each row is a moment when line 3 starts a pass of the loop (and the last row, after line 6), with the values of <code>i</code> and <code>count</code> then. The first row is done for you.</p>`,
+            code: `word = "moon"\ncount = 0\nfor i in range(len(word)):\n    if word[i] in "aeiou":\n        count = count + 1\nprint(count)`,
+            vars: ['i', 'count'],
+            steps: [
+              { line: 3, values: { i: '0', count: '0' }, show: true },
+              { line: 3, values: { i: '1', count: '0' }, why: { count: { '1': 'This row is the start of the pass for i = 1: word[1] has not been tested yet, so count has not gone up for it.' } } },
+              { line: 3, values: { i: '2', count: '1' }, why: { count: { '0': 'In the pass for i = 1, word[1] is "o", a vowel, so count became 1.' } } },
+              { line: 3, values: { i: '3', count: '2' }, why: { count: { '3': 'word[3] is "n", which is not a vowel, so it adds nothing. Only the o at position 1 and the o at position 2 have counted.' } } },
+              { line: 6, values: { i: '3', count: '2' } }
+            ],
+            hints: ['i is a position: it takes 0, 1, 2, 3 for the four letters of "moon". The if tests the letter at that position.', 'The letters at positions 1 and 2 are both "o". count goes up inside the pass for each of them, and the n at position 3 adds nothing.'],
+            solution: '<p>i: 0, 1, 2, 3, 3. count: 0, 0, 1, 2, 2. The program prints <code>2</code>: the two o letters.</p>',
+            followup: 'Change the word to "banana" and trace it again before running it: what does it print? Then check whether the loop for ch in word would do the same job without positions.'
+          }
+        },
         {
           ex: {
             id: 'py-6-1', title: 'Longest word',
@@ -908,7 +948,7 @@ print(same_letters("hello", "world"))`, caption: 'True, True, False. Cleaning fi
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
 <li>A string is a sequence: <code>len</code>, positions, slices, <code>in</code> and <code>for</code> work as for lists.</li>
-<li>A string can never change. Methods give back new strings; to keep one, store it.</li>
+<li>A string can never change, which is why <code>word[0] = "P"</code> fails even though <code>words[0] = "P"</code> works for a list. Methods give back new strings; to keep one, store it.</li>
 <li>Escapes such as <code>\\n</code> and <code>\\"</code> put special characters inside quotes; each is one character.</li>
 <li><code>split</code> turns text into a list and <code>join</code> turns a list back into text; <code>split()</code> and <code>split(",")</code> split differently.</li>
 <li>Build text with an accumulator starting from <code>""</code>. Clean text (lower case, no spaces) before comparing it.</li>
