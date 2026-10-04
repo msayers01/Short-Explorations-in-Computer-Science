@@ -43,7 +43,7 @@
   --hl-k: #8a2c8a; --hl-s: #1f6b2f; --hl-c: #6b6b6b; --hl-n: #1d5fb8; --hl-b: #2a5a9a; --hl-p: #8a5a00;
   color-scheme: light dark;
 }
-:root[data-course="python"] { --accent: #b06400; --accent-soft: #fcf1df; }
+:root[data-course="python"] { --accent: #a45d00; --accent-soft: #fcf1df; }
 :root[data-course="lisp"] { --accent: #5b3a8c; --accent-soft: #efe8f8; }
 :root[data-course="cpp"] { --accent: #1c5aa6; --accent-soft: #e5eefb; }
 :root[data-course="math"] { --accent: #1f6e4a; --accent-soft: #e4f2ea; }
@@ -1103,7 +1103,7 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .sb-head { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 0.4rem; }
 .sb-arrow { font-size: 1.6rem; color: var(--ink-3); padding-top: 1.6rem; }
 .sb-stack { display: inline-flex; flex-direction: column; align-items: flex-start; }
-.sb { color: #fff; font-size: 0.86rem; font-weight: 500; border-radius: 6px; margin-top: 2px; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.18); text-shadow: 0 1px 0 rgba(0,0,0,0.15); }
+.sb { color: #fff; font-size: 0.86rem; font-weight: 600; border-radius: 6px; margin-top: 2px; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.18); text-shadow: 0 1px 0 rgba(0,0,0,0.15); }
 .sb-row { padding: 0.32rem 0.7rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; white-space: nowrap; }
 .sb-hat { border-radius: 18px 18px 6px 6px; padding-top: 0.25rem; }
 .sb-c { padding-bottom: 0; }
@@ -1114,8 +1114,9 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .sb-in { display: inline-block; color: #575e75; background: #fff; font-weight: 500; line-height: 1.2; padding: 0.08rem 0.5rem; font-size: 0.82rem; }
 .sb-text { border-radius: 4px; } .sb-num { border-radius: 999px; min-width: 1.6em; text-align: center; } .sb-bool { border-radius: 2px; clip-path: polygon(8% 0, 92% 0, 100% 50%, 92% 100%, 8% 100%, 0 50%); padding: 0.08rem 0.9rem; background: #ffffffcc; }
 .sb-bool .sb-in { margin: 0 0.15em; } .sb-bool .sb-bool { background: #59c05944; }
-.sb-event { background: #ffbf00; color: #4a3600; text-shadow: none; } .sb-looks { background: #9966ff; } .sb-motion { background: #4c97ff; } .sb-control { background: #ffab19; color: #3f2a00; text-shadow: none; }
-.sb-sensing { background: #5cb1d6; } .sb-operators { background: #59c059; } .sb-variables { background: #ff8c1a; } .sb-myblocks { background: #ff6680; } .sb-pen { background: #0fbd8c; } .sb-sound { background: #cf63cf; }
+.sb-event { background: #ffbf00; color: #4a3600; text-shadow: none; } .sb-looks { background: #9966ff; } .sb-motion { background: #4486e3; } .sb-control { background: #ffab19; color: #3f2a00; text-shadow: none; }
+.sb-sensing { background: #4a8eab; } .sb-operators { background: #469846; } .sb-variables { background: #c96f15; } .sb-myblocks { background: #de596f; } .sb-pen { background: #0c9971; } .sb-sound { background: #c55ec5; }
+/* Scratch's own palette is lighter, but white text on it is hard to read (2.3:1 on the orange); these keep each hue and reach 3.6:1 */
 .sb-control .sb-body, .sb-event .sb-body { background: var(--paper); }
 .sb-py { margin: 0; font-size: 0.86rem; }
 .bq { font-family: var(--sans); }
