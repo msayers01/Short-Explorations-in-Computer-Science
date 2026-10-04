@@ -1176,7 +1176,7 @@ xs mapped kept result`;
     load(0);
   };
 
-  /* ---------- graphs: breadth-first, depth-first and Dijkstra on one small fixed graph (SC 107 lesson 11) ---------- */
+  /* ---------- graphs: breadth-first, depth-first and Dijkstra on one small fixed graph (SC 107 lesson 13) ---------- */
   W.graph = function (mount, b) {
     const mode = b.mode === 'dfs' || b.mode === 'dijkstra' ? b.mode : 'bfs';
     const N = 'ABCDEFGH', R = 17, INF = Infinity;

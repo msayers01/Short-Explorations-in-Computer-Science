@@ -420,7 +420,7 @@
   }
 
   // ================================================================== registration
-  const RECURSION = [{ href: '#/python/11', text: 'SC 101 Lesson 11: Recursion' }, { href: '#/dsa/7', text: 'SC 107 Lesson 7: Recursion' }];
+  const RECURSION = [{ href: '#/python/13', text: 'SC 101 Lesson 13: Recursion' }, { href: '#/dsa/8', text: 'SC 107 Lesson 8: Recursion' }];
   A.register({ id: 'hanoi', group: GROUP, title: 'Towers of Hanoi',
     blurb: 'Move the tower one disc at a time, never a big disc on a small one. Play it yourself and try for the fewest moves, then watch recursion do it perfectly.',
     mount: mountHanoi,
@@ -443,13 +443,13 @@
     blurb: 'Plan a round trip through every town, then race the computer: it drives to the nearest town each time, then uncrosses roads until none cross. Can you beat it?',
     mount: mountTour,
     about: `<h2>The travelling salesman problem</h2>
-<p>Visit every town once and come back, by the shortest round trip. It sounds simple, but the number of possible tours grows faster than any power: with 12 towns there are 19,958,400 different round trips, with 25 towns more than 3 × 10<sup>23</sup>. Nobody knows a method that is guaranteed to find the best tour quickly for every map; it is one of the NP-hard problems of SC 104 lesson 12. In practice programs find very good tours with quick rules, and this demo uses two of them.</p>
+<p>Visit every town once and come back, by the shortest round trip. It sounds simple, but the number of possible tours grows faster than any power: with 12 towns there are 19,958,400 different round trips, with 25 towns more than 3 × 10<sup>23</sup>. Nobody knows a method that is guaranteed to find the best tour quickly for every map; it is one of the NP-hard problems of SC 104 lesson 14. In practice programs find very good tours with quick rules, and this demo uses two of them.</p>
 <h2>The computer's two rules</h2>
 <ul><li><b>Nearest neighbour.</b> From the green town, always drive to the closest town not yet visited. Quick, and usually 20 to 25% longer than the best tour, because the last roads have to come a long way home.</li>
 <li><b>2-opt.</b> Look at every pair of roads. If replacing roads a–b and c–d by a–c and b–d makes the trip shorter, do it, and reverse the part in between. Two roads that cross can always be uncrossed this way, so when 2-opt stops, no roads cross. The result is usually within about 5% of the best tour, but not always the best: which is why you can sometimes win.</li></ul>
 <h2>Where it is used</h2>
 <p>Delivery routes, the order in which a machine drills holes in a circuit board, and planning which stars a telescope looks at in one night are all travelling salesman problems. In 2006 a team including William Cook solved one with 85,900 points, from the layout of a computer chip, and proved its tour the shortest.</p>`,
-    taught: [{ href: '#/math/12', text: 'SC 104 Lesson 12: Easy to check, hard to find' }, { href: '#/math/5', text: 'SC 104 Lesson 5: Graphs and paths' }] });
+    taught: [{ href: '#/math/14', text: 'SC 104 Lesson 14: Easy to check, hard to find' }, { href: '#/math/6', text: 'SC 104 Lesson 6: Graphs and paths' }] });
   A.register({ id: 'life', group: GROUP, title: 'The Game of Life',
     blurb: 'Draw living cells on a grid and press Play. Three simple rules make gliders that fly, oscillators that pulse, and a gun that fires gliders for ever.',
     mount: mountLife,
@@ -469,7 +469,7 @@
 <h2>How fast it gets better</h2>
 <p>Slowly. The error shrinks like 1/√n: to get one more decimal place right you need about 100 times as many drops. A thousand drops usually land within about 0.05 of π; a million drops usually get 3.14 right, and only sometimes 3.141. That is why the graph has a log scale, each mark ten times more drops than the one before.</p>
 <p>The method is named after the casino in Monte Carlo. Stanisław Ulam and John von Neumann developed it in the 1940s, at Los Alamos, to simulate neutrons, which no formula could follow. Today Monte Carlo simulations price insurance, forecast weather, plan cancer radiation treatment and render the light in animated films.</p>`,
-    taught: [{ href: '#/python/10', text: 'SC 101 Lesson 10: Randomness and simulation' }] });
+    taught: [{ href: '#/python/12', text: 'SC 101 Lesson 12: Randomness and simulation' }] });
 
   // ================================================================== tests (node test_algos.js)
   function selfTest() {

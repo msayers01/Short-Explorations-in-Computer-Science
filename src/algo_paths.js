@@ -1019,7 +1019,7 @@
 <li>A* was published in 1968 by Peter Hart, Nils Nilsson and Bertram Raphael at the Stanford Research Institute, for the Shakey robot. It is still the standard way characters in video games find their way across a map.</li>
 <li>Map and satnav route planners build on Dijkstra and A*, adding preprocessing (such as contraction hierarchies) so that a route across a continent's road network takes milliseconds.</li>
 </ul>`,
-    taught: [{ href: '#/math/5', text: 'SC 104, Graphs and paths (BFS and its proof)' }, { href: '#/dsa/6', text: 'SC 107, Stacks and queues' }]
+    taught: [{ href: '#/math/6', text: 'SC 104, Graphs and paths (BFS and its proof)' }, { href: '#/dsa/7', text: 'SC 107, Stacks and queues' }]
   });
 
   A.register({
@@ -1045,7 +1045,7 @@
 <li><b>Dead-end filling</b> looks at the whole map: fill in every dead end, then the corridor behind it, until no dead end is left. In a perfect maze what remains is exactly the solution. A person inside the maze cannot do this; a person with a map can.</li>
 </ul>
 <p>The seed decides every random choice: the same generator, size and seed always make the same maze.</p>`,
-    taught: [{ href: '#/dsa/6', text: 'SC 107, Stacks and queues' }, { href: '#/dsa/7', text: 'SC 107, Recursion' }, { href: '#/math/5', text: 'SC 104, Graphs and paths (trees)' }]
+    taught: [{ href: '#/dsa/7', text: 'SC 107, Stacks and queues' }, { href: '#/dsa/8', text: 'SC 107, Recursion' }, { href: '#/math/6', text: 'SC 104, Graphs and paths (trees)' }]
   });
 
   A.register({
@@ -1061,7 +1061,7 @@
 <li><b>Add loops.</b> A perfect maze has exactly one path, so every solver finds the same one. With loops there are many paths: watch DFS bring back a long winding one, and dead-end filling get stuck, because a loop has no dead end to fill.</li>
 <li><b>Change the maze.</b> Sidewinder and binary-style mazes have a long open top corridor that suits A*; the recursive backtracker's long twisting corridors make A*'s sense of direction almost useless.</li>
 </ul>`,
-    taught: [{ href: '#/dsa/6', text: 'SC 107, Stacks and queues' }, { href: '#/math/5', text: 'SC 104, Graphs and paths' }]
+    taught: [{ href: '#/dsa/7', text: 'SC 107, Stacks and queues' }, { href: '#/math/6', text: 'SC 104, Graphs and paths' }]
   });
 
   A.register({
@@ -1081,7 +1081,7 @@
 <li>DFS: finding the connected pieces of a graph, detecting cycles, putting tasks in an order that respects their dependencies (topological sorting), and generating mazes (the recursive backtracker is a randomized DFS).</li>
 <li>Dijkstra: route planning, and network routing (OSPF and IS-IS run it on every router).</li>
 </ul>`,
-    taught: [{ href: '#/math/5', text: 'SC 104, Graphs and paths' }, { href: '#/dsa/6', text: 'SC 107, Stacks and queues' }, { href: '#/dsa/7', text: 'SC 107, Recursion' }]
+    taught: [{ href: '#/math/6', text: 'SC 104, Graphs and paths' }, { href: '#/dsa/7', text: 'SC 107, Stacks and queues' }, { href: '#/dsa/8', text: 'SC 107, Recursion' }]
   });
 
   // ================================================================== tests (node test_algos.js)

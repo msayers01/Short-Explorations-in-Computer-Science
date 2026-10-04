@@ -124,6 +124,7 @@ async function verifyTrace(ex) {
     const at = lines[n - 1]; if (at === undefined) { probs.push('step line ' + n + ' is not in the program'); continue; }
     const ind = (header(at) ? (lines[n] || '') : at).match(/^\s*/)[0], gone = missing(n);
     const cap = lang === 'python' ? ind + '__t(' + n + ', [' + ex.vars.map((v) => gone.has(v) ? "'-'" : '__v(lambda: ' + v + ')').join(', ') + '])'
+      : lang === 'cpp' ? ind + (course.runtime === 'full' ? 'std::cout' : 'cout') + ' << "@@' + n + '|"' + ex.vars.map((v) => ' << ' + (gone.has(v) ? '"-"' : '(' + v + ')')).join(' << "|"') + ' << ' + (course.runtime === 'full' ? 'std::endl' : 'endl') + ';'
       : ind + 'System.out.println("@@' + n + '|"' + ex.vars.map((v) => ' + ' + (gone.has(v) ? '"-"' : '(' + v + ')')).join(' + "|"') + ');';
     lines.splice(n, 0, cap);
   }
@@ -132,7 +133,11 @@ async function verifyTrace(ex) {
     src = "def __v(f):\n    try:\n        return str(f())\n    except NameError:\n        return '-'\ndef __t(n, vals):\n    print('@@' + str(n) + '|' + '|'.join(vals))\n" + src;
     const r = await py(src, ex.stdin || ''); out = r.out; err = r.err;
   } else if (lang === 'java') { const r = JAVA.run(src, ex.stdin || '', { maxMs: 5000 }); out = r.out; err = r.err; }
-  else return ['trace verification is not written for ' + lang];
+  else if (lang === 'cpp' && course.runtime === 'full') {   // real Clang: the capture lines are compiled in, the program run once
+    const r = await (await full)(src, [ex.stdin || '']); err = r.err || r.parts[0].err; out = r.err ? '' : r.parts[0].out;
+  } else if (lang === 'cpp') {
+    try { JSCPP.run(ensureMainReturns(src), ex.stdin || '', { stdio: { write: (t) => out += t }, maxTimeout: 5000, unsigned_overflow: 'warn' }); } catch (e) { err = e.message || String(e); }   // C++ reads of an out-of-scope variable are not checked here
+  } else return ['trace verification is not written for ' + lang];
   if (err) return ['the traced program fails: ' + String(err).split('\n')[0]];
   const events = out.split('\n').filter((l) => l.startsWith('@@')).map((l) => { const [n, ...vals] = l.slice(2).split('|'); return { line: +n, vals }; });
   const tidy = (x) => String(x).trim().toLowerCase().replace(/\s+/g, '');

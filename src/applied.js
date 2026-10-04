@@ -29,7 +29,7 @@
         { f: 'data', t: 'Data engineers choose column types on purpose: 32-bit numbers take half the memory of 64-bit ones, which matters when a table has hundreds of millions of rows.' }
       ],
       jobs: ['Software developer', 'Embedded engineer', 'Data engineer', 'Flight software engineer'],
-      learn: ['python/1', 'scratch/2', 'cpp/1', 'java/1', 'java/3', 'cpp/8'],
+      learn: ['python/1', 'scratch/2', 'cpp/1', 'java/1', 'java/3', 'cpp/9'],
       teach: 'Hook: show 0.1 + 0.2 in the Python Code Lab. Ask: why would a bank not store your balance like that? What should a program do when a count goes past the biggest number its type can hold?'
     },
     {
@@ -71,7 +71,7 @@
         { f: 'data', t: 'Spreadsheet formulas such as SUM and AVERAGE are functions, and a data pipeline is a chain of functions, each taking a table and returning a new one.' }
       ],
       jobs: ['Software developer', 'API developer', 'Library maintainer', 'Test engineer'],
-      learn: ['scratch/6', 'python/7', 'cpp/4', 'java/4', 'lisp/2'],
+      learn: ['scratch/7', 'python/8', 'cpp/4', 'java/4', 'lisp/2'],
       teach: 'Activity: have students list the "functions" in a recipe or a morning routine, with their inputs and outputs. Which ones are used more than once?'
     },
     {
@@ -84,7 +84,7 @@
         { f: 'sec', t: 'Reading or writing past the end of an array is a classic C and C++ security hole: the 1988 Morris worm and the 2014 Heartbleed bug both came from it.' }
       ],
       jobs: ['Graphics programmer', 'Machine-learning engineer', 'Signal-processing engineer', 'C/C++ developer'],
-      learn: ['scratch/5', 'python/5', 'cpp/6', 'modern/2', 'dsa/1'],
+      learn: ['scratch/6', 'python/6', 'cpp/7', 'modern/2', 'dsa/1'],
       teach: 'Hook: open any photo and zoom in until you see squares. Each square is one item of an array. How many numbers does one photo hold?'
     },
     {
@@ -98,7 +98,7 @@
         { f: 'data', t: 'Log files, a server\'s diary of what it did, are lines of text that engineers split and search to find out what went wrong.' }
       ],
       jobs: ['Web developer', 'Security analyst', 'Bioinformatician', 'Localization engineer'],
-      learn: ['scratch/9', 'python/6', 'computer/6', 'cpp/7', 'modern/1', 'java/2'],
+      learn: ['scratch/11', 'python/7', 'computer/6', 'cpp/8', 'modern/1', 'java/2'],
       teach: 'Discussion: a form asks for your name. What should a program do if someone types a name with an apostrophe (O\'Brien), an accent (José), or a piece of code?'
     },
     {
@@ -113,7 +113,7 @@
         { f: 'web', t: 'Caches keep recent answers so a site does not have to work them out again; they are hash tables keyed by the question. Memcached and Redis are well-known examples.' }
       ],
       jobs: ['Backend developer', 'Security engineer', 'DevOps engineer', 'Database engineer'],
-      learn: ['python/9', 'java/11', 'modern/7', 'math/11'],
+      learn: ['python/11', 'java/13', 'modern/8', 'math/13'],
       teach: 'Hook: explain why "Forgot your password?" sends a reset link instead of your old password. (The site does not know it: it only kept a hash.)'
     },
     {
@@ -127,7 +127,7 @@
         { f: 'eng', t: 'The Fast Fourier Transform (1965) does in about n log n steps what took n² before; it is used in audio, radio, medical imaging and more.' }
       ],
       jobs: ['Backend developer', 'Performance engineer', 'Site reliability engineer', 'Data engineer'],
-      learn: ['dsa/1', 'math/11', 'lisp/5', 'python/12'],
+      learn: ['dsa/1', 'math/13', 'lisp/6', 'python/14'],
       teach: 'Activity: time a program on n and on 2n items (the doubling experiment). Ask students to predict the second time before running it.'
     },
     {
@@ -141,7 +141,7 @@
         { f: 'web', t: 'Feeds, leaderboards and search results are sorted lists, often by more than one key (score first, then time).' }
       ],
       jobs: ['Backend developer', 'Database engineer', 'Search engineer'],
-      learn: ['python/12', 'cpp/10', 'dsa/2', 'dsa/3', 'dsa/4'],
+      learn: ['python/14', 'cpp/12', 'dsa/2', 'dsa/3', 'dsa/4'],
       teach: 'Hook: play "guess my number between 1 and 1,000" with yes/no "higher or lower" answers. The best strategy never needs more than 10 guesses. Why 10?'
     },
     {
@@ -156,7 +156,7 @@
         { f: 'games', t: 'Games collect events (key presses, network messages) in a queue and handle them in order each frame.' }
       ],
       jobs: ['Systems programmer', 'Backend developer', 'Exploit developer', 'Game developer'],
-      learn: ['dsa/6', 'dsa/7', 'python/11', 'math/8'],
+      learn: ['dsa/7', 'dsa/8', 'python/13', 'math/9'],
       teach: 'Discussion: which is fairer for a school cafeteria, a stack or a queue? Then: why does Undo use the other one?'
     },
     {
@@ -169,7 +169,7 @@
         { f: 'swe', t: 'Garbage collectors in Java and JavaScript follow references from object to object to find which memory is still in use and free the rest.' }
       ],
       jobs: ['Systems programmer', 'Kernel developer', 'Backend developer'],
-      learn: ['dsa/5', 'lisp/6', 'lisp/7'],
+      learn: ['dsa/6', 'lisp/7', 'lisp/8'],
       teach: 'Activity: a human linked list. Each student holds a card with the name of the next student. Insert someone in the middle; then try to find the 7th person without walking the chain.'
     },
     {
@@ -183,7 +183,7 @@
         { f: 'swe', t: 'Divide-and-conquer algorithms such as merge sort, quicksort and the Fast Fourier Transform are recursive.' }
       ],
       jobs: ['Compiler engineer', 'Game AI programmer', 'Backend developer'],
-      learn: ['python/11', 'lisp/4', 'lisp/7', 'dsa/7', 'cpp/4', 'java/4'],
+      learn: ['python/13', 'lisp/4', 'lisp/8', 'dsa/8', 'cpp/4', 'java/4'],
       teach: 'Hook: two mirrors facing each other, or a set of nesting dolls. Where is the base case? What would happen without one?'
     },
     {
@@ -198,7 +198,7 @@
         { f: 'games', t: 'Characters in games find their way around a level with A* search on a grid or a "navigation mesh".' }
       ],
       jobs: ['Network engineer', 'Penetration tester', 'Backend developer', 'Game AI programmer'],
-      learn: ['math/5', 'dsa/6'],
+      learn: ['math/6', 'dsa/7'],
       teach: 'Activity: draw the classroom friendships (or the school\'s hallways) as a graph. Find the shortest path between two points by breadth-first search, one ring at a time.'
     },
     {
@@ -213,7 +213,7 @@
         { f: 'data', t: 'Decision trees, and "forests" of many of them, are among the most widely used machine-learning models for tables of data.' }
       ],
       jobs: ['Database engineer', 'Compiler engineer', 'Web developer', 'Machine-learning engineer'],
-      learn: ['shell/1', 'math/5', 'lisp/7', 'lisp/11'],
+      learn: ['shell/1', 'math/6', 'lisp/8', 'lisp/13'],
       teach: 'Hook: open a computer\'s file browser and follow a path such as /home/student/projects down from the root. Every folder has exactly one parent. Why can a folder not be inside itself?'
     },
     {
@@ -227,7 +227,7 @@
         { f: 'swe', t: 'Drives are sold in powers of 1,000 but often reported in powers of 1,024, which is why a 500 GB drive shows as about 465 GB.' }
       ],
       jobs: ['Network engineer', 'Embedded engineer', 'Security analyst', 'Digital forensics analyst'],
-      learn: ['computer/2', 'computer/3', 'computer/6', 'cpp/2', 'cpp/7'],
+      learn: ['computer/2', 'computer/3', 'computer/6', 'cpp/2', 'cpp/8'],
       teach: 'Hook: count to 31 on one hand in binary (each finger is a bit). Then: how many different addresses does a 32-bit number allow, and why did the internet need IPv6?'
     },
     {
@@ -242,7 +242,7 @@
         { f: 'games', t: 'Graphics cards (GPUs) are processors with thousands of small cores that run the same step on many pixels at once; the same chips are now used to train AI models.' }
       ],
       jobs: ['Embedded engineer', 'Malware analyst', 'Operating-system developer', 'Hardware engineer'],
-      learn: ['computer/1', 'computer/2', 'computer/4', 'cpp/6'],
+      learn: ['computer/1', 'computer/2', 'computer/4', 'cpp/7'],
       teach: 'Activity: act out fetch, decode, execute with students as the processor, the memory boxes and the program counter. Then compare the pace: a 3 GHz processor has 3 billion clock ticks a second.'
     },
     {
@@ -256,7 +256,7 @@
         { f: 'games', t: 'Game engines such as Unreal Engine are written in C++ and use pointers and careful memory layout to update a whole world in a frame of about 16 milliseconds (60 frames a second).' }
       ],
       jobs: ['Systems programmer', 'Vulnerability researcher', 'Firmware engineer', 'Game engine programmer'],
-      learn: ['cpp/5', 'cpp/6', 'cpp/7', 'modern/2', 'modern/3'],
+      learn: ['cpp/6', 'cpp/7', 'cpp/8', 'modern/2', 'modern/3'],
       teach: 'Discussion: a pointer is a house address written on paper. What goes wrong if the house is knocked down and someone still uses the address? (That is "use after free".)'
     },
     {
@@ -270,7 +270,7 @@
         { f: 'eng', t: 'Engineering simulations model physical parts (a beam, a pump, a circuit element) as objects with properties and rules.' }
       ],
       jobs: ['App developer', 'Game developer', 'Software architect'],
-      learn: ['modern/4', 'modern/5', 'java/8', 'java/9', 'modern/8', 'dsa/5'],
+      learn: ['modern/4', 'modern/6', 'java/9', 'java/11', 'modern/10', 'dsa/6'],
       teach: 'Activity: design a Student or a Book type on the board. What data does it hold? Which rules should it refuse to break, whatever the rest of the program does?'
     },
     {
@@ -283,7 +283,7 @@
         { f: 'swe', t: 'Checking input where it enters a program (is it really a number? is it in range?) is the first defence against bugs and attacks alike.' }
       ],
       jobs: ['Backend developer', 'Site reliability engineer', 'Safety engineer'],
-      learn: ['python/2', 'python/8', 'java/10', 'lisp/1'],
+      learn: ['python/2', 'python/9', 'java/12', 'lisp/1'],
       teach: 'Discussion: what should a cash machine do if the network drops halfway through a withdrawal? List the possible states and what is safe in each.'
     },
     {
@@ -297,7 +297,7 @@
         { f: 'data', t: 'Data pipelines are tested too: checks that a column has no missing values, or that totals add up, catch bad data before it reaches a report.' }
       ],
       jobs: ['Quality assurance engineer', 'Software developer in test', 'Security researcher', 'Every developer'],
-      learn: ['python/7', 'python/8', 'cpp/8', 'cpp/10', 'dsa/2'],
+      learn: ['python/8', 'python/9', 'cpp/9', 'cpp/12', 'dsa/2'],
       teach: 'Activity: give pairs a function with one hidden bug (the courses\' debugging lessons have some). One student writes tests, the other predicts which test will catch it.'
     },
     {
@@ -311,7 +311,7 @@
         { f: 'data', t: 'Machine learning shuffles its data and starts from random weights; fixing the seed makes an experiment repeatable.' }
       ],
       jobs: ['Data scientist', 'Quantitative analyst', 'Game designer', 'Cryptographer'],
-      learn: ['python/10', 'cpp/9'],
+      learn: ['python/12', 'cpp/11'],
       teach: 'Hook: ask the class to write down a "random" list of 20 coin flips, then flip a real coin 20 times. Which list has the longer runs? People are bad random generators, and so are simple formulas.'
     },
     {
@@ -324,7 +324,7 @@
         { f: 'data', t: 'Spreadsheet and database work is mostly maps (compute a new column), filters (keep some rows) and reductions (SUM, COUNT).' }
       ],
       jobs: ['Data engineer', 'Front-end developer', 'Backend developer'],
-      learn: ['lisp/8', 'lisp/9', 'modern/6'],
+      learn: ['lisp/9', 'lisp/11', 'modern/7'],
       teach: 'Activity: give a spreadsheet of made-up scores. Which operations are a map, which a filter, which a reduce?'
     },
     {
@@ -337,7 +337,7 @@
         { f: 'data', t: 'Machine-learning libraries work out derivatives automatically to train neural networks (automatic differentiation, a cousin of the symbolic differentiation in the Lisp course\'s project).' }
       ],
       jobs: ['Compiler engineer', 'Developer-tools engineer', 'Application security engineer'],
-      learn: ['lisp/1', 'lisp/10', 'lisp/11', 'math/9'],
+      learn: ['lisp/1', 'lisp/12', 'lisp/13', 'math/11'],
       teach: 'Discussion: a calculator app that runs whatever the user types as code works perfectly in a demo. Why is it dangerous on a website?'
     },
     {
@@ -350,7 +350,7 @@
         { f: 'swe', t: 'Testing every combination of settings explodes by the product rule: 10 on/off options make 2¹⁰ = 1,024 combinations, so testers choose a smaller set that still covers every pair of options (pairwise testing).' }
       ],
       jobs: ['Security analyst', 'Database developer', 'Data analyst', 'Test engineer'],
-      learn: ['math/2', 'math/11', 'modern/7'],
+      learn: ['math/2', 'math/13', 'modern/8'],
       teach: 'Hook: how many 4-digit phone PINs are there? How long would it take to try them all at one a second? What does a lockout after 10 tries change?'
     },
     {
@@ -363,7 +363,7 @@
         { f: 'swe', t: 'Programmers reason with loop invariants and assertions, the everyday form of proof, and some tools check them automatically.' }
       ],
       jobs: ['Verification engineer', 'Hardware engineer', 'Security researcher'],
-      learn: ['math/3', 'lisp/4', 'lisp/5'],
+      learn: ['math/3', 'lisp/4', 'lisp/6'],
       teach: 'Discussion: a program passed 1,000 tests. Is it correct? Use the courses\' example of a claim that holds for every number anyone has tried and still fails.'
     },
     {
@@ -377,7 +377,7 @@
         { f: 'sec', t: 'Simple substitution ciphers like Caesar\'s fall to letter counting (frequency analysis), a method described by the scholar al-Kindi in the 9th century.' }
       ],
       jobs: ['Cryptographer', 'Security engineer', 'Payments developer'],
-      learn: ['math/4', 'math/13', 'python/13', 'computer/10', 'cpp/11'],
+      learn: ['math/4', 'math/16', 'python/16', 'computer/10', 'cpp/13'],
       teach: 'Hook: check the last digit of an ISBN-10 from a book in the room (the instructions are short), or a test card number with the Luhn check. What kinds of typing mistake does it catch?'
     },
     {
@@ -392,7 +392,7 @@
         { f: 'web', t: 'Forms check what you type (a postal code, an email address) with regular expressions.' }
       ],
       jobs: ['Detection engineer', 'Protocol engineer', 'Compiler engineer', 'Embedded engineer'],
-      learn: ['math/6', 'math/7', 'math/8', 'shell/3'],
+      learn: ['math/7', 'math/8', 'math/9', 'shell/3'],
       teach: 'Activity: draw the states of a traffic light, or a turnstile (locked, unlocked; coin, push). What does each input do in each state?'
     },
     {
@@ -405,7 +405,7 @@
         { f: 'eng', t: 'Some safety-critical code follows rules such as "every loop has a fixed upper bound" and "no recursion" (NASA JPL\'s "Power of Ten"), in part so tools can check that it always finishes.' }
       ],
       jobs: ['Security researcher', 'Static-analysis developer', 'Programming-language designer'],
-      learn: ['math/9', 'math/10'],
+      learn: ['math/11', 'math/12'],
       teach: 'Discussion: a company sells "a program that finds every bug in your code". What should you ask them?'
     },
     {
@@ -418,7 +418,7 @@
         { f: 'data', t: 'Planning and scheduling problems in AI are often NP-hard, which is why they are solved by search with clever pruning.' }
       ],
       jobs: ['Operations-research analyst', 'Logistics software engineer', 'Cryptographer', 'Verification engineer'],
-      learn: ['math/12', 'math/11'],
+      learn: ['math/14', 'math/13'],
       teach: 'Hook: a Sudoku is quick to check and slow to solve. P versus NP is one of the Clay Mathematics Institute\'s seven Millennium Prize Problems, each with a one-million-dollar prize, and it is still open.'
     },
     {
