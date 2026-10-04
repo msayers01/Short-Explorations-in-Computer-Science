@@ -1,6 +1,6 @@
 /* Saving a person's work to a file and restoring it. Progress is kept only in the browser, so without this it is lost when the
    site's data is cleared, and cannot move to another computer. The file holds: exercise progress and the code that passed, the Code Lab's
-   files, the terminal's files, the review schedule (review.js), the portfolio settings, and (student side of teach.js) the student's name and the assignments they received. A teacher can also
+   files, the terminal's files, the Bot Arena's bots, the review schedule (review.js), the portfolio settings, and (student side of teach.js) the student's name and the assignments they received. A teacher can also
    include the teacher tools' data: assignments with their hidden tests, and the grade book. That is off unless asked for.
 
    A backup file is untrusted input, like a link: anyone can hand someone a file. parse() checks and rebuilds every part of it (types,
@@ -17,13 +17,16 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
   const FORMAT = 'short-explorations-backup', VERSION = 1, MAX_FILE = 8 * 1024 * 1024;
-  const KEYS = { progress: 'shortcourses.progress.v1', lab: 'shortcourses.lab.v1', portfolio: 'shortcourses.portfolio.v1', teach: 'shortcourses.teach.v1', shell: 'shortcourses.shell.v1', review: 'shortcourses.review.v1' };
+  const KEYS = { progress: 'shortcourses.progress.v1', lab: 'shortcourses.lab.v1', portfolio: 'shortcourses.portfolio.v1', teach: 'shortcourses.teach.v1', shell: 'shortcourses.shell.v1', review: 'shortcourses.review.v1', arena: 'shortcourses.arena.v1' };
   const LANGS = ['python', 'cpp', 'java', 'scheme'];
   const TEACH = () => (typeof window !== 'undefined' && window.TEACH) || null;
   // the terminal's file system: shell.js checks and caps everything it loads, so it is the sanitizer here (in node the module is required)
   const SHELL = () => (typeof window !== 'undefined' && window.SHELL) || (typeof require === 'function' ? require('./shell.js') : null);
   // the review schedule: review.js cleans it (ids, bounded numbers, no prototype)
   const REVIEW = () => (typeof window !== 'undefined' && window.REVIEW) || (typeof require === 'function' ? require('./review.js') : null);
+
+  // the Bot Arena's bots: tron.js checks a bot (language, size, name), so it is the sanitizer here (in node the module is required)
+  const TRON = () => (typeof window !== 'undefined' && window.TRON) || (typeof require === 'function' ? require('./tron.js') : null);
 
   // ---------- small, strict helpers: everything from a file or from storage goes through these ----------
   const isObj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
@@ -122,21 +125,42 @@
   }
 
   /** raw parts → clean parts. Only parts that are present come out. */
+  // Only the bots are kept (not the match setup): [{id, name, lang, source}], at most 60, ids as arena_run.js makes them.
+  function cleanArena(a) {
+    const T = TRON();
+    if (!isObj(a) || !T) return null;
+    const bots = [], seen = new Set();
+    for (const b of (Array.isArray(a.bots) ? a.bots : []).slice(0, 60)) {
+      if (!isObj(b) || typeof b.id !== 'string' || !/^[a-z0-9]{4,12}$/.test(b.id) || seen.has(b.id)) continue;
+      let c; try { c = T.cleanBot({ format: 'tronbot', version: 1, name: b.name, lang: b.lang, source: b.source }); } catch (e) { continue; }
+      seen.add(b.id); bots.push({ id: b.id, name: c.name, lang: c.lang, source: c.source, at: Number.isFinite(b.at) ? fin(b.at, 0, 1e15) : 0 });
+    }
+    return bots.length ? { v: 1, bots } : null;
+  }
+  const sameBot = (a, b) => a.name === b.name && a.lang === b.lang && a.source === b.source;
+  function mergeArena(mine, theirs) {   // the bots here stay; the others are added unless already here (same id, or the same bot under another id)
+    const bots = mine.bots.map((b) => Object.assign({}, b));
+    for (const b of theirs.bots) if (bots.length < 60 && !bots.some((m) => m.id === b.id || sameBot(m, b))) bots.push(Object.assign({}, b));
+    return { v: 1, bots };
+  }
+
   function sanitize(raw, withTeacher) {
     const out = {};
     if (isObj(raw.progress)) out.progress = cleanProgress(raw.progress);
     const lab = cleanLab(raw.lab); if (lab) out.lab = lab;
     const pf = cleanPortfolio(raw.portfolio); if (pf) out.portfolio = pf;
     const shl = cleanShell(raw.shell); if (shl) out.shell = shl;
+    const ar = cleanArena(raw.arena); if (ar) out.arena = ar;
     const th = cleanTeach(raw.teach, withTeacher); if (th) out.teach = th;
     if (isObj(raw.review) && REVIEW()) { const rv = REVIEW().clean(raw.review); if (keys(rv.items).length) out.review = rv; }
     return out;
   }
 
   function summarize(data) {
-    const s = { exercises: 0, programs: 0, portfolio: false, received: 0, assignments: 0, submissions: 0, hasTeacher: false, terminal: 0, reviews: 0 };
+    const s = { exercises: 0, programs: 0, portfolio: false, received: 0, assignments: 0, submissions: 0, hasTeacher: false, terminal: 0, reviews: 0, bots: 0 };
     if (data.progress) s.exercises = keys(data.progress.done).length;
     if (data.review) s.reviews = keys(data.review.items).length;
+    if (data.arena) s.bots = data.arena.bots.length;
     if (data.shell) { const S = SHELL(); if (S) s.terminal = S.makeFS(data.shell.fs).usage().files; }
     if (data.lab) s.programs = LANGS.reduce((n, l) => n + data.lab.files[l].filter((f) => !f.ex || f.code.trim()).length, 0);
     if (data.portfolio) s.portfolio = !!(data.portfolio.name || data.portfolio.note || data.portfolio.lab.length);
@@ -150,7 +174,7 @@
   // ---------- making and reading the file ----------
   function collect(storage, opts) {
     opts = opts || {};
-    const raw = { progress: read(storage, KEYS.progress), lab: read(storage, KEYS.lab), portfolio: read(storage, KEYS.portfolio), teach: read(storage, KEYS.teach), shell: read(storage, KEYS.shell), review: read(storage, KEYS.review) };
+    const raw = { progress: read(storage, KEYS.progress), lab: read(storage, KEYS.lab), portfolio: read(storage, KEYS.portfolio), teach: read(storage, KEYS.teach), shell: read(storage, KEYS.shell), review: read(storage, KEYS.review), arena: read(storage, KEYS.arena) };
     const data = sanitize(raw, !!opts.teacher);
     return { app: FORMAT, v: VERSION, saved: new Date().toISOString(), data };
   }
@@ -166,7 +190,7 @@
     if (!isObj(o.data)) throw new Error('This backup file has no saved work in it.');
     const data = sanitize(o.data, true);
     const summary = summarize(data);
-    if (!summary.exercises && !summary.programs && !summary.portfolio && !summary.received && !summary.assignments && !summary.submissions && !summary.terminal && !summary.reviews && !(data.progress && keys(data.progress.code).length)) throw new Error('This backup file is empty: there is no saved work in it.');
+    if (!summary.exercises && !summary.programs && !summary.portfolio && !summary.received && !summary.assignments && !summary.submissions && !summary.terminal && !summary.reviews && !summary.bots && !(data.progress && keys(data.progress.code).length)) throw new Error('This backup file is empty: there is no saved work in it.');
     return { saved: typeof o.saved === 'string' ? o.saved.slice(0, 40) : '', data, summary };
   }
 
@@ -221,6 +245,12 @@
     }
     if (data.portfolio) { const mine = cleanPortfolio(read(storage, KEYS.portfolio)); write(storage, KEYS.portfolio, merge && mine ? mergePortfolio(mine, data.portfolio) : data.portfolio); }
     if (data.review) { const mine = read(storage, KEYS.review); write(storage, KEYS.review, merge && mine ? REVIEW().merge(mine, data.review) : data.review); }
+    if (data.arena) {
+      const raw = read(storage, KEYS.arena) || {}, mine = cleanArena(raw), next = merge && mine ? mergeArena(mine, data.arena) : { v: 1, bots: data.arena.bots };
+      const out = Object.assign({}, raw, { v: 1, bots: next.bots });   // the match setup stays as it was
+      if (!out.bots.some((b) => b.id === out.current)) out.current = out.bots[0].id;
+      write(storage, KEYS.arena, out);
+    }
     if (data.shell) { const raw = read(storage, KEYS.shell), mine = cleanShell(raw); const next = merge && mine ? mergeShell(mine, data.shell) : data.shell; if (raw && Array.isArray(raw.history)) next.history = raw.history; write(storage, KEYS.shell, next); }
     if (data.teach) {
       const raw = read(storage, KEYS.teach) || {}, mine = cleanTeach(raw, true) || { studentName: '', received: dict() };
@@ -254,12 +284,12 @@
     const save = el('button', { class: 'btn', onclick: () => {
       const content = collect(storage, { teacher: !!(teacherRow && teacherChk.checked) });
       const s = summarize(content.data);
-      if (!s.exercises && !s.programs && !s.portfolio && !s.received && !s.assignments && !s.terminal && !s.reviews && !(content.data.progress && keys(content.data.progress.code).length)) { note('There is nothing saved on this device yet, so there is nothing to put in a file.'); return; }
+      if (!s.exercises && !s.programs && !s.portfolio && !s.received && !s.assignments && !s.terminal && !s.reviews && !s.bots && !(content.data.progress && keys(content.data.progress.code).length)) { note('There is nothing saved on this device yet, so there is nothing to put in a file.'); return; }
       const blob = new Blob([JSON.stringify(content, null, 1)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = el('a', { href: url, download: 'short-explorations-work-' + content.saved.slice(0, 10) + '.json' });
       document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
-      note('Saved: ' + s.exercises + ' completed exercise' + (s.exercises === 1 ? '' : 's') + ' and ' + s.programs + ' Code Lab program' + (s.programs === 1 ? '' : 's') + (s.terminal ? ', ' + s.terminal + ' terminal file' + (s.terminal === 1 ? '' : 's') : '') + (s.reviews ? ', ' + s.reviews + ' review question' + (s.reviews === 1 ? '' : 's') : '') + (s.hasTeacher ? ', and the teacher tools' : '') + '. Keep the file somewhere safe; it holds your code and your name.');
+      note('Saved: ' + s.exercises + ' completed exercise' + (s.exercises === 1 ? '' : 's') + ' and ' + s.programs + ' Code Lab program' + (s.programs === 1 ? '' : 's') + (s.terminal ? ', ' + s.terminal + ' terminal file' + (s.terminal === 1 ? '' : 's') : '') + (s.reviews ? ', ' + s.reviews + ' review question' + (s.reviews === 1 ? '' : 's') : '') + (s.bots ? ', ' + s.bots + ' arena bot' + (s.bots === 1 ? '' : 's') : '') + (s.hasTeacher ? ', and the teacher tools' : '') + '. Keep the file somewhere safe; it holds your code and your name.');
     } }, 'Save my work to a file');
     const restore = el('button', { class: 'btn', onclick: () => file.click() }, 'Restore from a file…');
 
@@ -275,6 +305,7 @@
       const items = [s.exercises + ' completed exercise' + (s.exercises === 1 ? '' : 's'), s.programs + ' Code Lab program' + (s.programs === 1 ? '' : 's')];
       if (s.terminal) items.push(s.terminal + ' terminal file' + (s.terminal === 1 ? '' : 's'));
       if (s.reviews) items.push(s.reviews + ' review question' + (s.reviews === 1 ? '' : 's'));
+      if (s.bots) items.push(s.bots + ' Bot Arena bot' + (s.bots === 1 ? '' : 's'));
       if (s.received) items.push(s.received + ' assignment' + (s.received === 1 ? '' : 's') + ' received');
       if (s.portfolio) items.push('portfolio settings');
       if (s.hasTeacher) items.push('teacher tools: ' + s.assignments + ' assignment' + (s.assignments === 1 ? '' : 's') + ', ' + s.submissions + ' submission' + (s.submissions === 1 ? '' : 's'));

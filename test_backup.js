@@ -156,5 +156,31 @@ check('broken storage does not throw', Object.keys(BACKUP.collect(broken, { teac
   check('review: hostile ids and values are dropped or bounded', Object.keys(ei).join() === 'python:ok1' && ei['python:ok1'].box === 4 && ei['python:ok1'].due === 0 && ei['python:ok1'].n === 0 && ei['python:ok1'].last === 1e15 && Object.getPrototypeOf(ei) === null, ei);
 }
 
+// ---- the Bot Arena's bots
+{
+  const bots = [{ id: 'abcd2345', name: 'Pat', lang: 'python', source: 'print("UP")', at: 5 }, { id: 'efgh6789', name: 'Sam', lang: 'scheme', source: '(display "UP")', at: 6 }];
+  const arena = { v: 1, bots, current: 'efgh6789', setup: { width: 30, players: 3 } };
+  const a1 = store({ 'shortcourses.arena.v1': J(arena), 'shortcourses.progress.v1': J(progress) });
+  const f = BACKUP.collect(a1, {});
+  check('arena bots are in the file, the match setup is not', f.data.arena && f.data.arena.bots.length === 2 && f.data.arena.bots[0].source === 'print("UP")' && !('setup' in f.data.arena) && !('current' in f.data.arena), f.data.arena);
+  const only = store({ 'shortcourses.arena.v1': J(arena) });
+  check('a device with only arena bots has something to save', BACKUP.collect(only, {}).data.arena.bots.length === 2 && BACKUP.parse(J(BACKUP.collect(only, {}))).summary.bots === 2);
+  const fresh = store({});
+  BACKUP.apply(fresh, BACKUP.parse(J(f)).data, 'replace');
+  check('restore puts the bots back, with a current bot that exists', fresh.dump('shortcourses.arena.v1').bots.length === 2 && fresh.dump('shortcourses.arena.v1').current === 'abcd2345');
+  const mine = store({ 'shortcourses.arena.v1': J({ v: 1, current: 'zzzz9999', setup: { width: 30 }, bots: [{ id: 'zzzz9999', name: 'Mine', lang: 'java', source: 'class Main {}' }, { id: 'qqqq1111', name: 'Pat', lang: 'python', source: 'print("UP")' }] }) });
+  BACKUP.apply(mine, BACKUP.parse(J(f)).data, 'merge');
+  const m = mine.dump('shortcourses.arena.v1');
+  check('merge keeps the bots here, adds the missing ones and skips a bot already here under another id', m.bots.map((b) => b.name).join() === 'Mine,Pat,Sam' && m.current === 'zzzz9999' && m.setup.width === 30, m);
+  const hostile = J({ app: 'short-explorations-backup', v: 1, saved: 'x', data: { arena: { bots: [
+    { id: '__proto__', name: 'x', lang: 'python', source: 'x' }, { id: 'abcd2345', name: 'ok', lang: 'python', source: 'print(1)' }, { id: 'abcd2345', name: 'dup', lang: 'python', source: 'print(2)' },
+    { id: 'bad id!', name: 'x', lang: 'python', source: 'x' }, { id: 'lang0001', name: 'x', lang: 'ruby', source: 'x' }, { id: 'src00001', name: 'x', lang: 'java', source: 'x'.repeat(30000) }, { id: 'nosrc001', name: 'x', lang: 'java', source: 5 },
+    { id: 'name0001', name: '\u0000' + 'n'.repeat(100), lang: 'cpp', source: 'a\r\nb', at: 'soon' }, 7, null] } } });
+  const hp = BACKUP.parse(hostile).data.arena.bots;
+  check('hostile arena bots: odd ids, languages, sizes and duplicates are dropped; names are cut', hp.map((b) => b.id).join() === 'abcd2345,name0001' && hp[1].name.length === 40 && hp[1].source === 'a\nb' && hp[1].at === 0 && hp[0].name === 'ok', hp);
+  const many = BACKUP.parse(J({ app: 'short-explorations-backup', v: 1, saved: 'x', data: { arena: { bots: Array.from({ length: 200 }, (_, i) => ({ id: 'bot' + String(i).padStart(5, '0'), name: 'b' + i, lang: 'python', source: 'x' })) } } })).data.arena.bots;
+  check('at most 60 arena bots are restored', many.length === 60);
+  check('a file whose arena part is junk adds nothing', ['nope', [], 5].every((junk) => { const o = J({ app: 'short-explorations-backup', v: 1, saved: 'x', data: { progress: { done: { 'py-1-1': 1 } }, arena: junk === 'nope' ? { bots: 'nope' } : junk } }); return !('arena' in BACKUP.parse(o).data); }));
+}
 if (bad) { console.log(bad + ' problems'); process.exit(1); }
 console.log('backup OK');
