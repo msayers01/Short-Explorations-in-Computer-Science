@@ -330,7 +330,11 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     if (!query) return null;
     const q = new URLSearchParams(query);
     if (!q.get('c')) return null;
-    try { return { lang: hasLang(q.get('l')) ? q.get('l') : 'python', code: b64d(q.get('c')), name: q.get('n') || '' }; } catch (e) { return null; }
+    try {
+      const code = b64d(q.get('c'));
+      if (code.length > 1000000) return null;   // the same limits as a restored backup (backup.js cleanLabFile)
+      return { lang: hasLang(q.get('l')) ? q.get('l') : 'python', code, name: (q.get('n') || '').slice(0, 100) };
+    } catch (e) { return null; }
   }
 
   /* ---------------- the editor ---------------- */
@@ -579,7 +583,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const { el, Runners, outputPanel, tipFor, armConfirm } = A();
     load();
     const shared = kind === 'assign' || kind === 'review' ? null : parseShare(query);
-    if (shared) { S.lang = shared.lang; const name = shared.name || ('shared' + LANG_INFO[S.lang].ext); const files = S.files[S.lang]; let idx = files.findIndex(f => f.name === name && f.code === shared.code); if (idx < 0) { files.push({ name: uniqueName(S.lang, name), code: shared.code }); idx = files.length - 1; } S.active[S.lang] = idx; save(); history.replaceState(null, '', '#/lab'); }
+    if (shared) { S.lang = shared.lang; const name = shared.name || ('shared' + LANG_INFO[S.lang].ext); const files = S.files[S.lang]; let idx = files.findIndex(f => f.name === name && f.code === shared.code); if (idx < 0 && files.length < 200) { files.push({ name: uniqueName(S.lang, name), code: shared.code }); idx = files.length - 1; } if (idx >= 0) S.active[S.lang] = idx; save(); history.replaceState(null, '', '#/lab'); }
     document.documentElement.setAttribute('data-course', LANG_INFO[S.lang].accent);
 
     const main = el('main', { class: 'lab' });

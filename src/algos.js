@@ -128,6 +128,7 @@
       el('nav', { class: 'algo-pager' }, prev ? el('a', { href: '#/algorithms/' + prev.id }, '← ' + prev.title) : el('span'), el('a', { href: '#/algorithms' }, 'All demonstrations'), next ? el('a', { href: '#/algorithms/' + next.id }, next.title + ' →') : el('span')));
     // mount once the page is in the document, so the canvas can measure itself
     requestAnimationFrame(() => {
+      if (!host.isConnected) return;   // the reader moved on before the first frame: nothing to start, nothing to clean up
       try { const stop = d.mount(host, api); stopCurrent = typeof stop === 'function' ? stop : null; }
       catch (e) { host.append(el('p', { class: 'algo-error' }, 'This demonstration could not start: ' + (e && e.message ? e.message : String(e)))); }
     });

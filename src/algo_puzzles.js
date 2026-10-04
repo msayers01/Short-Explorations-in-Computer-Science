@@ -376,7 +376,7 @@
       start: () => (function* () { for (;;) yield 1; })(),
       onStep: () => {
         const x = rnd(), y = rnd(), hit = x * x + y * y <= 1; n++; if (hit) inside++;
-        recent.push([x, y, hit]); if (recent.length > 4000) recent.splice(0, recent.length - 4000);
+        recent.push([x, y, hit]); if (recent.length > 4500) recent.splice(0, recent.length - 4000);
         if (n <= 100 || n % Math.ceil(n / 200) === 0) history.push([n, 4 * inside / n]);
         if (history.length > 600) history = history.filter((_, k) => k % 2 === 0);
         later();

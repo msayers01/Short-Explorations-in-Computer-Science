@@ -277,8 +277,9 @@
         typeof DecompressionStream === 'undefined' ? el('p', {}, 'This browser also cannot read compressed links. Open it in a current Chrome, Edge, Firefox or Safari.') : null));
       return;
     }
-    P.items = P.items.filter(it => it && typeof it.id === 'string');
-    P.lab = (Array.isArray(P.lab) ? P.lab : []).filter(f => f && typeof f.code === 'string' && (f.lang === 'python' || f.lang === 'cpp' || f.lang === 'java' || f.lang === 'scheme'));
+    const seen = new Set();   // one entry per exercise, and no more than a course holds: a long link must not freeze the teacher's tab
+    P.items = P.items.filter(it => it && typeof it.id === 'string' && !seen.has(it.id) && seen.add(it.id)).slice(0, 500);
+    P.lab = (Array.isArray(P.lab) ? P.lab : []).filter(f => f && typeof f.code === 'string' && (f.lang === 'python' || f.lang === 'cpp' || f.lang === 'java' || f.lang === 'scheme')).slice(0, 200);
     let doc;
     try { doc = renderDoc(P, { own: false }); }
     catch (e) { main.innerHTML = ''; main.append(el('header', { class: 'pf-intro' }, el('h1', {}, 'This portfolio link did not open'), el('p', { class: 'lead' }, 'The link opened, but its contents are not a portfolio this site can show.'))); return; }

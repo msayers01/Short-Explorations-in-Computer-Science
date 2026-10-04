@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xoDJZhMaily7Ql79Q8k//KIMpD4L8S2vU4hwcA2bRl4=' 'sha256-mw95Cs/PZ+I9hUjtSwZfp54KDoTG3tGejvkcacKi33o=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xoDJZhMaily7Ql79Q8k//KIMpD4L8S2vU4hwcA2bRl4=' 'sha256-QXc5vziazeBeEUW1Zq80W4NDuUhA8FwbFONu5v/qI9w=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -18656,8 +18656,9 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
     state.i = i; state.target = null; state.spot.classList.add('hidden'); state.card.classList.add('moving');
     if (location.hash !== step.route) { state.navigating = true; location.hash = step.route; await new Promise((r) => setTimeout(r, 50)); }
     const target = await waitFor(step.target, 4000);
+    if (!state) return;   // the tour was closed while the page loaded
     state.navigating = false;
-    if (!state || state.i !== i) return;
+    if (state.i !== i) return;
     if (!target) { if (step.optional) { go(i + dir); return; } render(step, null); return; }
     state.target = target;
     reveal(target, step);
@@ -21039,7 +21040,11 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     if (!query) return null;
     const q = new URLSearchParams(query);
     if (!q.get('c')) return null;
-    try { return { lang: hasLang(q.get('l')) ? q.get('l') : 'python', code: b64d(q.get('c')), name: q.get('n') || '' }; } catch (e) { return null; }
+    try {
+      const code = b64d(q.get('c'));
+      if (code.length > 1000000) return null;   // the same limits as a restored backup (backup.js cleanLabFile)
+      return { lang: hasLang(q.get('l')) ? q.get('l') : 'python', code, name: (q.get('n') || '').slice(0, 100) };
+    } catch (e) { return null; }
   }
 
   /* ---------------- the editor ---------------- */
@@ -21288,7 +21293,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const { el, Runners, outputPanel, tipFor, armConfirm } = A();
     load();
     const shared = kind === 'assign' || kind === 'review' ? null : parseShare(query);
-    if (shared) { S.lang = shared.lang; const name = shared.name || ('shared' + LANG_INFO[S.lang].ext); const files = S.files[S.lang]; let idx = files.findIndex(f => f.name === name && f.code === shared.code); if (idx < 0) { files.push({ name: uniqueName(S.lang, name), code: shared.code }); idx = files.length - 1; } S.active[S.lang] = idx; save(); history.replaceState(null, '', '#/lab'); }
+    if (shared) { S.lang = shared.lang; const name = shared.name || ('shared' + LANG_INFO[S.lang].ext); const files = S.files[S.lang]; let idx = files.findIndex(f => f.name === name && f.code === shared.code); if (idx < 0 && files.length < 200) { files.push({ name: uniqueName(S.lang, name), code: shared.code }); idx = files.length - 1; } if (idx >= 0) S.active[S.lang] = idx; save(); history.replaceState(null, '', '#/lab'); }
     document.documentElement.setAttribute('data-course', LANG_INFO[S.lang].accent);
 
     const main = el('main', { class: 'lab' });
@@ -22464,9 +22469,14 @@ window.GUIDE = (function () {
         if (kind === 'assign' && q.get('a')) {
           const a = normalize(await unpack(q.get('a'))); if (!a) throw new Error('not an assignment');
           for (const t of a.tests) t.hidden = false;   // a student link never carries hidden tests; do not trust one that claims to
-          T.received[a.id] = a; save();
-          ctx.openAssignmentFile(a);
-          ctx.status('assignment opened: ' + a.title);
+          const open = () => { T.received[a.id] = a; save(); ctx.openAssignmentFile(a); ctx.status('assignment opened: ' + a.title); };
+          const had = T.received[a.id];
+          if (had && JSON.stringify(had) !== JSON.stringify(a)) confirmLink('An assignment link was opened', [
+            '\u201c' + a.title + '\u201d has the same code as an assignment you already have, but its text or tests are different.',
+            'Continuing replaces the one on this device (' + (had.title ? '\u201c' + had.title + '\u201d' : 'untitled') + ').',
+            'Only continue if your teacher sent you this link.'
+          ], 'Replace it', open);
+          else open();
         } else if (kind === 'review' && q.get('s')) {
           const sub = cleanSub(await unpack(q.get('s')));
           const mine = T.assignments[sub.a], had = (T.book[sub.a] || {})[sub.name];
@@ -25128,8 +25138,9 @@ xs mapped kept result`;
         typeof DecompressionStream === 'undefined' ? el('p', {}, 'This browser also cannot read compressed links. Open it in a current Chrome, Edge, Firefox or Safari.') : null));
       return;
     }
-    P.items = P.items.filter(it => it && typeof it.id === 'string');
-    P.lab = (Array.isArray(P.lab) ? P.lab : []).filter(f => f && typeof f.code === 'string' && (f.lang === 'python' || f.lang === 'cpp' || f.lang === 'java' || f.lang === 'scheme'));
+    const seen = new Set();   // one entry per exercise, and no more than a course holds: a long link must not freeze the teacher's tab
+    P.items = P.items.filter(it => it && typeof it.id === 'string' && !seen.has(it.id) && seen.add(it.id)).slice(0, 500);
+    P.lab = (Array.isArray(P.lab) ? P.lab : []).filter(f => f && typeof f.code === 'string' && (f.lang === 'python' || f.lang === 'cpp' || f.lang === 'java' || f.lang === 'scheme')).slice(0, 200);
     let doc;
     try { doc = renderDoc(P, { own: false }); }
     catch (e) { main.innerHTML = ''; main.append(el('header', { class: 'pf-intro' }, el('h1', {}, 'This portfolio link did not open'), el('p', { class: 'lead' }, 'The link opened, but its contents are not a portfolio this site can show.'))); return; }
@@ -25897,6 +25908,7 @@ xs mapped kept result`;
       el('nav', { class: 'algo-pager' }, prev ? el('a', { href: '#/algorithms/' + prev.id }, '← ' + prev.title) : el('span'), el('a', { href: '#/algorithms' }, 'All demonstrations'), next ? el('a', { href: '#/algorithms/' + next.id }, next.title + ' →') : el('span')));
     // mount once the page is in the document, so the canvas can measure itself
     requestAnimationFrame(() => {
+      if (!host.isConnected) return;   // the reader moved on before the first frame: nothing to start, nothing to clean up
       try { const stop = d.mount(host, api); stopCurrent = typeof stop === 'function' ? stop : null; }
       catch (e) { host.append(el('p', { class: 'algo-error' }, 'This demonstration could not start: ' + (e && e.message ? e.message : String(e)))); }
     });
@@ -29967,7 +29979,7 @@ xs mapped kept result`;
       start: () => (function* () { for (;;) yield 1; })(),
       onStep: () => {
         const x = rnd(), y = rnd(), hit = x * x + y * y <= 1; n++; if (hit) inside++;
-        recent.push([x, y, hit]); if (recent.length > 4000) recent.splice(0, recent.length - 4000);
+        recent.push([x, y, hit]); if (recent.length > 4500) recent.splice(0, recent.length - 4000);
         if (n <= 100 || n % Math.ceil(n / 200) === 0) history.push([n, 4 * inside / n]);
         if (history.length > 600) history = history.filter((_, k) => k % 2 === 0);
         later();

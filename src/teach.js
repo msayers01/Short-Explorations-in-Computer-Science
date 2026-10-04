@@ -268,9 +268,14 @@
         if (kind === 'assign' && q.get('a')) {
           const a = normalize(await unpack(q.get('a'))); if (!a) throw new Error('not an assignment');
           for (const t of a.tests) t.hidden = false;   // a student link never carries hidden tests; do not trust one that claims to
-          T.received[a.id] = a; save();
-          ctx.openAssignmentFile(a);
-          ctx.status('assignment opened: ' + a.title);
+          const open = () => { T.received[a.id] = a; save(); ctx.openAssignmentFile(a); ctx.status('assignment opened: ' + a.title); };
+          const had = T.received[a.id];
+          if (had && JSON.stringify(had) !== JSON.stringify(a)) confirmLink('An assignment link was opened', [
+            '\u201c' + a.title + '\u201d has the same code as an assignment you already have, but its text or tests are different.',
+            'Continuing replaces the one on this device (' + (had.title ? '\u201c' + had.title + '\u201d' : 'untitled') + ').',
+            'Only continue if your teacher sent you this link.'
+          ], 'Replace it', open);
+          else open();
         } else if (kind === 'review' && q.get('s')) {
           const sub = cleanSub(await unpack(q.get('s')));
           const mine = T.assignments[sub.a], had = (T.book[sub.a] || {})[sub.name];
