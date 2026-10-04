@@ -489,6 +489,20 @@
     def('write', ([x]) => { out(write(x, false)); return UNSPEC; }, 1, 2);
     def('newline', () => { out('\n'); return UNSPEC; }, 0, 1);
     def('write-line', ([x]) => { out(write(x, false) + '\n'); return UNSPEC; }, 1, 2);
+    // Standard input, for programs that are handed text (the Bot Arena): opts.stdin is a string. read-line gives the rest of the current line,
+    // read the next number, word or string (like MIT Scheme, read leaves the rest of its line, so a read-line straight after it gives ""). Both give (eof-object) at the end.
+    const stdin = typeof opts.stdin === 'string' ? opts.stdin : ''; let inPos = 0;
+    const EOF = { toString() { return '#[eof]'; } };
+    def('eof-object', () => EOF, 0, 0); def('eof-object?', ([x]) => x === EOF, 1, 1);
+    def('read-line', () => { if (inPos >= stdin.length) return EOF; const j = stdin.indexOf('\n', inPos), line = stdin.slice(inPos, j < 0 ? stdin.length : j); inPos = j < 0 ? stdin.length : j + 1; return line; }, 0, 1);
+    def('read', () => {
+      while (inPos < stdin.length && /\s/.test(stdin[inPos])) inPos++;
+      if (inPos >= stdin.length) return EOF;
+      const m = /^(?:"(?:[^"\\]|\\.)*"|[^\s()"]+)/.exec(stdin.slice(inPos));
+      if (!m) throw new SchemeError('read: cannot read this input here (it reads one number, word or string)');
+      inPos += m[0].length;
+      return parseAll(m[0])[0];
+    }, 0, 1);
     def('error', (a) => { throw new SchemeError(a.map((x, i) => write(x, i === 0)).join(' ')); }, 1);
     def('number->string', ([n, radix]) => radix && radix !== 10 && (typeof num(n, 'number->string') === 'bigint' || Number.isInteger(n)) ? n.toString(radix) : fmtNum(num(n, 'number->string')), 1, 2);
     def('string->number', ([s, radix]) => {

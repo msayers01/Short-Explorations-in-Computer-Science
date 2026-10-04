@@ -203,7 +203,7 @@
     scheme: {
       run(code, opts) {
         opts = opts || {};
-        const r = Scheme.runProgram(code, { onOutput: opts.onOutput });
+        const r = Scheme.runProgram(code, { onOutput: opts.onOutput, stdin: opts.stdin, stepLimit: opts.stepLimit });   // stdin and stepLimit: the Bot Arena feeds a bot its board and bounds its time
         return Promise.resolve(r);
       }
     },
@@ -1047,6 +1047,7 @@
         el('a', { href: '#/courses', class: 'courses-link' + (course === 'courses' || (course && course.id) ? ' current' : '') }, 'Courses'),
         window.ALGOS ? el('a', { href: '#/algorithms', class: 'algos-link' + (course === 'algorithms' ? ' current' : '') }, 'Algorithms') : null,
         window.APPLIED ? el('a', { href: '#/real-world', class: 'applied-link' + (course === 'applied' ? ' current' : '') }, 'Real world') : null,
+        window.ARENA && window.ARENA.page ? el('a', { href: '#/arena', class: 'arena-link-top' + (course === 'arena' ? ' current' : '') }, 'Arena') : null,   // write a bot that plays Tron (src/arena.js)
         el('a', { href: '#/lab', class: 'lab-link' + (course === 'lab' ? ' current' : '') }, 'Code Lab'),
         window.REVIEW ? window.REVIEW.topLink(course === 'today') : null),   // appears once there is something to review (src/review.js)
       el('div', { class: 'top-tools' },   // the three small controls sit close together so the links keep their room
@@ -1240,6 +1241,7 @@
     if (parts[0] === 'today' && window.REVIEW) { document.documentElement.setAttribute('data-course', ''); document.title = 'Today\u2019s review — ' + SITE.name; app.append(topBar('today'), window.REVIEW.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'courses') { document.documentElement.setAttribute('data-course', ''); document.title = 'Courses — ' + SITE.name; app.append(topBar('courses'), coursesPage()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'algorithms' && window.ALGOS) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('algorithms'), window.ALGOS.page(parts[1])); window.scrollTo(0, 0); return; }
+    if (parts[0] === 'arena' && window.ARENA && window.ARENA.page) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('arena'), window.ARENA.page(parts[1], query)); window.scrollTo(0, 0); return; }
     if (parts[0] === 'real-world' && window.APPLIED) { document.documentElement.setAttribute('data-course', ''); document.title = 'Where it is used — ' + SITE.name; app.append(topBar('applied'), window.APPLIED.page(parts[1])); if (parts[1]) { const t = document.getElementById(parts[1]); if (t && t.scrollIntoView) { t.scrollIntoView(); return; } } window.scrollTo(0, 0); return; }
     if ((parts[0] === 'lab' || parts[0] === 'assign' || parts[0] === 'review') && window.LAB) { document.title = 'Code Lab — ' + SITE.name; app.append(topBar('lab'), window.LAB.page(query, parts[0])); window.scrollTo(0, 0); return; }
     let course = parts[0] ? courseById(parts[0]) : null;

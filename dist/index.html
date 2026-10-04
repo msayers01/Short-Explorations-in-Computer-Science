@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xoDJZhMaily7Ql79Q8k//KIMpD4L8S2vU4hwcA2bRl4=' 'sha256-fSpEsCaSLioOvQTEv/M+Z8GWbkMC2ge5ikqPU2h6q9s=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xoDJZhMaily7Ql79Q8k//KIMpD4L8S2vU4hwcA2bRl4=' 'sha256-ceqLonkd7ZcjW4aRFKtmpMOQfvDQ9lSH0wSWlVEbJbA=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -1170,6 +1170,67 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .algo-error { color: var(--err); }
 @media (max-width: 560px) { .algos-head h1, .algo-one h1, .courses-head h1 { font-size: 1.9rem; } .algo-status { margin-left: 0; width: 100%; } }
 
+/* ---------- Bot Arena (src/arena.js, arena_view.js, arena_run.js) */
+.arena { max-width: 74rem; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+.arena h2 { font-size: 1.35rem; margin: 1.6rem 0 0.6rem; } .arena h3 { font-size: 1.05rem; margin: 1.1rem 0 0.4rem; }
+.arena .lede { font-size: 1.1rem; color: var(--ink-2); max-width: 46rem; }
+.arena-subnav { margin: 0.6rem 0 0; font-family: var(--sans); }
+.arena-how { margin: 1rem 0; font-family: var(--sans); font-size: 0.95rem; }
+.arena-how summary, .arena-teacher summary, .arena-pastebox summary { cursor: pointer; color: var(--ink-2); }
+.arena-sample { background: var(--code-bg); padding: 0.7rem 0.9rem; border-radius: 3px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; }
+.arena-setup { border: 1px solid var(--rule); border-radius: 4px; padding: 0.4rem 1rem; margin: 1rem 0 1.4rem; background: var(--paper); }
+.arena-slots { display: flex; flex-wrap: wrap; gap: 0.5rem 1.2rem; }
+.arena-slot, .arena-field { font-family: var(--sans); font-size: 0.92rem; color: var(--ink-2); display: inline-flex; align-items: center; gap: 0.4rem; }
+.arena-opts { gap: 0.5rem 1.4rem; }
+.arena select, .arena input[type=number], .arena input[type=text], .arena textarea { font: inherit; font-family: var(--sans); font-size: 0.92rem; color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 3px; padding: 0.3rem 0.45rem; max-width: 100%; }
+.arena input[type=number] { width: 4.2rem; } .arena-seed { width: 8rem; } .arena-name { width: 14rem; }
+.arena-dot { display: inline-block; width: 0.85rem; height: 0.85rem; border-radius: 2px; margin-right: 0.35rem; vertical-align: -0.1em; }
+.arena-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.6rem; align-items: start; }
+@media (max-width: 960px) { .arena-cols { grid-template-columns: minmax(0, 1fr); } }
+.arena-pane { min-width: 0; }
+.arena-editor .editor { max-height: 34rem; overflow: auto; }
+.arena-botsel { max-width: 16rem; }
+.arena-panenote { font-family: var(--sans); font-size: 0.9rem; margin: 0.5rem 0; min-height: 1.2em; color: var(--ink-2); } .arena-panenote.err, .arena-incoming.err { color: var(--err); }
+.arena-swap { font-family: var(--sans); font-size: 0.9rem; background: var(--paper-2); border: 1px solid var(--rule); padding: 0.5rem 0.7rem; margin: 0.4rem 0; border-radius: 3px; }
+.arena-paste { width: 100%; box-sizing: border-box; font-family: var(--mono); font-size: 0.8rem; }
+.arena-linkbox { margin: 0.4rem 0; } .arena-link { flex: 1 1 18rem; min-width: 0; font-family: var(--mono); font-size: 0.8rem; } .arena-warn { color: var(--warn); }
+.arena-incoming { border: 1px solid var(--accent); background: var(--accent-soft); padding: 0.6rem 1rem; border-radius: 4px; font-family: var(--sans); margin: 1rem 0; }
+.arena-peek { max-height: 12rem; overflow: auto; background: var(--code-bg); padding: 0.5rem 0.7rem; font-size: 0.8rem; border-radius: 3px; }
+.arena-status { font-family: var(--sans); font-size: 0.92rem; color: var(--ink-2); }
+.arena-viewer { max-width: 100%; }
+.arena-legend { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; font-family: var(--sans); font-size: 0.9rem; margin-bottom: 0.5rem; min-height: 1.3rem; }
+.arena-chip i { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 2px; margin-right: 0.3rem; vertical-align: -0.1em; } .arena-chip b { margin-right: 0.25rem; } .arena-chip small { color: var(--ink-3); } .arena-chip.is-out { opacity: 0.6; text-decoration: line-through; text-decoration-thickness: 1px; }
+.arena-board { line-height: 0; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; background: var(--paper-2); display: inline-block; max-width: 100%; }
+.arena-canvas { display: block; max-width: 100%; }
+.arena-scrub { width: 100%; margin: 0.5rem 0 0; accent-color: var(--accent); box-sizing: border-box; }
+.arena-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; margin: 0.5rem 0; font-family: var(--sans); font-size: 0.92rem; }
+.arena-turn { margin-left: auto; color: var(--ink-2); font-variant-numeric: tabular-nums; } .arena-speed { min-width: 5.5rem; }
+.arena-hover { display: block; font-family: var(--mono); font-size: 0.82rem; color: var(--ink-3); min-height: 1.3em; }
+.arena-banner { font-family: var(--sans); border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 0.6rem 0.9rem; margin: 0.6rem 0; border-radius: 0 3px 3px 0; } .arena-banner-line { font-size: 0.92rem; color: var(--ink-2); margin-top: 0.15rem; }
+.arena-matchtools { font-family: var(--sans); }
+.arena-logs { margin-top: 1rem; }
+.arena-tabs { display: flex; flex-wrap: wrap; gap: 0.25rem; } .arena-tab { font-family: var(--sans); font-size: 0.85rem; padding: 0.25rem 0.7rem; border: 1px solid var(--rule); background: var(--paper); color: var(--ink-2); border-radius: 3px 3px 0 0; cursor: pointer; } .arena-tab[aria-selected=true] { border-color: var(--accent); color: var(--ink); border-bottom-color: var(--paper); background: var(--accent-soft); }
+.arena-showinput { margin-left: auto; font-family: var(--sans); }
+.arena-log { background: var(--code-bg); border: 1px solid var(--rule); border-radius: 3px; padding: 0.6rem 0.8rem; margin: 0 0 0.6rem; font-size: 0.82rem; line-height: 1.45; max-height: 16rem; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+.arena-input { max-height: 22rem; font-size: 0.75rem; line-height: 1.2; white-space: pre; word-break: normal; }
+.arena-inputhead { font-family: var(--sans); margin: 0.3rem 0; }
+.arena-series { margin-top: 1rem; font-family: var(--sans); } .arena-wins { font-size: 1rem; }
+.arena-table { border-collapse: collapse; font-family: var(--sans); font-size: 0.95rem; margin: 0.4rem 0; } .arena-table th, .arena-table td { border: 1px solid var(--rule); padding: 0.3rem 0.7rem; text-align: left; } .arena-table th { background: var(--paper-2); font-weight: 600; } .arena-table td:not(:nth-child(2)) { font-variant-numeric: tabular-nums; }
+.arena-sortbtn { font: inherit; font-weight: 600; background: none; border: 0; padding: 0; color: inherit; cursor: pointer; text-align: left; } .arena-sortbtn:hover { text-decoration: underline; }
+.arena-scroll { overflow-x: auto; max-width: 100%; }
+.arena-grid { border-collapse: collapse; font-family: var(--sans); } .arena-grid th, .arena-grid td { border: 1px solid var(--rule-2); padding: 0.15rem 0.3rem; white-space: nowrap; text-align: center; } .arena-rowhead { text-align: left !important; font-weight: 400; } .arena-self { background: var(--paper-2); color: var(--ink-3); }
+.arena-cell { font: inherit; font-size: 0.8rem; width: 1.5rem; height: 1.5rem; margin: 1px; border: 1px solid var(--rule); border-radius: 3px; cursor: pointer; background: var(--paper); color: var(--ink); padding: 0; } .arena-cell.W { background: var(--ok-soft); color: var(--ok); border-color: var(--ok); } .arena-cell.L { background: var(--err-soft); color: var(--err); border-color: var(--err); } .arena-cell:hover { filter: brightness(0.95); }
+.arena-entries { list-style: none; padding: 0; margin: 0 0 0.6rem; display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; font-family: var(--sans); } .arena-entries li { display: inline-flex; gap: 0.4rem; align-items: center; }
+.arena-saved { display: flex; flex-wrap: wrap; gap: 0.3rem 1.1rem; align-items: center; font-family: var(--sans); margin-bottom: 0.6rem; } .arena-check { display: inline-flex; gap: 0.3rem; align-items: center; }
+.arena-drop { border: 2px dashed var(--rule); border-radius: 4px; padding: 1rem; text-align: center; font-family: var(--sans); margin: 0.4rem 0 0.6rem; } .arena-drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.arena progress { width: 14rem; accent-color: var(--accent); }
+.arena-projector { position: fixed; inset: 0; z-index: 1000; background: var(--paper); color: var(--ink); display: flex; flex-direction: column; padding: 0.8rem 1.4rem 1rem; overflow: auto; }
+.proj-bar { display: flex; gap: 0.5rem; align-items: center; font-family: var(--sans); } .proj-bar .spacer { flex: 1; } .proj-count { font-size: 1.1rem; color: var(--ink-2); }
+.proj-main { flex: 1; display: grid; grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr); gap: 2rem; margin-top: 0.6rem; min-height: 0; } @media (max-width: 800px) { .proj-main { grid-template-columns: minmax(0, 1fr); } }
+.proj-title { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.2rem; font-family: var(--serif); font-size: 2.2rem; margin-bottom: 0.6rem; } .proj-vs { font-size: 1.3rem; color: var(--ink-3); font-family: var(--sans); }
+.proj-stand h2 { font-size: 1.5rem; margin: 0 0 0.6rem; } .proj-stand ol { margin: 0; padding-left: 2rem; font-family: var(--sans); font-size: 1.5rem; line-height: 1.5; } .proj-stand li { padding-left: 0.3rem; } .proj-name { display: inline-block; min-width: 10rem; } .proj-pts { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.arena-viewer.big .arena-legend { font-size: 1.15rem; } .arena-viewer.big .arena-banner { font-size: 1.3rem; } .arena-viewer.big .arena-controls { font-size: 1rem; }
+
 /* ---------- pictures in lessons (app.js: photoBlock; img/ and scripts/fetch-image.js) */
 .photo { margin: 0; }
 .photo-row { display: flex; gap: 0.6rem; align-items: flex-start; }
@@ -2120,6 +2181,20 @@ window.BUILD = {"date":"2026-10-04","thirdParty":[{"name":"Skulpt","version":"1.
     def('write', ([x]) => { out(write(x, false)); return UNSPEC; }, 1, 2);
     def('newline', () => { out('\n'); return UNSPEC; }, 0, 1);
     def('write-line', ([x]) => { out(write(x, false) + '\n'); return UNSPEC; }, 1, 2);
+    // Standard input, for programs that are handed text (the Bot Arena): opts.stdin is a string. read-line gives the rest of the current line,
+    // read the next number, word or string (like MIT Scheme, read leaves the rest of its line, so a read-line straight after it gives ""). Both give (eof-object) at the end.
+    const stdin = typeof opts.stdin === 'string' ? opts.stdin : ''; let inPos = 0;
+    const EOF = { toString() { return '#[eof]'; } };
+    def('eof-object', () => EOF, 0, 0); def('eof-object?', ([x]) => x === EOF, 1, 1);
+    def('read-line', () => { if (inPos >= stdin.length) return EOF; const j = stdin.indexOf('\n', inPos), line = stdin.slice(inPos, j < 0 ? stdin.length : j); inPos = j < 0 ? stdin.length : j + 1; return line; }, 0, 1);
+    def('read', () => {
+      while (inPos < stdin.length && /\s/.test(stdin[inPos])) inPos++;
+      if (inPos >= stdin.length) return EOF;
+      const m = /^(?:"(?:[^"\\]|\\.)*"|[^\s()"]+)/.exec(stdin.slice(inPos));
+      if (!m) throw new SchemeError('read: cannot read this input here (it reads one number, word or string)');
+      inPos += m[0].length;
+      return parseAll(m[0])[0];
+    }, 0, 1);
     def('error', (a) => { throw new SchemeError(a.map((x, i) => write(x, i === 0)).join(' ')); }, 1);
     def('number->string', ([n, radix]) => radix && radix !== 10 && (typeof num(n, 'number->string') === 'bigint' || Number.isInteger(n)) ? n.toString(radix) : fmtNum(num(n, 'number->string')), 1, 2);
     def('string->number', ([s, radix]) => {
@@ -17063,8 +17138,8 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
 
    window.PYRUN.run(code, {stdin, execLimit, turtle:{mount,width,height}, onOutput, onInput}) → Promise<{out, err}>
    window.PYRUN.trace(code, {…, onStep}) → {done, next(), finish(), stop()}        window.PYRUN.cancel()
-   window.CPPRUN.run(code, {stdin, onOutput}) → Promise<{out, err}>      window.CPPRUN.trace(code, stdin) → Promise<{trace, err}>
-   window.JAVARUN.run(code, {stdin, onOutput}) → Promise<{out, err}>     (the site's own Java interpreter, src/java.js)
+   window.CPPRUN.run(code, {stdin, onOutput, maxMs}) → Promise<{out, err}>      window.CPPRUN.trace(code, stdin) → Promise<{trace, err}>
+   window.JAVARUN.run(code, {stdin, onOutput, maxMs}) → Promise<{out, err}>     (the site's own Java interpreter, src/java.js)
    window.CLANGRUN.run(code, {stdin, std, onOutput, onNote}) → Promise<{out, err, exit, notes}>   (real C++; see below: downloaded on demand)
    window.CLANGRUN.runMany(code, [stdin…]) → Promise<{err, parts:[{out, all, err, exit}]}>        compile once, run once for each input
    window.CPPRUN.check(code), window.JAVARUN.check(code), window.CLANGRUN.compile(code, {std}) → Promise<{err}>   compile only (the terminal's g++ and javac) */
@@ -17280,12 +17355,13 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
     cancel: () => py.cancel()
   };
   window.JAVARUN = {
-    run: (code, opts) => { opts = opts || {}; return java.run({ t: 'run', totalMs: 8000, idleMs: 8000, opts, payload: { code: String(code), stdin: opts.stdin == null ? '' : String(opts.stdin), maxTimeout: 5000 } }); },
+    // opts.maxMs: the program's time limit (the Bot Arena gives a bot a few hundred milliseconds a move); the page waits 3 seconds longer before it ends the worker itself
+    run: (code, opts) => { opts = opts || {}; const ms = opts.maxMs || 5000; return java.run({ t: 'run', totalMs: ms + 3000, idleMs: ms + 3000, opts, payload: { code: String(code), stdin: opts.stdin == null ? '' : String(opts.stdin), maxTimeout: ms } }); },
     check: (code) => java.run({ t: 'run', totalMs: 8000, idleMs: 8000, opts: {}, payload: { code: String(code), stdin: '', maxTimeout: 5000, checkOnly: true } }),
     cancel: () => java.cancel()
   };
   window.CPPRUN = {
-    run: (code, opts) => { opts = opts || {}; return cpp.run({ t: 'run', totalMs: 7000, idleMs: 7000, opts, payload: { code: String(code), stdin: opts.stdin == null ? '' : String(opts.stdin), maxTimeout: 4000 } }); },
+    run: (code, opts) => { opts = opts || {}; const ms = opts.maxMs || 4000; return cpp.run({ t: 'run', totalMs: ms + 3000, idleMs: ms + 3000, opts, payload: { code: String(code), stdin: opts.stdin == null ? '' : String(opts.stdin), maxTimeout: ms } }); },
     trace: (code, stdin, opts) => { opts = opts || {}; return cpp.run({ t: 'trace', totalMs: 9000, idleMs: 9000, opts, payload: { code: String(code), stdin: String(stdin || ''), maxSteps: opts.maxSteps || 1500 } }); },
     check: (code) => cpp.run({ t: 'check', totalMs: 7000, idleMs: 7000, opts: {}, payload: { code: String(code), maxTimeout: 4000 } }),
     cancel: () => cpp.cancel()
@@ -17546,7 +17622,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
     scheme: {
       run(code, opts) {
         opts = opts || {};
-        const r = Scheme.runProgram(code, { onOutput: opts.onOutput });
+        const r = Scheme.runProgram(code, { onOutput: opts.onOutput, stdin: opts.stdin, stepLimit: opts.stepLimit });   // stdin and stepLimit: the Bot Arena feeds a bot its board and bounds its time
         return Promise.resolve(r);
       }
     },
@@ -18390,6 +18466,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
         el('a', { href: '#/courses', class: 'courses-link' + (course === 'courses' || (course && course.id) ? ' current' : '') }, 'Courses'),
         window.ALGOS ? el('a', { href: '#/algorithms', class: 'algos-link' + (course === 'algorithms' ? ' current' : '') }, 'Algorithms') : null,
         window.APPLIED ? el('a', { href: '#/real-world', class: 'applied-link' + (course === 'applied' ? ' current' : '') }, 'Real world') : null,
+        window.ARENA && window.ARENA.page ? el('a', { href: '#/arena', class: 'arena-link-top' + (course === 'arena' ? ' current' : '') }, 'Arena') : null,   // write a bot that plays Tron (src/arena.js)
         el('a', { href: '#/lab', class: 'lab-link' + (course === 'lab' ? ' current' : '') }, 'Code Lab'),
         window.REVIEW ? window.REVIEW.topLink(course === 'today') : null),   // appears once there is something to review (src/review.js)
       el('div', { class: 'top-tools' },   // the three small controls sit close together so the links keep their room
@@ -18583,6 +18660,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
     if (parts[0] === 'today' && window.REVIEW) { document.documentElement.setAttribute('data-course', ''); document.title = 'Today\u2019s review — ' + SITE.name; app.append(topBar('today'), window.REVIEW.page()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'courses') { document.documentElement.setAttribute('data-course', ''); document.title = 'Courses — ' + SITE.name; app.append(topBar('courses'), coursesPage()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'algorithms' && window.ALGOS) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('algorithms'), window.ALGOS.page(parts[1])); window.scrollTo(0, 0); return; }
+    if (parts[0] === 'arena' && window.ARENA && window.ARENA.page) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('arena'), window.ARENA.page(parts[1], query)); window.scrollTo(0, 0); return; }
     if (parts[0] === 'real-world' && window.APPLIED) { document.documentElement.setAttribute('data-course', ''); document.title = 'Where it is used — ' + SITE.name; app.append(topBar('applied'), window.APPLIED.page(parts[1])); if (parts[1]) { const t = document.getElementById(parts[1]); if (t && t.scrollIntoView) { t.scrollIntoView(); return; } } window.scrollTo(0, 0); return; }
     if ((parts[0] === 'lab' || parts[0] === 'assign' || parts[0] === 'review') && window.LAB) { document.title = 'Code Lab — ' + SITE.name; app.append(topBar('lab'), window.LAB.page(query, parts[0])); window.scrollTo(0, 0); return; }
     let course = parts[0] ? courseById(parts[0]) : null;
@@ -18612,7 +18690,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
   const STEPS = [
     { route: '#/', target: '.hero', title: 'Welcome', text: 'Everything on this site runs in your browser: nothing to install, no account, nothing sent anywhere. Your progress is saved on this device. This tour takes two minutes; press Esc to leave it at any time.' },
     { route: '#/', target: '.catalog li', title: 'The courses', text: 'The courses come in three groups: start here, programming languages, and computer science. SC 099 is for anyone who has never programmed; SC 100 follows Scratch; SC 101 is the usual start. Each card says how many lessons and graded exercises the course has, and how many you have completed.' },
-    { route: '#/', target: '.top-links', title: 'The top bar', text: 'From any page: Courses lists every course by group, with a search box; Algorithms shows searching, sorting, mazes, game search and puzzles in motion, with races to bet on; Real world says where each idea is used in software, security and engineering; and the Code Lab. Once you have answered a few quick checks, Review appears too, with the number of questions due today. The circle at the right switches between light and dark.', place: 'bottom' },
+    { route: '#/', target: '.top-links', title: 'The top bar', text: 'From any page: Courses lists every course by group, with a search box; Algorithms shows searching, sorting, mazes, game search and puzzles in motion, with races to bet on; Real world says where each idea is used in software, security and engineering; Arena is where you write a bot that plays Tron against other bots; and the Code Lab. Once you have answered a few quick checks, Review appears too, with the number of questions due today. The circle at the right switches between light and dark.', place: 'bottom' },
     { route: '#/', target: '.backup', title: 'Your work', text: 'Exercises you pass and programs you write stay on this device. Save them to a file here to keep them safe or carry them to another computer, and restore them from the file later.', optional: true },
     { route: '#/python/1', target: '.lesson-map', title: 'Inside a lesson', text: 'Every lesson has the same parts: a short true story, numbered sections, runnable examples, quick checks, graded exercises and a recap. This map jumps to any of them, and the list on the side follows you as you read.' },
     { route: '#/python/1', target: '.blk-play', title: 'Examples run here', text: 'Press Run and the program runs in the page. Change something and run again; Reset puts it back. Open in Code Lab copies it into your own workspace.', place: 'top' },
@@ -25781,6 +25859,1688 @@ xs mapped kept result`;
   function jump(id) { return (e) => { e.preventDefault(); const t = document.getElementById(id); if (t && t.scrollIntoView) { t.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); t.setAttribute('tabindex', '-1'); t.focus({ preventScroll: true }); } }; }
 
   window.ABOUT = { page };
+})();
+
+;
+/* src/tron.js */
+/* Bot Arena, the game side: Tron, its referee, the built-in bots, replays, bot files, round-robin tournaments, CSV and zip.
+   Nothing here touches the page, so test_arena.js runs all of it in node. Exposed as window.TRON (browser) or module.exports (node).
+
+   The protocol bots speak (see ARCHITECTURE §9j): a bot is a program that reads ONE turn on stdin and prints ONE move.
+     width height / you alive / x y player (one line per player still alive) / height lines of width characters: . empty, # wall, 1-4 a head
+   The move is UP, DOWN, LEFT or RIGHT. The referee runs the bot afresh every turn ("restart mode"), so a bot keeps no memory between turns.
+
+   Everything random uses the seeded generator below, so a seed plus the moves reproduces a match exactly (that is what a replay is).
+   Everything that arrives from a link or a file (a replay, a bot) is sanitised here before anything else sees it. */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.TRON = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  const MOVES = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
+  const DELTA = { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] };
+  const LETTER = { UP: 'U', DOWN: 'D', LEFT: 'L', RIGHT: 'R' };
+  const FROM_LETTER = { U: 'UP', D: 'DOWN', L: 'LEFT', R: 'RIGHT' };
+  const LANGS = ['python', 'cpp', 'java', 'scheme'];
+  const LIMITS = { minSize: 10, maxSize: 40, minPlayers: 2, maxPlayers: 4, minTime: 50, maxTime: 10000, maxName: 40, maxSource: 20000, maxPlayerName: 40 };
+  const DEFAULTS = { width: 20, height: 20, players: 2, timeMs: 0, invalid: 'up' };
+  /** The time a bot gets per move when the match says 0 ("by language"): the teaching C++ interpreter is the slow one. */
+  const LANG_TIME = { python: 500, java: 500, scheme: 500, cpp: 2000, js: 500 };
+  const limitFor = (lang, timeMs) => timeMs || LANG_TIME[lang] || 500;
+  const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  const clampInt = (x, lo, hi, dflt) => { x = Math.round(Number(x)); return Number.isFinite(x) ? Math.min(hi, Math.max(lo, x)) : dflt; };
+  const cleanText = (x, max) => String(typeof x === 'string' ? x : x == null ? '' : x).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').slice(0, max);
+
+  /** The settings of a match, every field forced into its allowed range (settings can come from a link). */
+  function settingsOf(s) {
+    s = s && typeof s === 'object' ? s : {};
+    return {
+      width: clampInt(s.width, LIMITS.minSize, LIMITS.maxSize, DEFAULTS.width),
+      height: clampInt(s.height, LIMITS.minSize, LIMITS.maxSize, DEFAULTS.height),
+      players: clampInt(s.players, LIMITS.minPlayers, LIMITS.maxPlayers, DEFAULTS.players),
+      timeMs: Number(s.timeMs) === 0 ? 0 : clampInt(s.timeMs, LIMITS.minTime, LIMITS.maxTime, DEFAULTS.timeMs),
+      invalid: s.invalid === 'forfeit' ? 'forfeit' : 'up'
+    };
+  }
+  const seedOf = (x) => { x = Math.floor(Number(x)); return Number.isFinite(x) ? (x >>> 0) : 1; };
+
+  /** mulberry32: the same seed always gives the same numbers. */
+  function rng(seed) {
+    let a = seedOf(seed) || 1;
+    const next = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    next.int = (n) => Math.floor(next() * n);
+    return next;
+  }
+
+  // ---------- the rules
+  /** Fixed starting cells, two in from the corners: player 1 top-left, 2 bottom-right (opposite), 3 top-right, 4 bottom-left. */
+  const startCells = (w, h, n) => [[2, 2], [w - 3, h - 3], [w - 3, 2], [2, h - 3]].slice(0, n);
+
+  function create(settings, seed) {
+    const s = settingsOf(settings);
+    return { settings: s, w: s.width, h: s.height, n: s.players, seed: seedOf(seed), turn: 0,
+      grid: new Uint8Array(s.width * s.height),   // 0 empty, p+1 a trail cell left by player p
+      heads: startCells(s.width, s.height, s.players).map(([x, y]) => ({ x, y, alive: true, at: null, reason: '' })),
+      over: false, winner: 0, draw: false, capped: false };
+  }
+  const aliveList = (st) => { const r = []; st.heads.forEach((h, i) => { if (h.alive) r.push(i); }); return r; };
+  const inside = (st, x, y) => x >= 0 && y >= 0 && x < st.w && y < st.h;
+
+  /** Apply one turn. moves[p] is UP/DOWN/LEFT/RIGHT, or 'X' (the player drops out: a forfeit); a dead player's entry is ignored.
+      All players move together. Returns the crashes of this turn: [{player (1-based), turn, at:[x,y], reason}]. why[p] replaces the reason of an 'X'. */
+  function step(st, moves, why) {
+    if (st.over) return [];
+    const turn = st.turn + 1, alive = aliveList(st), target = {}, crashed = {};
+    for (const p of alive) {
+      const m = moves[p];
+      if (m === 'X') { crashed[p] = { at: [st.heads[p].x, st.heads[p].y], reason: (why && why[p]) || 'dropped out' }; continue; }
+      if (!hasOwn(DELTA, m)) throw new Error('step: player ' + (p + 1) + ' has no legal move: ' + String(m));
+      target[p] = [st.heads[p].x + DELTA[m][0], st.heads[p].y + DELTA[m][1]];
+    }
+    // Every crash is decided against the board as it was at the start of the turn.
+    for (const p of alive) {
+      if (crashed[p]) continue;
+      const [x, y] = target[p], where = '(' + x + ', ' + y + ')';
+      let reason = '';
+      if (!inside(st, x, y)) reason = 'left the board at ' + where;
+      else {
+        const owner = st.grid[y * st.w + x];
+        if (owner) reason = owner === p + 1 ? 'ran into its own trail at ' + where : 'ran into player ' + owner + '’s trail at ' + where;
+        else {
+          const head = alive.find((q) => q !== p && st.heads[q].x === x && st.heads[q].y === y);
+          if (head !== undefined) reason = 'ran into the head of player ' + (head + 1) + ' at ' + where;
+          else {
+            const rival = alive.find((q) => q !== p && target[q] && target[q][0] === x && target[q][1] === y);
+            if (rival !== undefined) reason = 'crashed head-on with player ' + (rival + 1) + ' at ' + where;
+          }
+        }
+      }
+      if (reason) crashed[p] = { at: [x, y], reason };
+    }
+    const events = [];
+    for (const p of alive) {
+      const h = st.heads[p];
+      st.grid[h.y * st.w + h.x] = p + 1;   // the cell a head leaves, or dies on, is a wall for ever
+      if (crashed[p]) { h.alive = false; h.at = crashed[p].at; h.reason = crashed[p].reason; events.push({ player: p + 1, turn, at: crashed[p].at, reason: crashed[p].reason }); }
+      else { h.x = target[p][0]; h.y = target[p][1]; }
+    }
+    st.turn = turn;
+    const left = aliveList(st);
+    if (left.length <= 1) { st.over = true; st.winner = left.length ? left[0] + 1 : 0; st.draw = !left.length; }
+    else if (turn >= st.w * st.h) { st.over = true; st.winner = 0; st.draw = true; st.capped = true; }   // the turn cap: a draw
+    return events;
+  }
+
+  /** What player p (0-based) sees: the same information the text carries. */
+  function observe(st, p) {
+    const heads = [], digit = {};
+    st.heads.forEach((h, i) => { if (h.alive) { heads.push({ x: h.x, y: h.y, p: i + 1 }); digit[h.y * st.w + h.x] = String(i + 1); } });
+    const rows = [];
+    for (let y = 0; y < st.h; y++) { let r = ''; for (let x = 0; x < st.w; x++) { const i = y * st.w + x; r += digit[i] || (st.grid[i] ? '#' : '.'); } rows.push(r); }
+    return { w: st.w, h: st.h, you: p + 1, alive: heads.length, heads, rows };
+  }
+  /** The text a bot gets on stdin. */
+  function serialize(st, p) {
+    const o = observe(st, p);
+    return o.w + ' ' + o.h + '\n' + o.you + ' ' + o.alive + '\n' + o.heads.map((h) => h.x + ' ' + h.y + ' ' + h.p + '\n').join('') + o.rows.join('\n') + '\n';
+  }
+  /** The text of a turn back into what observe() gives (the built-in bots and the tests use it; so does anyone writing a bot in JavaScript). */
+  function parseObs(text) {
+    const lines = String(text).split('\n'); let i = 0;
+    const nums = (l) => String(l).trim().split(/\s+/).map(Number);
+    const [w, h] = nums(lines[i++]), [you, alive] = nums(lines[i++]), heads = [];
+    for (let k = 0; k < alive; k++) { const [x, y, p] = nums(lines[i++]); heads.push({ x, y, p }); }
+    const rows = []; for (let y = 0; y < h; y++) rows.push(lines[i++]);
+    return { w, h, you, alive, heads, rows };
+  }
+  /** A bot's reply → {move} or {error} (words for the student). Exactly one non-empty line: UP, DOWN, LEFT or RIGHT in any case. */
+  function parseMove(text) {
+    const lines = String(text == null ? '' : text).split('\n').map((l) => l.trim()).filter(Boolean);
+    if (!lines.length) return { error: 'printed nothing' };
+    if (lines.length > 1) return { error: 'printed ' + lines.length + ' lines (expected exactly one move). Debugging output belongs on stderr' };
+    const m = lines[0].toUpperCase();
+    return hasOwn(DELTA, m) ? { move: m } : { error: 'printed “' + cleanText(lines[0], 30) + '”, which is not UP, DOWN, LEFT or RIGHT' };
+  }
+
+  // ---------- the built-in bots (JavaScript, no runtime to start). make(ctx) returns {move(obs) → 'UP'…}; ctx = {rng, player}
+  const open = (o, x, y) => x >= 0 && y >= 0 && x < o.w && y < o.h && o.rows[y][x] === '.';
+  const myHead = (o) => o.heads.find((h) => h.p === o.you);
+  const legalMoves = (o) => { const me = myHead(o); return MOVES.filter((m) => open(o, me.x + DELTA[m][0], me.y + DELTA[m][1])); };
+  const openNeighbours = (o, x, y) => MOVES.reduce((n, m) => n + (open(o, x + DELTA[m][0], y + DELTA[m][1]) ? 1 : 0), 0);
+  /** A breadth-first flood from several sources at once through empty cells: dist[i] is how many moves the nearest source needs to reach cell i
+      (-1: none can), who[i] which source gets there first (-2: two arrive together, so the cell is nobody's). */
+  function territory(o, sources) {
+    const dist = new Int16Array(o.w * o.h).fill(-1), who = new Int8Array(o.w * o.h).fill(-1);
+    let frontier = [];
+    sources.forEach((s, k) => { const i = s.y * o.w + s.x; dist[i] = 0; who[i] = k; frontier.push(i); });
+    for (let d = 1; frontier.length; d++) {
+      const claim = new Map();
+      for (const i of frontier) {
+        if (who[i] < 0) continue;   // a contested cell is not spread from
+        const x = i % o.w, y = (i - x) / o.w;
+        for (const m of MOVES) {
+          const nx = x + DELTA[m][0], ny = y + DELTA[m][1];
+          if (!open(o, nx, ny)) continue;
+          const j = ny * o.w + nx;
+          if (dist[j] >= 0) continue;
+          const c = claim.get(j);
+          if (c === undefined) claim.set(j, who[i]); else if (c !== who[i]) claim.set(j, -2);
+        }
+      }
+      frontier = [];
+      for (const [j, k] of claim) { dist[j] = d; who[j] = k; frontier.push(j); }
+    }
+    return { dist, who };
+  }
+  const BUILTINS = [
+    { id: 'random', name: 'Random', blurb: 'Picks any move that does not crash. Easy to beat.',
+      make: (ctx) => ({ move(o) { const ok = legalMoves(o); return ok.length ? ok[ctx.rng.int(ok.length)] : 'UP'; } }) },
+    { id: 'hugger', name: 'Wall Hugger', blurb: 'Goes straight until something is in the way, then turns toward the most open space.',
+      make: () => { let dir = null; return { move(o) {
+        const me = myHead(o), ok = legalMoves(o);
+        if (!dir) dir = Math.abs(o.w / 2 - me.x) >= Math.abs(o.h / 2 - me.y) ? (me.x < o.w / 2 ? 'RIGHT' : 'LEFT') : (me.y < o.h / 2 ? 'DOWN' : 'UP');   // toward the middle
+        if (!ok.length) return dir;
+        if (!ok.includes(dir)) { let best = ok[0], bs = -1; for (const m of ok) { const s = openNeighbours(o, me.x + DELTA[m][0], me.y + DELTA[m][1]); if (s > bs) { bs = s; best = m; } } dir = best; }
+        return dir;
+      } }; } },
+    { id: 'flood', name: 'Flood Fill', blurb: 'Picks the move that keeps the most room, counting only the cells it can reach before anyone else.',
+      make: () => ({ move(o) {
+        const me = myHead(o), ok = legalMoves(o);
+        if (!ok.length) return 'UP';
+        const foes = o.heads.filter((h) => h.p !== o.you).map((f) => ({ x: f.x, y: f.y }));
+        let best = ok[0], bs = -Infinity;
+        for (const m of ok) {
+          const to = { x: me.x + DELTA[m][0], y: me.y + DELTA[m][1] };
+          const race = territory(o, [to].concat(foes)).who;   // who gets to each cell first, if we all set off now
+          let mine = 0, theirs = 0; for (let i = 0; i < race.length; i++) { if (race[i] === 0) mine++; else if (race[i] > 0) theirs++; }
+          const alone = territory(o, [to]).dist; let reach = 0; for (let i = 0; i < alone.length; i++) if (alone[i] >= 0) reach++;
+          const clash = foes.some((f) => Math.abs(f.x - to.x) + Math.abs(f.y - to.y) === 1);   // a foe could step there this turn too, and both would crash
+          const score = (mine - theirs) * 10000 + reach * 10 - openNeighbours(o, to.x, to.y) - (clash ? 1e7 : 0);   // fewer open neighbours on a tie: hug walls, leave no pockets
+          if (score > bs) { bs = score; best = m; }
+        }
+        return best;
+      } }) }
+  ];
+  const builtinById = (id) => BUILTINS.find((b) => b.id === id) || null;
+
+  // ---------- drivers and the referee
+  /** A driver is what the referee talks to: {name, lang, start() → {ok, error?}, move(text, obs, turn) → {text, err, status, note}, stop()}.
+      status: 'ok', 'timeout', 'error' (the program failed) or 'crash'. The page builds one per student bot (src/arena.js); this one is for the built-in bots. */
+  function builtinDriver(def, ctx) {
+    const bot = def.make(ctx);
+    return { name: def.name, lang: 'js', builtin: true, start: async () => ({ ok: true }),
+      move: async (text, obs) => { let m; try { m = bot.move(obs || parseObs(text)); } catch (e) { return { text: '', err: String(e && e.message || e), status: 'error' }; } return { text: m, err: '', status: 'ok' }; },
+      stop() { } };
+  }
+
+  /** A bot's output → {text, log}: lines that start with "LOG" go to the bot's log tab, the rest is the reply to the referee. These runtimes
+      have no stderr of their own, so this is how a bot says something without spoiling its move. */
+  function splitOutput(out) {
+    const keep = [], log = [];
+    for (const line of String(out == null ? '' : out).split('\n')) { if (/^LOG(\s|$)/.test(line)) log.push(line.replace(/^LOG\s?/, '')); else keep.push(line); }
+    return { text: keep.join('\n'), log: log.join('\n') };
+  }
+  /** A driver for a student's program. run(source, stdin, limitMs) is how the page (or a test) runs it: → Promise<{out, err, timedOut}>, err being
+      the failure in words (a compile error, a traceback) or empty. start() runs the program once on the empty board, with plenty of time: a program
+      that does not even start (a syntax error, a crash) forfeits before turn 1 with the compiler's words shown. */
+  function botDriver(def, run) {
+    const limit = () => def.limitMs || limitFor(def.lang, 0);
+    return { name: def.name, lang: def.lang, builtin: false, limitMs: limit(),
+      async start(ctx) {
+        const r = await run(def.source, ctx.input, Math.max(4 * limit(), 3000));
+        if (r.timedOut) return { ok: true };   // too slow is not broken: on the turns where it is too slow the referee logs that and moves it UP
+        return r.err ? { ok: false, error: r.err } : { ok: true };
+      },
+      async move(text) {
+        const r = await run(def.source, text, limit());
+        if (r.timedOut) return { text: '', err: '', status: 'timeout' };
+        if (r.err) return { text: r.out, err: String(r.err), status: 'error', note: String(r.err).split('\n')[0].slice(0, 120) };
+        return { text: r.out, err: '', status: 'ok' };
+      },
+      stop() { } };
+  }
+
+  /** Play one match. opts: {settings, seed, drivers: one per player, onTurn(info), onLog(player, kind, text), shouldStop()}.
+      Resolves to {replay, frames, state, aborted}. replay is the small file (settings, seed, moves, result); frames are snapshots, one per turn
+      (frames[0] is the empty board), which the viewer draws. */
+  async function playMatch(opts) {
+    const s = settingsOf(Object.assign({}, opts.settings, { players: opts.drivers.length })), st = create(s, opts.seed);
+    const drivers = opts.drivers, log = opts.onLog || (() => { });
+    const frames = [snapshot(st, [])], moves = [], crashes = [];
+    const starts = await Promise.all(drivers.map(async (d, p) => { try { return (await d.start({ settings: s, player: p, input: serialize(st, p) })) || { ok: true }; } catch (e) { return { ok: false, error: String(e && e.message || e) }; } }));
+    const failed = starts.map((r) => (r.ok === false ? String(r.error || 'the bot did not start') : ''));
+    failed.forEach((f, p) => { if (f) log(p, 'referee', 'Player ' + (p + 1) + ' (' + drivers[p].name + ') forfeits before turn 1: ' + f.split('\n')[0].slice(0, 300), 0);
+      if (f.includes('\n')) log(p, 'stderr', f.slice(0, 2000), 0); });
+    let aborted = false;
+    while (!st.over) {
+      if (opts.shouldStop && opts.shouldStop()) { aborted = true; break; }
+      const turn = st.turn + 1, alive = aliveList(st), inputs = new Array(st.n).fill(''), chosen = new Array(st.n).fill(null), why = new Array(st.n).fill('');
+      await Promise.all(alive.map(async (p) => {
+        if (failed[p]) { chosen[p] = 'X'; why[p] = 'did not start: ' + failed[p].split('\n')[0].slice(0, 200); return; }
+        const obs = observe(st, p); inputs[p] = serialize(st, p);
+        let res;
+        try { res = await drivers[p].move(inputs[p], obs, turn); } catch (e) { res = { text: '', err: String(e && e.message || e), status: 'crash' }; }
+        res = res || { text: '', err: '', status: 'crash' };
+        const sp = splitOutput(res.text); res = Object.assign({}, res, { text: sp.text });
+        if (sp.log) log(p, 'stderr', sp.log, turn);
+        if (res.err) log(p, 'stderr', res.err, turn);
+        let problem = '';
+        if (res.status === 'timeout') problem = 'took longer than ' + (drivers[p].limitMs || limitFor(drivers[p].lang, s.timeMs)) + ' ms';
+        else if (res.status === 'error' || res.status === 'crash') problem = 'crashed' + (res.note ? ' (' + res.note + ')' : '');
+        else { const r = parseMove(res.text); if (r.move) chosen[p] = r.move; else problem = r.error; }
+        if (problem) {
+          const act = s.invalid === 'forfeit' ? 'forfeits' : 'is moved UP';
+          log(p, 'referee', 'Turn ' + turn + ': player ' + (p + 1) + ' (' + drivers[p].name + ') ' + problem + '; ' + act + '.', turn);
+          if (s.invalid === 'forfeit') { chosen[p] = 'X'; why[p] = 'forfeit: ' + problem; } else chosen[p] = 'UP';
+        }
+      }));
+      const events = step(st, chosen, why);
+      moves.push(chosen.map((m, p) => (!alive.includes(p) ? '-' : m === 'X' ? 'X' : LETTER[m])).join(''));
+      for (const e of events) crashes.push(e);
+      const frame = snapshot(st, events); frames.push(frame);
+      if (opts.onTurn) opts.onTurn({ turn, frame, moves: moves[moves.length - 1], inputs, events, state: st });
+    }
+    const replay = { format: 'tronreplay', version: 1, settings: s, seed: st.seed, players: drivers.map((d) => ({ name: cleanText(d.name, LIMITS.maxPlayerName), lang: LANGS.includes(d.lang) ? d.lang : 'js' })), moves,
+      result: { winner: st.winner, draw: st.draw, capped: st.capped, turns: st.turn, crashes: crashes.map((c) => ({ player: c.player, turn: c.turn, at: c.at, reason: c.reason })) } };
+    return { replay, frames, state: st, aborted };
+  }
+  /** A state (enough of one for observe() and serialize()) from a snapshot: what a bot was shown before the move that made the next frame. */
+  function fromFrame(settings, frame) {
+    const s = settingsOf(settings);
+    return { w: s.width, h: s.height, n: s.players, grid: frame.grid, heads: frame.heads, turn: frame.turn };
+  }
+  function snapshot(st, events) {
+    return { turn: st.turn, grid: st.grid.slice(), heads: st.heads.map((h) => ({ x: h.x, y: h.y, alive: h.alive, at: h.at })), over: st.over, winner: st.winner, draw: st.draw, events: events.map((e) => Object.assign({}, e)) };
+  }
+
+  // ---------- replays: a small file, checked on the way in
+  const MOVE_CHARS = /^[UDLRX-]+$/;
+  /** A replay object from a file or a link → a clean one, or throws an Error whose message says what is wrong. */
+  function cleanReplay(r) {
+    if (!r || typeof r !== 'object' || r.format !== 'tronreplay') throw new Error('This is not a Bot Arena replay.');
+    if (r.version !== 1) throw new Error('This replay was made by a different version of the arena (' + cleanText(r.version, 10) + ').');
+    const settings = settingsOf(r.settings), n = settings.players;
+    if (!Array.isArray(r.moves) || r.moves.length > settings.width * settings.height) throw new Error('This replay has too many turns.');
+    const moves = r.moves.map((m) => { if (typeof m !== 'string' || m.length !== n || !MOVE_CHARS.test(m)) throw new Error('This replay has a turn that is not one move per player.'); return m; });
+    const players = []; for (let i = 0; i < n; i++) { const p = Array.isArray(r.players) && r.players[i] && typeof r.players[i] === 'object' ? r.players[i] : {}; players.push({ name: cleanText(p.name, LIMITS.maxPlayerName) || 'Player ' + (i + 1), lang: LANGS.includes(p.lang) ? p.lang : 'js' }); }
+    const res = r.result && typeof r.result === 'object' ? r.result : {};
+    const crashes = (Array.isArray(res.crashes) ? res.crashes : []).slice(0, 8).filter((c) => c && typeof c === 'object').map((c) => ({ player: clampInt(c.player, 1, n, 1), turn: clampInt(c.turn, 1, 1e5, 1), at: Array.isArray(c.at) ? [clampInt(c.at[0], -1, 1e3, 0), clampInt(c.at[1], -1, 1e3, 0)] : [0, 0], reason: cleanText(c.reason, 200) }));
+    return { format: 'tronreplay', version: 1, settings, seed: seedOf(r.seed), players, moves, result: { winner: clampInt(res.winner, 0, n, 0), draw: !!res.draw, capped: !!res.capped, turns: clampInt(res.turns, 0, 1e5, moves.length), crashes } };
+  }
+  /** Re-run a (clean) replay: {frames, state, result} where result is what the rules say (crash reasons included). */
+  function simulate(replay) {
+    const st = create(replay.settings, replay.seed), frames = [snapshot(st, [])], crashes = [];
+    for (const m of replay.moves) {
+      if (st.over) break;
+      const chosen = [...m].map((c, p) => (!st.heads[p].alive ? null : hasOwn(FROM_LETTER, c) ? FROM_LETTER[c] : 'X'));
+      const ev = step(st, chosen); for (const e of ev) crashes.push(e);
+      frames.push(snapshot(st, ev));
+    }
+    return { frames, state: st, result: { winner: st.winner, draw: st.draw, capped: st.capped, turns: st.turn, crashes } };
+  }
+  /** The sentence for the result banner. Uses the crash reasons the file carries (they can say why a bot forfeited), else the simulated ones. */
+  function describeResult(replay, result) {
+    const r = replay.result && replay.result.crashes && replay.result.crashes.length ? replay.result : result;
+    const nm = (p) => 'Player ' + p + ' (' + (replay.players[p - 1] ? replay.players[p - 1].name : '?') + ')';
+    const lines = [];
+    const w = result.winner;
+    lines.push(w ? nm(w) + ' wins after ' + result.turns + ' turn' + (result.turns === 1 ? '' : 's') + '.' : result.capped ? 'A draw: the turn limit (' + result.turns + ' turns) was reached.' : 'A draw after ' + result.turns + ' turns: the last players crashed together.');
+    const reasons = {}; for (const c of (result.crashes || [])) reasons[c.player + ':' + c.turn] = c.reason;
+    for (const c of r.crashes) lines.push(nm(c.player) + ' crashed on turn ' + c.turn + ': ' + (c.reason || reasons[c.player + ':' + c.turn] || 'crashed') + '.');
+    return lines;
+  }
+
+  // ---------- bot files
+  /** A bot from a file or a link → {name, lang, source}, or throws. */
+  function cleanBot(b) {
+    if (!b || typeof b !== 'object' || b.format !== 'tronbot') throw new Error('This is not a Bot Arena bot file.');
+    if (b.version !== 1) throw new Error('This bot was made by a different version of the arena.');
+    if (!LANGS.includes(b.lang)) throw new Error('This bot is written in a language the arena does not run.');
+    if (typeof b.source !== 'string' || !b.source.trim()) throw new Error('This bot file has no program in it.');
+    if (b.source.length > LIMITS.maxSource) throw new Error('This bot is longer than ' + LIMITS.maxSource + ' characters.');
+    return { name: cleanText(b.name, LIMITS.maxName).trim() || 'Unnamed bot', lang: b.lang, source: b.source.replace(/\r\n?/g, '\n') };
+  }
+  const botFile = (b) => ({ format: 'tronbot', version: 1, name: cleanText(b.name, LIMITS.maxName), lang: b.lang, source: String(b.source) });
+  const fileSafe = (s) => (String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'bot').slice(0, 40);
+
+  // ---------- tournaments
+  /** Round robin: every pair of bots plays `rounds` matches, swapping who starts where each time. → [{a, b, flip, k}] (indexes into the bots list) */
+  function schedule(count, rounds) {
+    const jobs = [];
+    for (let a = 0; a < count; a++) for (let b = a + 1; b < count; b++) for (let k = 0; k < rounds; k++) jobs.push({ a, b, flip: k % 2 === 1, k });
+    return jobs;
+  }
+  const survived = (replay, p) => { const c = replay.result.crashes.find((x) => x.player === p + 1); return c ? c.turn : replay.result.turns; };
+  /** Run a round robin, one match at a time (student bots share their language's single sandbox, so matches cannot overlap).
+      opts: {bots: [{name, lang, driver(slotSeed) → a fresh driver}], rounds, settings, seed, onProgress(done, total, result) → may return a promise
+      (the page yields to the browser there), shouldStop()}. → Promise<{results, aborted}> with results as standings() wants them, plus the replay of each match. */
+  async function runTournament(opts) {
+    const jobs = schedule(opts.bots.length, opts.rounds), results = [];
+    let aborted = false;
+    for (let i = 0; i < jobs.length; i++) {
+      if (opts.shouldStop && opts.shouldStop()) { aborted = true; break; }
+      const j = jobs[i], seed = seedOf(seedOf(opts.seed) + i), order = j.flip ? [j.b, j.a] : [j.a, j.b];
+      const m = await playMatch({ settings: Object.assign({}, opts.settings, { players: 2 }), seed, drivers: order.map((b, slot) => opts.bots[b].driver(seed * 4 + slot)) });
+      const rep = m.replay, w = rep.result.winner;   // w is a slot (1 or 2), or 0 for a draw
+      const first = j.flip ? 'b' : 'a', second = j.flip ? 'a' : 'b';
+      const res = { a: j.a, b: j.b, k: j.k, flip: j.flip, seed, winner: w === 0 ? null : (w === 1 ? first : second), turns: { [first]: survived(rep, 0), [second]: survived(rep, 1) }, replay: rep };
+      results.push(res);
+      if (opts.onProgress) await opts.onProgress(i + 1, jobs.length, res);
+    }
+    return { results, aborted };
+  }
+
+  /** Standings from finished matches [{a, b, winner: 'a'|'b'|null, turns: {a, b}}]: 3 for a win, 1 for a draw; ties broken by turns survived. */
+  function standings(count, results) {
+    const rows = Array.from({ length: count }, (_, i) => ({ bot: i, played: 0, wins: 0, draws: 0, losses: 0, points: 0, turns: 0 }));
+    for (const r of results) {
+      const A = rows[r.a], B = rows[r.b]; A.played++; B.played++; A.turns += r.turns.a; B.turns += r.turns.b;
+      if (r.winner === 'a') { A.wins++; A.points += 3; B.losses++; } else if (r.winner === 'b') { B.wins++; B.points += 3; A.losses++; } else { A.draws++; B.draws++; A.points++; B.points++; }
+    }
+    return rows;
+  }
+  const rank = (rows) => rows.slice().sort((x, y) => y.points - x.points || y.turns - x.turns || y.wins - x.wins || x.bot - y.bot);
+  const csvCell = (v) => { let s = String(v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };   // names are student text: no formula injection into a spreadsheet
+  function standingsCsv(names, rows) {
+    return ['Rank,Bot,Played,Wins,Draws,Losses,Points,Turns survived'].concat(rank(rows).map((r, i) => [i + 1, names[r.bot], r.played, r.wins, r.draws, r.losses, r.points, r.turns].map(csvCell).join(','))).join('\r\n') + '\r\n';
+  }
+
+  // ---------- a zip file, stored (not compressed): the replays are already tiny, so no library is needed
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = (b) => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  /** files: [{name, text}] → Uint8Array of a zip archive. */
+  function zip(files) {
+    const enc = new TextEncoder(), parts = [], central = []; let offset = 0;
+    const u16 = (v) => [v & 255, (v >>> 8) & 255], u32 = (v) => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+    for (const f of files) {
+      const name = enc.encode(f.name), data = enc.encode(f.text), crc = crc32(data);
+      const head = Uint8Array.from([].concat(u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(0), u16(0x21), u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0)));   // 0x0800: names are UTF-8; date 1980-01-01
+      parts.push(head, name, data);
+      central.push(Uint8Array.from([].concat(u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(0), u16(0x21), u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset))), name);
+      offset += head.length + name.length + data.length;
+    }
+    const cdSize = central.reduce((n, p) => n + p.length, 0);
+    const end = Uint8Array.from([].concat(u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length), u32(cdSize), u32(offset), u16(0)));
+    const all = parts.concat(central, [end]), out = new Uint8Array(all.reduce((n, p) => n + p.length, 0)); let at = 0;
+    for (const p of all) { out.set(p, at); at += p.length; }
+    return out;
+  }
+
+  return { MOVES, DELTA, LETTER, LANGS, LIMITS, DEFAULTS, LANG_TIME, limitFor, settingsOf, seedOf, rng, startCells, create, step, aliveList, observe, serialize, parseObs, parseMove, legalMoves,
+    BUILTINS, builtinById, builtinDriver, botDriver, splitOutput, playMatch, snapshot, fromFrame, cleanReplay, simulate, describeResult, cleanBot, botFile, fileSafe, cleanText, schedule, runTournament, standings, rank, standingsCsv, zip, crc32 };
+});
+
+;
+/* src/arena_bots.js */
+/* Bot Arena: the starter bot and a finished Flood Fill bot, in each language. Plain text, so the page and test_arena.js use the same files.
+   All four share one structure and the same function names (readTurn, isOpen, legalMoves, then main), so a student who switches language
+   recognises it. Each starter reads one turn and prints the first move that does not crash; each solution picks the move whose reachable
+   region is biggest. A line that starts with "LOG " is shown in the bot's log tab and ignored by the referee (these runtimes have no separate stderr).
+   Exposed as window.TRONBOTS (browser) or module.exports (node). */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.TRONBOTS = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  const templates = {
+    python: `# A Tron bot. The arena runs this program once per turn: it reads the board
+# from input and prints ONE move: UP, DOWN, LEFT or RIGHT.
+# print("LOG ...") writes to your log tab; the referee ignores those lines.
+
+def readTurn():
+    width, height = map(int, input().split())    # line 1: board size
+    you, alive = map(int, input().split())       # line 2: your number, players left
+    heads = {}
+    for _ in range(alive):                       # one line per player: x y player
+        x, y, player = map(int, input().split())
+        heads[player] = (x, y)
+    grid = [input() for _ in range(height)]      # '.' empty, '#' wall, digit = a head
+    return width, height, you, heads, grid
+
+def isOpen(grid, width, height, x, y):
+    return 0 <= x < width and 0 <= y < height and grid[y][x] == "."
+
+def legalMoves(grid, width, height, x, y):
+    moves = []
+    for name, dx, dy in [("UP", 0, -1), ("DOWN", 0, 1), ("LEFT", -1, 0), ("RIGHT", 1, 0)]:
+        if isOpen(grid, width, height, x + dx, y + dy):
+            moves.append(name)
+    return moves
+
+width, height, you, heads, grid = readTurn()
+x, y = heads[you]
+moves = legalMoves(grid, width, height, x, y)
+print("LOG I am at", x, y, "and can go", moves)
+print(moves[0] if moves else "UP")               # first safe move; boxed in? any move will do
+`,
+    cpp: `// A Tron bot. The arena runs this program once per turn: it reads the board
+// from cin and prints ONE move: UP, DOWN, LEFT or RIGHT.
+// cout << "LOG ..." writes to your log tab; the referee ignores those lines.
+// (This C++ is the site's teaching interpreter: arrays and char strings, no vector.)
+#include <iostream>
+using namespace std;
+
+int width, height, you, alive;
+int headX[5], headY[5];
+char grid[40][41];                           // grid[y][x]
+int dx[4] = {0, 0, -1, 1};                   // direction 0 UP, 1 DOWN, 2 LEFT, 3 RIGHT
+int dy[4] = {-1, 1, 0, 0};
+
+void readTurn() {
+    cin >> width >> height;                  // line 1: board size
+    cin >> you >> alive;                     // line 2: your number, players left
+    for (int i = 0; i < alive; i++) {        // one line per player: x y player
+        int x, y, player;
+        cin >> x >> y >> player;
+        headX[player] = x;
+        headY[player] = y;
+    }
+    for (int i = 0; i < height; i++) {       // '.' empty, '#' wall, digit = a head
+        cin >> grid[i];
+    }
+}
+
+bool isOpen(int x, int y) {
+    return x >= 0 && x < width && y >= 0 && y < height && grid[y][x] == '.';
+}
+
+int legalMoves(int x, int y, int moves[]) {  // fills moves, returns how many
+    int count = 0;
+    for (int d = 0; d < 4; d++) {
+        if (isOpen(x + dx[d], y + dy[d])) {
+            moves[count] = d;
+            count++;
+        }
+    }
+    return count;
+}
+
+void printMove(int d) {
+    if (d == 0) cout << "UP" << endl;
+    else if (d == 1) cout << "DOWN" << endl;
+    else if (d == 2) cout << "LEFT" << endl;
+    else cout << "RIGHT" << endl;
+}
+
+int main() {
+    readTurn();
+    int moves[4];
+    int count = legalMoves(headX[you], headY[you], moves);
+    cout << "LOG I am at " << headX[you] << " " << headY[you] << endl;
+    if (count > 0) printMove(moves[0]);      // first safe move
+    else printMove(0);                       // boxed in: any move will do
+    return 0;
+}
+`,
+    java: `// A Tron bot. The arena runs this program once per turn: it reads the board
+// from System.in and prints ONE move: UP, DOWN, LEFT or RIGHT.
+// System.out.println("LOG ...") writes to your log tab; the referee ignores those lines.
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class Main {
+    static int width, height, you, alive;
+    static int[] headX = new int[5];
+    static int[] headY = new int[5];
+    static String[] grid;
+
+    static void readTurn(Scanner in) {
+        width = in.nextInt();                    // line 1: board size
+        height = in.nextInt();
+        you = in.nextInt();                      // line 2: your number, players left
+        alive = in.nextInt();
+        for (int i = 0; i < alive; i++) {        // one line per player: x y player
+            int x = in.nextInt();
+            int y = in.nextInt();
+            int player = in.nextInt();
+            headX[player] = x;
+            headY[player] = y;
+        }
+        grid = new String[height];
+        for (int i = 0; i < height; i++) {       // '.' empty, '#' wall, digit = a head
+            grid[i] = in.next();
+        }
+    }
+
+    static boolean isOpen(int x, int y) {
+        return x >= 0 && x < width && y >= 0 && y < height && grid[y].charAt(x) == '.';
+    }
+
+    static ArrayList<String> legalMoves(int x, int y) {
+        ArrayList<String> moves = new ArrayList<>();
+        if (isOpen(x, y - 1)) moves.add("UP");
+        if (isOpen(x, y + 1)) moves.add("DOWN");
+        if (isOpen(x - 1, y)) moves.add("LEFT");
+        if (isOpen(x + 1, y)) moves.add("RIGHT");
+        return moves;
+    }
+
+    public static void main(String[] args) {
+        readTurn(new Scanner(System.in));
+        ArrayList<String> moves = legalMoves(headX[you], headY[you]);
+        System.out.println("LOG I am at " + headX[you] + " " + headY[you]);
+        System.out.println(moves.size() > 0 ? moves.get(0) : "UP");   // first safe move; boxed in: any move
+    }
+}
+`,
+    scheme: `; A Tron bot. The arena runs this program once per turn: it reads the board
+; from standard input and prints ONE move: UP, DOWN, LEFT or RIGHT.
+; (display "LOG ...") on a line of its own writes to your log tab.
+
+(define width (read))                        ; line 1: board size
+(define height (read))
+(define you (read))                          ; line 2: your number, players left
+(define alive (read))
+
+(define (readHeads n)                        ; one line per player: x y player
+  (if (= n 0)
+      '()
+      (let* ((x (read)) (y (read)) (p (read)))
+        (cons (list p x y) (readHeads (- n 1))))))
+(define heads (readHeads alive))
+
+(define (readRows n)                         ; '.' empty, '#' wall, digit = a head
+  (if (= n 0)
+      '()
+      (let ((row (read-line)))
+        (cons row (readRows (- n 1))))))
+(read-line)                                  ; read leaves the end of its line: skip it
+(define grid (readRows height))
+
+(define (isOpen x y)
+  (and (>= x 0) (< x width) (>= y 0) (< y height)
+       (string=? (string-ref (list-ref grid y) x) ".")))
+
+(define (legalMoves x y)
+  (append (if (isOpen x (- y 1)) '("UP") '())
+          (if (isOpen x (+ y 1)) '("DOWN") '())
+          (if (isOpen (- x 1) y) '("LEFT") '())
+          (if (isOpen (+ x 1) y) '("RIGHT") '())))
+
+(define me (cdr (assv you heads)))           ; my head: (x y)
+(define moves (legalMoves (car me) (cadr me)))
+(display (if (null? moves) "UP" (car moves))) ; first safe move; boxed in: any move
+(newline)
+`
+  };
+
+  const solutions = {
+    python: `# Flood Fill: for each safe move, count the cells the head could still reach if
+# it stepped there (a breadth-first flood), and take the move with the most room.
+
+DIRS = [("UP", 0, -1), ("DOWN", 0, 1), ("LEFT", -1, 0), ("RIGHT", 1, 0)]
+
+def readTurn():
+    width, height = map(int, input().split())
+    you, alive = map(int, input().split())
+    heads = {}
+    for _ in range(alive):
+        x, y, player = map(int, input().split())
+        heads[player] = (x, y)
+    grid = [input() for _ in range(height)]
+    return width, height, you, heads, grid
+
+def isOpen(grid, width, height, x, y):
+    return 0 <= x < width and 0 <= y < height and grid[y][x] == "."
+
+def legalMoves(grid, width, height, x, y):
+    moves = []
+    for name, dx, dy in DIRS:
+        if isOpen(grid, width, height, x + dx, y + dy):
+            moves.append((name, x + dx, y + dy))
+    return moves
+
+def regionSize(grid, width, height, x, y):
+    seen = {(x, y)}
+    queue = [(x, y)]
+    i = 0
+    while i < len(queue):                        # a list and a position: no need for a deque
+        cx, cy = queue[i]
+        i += 1
+        for name, dx, dy in DIRS:
+            nx, ny = cx + dx, cy + dy
+            if (nx, ny) not in seen and isOpen(grid, width, height, nx, ny):
+                seen.add((nx, ny))
+                queue.append((nx, ny))
+    return len(seen)
+
+width, height, you, heads, grid = readTurn()
+x, y = heads[you]
+best, bestSize = "UP", -1
+for name, nx, ny in legalMoves(grid, width, height, x, y):
+    size = regionSize(grid, width, height, nx, ny)
+    print("LOG", name, "leaves room for", size)
+    if size > bestSize:
+        best, bestSize = name, size
+print(best)
+`,
+    cpp: `// Flood Fill: for each safe move, count the cells the head could still reach if
+// it stepped there (a breadth-first flood), and take the move with the most room.
+#include <iostream>
+using namespace std;
+
+int width, height, you, alive;
+int headX[5], headY[5];
+char grid[40][41];
+int dx[4] = {0, 0, -1, 1};
+int dy[4] = {-1, 1, 0, 0};
+int seen[1600];
+int queue[1600];
+
+void readTurn() {
+    cin >> width >> height;
+    cin >> you >> alive;
+    for (int i = 0; i < alive; i++) {
+        int x, y, player;
+        cin >> x >> y >> player;
+        headX[player] = x;
+        headY[player] = y;
+    }
+    for (int i = 0; i < height; i++) {
+        cin >> grid[i];
+    }
+}
+
+bool isOpen(int x, int y) {
+    return x >= 0 && x < width && y >= 0 && y < height && grid[y][x] == '.';
+}
+
+int regionSize(int x, int y) {
+    for (int i = 0; i < width * height; i++) seen[i] = 0;
+    int head = 0;
+    int tail = 0;
+    queue[tail] = y * width + x;
+    tail++;
+    seen[y * width + x] = 1;
+    while (head < tail) {                    // an array and two positions: no need for a queue class
+        int cx = queue[head] % width;
+        int cy = queue[head] / width;
+        head++;
+        for (int d = 0; d < 4; d++) {
+            int nx = cx + dx[d];
+            int ny = cy + dy[d];
+            if (isOpen(nx, ny) && seen[ny * width + nx] == 0) {
+                seen[ny * width + nx] = 1;
+                queue[tail] = ny * width + nx;
+                tail++;
+            }
+        }
+    }
+    return tail;
+}
+
+void printMove(int d) {
+    if (d == 0) cout << "UP" << endl;
+    else if (d == 1) cout << "DOWN" << endl;
+    else if (d == 2) cout << "LEFT" << endl;
+    else cout << "RIGHT" << endl;
+}
+
+int main() {
+    readTurn();
+    int x = headX[you];
+    int y = headY[you];
+    int best = 0;
+    int bestSize = -1;
+    for (int d = 0; d < 4; d++) {
+        if (!isOpen(x + dx[d], y + dy[d])) continue;
+        int size = regionSize(x + dx[d], y + dy[d]);
+        cout << "LOG direction " << d << " leaves room for " << size << endl;
+        if (size > bestSize) {
+            best = d;
+            bestSize = size;
+        }
+    }
+    printMove(best);
+    return 0;
+}
+`,
+    java: `// Flood Fill: for each safe move, count the cells the head could still reach if
+// it stepped there (a breadth-first flood), and take the move with the most room.
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class Main {
+    static int width, height, you, alive;
+    static int[] headX = new int[5];
+    static int[] headY = new int[5];
+    static String[] grid;
+    static int[] dx = {0, 0, -1, 1};
+    static int[] dy = {-1, 1, 0, 0};
+    static String[] names = {"UP", "DOWN", "LEFT", "RIGHT"};
+
+    static void readTurn(Scanner in) {
+        width = in.nextInt();
+        height = in.nextInt();
+        you = in.nextInt();
+        alive = in.nextInt();
+        for (int i = 0; i < alive; i++) {
+            int x = in.nextInt();
+            int y = in.nextInt();
+            int player = in.nextInt();
+            headX[player] = x;
+            headY[player] = y;
+        }
+        grid = new String[height];
+        for (int i = 0; i < height; i++) {
+            grid[i] = in.next();
+        }
+    }
+
+    static boolean isOpen(int x, int y) {
+        return x >= 0 && x < width && y >= 0 && y < height && grid[y].charAt(x) == '.';
+    }
+
+    static int regionSize(int x, int y) {
+        boolean[] seen = new boolean[width * height];
+        int[] queue = new int[width * height];
+        int head = 0;
+        int tail = 0;
+        queue[tail++] = y * width + x;
+        seen[y * width + x] = true;
+        while (head < tail) {                    // an array and two positions: no need for a Queue
+            int cx = queue[head] % width;
+            int cy = queue[head] / width;
+            head++;
+            for (int d = 0; d < 4; d++) {
+                int nx = cx + dx[d];
+                int ny = cy + dy[d];
+                if (isOpen(nx, ny) && !seen[ny * width + nx]) {
+                    seen[ny * width + nx] = true;
+                    queue[tail++] = ny * width + nx;
+                }
+            }
+        }
+        return tail;
+    }
+
+    public static void main(String[] args) {
+        readTurn(new Scanner(System.in));
+        int x = headX[you];
+        int y = headY[you];
+        String best = "UP";
+        int bestSize = -1;
+        for (int d = 0; d < 4; d++) {
+            if (!isOpen(x + dx[d], y + dy[d])) continue;
+            int size = regionSize(x + dx[d], y + dy[d]);
+            System.out.println("LOG " + names[d] + " leaves room for " + size);
+            if (size > bestSize) {
+                best = names[d];
+                bestSize = size;
+            }
+        }
+        System.out.println(best);
+    }
+}
+`,
+    scheme: `; Flood Fill: for each safe move, count the cells the head could still reach if
+; it stepped there (a breadth-first flood), and take the move with the most room.
+
+(define width (read))
+(define height (read))
+(define you (read))
+(define alive (read))
+(define (readHeads n)
+  (if (= n 0) '()
+      (let* ((x (read)) (y (read)) (p (read)))
+        (cons (list p x y) (readHeads (- n 1))))))
+(define heads (readHeads alive))
+(define (readRows n)
+  (if (= n 0) '() (let ((row (read-line))) (cons row (readRows (- n 1))))))
+(read-line)
+(define grid (readRows height))
+
+(define (isOpen x y)
+  (and (>= x 0) (< x width) (>= y 0) (< y height)
+       (string=? (string-ref (list-ref grid y) x) ".")))
+
+; seen is a list of rows of #t / #f that we change with set-car! as the flood spreads.
+(define (makeSeen)
+  (map (lambda (y) (map (lambda (x) #f) (iota width))) (iota height)))
+(define (seen? seen x y) (list-ref (list-ref seen y) x))
+(define (mark! seen x y) (set-car! (list-tail (list-ref seen y) x) #t))
+
+(define (regionSize x y)
+  (let ((seen (makeSeen)))
+    (mark! seen x y)
+    (let loop ((queue (list (cons x y))) (count 1))   ; queue: cells still to visit
+      (if (null? queue)
+          count
+          (let* ((cell (car queue)) (cx (car cell)) (cy (cdr cell)) (rest (cdr queue)) (new '()))
+            (for-each
+              (lambda (d)
+                (let ((nx (+ cx (car d))) (ny (+ cy (cdr d))))
+                  (if (and (isOpen nx ny) (not (seen? seen nx ny)))
+                      (begin (mark! seen nx ny)
+                             (set! new (cons (cons nx ny) new))))))
+              (list (cons 0 -1) (cons 0 1) (cons -1 0) (cons 1 0)))
+            (loop (append rest new) (+ count (length new))))))))
+
+(define me (cdr (assv you heads)))
+(define x (car me))
+(define y (cadr me))
+(define (try name nx ny best)                  ; best is (size . name)
+  (if (isOpen nx ny)
+      (let ((size (regionSize nx ny)))
+        (if (> size (car best)) (cons size name) best))
+      best))
+(define best
+  (try "RIGHT" (+ x 1) y
+    (try "LEFT" (- x 1) y
+      (try "DOWN" x (+ y 1)
+        (try "UP" x (- y 1) (cons -1 "UP"))))))
+(display (cdr best))
+(newline)
+`
+  };
+
+  return { templates, solutions, langs: ['python', 'cpp', 'java', 'scheme'] };
+});
+
+;
+/* src/arena_run.js */
+/* Bot Arena, the page's plumbing: how a student's bot is run (the same sandboxes as the Code Lab), the bots saved in this browser, and the
+   links and files that carry bots and replays. The pages themselves are src/arena_view.js (the viewer) and src/arena.js.
+   Exposed as window.ARENA (the other two files add to it).
+
+   Running a bot. Python, C++ and Java programs run in their Web Workers (src/runner.js); Scheme runs in the page, on its own interpreter, and is
+   stopped by a step limit instead of a clock (the page cannot interrupt it). run(lang)(source, stdin, limitMs) → Promise<{out, err, timedOut}>.
+   - Bots of one language take turns (they share that language's one worker), so the clock of a move starts when that bot's program starts, not
+     while it waits behind another.
+   - A program that runs past its limit is stopped by ending its worker; the next run starts a fresh worker, which takes a moment, so a new worker is
+     warmed up with a trivial program first, outside the clock.
+   Nothing a bot prints is trusted: it is read by the referee (src/tron.js) as a move, or shown in the log as text. */
+(function () {
+  'use strict';
+  const T = window.TRON;
+  const A = window.ARENA = window.ARENA || {};
+  const el = (...a) => window.__app.internal.el(...a);
+  const LANG_LABEL = { python: 'Python', cpp: 'C++', java: 'Java', scheme: 'Scheme' };
+  const WARM = { python: 'print(1)', cpp: '#include <iostream>\nint main() { return 0; }', java: 'public class Main { public static void main(String[] a) { } }' };
+  const SCHEME_STEPS_PER_MS = 5000;   // the interpreter does about 13 million steps a second on a laptop; this leaves room for a slow device
+
+  // ---------- running a program
+  const locks = {}, cold = { python: true, cpp: true, java: true };
+  const runners = () => window.__runners;
+  function once(lang, source, stdin, ms) {
+    const R = runners();
+    if (lang === 'python') return R.python.run(source, { stdin, execLimit: ms });
+    if (lang === 'cpp') return R.cpp.run(source, { stdin, maxMs: ms });
+    if (lang === 'java') return R.java.run(source, { stdin, maxMs: ms });
+    return Promise.reject(new Error('no runner for ' + lang));
+  }
+  const cancel = (lang) => { if (lang === 'python') window.PYRUN.cancel(); else if (lang === 'cpp') window.CPPRUN.cancel(); else if (lang === 'java') window.JAVARUN.cancel(); };
+  const isLimit = (err) => /^Time limit exceeded|^;Aborting!: program ran for too long/.test(String(err || ''));
+  /** Start a language's worker ahead of the first move (a worker takes a moment to start; that must not count against a bot). */
+  async function warm(lang) {
+    if (!cold[lang] || !WARM[lang]) return;
+    try { await once(lang, WARM[lang], '', 5000); cold[lang] = false; } catch (e) { /* the first real run reports the failure */ }
+  }
+  function run(lang) {
+    return (source, stdin, limitMs) => {
+      const go = async () => {
+        if (lang === 'scheme') {
+          const r = await runners().scheme.run(source, { stdin, stepLimit: Math.round(limitMs * SCHEME_STEPS_PER_MS) });
+          return { out: r.output || '', err: r.error || null, timedOut: isLimit(r.error) };
+        }
+        await warm(lang);
+        let timer = 0, guarded = false;
+        const r = await Promise.race([
+          once(lang, source, stdin, limitMs),
+          new Promise((resolve) => { timer = setTimeout(() => { guarded = true; cancel(lang); cold[lang] = true; resolve({ out: '', err: null }); }, limitMs + 400); })   // the sandbox's own limit did not fire in time
+        ]);
+        clearTimeout(timer);
+        if (guarded) return { out: '', err: null, timedOut: true };
+        if (isLimit(r.err)) { cold[lang] = true; return { out: r.out || '', err: null, timedOut: true }; }   // a sandbox that hit its limit has ended its worker
+        if (r.err === 'Stopped.') { cold[lang] = true; return { out: r.out || '', err: 'stopped', timedOut: false }; }
+        return { out: r.out || '', err: r.err || null, timedOut: false };
+      };
+      const p = (locks[lang] || Promise.resolve()).then(go, go);
+      locks[lang] = p.then(() => { }, () => { });
+      return p;
+    };
+  }
+  /** End whatever a language's sandbox is doing (the Stop button). */
+  function stopAll() { for (const l of ['python', 'cpp', 'java']) { cancel(l); cold[l] = true; } }
+
+  /** A driver (see TRON.botDriver) for a saved or loaded bot, or for a built-in one. */
+  function driverFor(entry, settings, seed, slot) {
+    if (entry.builtin) { const def = T.builtinById(entry.builtin); return T.builtinDriver(def, { rng: T.rng(T.seedOf(seed) * 4 + slot), player: slot }); }
+    return T.botDriver({ name: entry.name, lang: entry.lang, source: entry.source, limitMs: T.limitFor(entry.lang, settings.timeMs) }, run(entry.lang));
+  }
+
+  // ---------- the bots saved in this browser (everything a student makes lives in localStorage)
+  const KEY = 'shortcourses.arena.v1';
+  const ID_RE = /^[a-z0-9]{4,12}$/;
+  const newId = () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; for (let i = 0; i < 8; i++) s += a[Math.floor(Math.random() * a.length)]; return s; };
+  let S = null;
+  function cleanStore(raw) {
+    const out = { v: 1, bots: [], current: '', setup: {} };
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) raw = {};
+    const seen = new Set();
+    for (const b of (Array.isArray(raw.bots) ? raw.bots : []).slice(0, 60)) {
+      if (!b || typeof b !== 'object' || typeof b.id !== 'string' || !ID_RE.test(b.id) || seen.has(b.id)) continue;
+      let c; try { c = T.cleanBot({ format: 'tronbot', version: 1, name: b.name, lang: b.lang, source: b.source }); } catch (e) { continue; }
+      seen.add(b.id); out.bots.push({ id: b.id, name: c.name, lang: c.lang, source: c.source, at: Number.isFinite(b.at) ? b.at : 0 });
+    }
+    out.current = typeof raw.current === 'string' && seen.has(raw.current) ? raw.current : '';
+    const u = raw.setup && typeof raw.setup === 'object' && !Array.isArray(raw.setup) ? raw.setup : {};
+    const s = T.settingsOf(u);
+    out.setup = { width: s.width, height: s.height, players: s.players, timeMs: s.timeMs, invalid: s.invalid, seed: typeof u.seed === 'string' ? u.seed.replace(/[^0-9]/g, '').slice(0, 10) : '',
+      slots: (Array.isArray(u.slots) ? u.slots : []).slice(0, 4).map((x) => (typeof x === 'string' && /^(me|b:[a-z]{1,12}|bot:[a-z0-9]{4,12})$/.test(x) ? x : '')) };
+    return out;
+  }
+  function store() {
+    if (S) return S;
+    let raw = null; try { raw = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { raw = null; }
+    S = cleanStore(raw);
+    return S;
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable: the work lasts until the page closes */ } }
+  window.addEventListener('storage', (e) => { if (e.key === KEY || e.key === null) S = null; });   // another tab saved: do not write our copy over it
+  function addBot(bot) {
+    const s = store(), b = { id: newId(), name: bot.name, lang: bot.lang, source: bot.source, at: Date.now() };
+    s.bots.unshift(b); if (s.bots.length > 60) s.bots.length = 60;
+    save(); return b;
+  }
+  const byId = (id) => store().bots.find((b) => b.id === id) || null;
+
+  // ---------- files and links
+  function download(name, data, type) {
+    const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: type || 'application/json' }));
+    const a = el('a', { href: url, download: name }); document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+  const LINK_WARN = 8192;
+  /** A link that carries an object in its fragment (so it is never sent to a server): → Promise<{url, long}> */
+  async function linkFor(kind, obj) {
+    const packed = await window.TEACH.pack(obj);
+    const url = location.href.split('#')[0] + '#/arena?' + kind + '=' + packed;
+    return { url, long: url.length > LINK_WARN };
+  }
+  /** What a pasted link, token or file text holds → {bot} or {replay}, checked; throws an Error with words for the student. */
+  async function readShared(text) {
+    text = String(text || '').trim();
+    if (!text) throw new Error('There is nothing to read here.');
+    if (text.length > 4 * 1024 * 1024) throw new Error('This is too big to be a bot or a replay.');
+    let obj = null;
+    if (text[0] === '{') { try { obj = JSON.parse(text); } catch (e) { throw new Error('This file is not valid JSON.'); } }
+    else {
+      const m = /[?&](bot|replay)=([A-Za-z0-9_-]+)/.exec(text), token = m ? m[2] : text.replace(/\s+/g, '');
+      if (!/^[A-Za-z0-9_-]+$/.test(token)) throw new Error('This is not a Bot Arena link or file.');
+      obj = await window.TEACH.unpack(token);
+    }
+    if (obj && obj.format === 'tronbot') return { bot: T.cleanBot(obj) };
+    if (obj && obj.format === 'tronreplay') return { replay: T.cleanReplay(obj) };
+    throw new Error('This is not a Bot Arena bot or replay.');
+  }
+  /** A box that shows a link to copy (a button copies it where the browser allows; otherwise the text is selected for the student). */
+  function linkBox(url, long, onClose) {
+    const input = el('input', { type: 'text', readonly: '', value: url, class: 'arena-link', 'aria-label': 'Link' });
+    const done = el('span', { class: 'small', role: 'status' });
+    const box = el('div', { class: 'arena-linkbox' },
+      long ? el('p', { class: 'small arena-warn' }, 'This link is ' + Math.round(url.length / 1024) + ' KB long. Some chat and email programs cut long links short; download the file instead if you can.') : null,
+      el('div', { class: 'toolbar' }, input,
+        el('button', { class: 'btn sm', onclick: async () => { input.select(); try { await navigator.clipboard.writeText(url); done.textContent = 'Copied.'; } catch (e) { done.textContent = 'Press Ctrl+C (or ⌘C) to copy.'; } } }, 'Copy'),
+        onClose ? el('button', { class: 'btn quiet sm', onclick: () => { box.remove(); onClose(); } }, 'Close') : null, done));
+    setTimeout(() => input.select(), 0);
+    return box;
+  }
+
+  Object.assign(A, { LANG_LABEL, run, stopAll, driverFor, store, save, addBot, byId, newId, download, linkFor, readShared, linkBox, LINK_WARN, cleanStore });
+})();
+
+;
+/* src/arena_view.js */
+/* Bot Arena, the viewer: draws a match on a canvas and plays it back. It reads only frames (one snapshot of the board per turn, see
+   TRON.snapshot), so a match that is still being played and a replay loaded from a file or a link go through the same code.
+     const v = ARENA.viewer(host, { maxWidth, onTurn(index, frame) })
+     v.live(settings, players)  start showing a match as it is played      v.push(frame)  one more turn       v.finish(lines)  the match is over
+     v.show(replay)             a finished replay (checked by TRON.cleanReplay, then re-simulated)             v.destroy()
+   Players are drawn in four colours AND with their number on the head, so the picture does not depend on telling colours apart. */
+(function () {
+  'use strict';
+  const T = window.TRON;
+  const A = window.ARENA = window.ARENA || {};
+  const el = (...a) => window.__app.internal.el(...a);
+  const PLAYER_COLORS = ['#2b7bd0', '#e07b00', '#2a9d4b', '#b04fc0'];
+  A.PLAYER_COLORS = PLAYER_COLORS;
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+  function viewer(host, opts) {
+    opts = opts || {};
+    let settings = T.settingsOf({}), players = [], frames = [], complete = true, lines = [], idx = 0, playing = false, speed = 8, raf = 0, last = 0, carry = 0, cell = 16, gone = false;
+    const canvas = el('canvas', { class: 'arena-canvas', role: 'img', 'aria-label': 'The game board' });
+    const legend = el('div', { class: 'arena-legend' });
+    const banner = el('div', { class: 'arena-banner', role: 'status', hidden: '' });
+    const hover = el('span', { class: 'arena-hover' }, ' ');
+    const counter = el('span', { class: 'arena-turn', 'aria-live': 'off' });
+    const scrub = el('input', { type: 'range', min: 0, max: 0, value: 0, class: 'arena-scrub', 'aria-label': 'Turn' });
+    const speedBox = el('input', { type: 'range', min: 1, max: 30, value: speed, class: 'algo-speed', 'aria-label': 'Speed in turns per second' });
+    const speedOut = el('span', { class: 'small arena-speed' }, speed + ' turns/s');
+    const btn = (label, aria, fn, cls) => el('button', { class: 'btn sm' + (cls ? ' ' + cls : ''), 'aria-label': aria, title: aria, onclick: fn }, label);
+    const playBtn = btn('Play', 'Play or pause', () => (playing ? pause() : play()), 'primary');
+    const controls = el('div', { class: 'arena-controls' },
+      btn('|<', 'Back to the start', () => { pause(); seek(0); }), btn('<', 'One turn back', () => { pause(); seek(idx - 1); }), playBtn,
+      btn('>', 'One turn forward', () => { pause(); seek(idx + 1); }), btn('>|', 'Jump to the end', () => { pause(); seek(frames.length - 1); }),
+      el('label', { class: 'algo-speed-label' }, 'Speed ', speedBox, speedOut), counter);
+    const root = el('div', { class: 'arena-viewer' + (opts.big ? ' big' : '') }, legend, el('div', { class: 'arena-board' }, canvas), scrub, controls, hover, banner);
+    host.append(root);
+    const ctx = canvas.getContext('2d');
+
+    function frame() { return frames[Math.min(idx, frames.length - 1)] || null; }
+    function size() {
+      const avail = Math.max(160, Math.min(opts.maxWidth || 640, (root.clientWidth || 600)));
+      cell = Math.max(4, Math.floor(Math.min(avail / settings.width, (opts.maxHeight || 1e4) / settings.height)));
+      const w = cell * settings.width, h = cell * settings.height, dpr = Math.min(3, window.devicePixelRatio || 1);
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    function draw() {
+      const f = frame(); if (!f) return;
+      const W = settings.width, H = settings.height, bg = css('--paper-2') || '#f5f5f3', grid = css('--rule-2') || '#ececea', ink = css('--ink') || '#000';
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, cell * W, cell * H);
+      if (cell >= 10) { ctx.strokeStyle = grid; ctx.lineWidth = 1; ctx.beginPath(); for (let x = 1; x < W; x++) { ctx.moveTo(x * cell + 0.5, 0); ctx.lineTo(x * cell + 0.5, cell * H); } for (let y = 1; y < H; y++) { ctx.moveTo(0, y * cell + 0.5); ctx.lineTo(cell * W, y * cell + 0.5); } ctx.stroke(); }
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const o = f.grid[y * W + x]; if (!o) continue;
+        const alive = f.heads[o - 1] && f.heads[o - 1].alive;
+        ctx.globalAlpha = alive ? 0.85 : 0.35;   // a crashed player's trail fades
+        ctx.fillStyle = PLAYER_COLORS[(o - 1) % 4]; ctx.fillRect(x * cell + 1, y * cell + 1, cell - 1, cell - 1);
+      }
+      ctx.globalAlpha = 1;
+      f.heads.forEach((h, i) => {
+        const col = PLAYER_COLORS[i % 4];
+        if (h.alive) {
+          ctx.fillStyle = col; ctx.fillRect(h.x * cell, h.y * cell, cell, cell);
+          ctx.strokeStyle = ink; ctx.lineWidth = Math.max(1.5, cell / 8); ctx.strokeRect(h.x * cell + 1, h.y * cell + 1, cell - 2, cell - 2);
+          if (cell >= 9) { ctx.fillStyle = '#fff'; ctx.font = '600 ' + Math.round(cell * 0.62) + 'px ' + (css('--sans') || 'sans-serif'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(i + 1), h.x * cell + cell / 2, h.y * cell + cell / 2 + 0.5); }
+        } else if (h.at && h.at[0] >= 0 && h.at[1] >= 0 && h.at[0] < W && h.at[1] < H) {   // where it crashed: a cross
+          ctx.strokeStyle = col; ctx.lineWidth = Math.max(2, cell / 6); const x = h.at[0] * cell, y = h.at[1] * cell, m = cell * 0.2;
+          ctx.beginPath(); ctx.moveTo(x + m, y + m); ctx.lineTo(x + cell - m, y + cell - m); ctx.moveTo(x + cell - m, y + m); ctx.lineTo(x + m, y + cell - m); ctx.stroke();
+        }
+      });
+    }
+    function sync() {
+      scrub.max = Math.max(0, frames.length - 1); scrub.value = Math.min(idx, frames.length - 1);
+      const last = Math.max(0, frames.length - 1), f = frame();
+      counter.textContent = 'Turn ' + (f ? f.turn : 0) + (complete ? ' of ' + last : (last ? ' (' + last + ' so far)' : ''));
+      playBtn.textContent = playing ? 'Pause' : (complete && idx >= last && last > 0 ? 'Replay' : 'Play');
+      const done = complete && idx >= last && lines.length > 0;
+      banner.hidden = !done; banner.textContent = '';
+      if (done) lines.forEach((l, i) => banner.append(el(i ? 'div' : 'strong', { class: i ? 'arena-banner-line' : '' }, l)));
+      canvas.setAttribute('aria-label', 'The game board at turn ' + (f ? f.turn : 0) + (done ? '. ' + lines.join(' ') : ''));
+      legend.textContent = '';
+      players.forEach((p, i) => {
+        const hd = f && f.heads[i], out = hd && !hd.alive;
+        legend.append(el('span', { class: 'arena-chip' + (out ? ' is-out' : '') }, el('i', { style: 'background:' + PLAYER_COLORS[i % 4] }), el('b', {}, String(i + 1)), ' ' + p.name, el('small', {}, ' ' + (p.lang === 'js' ? 'built in' : (A.LANG_LABEL[p.lang] || p.lang)) + (out ? ' · crashed' : ''))));
+      });
+      if (opts.onTurn) opts.onTurn(Math.min(idx, frames.length - 1), f);
+    }
+    function seek(i) { idx = Math.max(0, Math.min(frames.length - 1, Math.round(i))); draw(); sync(); }
+    function tick(t) {
+      raf = 0;
+      if (gone || !root.isConnected) { playing = false; return; }
+      if (!playing) return;
+      carry += Math.min(0.25, (t - last) / 1000) * speed; last = t;
+      while (carry >= 1) { carry -= 1; if (idx < frames.length - 1) idx++; else break; }
+      draw(); sync();
+      if (idx >= frames.length - 1) { carry = 0; if (complete) { playing = false; sync(); return; } }
+      raf = requestAnimationFrame(tick);
+    }
+    function play() {
+      if (complete && idx >= frames.length - 1) idx = 0;
+      playing = true; last = performance.now(); carry = 0; sync();
+      if (!raf) raf = requestAnimationFrame(tick);
+    }
+    function pause() { playing = false; sync(); }
+    scrub.addEventListener('input', () => { pause(); seek(+scrub.value); });
+    speedBox.addEventListener('input', () => { speed = +speedBox.value; speedOut.textContent = speed + ' turns/s'; });
+    canvas.addEventListener('mousemove', (e) => {
+      const r = canvas.getBoundingClientRect(), x = Math.floor((e.clientX - r.left) / cell), y = Math.floor((e.clientY - r.top) / cell), f = frame();
+      if (!f || x < 0 || y < 0 || x >= settings.width || y >= settings.height) { hover.textContent = ' '; return; }
+      const o = f.grid[y * settings.width + x], h = f.heads.findIndex((q) => q.alive && q.x === x && q.y === y);
+      hover.textContent = '(' + x + ', ' + y + ')  ' + (h >= 0 ? 'head of player ' + (h + 1) : o ? 'trail of player ' + o : 'empty');
+    });
+    canvas.addEventListener('mouseleave', () => { hover.textContent = ' '; });
+    const mo = new MutationObserver(draw); mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    let ro = null, pending = 0;
+    if (window.ResizeObserver) { ro = new ResizeObserver(() => { if (!pending) pending = requestAnimationFrame(() => { pending = 0; if (!root.isConnected) return; size(); draw(); }); }); ro.observe(root); }   // setting a canvas's size clears it, so it is always drawn again
+
+    function set(newSettings, newPlayers, newFrames, isComplete, newLines) {
+      pause(); settings = T.settingsOf(newSettings); players = newPlayers; frames = newFrames; complete = isComplete; lines = newLines || []; idx = 0;
+      size(); draw(); sync();
+    }
+    const api = {
+      el: root,
+      live(s, ps) { set(s, ps, [T.snapshot(T.create(s, 1), [])], false, []); play(); },
+      push(f) { frames.push(f); sync(); },
+      finish(l) { complete = true; lines = l; sync(); if (!playing && idx >= frames.length - 1) sync(); },
+      show(replay, autoplay) { const clean = T.cleanReplay(replay), sim = T.simulate(clean); set(clean.settings, clean.players, sim.frames, true, T.describeResult(clean, sim.result)); if (autoplay !== false) play(); else seek(sim.frames.length - 1); return clean; },
+      set, play, pause, seek,
+      get index() { return idx; }, get playing() { return playing; }, get frames() { return frames; }, get settings() { return settings; },
+      destroy() { gone = true; playing = false; if (raf) cancelAnimationFrame(raf); mo.disconnect(); if (ro) ro.disconnect(); root.remove(); }
+    };
+    size(); sync();
+    return api;
+  }
+  A.viewer = viewer;
+})();
+
+;
+/* src/arena.js */
+/* Bot Arena: the #/arena page (write a bot, play it against the built-in bots or your other bots, watch and share the match) and the
+   #/arena/tournament page (load a class's bots, run a round robin, show it on a projector). ARCHITECTURE §9j.
+   The rules, the referee and the bots are in src/tron.js; running a program and saving bots in src/arena_run.js; drawing in src/arena_view.js.
+   A bot (or replay) link is  #/arena?bot=<packed>  or  #/arena?replay=<packed>: the data is in the fragment, so it is never sent to a server.
+   Student bots loaded for a tournament stay in this browser. */
+(function () {
+  'use strict';
+  const T = window.TRON, B = window.TRONBOTS, A = window.ARENA;
+  const el = (...a) => window.__app.internal.el(...a);
+  const armConfirm = (...a) => window.__app.internal.armConfirm(...a);
+  const LABEL = A.LANG_LABEL;
+  const BUILTIN_VALUE = (id) => 'b:' + id;
+  const tick = () => new Promise((r) => setTimeout(r, 0));   // let the browser draw and answer clicks between matches
+  const intIn = (input, lo, hi, d) => { const n = Math.round(Number(input.value)); return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : d; };
+  const langName = (l) => (l === 'js' ? 'built in' : LABEL[l] || l);
+  const pristine = (src) => !src.trim() || Object.values(B.templates).includes(src) || Object.values(B.solutions).includes(src);
+  const MAX_FILE = 1024 * 1024;
+
+  function subnav(here) {
+    return el('p', { class: 'arena-subnav small' }, here === 'play' ? el('b', {}, 'Write a bot') : el('a', { href: '#/arena' }, 'Write a bot'), ' · ',
+      here === 'tournament' ? el('b', {}, 'Run a tournament (for teachers)') : el('a', { href: '#/arena/tournament' }, 'Run a tournament (for teachers)'));
+  }
+  const howItWorks = () => el('details', { class: 'arena-how' }, el('summary', {}, 'How a bot talks to the arena'),
+    el('p', {}, 'A bot is a normal program, in Python, Java, C++ or Scheme. Every turn the arena runs it afresh, gives it the board on its standard input (what ', el('code', {}, 'input()'), ', ', el('code', {}, 'cin'), ' or ', el('code', {}, 'Scanner'), ' read), and the bot prints ONE move: ', el('code', {}, 'UP'), ', ', el('code', {}, 'DOWN'), ', ', el('code', {}, 'LEFT'), ' or ', el('code', {}, 'RIGHT'), '. A bot starts fresh each turn, so it remembers nothing from the last one.'),
+    el('pre', { class: 'arena-sample' }, '20 20          the board: width height\n1 2            you are player 1; 2 players are still alive\n3 2 1          where each player’s head is: x y player\n16 17 2\n....................   one line per row, top row first:\n..#1................   . empty   # a wall (a trail)   1-4 a head\n...                    (20 rows in all; (0, 0) is the top left)'),
+    el('p', {}, 'All players move at the same time. A player crashes by leaving the board, running into a wall or a head, or moving into the same cell as another player; the last player left wins. A bot that prints something that is not a move, takes too long, or fails is moved UP for that turn (you can make that a forfeit instead), and the reason appears in the log.'),
+    el('p', {}, 'To see what your bot is thinking, print a line that starts with ', el('code', {}, 'LOG '), ', for example ', el('code', {}, 'print("LOG going", move)'), '. Those lines go to your bot’s tab in the log and the arena ignores them (the sandboxes have no separate error channel). Anything else you print counts as your move.'),
+    el('p', {}, 'Time: each move gets 500 ms (2 seconds for C++, which this site runs on a slower interpreter), unless the match says otherwise. The same seed and the same moves always replay the same match.'));
+
+  // =================================================================== the play page
+  function playPage(query) {
+    const S = A.store(), main = el('main', { class: 'arena' });
+    if (!S.bots.length) { const b = A.addBot({ name: 'My first bot', lang: 'python', source: B.templates.python }); S.current = b.id; A.save(); }
+    let bot = A.byId(S.current) || S.bots[0];
+    S.current = bot.id;
+    let editor = null, running = false, stopFlag = false, current = null, series = null, logTab = 'ref', saveTimer = 0;
+    const alive = () => main.isConnected;
+    const saveSoon = () => { clearTimeout(saveTimer); saveTimer = setTimeout(() => A.save(), 400); };
+    window.addEventListener('pagehide', () => A.save());
+
+    // ---- editor pane
+    const nameInput = el('input', { type: 'text', class: 'arena-name', maxlength: 40, 'aria-label': 'Bot name', value: bot.name });
+    const langSel = el('select', { 'aria-label': 'Language' }, T.LANGS.map((l) => el('option', { value: l }, LABEL[l])));
+    const botSel = el('select', { 'aria-label': 'My bots', class: 'arena-botsel' });
+    const editorHost = el('div', { class: 'arena-editor' });
+    const paneNote = el('div', { class: 'arena-panenote', role: 'status' });
+    const linkSlot = el('div');
+    const fileIn = el('input', { type: 'file', accept: '.json,application/json', hidden: '', 'aria-label': 'Open a bot or replay file' });
+    const pasteBox = el('textarea', { rows: 3, class: 'arena-paste', placeholder: 'Paste a bot or replay link, or the contents of a .tronbot.json or .tronreplay.json file', 'aria-label': 'Paste a link or file' });
+    const note = (text, bad) => { paneNote.textContent = text || ''; paneNote.className = 'arena-panenote' + (bad ? ' err' : ''); };
+    function mountEditor() {
+      editorHost.textContent = '';
+      editor = window.__app.makeEditor(bot.lang, bot.source, (v) => { bot.source = v; bot.at = Date.now(); saveSoon(); });
+      editorHost.append(editor.el);
+      langSel.value = bot.lang; nameInput.value = bot.name;
+    }
+    function fillBotSel() {
+      botSel.textContent = '';
+      for (const b of S.bots) botSel.append(el('option', { value: b.id, selected: b.id === bot.id ? '' : null }, b.name + ' (' + LABEL[b.lang] + ')'));
+      botSel.value = bot.id;
+    }
+    function useBot(b) { bot = b; S.current = b.id; A.save(); mountEditor(); fillBotSel(); fillSlots(); note(''); linkSlot.textContent = ''; }
+    botSel.addEventListener('change', () => { const b = A.byId(botSel.value); if (b) useBot(b); });
+    nameInput.addEventListener('input', () => { bot.name = T.cleanText(nameInput.value, 40) || 'Unnamed bot'; fillBotSel(); fillSlots(); saveSoon(); });
+    const swapBox = el('div', { class: 'arena-swap', hidden: '' });
+    langSel.addEventListener('change', () => {
+      const to = langSel.value, from = bot.lang;
+      if (to === from) return;
+      const doSwitch = () => { bot.lang = to; bot.source = B.templates[to]; swapBox.hidden = true; mountEditor(); fillBotSel(); fillSlots(); saveSoon(); note('Switched to ' + LABEL[to] + ' with its starter bot.'); };
+      if (pristine(bot.source)) { doSwitch(); return; }
+      langSel.value = from;
+      swapBox.hidden = false; swapBox.textContent = '';
+      swapBox.append(el('span', {}, 'Switching to ' + LABEL[to] + ' replaces your ' + LABEL[from] + ' code with the ' + LABEL[to] + ' starter. To keep it, make a new bot instead. '),
+        el('button', { class: 'btn sm', onclick: () => { langSel.value = to; doSwitch(); } }, 'Replace my code'), ' ',
+        el('button', { class: 'btn quiet sm', onclick: () => { swapBox.hidden = true; } }, 'Cancel'));
+    });
+    const newBtn = el('button', { class: 'btn sm', onclick: () => { const b = A.addBot({ name: 'Bot ' + (S.bots.length + 1), lang: langSel.value, source: B.templates[langSel.value] }); useBot(b); } }, 'New bot');
+    const dupBtn = el('button', { class: 'btn quiet sm', onclick: () => { const b = A.addBot({ name: T.cleanText(bot.name + ' copy', 40), lang: bot.lang, source: bot.source }); useBot(b); } }, 'Copy');
+    const delBtn = el('button', { class: 'btn quiet sm', onclick: () => armConfirm(delBtn, 'Delete this bot?', () => {
+      S.bots.splice(S.bots.indexOf(bot), 1);
+      if (!S.bots.length) A.addBot({ name: 'My first bot', lang: 'python', source: B.templates.python });
+      A.save(); useBot(S.bots[0]);
+    }) }, 'Delete');
+    const starterBtn = el('button', { class: 'btn quiet sm', onclick: () => {
+      const go = () => { editor.value = B.templates[bot.lang]; bot.source = B.templates[bot.lang]; A.save(); note('The starter bot is loaded.'); };
+      if (pristine(bot.source)) go(); else armConfirm(starterBtn, 'Replace your code?', go);
+    } }, 'Load the starter');
+    const solBtn = el('button', { class: 'btn quiet sm', onclick: () => armConfirm(solBtn, 'Show the solution?', () => { editor.value = B.solutions[bot.lang]; bot.source = B.solutions[bot.lang]; A.save(); note('The Flood Fill solution is loaded: read it, then try to beat it.'); }) }, 'Reveal the Flood Fill solution');
+    const exportBtn = el('button', { class: 'btn quiet sm', onclick: () => A.download(T.fileSafe(bot.name) + '.tronbot.json', JSON.stringify(T.botFile(bot), null, 1) + '\n') }, 'Export bot');
+    const linkBtn = el('button', { class: 'btn quiet sm', onclick: async () => { const l = await A.linkFor('bot', T.botFile(bot)); linkSlot.textContent = ''; linkSlot.append(A.linkBox(l.url, l.long, () => { linkSlot.textContent = ''; })); } }, 'Copy link');
+    const importBtn = el('button', { class: 'btn quiet sm', onclick: () => fileIn.click() }, 'Import file');
+    async function openShared(text) {
+      try {
+        const r = await A.readShared(text);
+        if (r.bot) { useBot(A.addBot(r.bot)); note('Opened “' + r.bot.name + '” (' + LABEL[r.bot.lang] + ') as a new bot of yours. Read it before you run it.'); }
+        else { showReplay(r.replay, 'file'); note('Opened a replay: ' + r.replay.players.map((p) => p.name).join(' vs ') + '.'); }
+      } catch (e) { note(e.message || String(e), true); }
+    }
+    fileIn.addEventListener('change', async () => {
+      const f = fileIn.files && fileIn.files[0]; fileIn.value = '';
+      if (!f) return;
+      if (f.size > MAX_FILE) { note('That file is too big to be a bot or a replay.', true); return; }
+      openShared(await f.text());
+    });
+    const pasteDetails = el('details', { class: 'arena-pastebox' }, el('summary', {}, 'Paste a link or file'), pasteBox,
+      el('div', { class: 'toolbar' }, el('button', { class: 'btn sm', onclick: () => { const t = pasteBox.value; pasteBox.value = ''; pasteDetails.open = false; openShared(t); } }, 'Open')));
+    const solutionNote = el('details', { class: 'arena-teacher' }, el('summary', {}, 'For teachers: the finished Flood Fill bot'),
+      el('p', { class: 'small' }, 'A complete Flood Fill bot in each language, with the same structure as the starter. It counts the cells it could still reach after each move and takes the move with the most room. Revealing it replaces the code in the editor.'), solBtn);
+
+    // ---- the match setup bar
+    const players = el('select', { 'aria-label': 'Number of players' }, [2, 3, 4].map((n) => el('option', { value: n }, n + ' players')));
+    const slotsBox = el('div', { class: 'arena-slots' });
+    const widthIn = el('input', { type: 'number', min: 10, max: 40, value: S.setup.width, 'aria-label': 'Board width' });
+    const heightIn = el('input', { type: 'number', min: 10, max: 40, value: S.setup.height, 'aria-label': 'Board height' });
+    const timeSel = el('select', { 'aria-label': 'Time per move' }, [[0, 'By language (500 ms, C++ 2 s)'], [100, '100 ms'], [250, '250 ms'], [500, '500 ms'], [1000, '1 second'], [2000, '2 seconds'], [5000, '5 seconds']].map(([v, t]) => el('option', { value: v }, t)));
+    const seedIn = el('input', { type: 'text', inputmode: 'numeric', placeholder: 'random', value: S.setup.seed, 'aria-label': 'Seed', class: 'arena-seed' });
+    const invalidSel = el('select', { 'aria-label': 'An invalid move' }, [['up', 'is moved UP'], ['forfeit', 'forfeits the match']].map(([v, t]) => el('option', { value: v }, t)));
+    players.value = String(S.setup.players); timeSel.value = String([0, 100, 250, 500, 1000, 2000, 5000].includes(S.setup.timeMs) ? S.setup.timeMs : 0); invalidSel.value = S.setup.invalid;
+    const slotValues = () => { const d = ['me', BUILTIN_VALUE('random'), BUILTIN_VALUE('hugger'), BUILTIN_VALUE('flood')]; return d.map((v, i) => S.setup.slots[i] || v); };
+    function slotOptions(i) {
+      const opts = [];
+      if (i === 0) opts.push(el('option', { value: 'me' }, 'My bot (the one in the editor)'));
+      else opts.push(el('option', { value: 'me' }, 'My bot again'));
+      for (const d of T.BUILTINS) opts.push(el('option', { value: BUILTIN_VALUE(d.id) }, d.name + ' (built in)'));
+      for (const b of S.bots) opts.push(el('option', { value: 'bot:' + b.id }, b.name + ' (' + LABEL[b.lang] + ')'));
+      return opts;
+    }
+    function fillSlots() {
+      const n = +players.value, vals = slotValues();
+      slotsBox.textContent = '';
+      for (let i = 0; i < n; i++) {
+        const sel = el('select', { 'aria-label': 'Player ' + (i + 1) }, slotOptions(i));
+        sel.value = [...sel.options].some((o) => o.value === vals[i]) ? vals[i] : (i === 0 ? 'me' : BUILTIN_VALUE('random'));
+        S.setup.slots[i] = sel.value;
+        sel.addEventListener('change', () => { S.setup.slots[i] = sel.value; saveSoon(); });
+        slotsBox.append(el('label', { class: 'arena-slot' }, el('i', { class: 'arena-dot', style: 'background:' + A.PLAYER_COLORS[i] }), 'Player ' + (i + 1) + ' ', sel));
+      }
+    }
+    players.addEventListener('change', () => { fillSlots(); saveSoon(); });
+    for (const x of [widthIn, heightIn, timeSel, seedIn, invalidSel]) x.addEventListener('change', () => { remember(); });
+    function remember() { Object.assign(S.setup, { width: intIn(widthIn, 10, 40, 20), height: intIn(heightIn, 10, 40, 20), players: +players.value, timeMs: +timeSel.value, seed: seedIn.value.replace(/[^0-9]/g, '').slice(0, 10), invalid: invalidSel.value }); saveSoon(); }
+    const settingsNow = () => { remember(); return T.settingsOf({ width: S.setup.width, height: S.setup.height, players: +players.value, timeMs: +timeSel.value, invalid: invalidSel.value }); };
+    const seedNow = () => { const t = seedIn.value.replace(/[^0-9]/g, ''); return t ? T.seedOf(Number(t)) : (Math.floor(Math.random() * 4294967296) >>> 0) || 1; };
+    function entryOf(value) {
+      if (value === 'me') return { name: bot.name, lang: bot.lang, source: bot.source };
+      if (value.startsWith('bot:')) { const b = A.byId(value.slice(4)); if (b) return { name: b.name, lang: b.lang, source: b.source }; }
+      const d = T.builtinById(value.startsWith('b:') ? value.slice(2) : '') || T.builtinById('random');
+      return { name: d.name, lang: 'js', builtin: d.id };
+    }
+    const playBtn = el('button', { class: 'btn primary', onclick: () => playOne() }, 'Play');
+    const seriesBtn = el('button', { class: 'btn', onclick: () => playSeries(10) }, 'Play 10');
+    const stopBtn = el('button', { class: 'btn quiet', hidden: '', onclick: () => { stopFlag = true; A.stopAll(); } }, 'Stop');
+    const testBtn = el('button', { class: 'btn quiet', onclick: () => testRun() }, 'Test my bot once');
+    const status = el('div', { class: 'arena-status', role: 'status' });
+    function setRunning(on) { running = on; playBtn.disabled = seriesBtn.disabled = testBtn.disabled = on; stopBtn.hidden = !on; }
+
+    // ---- the viewer, the logs
+    const viewerHost = el('div', { class: 'arena-viewer-host' });
+    const tabs = el('div', { class: 'arena-tabs', role: 'tablist' });
+    const logOut = el('pre', { class: 'arena-log', tabindex: '0', 'aria-label': 'Log' });
+    const inputOut = el('pre', { class: 'arena-log arena-input', tabindex: '0', 'aria-label': 'The input the bot was sent', hidden: '' });
+    const inputHead = el('div', { class: 'small arena-inputhead', hidden: '' });
+    const showInput = el('input', { type: 'checkbox', id: 'arena-showinput' });
+    const matchTools = el('div', { class: 'toolbar arena-matchtools', hidden: '' });
+    const matchLink = el('div');
+    const v = A.viewer(viewerHost, { maxWidth: 640, onTurn: () => refreshInput() });   // after the boxes refreshInput reads: the viewer calls it as it is built
+    function newResult(entries, settings, seed) {
+      return { entries, settings, seed, players: entries.map((e) => ({ name: e.name, lang: e.lang })), logs: { ref: [], p: entries.map(() => []) }, replay: null, frames: null, dropped: 0 };
+    }
+    function addLog(res, p, kind, text, turn) {
+      if (stopFlag) return;
+      const list = kind === 'referee' ? res.logs.ref : res.logs.p[p];
+      if (list.length >= 400) { res.dropped++; return; }
+      list.push({ turn: turn || 0, p, text: String(text).slice(0, 4000) });
+      if (current === res) renderLog();
+    }
+    function renderTabs() {
+      tabs.textContent = '';
+      const mk = (key, label, color) => tabs.append(el('button', { role: 'tab', class: 'arena-tab', 'aria-selected': String(logTab === key), onclick: () => { logTab = key; renderTabs(); renderLog(); refreshInput(); } }, color ? el('i', { class: 'arena-dot', style: 'background:' + color }) : null, label));
+      mk('ref', 'Referee');
+      if (current) current.players.forEach((p, i) => mk(i, (i + 1) + ' · ' + p.name, A.PLAYER_COLORS[i]));
+    }
+    function renderLog() {
+      const res = current;
+      if (!res) { logOut.textContent = 'Nothing has been played yet. Press Play, or "Test my bot once".'; return; }
+      const list = logTab === 'ref' ? res.logs.ref : (res.logs.p[logTab] || []);
+      const txt = list.map((l) => (l.turn ? 'turn ' + l.turn + '  ' : 'start   ') + l.text.replace(/\n/g, '\n          ')).join('\n');
+      logOut.textContent = (txt || (logTab === 'ref' ? 'No problems so far: every move was valid and on time.' : 'This bot printed nothing to its log. (A line that starts with LOG goes here.)')) + (res.dropped ? '\n… and ' + res.dropped + ' more lines that are not shown.' : '');
+    }
+    function refreshInput() {
+      const on = showInput.checked && current && typeof logTab === 'number';
+      inputOut.hidden = inputHead.hidden = !on;
+      if (!on) return;
+      const f = v.frames[v.index];
+      if (!f) { inputOut.textContent = ''; return; }
+      const st = T.fromFrame(current.settings, f);
+      inputHead.textContent = f.over ? 'The match was over at this turn, so nothing was sent.' : f.heads[logTab] && f.heads[logTab].alive ? 'What ' + current.players[logTab].name + ' was sent to choose the move for turn ' + (f.turn + 1) + ' (the board you are looking at):' : current.players[logTab].name + ' had crashed by this turn, so nothing was sent.';
+      inputOut.textContent = f.over || !(f.heads[logTab] && f.heads[logTab].alive) ? '' : T.serialize(st, logTab);
+    }
+    showInput.addEventListener('change', refreshInput);
+    function showMatchTools(res) {
+      matchTools.hidden = !res.replay; matchTools.textContent = ''; matchLink.textContent = '';
+      if (!res.replay) return;
+      matchTools.append(el('span', { class: 'small' }, 'Seed ' + res.replay.seed + ' · ' + res.replay.result.turns + ' turns'),
+        el('button', { class: 'btn quiet sm', onclick: () => A.download(T.fileSafe(res.players.map((p) => p.name).join('-vs-')) + '-' + res.replay.seed + '.tronreplay.json', JSON.stringify(res.replay) + '\n') }, 'Download replay'),
+        el('button', { class: 'btn quiet sm', onclick: async () => { const l = await A.linkFor('replay', res.replay); matchLink.textContent = ''; matchLink.append(A.linkBox(l.url, l.long, () => { matchLink.textContent = ''; })); } }, 'Copy replay link'));
+    }
+    function showReplay(replay, from) {
+      const clean = v.show(replay);
+      current = { entries: clean.players, settings: clean.settings, seed: clean.seed, players: clean.players, logs: { ref: [], p: clean.players.map(() => []) }, replay: clean, frames: v.frames, dropped: 0, from };
+      current.logs.ref.push({ turn: 0, p: 0, text: 'This replay was opened from ' + (from === 'link' ? 'a link' : 'a file') + '. The bots’ own logs are not part of a replay file.' });
+      logTab = 'ref'; renderTabs(); renderLog(); showMatchTools(current); series = null; seriesBox.hidden = true;
+      status.textContent = ''; refreshInput();
+    }
+
+    // ---- playing
+    async function playOne() {
+      if (running) return;
+      stopFlag = false; seriesBox.hidden = true; series = null; setRunning(true);
+      const s = settingsNow(), seed = seedNow(), entries = [...slotsBox.querySelectorAll('select')].map((sel) => entryOf(sel.value));
+      const res = newResult(entries, s, seed); current = res; logTab = 'ref'; renderTabs(); renderLog(); showMatchTools(res);
+      status.textContent = 'Starting' + (entries.some((e) => !e.builtin && e.lang !== 'scheme') ? ' (the first move of a language can be slow: its engine is starting)' : '') + '…';
+      try {
+        const drivers = entries.map((e, p) => A.driverFor(e, s, seed, p));
+        v.live(s, res.players);
+        const m = await T.playMatch({ settings: s, seed, drivers, shouldStop: () => stopFlag || !alive(), onLog: (p, k, t, turn) => addLog(res, p, k, t, turn), onTurn: ({ frame, turn }) => { if (alive()) { v.push(frame); status.textContent = 'Turn ' + turn + '…'; } } });
+        if (!alive()) return;
+        res.replay = m.replay; res.frames = m.frames;
+        v.finish(m.aborted ? ['Stopped.'] : T.describeResult(m.replay, m.replay.result));
+        status.textContent = m.aborted ? 'Stopped after ' + m.replay.moves.length + ' turns.' : 'Done.';
+        showMatchTools(res); renderLog(); refreshInput();
+      } catch (e) { status.textContent = 'The match could not be played: ' + (e && e.message || e); }
+      finally { setRunning(false); }
+    }
+    async function playSeries(n) {
+      if (running) return;
+      stopFlag = false; setRunning(true);
+      const s = settingsNow(), base = seedNow(), entries = [...slotsBox.querySelectorAll('select')].map((sel) => entryOf(sel.value));
+      series = { entries, rows: [], wins: entries.map(() => 0), draws: 0, base };
+      seriesBox.hidden = false; matchTools.hidden = true; renderSeries();
+      try {
+        for (let i = 0; i < n && !stopFlag && alive(); i++) {
+          const swap = entries.length === 2 && i % 2 === 1, order = entries.map((_, k) => k); if (swap) order.reverse();   // two players take turns at the first start
+          const seed = T.seedOf(base + i), res = newResult(order.map((k) => entries[k]), s, seed);
+          status.textContent = 'Match ' + (i + 1) + ' of ' + n + '…';
+          const m = await T.playMatch({ settings: s, seed, drivers: order.map((k, slot) => A.driverFor(entries[k], s, seed, slot)), shouldStop: () => stopFlag || !alive(), onLog: (p, k, t, turn) => addLog(res, p, k, t, turn) });
+          if (m.aborted) break;
+          res.replay = m.replay; res.frames = m.frames;
+          const w = m.replay.result.winner;
+          if (w) series.wins[order[w - 1]]++; else series.draws++;
+          series.rows.push({ res, winner: w ? order[w - 1] : -1 });
+          renderSeries(); await tick();
+        }
+        status.textContent = stopFlag ? 'Stopped.' : 'Done: ' + series.rows.length + ' matches.';
+      } catch (e) { status.textContent = 'The series could not be played: ' + (e && e.message || e); }
+      finally { setRunning(false); }
+    }
+    const seriesBox = el('div', { class: 'arena-series', hidden: '' });
+    function renderSeries() {
+      if (!series) return;
+      seriesBox.textContent = '';
+      const total = series.rows.length;
+      seriesBox.append(el('h3', {}, 'Series: ' + total + ' match' + (total === 1 ? '' : 'es')),
+        el('p', { class: 'arena-wins' }, series.entries.map((e, k) => el('span', {}, el('b', {}, e.name), ' ' + series.wins[k] + (series.wins[k] === 1 ? ' win' : ' wins') + (k < series.entries.length - 1 ? ' · ' : ''))), ' · ' + series.draws + (series.draws === 1 ? ' draw' : ' draws')),
+        el('table', { class: 'arena-table small' }, el('thead', {}, el('tr', {}, ['Match', 'Seed', 'Result', 'Turns', ''].map((h) => el('th', {}, h)))),
+          el('tbody', {}, series.rows.map((r, i) => el('tr', {}, el('td', {}, i + 1), el('td', {}, r.res.seed), el('td', {}, r.winner < 0 ? 'Draw' : series.entries[r.winner].name + ' won'), el('td', {}, r.res.replay.result.turns),
+            el('td', {}, el('button', { class: 'btn quiet sm', onclick: () => { current = r.res; logTab = 'ref'; v.show(r.res.replay); renderTabs(); renderLog(); showMatchTools(r.res); window.scrollTo({ top: viewerHost.getBoundingClientRect().top + window.scrollY - 80 }); } }, 'Watch')))))));
+    }
+    async function testRun() {
+      if (running) return;
+      stopFlag = false; setRunning(true);
+      const s = settingsNow(), st = T.create(s, 1), input = T.serialize(st, 0), res = newResult([entryOf('me')], s, 1);
+      current = res; logTab = 0; renderTabs(); renderLog();
+      status.textContent = 'Running your bot on the empty board…';
+      try {
+        const t0 = performance.now(), d = A.driverFor(entryOf('me'), s, 1, 0), start = await d.start({ settings: s, player: 0, input }), r = start.ok ? await d.move(input) : { text: '', err: start.error, status: 'error' };
+        const sp = T.splitOutput(r.text), pm = T.parseMove(sp.text), ms = Math.round(performance.now() - t0);
+        const out = [];
+        if (!start.ok) out.push('The program did not start:\n' + String(start.error).slice(0, 3000));
+        else {
+          if (sp.log) out.push('LOG lines:\n' + sp.log);
+          if (r.status === 'timeout') out.push('It took longer than its ' + d.limitMs + ' ms.');
+          else if (r.status !== 'ok') out.push('It failed:\n' + String(r.err).slice(0, 3000));
+          else out.push(pm.move ? 'It chose ' + pm.move + '.' : 'That is not a move: it ' + pm.error + '.');
+          out.push('(The whole test took ' + ms + ' ms, which includes starting the engine the first time.)');
+        }
+        res.logs.p[0].push({ turn: 0, p: 0, text: out.join('\n\n') }); renderLog();
+        status.textContent = start.ok && pm.move ? 'Your bot printed a valid move.' : 'Your bot has a problem: see its tab in the log.';
+      } catch (e) { status.textContent = 'The test could not be run: ' + (e && e.message || e); }
+      finally { setRunning(false); }
+    }
+
+    // ---- assemble
+    mountEditor(); fillBotSel(); fillSlots(); renderTabs(); renderLog();
+    const editorPane = el('section', { class: 'arena-pane', 'aria-label': 'Your bot' },
+      el('div', { class: 'toolbar' }, botSel, newBtn, dupBtn, delBtn),
+      el('div', { class: 'toolbar' }, el('label', { class: 'arena-field' }, 'Name ', nameInput), el('label', { class: 'arena-field' }, 'Language ', langSel)),
+      swapBox, editorHost,
+      el('div', { class: 'toolbar' }, starterBtn, exportBtn, linkBtn, importBtn, fileIn),
+      linkSlot, pasteDetails, paneNote, solutionNote);
+    const setup = el('section', { class: 'arena-setup', 'aria-label': 'The match' },
+      el('div', { class: 'toolbar' }, el('label', { class: 'arena-field' }, 'Players ', players), slotsBox),
+      el('div', { class: 'toolbar arena-opts' }, el('label', { class: 'arena-field' }, 'Board ', widthIn, ' × ', heightIn), el('label', { class: 'arena-field' }, 'Time per move ', timeSel), el('label', { class: 'arena-field' }, 'Seed ', seedIn), el('label', { class: 'arena-field' }, 'An invalid move ', invalidSel)),
+      el('div', { class: 'toolbar' }, playBtn, seriesBtn, stopBtn, testBtn, status));
+    const watchPane = el('section', { class: 'arena-pane', 'aria-label': 'The match' }, viewerHost, matchTools, matchLink, seriesBox,
+      el('div', { class: 'arena-logs' }, el('div', { class: 'toolbar' }, tabs, el('label', { class: 'arena-showinput small' }, showInput, ' Show input')), inputHead, inputOut, logOut));
+    main.append(el('header', { class: 'algos-head' }, el('h1', {}, 'Bot Arena'),
+        el('p', { class: 'lede' }, 'Write a program that plays Tron: it moves its head one cell a turn, leaves a wall behind, and the last bot still moving wins. Your bot can be in Python, Java, C++ or Scheme, and it can play bots written in any of the others.'), subnav('play')),
+      howItWorks(), setup, el('div', { class: 'arena-cols' }, editorPane, watchPane));
+
+    // ---- a bot or replay in the link
+    const q = new URLSearchParams(query || '');
+    const shared = q.get('bot') ? 'bot=' + q.get('bot') : q.get('replay') ? 'replay=' + q.get('replay') : '';
+    if (shared) (async () => {
+      try {
+        const r = await A.readShared('?' + shared);
+        if (r.replay) { showReplay(r.replay, 'link'); note('This replay came in a link.'); return; }
+        const box = el('div', { class: 'arena-incoming' }, el('p', {}, el('b', {}, 'Someone sent you a bot: “' + r.bot.name + '”'), ' (' + LABEL[r.bot.lang] + ', ' + r.bot.source.split('\n').length + ' lines). It has not been run. Read it first: it will run in a sandbox in this browser, with no way to reach anything of yours.'),
+          el('pre', { class: 'arena-peek' }, r.bot.source.slice(0, 1500) + (r.bot.source.length > 1500 ? '\n…' : '')),
+          el('div', { class: 'toolbar' }, el('button', { class: 'btn primary', onclick: () => { box.remove(); useBot(A.addBot(r.bot)); note('Opened as a new bot of yours.'); } }, 'Open it as a new bot'), el('button', { class: 'btn quiet', onclick: () => box.remove() }, 'No thanks')));
+        main.querySelector('.algos-head').after(box);
+      } catch (e) { main.querySelector('.algos-head').after(el('p', { class: 'arena-incoming err' }, 'The link could not be opened: ' + (e.message || e))); }
+    })();
+    return main;
+  }
+
+  // =================================================================== the tournament page
+  function tournamentPage() {
+    const S = A.store(), main = el('main', { class: 'arena' });
+    const alive = () => main.isConnected;
+    let entries = [], out = null, running = false, stopFlag = false, sort = { key: 'points', dir: -1 }, projector = null;
+    const MAX_BOTS = 40;
+    const list = el('ul', { class: 'arena-entries' }), msg = el('div', { class: 'arena-panenote', role: 'status' });
+    const say = (t, bad) => { msg.textContent = t || ''; msg.className = 'arena-panenote' + (bad ? ' err' : ''); };
+    const uniqueName = (name) => { let n = name, k = 2; while (entries.some((e) => e.name === n)) n = name + ' (' + k++ + ')'; return n; };
+    function add(e) {
+      if (entries.length >= MAX_BOTS) { say('A tournament holds at most ' + MAX_BOTS + ' bots.', true); return false; }
+      entries.push(Object.assign({ id: A.newId() }, e, { name: uniqueName(T.cleanText(e.name, 40) || 'Unnamed bot') })); return true;
+    }
+    function renderEntries() {
+      list.textContent = '';
+      if (!entries.length) list.append(el('li', { class: 'small' }, 'No bots yet. Add some below.'));
+      entries.forEach((e, i) => list.append(el('li', {}, el('b', {}, e.name), ' ', el('span', { class: 'small' }, langName(e.lang)), ' ',
+        el('button', { class: 'btn quiet sm', 'aria-label': 'Remove ' + e.name, onclick: () => { entries.splice(i, 1); renderEntries(); } }, 'Remove'))));
+      runBtn.disabled = running || entries.length < 2;
+      count.textContent = entries.length + (entries.length === 1 ? ' bot' : ' bots') + (entries.length >= 2 ? ' · ' + (entries.length * (entries.length - 1) / 2 * intIn(roundsIn, 1, 10, 2)) + ' matches' : '');
+    }
+    const count = el('span', { class: 'small' });
+    // ---- adding bots: built in, saved here, files (also by dropping them), pasted links
+    const builtinBtns = T.BUILTINS.map((d) => el('button', { class: 'btn quiet sm', title: d.blurb, onclick: () => { add({ name: d.name, lang: 'js', builtin: d.id }); renderEntries(); } }, '+ ' + d.name));
+    const saved = el('div', { class: 'arena-saved' });
+    function renderSaved() {
+      saved.textContent = '';
+      if (!S.bots.length) { saved.append(el('span', { class: 'small' }, 'You have no saved bots on this device yet.')); return; }
+      const boxes = S.bots.map((b) => ({ b, box: el('input', { type: 'checkbox' }) }));
+      saved.append(...boxes.map(({ b, box }) => el('label', { class: 'arena-check' }, box, ' ' + b.name + ' (' + LABEL[b.lang] + ')')),
+        el('button', { class: 'btn sm', onclick: () => { for (const { b, box } of boxes) if (box.checked) { add({ name: b.name, lang: b.lang, source: b.source }); box.checked = false; } renderEntries(); } }, 'Add the ticked bots'));
+    }
+    async function addTexts(texts) {
+      const problems = []; let added = 0;
+      for (const [label, text] of texts) {
+        try { const r = await A.readShared(text); if (!r.bot) throw new Error('that is a replay, not a bot'); if (add({ name: r.bot.name, lang: r.bot.lang, source: r.bot.source })) added++; }
+        catch (e) { problems.push(label + ': ' + (e.message || e)); }
+      }
+      renderEntries();
+      say((added ? 'Added ' + added + (added === 1 ? ' bot. ' : ' bots. ') : '') + problems.join(' '), problems.length > 0 && !added);
+    }
+    async function addFiles(files) {
+      const texts = [];
+      for (const f of [...files].slice(0, 100)) { if (f.size > MAX_FILE) { texts.push([f.name, '']); continue; } texts.push([f.name, await f.text()]); }
+      await addTexts(texts);
+    }
+    const fileIn = el('input', { type: 'file', multiple: '', accept: '.json,application/json', 'aria-label': 'Choose bot files' });
+    fileIn.addEventListener('change', () => { addFiles(fileIn.files); fileIn.value = ''; });
+    const drop = el('div', { class: 'arena-drop', tabindex: '0' }, 'Drop .tronbot.json files here, or ', fileIn);
+    drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+    drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+    const paste = el('textarea', { rows: 3, class: 'arena-paste', placeholder: 'Or paste bot links, one to a line', 'aria-label': 'Paste bot links' });
+    const pasteBtn = el('button', { class: 'btn sm', onclick: () => { const lines = paste.value.split('\n').map((l) => l.trim()).filter(Boolean); paste.value = ''; addTexts(lines.map((l, i) => ['line ' + (i + 1), l])); } }, 'Add the pasted links');
+
+    // ---- settings and running
+    const widthIn = el('input', { type: 'number', min: 10, max: 40, value: 20, 'aria-label': 'Board width' }), heightIn = el('input', { type: 'number', min: 10, max: 40, value: 20, 'aria-label': 'Board height' });
+    const roundsIn = el('input', { type: 'number', min: 1, max: 10, value: 2, 'aria-label': 'Matches per pairing' });
+    const seedIn = el('input', { type: 'text', inputmode: 'numeric', placeholder: 'random', 'aria-label': 'Seed', class: 'arena-seed' });
+    const timeSel = el('select', { 'aria-label': 'Time per move' }, [[0, 'By language'], [250, '250 ms'], [500, '500 ms'], [1000, '1 second'], [2000, '2 seconds']].map(([v, t]) => el('option', { value: v }, t)));
+    const invalidSel = el('select', { 'aria-label': 'An invalid move' }, [['up', 'is moved UP'], ['forfeit', 'forfeits the match']].map(([v, t]) => el('option', { value: v }, t)));
+    roundsIn.addEventListener('input', renderEntries);
+    const bar = el('progress', { max: 1, value: 0, 'aria-label': 'Progress', hidden: '' }), barText = el('span', { class: 'small', role: 'status' });
+    const runBtn = el('button', { class: 'btn primary', onclick: () => run() }, 'Run the tournament');
+    const stopBtn = el('button', { class: 'btn quiet', hidden: '', onclick: () => { stopFlag = true; A.stopAll(); } }, 'Stop');
+    const resultsBox = el('div', { class: 'arena-results', hidden: '' }), viewerHost = el('div', { class: 'arena-viewer-host' });
+    viewerHost.hidden = true;   // until a match is chosen
+    const v = A.viewer(viewerHost, { maxWidth: 560 });
+    const watching = el('p', { class: 'small', role: 'status' });
+
+    async function run() {
+      if (running || entries.length < 2) return;
+      stopFlag = false; running = true; runBtn.disabled = true; stopBtn.hidden = false; bar.hidden = false; say(''); resultsBox.hidden = true;
+      const s = T.settingsOf({ width: intIn(widthIn, 10, 40, 20), height: intIn(heightIn, 10, 40, 20), players: 2, timeMs: +timeSel.value, invalid: invalidSel.value });
+      const seedText = seedIn.value.replace(/[^0-9]/g, ''), seed = seedText ? T.seedOf(Number(seedText)) : (Math.floor(Math.random() * 4294967296) >>> 0) || 1;
+      const snapshot = entries.slice(), bots = snapshot.map((e) => ({ name: e.name, lang: e.lang, driver: (sd) => A.driverFor(e, s, sd, 0) }));
+      const rounds = intIn(roundsIn, 1, 10, 2);
+      try {
+        const r = await T.runTournament({ bots, rounds, settings: s, seed, shouldStop: () => stopFlag || !alive(),
+          onProgress: async (done, total) => { bar.max = total; bar.value = done; barText.textContent = 'Match ' + done + ' of ' + total; if (done % 4 === 0) await tick(); } });
+        if (!alive()) return;
+        out = { entries: snapshot, results: r.results, settings: s, seed, rounds, aborted: r.aborted };
+        barText.textContent = (r.aborted ? 'Stopped after ' : 'Done: ') + r.results.length + ' matches (seed ' + seed + ').';
+        renderResults();
+      } catch (e) { barText.textContent = 'The tournament could not be run: ' + (e && e.message || e); }
+      finally { running = false; stopBtn.hidden = true; runBtn.disabled = entries.length < 2; }
+    }
+
+    // ---- the results: a sortable table, a head-to-head grid, the exports
+    const COLS = [['rank', 'Rank'], ['name', 'Bot'], ['played', 'Played'], ['wins', 'Wins'], ['draws', 'Draws'], ['losses', 'Losses'], ['points', 'Points'], ['turns', 'Turns survived']];
+    function renderResults() {
+      resultsBox.textContent = ''; resultsBox.hidden = false;
+      const names = out.entries.map((e) => e.name), rows = T.standings(out.entries.length, out.results), ranked = T.rank(rows), place = new Map(ranked.map((r, i) => [r.bot, i + 1]));
+      const key = sort.key, val = (r) => (key === 'name' ? names[r.bot].toLowerCase() : key === 'rank' ? place.get(r.bot) : r[key]);
+      const shown = rows.slice().sort((a, b) => { const x = val(a), y = val(b); return (x < y ? -1 : x > y ? 1 : 0) * sort.dir || place.get(a.bot) - place.get(b.bot); });
+      const head = el('tr', {}, COLS.map(([k, label]) => el('th', { 'aria-sort': sort.key === k ? (sort.dir > 0 ? 'ascending' : 'descending') : 'none' },
+        el('button', { class: 'arena-sortbtn', onclick: () => { sort = { key: k, dir: sort.key === k ? -sort.dir : (k === 'name' || k === 'rank' || k === 'losses' ? 1 : -1) }; renderResults(); } }, label + (sort.key === k ? (sort.dir > 0 ? ' ▲' : ' ▼') : '')))));
+      const table = el('table', { class: 'arena-table' }, el('thead', {}, head), el('tbody', {}, shown.map((r) => el('tr', {},
+        el('td', {}, place.get(r.bot)), el('td', {}, el('b', {}, names[r.bot]), ' ', el('span', { class: 'small' }, langName(out.entries[r.bot].lang))), el('td', {}, r.played), el('td', {}, r.wins), el('td', {}, r.draws), el('td', {}, r.losses), el('td', {}, el('b', {}, r.points)), el('td', {}, r.turns)))));
+      // head to head: each small button is one match, from the row bot's side; press it to watch
+      const order = ranked.map((r) => r.bot);
+      const grid = el('table', { class: 'arena-grid small' }, el('thead', {}, el('tr', {}, el('th', {}, ''), order.map((b) => el('th', { title: names[b] }, place.get(b))))),
+        el('tbody', {}, order.map((a) => el('tr', {}, el('th', { class: 'arena-rowhead' }, place.get(a) + ' ' + names[a]), order.map((b) => {
+          if (a === b) return el('td', { class: 'arena-self' }, '–');
+          const ms = out.results.filter((m) => (m.a === a && m.b === b) || (m.a === b && m.b === a));
+          return el('td', {}, ms.map((m) => { const mine = m.winner === null ? 'D' : ((m.a === a) === (m.winner === 'a') ? 'W' : 'L');
+            return el('button', { class: 'arena-cell ' + mine, 'aria-label': names[a] + ' against ' + names[b] + ', seed ' + m.seed + ': ' + (mine === 'W' ? 'won' : mine === 'L' ? 'lost' : 'draw') + '. Watch.', title: 'Seed ' + m.seed + ' · ' + m.replay.result.turns + ' turns', onclick: () => watch(m) }, mine); }));
+        })))));
+      resultsBox.append(el('h2', {}, 'Standings'), el('div', { class: 'arena-scroll' }, table),
+        el('div', { class: 'toolbar' },
+          el('button', { class: 'btn', onclick: () => projectorMode() }, 'Projector mode'),
+          el('button', { class: 'btn quiet', onclick: () => A.download('standings.csv', T.standingsCsv(names, rows), 'text/csv') }, 'Download standings (CSV)'),
+          el('button', { class: 'btn quiet', onclick: () => A.download('replays.zip', new Blob([T.zip(zipFiles(names, rows))], { type: 'application/zip' })) }, 'Download all replays (zip)')),
+        el('h2', {}, 'Head to head'), el('p', { class: 'small' }, 'Read across: each box is one match for the bot in that row against the bot in that column (W won, L lost, D drew). Press a box to watch it.'), el('div', { class: 'arena-scroll' }, grid),
+        watching, viewerHost);
+    }
+    function zipFiles(names, rows) {
+      const files = [{ name: 'standings.csv', text: T.standingsCsv(names, rows) }];
+      out.results.forEach((m, i) => files.push({ name: 'replays/' + String(i + 1).padStart(3, '0') + '-' + T.fileSafe(names[m.a]) + '-vs-' + T.fileSafe(names[m.b]) + '-' + (m.k + 1) + '.tronreplay.json', text: JSON.stringify(m.replay) + '\n' }));
+      return files;
+    }
+    function watch(m) {
+      viewerHost.hidden = false; v.show(m.replay);
+      watching.textContent = 'Watching: ' + m.replay.players.map((p, i) => (i + 1) + ' ' + p.name).join(' vs ') + ' · seed ' + m.seed;
+      viewerHost.scrollIntoView({ block: 'center' });
+    }
+
+    // ---- projector mode: matches one after another, big names, standings that grow as matches finish
+    function projectorMode() {
+      if (projector || !out || !out.results.length) return;
+      const names = out.entries.map((e) => e.name), n = out.entries.length;
+      const title = el('div', { class: 'proj-title' }), stand = el('div', { class: 'proj-stand' }), host = el('div', { class: 'proj-board' });
+      let pv = null, index = 0, paused = false, timer = 0, token = 0;
+      const close = () => { token++; clearTimeout(timer); if (pv) pv.destroy(); overlay.remove(); projector = null; document.removeEventListener('keydown', onKey); if (document.fullscreenElement) document.exitFullscreen().catch(() => { }); };
+      const pauseBtn = el('button', { class: 'btn sm', onclick: () => togglePause() }, 'Pause');
+      const overlay = el('div', { class: 'arena-projector', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Tournament on the projector' },
+        el('div', { class: 'proj-bar' }, el('span', { class: 'proj-count' }), el('span', { class: 'spacer' }), el('button', { class: 'btn sm', onclick: () => step(-1) }, 'Previous'), pauseBtn, el('button', { class: 'btn sm', onclick: () => step(1) }, 'Next'), el('button', { class: 'btn sm', onclick: close }, 'Close')),
+        el('div', { class: 'proj-main' }, el('div', { class: 'proj-left' }, title, host), stand));
+      const countEl = overlay.querySelector('.proj-count');
+      function standings(upto) {
+        const rows = T.rank(T.standings(n, out.results.slice(0, upto)));
+        stand.textContent = '';
+        stand.append(el('h2', {}, upto >= out.results.length ? 'Final standings' : 'Standings after ' + upto + ' of ' + out.results.length),
+          el('ol', {}, rows.map((r) => el('li', {}, el('span', { class: 'proj-name' }, names[r.bot]), el('span', { class: 'proj-pts' }, r.points + ' pts')))));
+      }
+      function showMatch(i) {
+        const m = out.results[i], my = ++token; clearTimeout(timer);
+        countEl.textContent = 'Match ' + (i + 1) + ' of ' + out.results.length;
+        title.textContent = '';
+        title.append(...m.replay.players.flatMap((p, k) => [k ? el('span', { class: 'proj-vs' }, 'vs') : '', el('span', { class: 'proj-player' }, el('i', { class: 'arena-dot', style: 'background:' + A.PLAYER_COLORS[k] }), p.name)]).filter(Boolean));   // not null: the DOM's append prints it
+        standings(i);
+        if (!pv) pv = A.viewer(host, { maxWidth: 900, maxHeight: Math.max(300, window.innerHeight - 260), big: true });
+        pv.show(m.replay);
+        const wait = () => { if (my !== token) return; if (paused) { timer = setTimeout(wait, 300); return; } if (pv.playing) { timer = setTimeout(wait, 250); return; } timer = setTimeout(() => { if (my === token) { standings(i + 1); timer = setTimeout(() => { if (my === token) step(1); }, 1800); } }, 1500); };
+        timer = setTimeout(wait, 400);
+      }
+      function step(d) { index += d; if (index < 0) index = 0; if (index >= out.results.length) { index = out.results.length - 1; standings(out.results.length); return; } showMatch(index); }
+      function togglePause() { paused = !paused; pauseBtn.textContent = paused ? 'Resume' : 'Pause'; if (pv) { if (paused) pv.pause(); else if (!pv.playing && pv.index < pv.frames.length - 1) pv.play(); } }
+      function onKey(e) { if (e.key === 'Escape') close(); else if (e.key === ' ') { e.preventDefault(); togglePause(); } else if (e.key === 'ArrowRight') step(1); else if (e.key === 'ArrowLeft') step(-1); }
+      document.addEventListener('keydown', onKey);
+      document.body.append(overlay); projector = overlay;
+      if (overlay.requestFullscreen) overlay.requestFullscreen().catch(() => { });
+      overlay.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && projector) close(); });
+      showMatch(0);
+    }
+
+    // ---- assemble
+    renderEntries(); renderSaved();
+    main.append(el('header', { class: 'algos-head' }, el('h1', {}, 'Tournament'),
+        el('p', { class: 'lede' }, 'Load a class’s bots, play every bot against every other, and show the matches on a projector. Nothing is sent anywhere: the bots you load stay in this browser, and every bot runs in a sandbox.'), subnav('tournament')),
+      el('section', {}, el('h2', {}, '1. The bots'), list, count,
+        el('div', { class: 'toolbar' }, el('span', { class: 'small' }, 'Built-in bots to compare against:'), builtinBtns),
+        el('h3', {}, 'My saved bots'), saved, el('h3', {}, 'Bot files and links'), drop, paste, el('div', { class: 'toolbar' }, pasteBtn), msg),
+      el('section', {}, el('h2', {}, '2. The tournament'),
+        el('div', { class: 'toolbar arena-opts' }, el('label', { class: 'arena-field' }, 'Board ', widthIn, ' × ', heightIn), el('label', { class: 'arena-field' }, 'Matches per pairing ', roundsIn), el('label', { class: 'arena-field' }, 'Time per move ', timeSel), el('label', { class: 'arena-field' }, 'Seed ', seedIn), el('label', { class: 'arena-field' }, 'An invalid move ', invalidSel)),
+        el('p', { class: 'small' }, 'Every pair plays the number of matches you choose, and the two bots swap starting corners each time. A win is 3 points, a draw 1; ties are broken by the turns a bot survived in all its matches.'),
+        el('div', { class: 'toolbar' }, runBtn, stopBtn, bar, barText)),
+      resultsBox);
+    return main;
+  }
+
+  A.page = function (sub, query) {
+    document.title = (sub === 'tournament' ? 'Tournament — Bot Arena' : 'Bot Arena') + ' — ' + ((window.SITE && window.SITE.name) || 'Short Explorations in Computer Science');
+    return sub === 'tournament' ? tournamentPage() : playPage(query);
+  };
 })();
 
 ;
