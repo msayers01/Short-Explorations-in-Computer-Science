@@ -645,15 +645,26 @@ Students write a bot (Python, Java, C++ or Scheme) that plays Tron against built
   re-simulated, so it stays small; `result.crashes[].reason` carries the words (including why a bot forfeited).
 - **Time.** `settings.timeMs` 0 means by language: 500 ms, 2 s for C++ (JSCPP is the slow engine; the JVM-startup reason in the spec does not apply, our Java is an interpreter).
 - **`arena_run.js`**: `run(lang)` over the existing runners (`PYRUN`, `CPPRUN`, `JAVARUN` take `maxMs`/`execLimit`; Scheme takes `stdin` and `stepLimit` and runs in the page,
-  stopped by steps, since the page cannot interrupt it). Bots of a language take turns (one worker each), a new worker is warmed up outside the clock, a bot past its limit
+  stopped by steps, since the page cannot interrupt it; `BOTRUN.open` starts a bot that stays running). Bots of a language take turns (one worker each), a new worker is warmed up outside the clock, a bot past its limit
   has its worker ended. Saved bots: `shortcourses.arena.v1` (sanitised on load; the bots, not the match setup, are in the backup file: `backup.js: cleanArena`/`mergeArena`). Links: `#/arena?bot=` / `?replay=` via `TEACH.pack` (deflate,
   size-capped inflate; fragments never reach a server; a warning past 8 KB).
 - **`arena_view.js`**: canvas viewer driven only by frames (live match and loaded replay take the same path); heads carry their number; hover shows coordinates.
 - **`arena.js`**: `#/arena` (editor, My bots, templates, setup bar, Play / Play 10 / Test my bot once, logs with "Show input", import/export/links) and
   `#/arena/tournament` (bot files by pick, drop or pasted links, round robin with swapped starts, sortable table, head-to-head grid, CSV, zip, projector mode).
-- **Not built (spec phase 4):** persistent mode (a bot that stays running and keeps state). It needs blocking stdin in a worker (SharedArrayBuffer + Atomics.wait, so
-  cross-origin isolation); none of the current runners can block on stdin. The starter bots are written as `readTurn()` then play, so a loop around them is the change.
-  Also not built: a worker pool for tournaments (student bots of one language share one worker, so matches run one at a time; built-in matches take milliseconds).
+- **Persistent mode** (`settings.mode: 'persistent'`, the "Run bots" selector): a bot is started once and kept running; the first turn it is sent starts with the line
+  `TRON 1`, every turn ends with `END`, and `GAMEOVER` is sent when the match is over (so a variable outside the loop remembers the last turn). The starters and solutions are
+  loops that understand the framing and also stop at end of input, so one program works in both modes. How it works: the page and a worker share a `SharedArrayBuffer`
+  (`botio.js` in the worker, `botsession.js` in the page and in node); the worker blocks in `Atomics.wait` when the program asks for input (`input()` in Skulpt, JSCPP's `cin`,
+  the Java `Scanner` through a `more()` hook in `java.js`, Scheme's `read`/`read-line` through `moreInput` in `scheme.js`) and posts `{t:'idle'}` first, which is how the
+  page knows a turn is answered (what was printed since the turn was sent is the reply, so two lines are still one invalid reply). Output is flushed at idle. Each language's worker
+  has a `{t:'bot'}` message (`pyworker.js`, `cppworker.js`, `javaworker.js`) and Scheme has its own worker (`schemeworker.js`, data block `scheme-src`; in restart mode Scheme still
+  runs in the page). `scripts/worker-sources.js` lists the files of each worker for `build.js` and for `test_arena.js`, which runs the very same source in node's `worker_threads`.
+  A turn that takes longer than the limit ends the worker; the next turn starts a new program (it has forgotten everything). A program that fails before its first read (syntax or
+  compile error, a loop before it reads) forfeits before turn 1; one that prints its move and ends is simply started again next turn. Needs `crossOriginIsolated`:
+  `build.js` writes `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` for `/` and `/index.html` in `dist/_headers` (the page loads nothing
+  from another origin, so COEP costs it nothing, and `test_browser.js` serves the page with exactly those headers and checks turtle graphics still work). A copy opened from a file,
+  or shown inside another site's frame, is not isolated: the selector says so and persistent mode is off (restart mode is unchanged).
+- **Not built:** a worker pool for tournaments (student bots of one language share one worker in restart mode, so matches run one at a time; built-in matches take milliseconds).
 - Tests: `test_arena.js` (rules, determinism, hostile replays, every starter and solution on the real runtimes, timeouts, forfeits, zip checked with Python's unzipper, a 132-match
   tournament) and the Arena section of `test_browser.js`. The Flood Fill solutions in all four languages choose identical moves on every board of a game (tested).
 

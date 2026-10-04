@@ -12,7 +12,7 @@
    initialized"), unreachable-code errors.
 
    Exposed as window.JAVA (browser) or module.exports (node):
-     JAVA.run(code, stdin, { maxSteps, maxMs, write(text) }) → { out, err, exit }   err is the compile error or the uncaught exception text
+     JAVA.run(code, stdin, { maxSteps, maxMs, write(text), more() }) → { out, err, exit }   err is the compile error or the uncaught exception text
    (src/javautil.js wraps a method-writing exercise in a class with a main, for the checker.) */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -555,7 +555,7 @@
     const R = this;
     R.out = ''; R.outLen = 0; R.write = opts.write || null; R.maxOut = opts.maxOut || 2e6;
     R.steps = 0; R.maxSteps = opts.maxSteps || Infinity; R.deadline = opts.maxMs ? Date.now() + opts.maxMs : Infinity;
-    R.stdin = typeof opts.stdin === 'string' ? opts.stdin : ''; R.stdinPos = 0;
+    R.stdin = typeof opts.stdin === 'string' ? opts.stdin : ''; R.stdinPos = 0; R.more = opts.more || null;
     R.classes = null;   // filled by the checker: name → ClassInfo (user and library)
     R.frames = [];      // the Java call stack, for stack traces: {cls, name, line}
     R.exitCode = null;
@@ -702,11 +702,13 @@
   class JSet { constructor(sorted) { this.m = new JMap(sorted); this.id = ++JObj.n; } }
 
   class JScanner {
-    constructor(src) { this.s = src; this.p = 0; this.closed = false; this.id = ++JObj.n; }
+    constructor(src, more) { this.s = src; this.p = 0; this.closed = false; this.id = ++JObj.n; this.more = more || null; }   // more(): a program that stays running (Bot Arena) waits here for the next text; '' ends the input
+    fill() { if (!this.more) return false; const t = this.more(); if (!t) return false; this.s = this.s.slice(this.p) + t; this.p = 0; return true; }
+    hasLine() { return this.p < this.s.length || (this.fill() && this.hasLine()); }
     skipWs() { while (this.p < this.s.length && /\s/.test(this.s[this.p])) this.p++; }
-    peekToken() { let q = this.p; while (q < this.s.length && /\s/.test(this.s[q])) q++; if (q >= this.s.length) return null; let e = q; while (e < this.s.length && !/\s/.test(this.s[e])) e++; return { tok: this.s.slice(q, e), end: e }; }
+    peekToken() { for (;;) { let q = this.p; while (q < this.s.length && /\s/.test(this.s[q])) q++; if (q >= this.s.length) { if (this.fill()) continue; return null; } let e = q; while (e < this.s.length && !/\s/.test(this.s[e])) e++; if (e >= this.s.length && this.fill()) continue; return { tok: this.s.slice(q, e), end: e }; } }
     next(R) { const t = this.peekToken(); if (!t) throwJ(R, 'NoSuchElementException', null); this.p = t.end; return t.tok; }
-    nextLine(R) { if (this.p >= this.s.length) throwJ(R, 'NoSuchElementException', 'No line found'); const i = this.s.indexOf('\n', this.p); const line = i < 0 ? this.s.slice(this.p) : this.s.slice(this.p, i); this.p = i < 0 ? this.s.length : i + 1; return line.replace(/\r$/, ''); }
+    nextLine(R) { if (!this.hasLine()) throwJ(R, 'NoSuchElementException', 'No line found'); for (;;) { if (this.s.indexOf('\n', this.p) >= 0 || !this.fill()) break; } const i = this.s.indexOf('\n', this.p); const line = i < 0 ? this.s.slice(this.p) : this.s.slice(this.p, i); this.p = i < 0 ? this.s.length : i + 1; return line.replace(/\r$/, ''); }
     typed(R, re, conv, what) { const t = this.peekToken(); if (!t) throwJ(R, 'NoSuchElementException', null); if (!re.test(t.tok)) throwJ(R, 'InputMismatchException', null); /* Java: no message unless the token is a number out of range */ const v = conv(t.tok); if (v === null) throwJ(R, 'InputMismatchException', 'For input string: "' + t.tok + '"' + (what ? ' (' + what + ')' : '')); this.p = t.end; return v; }
     hasTyped(re, conv) { const t = this.peekToken(); return !!t && re.test(t.tok) && conv(t.tok) !== null; }
   }
@@ -1087,10 +1089,10 @@
     'arraycopy(Object,int,Object,int,int)': ['void', (o, a, R) => { const [src, sp, dst, dp, n] = a; nn(R, src); nn(R, dst); if (!(src instanceof JArr) || !(dst instanceof JArr)) throwJ(R, 'ArrayStoreException', 'arraycopy: ' + (src instanceof JArr ? 'destination' : 'source') + ' type ' + qualified(runtimeClassName(src instanceof JArr ? dst : src)) + ' is not an array'); if (sp < 0 || dp < 0 || n < 0 || sp + n > src.a.length || dp + n > dst.a.length) throwJ(R, 'ArrayIndexOutOfBoundsException', 'arraycopy: last ' + (sp + n > src.a.length ? 'source' : 'destination') + ' index ' + (sp + n > src.a.length ? sp + n : dp + n) + ' out of bounds for length ' + (sp + n > src.a.length ? src.a.length : dst.a.length)); const tmp = src.a.slice(sp, sp + n); for (let i = 0; i < n; i++) dst.a[dp + i] = tmp[i]; }],
     'getProperty(String)': ['String', (o, a) => ({ 'line.separator': '\n', 'java.version': '21', 'user.name': 'student', 'os.name': 'Browser' }[a[0]] || null)], 'identityHashCode(Object)': ['int', (o, a) => (a[0] && a[0].id ? idHash(a[0].id) | 0 : 0)]
   } });
-  def('Scanner', { ctors: { 'InputStream': (o, a, R) => { if (a[0] !== SYSIN) throwJ(R, 'IllegalArgumentException', 'only System.in can be scanned here'); return new JScanner(R.stdin); }, 'String': (o, a, R) => new JScanner(nn(R, a[0])) }, methods: {
+  def('Scanner', { ctors: { 'InputStream': (o, a, R) => { if (a[0] !== SYSIN) throwJ(R, 'IllegalArgumentException', 'only System.in can be scanned here'); return new JScanner(R.stdin, R.more); }, 'String': (o, a, R) => new JScanner(nn(R, a[0])) }, methods: {
     'nextInt()': ['int', (s, a, R) => s.typed(R, INT_RE, toInt)], 'nextLong()': ['long', (s, a, R) => s.typed(R, INT_RE, toLong)], 'nextDouble()': ['double', (s, a, R) => s.typed(R, DBL_RE, toDbl)], 'nextFloat()': ['float', (s, a, R) => Math.fround(s.typed(R, DBL_RE, toDbl))],
     'nextBoolean()': ['boolean', (s, a, R) => s.typed(R, BOOL_RE, (t) => t.toLowerCase() === 'true')], 'next()': ['String', (s, a, R) => s.next(R)], 'nextLine()': ['String', (s, a, R) => s.nextLine(R)],
-    'hasNext()': ['boolean', (s) => !!s.peekToken()], 'hasNextInt()': ['boolean', (s) => s.hasTyped(INT_RE, toInt)], 'hasNextLong()': ['boolean', (s) => s.hasTyped(INT_RE, toLong)], 'hasNextDouble()': ['boolean', (s) => s.hasTyped(DBL_RE, toDbl)], 'hasNextBoolean()': ['boolean', (s) => s.hasTyped(BOOL_RE, () => true)], 'hasNextLine()': ['boolean', (s) => s.p < s.s.length],
+    'hasNext()': ['boolean', (s) => !!s.peekToken()], 'hasNextInt()': ['boolean', (s) => s.hasTyped(INT_RE, toInt)], 'hasNextLong()': ['boolean', (s) => s.hasTyped(INT_RE, toLong)], 'hasNextDouble()': ['boolean', (s) => s.hasTyped(DBL_RE, toDbl)], 'hasNextBoolean()': ['boolean', (s) => s.hasTyped(BOOL_RE, () => true)], 'hasNextLine()': ['boolean', (s) => s.hasLine()],
     'close()': ['void', (s) => { s.closed = true; }], 'nextShort()': ['short', (s, a, R) => s.typed(R, INT_RE, (t) => { const v = toInt(t); return v === null || v < -32768 || v > 32767 ? null : v; })], 'nextByte()': ['byte', (s, a, R) => s.typed(R, INT_RE, (t) => { const v = toInt(t); return v === null || v < -128 || v > 127 ? null : v; })]
   } });
   def('Random', { ctors: { '': () => new JRandom(), 'long': (o, a) => new JRandom(a[0]) }, methods: {
@@ -2054,7 +2056,7 @@
   const fileNameGuess = (code) => { const m = String(code).match(/\bpublic\s+(?:final\s+|abstract\s+)*class\s+([A-Za-z_$][\w$]*)/) || String(code).match(/\bclass\s+([A-Za-z_$][\w$]*)/); return (m ? m[1] : 'Main') + '.java'; };
   function run(code, stdin, opts) {
     opts = opts || {};
-    const R = new Runtime({ stdin, write: opts.write, maxSteps: opts.maxSteps, maxMs: opts.maxMs === undefined ? 5000 : opts.maxMs, maxOut: opts.maxOut });
+    const R = new Runtime({ stdin, more: opts.more, write: opts.write, maxSteps: opts.maxSteps, maxMs: opts.maxMs === undefined ? 5000 : opts.maxMs, maxOut: opts.maxOut });
     let chk;
     try { chk = Checker(parse(String(code))); }
     catch (e) { if (e instanceof CompileError) return { out: '', err: fileNameGuess(code) + ':' + e.line + ': error: ' + e.message, compile: true, line: e.line }; throw e; }

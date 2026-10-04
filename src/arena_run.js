@@ -19,6 +19,7 @@
   const SCHEME_STEPS_PER_MS = 5000;   // the interpreter does about 13 million steps a second on a laptop; this leaves room for a slow device
 
   // ---------- running a program
+  const live = new Set();   // the persistent sessions that are open, so that Stop can end them
   const locks = {}, cold = { python: true, cpp: true, java: true };
   const runners = () => window.__runners;
   function once(lang, source, stdin, ms) {
@@ -60,12 +61,19 @@
     };
   }
   /** End whatever a language's sandbox is doing (the Stop button). */
-  function stopAll() { for (const l of ['python', 'cpp', 'java']) { cancel(l); cold[l] = true; } }
+  function stopAll() { for (const l of ['python', 'cpp', 'java']) { cancel(l); cold[l] = true; } for (const x of [...live]) x.close(); }
 
-  /** A driver (see TRON.botDriver) for a saved or loaded bot, or for a built-in one. */
+  // Persistent mode (a bot started once and kept running) needs a shared-memory channel to a worker, so the site must be cross-origin isolated.
+  const persistentAvailable = () => !!(window.BOTRUN && window.BOTRUN.available());
+    function openSession(lang) {
+    return async (source, opts) => { const r = await window.BOTRUN.open(lang, source, opts); if (r.session) { live.add(r.session); const close = r.session.close; r.session.close = () => { live.delete(r.session); close.call(r.session); }; } return r; };
+  }
+  /** A driver (see TRON.botDriver, TRON.persistentDriver) for a saved or loaded bot, or for a built-in one. */
   function driverFor(entry, settings, seed, slot) {
     if (entry.builtin) { const def = T.builtinById(entry.builtin); return T.builtinDriver(def, { rng: T.rng(T.seedOf(seed) * 4 + slot), player: slot }); }
-    return T.botDriver({ name: entry.name, lang: entry.lang, source: entry.source, limitMs: T.limitFor(entry.lang, settings.timeMs) }, run(entry.lang));
+    const def = { name: entry.name, lang: entry.lang, source: entry.source, limitMs: T.limitFor(entry.lang, settings.timeMs) };
+    if (settings.mode === 'persistent' && persistentAvailable()) return T.persistentDriver(def, openSession(entry.lang));
+    return T.botDriver(def, run(entry.lang));
   }
 
   // ---------- the bots saved in this browser (everything a student makes lives in localStorage)
@@ -85,7 +93,7 @@
     out.current = typeof raw.current === 'string' && seen.has(raw.current) ? raw.current : '';
     const u = raw.setup && typeof raw.setup === 'object' && !Array.isArray(raw.setup) ? raw.setup : {};
     const s = T.settingsOf(u);
-    out.setup = { width: s.width, height: s.height, players: s.players, timeMs: s.timeMs, invalid: s.invalid, seed: typeof u.seed === 'string' ? u.seed.replace(/[^0-9]/g, '').slice(0, 10) : '',
+    out.setup = { width: s.width, height: s.height, players: s.players, timeMs: s.timeMs, invalid: s.invalid, mode: s.mode, seed: typeof u.seed === 'string' ? u.seed.replace(/[^0-9]/g, '').slice(0, 10) : '',
       slots: (Array.isArray(u.slots) ? u.slots : []).slice(0, 4).map((x) => (typeof x === 'string' && /^(me|b:[a-z]{1,12}|bot:[a-z0-9]{4,12})$/.test(x) ? x : '')) };
     return out;
   }
@@ -146,5 +154,5 @@
     return box;
   }
 
-  Object.assign(A, { LANG_LABEL, run, stopAll, driverFor, store, save, addBot, byId, newId, download, linkFor, readShared, linkBox, LINK_WARN, cleanStore });
+  Object.assign(A, { LANG_LABEL, run, stopAll, driverFor, persistentAvailable, store, save, addBot, byId, newId, download, linkFor, readShared, linkBox, LINK_WARN, cleanStore });
 })();

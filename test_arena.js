@@ -11,6 +11,8 @@ const Scheme = require('./src/scheme.js'), JAVA = require('./src/java.js');
 require('./node_modules/skulpt/dist/skulpt.min.js'); require('./node_modules/skulpt/dist/skulpt-stdlib.js');
 const JSCPP = require('./node_modules/JSCPP/lib/commonjs.js');
 const { ensureMainReturns } = require('./src/cpputil.js');
+const BS = require('./src/botsession.js'), WS = require('./scripts/worker-sources.js');
+const { Worker } = require('worker_threads');
 const FULL = !!process.env.ARENA_FULL;
 let bad = 0;
 const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + name + (detail !== undefined ? '\n  ' + (typeof detail === 'string' ? detail : JSON.stringify(detail)) : '')); } };
@@ -320,6 +322,123 @@ const builtin = (id, seed, p) => T.builtinDriver(T.builtinById(id), { rng: T.rng
     check('the replay of a mixed match names both languages and re-simulates', T.simulate(T.cleanReplay(m.replay)).result.winner === m.replay.result.winner);
     const m2 = await T.playMatch({ settings: { players: 3 }, seed: 9, drivers: [student('Py', 'python', B.templates.python, 5000), student('Jv', 'java', B.templates.java, 5000), student('Sc', 'scheme', B.templates.scheme, 5000)] });
     check('three bots in three languages play one match', m2.state.over && m2.replay.moves.every((x) => x.length === 3));
+  }
+
+
+  // ================= persistent mode: a bot started once and kept running, in the real workers (node's worker_threads, the same source the page builds)
+  {
+    const sources = {}; for (const k of Object.keys(WS)) sources[k] = WS[k].map((f) => fs.readFileSync(path.join(__dirname, f), 'utf8')).join(';\n');
+    // the shim makes a worker_thread look like a Web Worker to that source: self, postMessage, onmessage
+    // (and a Web Worker has no module or require, which the files' own "am I in node?" checks look for)
+    const shim = "const { parentPort, workerData } = require('worker_threads'); global.module = undefined; global.exports = undefined; global.require = undefined; global.self = global; global.postMessage = (m) => parentPort.postMessage(m); parentPort.on('message', (m) => { if (global.onmessage) global.onmessage({ data: m }); }); (0, eval)(workerData.source);";
+    const spawnFor = (lang) => () => { const w = new Worker(shim, { eval: true, workerData: { source: sources[lang === 'python' ? 'py' : lang] } }); return { postMessage: (m) => w.postMessage(m), terminate: () => w.terminate(), set onmessage(f) { w.on('message', f); }, set onerror(f) { w.on('error', f); } }; };
+    const persist = (name, lang, source, limitMs) => T.persistentDriver({ name, lang, source, limitMs: limitMs || T.limitFor(lang, 0) }, (src, o) => BS.open(spawnFor(lang), src, Object.assign({ startMs: 20000 }, o)));
+    const moves = (r) => r.replay.moves.join(',');
+    check('BOTSESSION knows when it can run', BS.available() === true);
+
+    // every starter and solution plays the same match in persistent mode as in restart mode (same bot, same seed: the same moves)
+    for (const [kind, lang, seeds] of [['templates', 'python', [1, 2, 3]], ['templates', 'java', [1, 2]], ['templates', 'scheme', [1, 2]], ['templates', 'cpp', [1, 2]], ['solutions', 'python', [1]], ['solutions', 'java', [1]], ['solutions', 'scheme', [1]]]) {
+      for (const seed of seeds) {
+        const lg = [];
+        const a = await T.playMatch({ settings: { mode: 'restart' }, seed, drivers: [student('R', lang, B[kind][lang], 20000), builtin('random', seed + 7, 1)] });
+        const b = await T.playMatch({ settings: { mode: 'persistent' }, seed, drivers: [persist('P', lang, B[kind][lang], 20000), builtin('random', seed + 7, 1)], onLog: (p, k, t) => lg.push([k, t]) });
+        check(lang + ' ' + kind + ' (seed ' + seed + '): persistent mode plays exactly the match restart mode plays', moves(a) === moves(b) && a.replay.result.winner === b.replay.result.winner && !lg.some((l) => l[0] === 'referee'), [moves(a).slice(0, 60), moves(b).slice(0, 60), lg.slice(0, 2)]);
+      }
+    }
+    const pm = await T.playMatch({ settings: { mode: 'persistent' }, seed: 4, drivers: [persist('P', 'python', B.templates.python), builtin('random', 4, 1)] });
+    check('a persistent match is recorded as one, and its replay re-simulates', pm.replay.settings.mode === 'persistent' && T.simulate(T.cleanReplay(pm.replay)).result.winner === pm.replay.result.winner);
+    check('the mode is clamped like every setting', T.settingsOf({ mode: 'turbo' }).mode === 'restart' && T.settingsOf({ mode: { x: 1 } }).mode === 'restart' && T.settingsOf({ mode: 'persistent' }).mode === 'persistent' && T.settingsOf({}).mode === 'restart');
+
+    // a bot that keeps state: a counter that only exists because the program is still running
+    const counter = {
+      python: 'n = 0\nwhile True:\n    line = input()\n    if line == "" or line == "GAMEOVER":\n        break\n    if line == "END":\n        n += 1\n        print("DOWN" if n % 3 == 0 else "RIGHT")\n',
+      java: 'import java.util.Scanner;\npublic class Main { public static void main(String[] a) { Scanner in = new Scanner(System.in); int n = 0; while (in.hasNext()) { String w = in.next(); if (w.equals("END")) { n++; System.out.println(n % 3 == 0 ? "DOWN" : "RIGHT"); } if (w.equals("GAMEOVER")) break; } } }',
+      cpp: '#include <iostream>\n#include <cstring>\nusing namespace std;\nint main() { int n = 0; char w[64]; while (cin >> w) { if (strcmp(w, "END") == 0) { n++; if (n % 3 == 0) cout << "DOWN" << endl; else cout << "RIGHT" << endl; } } return 0; }',
+      scheme: '(define n 0)\n(let loop ((w (read)))\n  (cond ((eof-object? w) 0)\n        ((eq? w (quote END)) (set! n (+ n 1)) (display (if (= (remainder n 3) 0) "DOWN" "RIGHT")) (newline) (loop (read)))\n        (else (loop (read)))))' };
+    const safe = { name: 'Safe', lang: 'js', start: async () => ({ ok: true }), move: async () => ({ text: 'LEFT', err: '', status: 'ok' }), stop() { } };   // walks along the bottom edge
+    for (const lang of ['python', 'java', 'cpp', 'scheme']) {
+      const m = await T.playMatch({ settings: { mode: 'persistent', width: 40, height: 40 }, seed: 1, drivers: [persist('Counter', lang, counter[lang], 20000), safe] });
+      check(lang + ': a persistent bot keeps its counter from turn to turn', m.replay.moves.slice(0, 7).map((x) => x[0]).join('') === 'RRDRRDR', m.replay.moves.slice(0, 7));
+    }
+    // the same counter bot in restart mode cannot work: every turn is a fresh program, so it never sees END, prints nothing, and is moved UP
+    const lgr = [];
+    const rr = await T.playMatch({ settings: { mode: 'restart' }, seed: 1, drivers: [student('Counter', 'python', counter.python), safe], onLog: (p, k, t) => lgr.push(t) });
+    check('...and in restart mode it has no memory (nothing printed, moved UP)', rr.replay.moves[0][0] === 'U' && lgr.some((t) => /printed nothing/.test(t)));
+
+    // too slow: ended, logged, replaced by a new program that has forgotten, the match goes on
+    const stuck = 'n = 0\nwhile True:\n    line = input()\n    if line == "END":\n        n += 1\n        if n == 3:\n            while True:\n                pass\n        print("RIGHT")\n';
+    const lg1 = [];
+    const sm = await T.playMatch({ settings: { mode: 'persistent', width: 40, height: 40 }, seed: 1, drivers: [persist('Stuck', 'python', stuck, 300), safe], onLog: (p, k, t, turn) => lg1.push([k, turn, t]) });
+    const slow = lg1.filter((l) => l[0] === 'referee' && /took longer than 300 ms/.test(l[2])).map((l) => l[1]);
+    check('a persistent bot that gets stuck is ended on that turn, and a fresh program (its counter forgotten) is stuck again three turns later', slow[0] === 3 && slow[1] === 6, [slow, lg1.slice(0, 3)]);
+    check('...and it is moved UP on the turns it is too slow', sm.replay.moves[2][0] === 'U' && sm.replay.moves[5][0] === 'U' && sm.replay.moves[0][0] === 'R');
+
+    // not starting, not waiting, exiting early, printing too much
+    for (const [lang, src, why] of [['python', 'def f(:\n', /SyntaxError|syntax|parse/i], ['java', 'public class Main { public static void main(String[] a) { int x = "s"; } }', /incompatible types/], ['scheme', '(display (+ 1', /./], ['cpp', 'int main() { return 0 }', /./]]) {
+      const lg = [];
+      const r = await T.playMatch({ settings: { mode: 'persistent' }, seed: 2, drivers: [persist('Broken', lang, src), builtin('random', 1, 1)], onLog: (p, k, t) => lg.push(t) });
+      check(lang + ': a program that does not start forfeits before turn 1 in persistent mode, with its error shown', r.replay.result.winner === 2 && r.replay.result.turns === 1 && lg.some((t) => /forfeits before turn 1/.test(t) && why.test(t)), lg);
+    }
+    const lgx = [];
+    const noread = await T.playMatch({ settings: { mode: 'persistent' }, seed: 2, drivers: [persist('NoRead', 'python', 'print("RIGHT")'), builtin('random', 1, 1)], onLog: (p, k, t) => lgx.push(t) });
+    check('a program that ends without waiting for a turn forfeits, and the message says what a persistent bot must do', noread.replay.result.winner === 2 && lgx.some((t) => /ended without waiting for a turn/.test(t)), lgx);
+    const once = 'line = input()\nwhile line != "END":\n    line = input()\nprint("RIGHT")\n';
+    const lgo = [];
+    const oc = await T.playMatch({ settings: { mode: 'persistent', width: 40, height: 40 }, seed: 2, drivers: [persist('Once', 'python', once), safe], onLog: (p, k, t, turn) => lgo.push([k, turn, t]) });
+    check('a restart-style bot (reads one turn, prints, ends) works in persistent mode too: it is started again for every turn', !lgo.length && oc.replay.moves.slice(0, 5).every((m) => m[0] === 'R'), [lgo.slice(0, 2), oc.replay.moves.slice(0, 5)]);
+    const bye = 'line = input()\nwhile line != "END":\n    line = input()\nraise ValueError("bye")\n';
+    const lgb = [];
+    await T.playMatch({ settings: { mode: 'persistent', width: 40, height: 40 }, seed: 2, drivers: [persist('Bye', 'python', bye), safe], onLog: (p, k, t, turn) => lgb.push([k, turn, t]) });
+    check('a bot that fails while answering is a crashed bot on that turn (moved UP), and its error is in its log', lgb.some((l) => l[0] === 'referee' && l[1] === 1 && /crashed/.test(l[2])) && lgb.some((l) => l[0] === 'stderr' && /ValueError/.test(l[2])), lgb.slice(0, 3));
+    const talk = 'import sys\nline = input()\nwhile line != "END":\n    line = input()\nwhile True:\n    print("x" * 1000)\n';
+    const lgt = [];
+    const tk = await T.playMatch({ settings: { mode: 'persistent' }, seed: 2, drivers: [persist('Talker', 'python', talk), builtin('random', 1, 1)], onLog: (p, k, t) => lgt.push(t) });
+    check('a bot that prints without end is stopped, and the referee says so', tk.state.over && lgt.some((t) => /printed more than/.test(t)), lgt.slice(0, 2));
+    // drivers are stopped when a match ends or is stopped
+    let live = 0;
+    const counted = (d) => ({ ...d, start: async (c) => { live++; return d.start(c); }, stop() { live--; d.stop(); } });
+    await T.playMatch({ settings: { mode: 'persistent' }, seed: 3, drivers: [counted(persist('A', 'python', B.templates.python)), counted(persist('B', 'python', B.templates.python))] });
+    check('every driver is stopped when the match ends', live === 0, live);
+    let stop2 = false, n2 = 0;
+    await T.playMatch({ settings: { mode: 'persistent' }, seed: 3, drivers: [counted(persist('A', 'java', B.templates.java)), counted(persist('B', 'scheme', B.templates.scheme))], shouldStop: () => stop2, onTurn: () => { if (++n2 === 2) stop2 = true; } });
+    check('and when it is stopped part way', live === 0, live);
+
+    // a long match: a bot walking the board in rows, its direction kept in a variable, against another walker from the opposite corner
+    const sweeper = `import java.util.Scanner;
+public class Main {
+    public static void main(String[] args) {
+        Scanner in = new Scanner(System.in);
+        int dir = 1;                              // 1 right, -1 left: the memory that lives between turns
+        while (in.hasNext()) {
+            String word = in.next();
+            if (word.equals("GAMEOVER")) break;
+            if (word.equals("TRON") || word.equals("END")) { if (word.equals("TRON")) in.next(); continue; }
+            int width = Integer.parseInt(word);
+            int height = in.nextInt();
+            int you = in.nextInt();
+            int alive = in.nextInt();
+            int x = 0;
+            for (int i = 0; i < alive; i++) { int hx = in.nextInt(); int hy = in.nextInt(); int p = in.nextInt(); if (p == you) x = hx; }
+            for (int i = 0; i < height; i++) in.next();
+            if ((dir == 1 && x == width - 3) || (dir == -1 && x == 2)) { System.out.println("DOWN"); dir = -dir; }
+            else System.out.println(dir == 1 ? "RIGHT" : "LEFT");
+        }
+    }
+}
+`;
+    let dir2 = -1;
+    const walker = { name: 'Walker', lang: 'js', start: async () => ({ ok: true }), stop() { }, move: async (text, obs) => { const me = obs.heads.find((h) => h.p === obs.you); if ((dir2 === 1 && me.x === obs.w - 3) || (dir2 === -1 && me.x === 2)) { dir2 = -dir2; return { text: 'UP', err: '', status: 'ok' }; } return { text: dir2 === 1 ? 'RIGHT' : 'LEFT', err: '', status: 'ok' }; } };
+    const lgl = [];
+    const t0 = Date.now();
+    const long = await T.playMatch({ settings: { mode: 'persistent', width: 40, height: 40 }, seed: 1, drivers: [persist('Sweeper', 'java', sweeper, 2000), walker], onLog: (p, k, t) => lgl.push(t) });
+    const ms = Date.now() - t0;
+    check('a Java bot that stays running plays a match of 400+ turns with no invalid move', long.replay.result.turns >= 400 && !lgl.length, [long.replay.result.turns, lgl.slice(0, 2)]);
+    check('...and a turn costs a few milliseconds, not a start-up (400 turns well inside what ten turns a second would take: 40 s)', ms < 20000, ms);
+    console.log('     persistent Java: ' + long.replay.result.turns + ' turns in ' + ms + ' ms (' + Math.round(ms / long.replay.result.turns) + ' ms a turn)');
+
+    // BOTSESSION on its own: a worker that dies, a source that never reads, closing
+    const dead = await BS.open(spawnFor('python'), 'import sys\nline = input()\nraise ValueError("boom")\n', { startMs: 20000 });
+    check('a program that fails after its first read is reported to the turn that was in progress', !dead.err && await (async () => { const r = await dead.session.turn('x\nEND\n', 5000); return /ValueError/.test(r.err || '') && r.exited === true; })());
   }
 
   // ================= tournaments, CSV and zip
