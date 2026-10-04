@@ -370,7 +370,7 @@
     about: '<p><b>Linear search</b> looks at the cells in order until it finds the target or runs out of cells. It works on any array, sorted or not, and it costs O(n): a miss looks at all n cells, and a hit looks at about half of them on average.</p>' +
       '<p><b>Binary search</b> needs the array to be sorted. It keeps a range, <code>lo</code> to <code>hi</code>, that must hold the target if the target is there at all. It compares the target with the middle cell, <code>mid = lo + (hi − lo) / 2</code>, and throws away the half that cannot hold it. Each comparison halves the range, so it never needs more than ⌊log₂ n⌋ + 1 comparisons: 6 for 32 cells, 11 for 1,024, 20 for a million. That is O(log n).</p>' +
       '<p>The price is the sorting. A sorted array is worth it when you search it many times. Java’s <code>Arrays.binarySearch</code>, Python’s <code>bisect</code> module and C++’s <code>std::lower_bound</code> all do this, and <code>git bisect</code> uses the same halving to find the commit that introduced a bug.</p>',
-    taught: [{ href: '#/dsa/1', text: 'SC 107 lesson 1: Counting the cost' }, { href: '#/dsa/2', text: 'SC 107 lesson 2: Searching' }, { href: '#/python/12', text: 'SC 101 lesson 12: Searching and sorting' }, { href: '#/cpp/10', text: 'SC 103 lesson 10: Searching and sorting' }]
+    taught: [{ href: '#/dsa/1', text: 'SC 107 lesson 1: Counting the cost' }, { href: '#/dsa/2', text: 'SC 107 lesson 2: Searching' }, { href: '#/python/12', text: 'SC 101 lesson 12: Searching and sorting' }, { href: '#/cpp/12', text: 'SC 103 lesson 12: Searching and sorting' }]
   });
 
   // ---------- demo 2: guess my number

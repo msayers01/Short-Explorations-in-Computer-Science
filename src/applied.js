@@ -29,7 +29,7 @@
         { f: 'data', t: 'Data engineers choose column types on purpose: 32-bit numbers take half the memory of 64-bit ones, which matters when a table has hundreds of millions of rows.' }
       ],
       jobs: ['Software developer', 'Embedded engineer', 'Data engineer', 'Flight software engineer'],
-      learn: ['python/1', 'scratch/2', 'cpp/1', 'java/1', 'java/3', 'cpp/8'],
+      learn: ['python/1', 'scratch/2', 'cpp/1', 'java/1', 'java/3', 'cpp/9'],
       teach: 'Hook: show 0.1 + 0.2 in the Python Code Lab. Ask: why would a bank not store your balance like that? What should a program do when a count goes past the biggest number its type can hold?'
     },
     {
@@ -84,7 +84,7 @@
         { f: 'sec', t: 'Reading or writing past the end of an array is a classic C and C++ security hole: the 1988 Morris worm and the 2014 Heartbleed bug both came from it.' }
       ],
       jobs: ['Graphics programmer', 'Machine-learning engineer', 'Signal-processing engineer', 'C/C++ developer'],
-      learn: ['scratch/5', 'python/5', 'cpp/6', 'modern/2', 'dsa/1'],
+      learn: ['scratch/5', 'python/5', 'cpp/7', 'modern/2', 'dsa/1'],
       teach: 'Hook: open any photo and zoom in until you see squares. Each square is one item of an array. How many numbers does one photo hold?'
     },
     {
@@ -98,7 +98,7 @@
         { f: 'data', t: 'Log files, a server\'s diary of what it did, are lines of text that engineers split and search to find out what went wrong.' }
       ],
       jobs: ['Web developer', 'Security analyst', 'Bioinformatician', 'Localization engineer'],
-      learn: ['scratch/9', 'python/6', 'computer/6', 'cpp/7', 'modern/1', 'java/2'],
+      learn: ['scratch/9', 'python/6', 'computer/6', 'cpp/8', 'modern/1', 'java/2'],
       teach: 'Discussion: a form asks for your name. What should a program do if someone types a name with an apostrophe (O\'Brien), an accent (José), or a piece of code?'
     },
     {
@@ -141,7 +141,7 @@
         { f: 'web', t: 'Feeds, leaderboards and search results are sorted lists, often by more than one key (score first, then time).' }
       ],
       jobs: ['Backend developer', 'Database engineer', 'Search engineer'],
-      learn: ['python/12', 'cpp/10', 'dsa/2', 'dsa/3', 'dsa/4'],
+      learn: ['python/12', 'cpp/12', 'dsa/2', 'dsa/3', 'dsa/4'],
       teach: 'Hook: play "guess my number between 1 and 1,000" with yes/no "higher or lower" answers. The best strategy never needs more than 10 guesses. Why 10?'
     },
     {
@@ -227,7 +227,7 @@
         { f: 'swe', t: 'Drives are sold in powers of 1,000 but often reported in powers of 1,024, which is why a 500 GB drive shows as about 465 GB.' }
       ],
       jobs: ['Network engineer', 'Embedded engineer', 'Security analyst', 'Digital forensics analyst'],
-      learn: ['computer/2', 'computer/3', 'computer/6', 'cpp/2', 'cpp/7'],
+      learn: ['computer/2', 'computer/3', 'computer/6', 'cpp/2', 'cpp/8'],
       teach: 'Hook: count to 31 on one hand in binary (each finger is a bit). Then: how many different addresses does a 32-bit number allow, and why did the internet need IPv6?'
     },
     {
@@ -242,7 +242,7 @@
         { f: 'games', t: 'Graphics cards (GPUs) are processors with thousands of small cores that run the same step on many pixels at once; the same chips are now used to train AI models.' }
       ],
       jobs: ['Embedded engineer', 'Malware analyst', 'Operating-system developer', 'Hardware engineer'],
-      learn: ['computer/1', 'computer/2', 'computer/4', 'cpp/6'],
+      learn: ['computer/1', 'computer/2', 'computer/4', 'cpp/7'],
       teach: 'Activity: act out fetch, decode, execute with students as the processor, the memory boxes and the program counter. Then compare the pace: a 3 GHz processor has 3 billion clock ticks a second.'
     },
     {
@@ -256,7 +256,7 @@
         { f: 'games', t: 'Game engines such as Unreal Engine are written in C++ and use pointers and careful memory layout to update a whole world in a frame of about 16 milliseconds (60 frames a second).' }
       ],
       jobs: ['Systems programmer', 'Vulnerability researcher', 'Firmware engineer', 'Game engine programmer'],
-      learn: ['cpp/5', 'cpp/6', 'cpp/7', 'modern/2', 'modern/3'],
+      learn: ['cpp/6', 'cpp/7', 'cpp/8', 'modern/2', 'modern/3'],
       teach: 'Discussion: a pointer is a house address written on paper. What goes wrong if the house is knocked down and someone still uses the address? (That is "use after free".)'
     },
     {
@@ -297,7 +297,7 @@
         { f: 'data', t: 'Data pipelines are tested too: checks that a column has no missing values, or that totals add up, catch bad data before it reaches a report.' }
       ],
       jobs: ['Quality assurance engineer', 'Software developer in test', 'Security researcher', 'Every developer'],
-      learn: ['python/7', 'python/8', 'cpp/8', 'cpp/10', 'dsa/2'],
+      learn: ['python/7', 'python/8', 'cpp/9', 'cpp/12', 'dsa/2'],
       teach: 'Activity: give pairs a function with one hidden bug (the courses\' debugging lessons have some). One student writes tests, the other predicts which test will catch it.'
     },
     {
@@ -311,7 +311,7 @@
         { f: 'data', t: 'Machine learning shuffles its data and starts from random weights; fixing the seed makes an experiment repeatable.' }
       ],
       jobs: ['Data scientist', 'Quantitative analyst', 'Game designer', 'Cryptographer'],
-      learn: ['python/10', 'cpp/9'],
+      learn: ['python/10', 'cpp/11'],
       teach: 'Hook: ask the class to write down a "random" list of 20 coin flips, then flip a real coin 20 times. Which list has the longer runs? People are bad random generators, and so are simple formulas.'
     },
     {
@@ -377,7 +377,7 @@
         { f: 'sec', t: 'Simple substitution ciphers like Caesar\'s fall to letter counting (frequency analysis), a method described by the scholar al-Kindi in the 9th century.' }
       ],
       jobs: ['Cryptographer', 'Security engineer', 'Payments developer'],
-      learn: ['math/4', 'math/13', 'python/13', 'computer/10', 'cpp/11'],
+      learn: ['math/4', 'math/13', 'python/13', 'computer/10', 'cpp/13'],
       teach: 'Hook: check the last digit of an ISBN-10 from a book in the room (the instructions are short), or a test card number with the Luhn check. What kinds of typing mistake does it catch?'
     },
     {
