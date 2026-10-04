@@ -29,6 +29,8 @@
     setCode(id, code) { this.load().code[id] = code; this.save(); },
     reset() { this.data = { done: {}, code: {}, pass: {} }; this.save(); }
   };
+  // another tab saved: forget the copy held here, or the next save would write it back over that tab's work
+  window.addEventListener('storage', (e) => { if (e.key === Progress.key || e.key === null) Progress.data = null; });
 
   // ---------- syntax highlighting ----------
   const LANGS = {
@@ -247,6 +249,10 @@
   // output (stderr in red, notes dimmed), a blinking cursor while the program runs, and input() answered on an inline prompt.
   // Everything written into it is text: output from a sandbox is never interpreted as HTML.
   const COMMANDS = { python: 'python main.py', scheme: 'scheme main.scm', cpp: 'g++ main.cpp -o main && ./main', cppfull: 'clang++ -std=c++20 main.cpp -o main && ./main', java: 'javac Main.java && java Main' };
+  // A program waiting at input() is ended when its output panel is cleared or leaves the page; otherwise it would hold the engine's queue forever.
+  const askers = new Set();
+  const abandonAsk = (a) => { askers.delete(a); a.resolve(''); if (window.PYRUN) window.PYRUN.cancel(); };
+  document.addEventListener('routed', () => { for (const a of [...askers]) if (!a.row.isConnected) abandonAsk(a); });
   function outputPanel() {
     const box = el('div', { class: 'out term', hidden: '' });
     const status = el('span', { class: 'term-status', role: 'status' });
@@ -260,7 +266,7 @@
     const setStatus = (cls, text) => { status.className = 'term-status' + (cls ? ' ' + cls : ''); status.textContent = text; };
     const api = {
       el: box,
-      clear() { pre.textContent = ''; printed = ''; box.hidden = false; box.classList.remove('has-error'); setStatus('', ''); },
+      clear() { for (const a of [...askers]) if (a.pre === pre) abandonAsk(a); pre.textContent = ''; printed = ''; box.hidden = false; box.classList.remove('has-error'); setStatus('', ''); },
       /** a run begins: the prompt line names the command, the status says running, the cursor blinks */
       start(cmd) { api.clear(); t0 = Date.now(); if (cmd) line('cmd', cmd); pre.appendChild(cursor); setStatus('running', 'running'); },
       /** a run ends: the cursor stops and the status pill says how it went */
@@ -285,7 +291,8 @@
           const inp = el('input', { class: 'inline-input', type: 'text', 'aria-label': 'Program input', autocomplete: 'off', spellcheck: 'false' });
           const row = el('span', { class: 'input-line' }, prompt || '', inp);
           put(row); inp.focus();
-          inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const v = inp.value; row.replaceWith(el('span', {}, prompt || '', el('span', { class: 'typed' }, v), '\n')); resolve(v); } });
+          const a = { row, pre, resolve }; askers.add(a);
+          inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { askers.delete(a); const v = inp.value; row.replaceWith(el('span', {}, prompt || '', el('span', { class: 'typed' }, v), '\n')); resolve(v); } });
         });
       }
     };

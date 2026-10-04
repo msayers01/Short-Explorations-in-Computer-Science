@@ -537,6 +537,25 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     check('grader: $? unchanged', sh.lastExit, 3);
   }
 
+  // ---- limits that a single command could otherwise get around
+  {
+    const { fs, run } = fresh();
+    const t0 = Date.now();
+    let r = await run('echo {1..1000}{1..1000}{1..1000} | wc -c');
+    check('brace product is capped', /^\s*\d{1,6}\s*$/.test(r.out.trim()) || r.out.length < 200, true);
+    r = await run('echo {a,b}{c,d}{e,f}');
+    eq('small brace products still expand', r, 'ace acf ade adf bce bcf bde bdf\n', 0);
+    r = await run('x=aaaaaaaaaa; for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do x=$x$x; done; echo ${#x}');
+    check('a variable is capped', r.out.trim(), String(SHELL.LIMITS.vars));
+    let e = null; try { for (let i = 0; i <= SHELL.LIMITS.dirs; i++) fs.mkdir('/home/student/d' + i); } catch (x) { e = x.code; }
+    check('empty directories are counted', e, 'EMFILE');
+    e = null; try { fs.copy('/home/student', '/tmp/c', true); } catch (x) { e = x.code; } check('copying many directories is refused', e, 'EMFILE');
+    const many = { t: 'd', c: [] }; for (let i = 0; i < 5000; i++) many.c.push(['d' + i, { t: 'd', c: [] }]);
+    const h = SHELL.makeFS({ v: 1, cwd: '/home/student', root: { t: 'd', c: [['home', { t: 'd', c: [['student', many]] }]] } }, { now: () => T0 });
+    check('hostile: a saved copy cannot hold a huge tree of directories', h.list('/home/student').length <= SHELL.LIMITS.dirs, true);
+    check('these limits are quick', Date.now() - t0 < 5000, true);
+  }
+
   // ---- saving and reloading a session's work
   {
     const { fs, run } = fresh();

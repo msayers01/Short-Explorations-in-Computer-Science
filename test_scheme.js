@@ -69,6 +69,8 @@ check("(sort (list '(b . 1) '(a . 1) '(c . 0)) (lambda (x y) (< (cdr x) (cdr y))
 check('(let ((a (list 1 2))) (eq? a (list-copy a)))', '#f');
 
 // the REPL-style use: one evaluator, many forms, each with a fresh budget
+errs('(iota 1000000000)', /out of memory/);
+errs('(define (f s n) (if (= n 0) s (f (string-append s s) (- n 1)))) (string-length (f "abcdefghij" 40))', /out of memory/);
 const it = Scheme.makeEvaluator({ stepLimit: 2000 });
 for (const f of Scheme.parseAll('(define (loop n) (if (= n 0) 0 (loop (- n 1))))')) it.evaluate(f, it.G);
 let failed = false;

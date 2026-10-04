@@ -69,6 +69,8 @@
     try { data = clean(JSON.parse(localStorage.getItem(KEY) || 'null')); } catch (e) { data = clean(null); }
     return data;
   }
+  // another tab saved: forget the copy held here, or the next save would write it back over the other tab's answers
+  if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('storage', (e) => { if (e.key === KEY || e.key === null) data = null; });
   function save() { try { localStorage.setItem(KEY, JSON.stringify(load())); } catch (e) { /* storage unavailable */ } }
 
   // ---------- the questions: every quick check of every course, by id ----------
