@@ -414,7 +414,8 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('a lesson example draws with turtle in a sandboxed frame', (await page.locator('.play-turtle iframe').count()) === 1 && (await page.locator('.play-turtle iframe').getAttribute('sandbox')) === 'allow-scripts' && (await page.frameLocator('.play-turtle iframe').locator('canvas').count()) > 0);
   await goto('#/dsa/1');
   check('DSA figures render', (await page.locator('.fig-mount svg').count()) >= 3);
-  check('the Under development tag is shown', (await page.locator('.dev-tag').count()) >= 1);
+  await goto('#/scratch/1');
+  check('the Under development tag is shown (on a course still being written)', (await page.locator('.dev-tag').count()) >= 1);
   await goto('#/dsa/5');
   check('the linked-list figure renders', (await page.locator('.fig-mount svg').count()) >= 1);
   await goto('#/dsa/6');
@@ -491,6 +492,33 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await hp.locator('select').selectOption({ label: 'Random: 10 items' });
   const rnd = (await hp.locator('.hp-cell .hp-val').allTextContents()).map(Number);
   check('dsa: the random starting heap obeys the heap rule', rnd.length === 10 && rnd.every((v, i) => i === 0 || rnd[(i - 1) >> 1] <= v), rnd);
+  }
+  {
+  // ---- DSA lesson 11 (graphs): the three runs of the graph figure end where the lesson says they do
+  await goto('#/dsa/11');
+  const gfigs = page.locator('.fig-mount').filter({ has: page.locator('svg.gr-svg') });
+  check('dsa: lesson 11 has three graph figures (BFS, DFS, Dijkstra)', (await gfigs.count()) === 3);
+  const runGraph = async (fig) => { for (let i = 0; i < 80; i++) { const step = fig.locator('button:has-text("Step")'); if (await step.isDisabled()) break; await step.click(); } };
+  const bfsG = gfigs.nth(0), dfsG = gfigs.nth(1), dijG = gfigs.nth(2);
+  check('dsa: the graph figure draws eight vertices', (await bfsG.locator('svg.gr-svg circle').count()) === 8);
+  await bfsG.locator('button:has-text("Step")').click();
+  check('dsa: BFS starts by putting A in the queue, then takes it out', /A gets distance 0/.test(await bfsG.locator('.gr-msg').textContent()) === false && /Take A from the front/.test(await bfsG.locator('.gr-msg').textContent()));
+  await bfsG.locator('button:has-text("Step")').click();
+  check('dsa: BFS puts B in the queue with distance 1', /B is new: distance 0 \+ 1 = 1/.test(await bfsG.locator('.gr-msg').textContent()) && (await bfsG.locator('.gr-chips').first().textContent()).includes('B'));
+  await runGraph(bfsG);
+  check('dsa: BFS ends with the shortest route to H, four edges', /A → B → D → F → H: 4 edges/.test(await bfsG.locator('.gr-msg').textContent()), await bfsG.locator('.gr-msg').textContent());
+  check('dsa: BFS finishes all eight vertices in the order of the rings', (await bfsG.locator('.gr-chips').nth(1).textContent()).replace(/\s/g, '') === 'ABCDEFGH');
+  await bfsG.locator('button:has-text("Reset")').click();
+  check('dsa: Reset returns the figure to its first step', /step 1 of/.test(await bfsG.locator('.fig-note').textContent()));
+  await runGraph(dfsG);
+  check('dsa: DFS visits A B D C E F H G', /order A B D C E F H G/.test(await dfsG.locator('.gr-msg').textContent()), await dfsG.locator('.gr-msg').textContent());
+  await runGraph(dijG);
+  check('dsa: Dijkstra ends with the distances 0 4 1 3 7 6 11 12', /A 0, B 4, C 1, D 3, E 7, F 6, G 11, H 12/.test(await dijG.locator('.gr-msg').textContent()), await dijG.locator('.gr-msg').textContent());
+  check('dsa: Dijkstra shows the road lengths on the edges', (await dijG.locator('svg.gr-svg text').allTextContents()).includes('8'));
+  await goto('#/dsa/11');
+  const g2 = page.locator('.fig-mount').filter({ has: page.locator('svg.gr-svg') }).nth(0);
+  await g2.locator('button:has-text("Play")').click(); await page.waitForTimeout(2800); await g2.locator('button:has-text("Pause")').click();
+  check('dsa: the graph figure plays on its own and pauses', !/step 1 of/.test(await g2.locator('.fig-note').textContent()));
   }
   await goto('#/python/1');
   const pp = page.locator('.play').filter({ has: page.locator('.guess') }).first();

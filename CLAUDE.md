@@ -86,16 +86,17 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   app and Scheme, course text): see its commit messages. Bugs it found but left: Scheme character literals. (Java switch expressions and `yield` were added in October 2026, with javac's errors for a missing `default`, `yield` outside a switch expression, `break`/`return` out of one, and unreachable statements: `difftest/java/probe-sw*.java`, `probe-e*.java`, `probe-u*.java`. Pattern matching in `case` is still not covered.) (Java `%1$s` / `%<s`
   and `new TreeSet<>(comparator)` / `new TreeMap<>(comparator)` were fixed in October 2026: `difftest/java/probe-tc.java`.) (Shell `${s/a/b}`, `${f%.txt}`, `${p##*/}`, `${s^^}` and negative slices were added in October 2026 and are checked against bash in `difftest/shell.txt`; `${x@Q}`-style transforms and arrays still report "bad substitution".)
 - SC 105 Modern C++ has 8 lessons (string, vector, references, struct, class, algorithms/lambdas, map/set, gradebook project), 15 exercises.
-- SC 107 Data Structures and Algorithms (Java, `src/course_dsa.js`): lessons 1-7 (cost and arrays; searching; simple sorts; merge sort and
-  quicksort; linked lists; stacks and queues; recursion), 24 exercises (code and `answer` kinds), figures growth, arrayops, dynarray, sortlab,
-  mergeviz, partition, linkedlist, stackqueue, callstack. The interpreter has no `java.util.Stack` (taught as legacy, not run); `ArrayDeque`
-  works as stack, queue and deque. A `\n` inside a Java string in a lesson must be written `\\n` in the template literal.
-  Linked-list exercises use `classes: true` with two top-level classes (no nested classes in the interpreter). The interpreter's recursion
-  limit is `MAX_DEPTH` = 1200 frames in node, but in Chromium's worker the JS stack runs out at about 270 Java frames (measured October 2026: a
-  `sum(a, i+1)` recursion fails between 250 and 300): keep recursion demos and exercise tests under about 200 deep, and check examples in
-  a browser, since node-based tests cannot see this. Fixing it properly means fewer JS frames per Java call in `java.js`. Planned next:
-  hash tables; binary search trees; heaps and priority queues; graphs; a project. (Lesson text already points at hash tables as lesson 8,
-  trees as 9, heaps as 10, graphs as 11.)
+- SC 107 Data Structures and Algorithms (Java, `src/course_dsa.js`, finished October 2026): 12 lessons (cost and arrays; searching; simple sorts; merge sort and
+  quicksort; linked lists; stacks and queues; recursion; hash tables; binary search trees; heaps and priority queues; graphs; a project, the busiest words),
+  about 50 exercises (`ds-<n>-<k>`; code and `answer` kinds), every lesson `standard: 1` at lesson level. Figures growth, arrayops, dynarray, search, sortlab,
+  mergeviz, partition, linkedlist, stackqueue, callstack, hashtable, bst, heap, graph (modes bfs, dfs, dijkstra). Lessons 8-11 were written by parallel
+  agents and checked against a real JDK 21 (`test_diff.js java` runs every example and exercise solution). The interpreter has no `java.util.Stack` (taught as legacy,
+  not run); `ArrayDeque` works as stack, queue and deque; `PriorityQueue` is OpenJDK's heap, so printing it shows the heap array. A `\n` inside a Java string in a
+  lesson must be written `\\n` in the template literal. Linked-list, tree and heap exercises use `classes: true` with top-level classes (no nested classes in the
+  interpreter). Graph exercises take a ragged `int[][]` adjacency list because a `{call}` test cannot build a `List<List<Integer>>`. The interpreter's recursion
+  limit is `MAX_DEPTH` = 1200 frames in node, but in Chromium's worker the JS stack runs out at about 270 Java frames (measured October 2026): keep recursion demos and
+  exercise tests under about 200 deep, and check examples in a browser, since node-based tests cannot see this. Fixing it properly means fewer JS frames per Java call
+  in `java.js`. Not done: course-level skills and checkpoints (they would renumber lessons), AVL/red-black rotations as code, minimum spanning trees, union-find, dynamic programming.
 - SC 100 From Scratch to Python (`src/course_scratch.js`, grades 5-8): lessons 1-9 (say and ask; variables; repeat, forever and the turtle;
   if/elif/else; lists; functions; a text-adventure project; turtle art: shapes as functions, colour, fill, spirals, a flower, random stars;
   words and letters: + len [] slices, for letter in word, upper/lower/replace/count/split), 18 exercises, the `blocks` figure (Scratch blocks beside Python; C-blocks take an else child list) and
@@ -106,7 +107,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   end the game, or the loop runs on empty input until the time limit. Skulpt's turtle supports color (named colours), pensize, begin_fill/
   end_fill, penup/pendown, goto, speed. Planned next: a dictionaries lesson (a Scratch list of pairs → dict) and a final "what next" lesson
   handing over to SC 101.
-- Courses still being written carry `status: 'developing'` (Scratch to Python, Modern C++, Java, DSA): an "Under development" tag (app.js `devTag`).
+- Courses still being written carry `status: 'developing'` (Scratch to Python, Modern C++, The Command Line, How Machines Learn): an "Under development" tag (app.js `devTag`).
 - SC 106 Introduction to Java (finished October 2026): the interpreter and 12 lessons (Hello Java and types; decisions and Scanner; loops; methods;
   arrays; Strings; ArrayList; classes and objects; 9 inheritance and interfaces; 10 exceptions; 11 HashMap and HashSet; 12 project, a text-mode
   Minecraft crafting table), 22 exercises (`jv-<n>-<k>`). Every lesson has `standard: 1` (lesson level: no course-level skills or checkpoints, so no

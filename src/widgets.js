@@ -1176,6 +1176,116 @@ xs mapped kept result`;
     load(0);
   };
 
+  /* ---------- graphs: breadth-first, depth-first and Dijkstra on one small fixed graph (SC 107 lesson 11) ---------- */
+  W.graph = function (mount, b) {
+    const mode = b.mode === 'dfs' || b.mode === 'dijkstra' ? b.mode : 'bfs';
+    const N = 'ABCDEFGH', R = 17, INF = Infinity;
+    const pos = [[40, 125], [120, 45], [120, 205], [230, 75], [230, 185], [340, 95], [340, 200], [450, 150]];
+    const E = [[0, 1, 4], [0, 2, 1], [1, 3, 5], [2, 3, 2], [2, 4, 8], [3, 5, 3], [4, 5, 1], [4, 6, 4], [5, 7, 6], [6, 7, 2]];
+    const adj = N.split('').map(() => []);
+    for (const [a, c, w] of E) { adj[a].push([c, w]); adj[c].push([a, w]); }
+    adj.forEach((l) => l.sort((x, y) => x[0] - y[0]));
+    const steps = [];
+    const names = (l) => l.map((x) => N[x[0]]).join(', ');
+
+    function bfs() {
+      const dist = Array(8).fill(-1), parent = Array(8).fill(-1), done = Array(8).fill(false), q = [0], fin = [];
+      dist[0] = 0;
+      const snap = (cur, edge, kind, msg) => steps.push({ cur, edge, kind, msg, ft: q.map((v) => N[v]), val: dist.map((d) => d < 0 ? '' : String(d)), seen: dist.map((d) => d >= 0), done: done.slice(), parent: parent.slice(), fin: fin.slice() });
+      snap(-1, null, '', 'Start: A gets distance 0 and goes into the queue. Nothing else is known yet.');
+      while (q.length) {
+        const v = q.shift();
+        snap(v, null, '', 'Take ' + N[v] + ' from the front of the queue. Its neighbours are ' + names(adj[v]) + '.');
+        adj[v].forEach(([w], k) => {
+          const last = k === adj[v].length - 1, fin1 = () => { if (last) { done[v] = true; fin.push(N[v]); } return last ? ' ' + N[v] + ' is finished.' : ''; };
+          if (dist[w] < 0) { dist[w] = dist[v] + 1; parent[w] = v; q.push(w); const t = fin1(); snap(v, [v, w], 'new', N[w] + ' is new: distance ' + dist[v] + ' + 1 = ' + dist[w] + ', parent ' + N[v] + '. It joins the back of the queue.' + t); }
+          else { const t = fin1(); snap(v, [v, w], 'skip', N[w] + ' was seen before: skip it. (This check is what stops the search going round and round.)' + t); }
+        });
+      }
+      const path = []; for (let v = 7; v >= 0; v = parent[v]) path.unshift(N[v]);
+      snap(-1, null, '', 'The queue is empty, so the search is over. Following the parent links back from H gives the route ' + path.join(' → ') + ': ' + (path.length - 1) + ' edges, the fewest possible.');
+    }
+
+    function dfs() {
+      const num = Array(8).fill(0), parent = Array(8).fill(-1), done = Array(8).fill(false), st = [], fin = []; let count = 0;
+      const snap = (cur, edge, kind, msg) => steps.push({ cur, edge, kind, msg, ft: st.map((v) => N[v]), val: num.map((d) => d ? String(d) : ''), seen: num.map((d) => d > 0), done: done.slice(), parent: parent.slice(), fin: fin.slice() });
+      function visit(v, p) {
+        num[v] = ++count; parent[v] = p; st.push(v); fin.push(N[v]);
+        snap(v, p < 0 ? null : [p, v], p < 0 ? '' : 'new', p < 0 ? 'Start at A: visit it (number 1) and put it on the call stack.' : 'From ' + N[p] + ', ' + N[v] + ' is unvisited: go deeper. Visit ' + N[v] + ' (number ' + num[v] + ') and put it on the stack.');
+        for (const [w] of adj[v]) {
+          if (!num[w]) visit(w, v);
+          else if (w !== p) snap(v, [v, w], 'skip', N[w] + ' is already visited: skip it.');
+        }
+        st.pop(); done[v] = true;
+        snap(p, null, '', N[v] + ' has no unvisited neighbours left: it is finished and leaves the stack.' + (p < 0 ? ' The first call returns.' : ' Back to ' + N[p] + '.'));
+      }
+      visit(0, -1);
+      steps[steps.length - 1].msg += ' Every vertex was visited, in the order ' + fin.join(' ') + '.';
+    }
+
+    function dijkstra() {
+      const dist = Array(8).fill(INF), parent = Array(8).fill(-1), done = Array(8).fill(false), fin = []; let pq = [[0, 0]];
+      dist[0] = 0;
+      const fmt = (d) => d === INF ? '∞' : String(d);
+      const snap = (cur, edge, kind, msg) => steps.push({ cur, edge, kind, msg, ft: pq.map((e) => N[e[0]] + ':' + e[1]), val: dist.map(fmt), seen: dist.map((d) => d < INF), done: done.slice(), parent: parent.slice(), fin: fin.slice() });
+      snap(-1, null, '', 'Start: A has distance 0; every other vertex is ∞ (no route known). The priority queue holds A:0.');
+      while (pq.length) {
+        pq.sort((x, y) => x[1] - y[1] || x[0] - y[0]);
+        const [v, d] = pq.shift();
+        if (d > dist[v]) { snap(v, null, '', 'Take ' + N[v] + ':' + d + ' from the queue. It is stale: ' + N[v] + ' already has the better distance ' + dist[v] + ', so skip it.'); continue; }
+        done[v] = true; fin.push(N[v] + ' ' + d);
+        snap(v, null, '', 'Take the smallest entry, ' + N[v] + ':' + d + '. The distance of ' + N[v] + ' is now final: ' + d + '. Relax its edges.');
+        for (const [w, wt] of adj[v]) {
+          const nd = d + wt;
+          if (nd < dist[w]) {
+            const old = dist[w]; dist[w] = nd; parent[w] = v; pq.push([w, nd]);
+            snap(v, [v, w], 'new', N[v] + '–' + N[w] + ': ' + d + ' + ' + wt + ' = ' + nd + ' beats ' + fmt(old) + '. Update ' + N[w] + ' to ' + nd + ' and add ' + N[w] + ':' + nd + ' to the queue.');
+          } else snap(v, [v, w], 'skip', N[v] + '–' + N[w] + ': ' + d + ' + ' + wt + ' = ' + nd + ' does not beat ' + dist[w] + '. No change.');
+        }
+      }
+      snap(-1, null, '', 'The queue is empty. Every distance is final: ' + dist.map((x, i) => N[i] + ' ' + x).join(', ') + '.');
+    }
+    (mode === 'bfs' ? bfs : mode === 'dfs' ? dfs : dijkstra)();
+
+    const front = { bfs: 'queue (front → back)', dfs: 'call stack (bottom → top)', dijkstra: 'priority queue (smallest first)' }[mode];
+    const lower = { bfs: 'finished, in order', dfs: 'visited, in order', dijkstra: 'final distances, in order' }[mode];
+    const svg = sv('svg', { class: 'gr-svg', viewBox: '0 0 490 250', role: 'img', 'aria-label': 'A graph of eight vertices' });
+    const frontRow = el('div', { class: 'gr-chips' }), finRow = el('div', { class: 'gr-chips' });
+    const msg = el('div', { class: 'fig-status gr-msg', role: 'status', 'aria-live': 'polite' });
+    const chips = (host, items, hotIndex) => host.replaceChildren(...(items.length ? items.map((t, k) => el('span', { class: 'gr-chip' + (k === hotIndex ? ' gr-next' : '') }, t)) : [el('span', { class: 'gr-chip gr-empty' }, 'empty')]));
+
+    function render(i) {
+      const s = steps[i];
+      svg.innerHTML = '';
+      E.forEach(([a, c]) => {
+        const hot = s.edge && ((s.edge[0] === a && s.edge[1] === c) || (s.edge[0] === c && s.edge[1] === a));
+        const tree = s.parent[a] === c || s.parent[c] === a;
+        svg.append(sv('line', { x1: pos[a][0], y1: pos[a][1], x2: pos[c][0], y2: pos[c][1], stroke: hot ? 'var(--ink)' : tree ? 'var(--accent)' : 'var(--rule)', 'stroke-width': hot ? 4 : tree ? 3 : 1.8, 'stroke-dasharray': hot && s.kind === 'skip' ? '6 4' : null, 'stroke-linecap': 'round' }));
+      });
+      if (mode === 'dijkstra') E.forEach(([a, c, w]) => {
+        const x = (pos[a][0] + pos[c][0]) / 2, y = (pos[a][1] + pos[c][1]) / 2;
+        svg.append(sv('rect', { x: x - 9, y: y - 9, width: 18, height: 17, rx: 3, fill: 'var(--paper)', stroke: 'var(--rule)' }), mono(x, y + 4, String(w), { 'text-anchor': 'middle', 'font-size': 12 }));
+      });
+      for (let v = 0; v < 8; v++) {
+        const [x, y] = pos[v], done = s.done[v], waiting = s.seen[v] && !done;
+        svg.append(sv('circle', { cx: x, cy: y, r: R, fill: done ? 'var(--accent)' : waiting ? 'var(--accent-soft)' : 'var(--paper-2)', stroke: s.cur === v ? 'var(--ink)' : s.seen[v] ? 'var(--accent)' : 'var(--rule)', 'stroke-width': s.cur === v ? 3.5 : 1.8 }));
+        svg.append(txt(x, y + 5, N[v], { 'text-anchor': 'middle', 'font-size': 15, 'font-weight': 700, fill: done ? 'var(--accent-ink)' : 'var(--ink)' }));
+        if (s.val[v] !== '') svg.append(mono(x, y + R + 14, s.val[v], { 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 600, fill: s.val[v] === '∞' ? 'var(--ink-3)' : 'var(--ink)' }));
+      }
+      chips(frontRow, s.ft, mode === 'dfs' ? s.ft.length - 1 : 0);
+      chips(finRow, s.fin, -1);
+      msg.textContent = s.msg;
+      svg.setAttribute('aria-label', 'Graph of eight vertices' + (mode === 'dijkstra' ? ' with edge weights. ' : '. ') + s.msg);
+    }
+    const ctl = stepper(steps.length, render, { interval: 1200 });
+    const key = { bfs: 'Number under a vertex: its distance from A. Dark: finished. Tinted: in the queue. Ring: the vertex being looked at. Heavy lines: parent links.', dfs: 'Number under a vertex: the order it was visited. Dark: finished. Tinted: on the stack. Ring: the current vertex. Heavy lines: the edges the search went along.', dijkstra: 'Number under a vertex: the best distance found so far (∞ if none). Dark: final. Ring: the vertex being processed. Heavy lines: the best route found so far to each vertex.' }[mode];
+    mount.append(
+      el('div', { class: 'gr-wrap' },
+        el('div', { class: 'gr-left fig-scroll' }, svg),
+        el('div', { class: 'gr-side' }, el('div', { class: 'gr-lab' }, front), frontRow, el('div', { class: 'gr-lab' }, lower), finRow)),
+      el('p', { class: 'gr-key' }, key), msg, ctl.el);
+  };
+
   /* ---------- the directory tree of a shell lesson: click a name to see its paths; "go here" moves the marker ---------- */
   // params: tree (the same shape as a lesson's setup, keys as paths from the home directory), cwd ('~' or '~/x'), the home is /home/student
   W.fstree = function (mount, b) {

@@ -151,6 +151,11 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 | 5. Linked lists | 3A-DA-10, 3B-AP-12 |
 | 6. Stacks and queues | 3B-AP-12 |
 | 7. Recursion | 3B-AP-13 |
+| 8. Hash tables | 3A-DA-10, 3B-AP-12, 3B-AP-11 |
+| 9. Binary search trees | 3B-AP-12, 3B-AP-11, 3B-AP-13 |
+| 10. Heaps and priority queues | 3B-AP-12, 3B-AP-11, 3B-AP-10 |
+| 11. Graphs | 3B-AP-12, 3B-AP-10, 3B-AP-11 |
+| 12. Project: the busiest words | 3B-AP-12, 3B-AP-11, 3A-DA-10 |
 
 ### SC 108 The Command Line
 
@@ -204,7 +209,7 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 | **3A-NI-05** Give examples of how malware and attacks affect sensitive data | SC 099 L10 |  |
 | **3A-NI-06** Recommend security measures for scenarios (efficiency, feasibility, ethics) | SC 104 L13 |  |
 | **3A-DA-09** Translate between bit representations of characters, numbers, images | SC 099 L2, SC 099 L6, SC 099 L9, SC 101 L13, SC 103 L7 |  |
-| **3A-DA-10** Evaluate tradeoffs in how data is organized and where it is stored | SC 099 L3, SC 099 L5, SC 101 L5, SC 101 L9, SC 105 L7, SC 106 L11, SC 107 L1, SC 107 L5, SC 108 L2 |  |
+| **3A-DA-10** Evaluate tradeoffs in how data is organized and where it is stored | SC 099 L3, SC 099 L5, SC 101 L5, SC 101 L9, SC 105 L7, SC 106 L11, SC 107 L1, SC 107 L5, SC 107 L8, SC 107 L12, SC 108 L2 |  |
 | **3A-DA-12** Create computational models of relationships among data elements | SC 101 L10, SC 103 L9, SC 104 L5, SC 104 L6, SC 109 L1, SC 109 L2, SC 109 L6 |  |
 | **3A-AP-13** Create prototypes that use algorithms to solve problems | SC 101 L13, SC 105 L8, SC 106 L12 | Bot Arena |
 | **3A-AP-14** Use lists to simplify solutions instead of many simple variables | SC 100 L5, SC 101 L5, SC 101 L6, SC 101 L9, SC 103 L6, SC 105 L2, SC 106 L5, SC 106 L7 |  |
@@ -223,10 +228,10 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 | **3B-DA-07** Evaluate how well models and simulations test and refine hypotheses | SC 101 L10, SC 103 L9, SC 109 L3, SC 109 L4 |  |
 | **3B-AP-08** Describe how artificial intelligence drives software and physical systems | SC 109 L1, SC 109 L4, SC 109 L5, SC 109 L8 |  |
 | **3B-AP-09** Implement an AI algorithm to play a game or solve a problem | SC 109 L2, SC 109 L5, SC 109 L6, SC 109 L7, SC 109 L8 | Bot Arena |
-| **3B-AP-10** Use and adapt classic algorithms | SC 101 L11, SC 101 L12, SC 102 L9, SC 103 L10, SC 103 L11, SC 104 L4, SC 104 L13, SC 105 L6, SC 107 L2, SC 107 L3, SC 107 L4 | Algorithms in motion |
-| **3B-AP-11** Evaluate algorithms for efficiency, correctness and clarity | SC 101 L12, SC 102 L5, SC 103 L10, SC 103 L11, SC 104 L3, SC 104 L4, SC 104 L11, SC 104 L12, SC 107 L1, SC 107 L2, SC 107 L3, SC 107 L4, SC 109 L3 | Algorithms in motion |
-| **3B-AP-12** Compare and contrast fundamental data structures and their uses | SC 101 L5, SC 101 L9, SC 102 L6, SC 102 L7, SC 102 L10, SC 103 L5, SC 103 L6, SC 103 L7, SC 104 L2, SC 104 L5, SC 105 L1, SC 105 L2, SC 105 L7, SC 106 L5, SC 106 L7, SC 106 L11, SC 107 L1, SC 107 L5, SC 107 L6, SC 109 L7 |  |
-| **3B-AP-13** Illustrate the flow of execution of a recursive algorithm | SC 101 L11, SC 102 L4, SC 102 L5, SC 102 L7, SC 104 L3, SC 107 L4, SC 107 L7 |  |
+| **3B-AP-10** Use and adapt classic algorithms | SC 101 L11, SC 101 L12, SC 102 L9, SC 103 L10, SC 103 L11, SC 104 L4, SC 104 L13, SC 105 L6, SC 107 L2, SC 107 L3, SC 107 L4, SC 107 L10, SC 107 L11 | Algorithms in motion |
+| **3B-AP-11** Evaluate algorithms for efficiency, correctness and clarity | SC 101 L12, SC 102 L5, SC 103 L10, SC 103 L11, SC 104 L3, SC 104 L4, SC 104 L11, SC 104 L12, SC 107 L1, SC 107 L2, SC 107 L3, SC 107 L4, SC 107 L8, SC 107 L9, SC 107 L10, SC 107 L11, SC 107 L12, SC 109 L3 | Algorithms in motion |
+| **3B-AP-12** Compare and contrast fundamental data structures and their uses | SC 101 L5, SC 101 L9, SC 102 L6, SC 102 L7, SC 102 L10, SC 103 L5, SC 103 L6, SC 103 L7, SC 104 L2, SC 104 L5, SC 105 L1, SC 105 L2, SC 105 L7, SC 106 L5, SC 106 L7, SC 106 L11, SC 107 L1, SC 107 L5, SC 107 L6, SC 107 L8, SC 107 L9, SC 107 L10, SC 107 L11, SC 107 L12, SC 109 L7 |  |
+| **3B-AP-13** Illustrate the flow of execution of a recursive algorithm | SC 101 L11, SC 102 L4, SC 102 L5, SC 102 L7, SC 104 L3, SC 107 L4, SC 107 L7, SC 107 L9 |  |
 | **3B-AP-14** Construct solutions from student-created procedures, modules, objects | SC 101 L7, SC 102 L8, SC 102 L9, SC 102 L11, SC 105 L4, SC 105 L5, SC 105 L8, SC 106 L8, SC 106 L9, SC 106 L12 |  |
 | **3B-AP-15** Analyze a large problem and find generalizable patterns | SC 102 L11, SC 107 L4 |  |
 | **3B-AP-16** Demonstrate code reuse with libraries and APIs | SC 105 L1, SC 105 L2, SC 105 L6, SC 106 L6, SC 106 L7, SC 106 L11 |  |

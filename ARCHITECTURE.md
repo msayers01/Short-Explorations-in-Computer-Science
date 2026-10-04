@@ -721,7 +721,7 @@ Students write a bot (Python, Java, C++ or Scheme) that plays Tron against built
   experiment timed in the page; param `algo`), mergeviz (bottom-up merge sort, every merge step and the comparison count), partition (Lomuto
   partition with its invariant), linkedlist (nodes and arrows; get, insert, add first/last, remove first, with hop counts; all three take `items`),
   stackqueue (`kind: 'stack' | 'queue'`: eight cells, push/pop or enqueue/dequeue with wrap-round, one operation at a time), callstack
-  (`fn: 'sum' | 'fact' | 'fib'`, `n`: frames pushed and popped step by step, with the call count); and blocks (From Scratch to Python: a stack of Scratch-style blocks drawn with the palette
+  (`fn: 'sum' | 'fact' | 'fib'`, `n`: frames pushed and popped step by step, with the call count); hashtable (a chained table: hash arithmetic, collisions, load factor, doubling, a bad-hash switch; lesson 8), bst (insert, search, walk in order, presets; lesson 9), heap (min-heap as tree and array, sift up and down, step by step; lesson 10), graph (`mode: 'bfs' | 'dfs' | 'dijkstra'` on one fixed eight-vertex graph; lesson 11); and blocks (From Scratch to Python: a stack of Scratch-style blocks drawn with the palette
   colours beside highlighted Python; `stack: [[category, text, children?, elseChildren?]]`, `python`, in text `[words]` is a text input, `(10)`
   a number, `<cond>` a boolean), and blockquiz (the same blocks as a quiz: `items: [{stack, answer | [answers], hint}]`; the typed line is
   compared with spaces outside quotes removed and single quotes read as double; capitals and colons are not forgiven; two-line answers are

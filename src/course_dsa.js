@@ -1,13 +1,13 @@
 // Lesson content, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
 // Data Structures and Algorithms, in Java, on the site's own interpreter (src/java.js). Every structure and algorithm is shown three ways:
-// an interactive figure to step through (src/widgets.js: growth, arrayops, dynarray, search, sortlab, mergeviz, partition, linkedlist, stackqueue, callstack), code to write, and a cost to count.
+// an interactive figure to step through (src/widgets.js: growth, arrayops, dynarray, search, sortlab, mergeviz, partition, linkedlist, stackqueue, callstack, hashtable, bst, heap, graph), code to write, and a cost to count.
 window.COURSES = window.COURSES || [];
 window.COURSES.push({
-  id: 'dsa', code: 'SC 107', short: 'DSA', lang: 'java', status: 'developing',
+  id: 'dsa', code: 'SC 107', short: 'DSA', lang: 'java',
   title: 'Data Structures and Algorithms',
   grades: 'Grades 11–12 · after Java, or C++ with the Java primer',
-  audience: `<p><b>Grades 11–12</b>, after <em>Introduction to Java</em> (SC 106) or after <em>Introduction to C++</em> and lesson 1 of SC 106. This is the course that every computer science degree puts second: how data is arranged in memory, what each arrangement makes cheap and what it makes expensive, and how to tell, before running anything, how a program's running time will grow with its input. It is the material of technical interviews, of the second AP exam's hardest questions, and of every system that has to stay fast as it grows.</p><p>The code is Java, but every idea transfers unchanged to any language. Each lesson has interactive figures you can step through, code you write, and costs you count. The course is being written: the first seven lessons are here.</p>`,
-  tagline: 'How data is arranged, what each arrangement costs, and how to know before you run it: arrays, searching, sorting, and the measure of growth.',
+  audience: `<p><b>Grades 11–12</b>, after <em>Introduction to Java</em> (SC 106) or after <em>Introduction to C++</em> and lesson 1 of SC 106. This is the course that every computer science degree puts second: how data is arranged in memory, what each arrangement makes cheap and what it makes expensive, and how to tell, before running anything, how a program's running time will grow with its input. It is the material of technical interviews, of the second AP exam's hardest questions, and of every system that has to stay fast as it grows.</p><p>The code is Java, but every idea transfers unchanged to any language. Each lesson has interactive figures you can step through, code you write, and costs you count. Twelve lessons end in a project that uses a hash table, a sort and a heap on one problem.</p>`,
+  tagline: 'How data is arranged, what each arrangement costs, and how to know before you run it: arrays, searching, sorting, lists, stacks and queues, recursion, hash tables, trees, heaps and graphs.',
   description: `<p>Two programs can give the same answer and differ in running time by a factor of a billion. The difference is rarely the computer, the language or how neatly the code is written. It is the <em>arrangement</em> of the data and the <em>method</em> that works on it: a data structure and an algorithm. Choosing them is the part of programming that separates a program that works on the test file from one that still works when the file is a million times bigger.</p>
 <p>This course teaches the classical structures (arrays, lists, stacks, queues, hash tables, trees, graphs) and the classical algorithms on them (searching, sorting, traversal), and, more than any one of them, the habit of asking <em>how does the cost grow?</em> and the tools to answer it. Everything is shown three ways: as a picture you can step through one operation at a time, as Java code you write and check, and as a count of steps you can predict and then measure.</p>
 <p>Programs run in the Java interpreter built into this site, instantly and offline. It is slower than a real machine, so experiments use thousands of items where a laptop would use millions; the shapes of the curves are the same, and that is what matters.</p>`,
@@ -20,6 +20,10 @@ window.COURSES.push({
     'Build a linked list from nodes, give the cost of each operation, and say when it beats an array (rarely) and why it still matters',
     'Implement a stack and a ring-buffer queue in O(1) per operation, and know what each is for',
     'Write a recursive method with a sound base case, trace its call stack, and know when a memo or a loop is needed instead',
+    'Build a hash table with chaining, explain load factor and doubling, and say why equal objects need equal hash codes',
+    'Insert into, search, walk and delete from a binary search tree, and explain why its shape decides its speed',
+    'Store a heap in an array, write sift up and sift down, and use a priority queue for the k best of many',
+    'Search a graph breadth first and depth first, and find shortest routes with Dijkstra\'s algorithm',
     'Predict a running time from a doubling experiment, and check a prediction by measuring',
     'Choose a structure for a task by the operations the task needs most'
   ],
@@ -1246,7 +1250,7 @@ public class Main {
 }`, caption: 'It prints <code>[1, 2, 3]  served 1, 2</code> (Java builds the string from left to right, so the queue is printed before the two dequeues happen), then <code>[3, 4, 5]  size 3</code>, then <code>[3, 4, 5, 6, 7]  size 5</code>, and the values come out in the order they went in, <code>3 4 5 6 7</code>, through two wrap-rounds and one growth. The grow method is the subtle part: it must copy from head, going round, so that the new array holds the queue in order starting at 0.' },
         { check: "Why does a queue in an array need a ring?", options: ["To save memory", "So that dequeue does not shift every item: head moves instead, and wraps round", "Because arrays cannot be resized"], answer: 1, wrong: ["A ring uses the same memory as any array of that size. Its point is time: it avoids the O(n) shift that a dequeue from cell 0 would need.", null, "True, an array cannot be resized, but that is solved by copying into a bigger one, as the stack does. The ring solves a different problem: a dequeue that would shift every item."], why: "If the front were always cell 0, dequeue would be O(n). Letting head and tail walk and wrap keeps every operation O(1)." },
         `<h2>What queues are for</h2>
-<p>Anything served in order of arrival: print jobs, requests to a server, messages between parts of a program, the frames of a video waiting to be shown. And one algorithm this course will meet twice: breadth-first search, which explores a graph level by level by keeping the frontier in a queue (lesson 11). The library's queue is <code>ArrayDeque</code> again, used from the other end, or <code>LinkedList</code>, which also implements <code>Queue</code>. Predict who is left in a circle of seven children when every third pass puts the holder out.</p>`,
+<p>Anything served in order of arrival: print jobs, requests to a server, messages between parts of a program, the frames of a video waiting to be shown. And one algorithm this course will meet again: breadth-first search, which explores a graph level by level by keeping the frontier in a queue (lesson 11). The library's queue is <code>ArrayDeque</code> again, used from the other end, or <code>LinkedList</code>, which also implements <code>Queue</code>. Predict who is left in a circle of seven children when every third pass puts the holder out.</p>`,
         { predict: true, play: `import java.util.ArrayDeque;
 import java.util.Queue;
 
@@ -2580,6 +2584,547 @@ static void heapSort(int[] a) {
 <li>Heapsort builds a max-heap in the array in O(n), then moves the largest to the end n − 1 times: O(n log n), in place, not stable.</li>
 <li>Java&rsquo;s <code>PriorityQueue</code> is a min-heap (<code>Collections.reverseOrder()</code> for a max-heap; <code>Comparable</code> or a <code>Comparator</code> for your own classes). Printing it shows the heap&rsquo;s array, not sorted order. To keep the k largest, keep a min-heap of size k.</li>
 <li>Next: graphs, and Dijkstra&rsquo;s algorithm, which asks a priority queue for the nearest unvisited place again and again.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      standard: 1,
+      standards: ['3B-AP-12', '3B-AP-10', '3B-AP-11'],
+      title: 'Graphs', summary: 'Dots and lines as the model of maps, networks and dependencies; the two ways to store a graph and what each costs; breadth-first search and the shortest route counted in edges; depth-first search and connected components; and Dijkstra’s algorithm for the shortest route when the edges have lengths.',
+      blocks: [
+        `<p>In the 1950s the Dutch computer scientist Edsger Dijkstra was working on a question that sounds easy: what is the shortest way to travel from Rotterdam to Groningen? Looking back, late in his life, he said that he found the answer in about twenty minutes, one morning while shopping in Amsterdam with his fiancée. They had sat down on a café terrace to drink coffee, and he worked it out in his head, without pencil and paper. He published it in 1959, in a short note in the journal <i>Numerische Mathematik</i>. Today a version of the idea sits behind the route that a map app finds for you.</p>
+<p>The map of the Netherlands is a graph: the towns are the dots, the roads are the lines, and the length of each road is a number written on its line. You can see the answer by looking at a map. A program cannot look. It holds lists of numbers and can read one town at a time. In lesson 5 of the mathematics course (SC 104) you met graphs as mathematics: degrees, walks, Euler's bridges, and one breadth-first search in Python. This lesson is about the program. So how does a program that sees only one town at a time find the shortest route, and what must it remember so that it never goes round in circles?</p>
+<h2>What a graph models</h2>
+<div class="stmt"><p><span class="kind">Graph.</span> A set of <em>vertices</em> (the dots) and a set of <em>edges</em> (the lines, each joining two vertices). In this lesson <code>V</code> is the number of vertices and <code>E</code> the number of edges; every cost below is written with them.</p>
+<p><span class="kind">Three kinds.</span> <em>Undirected</em>: an edge works both ways (a friendship, a two-way road). <em>Directed</em>: an edge has a direction (a one-way street, "follows" on a social network, "this task must come before that one"). <em>Weighted</em>: every edge carries a number (kilometres, minutes, a price).</p></div>
+<p>Road maps, the links between web pages, the courses you must take before other courses, the moves of a puzzle, the computers of a network: once you see that each is dots and lines, one set of algorithms solves all of them. That is why graphs are the structure that the rest of computer science keeps coming back to. A tree is just a connected graph with no cycles, so what you learn here applies to trees too.</p>
+<details class="reveal"><summary>Guess first: at most how many edges can an undirected graph with 1,000 vertices have, if no two vertices are joined twice?</summary><p>Every pair of vertices may be joined once, and there are 1,000 × 999 ÷ 2 = <b>499,500</b> pairs. So <code>E</code> can be as large as about <code>V²/2</code>, and as small as 0. A graph with nearly all its edges is <em>dense</em>; one with few is <em>sparse</em>. Road maps and friendships are sparse: each town has a handful of roads, not a million. Which way you store a graph depends on which kind you have.</p></details>
+<h2>Two ways to store a graph</h2>
+<div class="stmt"><p><span class="kind">Adjacency matrix.</span> A <code>V × V</code> table: cell <code>[a][b]</code> says whether there is an edge from <code>a</code> to <code>b</code> (or, for a weighted graph, holds its weight). <span class="kind">Adjacency list.</span> An array with one list per vertex: the list of <code>a</code> holds the neighbours of <code>a</code> (for a weighted graph, the neighbour and the weight).</p>
+<table class="growth-table"><thead><tr><th></th><th>Matrix</th><th>List</th></tr></thead><tbody>
+<tr><td>Space</td><td>O(V²)</td><td>O(V + E)</td></tr>
+<tr><td>Is there an edge a–b?</td><td>O(1)</td><td>O(degree of a)</td></tr>
+<tr><td>All neighbours of a</td><td>O(V): scan a row</td><td>O(degree of a): just the list</td></tr>
+<tr><td>Add an edge</td><td>O(1)</td><td>O(1)</td></tr>
+</tbody></table></div>
+<p>The matrix wins at one thing, the instant test for one edge. The list wins at what almost every graph algorithm does all day: <em>going through the neighbours of a vertex</em>. And for a sparse graph the matrix wastes nearly all its cells. So the list is the usual choice, and the rest of this lesson uses it. For an undirected graph, store each edge twice, once in each endpoint's list; for a directed graph, once.</p>
+<p>In Java the list is <code>List&lt;List&lt;Integer&gt;&gt;</code>, or, when the graph is fixed, a ragged <code>int[][]</code> where row <code>v</code> is the array of the neighbours of <code>v</code>. In the code below the vertices <code>A</code> to <code>H</code> are the numbers 0 to 7, which is how a program names them: a vertex is an index.</p>`,
+        { play: `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        int n = 8;                                   // vertices A..H are numbered 0..7
+        int[][] edges = {{0,1},{0,2},{1,3},{2,3},{2,4},{3,5},{4,5},{4,6},{5,7},{6,7}};
+
+        boolean[][] matrix = new boolean[n][n];      // matrix[a][b]: is there an edge a-b?
+        List<List<Integer>> list = new ArrayList<>(); // list.get(a): the neighbours of a
+        for (int v = 0; v < n; v++) list.add(new ArrayList<>());
+
+        for (int[] e : edges) {
+            matrix[e[0]][e[1]] = true;  matrix[e[1]][e[0]] = true;   // undirected: both ways
+            list.get(e[0]).add(e[1]);   list.get(e[1]).add(e[0]);
+        }
+        System.out.println("matrix says C-E is an edge: " + matrix[2][4]);
+        System.out.println("neighbours of C (vertex 2): " + list.get(2));
+        System.out.println("matrix cells: " + n * n + "   list entries: " + (2 * edges.length));
+    }
+}`, predict: true, caption: 'The matrix answers "is C–E an edge?" by looking in one cell. The list gives C’s three neighbours, A, D and E (0, 3 and 4), straight away. The last line is the cost of space: 64 cells against 20 entries. For 8 vertices that hardly matters. For a road map of a million junctions, each with three or four roads, the matrix would need a million million cells (a terabyte even at one byte each) and the lists about four million entries. Try adding the edge <code>{0,7}</code> and see which numbers change.' },
+        { check: "A social network has a million people, and each knows about 200 others. Which way should the program store who knows whom?", options: ["An adjacency matrix: testing whether two people know each other is O(1)", "Adjacency lists: about 200 million entries, not a million million cells", "Either: both hold the same information, so they cost the same"], answer: 1, wrong: ["The O(1) test is real, but the matrix has a cell for every pair of people, a million times a million of them, almost all empty. Speed in one operation does not pay for impossible space.", null, "They hold the same information at very different cost: the matrix keeps a cell for every pair, connected or not, and the list keeps only the connections."], why: "Space is O(V²) for the matrix and O(V + E) for the lists. With E about 100 million edges and V a million, the lists are thousands of times smaller, and listing a person's friends is the operation the algorithms need." },
+        `<h2>Breadth first: rings outwards</h2>
+<p>Take a vertex, look at its neighbours, then at <em>their</em> neighbours, and so on: the search spreads outwards in rings, like a stone dropped in a pond. All the vertices one edge away come first, then all those two edges away. To do this the program must remember the vertices it has found but not yet explored. They have to be explored in the order in which they were found, which is exactly what a queue (lesson 6) does.</p>
+<div class="stmt"><p><span class="kind">Breadth-first search (BFS).</span> Mark the start with distance 0 and put it in a queue. Repeat until the queue is empty: take the vertex <code>v</code> from the front; for each neighbour <code>w</code> that has not been seen, set <code>dist[w] = dist[v] + 1</code>, remember <code>parent[w] = v</code>, and put <code>w</code> at the back.</p>
+<p><span class="kind">What it gives.</span> <code>dist[v]</code> is the fewest <em>edges</em> on any route from the start to <code>v</code>, and following <code>parent</code> back from <code>v</code> gives one such route. <span class="kind">Cost.</span> O(V + E): each vertex enters the queue once, and each list is read once.</p></div>
+<p>The array <code>dist</code> does two jobs. It records the answer, and its entries that are still -1 are the "not seen" marks. Without those marks the search would find A from B, then B from A, then A from B again, for ever. That one check is what makes a graph search stop.</p>`,
+        { fig: 'graph', mode: 'bfs', caption: 'Breadth-first search from A. Step through and watch the queue: B and C (distance 1) go in first, then D and E (distance 2), and so on. The heavy lines are the parent links; the route to H is the chain of them back to A.' },
+        { play: `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        int n = 8;
+        int[][] edges = {{0,1},{0,2},{1,3},{2,3},{2,4},{3,5},{4,5},{4,6},{5,7},{6,7}};
+        List<List<Integer>> adj = new ArrayList<>();
+        for (int v = 0; v < n; v++) adj.add(new ArrayList<>());
+        for (int[] e : edges) { adj.get(e[0]).add(e[1]); adj.get(e[1]).add(e[0]); }
+        int[] dist = new int[n], parent = new int[n];
+        Arrays.fill(dist, -1);                       // -1 means "not seen yet"
+        ArrayDeque<Integer> queue = new ArrayDeque<>();
+        dist[0] = 0; parent[0] = -1; queue.add(0);
+        while (!queue.isEmpty()) {
+            int v = queue.poll();
+            for (int w : adj.get(v)) {
+                if (dist[w] == -1) { dist[w] = dist[v] + 1; parent[w] = v; queue.add(w); }
+            }
+        }
+        System.out.println("distances from A: " + Arrays.toString(dist));
+        String route = "";
+        for (int v = 7; v != -1; v = parent[v]) route = "ABCDEFGH".charAt(v) + " " + route;
+        System.out.println("shortest route to H: " + route.trim());
+    }
+}`, predict: true, caption: 'The distances are 0, 1, 1, 2, 2, 3, 3, 4: B and C are one edge from A, D and E two, F and G three, and H four. The route is found backwards: H’s parent is F, F’s is D, D’s is B, B’s is A, and each step puts the vertex in front of the string. Change the target to G (vertex 6) and the route changes; change <code>queue.add</code> to <code>queue.push</code>, which adds at the front, and watch the distances stop being right.' },
+        { check: "You need the route with the fewest roads from A to H in the graph above, and every road counts the same. Which search should you use?", options: ["Breadth-first: it reaches every vertex one edge away before any vertex two edges away", "Depth-first: it heads straight for the far end of the graph, so it finds H quickly", "Either: both visit every vertex, so both find the same route"], answer: 0, wrong: [null, "Depth-first dives down whichever neighbour comes first and finds <em>a</em> route, not the shortest one. In the figure of the next section its route to H passes through seven vertices (six edges); the shortest has four.", "Both do visit every vertex, but in a different order, and the order is the whole point. Breadth-first order is by distance, so the first route it finds to a vertex is a shortest one; depth-first order is not."], why: "Because the queue is first in, first out, every vertex at distance k is taken out before any vertex at distance k + 1, so the first time BFS reaches a vertex is by a shortest route." },
+        `<h2>Depth first, and the pieces of a graph</h2>
+<p>Swap the queue for a stack and the search changes character. A stack takes out the vertex put in <em>last</em>, so the search follows one road as far as it can, and only when it is stuck backs up to the last place where there was a choice. That is <em>depth-first search</em>. A recursive method does this for free, because the call stack of lesson 7 is the stack: each call is a vertex on the way down, and a return is backing up.</p>
+<div class="stmt"><p><span class="kind">Depth-first search (DFS).</span> To visit <code>v</code>: mark it seen; then for each neighbour <code>w</code> that is not yet seen, visit <code>w</code>.</p>
+<p><span class="kind">Cost.</span> O(V + E), the same as BFS. <span class="kind">What it is good for.</span> Not shortest routes, but <em>what is connected to what</em>: finding every vertex reachable from a start, finding the pieces of a graph, finding cycles, and ordering tasks by their dependencies.</p></div>`,
+        { fig: 'graph', mode: 'dfs', caption: 'Depth-first search from A. The stack is the chain of calls that have not returned yet. Watch it grow to seven, then shrink as the calls return. The numbers are the order of visiting: A, B, D, C, E, F, H, G.' },
+        { play: `import java.util.*;
+
+public class Main {
+    static List<List<Integer>> adj = new ArrayList<>();
+    static boolean[] seen = new boolean[8];
+    static String order = "";
+
+    static void dfs(int v) {
+        seen[v] = true;
+        order += "ABCDEFGH".charAt(v);
+        for (int w : adj.get(v)) {
+            if (!seen[w]) dfs(w);                    // go deep before looking at the next neighbour
+        }
+    }
+
+    public static void main(String[] args) {
+        int[][] edges = {{0,1},{0,2},{1,3},{2,3},{2,4},{3,5},{4,5},{4,6},{5,7},{6,7}};
+        for (int v = 0; v < 8; v++) adj.add(new ArrayList<>());
+        for (int[] e : edges) { adj.get(e[0]).add(e[1]); adj.get(e[1]).add(e[0]); }
+        dfs(0);
+        System.out.println("depth first from A: " + order);
+    }
+}`, predict: true, caption: 'ABDCEFHG. From A the search goes to B, from B to D, from D to C (D’s first neighbour that is new is C, since B is seen), and so on, always taking the first unseen neighbour. Compare it with the breadth-first order ABCDEFGH: the same vertices, a different order. Try listing the edges in a different order, which changes each neighbour list, and see the order change.' },
+        `<p>A recursive search goes as deep as the longest road it follows. On a graph that is one long chain of a hundred thousand vertices, that is a hundred thousand calls, and Java's call stack gives out long before that. For big graphs, write DFS with an <code>ArrayDeque</code> as the stack: <code>push</code> the start; then repeat <code>pop</code> a vertex and, if it is unseen, mark it and <code>push</code> its neighbours. The set of vertices reached is the same; only the visiting order differs a little.</p>
+<p><span class="kind">Connected components.</span> A graph may fall into separate pieces, as the towns of the mathematics lesson did, with no road between one piece and the next. Either search from a vertex reaches exactly its own piece and nothing else, so counting the pieces is a loop around a search:</p>
+<pre class="code">int count = 0;
+for (int v = 0; v &lt; n; v++) {
+    if (!seen[v]) {          // v is in a piece we have not met yet
+        count++;
+        search(v);           // BFS or DFS: marks the whole piece as seen
+    }
+}</pre>
+<p>Each vertex is marked once and each list is read once, so the whole count is still O(V + E). You will write this in the exercises.</p>
+<h2>Shortest routes when roads have lengths</h2>
+<p>Breadth first counts <em>edges</em>. A route of three roads might be 300 kilometres, and one of five roads 50. When each edge has a weight, the shortest route is the one with the smallest <em>total weight</em>, and BFS is no longer enough. Dijkstra's idea is to keep BFS's shape but replace the queue with one that always serves the <em>closest</em> vertex first.</p>
+<div class="stmt"><p><span class="kind">Dijkstra's algorithm.</span> Give the start distance 0 and every other vertex ∞. Put the start in a <em>priority queue</em> (a queue that always hands out the smallest distance first; Java's <code>PriorityQueue</code> is a heap). Repeat: take the vertex <code>v</code> with the smallest distance. Its distance is now <em>final</em>. For each edge <code>v–w</code> with weight <code>wt</code>, if <code>dist[v] + wt &lt; dist[w]</code>, update <code>dist[w]</code> and put <code>w</code> in the queue (this step is called <em>relaxing</em> the edge).</p>
+<p><span class="kind">Why it works.</span> The closest unfinished vertex cannot be reached more cheaply by any other route, because every other route leaves through some unfinished vertex that is at least as far away, and the rest of the route only <em>adds</em> to the length.</p>
+<p><span class="kind">Cost.</span> Each edge can add one entry to the priority queue, and each queue operation costs O(log V), so the total is O((V + E) log V).</p></div>`,
+        { fig: 'graph', mode: 'dijkstra', caption: 'Dijkstra from A, with the road lengths on the edges. Watch E: it first gets 9 (through C), then a better route through F brings it down to 7. The old entry E:9 is still in the queue; when it comes out it is stale, and is skipped.' },
+        { long: true, play: `import java.util.*;
+
+class Edge {
+    int to, weight;
+    Edge(int to, int weight) { this.to = to; this.weight = weight; }
+}
+
+class Candidate implements Comparable<Candidate> {
+    int vertex, dist;
+    Candidate(int vertex, int dist) { this.vertex = vertex; this.dist = dist; }
+    public int compareTo(Candidate other) { return Integer.compare(dist, other.dist); }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        int n = 8;
+        int[][] edges = {{0,1,4},{0,2,1},{1,3,5},{2,3,2},{2,4,8},{3,5,3},{4,5,1},{4,6,4},{5,7,6},{6,7,2}};
+        List<List<Edge>> adj = new ArrayList<>();
+        for (int v = 0; v < n; v++) adj.add(new ArrayList<>());
+        for (int[] e : edges) { adj.get(e[0]).add(new Edge(e[1], e[2])); adj.get(e[1]).add(new Edge(e[0], e[2])); }
+
+        int[] dist = new int[n];
+        Arrays.fill(dist, Integer.MAX_VALUE);        // "no route known yet"
+        PriorityQueue<Candidate> pq = new PriorityQueue<>();   // a heap: smallest distance first
+        dist[0] = 0;
+        pq.add(new Candidate(0, 0));
+        while (!pq.isEmpty()) {
+            Candidate top = pq.poll();
+            if (top.dist > dist[top.vertex]) continue;          // stale: a better route was found since
+            for (Edge e : adj.get(top.vertex)) {
+                int through = top.dist + e.weight;
+                if (through < dist[e.to]) {                     // relax the edge
+                    dist[e.to] = through;
+                    pq.add(new Candidate(e.to, through));
+                }
+            }
+        }
+        System.out.println(Arrays.toString(dist));
+    }
+}`, predict: true, caption: '[0, 4, 1, 3, 7, 6, 11, 12]: the cheapest cost from A to each of A to H. H costs 12, by A, C, D, F, H (1 + 2 + 3 + 6); the route with the fewest roads that BFS found, A, B, D, F, H, costs 4 + 5 + 3 + 6 = 18. A priority queue of a class needs a way to order its objects, which is what <code>compareTo</code> is for (a <code>Comparable</code> class). The <code>if</code> with <code>continue</code> throws away stale entries instead of removing them, which a heap cannot do cheaply.' },
+        { check: "Dijkstra's algorithm treats a vertex's distance as final the moment it comes out of the priority queue. Which fact makes that safe?", options: ["No edge has a negative weight, so any other route to the vertex can only get longer", "The priority queue is a heap, so it is always sorted", "The graph has no cycles, so no vertex can be reached twice"], answer: 0, wrong: [null, "The heap only makes finding the smallest entry fast. A slow sorted list would give the same answers; correctness comes from the weights, not from the data structure.", "Dijkstra works on graphs with cycles (the one in the figure has several). A vertex can be reached by many routes; the point is that a route found later cannot be shorter."], why: "Every other route to the vertex leaves through some vertex that is still waiting, which is at least as far away, and the remaining edges only add. That argument fails the moment an edge can have a negative weight." },
+        `<p>Here is the smallest graph that breaks it. Three vertices; roads <code>A → B</code> of weight 3, <code>A → C</code> of weight 4, and <code>C → B</code> of weight −2. The cheapest way to B is through C: 4 − 2 = 2. But the textbook version of Dijkstra takes B out of the queue first, at 3, declares it final, and never looks at it again, so it reports 3. (The code above, which queues a vertex again whenever it finds a better route, would repair this tiny case, but it can then redo work over and over, and on a negative cycle it may never finish: it is no longer Dijkstra's algorithm.) Negative edges (a refund, an energy gain) need a different method, <em>Bellman–Ford</em>; if there is a negative <em>cycle</em>, a route can be made shorter for ever, and no shortest route exists. Dijkstra's algorithm is for the case that covers roads, flights and delays: lengths of zero or more.</p>
+<p>So the whole lesson is one idea in three costumes: keep a frontier of places found but not yet explored, always <code>take</code> the next one from it, and never explore the same vertex twice. A queue gives rings, a stack gives depth, and a priority queue gives distance.</p>`,
+        { aside: `<p><b>Common mistakes in this lesson.</b> Forgetting the "seen" check, so the search loops for ever on any cycle (including every undirected edge, which is a two-vertex cycle: A to B and back). Storing an undirected edge in only one direction. Using BFS on a weighted graph and calling the answer the shortest route. Starting <code>dist</code> at <code>Integer.MAX_VALUE</code> and then adding a weight to it, which overflows to a huge negative number: only add to distances that are final. Using <code>queue.remove()</code> where <code>poll()</code> is meant: on an empty queue the first throws an exception and the second returns <code>null</code>. Writing a recursive DFS for a graph with a very long chain.</p>` },
+        {
+          ex: {
+            id: 'ds-11-1', title: 'How many roads?',
+            prompt: `<p>Write</p><pre class="code">static int distance(int[][] adj, int start, int target)</pre><p>that returns the fewest edges on any route from <code>start</code> to <code>target</code>, or <code>-1</code> if there is no route. The graph is undirected and is given as an adjacency list: <code>adj[v]</code> is the array of the neighbours of vertex <code>v</code>. For example, in <code>{{1, 2}, {0, 3}, {0, 3}, {1, 2}}</code> (a square: 0 and 3 are opposite corners) the distance from 0 to 3 is 2, and from a vertex to itself it is 0. Use breadth-first search with an <code>ArrayDeque</code>.</p>`,
+            prelude: 'import java.util.*;\n',
+            starter: `static int distance(int[][] adj, int start, int target) {
+    int[] dist = new int[adj.length];
+    Arrays.fill(dist, -1);                           // -1: not seen yet
+    ArrayDeque<Integer> queue = new ArrayDeque<>();
+    // dist[start] = 0 and put start in the queue
+    // while the queue is not empty: take v; for each w in adj[v]: if w is not seen,
+    //     set dist[w] = dist[v] + 1 and put w in the queue
+    return -1;
+}`,
+            solution: `static int distance(int[][] adj, int start, int target) {
+    int[] dist = new int[adj.length];
+    Arrays.fill(dist, -1);
+    ArrayDeque<Integer> queue = new ArrayDeque<>();
+    dist[start] = 0;
+    queue.add(start);
+    while (!queue.isEmpty()) {
+        int v = queue.poll();
+        if (v == target) return dist[v];
+        for (int w : adj[v]) {
+            if (dist[w] == -1) {
+                dist[w] = dist[v] + 1;
+                queue.add(w);
+            }
+        }
+    }
+    return -1;
+}`,
+            hints: ['Start with dist[start] = 0 and queue.add(start). Then loop while (!queue.isEmpty()) and take v with queue.poll().', 'For each neighbour w of v (for (int w : adj[v])), do something only if dist[w] == -1: set dist[w] = dist[v] + 1 and queue.add(w). That test is what stops the search going round in circles.', 'You can return dist[target] after the loop (it is -1 if the target was never reached), or return early when you take the target from the queue.'],
+            tests: [
+              { call: 'distance(new int[][]{{1, 2}, {0, 3}, {0, 3}, {1, 2}}, 0, 3)', expect: '2', name: 'across a square' },
+              { call: 'distance(new int[][]{{1}, {0, 2}, {1, 3}, {2}}, 0, 3)', expect: '3', name: 'along a path' },
+              { call: 'distance(new int[][]{{1}, {0, 2}, {1}}, 1, 1)', expect: '0', name: 'a vertex to itself' },
+              { call: 'distance(new int[][]{{1}, {0}, {3}, {2}}, 0, 3)', expect: '-1', name: 'two separate pieces' },
+              { call: 'distance(new int[][]{{1, 5}, {0, 2}, {1, 3}, {2, 4}, {3, 5}, {4, 0}}, 0, 4)', expect: '2', name: 'round a ring, the short way' },
+              { call: 'distance(new int[][]{{1, 2}, {0, 3}, {0, 3, 4}, {1, 2, 5}, {2, 5, 6}, {3, 4, 7}, {4, 7}, {5, 6}}, 0, 7)', expect: '4', name: 'the eight-vertex graph of the lesson' },
+              { call: 'distance(new int[][]{{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}}, 0, 3)', expect: '1', name: 'every vertex joined to every other (loops without a seen check)' }
+            ],
+            failTip: 'If the program never finishes, it is going round a cycle: a vertex must be marked (dist set) at the moment it is put in the queue, not when it is taken out. If you get an answer that is too large, check that you set dist[w] = dist[v] + 1 and not dist[w] + 1.',
+            followup: 'Return the route itself as an int[] from start to target, or null if there is none, by keeping a parent array and walking back from the target.'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-11-2', kind: 'answer', title: 'Run the searches by hand',
+            prompt: `<p>Here is a graph of six vertices, 0 to 5. Its edges, with their lengths: <b>0–1 (7)</b>, <b>0–3 (2)</b>, <b>1–4 (2)</b>, <b>3–4 (6)</b>, <b>3–2 (3)</b>, <b>4–5 (1)</b>, <b>2–5 (9)</b>. In every search, start at 0 and look at the neighbours of a vertex in increasing numerical order. Parts (a) to (c) ignore the lengths; parts (d) and (e) use them. Draw the graph first.</p>`,
+            parts: [
+              { label: '(a) Breadth-first search: in what order are the vertices taken out of the queue? (six numbers, separated by spaces)', answer: '0 1 3 4 2 5', width: '10rem', wrong: [{ match: '0 1 2 3 4 5', msg: 'That is numerical order. The queue order is: 0, then its neighbours 1 and 3, then the new vertex 1 finds (4), and only then the new vertex 3 finds (2). So 4 comes before 2.' }, { match: '0 1 4 3 2 5', msg: 'That is a depth-first order (it is part (c)). Breadth first takes out 0, 1 and 3 before going further from any of them.' }] },
+              { label: '(b) How many edges are on a shortest route from 0 to 5?', answer: '3', width: '5rem', wrong: [{ match: '2', msg: 'No route has two edges: 5 is joined only to 4 and 2, and neither of those is a neighbour of 0. Count 0, 1, 4, 5.' }] },
+              { label: '(c) Depth-first search (recursive, ascending neighbours): in what order are the vertices visited?', answer: '0 1 4 3 2 5', width: '10rem', wrong: [{ match: '0 1 3 4 2 5', msg: 'That is the breadth-first order. Depth first from 0 goes to 1, then from 1 to 4 at once, before it ever looks at 3.' }] },
+              { label: '(d) Dijkstra: what is the length of the shortest route from 0 to 5?', answer: '9', width: '5rem', wrong: [{ match: '10', msg: 'That is the route 0, 1, 4, 5 (7 + 2 + 1). The route 0, 3, 4, 5 is 2 + 6 + 1 = 9, which is shorter even though it has the same number of edges.' }, { match: '3', msg: 'That is the number of edges. The question asks for the total length of the roads.' }] },
+              { label: '(e) Dijkstra: in what order are the vertices finalised (taken out of the priority queue as non-stale entries)? (six numbers)', answer: '0 3 2 1 4 5', width: '10rem', wrong: [{ match: '0 1 3 4 2 5', msg: 'That is the breadth-first order. Dijkstra goes by distance: 0 (0), 3 (2), 2 (5), 1 (7), 4 (8), 5 (9).' }] }
+            ],
+            hints: ['For (a), keep a queue on paper. Write who is in it after every step: take 0 and add 1 and 3, then take 1 and add what is new, and so on.', 'For (c), at each vertex take the smallest unseen neighbour and go there at once; when there is none, step back.', 'For (d) and (e), write each vertex’s best distance so far, starting 0, ∞, ∞, ∞, ∞, ∞, and finalise the smallest unfinished one each time. After 0: 1 has 7 and 3 has 2.'],
+            solution: `<p>(a) <b>0 1 3 4 2 5</b>: queue [0]; take 0, add 1 and 3; take 1, add 4; take 3, add 2; take 4, add 5; take 2; take 5. (b) <b>3</b>: 0, 1, 4, 5 (or 0, 3, 4, 5). (c) <b>0 1 4 3 2 5</b>: 0 to 1 to 4 (4's first neighbour 1 is seen, then 3) to 3, then from 3 to 2, from 2 to 5. (d) <b>9</b>: 0 to 3 (2), to 4 (6 more, 8), to 5 (1 more). (e) <b>0 3 2 1 4 5</b>: distances 0, 2, 5, 7, 8, 9. Vertex 5 first gets 14 (through 2) and then the better 9 (through 4); the entry with 14 is stale.</p>`,
+            followup: 'Change the length of 3–4 from 6 to 4. Now which route to 5 is shortest, and how does the order in (e) change?'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-11-3', title: 'How many pieces?',
+            prompt: `<p>Write</p><pre class="code">static int components(int[][] adj)</pre><p>that returns the number of connected components of an undirected graph given as an adjacency list: <code>adj[v]</code> is the array of the neighbours of vertex <code>v</code>. A graph with no vertices has 0 components; a vertex with no neighbours is a component of its own. For example, <code>{{1}, {0}, {3}, {2}, {}}</code> has 3: <code>{0, 1}</code>, <code>{2, 3}</code> and <code>{4}</code>. Search from each vertex that has not been seen yet, and mark everything the search reaches. Write the search with an <code>ArrayDeque</code> (as a queue or as a stack), not with recursion.</p>`,
+            prelude: 'import java.util.*;\n',
+            starter: `static int components(int[][] adj) {
+    boolean[] seen = new boolean[adj.length];
+    int count = 0;
+    // for each vertex s: if it has not been seen, count++ and search from s,
+    // marking every vertex the search reaches as seen
+    return count;
+}`,
+            solution: `static int components(int[][] adj) {
+    boolean[] seen = new boolean[adj.length];
+    int count = 0;
+    for (int s = 0; s < adj.length; s++) {
+        if (seen[s]) continue;
+        count++;
+        ArrayDeque<Integer> stack = new ArrayDeque<>();
+        stack.push(s);
+        seen[s] = true;
+        while (!stack.isEmpty()) {
+            int v = stack.pop();
+            for (int w : adj[v]) {
+                if (!seen[w]) { seen[w] = true; stack.push(w); }
+            }
+        }
+    }
+    return count;
+}`,
+            hints: ['The outer loop is over every vertex s from 0 to adj.length - 1. When seen[s] is false, you have found a new piece: count++.', 'Then run a search from s: put s in an ArrayDeque and mark it seen; while the deque is not empty, take a vertex v and, for each neighbour w in adj[v] that is not seen, mark it and add it.', 'Use stack.push(w) and stack.pop(), or queue.add(w) and queue.poll(): either order reaches the same vertices. Mark seen when you add, not when you take out.'],
+            tests: [
+              { call: 'components(new int[][]{})', expect: '0', name: 'no vertices' },
+              { call: 'components(new int[][]{{}})', expect: '1', name: 'one lonely vertex' },
+              { call: 'components(new int[][]{{1}, {0}, {3}, {2}, {}})', expect: '3', name: 'two pairs and a single' },
+              { call: 'components(new int[][]{{1, 2}, {0, 2}, {0, 1}})', expect: '1', name: 'a triangle' },
+              { call: 'components(new int[10][0])', expect: '10', name: 'ten vertices and no edges' },
+              { call: 'components(new int[][]{{1, 2}, {0, 2}, {0, 1}, {4, 5}, {3, 5}, {3, 4}, {7}, {6}})', expect: '3', name: 'two triangles and a pair' },
+              { call: 'components(new int[][]{{3}, {2}, {1, 4}, {0, 5}, {2}, {3}})', expect: '2', name: 'pieces whose numbers are interleaved' }
+            ],
+            failTip: 'If the count is too big, you are counting a vertex that an earlier search already reached: mark every vertex the search reaches, including the ones found from other vertices. If it is 0 for a graph with edges, the count++ is never reached.',
+            followup: 'Also return the size of the largest component. (In a social network, that is the biggest group of people who can all reach one another through friends.)'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-11-4', title: 'The cheapest route',
+            prompt: `<p>Complete the class <code>Roads</code>. Its method <code>cheapest(int n, int[][] edges, int from, int to)</code> takes <code>n</code> vertices numbered 0 to <code>n - 1</code> and a list of undirected roads, each <code>{a, b, length}</code> with a length of 0 or more, and returns the length of the shortest route from <code>from</code> to <code>to</code>, or <code>-1</code> if there is none. Use Dijkstra's algorithm with a <code>PriorityQueue</code>. The classes <code>Edge</code> and <code>Candidate</code> (a vertex with a distance, ordered by distance) are written for you. Write only the classes; the checker supplies <code>main</code>.</p>`,
+            classes: true,
+            prelude: 'import java.util.*;\n',
+            starter: `class Edge {
+    int to, weight;
+    Edge(int to, int weight) { this.to = to; this.weight = weight; }
+}
+
+class Candidate implements Comparable<Candidate> {
+    int vertex, dist;
+    Candidate(int vertex, int dist) { this.vertex = vertex; this.dist = dist; }
+    public int compareTo(Candidate other) { return Integer.compare(dist, other.dist); }
+}
+
+class Roads {
+    static int cheapest(int n, int[][] edges, int from, int to) {
+        // 1. build an adjacency list of Edge objects, each road in both directions
+        // 2. dist[] starts at Integer.MAX_VALUE, except dist[from] = 0
+        // 3. a PriorityQueue<Candidate>; take the smallest, skip it if stale, relax its edges
+        return -1;
+    }
+}`,
+            solution: `class Edge {
+    int to, weight;
+    Edge(int to, int weight) { this.to = to; this.weight = weight; }
+}
+
+class Candidate implements Comparable<Candidate> {
+    int vertex, dist;
+    Candidate(int vertex, int dist) { this.vertex = vertex; this.dist = dist; }
+    public int compareTo(Candidate other) { return Integer.compare(dist, other.dist); }
+}
+
+class Roads {
+    static int cheapest(int n, int[][] edges, int from, int to) {
+        List<List<Edge>> adj = new ArrayList<>();
+        for (int v = 0; v < n; v++) adj.add(new ArrayList<>());
+        for (int[] e : edges) {
+            adj.get(e[0]).add(new Edge(e[1], e[2]));
+            adj.get(e[1]).add(new Edge(e[0], e[2]));
+        }
+        int[] dist = new int[n];
+        Arrays.fill(dist, Integer.MAX_VALUE);
+        dist[from] = 0;
+        PriorityQueue<Candidate> pq = new PriorityQueue<>();
+        pq.add(new Candidate(from, 0));
+        while (!pq.isEmpty()) {
+            Candidate top = pq.poll();
+            if (top.dist > dist[top.vertex]) continue;
+            for (Edge e : adj.get(top.vertex)) {
+                int through = top.dist + e.weight;
+                if (through < dist[e.to]) {
+                    dist[e.to] = through;
+                    pq.add(new Candidate(e.to, through));
+                }
+            }
+        }
+        return dist[to] == Integer.MAX_VALUE ? -1 : dist[to];
+    }
+}`,
+            hints: ['Build the adjacency list first: for each road {a, b, w}, add new Edge(b, w) to the list of a and new Edge(a, w) to the list of b.', 'Start with dist[from] = 0 and pq.add(new Candidate(from, 0)). In the loop: Candidate top = pq.poll(); if (top.dist > dist[top.vertex]) continue; then for each Edge e in the list of top.vertex, compute int through = top.dist + e.weight.', 'If through < dist[e.to], set dist[e.to] = through and pq.add(new Candidate(e.to, through)). At the end, if dist[to] is still Integer.MAX_VALUE there is no route: return -1.'],
+            tests: [
+              { name: 'the lesson’s graph, to H', main: '        int[][] roads = {{0,1,4},{0,2,1},{1,3,5},{2,3,2},{2,4,8},{3,5,3},{4,5,1},{4,6,4},{5,7,6},{6,7,2}};\n        System.out.println(Roads.cheapest(8, roads, 0, 7));', expect: '12' },
+              { name: 'a better route found later (to E)', main: '        int[][] roads = {{0,1,4},{0,2,1},{1,3,5},{2,3,2},{2,4,8},{3,5,3},{4,5,1},{4,6,4},{5,7,6},{6,7,2}};\n        System.out.println(Roads.cheapest(8, roads, 0, 4) + " " + Roads.cheapest(8, roads, 7, 0));', expect: '7 12' },
+              { name: 'fewest roads is not cheapest', main: '        int[][] roads = {{0,2,10},{0,1,1},{1,2,1}};\n        System.out.println(Roads.cheapest(3, roads, 0, 2));', expect: '2' },
+              { name: 'no route', main: '        int[][] roads = {{0,1,5},{2,3,1}};\n        System.out.println(Roads.cheapest(4, roads, 0, 3));', expect: '-1' },
+              { name: 'a vertex to itself, and a road of length 0', main: '        int[][] roads = {{0,1,0},{1,2,4}};\n        System.out.println(Roads.cheapest(3, roads, 1, 1) + " " + Roads.cheapest(3, roads, 0, 2));', expect: '0 4' },
+              { name: 'a ring of a hundred towns', main: '        int n = 100;\n        int[][] roads = new int[n][];\n        for (int i = 0; i < n; i++) roads[i] = new int[]{i, (i + 1) % n, 3};\n        System.out.println(Roads.cheapest(n, roads, 0, 50) + " " + Roads.cheapest(n, roads, 0, 99) + " " + Roads.cheapest(n, roads, 0, 70));', expect: '150 3 90' }
+            ],
+            failTip: 'If the answer is too large, you may be forgetting to add the road in both directions, or taking the first route found instead of the smallest. If you get a huge negative number, you added a weight to Integer.MAX_VALUE: only add to the distance of a vertex taken from the queue, which is finite.',
+            followup: 'Return the route as well: keep a parent array that is updated each time you relax an edge, and print the towns from `from` to `to`.'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li>A graph is vertices and edges: undirected, directed or weighted. It models maps, networks, dependencies and puzzles, and <code>V</code> and <code>E</code> are the sizes in every cost.</li>
+<li>An adjacency matrix has O(1) edge tests and O(V²) space; an adjacency list has O(V + E) space and gives the neighbours of a vertex at once. Most graphs are sparse, so the list is the usual choice.</li>
+<li>Breadth-first search uses a queue and a <code>dist</code> array that also marks "seen". It spreads in rings and finds the route with the fewest edges, in O(V + E). Depth-first search uses a stack (or recursion) and finds what is connected to what; counting components is a search from every unseen vertex.</li>
+<li>Dijkstra's algorithm uses a priority queue to take the closest vertex first, and finds the cheapest route when edges have lengths of zero or more, in O((V + E) log V). A negative edge breaks the argument that a taken vertex is final.</li>
+<li><b>So how does a program that sees one town at a time find the shortest route?</b> It keeps a frontier of the towns it has found but not yet explored, takes the most promising one (the oldest for edges, the closest for lengths), and marks every town it has seen so that it never explores one twice. The marks are what stop the circles.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      standard: 1,
+      standards: ['3B-AP-12', '3B-AP-11', '3A-DA-10'],
+      title: 'Project: the busiest words', summary: 'A small project that uses the whole course: count the words of a text three ways (a hash table, sorting, a heap of the k best), compare what each costs, and write the top-k function a real tool would use.',
+      blocks: [
+        `<p>In 1986 Jon Bentley, who wrote the &ldquo;Programming Pearls&rdquo; column in <em>Communications of the ACM</em>, asked Donald Knuth to write a program that reads a text and prints its most frequent words. Knuth wrote one in a style he called literate programming, with a purpose-built hash structure, and it ran to several pages. Doug McIlroy, who invented the Unix pipe, answered with a pipeline of six standard commands that did the same job: split the text into words, sort them, count the repeats, sort by count, print the top. Both were right. The two answers use different structures, and the structure decided what each could do cheaply.</p>
+<p>You have now met every tool they used. So which way costs less, and what would you pick if the text had a billion words and you needed only the top ten?</p>
+<h2>Plan one: a hash table</h2>
+<div class="stmt"><p><span class="kind">The job.</span> Given an array of words, find how many times each different word occurs, then report the <em>k</em> most frequent, most frequent first, and for equal counts the alphabetically earlier word first. Three plans do it. They differ in where the work goes.</p></div>
+<p>The first plan is the one from lesson 8: a <code>HashMap</code> from word to count. Each word costs one lookup and one store, O(1) on average, so n words cost O(n). Predict what this prints before you run it.</p>`,
+        { play: `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        String text = "the cat and the dog and the bird saw the cat";
+        String[] words = text.split(" ");
+        Map<String, Integer> count = new HashMap<>();
+        for (String w : words) count.put(w, count.getOrDefault(w, 0) + 1);
+        System.out.println(words.length + " words, " + count.size() + " different");
+        System.out.println("the: " + count.get("the") + ", cat: " + count.get("cat"));
+    }
+}`, predict: true, caption: `There are 11 words and 6 different ones: the, cat, and, dog, bird, saw. <code>getOrDefault(w, 0) + 1</code> reads the count so far (0 if the word is new) and stores one more. &ldquo;the&rdquo; occurs 4 times and &ldquo;cat&rdquo; twice. The table holds one entry per <em>different</em> word, so its size is the number of different words, not the number of words.` },
+        { check: 'A text has 1,000,000 words but only 20,000 different ones. About how many entries does the <code>HashMap</code> of counts hold at the end?', options: ['1,000,000', '20,000', '1,000', '20'], answer: 1, why: 'One entry per different word. The table grows with the number of different words, not with the length of the text. That is why counting a huge text with few different words needs little memory.', wrong: ['That would be one entry per word. Repeats update the existing entry; they add no new one.', , 'There are 20,000 different words, so 20,000 keys must be stored.', 'Twenty is the number of thousands, not the number of keys.'] },
+        `<h2>Plan two: sort, then count runs</h2>
+<p>McIlroy's plan needs no hash table. Sort the words, and equal words end up side by side. Then one pass over the sorted array counts each <em>run</em> of equal neighbours. Sorting costs O(n log n) (lesson 4), the pass costs O(n).</p>`,
+        { play: `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        String[] w = "the cat and the dog and the bird saw the cat".split(" ");
+        Arrays.sort(w);
+        System.out.println(Arrays.toString(w));
+        int run = 1;
+        for (int i = 1; i <= w.length; i++) {
+            if (i < w.length && w[i].equals(w[i - 1])) run++;
+            else { System.out.println(w[i - 1] + " " + run); run = 1; }
+        }
+    }
+}`, predict: true, caption: `After sorting, the four &ldquo;the&rdquo; are one run, the two &ldquo;and&rdquo; another, and so on. The loop goes one past the end (<code>i &lt;= w.length</code>) so that the last run is printed too; the test <code>i &lt; w.length</code> stops it reading outside the array. The words come out in alphabetical order, which the hash table did not give you.` },
+        `<p>Plan two has two advantages. It uses only an array, and it gives the words in alphabetical order for free. It has one cost: O(n log n) against the table's O(n), so for a text of a million words it does about twenty times more comparing. Neither plan has yet said anything about which words are the <em>busiest</em>.</p>
+<h2>Plan three: keep only the best k</h2>
+<p>Lesson 10's pattern fits exactly. Count with a hash table, then walk the table's entries and keep a min-heap of the best k so far. Whenever the heap holds more than k, throw away its worst entry. A <code>Word</code> that implements <code>Comparable</code> says what &ldquo;worse&rdquo; means: fewer occurrences, or the same number and a later place in the alphabet.</p>`,
+        { play: `import java.util.*;
+
+class Word implements Comparable<Word> {
+    String text; int count;
+    Word(String text, int count) { this.text = text; this.count = count; }
+    public int compareTo(Word o) {
+        if (count != o.count) return Integer.compare(count, o.count);
+        return o.text.compareTo(text);          // later in the alphabet is worse
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        String[] words = "the cat and the dog and the bird saw the cat".split(" ");
+        Map<String, Integer> count = new HashMap<>();
+        for (String w : words) count.put(w, count.getOrDefault(w, 0) + 1);
+        PriorityQueue<Word> best = new PriorityQueue<>();
+        for (Map.Entry<String, Integer> e : count.entrySet()) {
+            best.add(new Word(e.getKey(), e.getValue()));
+            if (best.size() > 3) best.poll();
+        }
+        String[] top = new String[best.size()];
+        for (int i = top.length - 1; i >= 0; i--) { Word w = best.poll(); top[i] = w.text + " " + w.count; }
+        System.out.println(Arrays.toString(top));
+    }
+}`, predict: true, long: true, caption: `The heap never holds more than 3 words. &ldquo;the&rdquo; has 4. &ldquo;and&rdquo; and &ldquo;cat&rdquo; have 2 each, and &ldquo;and&rdquo; is earlier in the alphabet, so it ranks first of the two. The three words with 1 (bird, dog, saw) are thrown away one at a time as better ones arrive. The heap gives the worst first, so the answer is filled from the end of the array backwards.` },
+        { check: 'You have d different words and want the top k. What does the heap plan cost after the counting?', options: ['O(d log k)', 'O(d log d)', 'O(k²)', 'O(d)'], answer: 0, why: 'Each of the d entries is added to a heap that never holds more than k + 1 items, so each add and each poll costs O(log k). Sorting all d entries instead would cost O(d log d), which is more when k is small.', wrong: [, 'That is the cost of sorting every entry. The heap is only ever k items deep, so its operations cost log k, not log d.', 'k is the size of the answer, not the number of operations. Every one of the d entries has to be looked at.', 'Looking at d entries is O(d), but each one also touches the heap, which costs O(log k) each.'] },
+        `<h2>Choosing</h2>
+<table class="growth-table"><thead><tr><th>Plan</th><th>Time to count</th><th>Gives</th><th>Memory</th></tr></thead><tbody>
+<tr><td>Hash table, then sort the entries</td><td>O(n + d log d)</td><td>everything, by count</td><td>d entries</td></tr>
+<tr><td>Sort the words, count runs</td><td>O(n log n)</td><td>everything, alphabetical</td><td>the array</td></tr>
+<tr><td>Hash table, heap of the best k</td><td>O(n + d log k)</td><td>only the top k</td><td>d entries and k in the heap</td></tr>
+</tbody></table>
+<p>For the billion-word question: if the text has fewer than a few million different words, the hash table fits in memory and the heap picks the top ten almost for free. If it does not fit, sorting the text in pieces on disk and merging them (lesson 4's merge) is how McIlroy's pipeline scales, which is why it has lasted. The right answer depends on which resource you lack, and you can now say which one each plan spends.</p>
+<p><b>Common mistakes in this project.</b> Using <code>==</code> to compare words; use <code>equals</code>. Forgetting the last run in the sorted-array count. Making the heap hold <em>all</em> the entries, which is a slow sort. Reversing the comparison so the heap throws away the best word. Forgetting a rule for ties: without one, two runs can print the same words in a different order.</p>`,
+        { check: 'In the <code>Word</code> class of the heap plan, <code>compareTo</code> says a word with a smaller count is &ldquo;less&rdquo;. Why does a min-heap of these keep the <em>best</em> k?', options: ['It polls the smallest, which is the worst of the k + 1 held, so the best k stay', 'It sorts the words by count in the end', 'It keeps the k smallest counts', 'It only works if all the counts differ'], answer: 0, why: 'A min-heap gives up its smallest item first. After each add, the smallest of the k + 1 items is the one that cannot be in the top k, so polling it leaves the k best.', wrong: [, 'The heap is never sorted. It only knows its smallest item, which is all it needs.', 'The smallest is thrown away, so the largest counts are the ones that survive.', 'Ties are handled by the second line of compareTo, the alphabet.'] },
+        { ex: {
+            id: 'ds-12-1', title: 'The most common word',
+            prompt: `<p>Write</p><pre class="code">static String mostCommon(String[] words)</pre><p>that returns the word that occurs most often in <code>words</code>. If several words share the highest count, return the alphabetically first of them. For an empty array return the empty string <code>""</code>. Use a <code>HashMap</code>: the tests include a text of thousands of words.</p>`,
+            prelude: 'import java.util.*;',
+            starter: `static String mostCommon(String[] words) {
+    Map<String, Integer> count = new HashMap<>();
+    // count every word
+    String best = "";
+    // look at every entry; keep the word with the highest count (earlier word on a tie)
+    return best;
+}`,
+            solution: `static String mostCommon(String[] words) {
+    Map<String, Integer> count = new HashMap<>();
+    for (String w : words) count.put(w, count.getOrDefault(w, 0) + 1);
+    String best = "";
+    int bestCount = 0;
+    for (Map.Entry<String, Integer> e : count.entrySet()) {
+        int c = e.getValue();
+        if (c > bestCount || (c == bestCount && e.getKey().compareTo(best) < 0)) {
+            best = e.getKey();
+            bestCount = c;
+        }
+    }
+    return best;
+}`,
+            mustNotContain: [{ re: /Arrays\.sort|Collections\.sort|\.sort\s*\(/, msg: 'Use the hash table: sorting all the words is the plan this exercise is not about.' }],
+            hints: ['Count first: for each word, put(word, getOrDefault(word, 0) + 1). Then a second loop over count.entrySet().', 'Keep the best word and its count. An entry wins if its count is larger, or equal with an alphabetically earlier key: key.compareTo(best) < 0.', 'Start with bestCount = 0, so that the first entry always wins, and the empty array leaves best as "".'],
+            tests: [
+              { call: 'mostCommon("the cat and the dog and the bird saw the cat".split(" "))', expect: 'the', name: 'one clear winner' },
+              { call: 'mostCommon(new String[] {"b", "a", "b", "a"})', expect: 'a', name: 'a tie: the earlier word' },
+              { call: 'mostCommon(new String[] {"solo"})', expect: 'solo', name: 'one word' },
+              { call: 'mostCommon(new String[] {})', expect: '', name: 'no words' },
+              { setup: '        String[] w = new String[3000]; for (int i = 0; i < w.length; i++) w[i] = "w" + ((i * i) % 50);', call: 'mostCommon(w)', expect: 'w0', name: 'three thousand words, a tie at the top' }
+            ],
+            failTip: 'If a tie gives the wrong word, the order the table hands you its entries in is not alphabetical, so you must compare the keys yourself. If the empty array fails, check what best starts as.',
+            followup: 'Return the count of the winner too, as "the 4". Then change the tie rule to prefer the word that appeared first in the text. What does the hash table not remember that you now need?'
+          }
+        },
+        { ex: {
+            id: 'ds-12-2', title: 'The top k words',
+            prompt: `<p>Complete <code>TopWords.top(words, k)</code>. It returns an array of at most <code>k</code> strings of the form <code>"word count"</code>, the most frequent word first; for equal counts the alphabetically earlier word comes first. <code>Word</code> is given, and its <code>compareTo</code> already makes the <em>worse</em> word the smaller. Count with a <code>HashMap</code> and keep only the best <code>k</code> in a <code>PriorityQueue&lt;Word&gt;</code>. Do not sort.</p>`,
+            classes: true,
+            prelude: 'import java.util.*;\n',
+            starter: `class Word implements Comparable<Word> {
+    String text; int count;
+    Word(String text, int count) { this.text = text; this.count = count; }
+    public int compareTo(Word o) {
+        if (count != o.count) return Integer.compare(count, o.count);
+        return o.text.compareTo(text);
+    }
+}
+
+class TopWords {
+    static String[] top(String[] words, int k) {
+        // 1. count the words in a HashMap
+        // 2. add a Word for every entry to a PriorityQueue; poll when it holds more than k
+        // 3. fill the answer from the END, polling the worst first
+        return new String[0];
+    }
+}`,
+            solution: `class Word implements Comparable<Word> {
+    String text; int count;
+    Word(String text, int count) { this.text = text; this.count = count; }
+    public int compareTo(Word o) {
+        if (count != o.count) return Integer.compare(count, o.count);
+        return o.text.compareTo(text);
+    }
+}
+
+class TopWords {
+    static String[] top(String[] words, int k) {
+        Map<String, Integer> count = new HashMap<>();
+        for (String w : words) count.put(w, count.getOrDefault(w, 0) + 1);
+        PriorityQueue<Word> best = new PriorityQueue<>();
+        for (Map.Entry<String, Integer> e : count.entrySet()) {
+            best.add(new Word(e.getKey(), e.getValue()));
+            if (best.size() > k) best.poll();
+        }
+        String[] out = new String[best.size()];
+        for (int i = out.length - 1; i >= 0; i--) {
+            Word w = best.poll();
+            out[i] = w.text + " " + w.count;
+        }
+        return out;
+    }
+}`,
+            mustNotContain: [{ re: /Arrays\.sort|Collections\.sort|\.sort\s*\(/, msg: 'Keep a heap of size k instead of sorting.' }],
+            hints: ['The loop over count.entrySet() is the one from the lesson: add a new Word, then poll when best.size() > k.', 'poll() returns the worst remaining word, so the first word you poll belongs at the LAST index of the answer. Count down from out.length - 1.', 'Make the array as long as the heap is at the end, best.size(), so a k bigger than the number of different words works.'],
+            tests: [
+              { name: 'the lesson text, top 3', main: '        System.out.println(Arrays.toString(TopWords.top("the cat and the dog and the bird saw the cat".split(" "), 3)));', expect: '[the 4, and 2, cat 2]' },
+              { name: 'only the top word', main: '        System.out.println(Arrays.toString(TopWords.top("the cat and the dog and the bird saw the cat".split(" "), 1)));', expect: '[the 4]' },
+              { name: 'k bigger than the number of different words', main: '        System.out.println(Arrays.toString(TopWords.top("the cat and the dog and the bird saw the cat".split(" "), 10)));', expect: '[the 4, and 2, cat 2, bird 1, dog 1, saw 1]' },
+              { name: 'no words, and k = 0', main: '        System.out.println(Arrays.toString(TopWords.top(new String[] {}, 3)) + " " + Arrays.toString(TopWords.top(new String[] {"a"}, 0)));', expect: '[] []' },
+              { name: 'three thousand words', main: '        String[] w = new String[3000]; for (int i = 0; i < w.length; i++) w[i] = "w" + ((i * i) % 50);\n        System.out.println(Arrays.toString(TopWords.top(w, 3)));', expect: '[w0 300, w25 300, w1 120]' }
+            ],
+            failTip: 'If the order is reversed you filled the answer from index 0: the heap hands you the worst first. If equal counts come out in the wrong order, the tie rule lives in Word.compareTo, which was given; check you are polling, not removing from the wrong end.',
+            followup: 'Change TopWords to take a minimum count and report only words that reach it. Then say which plan of the lesson would be cheapest if you also wanted every word in alphabetical order.'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li><b>Which way costs less?</b> Counting with a hash table is O(n); sorting is O(n log n) but gives alphabetical order and needs no table; keeping the best k in a heap costs O(d log k) after the counting. What you need to produce, and what memory you have, decides.</li>
+<li>One problem, three structures from this course: a <code>HashMap</code>, a sorted array and a <code>PriorityQueue</code>. Each is the best answer to a different question.</li>
+<li>A tie rule has to be part of the specification. Write it into <code>compareTo</code> so the answer is the same on every run.</li>
+<li>For the top ten of a billion words, a hash table plus a heap of ten does it if the different words fit in memory; if not, sorting pieces and merging is what scales.</li>
 </ul></div>`
       ]
     }
