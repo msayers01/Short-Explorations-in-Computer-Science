@@ -646,7 +646,7 @@ Students write a bot (Python, Java, C++ or Scheme) that plays Tron against built
 - **Time.** `settings.timeMs` 0 means by language: 500 ms, 2 s for C++ (JSCPP is the slow engine; the JVM-startup reason in the spec does not apply, our Java is an interpreter).
 - **`arena_run.js`**: `run(lang)` over the existing runners (`PYRUN`, `CPPRUN`, `JAVARUN` take `maxMs`/`execLimit`; Scheme takes `stdin` and `stepLimit` and runs in the page,
   stopped by steps, since the page cannot interrupt it). Bots of a language take turns (one worker each), a new worker is warmed up outside the clock, a bot past its limit
-  has its worker ended. Saved bots: `shortcourses.arena.v1` (sanitised on load; **not yet in the backup file**). Links: `#/arena?bot=` / `?replay=` via `TEACH.pack` (deflate,
+  has its worker ended. Saved bots: `shortcourses.arena.v1` (sanitised on load; the bots, not the match setup, are in the backup file: `backup.js: cleanArena`/`mergeArena`). Links: `#/arena?bot=` / `?replay=` via `TEACH.pack` (deflate,
   size-capped inflate; fragments never reach a server; a warning past 8 KB).
 - **`arena_view.js`**: canvas viewer driven only by frames (live match and loaded replay take the same path); heads carry their number; hover shows coordinates.
 - **`arena.js`**: `#/arena` (editor, My bots, templates, setup bar, Play / Play 10 / Test my bot once, logs with "Show input", import/export/links) and

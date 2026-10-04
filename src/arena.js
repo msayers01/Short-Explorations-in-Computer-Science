@@ -35,8 +35,9 @@
     S.current = bot.id;
     let editor = null, running = false, stopFlag = false, current = null, series = null, logTab = 'ref', saveTimer = 0;
     const alive = () => main.isConnected;
-    const saveSoon = () => { clearTimeout(saveTimer); saveTimer = setTimeout(() => A.save(), 400); };
-    window.addEventListener('pagehide', () => A.save());
+    const saveSoon = () => { clearTimeout(saveTimer); saveTimer = setTimeout(() => { saveTimer = 0; A.save(); }, 400); };
+    // an edit still waiting for its save is written when the page goes; nothing else is, or a restored backup would be overwritten by this page's older copy
+    window.addEventListener('pagehide', () => { if (saveTimer) { clearTimeout(saveTimer); saveTimer = 0; A.save(); } });
 
     // ---- editor pane
     const nameInput = el('input', { type: 'text', class: 'arena-name', maxlength: 40, 'aria-label': 'Bot name', value: bot.name });

@@ -156,7 +156,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - Not verified: Full C++ on low-end devices (needs about 84 MB plus the program), and on the production URL since the security-review merge.
 
 - **Bot Arena** (ARCHITECTURE §9j, `src/tron.js`, `arena*.js`, `test_arena.js`): Tron bots in Python/Java/C++/Scheme at `#/arena` and `#/arena/tournament` (PR #40, merged).
-  Phases 1-3 of the owner's spec are built; **phase 4 (persistent mode) is not**. Known gaps: arena bots are not in the backup file; no stderr in the sandboxes (so `LOG ` lines);
+  Phases 1-3 of the owner's spec are built; **phase 4 (persistent mode) is not**. Arena bots are in the backup file (not the match setup). Known gaps: no stderr in the sandboxes (so `LOG ` lines);
   the teaching C++ has no `string`/`vector` (the C++ bots use char arrays); Scheme has no vectors, so its Flood Fill uses lists; the first-legal-move starter beats Random only about
   55-65% of the time (the spec's 90 of 100 holds for the Flood Fill solutions). Scheme gained `read`, `read-line`, `eof-object` (stdin option).
 
