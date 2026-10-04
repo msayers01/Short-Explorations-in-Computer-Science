@@ -25,6 +25,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '3B-CS-02', '9.2.4.5', '9.2.4.6'],
       title: 'Propositions and truth', summary: 'Statements that are true or false, the connectives that combine them, why a truth table is a proof, and how to say "for all" and "there exists" precisely.',
       blocks: [
         `<p>"This sentence is false." Is it true? If it is true, then what it says holds, so it is false. If it is false, then what it says fails, so it is true. This is the <em>liar paradox</em>, known to the ancient Greeks, and it shows that not every sentence can be simply true or false.</p>
@@ -148,6 +149,7 @@ table("exactly one of p, q", lambda p, q: (p or q) and not (p and q))`, caption:
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-12', '7.1.2.4', '9.1.2.2', '9.2.4.7'],
       title: 'Sets and counting', summary: 'Collections without order, four rules for counting without listing, why a set of n things has 2ⁿ subsets, and the pigeonhole principle.',
       blocks: [
         `<p>A pizza shop offers ten toppings, and you may choose any combination, from a plain pizza to one with all ten. How many different pizzas is that? Listing them would take all afternoon. By the end of this lesson you will know the answer, 1024, and be able to prove it.</p>
@@ -290,6 +292,7 @@ print(count, "subsets")`, caption: 'The output is the table above. Add a fourth 
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-11', '3B-AP-13', '9.2.4.6', '9.2.4.7'],
       title: 'Checking is not proving', summary: 'Why a thousand true cases prove nothing, what a proof actually is, and induction: the one technique that proves a claim about every number at once.',
       blocks: [
         `<p>Here is a claim about whole numbers: <i>for every</i> <i>n</i> ≥ 0, <i>n</i>² + <i>n</i> + 41 <i>is prime</i>. Check a few. <i>n</i> = 0 gives 41, <i>n</i> = 1 gives 43, <i>n</i> = 2 gives 47, <i>n</i> = 3 gives 53. All prime. It keeps working through <i>n</i> = 39. Let a program do the checking, then push it one step further.</p>`,
@@ -416,6 +419,7 @@ for n in range(0, 40):
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-11', '9.2.4.7'],
       title: 'Numbers, remainders and Euclid', summary: 'Divisibility and remainders stated exactly, arithmetic modulo m, Euclid\u2019s algorithm with a proof that it is right and fast, primes and trial division, proof by contradiction, and huge powers computed with small numbers.',
       blocks: [
         `<p>It is 9 o'clock. What time will it be in 100 hours? You do not count 100 hours on your fingers. You notice that every 12 hours the clock hand comes back where it started, so only the remainder of 100 divided by 12 matters: 100 = 8 × 12 + 4, so the clock moves 4 hours on, to 1 o'clock. That small trick, arithmetic where only remainders matter, is the heart of this lesson, and it ends up protecting every secure website.</p>
@@ -575,6 +579,7 @@ print(mod_pow(2, 10 ** 18, 1000000007), pow(2, 10 ** 18, 1000000007))`, caption:
     },
     /* ================================================================== */
     {
+      standards: ['3A-DA-12', '3B-AP-12'],
       title: 'Graphs and paths', summary: 'Dots and lines as a model of almost anything: degrees and the handshake theorem, walks and Euler\u2019s bridges, breadth-first search with a proof that it finds shortest paths, and trees.',
       blocks: [
         `<p>In 1967 the psychologist Stanley Milgram asked people in Nebraska to get a letter to a stranger in Boston, by passing it only to someone they knew personally, who would pass it on in the same way. The letters that arrived took about six steps on average, which gave us the phrase "six degrees of separation". In 2016, Facebook measured its own network of 1.6 billion people and found an average of 3.57 degrees. Both are questions about the shortest paths in a graph, and by the end of this lesson you will know the algorithm that answers them.</p>
@@ -726,6 +731,7 @@ D: B, C, E   E: D, F      F: E</code></pre>
     },
     /* ================================================================== */
     {
+      standards: ['3A-DA-12', '3B-CS-02'],
       title: 'Machines with a finite memory', summary: 'Finite automata defined exactly: alphabets, strings and languages; designing a machine by deciding what it must remember; proving it right by induction; and complements.',
       blocks: [
         `<p>A combination lock with a keypad opens as soon as the last three keys pressed are 1, 2, 3, whatever came before. It does not need to remember everything you have typed, only how much of "123" you have just typed: nothing, "1", or "12". Machines that get by on a fixed, small memory like this are everywhere, in lifts, traffic lights, vending machines and the text editor you type code in.</p>
@@ -851,6 +857,7 @@ print("disagreements with n % 3 == 0:", disagreements)`, caption: 'The machine a
     },
     /* ================================================================== */
     {
+      standards: ['3A-IC-24', '3B-DA-05'],
       title: 'Patterns, and the double vowel system', summary: 'Regular expressions: a notation for languages built from three operations. Then a real writing system, the double vowel spelling of Ojibwe, read by a three-state machine; why a code whose letters overlap needs a rule for reading; and what a pattern can and cannot say about a language.',
       blocks: [
         `<p>The home page of this site greets you with <span lang="ciw">Boozhoo</span>, the Ojibwe word for hello. Count its letters. In English you would say seven: B, o, o, z, h, o, o. A reader of Ojibwe says four: <b>b</b>, <b>oo</b>, <b>zh</b>, <b>oo</b>. The word is spelled in the <em>double vowel system</em>, and in that system <b>oo</b> is one letter, a long vowel, and <b>zh</b> is one letter, a consonant (the sound in the middle of \"measure\").</p>`,
@@ -1019,6 +1026,7 @@ print(re.findall("aa|ii|oo|ch|sh|zh|[abdeghijkmnopstwyz']", "gojibizotoon"))`, c
     },
     /* ================================================================== */
     {
+      standards: [],
       title: 'The limits of finite memory', summary: 'A game that no finite automaton can win: distinguishable strings, a pigeonhole proof that 0\u207f1\u207f needs unbounded memory, lower bounds on the number of states, and the stack.',
       blocks: [
         `<p>Here is a challenge. Design a finite automaton, in the sense of Lesson 6, that accepts exactly the strings made of some 0s followed by the <em>same number</em> of 1s. So <code>01</code>, <code>0011</code> and <code>000111</code> are in; <code>001</code>, <code>10</code> and <code>0101</code> are out; and the empty string is in, with zero of each. The language is written {0<sup><i>n</i></sup>1<sup><i>n</i></sup> : <i>n</i> ≥ 0}.</p>
@@ -1138,6 +1146,7 @@ for s in ["()", "([{}])", "([)]", "((", ")(", "{[()()]}", "f(x[1]) + {y}"]:
     },
     /* ================================================================== */
     {
+      standards: [],
       title: 'The universal machine', summary: 'A tape, a head and a table of rules: Turing\u2019s 1936 definition of computing, a proof that a machine adds one, the busy beaver, the Church\u2013Turing thesis, and one machine that runs all the others.',
       blocks: [
         `<p>In 1936 the word "computer" meant a person: someone paid to carry out long calculations with pencil and paper, following fixed rules, at an observatory or an insurance office. That year, before any electronic computer existed, Alan Turing asked what such a person could compute in principle, and stripped the answer down to its bones. What was left is the simplest machine that can do everything any computer can do. This lesson defines it exactly, proves that a small one works, meets a machine that is famous for being as busy as possible, and ends with the idea that made the modern computer possible.</p>`,
@@ -1284,6 +1293,7 @@ print(run(BEAVER, "", "A"))`, caption: 'Each line prints (final tape, number of 
     },
     /* ================================================================== */
     {
+      standards: [],
       title: 'What no program can do', summary: 'Counting infinities: why the programs can be listed but the problems cannot, Cantor\u2019s diagonal argument, Turing\u2019s proof that no program decides halting, and why the busy beaver can never be computed.',
       blocks: [
         `<p>Imagine a tool that reads any program and tells you, before you run it, whether it will ever finish or get stuck for ever. Every programmer has wished for it. Lesson 9 suggested that Python, or a Turing machine, can compute anything computable. This lesson shows that the tool is not merely hard to build but impossible, and the proof is one of the most beautiful arguments in mathematics. It comes in two steps. A counting argument shows that <em>some</em> problems have no program at all. Then a specific, natural problem is caught red-handed.</p>
@@ -1414,6 +1424,7 @@ s4 = 1 1 1 1 1 …</code></pre>
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-11'],
       title: 'Counting steps', summary: 'Comparing algorithms without a stopwatch: counting steps as the input grows, big-O defined and proved, why constants do not matter and exponents do, and what doubling the input does.',
       blocks: [
         `<p>An old legend tells of the inventor of chess, who asked his king for a modest reward: one grain of rice on the first square of the board, two on the second, four on the third, doubling on every square. The king laughed and agreed. The total on 64 squares is 2<sup>64</sup> − 1, about 18 billion billion grains, which is more rice than the whole world grows in a thousand years. The king had not been cheated by arithmetic. He had misjudged how fast doubling grows, and that is exactly what this lesson is about.</p>`,
@@ -1532,6 +1543,7 @@ print("fast:", pair_sum_fast(nums, 5))`, caption: 'Both say False (5 is not a mu
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-11'],
       title: 'Easy to check, hard to find', summary: 'Problems whose answers are quick to verify but seem to take for ever to discover: P and NP defined, reductions, NP-completeness, and the million-dollar question of whether P equals NP.',
       blocks: [
         `<p>Sudoku. Minesweeper. Tetris. Candy Crush. Each of these games has been the subject of a serious mathematical paper, and the papers all reach the same kind of conclusion: in a precise sense, the general version of the puzzle is as hard as some of the most important unsolved problems in computing. If you found a fast method for solving every Minesweeper board, you would also have a fast method for scheduling airlines, packing lorries, folding proteins and breaking much of the world's encryption, and you could collect a million dollars. This lesson explains how a game can carry that much weight.</p>
@@ -1646,6 +1658,7 @@ print(solve(list(range(1, 15)), 500))`, caption: 'Target 9 is found, as [4, 5], 
     },
     /* ================================================================== */
     {
+      standards: ['2-NI-06', '3A-NI-06', '3B-AP-10', '3B-NI-04'],
       title: 'Project: a lock made of arithmetic', summary: 'Put the whole course to work: build the RSA cipher, where the key that locks a message is public, the key that unlocks it is private, and the only way in is a problem believed to be hard.',
       blocks: [
         `<p>Two people who have never met want to share a secret over a channel that everyone can read. It sounds impossible: any key one of them sends, the eavesdropper sees too. Yet it happens every time you open a secure website. The method was published in 1977 by Ron Rivest, Adi Shamir and Leonard Adleman, and is named RSA after them. (A British government mathematician, Clifford Cocks, had found the same idea in 1973, but his work stayed secret until 1997.) The same year, Martin Gardner's magazine column printed a message locked with a 129-digit RSA key and offered a hundred dollars to anyone who could read it. It took seventeen years and the pooled computers of about six hundred volunteers. In 1994 the message was revealed: <em>The Magic Words are Squeamish Ossifrage</em>.</p>`,

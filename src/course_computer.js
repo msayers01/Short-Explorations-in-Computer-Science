@@ -24,6 +24,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['2-CS-02', '3A-CS-01'],
       title: 'The parts of a computer', summary: 'Input, processing, memory, storage and output; what is in the case; hardware and software.',
       blocks: [
         `<p>In February 1946 the United States Army showed reporters a machine that filled a room at the University of Pennsylvania: ENIAC, the first general-purpose electronic computer. It weighed thirty tons, held about eighteen thousand vacuum tubes, and could add five thousand numbers in a second, which was faster than anything before it by a thousand times. It had no keyboard and no screen. It was programmed by six women, Kay McNulty, Betty Jennings, Betty Snyder, Marlyn Wescoff, Fran Bilas and Ruth Lichterman, who set thousands of switches and plugged cables into panels by hand, working from the wiring diagrams because there was no manual.</p>
@@ -90,6 +91,7 @@ window.COURSES.push({
     },
     /* ================================================================== */
     {
+      standards: ['3B-CS-02', '2-DA-07', '3A-DA-09'],
       title: 'The processor and memory', summary: 'What a CPU does: fetch, decode, execute; clock speed and cores; memory as numbered boxes; bits, bytes and binary.',
       blocks: [
         `<p>In 1971 a company called Intel, three years old, shipped a chip the size of a fingernail for a Japanese calculator. The 4004 held 2,300 transistors, the tiny switches a chip is made of, and ticked 740,000 times a second. It was the first complete processor on one chip. The processor in a new phone holds tens of billions of transistors and ticks several billion times a second, and it still does what the 4004 did: fetch an instruction from memory, work out what it means, carry it out, and go on to the next.</p>`,
@@ -150,6 +152,7 @@ window.COURSES.push({
     },
     /* ================================================================== */
     {
+      standards: ['2-CS-02', '3A-DA-10', '3B-CS-01'],
       title: 'Storage, input and output', summary: 'Hard disks and SSDs; files and folders; file sizes; the devices that bring data in and send it out; the network.',
       blocks: [
         `<p>In 1956 IBM delivered the first computer hard disk, the 350, to a customer: fifty metal plates two feet across, spinning in a cabinet the size of two refrigerators, with a reading arm that moved between them. It stored about five million characters, roughly the text of a long novel, and it was leased for thousands of dollars a month. A microSD card today, the size of a fingernail, holds a hundred thousand times as much and costs about as much as a sandwich. The job has not changed: keep the bits when the power is off.</p>`,
@@ -205,6 +208,7 @@ window.COURSES.push({
     },
     /* ================================================================== */
     {
+      standards: ['3A-CS-01', '3A-CS-02', '3B-CS-01'],
       title: 'Software: from your program to the chip', summary: 'What the operating system does; what a program is; how a programming language becomes instructions the CPU can run; and what to expect when you start coding.',
       blocks: [
         `<p>In 1952 Grace Hopper, a mathematician and Navy officer working on one of the first commercial computers, the UNIVAC, wrote a program whose job was to write programs. Until then, every instruction a computer ran had to be written by hand as numbers. Hopper's program, which she called a <em>compiler</em>, took short words and turned them into those numbers. Her colleagues told her a computer could not possibly understand words. By the end of the decade her ideas had become COBOL, a language in which banks and governments wrote programs for the next sixty years. The programs you are about to write will go through a descendant of her idea every time you press Run.</p>`,

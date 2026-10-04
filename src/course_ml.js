@@ -56,6 +56,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['3A-DA-12', '3B-AP-08'],
       title: 'Rules or examples?', summary: 'Two ways to make a spam filter: write the rules yourself, or let the program count words in messages someone has already sorted. What a classifier is, its two kinds of mistake, and learning as counting.',
       blocks: [
         `<p>In August 2002 the programmer Paul Graham published an essay called <em>A Plan for Spam</em>. Like everyone else with an email address, he was drowning in junk mail, and like most programmers he had first tried to stop it with rules. He spent about six months writing software that looked for the features of spam: certain words, certain phrases, shouting capital letters. Some rules were good. Looking only for the word <em>click</em> caught 79.7% of the spam he had collected, but it also flagged 1.2% of his real mail, from people who had written "click" for an honest reason.</p>
@@ -186,6 +187,7 @@ for message, is_spam in new:
     },
     /* ================================================================== */
     {
+      standards: ['3A-DA-12', '3B-AP-09', '3B-DA-05'],
       title: 'Your nearest neighbours', summary: 'Examples as points, the distance between them, and the simplest learning method there is: give a new example the label of the most similar ones you have seen. What k is, and what changing it does.',
       blocks: [
         `<p>In 1951 two statisticians at the University of California, Berkeley, Evelyn Fix and Joseph Hodges, wrote a report for the US Air Force School of Aviation Medicine at Randolph Field, Texas. Its title was not inviting: <em>Discriminatory Analysis. Nonparametric Discrimination: Consistency Properties.</em> Its question was simple. You have measured many cases that belong to two groups, and now a new case arrives. Which group does it belong to, if you know nothing about the shape of the groups, no formula, only the measurements?</p>
@@ -311,6 +313,7 @@ print(knn([7.0, 7.3], 3))`, caption: 'With k = 1 the answer is lemon: the neares
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-11', '3B-DA-07', '9.1.1.15'],
       title: 'Is it any good?', summary: 'How to tell whether a model works: a test set it never saw, accuracy, the confusion table and what accuracy hides, and overfitting, the model that is perfect on its examples and wrong on everything else.',
       blocks: [
         `<p>In 2008 Google launched <em>Google Flu Trends</em>. The idea was clever: people who are ill search for their symptoms, so the number of searches for flu-like things should rise and fall with the number of people who have flu. The team tested 50 million search terms against five years of official flu figures from the US Centers for Disease Control and Prevention (CDC) and kept the 45 that matched best. The model they built from those searches followed the past flu seasons closely, and it could estimate this week's flu a week or two before the CDC's reports came out.</p>
@@ -429,6 +432,7 @@ for message in ["win a free prize", "lunch at noon", "win free cash now", "free 
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-08', '3B-DA-07'],
       title: 'Checkpoint one', checkpoint: true, summary: 'No new ideas: mixed questions on rules and examples, nearest neighbours and honest testing, then two programs that use all three. Which model fits? Which number would you trust?',
       blocks: [
         `<p>This lesson teaches nothing new. It mixes questions on the last three lessons, because telling apart ideas that look alike, such as a training score and a test score, or a false positive and a false negative, is a skill of its own, and it only grows when the questions are mixed. Answer each one before looking back. If one surprises you, the lesson it came from is linked on the Review page, and the question will come back there in a day.</p>
@@ -482,6 +486,7 @@ for message in ["win a free prize", "lunch at noon", "win free cash now", "free 
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-08', '3B-AP-09'],
       title: 'A line that learns', summary: 'The perceptron: a weighted vote of the features, a rule that moves the weights after every mistake, and the one kind of problem a single line can never learn.',
       blocks: [
         `<p>In July 1958 the US Office of Naval Research called a press conference in Washington. On show was an IBM 704, a computer that filled a room, running a program written by Frank Rosenblatt, a psychologist at the Cornell Aeronautical Laboratory in Buffalo. The computer was fed punched cards, each marked with a square on the left or on the right. Nobody had told it which side was which. After 50 tries it had taught itself to tell them apart.</p>
@@ -608,6 +613,7 @@ for epoch in range(1, 9):
     },
     /* ================================================================== */
     {
+      standards: ['2-DA-09', '3A-DA-12', '3B-AP-09', '8.1.1.4', '9.1.1.11'],
       title: 'Walking downhill', summary: 'Gradient descent, the method that trains almost every model today: measure the error, find which way is downhill, take a step, and choose the size of the step.',
       blocks: [
         `<p>In 1847 the French mathematician Augustin-Louis Cauchy sent a three-page note to the Academy of Sciences in Paris. Astronomers wanted to work out the orbit of a planet or a comet from their observations. An orbit is described by six numbers, and the equations linking them to the observations were far too hard to solve directly. Cauchy proposed something that sounds almost too simple. Start from a guess. Measure how wrong it is. Then change all six numbers a little, in the direction that makes the error shrink fastest, and do it again.</p>
@@ -723,6 +729,7 @@ for rate in [0.01, 0.1, 0.25]:
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-09', '3B-AP-12', '3B-DA-05'],
       title: 'Twenty questions', summary: 'Decision trees: a model you can read, built by asking the most useful question first. Entropy, the measure of how mixed a group is, and information gain, how much a question helps.',
       blocks: [
         `<p>In the late 1970s the British computer scientist Donald Michie set a puzzle. Take a chess endgame, a king and rook against a king and knight. From features of the position alone, without searching through the moves, decide whether the knight's side is lost within a certain number of moves. The Australian J. Ross Quinlan answered with a program called ID3, which learned a <b>decision tree</b>: a flowchart of questions about the position, each answer leading to the next question, ending in a verdict.</p>
@@ -860,6 +867,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-08', '3B-AP-09'],
       title: 'Checkpoint two', checkpoint: true, summary: 'No new ideas: mixed questions on perceptrons, gradient descent and decision trees, then a choice of model and a program that picks the best question.',
       blocks: [
         `<p>Three lessons, three kinds of model: a weighted vote that draws a line, a descent that finds the best numbers by feeling the slope, and a tree of questions chosen by information gain. The questions below mix them on purpose, along with the ideas that are easy to confuse: the learning rate and the slope, the entropy of a group and the gain of a question.</p>

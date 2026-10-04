@@ -110,6 +110,7 @@ site/
     algos.js             the #/algorithms page (§9g): demo registry, index and demo pages, shared player and canvas → window.ALGOS
     algo_search.js, algo_sort.js, algo_paths.js, algo_games.js, algo_puzzles.js   the demos (§9g); each also exports selfTest() for test_algos.js
     applied.js           the #/real-world page (§9g): topics, where each is used, jobs, lesson links → window.APPLIED
+    standards.js         the #/standards page and the standards box under each lesson's summary (§9k) → window.STANDARDS
 ```
 
 **Script order in `build.js` matters:** (window.BUILD) → cppstep → scheme → subst → site →
@@ -149,6 +150,7 @@ Hash routes; a `?query` after the path is split off first.
 | `#/algorithms`, `#/algorithms/<demo-id>` | Algorithms in motion: the index of demos, or one demo (§9g) |
 | `#/arena`, `#/arena/tournament`, `#/arena?bot=` / `?replay=` | Bot Arena: write a bot that plays Tron; the teacher's tournament; a shared bot or replay (§9j) |
 | `#/real-world`, `#/real-world/<topic-id>` | where the ideas of the courses are used, scrolled to a topic (§9g) |
+| `#/standards`, `#/standards/<code>` | the CSTA and Minnesota standards with the lessons that address them, scrolled to one standard (§9k) |
 | `#/<course>` | course page (audience, outcomes, "Your skills" once started (§9i), lesson list with progress) |
 | `#/<course>/<n>` | lesson n (1-based) |
 | `#/<course>/<n>/<exercise-id>` | lesson n, scrolled to that exercise |
@@ -612,6 +614,22 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   mobile), a search box, contents, and a by-course index for teachers. Lesson links are labelled from `window.COURSES` at page time and a
   link to a missing lesson is left out; `test_browser.js` checks every link resolves. Every example names a real system or event: check it
   before adding one, and keep the two that describe this site true when the site changes.
+
+## 9k. Standards alignment (`standards.js`, `scripts/standards-map.js`, `test_standards.js`)
+
+- Each lesson in `src/course_*.js` has `standards: ['2-AP-11', '3A-AP-17', '9.2.4.5', ...]`: CSTA K-12 CS Standards (2017) codes and Minnesota 2022
+  Mathematics CS-integrated benchmark codes, which look different (a CSTA code has letters and dashes, a Minnesota code is four dot-separated numbers).
+  An empty list means no standard applies (SC 104 lessons 8-10, theory beyond the standards). It is the only place the mapping is written.
+- `src/standards.js` holds the standards (`CSTA` code → short paraphrase, `MN` rows `[code, text, fit, note]` where fit is `'yes'`, `'partial'` or empty when
+  no lesson is tagged), the non-course pages that practise a standard (`SUPPORT`) and the code that draws the `#/standards` page (framework, grade band,
+  "with a lesson / no lesson yet", search) and the `<details class="lesson-stds">` box that `lessonPage` puts under a lesson's summary. A code in the address
+  (`#/standards/9.2.4.5`) opens the right list and scrolls to the standard. The standards' text is ours (paraphrased, not the official wording) and the page
+  says the mapping is the author's and not endorsed by CSTA or the Minnesota Department of Education: keep that wording if the page is changed.
+- `node scripts/standards-map.js` writes `STANDARDS_ALIGNMENT.md` (by course, by standard, gaps, the teacher-standards table) from the lessons and
+  `standards.js`; commit it with any change to a tag. `test_standards.js` (part of `npm test`) fails on an unknown code, a duplicate, an untagged lesson, a
+  Minnesota fit that disagrees with the tags, or an out-of-date `STANDARDS_ALIGNMENT.md`.
+- Adding a lesson: give it `standards`. Adding a standard (a new Minnesota subject, the 2026 CSTA revision): add it to `CSTA` or `MN` and tag lessons.
+  Tags were assigned from each lesson's title, summary and a search of its text, not a full re-read: when a lesson changes a lot, re-check its tags.
 
 ## 9i. Spaced review and the skills map (`review.js`)
 

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xoDJZhMaily7Ql79Q8k//KIMpD4L8S2vU4hwcA2bRl4=' 'sha256-Wt7m1grYQ9THFn+Xx0y5OWqmNaZEEgKBdIFAcDOIKS8=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xoDJZhMaily7Ql79Q8k//KIMpD4L8S2vU4hwcA2bRl4=' 'sha256-6Wu8aPPc2g1mVzUtib/GgOSi9k402s2SyUBZ/40nmV8=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -2630,6 +2630,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['2-CS-02', '3A-CS-01'],
       title: 'The parts of a computer', summary: 'Input, processing, memory, storage and output; what is in the case; hardware and software.',
       blocks: [
         `<p>In February 1946 the United States Army showed reporters a machine that filled a room at the University of Pennsylvania: ENIAC, the first general-purpose electronic computer. It weighed thirty tons, held about eighteen thousand vacuum tubes, and could add five thousand numbers in a second, which was faster than anything before it by a thousand times. It had no keyboard and no screen. It was programmed by six women, Kay McNulty, Betty Jennings, Betty Snyder, Marlyn Wescoff, Fran Bilas and Ruth Lichterman, who set thousands of switches and plugged cables into panels by hand, working from the wiring diagrams because there was no manual.</p>
@@ -2696,6 +2697,7 @@ window.COURSES.push({
     },
     /* ================================================================== */
     {
+      standards: ['3B-CS-02', '2-DA-07', '3A-DA-09'],
       title: 'The processor and memory', summary: 'What a CPU does: fetch, decode, execute; clock speed and cores; memory as numbered boxes; bits, bytes and binary.',
       blocks: [
         `<p>In 1971 a company called Intel, three years old, shipped a chip the size of a fingernail for a Japanese calculator. The 4004 held 2,300 transistors, the tiny switches a chip is made of, and ticked 740,000 times a second. It was the first complete processor on one chip. The processor in a new phone holds tens of billions of transistors and ticks several billion times a second, and it still does what the 4004 did: fetch an instruction from memory, work out what it means, carry it out, and go on to the next.</p>`,
@@ -2756,6 +2758,7 @@ window.COURSES.push({
     },
     /* ================================================================== */
     {
+      standards: ['2-CS-02', '3A-DA-10', '3B-CS-01'],
       title: 'Storage, input and output', summary: 'Hard disks and SSDs; files and folders; file sizes; the devices that bring data in and send it out; the network.',
       blocks: [
         `<p>In 1956 IBM delivered the first computer hard disk, the 350, to a customer: fifty metal plates two feet across, spinning in a cabinet the size of two refrigerators, with a reading arm that moved between them. It stored about five million characters, roughly the text of a long novel, and it was leased for thousands of dollars a month. A microSD card today, the size of a fingernail, holds a hundred thousand times as much and costs about as much as a sandwich. The job has not changed: keep the bits when the power is off.</p>`,
@@ -2811,6 +2814,7 @@ window.COURSES.push({
     },
     /* ================================================================== */
     {
+      standards: ['3A-CS-01', '3A-CS-02', '3B-CS-01'],
       title: 'Software: from your program to the chip', summary: 'What the operating system does; what a program is; how a programming language becomes instructions the CPU can run; and what to expect when you start coding.',
       blocks: [
         `<p>In 1952 Grace Hopper, a mathematician and Navy officer working on one of the first commercial computers, the UNIVAC, wrote a program whose job was to write programs. Until then, every instruction a computer ran had to be written by hand as numbers. Hopper's program, which she called a <em>compiler</em>, took short words and turned them into those numbers. Her colleagues told her a computer could not possibly understand words. By the end of the decade her ideas had become COBOL, a language in which banks and governments wrote programs for the next sixty years. The programs you are about to write will go through a descendant of her idea every time you press Run.</p>`,
@@ -2905,6 +2909,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['2-AP-10', '2-AP-11'],
       title: 'Say it in Python', summary: 'You already know how to program. This lesson shows how to type it: say becomes print, ask becomes input, and the computer tells you when you make a typo.',
       blocks: [
         `<p>Here is a secret. You already know how to program. You learned it in Scratch. Every idea in this course is one you have used before: say, ask, variables, repeat, if. The only new thing is how to <em>spell</em> them.</p>
@@ -2999,6 +3004,7 @@ turtle.done()`, caption: 'Run it and watch the canvas. Add one more t.right(90) 
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-11'],
       title: 'Keeping score: variables', summary: 'set and change become =, numbers and words are different kinds of thing, the maths blocks become symbols, and a program keeps a score.',
       blocks: [
         `<p>In 1972 a young engineer called Allan Alcorn built a game for a brand-new company, Atari. Two paddles, a ball, and two numbers at the top of the screen. The game was <em>Pong</em>. The numbers were the score. The first machine went into a bar in California. Within days it stopped working. The coin box was full.</p>`,
@@ -3105,6 +3111,7 @@ print("Score:", total)`, caption: 'Three variables, two kinds of thing. The scor
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12'],
       title: 'Repeat and forever', summary: 'The repeat block becomes a for loop, forever becomes while, the turtle draws squares, stars and spirals, and the lines inside a loop are marked by indenting them.',
       blocks: [
         `<p>Before Scratch there was Logo. And before the turtle on your screen, there was a real one. In 1967 a team in Massachusetts, with a mathematician called Seymour Papert, made a language for children called Logo. A couple of years later they gave it a robot. It was a round machine on wheels, about the size of a cake tin, with a pen underneath. Children typed <code>FORWARD 100</code> and <code>RIGHT 90</code>. The robot drove across big sheets of paper on the floor and drew. Papert called it the turtle.</p>
@@ -3226,6 +3233,7 @@ turtle.done()`, caption: 'The inner loop (j) draws one square. The outer loop (i
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12'],
       title: 'If, then, else', summary: 'The if block becomes if with a colon, else and else-if become else and elif, = becomes ==, and, or and not stay as words, and a program answers back depending on what you typed.',
       blocks: [
         `<p>In 1966 a computer scientist at MIT called Joseph Weizenbaum wrote a program that could hold a conversation. He named it ELIZA. You typed a sentence. It typed one back. One version played the part of a therapist, a kind of doctor you talk to about your worries. People found it amazingly good at it. Weizenbaum's own secretary had watched him build it. She knew exactly what it was. One day she asked him to leave the room, so she could talk to it in private.</p>`,
@@ -3339,6 +3347,7 @@ else:
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-11', '3A-AP-14'],
       title: 'Lists', summary: 'Scratch lists become Python lists in square brackets, add becomes append, item 1 becomes [0] because Python counts from zero, length of is len, contains is in, and a loop can walk through every item.',
       blocks: [
         `<p>The oldest writing in the world is lists. In the ruins of Uruk, a city in what is now Iraq, people dug up thousands of clay tablets. They are about five thousand years old. When the tablets were finally read, they were not stories or prayers. They were records. So many sacks of barley. So many jars of beer. Who got them. People invented writing because there were too many things to keep in their heads. A list on a tablet does not forget.</p>`,
@@ -3466,6 +3475,7 @@ print("The 8-ball says:", random.choice(answers))`, stdin: 'Will I get a dog?', 
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-14', '2-AP-19'],
       title: 'My blocks: functions', summary: 'A define block becomes def, its inputs become parameters, a block that reports an answer uses return, and a turtle draws a garden from one flower function.',
       blocks: [
         `<p>In 1949, at Cambridge University in England, a computer called EDSAC started working. It was one of the first in the world that could store its own program. Writing for it was slow. Every program had to be punched onto paper tape, hole by hole. Even printing a number took dozens of instructions.</p>`,
@@ -3627,6 +3637,7 @@ turtle.done()`, caption: 'A triangle, a square, a pentagon and so on, each in a 
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '2-AP-13', '2-AP-15', '2-AP-17'],
       title: 'Project: your own adventure game', summary: 'Everything from the course in one program: rooms with if and elif, a bag that is a list, a monster fight with while and random, and broadcasts that become functions. You build it piece by piece, then make it yours.',
       blocks: [
         `<p>In 1976 a programmer called Will Crowther wrote a game for his two daughters. He loved exploring caves, and he had helped map a real one in Kentucky. His game had no pictures at all. It printed <em>You are standing at the end of a road before a small brick building</em>, and waited. You typed <code>go north</code> or <code>take lamp</code>, and it printed what happened next. He called it <em>Adventure</em>. Another programmer, Don Woods, added more rooms and a dragon the next year. Thousands of people played it on university computers, and it started a whole kind of game.</p>`,
@@ -3809,6 +3820,7 @@ if health <= 0:
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '2-AP-14', '2-AP-16'],
       title: 'Project: turtle art', summary: 'Shapes become functions, colours and fills make them pretty, and loops turn one shape into a flower, a spiral and a sky full of stars.',
       blocks: [
         `<p>Remember Seymour Papert from lesson 3? He made Logo, a language for kids. His team gave it a robot with a pen underneath. Kids typed <code>FORWARD 50</code> and it rolled forward and drew a line. They typed <code>RIGHT 90</code> and it turned. Papert called it the turtle. He said kids should teach the computer, not the other way round. Scratch was made by his students, years later, with the same idea.</p>`,
@@ -3966,6 +3978,7 @@ turtle.done()`, caption: 'Fifteen stars, random places, random sizes, random col
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-11'],
       title: 'Words and letters', summary: 'join, letter of and length of become +, square brackets and len; a loop can go through a word one letter at a time; and words can be shouted, reversed and searched.',
       blocks: [
         `<p>In 1966 a programmer called Joseph Weizenbaum wrote a program that talked. You typed a sentence. It found a word in it, turned your sentence around, and asked a question. Type <em>I feel sad</em> and it said <em>Why do you feel sad?</em> He called it ELIZA. Some people thought it understood them. It did not understand a thing. It only played with words: cutting them, joining them, swapping them. That is what this lesson is about.</p>`,
@@ -4088,6 +4101,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['2-AP-11', '7.3.6.3'],
       title: 'Hello, Python', summary: 'What a program is, your first lines of Python, the kinds of values Python works with, and how to give a value a name.',
       blocks: [
         `<p>In 1843, a century before the first electronic computer, Ada Lovelace published a step-by-step method for a machine that had not been built, Charles Babbage's Analytical Engine, to calculate a sequence of numbers called the Bernoulli numbers. It is often called the first computer program. Everything since, from phone apps to spacecraft, is the same idea: a list of exact instructions for a machine that does precisely what it is told. The language in this course was released in 1991 by Guido van Rossum, who named it not after the snake but after the British comedy show <i>Monty Python's Flying Circus</i>, which is why so many Python examples mention spam.</p>`,
@@ -4208,6 +4222,7 @@ print(days, "days is", hours, "hours")`, caption: 'Three steps: read and convert
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '2-AP-17'],
       title: 'How Python reads your program', summary: 'The rules Python applies to every line, the two moments a program can fail, and why the spaces at the start of a line are part of the language.',
       blocks: [
         `<p>"Time flies like an arrow; fruit flies like a banana." Read that twice: in the first half <i>flies</i> is a verb, in the second it is a noun, and <i>like</i> changes meaning too. English is full of sentences a person can read two ways and sorts out from context without noticing. A programming language cannot afford that: every line must have exactly one meaning, fixed by rules.</p>
@@ -4332,6 +4347,7 @@ Total: 2.0</code></pre>
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '3A-AP-15'],
       title: 'Making decisions', summary: 'True and False, comparisons, if, elif and else, combining conditions with and, or and not, and the order in which Python checks them.',
       blocks: [
         `<p>Every time you press a button in a game, the program asks questions. Is the player touching the ground? Is there a wall to the left? Has the timer run out? A fast game asks thousands of such questions every second, and what happens next depends on each answer. Those yes-or-no questions, and the choices that follow them, are this lesson.</p>`,
@@ -4487,6 +4503,7 @@ else:
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '3A-AP-15'],
       title: 'Repetition', summary: 'for loops and range, while loops, loops that never end, and the accumulator pattern behind most loops you will ever write.',
       blocks: [
         `<p>A famous story tells of a teacher in Germany in the 1780s who kept a class busy by asking them to add up all the whole numbers from 1 to 100. Within moments a boy named Carl Friedrich Gauss, who became one of the greatest mathematicians in history, wrote down 5050. He had not added a hundred numbers; he had spotted a pattern. A computer has no such insight, but it does not need one: it can add a hundred numbers, or a hundred million, without getting bored or making a slip. That is what loops are for. Until the 1960s much of that patient arithmetic was done by people whose job title was <em>computer</em>, such as Katherine Johnson, who worked out the flight paths of America's first astronauts at NASA.</p>`,
@@ -4668,6 +4685,7 @@ print(digits)`, testStdin: '1234\n', caption: 'For 1234: the even numbers below 
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-14', '3A-DA-10', '3B-AP-12'],
       title: 'Lists', summary: 'Many values under one name: positions that start at 0, slices, looping, changing a list in place, and the famous surprise when two names share one list.',
       blocks: [
         `<p>A single variable holds one value. Real programs juggle many: a playlist of 2,000 songs, the ten best scores in a game, every word in a message. Python keeps an ordered collection of values under one name in a <em>list</em>. By the end of this lesson you will be able to pick out any song in a playlist, slice out the chorus of a list, and explain a bug that has confused programmers for as long as Python has existed.</p>
@@ -4814,6 +4832,7 @@ print(evens([3, 8, 5, 6, 2]))`, caption: 'Prints 2 and [8, 6, 2]. The second fun
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-11', '3A-AP-14'],
       title: 'Strings', summary: 'Text is a sequence too: positions and slices, why a string can never change, the methods worth knowing, splitting and joining, and building text piece by piece.',
       blocks: [
         `<p>Read this little poem, then read only the first letter of each line, top to bottom.</p>
@@ -4969,6 +4988,7 @@ print(same_letters("hello", "world"))`, caption: 'True, True, False. Cleaning fi
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-13', '2-AP-14', '2-AP-19', '3A-AP-17', '3A-AP-18', '3B-AP-14'],
       title: 'Functions', summary: 'Naming a computation so you can reuse it, test it and stop thinking about it: def, parameters and return, what happens during a call, scope, defaults, and testing with assert.',
       blocks: [
         `<p>Think of a vending machine. You put something in (money and a button press), something comes out (a snack), and you never need to know what happens inside. A <em>function</em> is a vending machine for a computation: values go in, one value comes out, and the rest of the program can forget how. You have been <em>calling</em> functions since the first lesson, <code>print</code>, <code>len</code>, <code>int</code>, and you have filled in the bodies of a few. Now you will build them from nothing, and by the end of the lesson you will test your own functions the way professional programmers do.</p>`,
@@ -5122,6 +5142,7 @@ print("has_digit passes its tests")`, caption: 'Putting return False inside the 
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-17', '3A-CS-03'],
       title: 'Finding and fixing bugs', summary: 'Every program has bugs; the skill is finding them fast. Three kinds of wrong, reading an error message, debugging as an experiment, testing, and handling the errors you expect with try and except.',
       blocks: [
         `<p>In September 1999, NASA's Mars Climate Orbiter reached Mars after a nine-month journey, fired its engine to slip into orbit, and was never heard from again. It had flown far too low into the Martian atmosphere. The investigation found the cause: one team's software reported the push of the thrusters in pounds, American units, and another team's software read those numbers as newtons, metric units. Nothing crashed and no error message appeared. Every program ran perfectly and gave the wrong answer, and a spacecraft costing well over a hundred million dollars was lost.</p>`,
@@ -5250,6 +5271,7 @@ print(safe_divide(1, 0, "n/a"))`, caption: 'Prints 2.5 and n/a. The return insid
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-14', '3A-DA-10', '3B-AP-12'],
       title: 'Dictionaries', summary: 'Looking things up by name instead of by position: keys and values, missing keys, looping over pairs, the counting pattern, which keys are allowed, and why lookup is fast however big the dictionary grows.',
       blocks: [
         `<p>A list is perfect when you know the <em>position</em> of what you want: the third song, the last score. But usually you know a <em>name</em>. You have a word and want its meaning, a student and want their score, a username and want the password check, a product and want its price. A paper dictionary works this way: you do not read it from page one; you jump to the word. Python's <em>dictionary</em> does the same, and it does it in a single step even when it holds millions of entries. This lesson shows how to use one, and how a dictionary makes one of the most useful patterns in programming, counting, a single line.</p>
@@ -5373,6 +5395,7 @@ print(top_scorer({"Ada": 92, "Grace": 95, "Linus": 95}))`, caption: "Prints {'b'
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-16', '2-DA-09', '3A-DA-12', '3B-DA-07', '6.1.2.3', '7.1.2.2', '7.1.2.5', '7.1.2.6'],
       title: 'Randomness and simulation', summary: 'Dice, coins and shuffled decks from the random module, repeatable randomness with seeds, and answering "how likely is that?" by running the experiment thousands of times, including two famous puzzles that fool almost everyone.',
       blocks: [
         `<p>Here is a question to try on your friends. In a class of 23 people, how likely is it that two of them share a birthday? Most people guess something small, perhaps one chance in 15, since there are 365 days to choose from. The true answer is just over one half. Nearly everyone's intuition gets this wrong, and a program can settle the argument in a few lines, without any probability theory, by simply trying it thousands of times. That trick, and the randomness it needs, is this lesson.</p>
@@ -5505,6 +5528,7 @@ print(fraction_at_least_five(3000))    # about 0.333`, caption: 'Calling random.
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-13', '9.3.7.4'],
       title: 'Recursion', summary: 'Functions that call themselves: base cases and progress, what the call stack does, why trusting the recursive call is justified, recursion on lists and strings, the Tower of Hanoi, and making slow recursion fast with a dictionary.',
       blocks: [
         `<p>In 1883 the French mathematician Édouard Lucas sold a puzzle with a story attached. In a temple, the story went, priests are moving a tower of 64 golden discs from one peg to another, one disc at a time, never putting a larger disc on a smaller one, using a third peg to help. When they finish, the world will end. Should we worry? By the end of this lesson you will have written a five-line program that solves the puzzle for any number of discs, and worked out exactly how long the priests need.</p>`,
@@ -5664,6 +5688,7 @@ print(count_char("banana", "a"))`, caption: 'Prints 21 and 3. Both shrink the in
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-11'],
       title: 'Searching and sorting', summary: 'Your first real algorithms and the question that separates programs that finish from programs that never do: how does the work grow? Linear and binary search, bubble sort, and merge sort, with exact step counts.',
       blocks: [
         `<p>Think of a number from 1 to a million, and I will find it with twenty yes-or-no questions. Every time. The trick is to ask "is it bigger than 500,000?", and whatever you answer, half of the possibilities are gone; after twenty questions, a million possibilities are down to one. That strategy is <em>binary search</em>, and it is one of the algorithms in this lesson.</p>
@@ -5806,6 +5831,7 @@ print(is_sorted([1, 3, 3, 8]), is_sorted([3, 1, 2]))`, caption: 'Prints 3 (the 1
     },
     /* ================================================================== */
     {
+      standards: ['2-NI-06', '3A-AP-13', '3A-DA-09', '3B-DA-05'],
       title: 'Project: the Caesar cipher', summary: 'Encrypt, decrypt, and then break a 2,000-year-old cipher, first by trying every key and then by frequency analysis, the method that sent a queen to her execution.',
       blocks: [
         `<p>In 1586, Mary, Queen of Scots, was imprisoned in England, and she and her supporters wrote to each other in cipher about a plot to put her on the English throne. The letters were intercepted, and Thomas Phelippes, a codebreaker working for Queen Elizabeth's spymaster, broke the cipher by counting how often each symbol appeared. The decoded letters were used at Mary's trial, and she was executed the next year. The counting method he used had been described some seven hundred years earlier by al-Kindi, a scholar in Baghdad, in the first known book on codebreaking.</p>`,
@@ -5932,6 +5958,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['3A-CS-02'],
       title: 'Expressions and the interpreter', summary: 'A language with one kind of sentence: what an expression is, how the interpreter finds its value, and how to give a value a name.',
       blocks: [
         `<p>In 1958 John McCarthy at MIT designed a language for research on artificial intelligence and called it Lisp, for LISt Processing. Only Fortran, from the year before, is an older programming language still in wide use. Lisp's look, with a parenthesis around every expression, has earned it a joking expansion, "Lots of Irritating Silly Parentheses". But its ideas turned up decades later in almost every language you have heard of, and by the end of this course you will see why the parentheses are the point.</p>
@@ -6048,6 +6075,7 @@ circumference`, caption: 'Once a name is defined it can be used in any later exp
     },
     /* ================================================================== */
     {
+      standards: ['3A-CS-01', '3A-AP-17', '3A-AP-18'],
       title: 'Procedures and the substitution model', summary: 'Naming a computation, a precise rule for what happens when you use it, and why the names inside a procedure belong to it alone.',
       blocks: [
         `<p>SICP begins by comparing programmers to sorcerers: a program is like a spell, a carefully arranged sequence of symbols that makes an invisible process happen inside the machine. As with any spell, a single wrong word can have unexpected effects, so a sorcerer needs to know exactly what each word will do. This lesson gives the first precise rule for predicting what a spell does.</p>
@@ -6211,6 +6239,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-15'],
       title: 'Making decisions', summary: 'Definitions by cases: predicates, cond and if, how they are evaluated, and why they cannot be ordinary procedures.',
       blocks: [
         `<p>Here is a small piece of history hiding in every language you will use. The conditional expression, an expression whose value depends on a test, the ancestor of Python's <code>if</code>/<code>else</code>, was invented by John McCarthy for Lisp in the late 1950s, and he proposed it for the language ALGOL, through which it spread everywhere. In Lisp it is still at its purest.</p>
@@ -6376,6 +6405,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-13'],
       title: 'Recursion', summary: 'Procedures defined in terms of themselves: why that is allowed, how the substitution model traces them, what makes them stop, and why they are right.',
       blocks: [
         `<p>An old cocoa tin from the Dutch company Droste showed a nurse carrying a tray, on which stood a tin of Droste cocoa, showing a nurse carrying a tray, on which stood a tin, and so on for ever; pictures that contain themselves are still called the Droste effect. Programmers have their own version. The name GNU, a free operating system project, stands for "GNU's Not Unix", an abbreviation that contains itself. And there is an old joke: "To understand recursion, you must first understand recursion." This lesson shows why a definition that refers to itself is not a joke at all, as long as it reaches the bottom.</p>`,
@@ -6499,6 +6529,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-11', '3B-AP-13'],
       title: 'The shape of a process', summary: 'Procedures and the processes they generate: recursive and iterative processes, tail calls, state variables with an invariant, and tree recursion.',
       blocks: [
         `<p>In 1202, Leonardo of Pisa, later known as Fibonacci, posed a puzzle about rabbits: start with one pair, suppose every pair produces a new pair each month from its second month of life, and ask how many pairs there are after a year. The answer grows through the sequence 1, 1, 2, 3, 5, 8, 13, …, which now bears his name. The numbers turn up far from rabbits too: the seeds in a sunflower head grow in two sets of spirals, one turning each way, and the numbers of spirals in the two sets are usually neighbours in the sequence, such as 34 and 55. This lesson computes those numbers two ways, and discovers that the obvious way is catastrophically slow for a reason you can see in the shape of the code.</p>`,
@@ -6626,6 +6657,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-12'],
       title: 'Pairs and lists', summary: 'One way to glue two things together, and everything that grows from it: pairs, the recursive definition of a list, box-and-pointer diagrams, and a pair made of nothing but procedures.',
       blocks: [
         `<p>Until now every value has been a single number or symbol. Real data comes in groups: a point has two coordinates, a sentence has many words, a family tree has branches inside branches. Lisp builds every one of these from a single operation that glues two values together. That is the whole kit. This lesson shows how far one kind of glue goes, and it ends with a small shock: the glue itself can be made out of procedures.</p>
@@ -6754,6 +6786,7 @@ colours
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-12', '3B-AP-13'],
       title: 'Recursion on lists', summary: 'The definition of a list writes your procedures for you: the template, three shapes (boil down, build, keep), a proof by induction on length, iterating over a list, and lists inside lists.',
       blocks: [
         `<p>Here is a claim that sounds too good to be true: once you know how a list is defined, you know how to write almost every procedure that works on lists, and you know why each one stops and why it is right. The definition from Lesson 6 does the work.</p>
@@ -6902,6 +6935,7 @@ boxes
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-17', '3B-AP-14'],
       title: 'Procedures as data', summary: 'Procedures are values like numbers: passing them in (higher-order procedures), making them on the spot (lambda), naming values locally (let), and handing them back (closures), with \u03c0 and a derivative on the way.',
       blocks: [
         `<p>Look at these three procedures side by side. One adds up the integers from <i>a</i> to <i>b</i>, one adds up their cubes, and one adds up the terms of a series that, strangely, closes in on π.</p>`,
@@ -7060,6 +7094,7 @@ boxes
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-14'],
       title: 'map, filter and accumulate', summary: 'Three higher-order procedures that replace almost every list recursion: signal-flow pipelines, a law proved by induction, folding in both directions, and nested mappings.',
       blocks: [
         `<p>Here is a puzzle, the second problem on the famous Project Euler list of programming challenges. The Fibonacci numbers go 1, 2, 3, 5, 8, 13, 21, …, each the sum of the two before. What is the sum of the <em>even</em> ones below four million? By the end of this lesson the answer is one line of Scheme, and the line reads almost like the question. The trick is to stop writing recursions one at a time.</p>
@@ -7215,6 +7250,7 @@ boxes
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-12'],
       title: 'Symbols, quotation, and code as data', summary: 'What the quote mark really does, symbols as values, three kinds of equality, association lists, and the idea at the heart of Lisp: a program is a list, so a program can read, build and even run other programs.',
       blocks: [
         `<p>SICP opens its section on symbols with a little puzzle about language. If someone says "say your name aloud", you say your name. If they say "say 'your name' aloud", you say the words "your name". The quotation marks change what is meant: not the thing the words stand for, but the words themselves. Programming languages need the same distinction, and Lisp takes it further than any other: in Lisp a quoted piece of <em>program</em> is ordinary data, which one program can take apart, change, build, and even run.</p>
@@ -7362,6 +7398,7 @@ d
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-14', '3B-AP-15'],
       title: 'Project: symbolic differentiation', summary: 'A program that does calculus on expressions, SICP\u2019s classic demonstration of code as data: wishful thinking, abstraction barriers, smart constructors, and a check of the symbolic answer against Lesson 8\u2019s numerical one.',
       blocks: [
         `<p>In the 1960s, researchers at MIT wrote programs that could do algebra and calculus with symbols, the way a person does with pencil and paper: not "the slope at 5 is 75.0001", but "the derivative of <i>x</i>³ is 3<i>x</i>²". They wrote them in Lisp, because in Lisp an expression is already a list that a program can take apart, and their descendants still run inside computer algebra systems today. This project builds the heart of one: a procedure <code>deriv</code> that takes an algebraic expression and a variable, and returns the derivative, symbolically, as another expression. It comes from SICP §2.3.2, and it fits on one screen.</p>
@@ -7509,6 +7546,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['2-AP-11', '3A-CS-02'],
       title: 'Hello, C++', summary: 'What a compiler does, the rules every C++ line follows, and why a variable must have a type before it has a value.',
       blocks: [
         `<p>In 1979, Bjarne Stroustrup, a Danish computer scientist at Bell Labs in New Jersey, started adding new features to the language C, which his colleagues had created a few years earlier to write the Unix operating system. He called the result "C with Classes". In 1983 it was renamed C++, a programmer's joke: in C, <code>++</code> means "add one", so C++ is "one more than C". Today it runs underneath web browsers, game engines, and the software on space probes.</p>`,
@@ -7668,6 +7706,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '3A-AP-15'],
       title: 'Making decisions', summary: 'Comparisons and bool, if and else, combining conditions, and the traps that C++ accepts but Python would refuse.',
       blocks: [
         `<p>In February 2014 Apple rushed out an urgent update for iPhones and Macs. In the code that checked whether a secure website was genuine, one line had accidentally been written twice, directly after an <code>if</code> with no braces. The second copy was not part of the <code>if</code>, whatever the indentation suggested, so it ran every time and skipped the rest of the check. For over a year, devices had accepted fake certificates. Programmers called it the "goto fail" bug, after the duplicated line. This lesson covers <code>if</code> in C++, and that exact trap.</p>
@@ -7856,6 +7895,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '3A-AP-15'],
       title: 'Loops', summary: 'while and for, stated exactly; how to count the passes of a loop, loops that never end, nested loops, and the accumulator pattern.',
       blocks: [
         `<p>On 31 December 2008, thousands of Microsoft Zune music players froze at the same moment, all over the world. The cause was a loop in the code that worked out the date. On the last day of a leap year, the loop's condition stayed true for ever and the loop never ended, so the players hung until their batteries ran flat. The next morning, a new year, they worked again. This lesson is about writing loops that stop, and knowing exactly when they will.</p>`,
@@ -8070,6 +8110,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-14', '3A-AP-17', '3A-AP-18'],
       title: 'Functions', summary: 'Typed functions stated exactly: parameters, return, declaration before use, pass by value, scope, early return, and a first look at recursion.',
       blocks: [
         `<p>A cookbook recipe for a lasagne might say "make the tomato sauce (page 12)" and "make the white sauce (page 40)". The lasagne recipe does not repeat those recipes; it names them, trusts them, and gets on with its own job. Functions are how programs do the same, and by the end of this lesson you will write functions that call other functions, and even themselves.</p>
@@ -8265,6 +8306,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-CS-02', '3B-AP-12'],
       title: 'Pointers', summary: 'Addresses and the variables that hold them, stated exactly: &, * and the three meanings of the star; why passing a pointer still passes by value; and how a function changes the caller\u2019s variables.',
       blocks: [
         `<p>In 1965 the computer scientist Tony Hoare added a special "points nowhere" value to a programming language he was designing, because it was so easy to implement. In 2009 he apologised for it in public, calling it his "billion-dollar mistake", after decades of programs crashing because they followed a pointer that pointed nowhere. Pointers are powerful and they are sharp. This lesson shows how they work, and how not to cut yourself.</p>`,
@@ -8475,6 +8517,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-14', '3B-AP-12', '3B-AP-18'],
       title: 'Arrays', summary: 'A row of values of one type: declaring and indexing, why nothing stops you running off the end, why an array\u2019s name is an address, and how functions share arrays.',
       blocks: [
         `<p>Picture a corridor of school lockers, all the same size, numbered from 0, standing shoulder to shoulder. That is an <em>array</em>: a fixed number of values of one type, stored next to each other in memory. It is the oldest data structure in computing and still the fastest, and it hides a famous danger. This lesson gives the rules, shows exactly why arrays are fast, and explains the bug behind some of the most expensive security holes in history.</p>`,
@@ -8667,6 +8710,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-DA-09', '3B-AP-12'],
       title: 'Characters and strings', summary: 'Text as numbers, and a string as an array of char with a zero at the end: walking it, building it, comparing it, and sending a secret message.',
       blocks: [
         `<p>Inside a computer there are no letters, only numbers. The word <code>Hi!</code> is stored as the three numbers 72, 105 and 33, followed by a 0 that says "the text stops here". This lesson is about that one design decision, made for the C language in the early 1970s and inherited by C++: how it makes text simple, how it makes text dangerous, and how to work with it one character at a time. At the end you will write a function that turns messages into secret code.</p>
@@ -8827,6 +8871,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-17', '3A-CS-03', '3B-AP-18'],
       title: 'Finding and fixing bugs', summary: 'Three kinds of wrong, reading compiler errors, the bugs C++ lets you make, and debugging as an experiment: reproduce, shrink, hypothesise, test, with a moth and an exploding rocket along the way.',
       blocks: [
         `<p>On 9 September 1947, engineers working on the Harvard Mark II computer found that a relay had stopped working. Inside it was a moth. They taped it into the logbook with the note "First actual case of bug being found", and the word stuck, although engineers had called faults "bugs" for decades before that. Since then, every programmer has spent more time finding bugs than writing new code. This lesson is about doing that calmly and systematically: knowing which kind of bug you are facing, reading what the compiler tells you, recognising the bugs that C++ lets through, and hunting the rest down like a scientist.</p>`,
@@ -9020,6 +9065,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['2-DA-09', '3A-DA-12', '3B-DA-07', '6.1.2.3', '7.1.2.2', '7.1.2.5'],
       title: 'Randomness and simulation', summary: 'Where a computer\u2019s random numbers come from, how to shape them into dice and coins, seeds, why more trials help only slowly, and estimating chances (and \u03c0) by simulation.',
       blocks: [
         `<p>In 1946 the mathematician Stanisław Ulam was recovering from an illness and passing the time with games of solitaire. He wondered what the chance was that a game would come out, tried to calculate it, and gave up: the combinations were hopeless. Then he had a better idea. Why not just play a hundred games and count how many came out? With the new electronic computers, you could play thousands. His colleagues named the method after the casino at Monte Carlo, and it was soon being used to design nuclear reactors. Today <em>Monte Carlo simulation</em> prices insurance, forecasts weather and elections, and plans rocket launches. This lesson builds it from the bottom: where a computer gets random numbers at all, how to turn them into dice and coins, and how much to trust what a simulation tells you.</p>`,
@@ -9209,6 +9255,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-11'],
       title: 'Searching and sorting', summary: 'Selection sort and binary search written out in full, each with an invariant that proves it right and an exact count of its work, plus the famous bug that hid in binary search for years.',
       blocks: [
         `<p>Play a game with a friend: they think of a whole number from 1 to a million, and you may ask only yes-or-no questions. How many questions do you need? Twenty always suffice: ask "is it bigger than 500,000?", and whatever the answer, half the possibilities are gone. After twenty halvings a million possibilities are down to one, since 2<sup>20</sup> is just over a million. That strategy, applied to a sorted array, is <em>binary search</em>, and this lesson writes it, together with a sorting algorithm to prepare the array for it.</p>
@@ -9369,6 +9416,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-11'],
       title: 'Project: Sieve of Eratosthenes', summary: 'A 2,200-year-old algorithm for finding every prime up to a limit, written with a bool array, proved correct, and put to work on questions mathematicians still cannot answer.',
       blocks: [
         `<p>Eratosthenes of Cyrene ran the great library of Alexandria around 240 BC. He is famous for measuring the size of the Earth, using the length of a shadow at noon in two cities, and getting it roughly right. He is also famous for a method of finding prime numbers that is still, more than two thousand years later, one of the fastest known. This project writes it in C++, proves that it works, and then uses it to explore questions about primes that nobody has yet been able to answer.</p>`,
@@ -9537,6 +9585,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '3B-CS-02', '9.2.4.5', '9.2.4.6'],
       title: 'Propositions and truth', summary: 'Statements that are true or false, the connectives that combine them, why a truth table is a proof, and how to say "for all" and "there exists" precisely.',
       blocks: [
         `<p>"This sentence is false." Is it true? If it is true, then what it says holds, so it is false. If it is false, then what it says fails, so it is true. This is the <em>liar paradox</em>, known to the ancient Greeks, and it shows that not every sentence can be simply true or false.</p>
@@ -9660,6 +9709,7 @@ table("exactly one of p, q", lambda p, q: (p or q) and not (p and q))`, caption:
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-12', '7.1.2.4', '9.1.2.2', '9.2.4.7'],
       title: 'Sets and counting', summary: 'Collections without order, four rules for counting without listing, why a set of n things has 2ⁿ subsets, and the pigeonhole principle.',
       blocks: [
         `<p>A pizza shop offers ten toppings, and you may choose any combination, from a plain pizza to one with all ten. How many different pizzas is that? Listing them would take all afternoon. By the end of this lesson you will know the answer, 1024, and be able to prove it.</p>
@@ -9802,6 +9852,7 @@ print(count, "subsets")`, caption: 'The output is the table above. Add a fourth 
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-11', '3B-AP-13', '9.2.4.6', '9.2.4.7'],
       title: 'Checking is not proving', summary: 'Why a thousand true cases prove nothing, what a proof actually is, and induction: the one technique that proves a claim about every number at once.',
       blocks: [
         `<p>Here is a claim about whole numbers: <i>for every</i> <i>n</i> ≥ 0, <i>n</i>² + <i>n</i> + 41 <i>is prime</i>. Check a few. <i>n</i> = 0 gives 41, <i>n</i> = 1 gives 43, <i>n</i> = 2 gives 47, <i>n</i> = 3 gives 53. All prime. It keeps working through <i>n</i> = 39. Let a program do the checking, then push it one step further.</p>`,
@@ -9928,6 +9979,7 @@ for n in range(0, 40):
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-11', '9.2.4.7'],
       title: 'Numbers, remainders and Euclid', summary: 'Divisibility and remainders stated exactly, arithmetic modulo m, Euclid\u2019s algorithm with a proof that it is right and fast, primes and trial division, proof by contradiction, and huge powers computed with small numbers.',
       blocks: [
         `<p>It is 9 o'clock. What time will it be in 100 hours? You do not count 100 hours on your fingers. You notice that every 12 hours the clock hand comes back where it started, so only the remainder of 100 divided by 12 matters: 100 = 8 × 12 + 4, so the clock moves 4 hours on, to 1 o'clock. That small trick, arithmetic where only remainders matter, is the heart of this lesson, and it ends up protecting every secure website.</p>
@@ -10087,6 +10139,7 @@ print(mod_pow(2, 10 ** 18, 1000000007), pow(2, 10 ** 18, 1000000007))`, caption:
     },
     /* ================================================================== */
     {
+      standards: ['3A-DA-12', '3B-AP-12'],
       title: 'Graphs and paths', summary: 'Dots and lines as a model of almost anything: degrees and the handshake theorem, walks and Euler\u2019s bridges, breadth-first search with a proof that it finds shortest paths, and trees.',
       blocks: [
         `<p>In 1967 the psychologist Stanley Milgram asked people in Nebraska to get a letter to a stranger in Boston, by passing it only to someone they knew personally, who would pass it on in the same way. The letters that arrived took about six steps on average, which gave us the phrase "six degrees of separation". In 2016, Facebook measured its own network of 1.6 billion people and found an average of 3.57 degrees. Both are questions about the shortest paths in a graph, and by the end of this lesson you will know the algorithm that answers them.</p>
@@ -10238,6 +10291,7 @@ D: B, C, E   E: D, F      F: E</code></pre>
     },
     /* ================================================================== */
     {
+      standards: ['3A-DA-12', '3B-CS-02'],
       title: 'Machines with a finite memory', summary: 'Finite automata defined exactly: alphabets, strings and languages; designing a machine by deciding what it must remember; proving it right by induction; and complements.',
       blocks: [
         `<p>A combination lock with a keypad opens as soon as the last three keys pressed are 1, 2, 3, whatever came before. It does not need to remember everything you have typed, only how much of "123" you have just typed: nothing, "1", or "12". Machines that get by on a fixed, small memory like this are everywhere, in lifts, traffic lights, vending machines and the text editor you type code in.</p>
@@ -10363,6 +10417,7 @@ print("disagreements with n % 3 == 0:", disagreements)`, caption: 'The machine a
     },
     /* ================================================================== */
     {
+      standards: ['3A-IC-24', '3B-DA-05'],
       title: 'Patterns, and the double vowel system', summary: 'Regular expressions: a notation for languages built from three operations. Then a real writing system, the double vowel spelling of Ojibwe, read by a three-state machine; why a code whose letters overlap needs a rule for reading; and what a pattern can and cannot say about a language.',
       blocks: [
         `<p>The home page of this site greets you with <span lang="ciw">Boozhoo</span>, the Ojibwe word for hello. Count its letters. In English you would say seven: B, o, o, z, h, o, o. A reader of Ojibwe says four: <b>b</b>, <b>oo</b>, <b>zh</b>, <b>oo</b>. The word is spelled in the <em>double vowel system</em>, and in that system <b>oo</b> is one letter, a long vowel, and <b>zh</b> is one letter, a consonant (the sound in the middle of \"measure\").</p>`,
@@ -10531,6 +10586,7 @@ print(re.findall("aa|ii|oo|ch|sh|zh|[abdeghijkmnopstwyz']", "gojibizotoon"))`, c
     },
     /* ================================================================== */
     {
+      standards: [],
       title: 'The limits of finite memory', summary: 'A game that no finite automaton can win: distinguishable strings, a pigeonhole proof that 0\u207f1\u207f needs unbounded memory, lower bounds on the number of states, and the stack.',
       blocks: [
         `<p>Here is a challenge. Design a finite automaton, in the sense of Lesson 6, that accepts exactly the strings made of some 0s followed by the <em>same number</em> of 1s. So <code>01</code>, <code>0011</code> and <code>000111</code> are in; <code>001</code>, <code>10</code> and <code>0101</code> are out; and the empty string is in, with zero of each. The language is written {0<sup><i>n</i></sup>1<sup><i>n</i></sup> : <i>n</i> ≥ 0}.</p>
@@ -10650,6 +10706,7 @@ for s in ["()", "([{}])", "([)]", "((", ")(", "{[()()]}", "f(x[1]) + {y}"]:
     },
     /* ================================================================== */
     {
+      standards: [],
       title: 'The universal machine', summary: 'A tape, a head and a table of rules: Turing\u2019s 1936 definition of computing, a proof that a machine adds one, the busy beaver, the Church\u2013Turing thesis, and one machine that runs all the others.',
       blocks: [
         `<p>In 1936 the word "computer" meant a person: someone paid to carry out long calculations with pencil and paper, following fixed rules, at an observatory or an insurance office. That year, before any electronic computer existed, Alan Turing asked what such a person could compute in principle, and stripped the answer down to its bones. What was left is the simplest machine that can do everything any computer can do. This lesson defines it exactly, proves that a small one works, meets a machine that is famous for being as busy as possible, and ends with the idea that made the modern computer possible.</p>`,
@@ -10796,6 +10853,7 @@ print(run(BEAVER, "", "A"))`, caption: 'Each line prints (final tape, number of 
     },
     /* ================================================================== */
     {
+      standards: [],
       title: 'What no program can do', summary: 'Counting infinities: why the programs can be listed but the problems cannot, Cantor\u2019s diagonal argument, Turing\u2019s proof that no program decides halting, and why the busy beaver can never be computed.',
       blocks: [
         `<p>Imagine a tool that reads any program and tells you, before you run it, whether it will ever finish or get stuck for ever. Every programmer has wished for it. Lesson 9 suggested that Python, or a Turing machine, can compute anything computable. This lesson shows that the tool is not merely hard to build but impossible, and the proof is one of the most beautiful arguments in mathematics. It comes in two steps. A counting argument shows that <em>some</em> problems have no program at all. Then a specific, natural problem is caught red-handed.</p>
@@ -10926,6 +10984,7 @@ s4 = 1 1 1 1 1 …</code></pre>
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-11'],
       title: 'Counting steps', summary: 'Comparing algorithms without a stopwatch: counting steps as the input grows, big-O defined and proved, why constants do not matter and exponents do, and what doubling the input does.',
       blocks: [
         `<p>An old legend tells of the inventor of chess, who asked his king for a modest reward: one grain of rice on the first square of the board, two on the second, four on the third, doubling on every square. The king laughed and agreed. The total on 64 squares is 2<sup>64</sup> − 1, about 18 billion billion grains, which is more rice than the whole world grows in a thousand years. The king had not been cheated by arithmetic. He had misjudged how fast doubling grows, and that is exactly what this lesson is about.</p>`,
@@ -11044,6 +11103,7 @@ print("fast:", pair_sum_fast(nums, 5))`, caption: 'Both say False (5 is not a mu
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-11'],
       title: 'Easy to check, hard to find', summary: 'Problems whose answers are quick to verify but seem to take for ever to discover: P and NP defined, reductions, NP-completeness, and the million-dollar question of whether P equals NP.',
       blocks: [
         `<p>Sudoku. Minesweeper. Tetris. Candy Crush. Each of these games has been the subject of a serious mathematical paper, and the papers all reach the same kind of conclusion: in a precise sense, the general version of the puzzle is as hard as some of the most important unsolved problems in computing. If you found a fast method for solving every Minesweeper board, you would also have a fast method for scheduling airlines, packing lorries, folding proteins and breaking much of the world's encryption, and you could collect a million dollars. This lesson explains how a game can carry that much weight.</p>
@@ -11158,6 +11218,7 @@ print(solve(list(range(1, 15)), 500))`, caption: 'Target 9 is found, as [4, 5], 
     },
     /* ================================================================== */
     {
+      standards: ['2-NI-06', '3A-NI-06', '3B-AP-10', '3B-NI-04'],
       title: 'Project: a lock made of arithmetic', summary: 'Put the whole course to work: build the RSA cipher, where the key that locks a message is public, the key that unlocks it is private, and the only way in is a problem believed to be hard.',
       blocks: [
         `<p>Two people who have never met want to share a secret over a channel that everyone can read. It sounds impossible: any key one of them sends, the eavesdropper sees too. Yet it happens every time you open a secure website. The method was published in 1977 by Ron Rivest, Adi Shamir and Leonard Adleman, and is named RSA after them. (A British government mathematician, Clifford Cocks, had found the same idea in 1973, but his work stayed secret until 1997.) The same year, Martin Gardner's magazine column printed a message locked with a 129-digit RSA key and offered a hundred dollars to anyone who could read it. It took seventeen years and the pooled computers of about six hundred volunteers. In 1994 the message was revealed: <em>The Magic Words are Squeamish Ossifrage</em>.</p>`,
@@ -11299,6 +11360,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['3B-AP-12', '3B-AP-16'],
       title: 'Text that looks after itself', summary: 'std::string: reading, building, searching and comparing text, and why it replaced the character arrays of the first C++ course.',
       blocks: [
         `<p>On the evening of 2 November 1988, a graduate student at Cornell named Robert Tappan Morris released a small program onto the Internet, which then connected only about sixty thousand computers. Within a day it had infected roughly one in ten of them and forced many to be taken offline. One of the ways it got in was through a program called <code>fingerd</code>, which read a line of text sent over the network into a fixed-size array of characters, without checking that the line fit. Morris sent a line that was too long. The extra characters spilled past the end of the array and overwrote whatever lay next to it in memory, and the overwritten memory held instructions that Morris's program had chosen.</p>`,
@@ -11439,6 +11501,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-14', '3B-AP-12', '3B-AP-16'],
       title: 'Lists that grow', summary: 'std::vector: a sequence that can grow and shrink, the range-based for loop, and what happens when an index is out of range.',
       blocks: [
         `<p>In the early 1990s Alexander Stepanov, a mathematician turned programmer working at Hewlett-Packard, had an unfashionable idea: that the tools for sorting, searching and storing data should be written once, for every kind of data, and be as fast as hand-written code. With his colleague Meng Lee he built a library on that idea. It was adopted into the C++ standard in 1998 and is still called, after its origin, the Standard Template Library. Its most-used part is the <code>vector</code>.</p>`,
@@ -11569,6 +11632,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-17', '3A-CS-01'],
       title: 'Another name for a variable', summary: 'References: how a function can change its caller’s variable, and how to pass a big object without copying it.',
       blocks: [
         `<p>Here is a function that tries to swap two numbers. It looks right. Run it.</p>`,
@@ -11713,6 +11777,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-17', '3A-AP-18', '3B-AP-14'],
       title: 'Your own types', summary: 'struct: bundling several values into one type, and keeping collections of them.',
       blocks: [
         `<p>In September 1999 NASA lost the Mars Climate Orbiter, a spacecraft that had cost about 125 million dollars, as it arrived at Mars. It passed far too close to the planet and was destroyed. The investigation found that two teams had written software that exchanged a number describing the strength of the thrusters. One team's program produced the number in pound-force seconds; the other's expected newton-seconds. Both sides saw the same kind of value, a <code>double</code>, and nothing in the language knew that they meant different things.</p>`,
@@ -11842,6 +11907,7 @@ Settings s;          // volume 5, muted false</code></pre>
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-17', '3B-AP-14', '3A-CS-01'],
       title: 'Types with rules', summary: 'class: private data, constructors and member functions, so that a value can never be put into a state the program forbids.',
       blocks: [
         `<p>In 1962 Kristen Nygaard and Ole-Johan Dahl, two Norwegian computer scientists, began work on a language for simulating real systems: ships in a harbour, customers in a queue. They found that the natural way to describe such things was as <em>objects</em>, each with its own data and its own behaviour, and in 1967 their language Simula 67 introduced the word <em>class</em>. A young Dane named Bjarne Stroustrup, who had learned Simula as a student in Aarhus, used it for his doctoral research at Cambridge in the late 1970s. Years later, at Bell Labs, he wanted its classes in a language that ran at the speed of C. That was the beginning of "C with Classes", and so of C++.</p>`,
@@ -11991,6 +12057,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-16'],
       title: 'Algorithms without the loops', summary: 'sort, find, count and friends from <algorithm>, and the small anonymous functions (lambdas) that tell them what you mean.',
       blocks: [
         `<p>In 1959 a twenty-five-year-old British student named Tony Hoare was in Moscow studying machine translation. To look words up quickly in a dictionary stored on magnetic tape, he needed to sort lists of words, and he thought of a method: pick one item, move everything smaller to its left and everything larger to its right, then do the same to each side. He called it Quicksort. He later said he wrote it down first as a way to explain it, and was surprised that people wanted it. You wrote a slower sort of your own, selection sort, in SC 103. Every serious C++ library contains a refined Quicksort already, and you are not expected to write another.</p>`,
@@ -12121,6 +12188,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-DA-10', '3B-AP-12'],
       title: 'Looking things up', summary: 'map and set: collections found by name instead of by position, and counting with them.',
       blocks: [
         `<p>In 1986 the magazine <em>Communications of the ACM</em> ran a column by Jon Bentley on a simple task: read a text file and print its most frequent words. For the column he invited Donald Knuth, the author of <em>The Art of Computer Programming</em>, to write a program, and Knuth produced about ten pages of carefully explained code, with a purpose-built data structure for the words. Then Bentley asked Doug McIlroy, who had helped invent the Unix pipeline, to comment. McIlroy's answer was one line of six standard commands joined together, which did the same job. Neither answer was foolish: Knuth was demonstrating a style of writing programs, and McIlroy was demonstrating the value of good tools.</p>`,
@@ -12232,6 +12300,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-13', '3B-AP-14'],
       title: 'Project: a gradebook report', summary: 'Putting the course together: a program that reads scores, keeps a record for each student, and prints a report.',
       blocks: [
         `<p>Every lesson so far has been one idea and two small exercises. Real programs are made of many ideas working together, and the skill that matters then is not knowing one more library function but <em>breaking a task into pieces</em>, each of which you can write and check on its own. This lesson is one larger exercise, with the steps laid out. The standard library does the heavy lifting; your job is to choose the right tools and join them.</p>
@@ -12346,6 +12415,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['2-AP-11', '3A-CS-02'],
       title: 'Hello, Java', summary: 'Where Java came from, the shape every Java program has, what the compiler checks, and the types a variable can have.',
       blocks: [
         `<p>In 1991 a small team at Sun Microsystems in California, led by James Gosling, set out to write software for the gadgets they expected to fill living rooms: television set-top boxes, handheld controllers, devices that did not yet exist. Every such device would have a different chip inside, so a program written for one would have to be rewritten for the next. Gosling's answer was a language whose programs were not translated for any particular chip. Instead they were translated into instructions for an imaginary machine, the <em>Java virtual machine</em>, and any real device that could pretend to be that machine could run every Java program ever written. He called the language Oak, after a tree outside his office window. The set-top boxes never came. The World Wide Web did, and in 1995 the language, renamed Java, was released to run the same program on every computer on the Internet. Its slogan was "write once, run anywhere".</p>`,
@@ -12521,6 +12591,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '3A-AP-15'],
       title: 'Making decisions', summary: 'Comparisons and boolean, if and else, combining conditions, comparing text with equals, and reading input you cannot trust.',
       blocks: [
         `<p>In February 2014 Apple shipped a fix for a bug in the code that checked whether a web site's security certificate was genuine, in every iPhone, iPad and Mac. The code, written in C, Java's older cousin, had a sequence of tests, each of the form <em>if this check fails, go to the failure handler</em>. One line, <code>goto fail;</code>, had been typed twice. The second copy was not inside any <code>if</code>; it ran every time, unconditionally, skipping the remaining checks and reporting success. Because C lets you leave out the braces around an <code>if</code> body, the extra line looked like part of the test above it, and it sat there, indented like its neighbour, for over a year. Anyone sitting between a user and a web site could pretend to be that site, and the device would believe them.</p>
@@ -12700,6 +12771,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '3A-AP-15'],
       title: 'Repetition', summary: 'while and for loops, counting and accumulating, nested loops, loops over the characters of a string, and the mistakes at the edges.',
       blocks: [
         `<p>In 1994 Thomas Nicely, a mathematics professor at Lynchburg College in Virginia, set a new Pentium computer to work on a problem that needed a great deal of repetition: adding up the reciprocals of the twin primes, pairs of primes two apart like 11 and 13, as far as the machine could reach. His program ran through hundreds of millions of numbers, dividing 1 by each. In June he noticed that its answers disagreed with results he had computed on older machines. By October he had narrowed the difference down to a single division, 1 divided by 824633702441, which the new chip got wrong in the tenth digit. The Pentium's floating-point division unit had a flaw in a lookup table, and it had taken a loop running billions of times to find the handful of inputs that exposed it. Intel eventually offered to replace every affected chip, at a cost of about 475 million dollars.</p>`,
@@ -12912,6 +12984,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-14', '3A-AP-17', '3A-AP-18'],
       title: 'Methods', summary: 'Writing a method once and calling it many times: parameters, return values, void, why a method cannot change your variables, and overloading.',
       blocks: [
         `<p>In 1949 the EDSAC at Cambridge University became one of the first computers that stored its program in memory alongside its data. Its users soon noticed that they were writing the same pieces of code over and over: a routine to print a number, a routine to take a square root, a routine to read paper tape. David Wheeler, a research student on the project, worked out how a program could jump into such a routine, let it do its work, and come back to the place it had left, with the routine none the wiser about who had called it. The trick is still called the Wheeler jump. By 1951 Wheeler, Maurice Wilkes and Stanley Gill had published the first textbook of programming, and most of it was about a library of these <em>subroutines</em>, kept on paper tape in a cabinet, that any program could borrow.</p>`,
@@ -13143,6 +13216,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-14', '3B-AP-12'],
       standard: 1, title: 'Arrays', summary: 'Many values under one name: making and indexing arrays, visiting every slot, the bounds Java checks, arrays shared between methods, counting with an array, and tables of rows and columns.',
       blocks: [
         `<p>In 1985 Friedhelm Hillebrand, an engineer at the German post office, was helping to plan GSM, the new mobile phone network that Europe was about to build, and he had to decide how long a text message could be. The messages were to travel in a spare corner of the network's signalling channel, where there was room for only a small, fixed amount of data, so the limit had to be chosen once, before a single phone was made. Hillebrand sat at his typewriter at home in Bonn, typed out the kind of sentences and questions people send each other, and counted the characters. Nearly all of them fitted in 160. So did most of the postcards and telex messages he looked at. The limit became 160 characters, each squeezed into 7 bits, so that a whole message fits in 140 bytes. When Twitter began in 2006 it kept its posts short enough to travel as one text message with room for the sender's name, and that is where its famous limit of 140 characters came from.</p>`,
@@ -13351,6 +13425,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-11', '3B-AP-16'],
       standard: 1, title: 'Strings', summary: 'Text as a row of characters: indexes and substrings, searching, why a String never changes, alphabetical order, characters as numbers, building text with StringBuilder, and splitting a line into parts.',
       blocks: [
         `<p>In 1987 three engineers, Joe Becker at Xerox and Lee Collins and Mark Davis at Apple, started work on a mess that every computer company had made for itself. Computers store letters as numbers, and each country, often each company, had its own table of which number meant which letter. The number that meant <em>é</em> on one computer meant a Greek letter or a line-drawing symbol on another, so a file written in Paris could arrive in Athens as nonsense. Becker's proposal of 1988, which he named <em>Unicode</em>, was one table for every writing system on Earth: Latin and Greek, Arabic and Hebrew, Devanagari and Thai, and the tens of thousands of Chinese characters, each with a number of its own. He reckoned that 16 bits, room for 65,536 characters, would be plenty for every script in modern use.</p>
@@ -13533,6 +13608,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-14', '3B-AP-12', '3B-AP-16'],
       standard: 1, title: 'ArrayList', summary: 'A list that grows as you add to it: adding, reading and removing, numbers in a list, the traps of removing inside a loop, when to choose a list over an array, and how a list grows.',
       blocks: [
         `<p>At 8:01 on the morning of 26 June 1974, in a Marsh supermarket in Troy, Ohio, a cashier named Sharon Buchanan slid a ten-pack of Wrigley's Juicy Fruit chewing gum across a glass window in her counter. A laser underneath read the black and white stripes on the packet, and the till looked up the price for itself: 67 cents. It was the first time anything in a shop had been sold by scanning a Universal Product Code, the barcode that is now printed on nearly everything you can buy. The packet of gum is kept at the Smithsonian's National Museum of American History.</p>`,
@@ -13710,6 +13786,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['3A-CS-01', '3A-AP-17', '3B-AP-14'],
       standard: 1, title: 'Classes and objects', summary: 'Making your own types: fields, constructors and methods that belong to an object, private fields that protect a class’s rules, toString, references and null, static, and objects that work together.',
       blocks: [
         `<p>In the early 1960s, at the Norwegian Computing Center in Oslo, Kristen Nygaard was writing simulations: programs that imitate some part of the real world to find out how it will behave before anyone builds it or changes it. The things such programs imitate are full of separate parts acting at the same time: customers arriving at counters, ships moving through a port, jobs passing from machine to machine in a factory. Nygaard found that the languages of the day made it hard to say what he meant, and with Ole-Johan Dahl, a brilliant programmer, he set out to design a better one. Their second language, Simula 67, gave the world a new way to organise programs. A program could describe a <em>class</em> of things, say a customer, once: what every customer knows and what every customer can do. Then it could make as many customers, <em>objects</em> of that class, as the simulation needed, each with its own information.</p>
@@ -14033,6 +14110,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['3A-DA-10', '3B-AP-11', '3B-AP-12'],
       title: 'Counting the cost', summary: 'Why speed is a property of the method, not the machine; the array, what it makes cheap and expensive; how a growing array grows; and the orders of growth that describe every algorithm in this course.',
       blocks: [
         `<p>The United States counts its population every ten years, and by 1880 the count had become the largest data-processing job in the world: fifty million people, each with a dozen facts to record, every total worked out by clerks with pencils and tally sheets. The tabulation of the 1880 census took most of the decade. The Census Office could see that the 1890 count would not be finished before the 1900 count began. A young engineer who had worked on the 1880 census, Herman Hollerith, proposed a different arrangement of the data: each person's facts punched as holes in a card, and machines that could read the holes and count them electrically. The cards for the 1890 census were run through his tabulators, and the population total was announced within months. The company Hollerith founded to sell the machines later became part of IBM.</p>`,
@@ -14264,6 +14342,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-11'],
       title: 'Searching', summary: 'Linear search and its cost; binary search, why it works and why it is so fast; the overflow bug that hid in it for twenty years; and the variants that find a boundary rather than a value.',
       blocks: [
         `<p>In 2006 Joshua Bloch, who had written much of Java's standard library, published a short article with the title "Nearly All Binary Searches and Mergesorts are Broken". The binary search in Jon Bentley's <em>Programming Pearls</em>, a book that Bloch had learned from, had been proved correct in the text, tested, and reprinted for twenty years. It had a bug. So did the binary search Bloch himself had written for Java's <code>java.util.Arrays</code>, where it had lain for nine years before someone's program broke on it. The bug was a single line, the one that finds the middle of a range: <code>int mid = (low + high) / 2;</code>. For a range inside an array of more than about a billion elements, <code>low + high</code> is larger than an <code>int</code> can hold, wraps round to a negative number, and the search looks at a cell that does not exist.</p>`,
@@ -14444,6 +14523,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-11'],
       title: 'Sorting, the slow way first', summary: 'Why so much computing is sorting; selection sort and insertion sort with their invariants and their counts; best and worst cases; stability; and the doubling experiment that shows what quadratic means.',
       blocks: [
         `<p>In the third volume of <em>The Art of Computer Programming</em>, published in 1973, Donald Knuth reported an estimate from the computer manufacturers of the 1960s: more than a quarter of all the running time on their customers' machines was spent sorting. The machines were mostly doing business: payroll, inventory, billing, and every one of those jobs began by putting records in order, by account number, by date, by name, so that matching ones could be found next to each other. The data arrived on punched cards and magnetic tape, and the sorting algorithms of the time were written to work with a few hundred cards in memory and the rest waiting on a tape drive.</p>`,
@@ -14635,6 +14715,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-11', '3B-AP-13', '3B-AP-15'],
       title: 'Divide and conquer: merge sort and quicksort', summary: 'Why splitting a problem in half and recursing gives n log n; merge sort, its merge step and its guarantee; quicksort, its partition step and its gamble; the recursion tree that explains both; and which one the library actually runs.',
       blocks: [
         `<p>The first sorting program ever written for a stored-program computer was a merge sort. John von Neumann wrote it in 1945 for the EDVAC, a machine that did not yet exist, in a notation he invented for the purpose; Donald Knuth, who later studied the manuscript, described it as the first program written for a computer of that kind. Von Neumann chose merging because it suited a machine that read data from a tape in order: two sorted tapes can be merged into one by reading each from the front and always taking the smaller, and the method never needs to jump back.</p>`,
@@ -14911,6 +14992,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['3A-DA-10', '3B-AP-12'],
       title: 'Linked lists', summary: 'A structure made of nodes that point to each other; what it makes cheap (changing the front, splicing) and expensive (reaching an index); writing one in Java with two classes; reversing it in place; and why ArrayList still wins most of the time.',
       blocks: [
         `<p>In 1956 three researchers, Allen Newell, Herbert Simon and Cliff Shaw, were building a program they called the Logic Theorist, to run on JOHNNIAC, a computer at the RAND Corporation in California, which could prove theorems from Russell and Whitehead's <em>Principia Mathematica</em>. Its data, logical expressions, were not of fixed size: a proof grew and branched as the program worked, and no array laid out in advance could hold it. So in the language they designed for it, IPL, every piece of data was a <em>cell</em> holding a value and the address of the next cell. A list was a chain of cells, and growing it meant making a new cell and changing one address. John McCarthy saw IPL, found it clumsy, and made the idea elegant in Lisp two years later; the linked list has been one of the two basic ways to hold a sequence ever since.</p>`,
@@ -15181,6 +15263,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-12'],
       title: 'Stacks and queues', summary: 'Two structures defined by what they refuse to do: the stack, where the last thing in is the first out, and the queue, where the first in is the first out; both in an array, the queue as a ring; what each is for; and the library classes that implement them.',
       blocks: [
         `<p>In 1955 two mathematicians in Munich, Friedrich Bauer and Klaus Samelson, were designing a machine that could work out an algebraic formula typed in the ordinary way, with brackets and with multiplication done before addition. The difficulty is that when the machine reads <code>3 + 4 ×</code> it cannot yet do the plus: it has to put the plus aside, wait for the multiplication, and come back. Their answer was a store they called the <em>Keller</em>, the cellar: things go in at the top, and whatever went in last comes out first. The plus goes into the cellar, the times goes in on top of it, the times comes out and is done, then the plus. They patented the idea in 1957. We call the cellar a stack, and every compiler, every calculator and every running program has one.</p>`,
@@ -15460,6 +15543,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-13'],
       title: 'Recursion', summary: 'A method that calls itself; the base case and the smaller problem; the call stack that makes it work and the overflow that happens without it; recursion against loops; the exponential trap in fib and the memo that fixes it; and the Tower of Hanoi.',
       blocks: [
         `<p>In 1883 a French mathematician, Édouard Lucas, put a puzzle on sale under the name "N. Claus de Siam", an anagram of Lucas d'Amiens, his home town. Three pegs; eight discs of different sizes stacked on one peg, largest at the bottom; move the whole tower to another peg, one disc at a time, never putting a larger disc on a smaller one. The box came with a legend: in a temple in India, priests were moving a tower of sixty-four golden discs by the same rules, and when they finished, the world would end.</p>`,
@@ -15754,6 +15838,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['3A-CS-02', '3B-CS-01'],
       title: 'Where am I?', summary: 'What a shell is, how to read the prompt, the tree of directories, absolute and relative paths, and moving around with cd.',
       blocks: [
         `<p>In the summer of 1969, Ken Thompson's wife took their baby son to California for three weeks to visit family. Thompson, a programmer at Bell Labs in New Jersey, stayed behind with a small computer nobody else wanted, a PDP-7, and a plan. He gave himself one week each for the four pieces of an operating system: the part that manages the machine, an editor, an assembler, and a program whose only job was to read what a person typed and run it. He called that last program the <em>shell</em>. The system it belonged to became Unix.</p>`,
@@ -15835,6 +15920,7 @@ cd pond`, setup: 'lesson1', expectError: true, caption: 'A misspelled name is "N
     },
     /* ================================================================== */
     {
+      standards: ['3A-DA-10', '3B-CS-01'],
       title: 'Making and moving things', summary: 'mkdir, touch and echo to make things; cp and mv to copy, move and rename; rm to remove, and why it needs care; wildcards that name many files at once.',
       blocks: [
         `<p>Late on the evening of 31 January 2017, an engineer at GitLab, a company whose servers hold the source code of thousands of projects, was trying to fix a slow database. There were two database servers, a main one and a spare. Tired, and meaning to clear out the spare, he typed a remove command on the main one. He realised within seconds and stopped it, but by then most of the directory was gone. Then the company found that its backups had quietly been failing for weeks. About six hours of other people's work was lost for good. GitLab wrote the whole story up and published it, so that nobody else would have to learn it the same way.</p>`,
@@ -15922,6 +16008,7 @@ ls`, setup: 'lesson2', caption: '<code>echo *.tmp</code> is the way to see what 
     },
     /* ================================================================== */
     {
+      standards: ['2-DA-08', '3B-DA-05'],
       title: 'Looking inside files', summary: 'cat, head and tail to read; wc to count; grep to search inside files; find to search for files; diff to compare two.',
       blocks: [
         `<p>In 1973 Lee McMahon, a researcher at Bell Labs, was trying to work out who had written each of the <em>Federalist Papers</em>, the anonymous essays of 1787 that argued for the American constitution. He wanted to count how often certain words appeared in each essay, and the editor he was using could not hold the text. He mentioned it to Ken Thompson. The next morning Thompson handed him a small program that read a file and printed every line matching a pattern. In the editor <code>ed</code>, the command for that was <code>g/re/p</code>: <em>globally</em> find the <em>regular expression</em> and <em>print</em>. So the program was called <code>grep</code>, and half a century later it is still the first thing a programmer types when looking for something.</p>`,
@@ -15994,6 +16081,7 @@ file poem.txt projects scores.csv`, setup: 'lesson3', expectError: true, caption
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-18', '3A-CS-02', '3B-DA-05'],
       title: 'Pipes and redirection', summary: 'Sending output to a file with > and >>, reading input from a file with <, and joining commands with | so that small tools do big jobs.',
       blocks: [
         `<p>In 1986 the programmer Jon Bentley asked Donald Knuth, the author of <em>The Art of Computer Programming</em>, to write a program for his column in a computing magazine: read a text and print the most common words with their counts. Knuth, who had just invented a way of writing programs as readable essays, produced ten pages of beautifully explained Pascal. Bentley then asked Doug McIlroy, the Bell Labs researcher who had first proposed the idea of pipes in 1964, to review it. McIlroy admired the program, and then did the same job in six commands joined by five vertical bars: split the text into words, make them lowercase, sort them, count the repeats, sort by count, show the top. It fitted on one line.</p>`,
@@ -16123,6 +16211,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['3A-DA-12', '3B-AP-08'],
       title: 'Rules or examples?', summary: 'Two ways to make a spam filter: write the rules yourself, or let the program count words in messages someone has already sorted. What a classifier is, its two kinds of mistake, and learning as counting.',
       blocks: [
         `<p>In August 2002 the programmer Paul Graham published an essay called <em>A Plan for Spam</em>. Like everyone else with an email address, he was drowning in junk mail, and like most programmers he had first tried to stop it with rules. He spent about six months writing software that looked for the features of spam: certain words, certain phrases, shouting capital letters. Some rules were good. Looking only for the word <em>click</em> caught 79.7% of the spam he had collected, but it also flagged 1.2% of his real mail, from people who had written "click" for an honest reason.</p>
@@ -16253,6 +16342,7 @@ for message, is_spam in new:
     },
     /* ================================================================== */
     {
+      standards: ['3A-DA-12', '3B-AP-09', '3B-DA-05'],
       title: 'Your nearest neighbours', summary: 'Examples as points, the distance between them, and the simplest learning method there is: give a new example the label of the most similar ones you have seen. What k is, and what changing it does.',
       blocks: [
         `<p>In 1951 two statisticians at the University of California, Berkeley, Evelyn Fix and Joseph Hodges, wrote a report for the US Air Force School of Aviation Medicine at Randolph Field, Texas. Its title was not inviting: <em>Discriminatory Analysis. Nonparametric Discrimination: Consistency Properties.</em> Its question was simple. You have measured many cases that belong to two groups, and now a new case arrives. Which group does it belong to, if you know nothing about the shape of the groups, no formula, only the measurements?</p>
@@ -16378,6 +16468,7 @@ print(knn([7.0, 7.3], 3))`, caption: 'With k = 1 the answer is lemon: the neares
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-11', '3B-DA-07', '9.1.1.15'],
       title: 'Is it any good?', summary: 'How to tell whether a model works: a test set it never saw, accuracy, the confusion table and what accuracy hides, and overfitting, the model that is perfect on its examples and wrong on everything else.',
       blocks: [
         `<p>In 2008 Google launched <em>Google Flu Trends</em>. The idea was clever: people who are ill search for their symptoms, so the number of searches for flu-like things should rise and fall with the number of people who have flu. The team tested 50 million search terms against five years of official flu figures from the US Centers for Disease Control and Prevention (CDC) and kept the 45 that matched best. The model they built from those searches followed the past flu seasons closely, and it could estimate this week's flu a week or two before the CDC's reports came out.</p>
@@ -16496,6 +16587,7 @@ for message in ["win a free prize", "lunch at noon", "win free cash now", "free 
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-08', '3B-DA-07'],
       title: 'Checkpoint one', checkpoint: true, summary: 'No new ideas: mixed questions on rules and examples, nearest neighbours and honest testing, then two programs that use all three. Which model fits? Which number would you trust?',
       blocks: [
         `<p>This lesson teaches nothing new. It mixes questions on the last three lessons, because telling apart ideas that look alike, such as a training score and a test score, or a false positive and a false negative, is a skill of its own, and it only grows when the questions are mixed. Answer each one before looking back. If one surprises you, the lesson it came from is linked on the Review page, and the question will come back there in a day.</p>
@@ -16549,6 +16641,7 @@ for message in ["win a free prize", "lunch at noon", "win free cash now", "free 
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-08', '3B-AP-09'],
       title: 'A line that learns', summary: 'The perceptron: a weighted vote of the features, a rule that moves the weights after every mistake, and the one kind of problem a single line can never learn.',
       blocks: [
         `<p>In July 1958 the US Office of Naval Research called a press conference in Washington. On show was an IBM 704, a computer that filled a room, running a program written by Frank Rosenblatt, a psychologist at the Cornell Aeronautical Laboratory in Buffalo. The computer was fed punched cards, each marked with a square on the left or on the right. Nobody had told it which side was which. After 50 tries it had taught itself to tell them apart.</p>
@@ -16675,6 +16768,7 @@ for epoch in range(1, 9):
     },
     /* ================================================================== */
     {
+      standards: ['2-DA-09', '3A-DA-12', '3B-AP-09', '8.1.1.4', '9.1.1.11'],
       title: 'Walking downhill', summary: 'Gradient descent, the method that trains almost every model today: measure the error, find which way is downhill, take a step, and choose the size of the step.',
       blocks: [
         `<p>In 1847 the French mathematician Augustin-Louis Cauchy sent a three-page note to the Academy of Sciences in Paris. Astronomers wanted to work out the orbit of a planet or a comet from their observations. An orbit is described by six numbers, and the equations linking them to the observations were far too hard to solve directly. Cauchy proposed something that sounds almost too simple. Start from a guess. Measure how wrong it is. Then change all six numbers a little, in the direction that makes the error shrink fastest, and do it again.</p>
@@ -16790,6 +16884,7 @@ for rate in [0.01, 0.1, 0.25]:
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-09', '3B-AP-12', '3B-DA-05'],
       title: 'Twenty questions', summary: 'Decision trees: a model you can read, built by asking the most useful question first. Entropy, the measure of how mixed a group is, and information gain, how much a question helps.',
       blocks: [
         `<p>In the late 1970s the British computer scientist Donald Michie set a puzzle. Take a chess endgame, a king and rook against a king and knight. From features of the position alone, without searching through the moves, decide whether the knight's side is lost within a certain number of moves. The Australian J. Ross Quinlan answered with a program called ID3, which learned a <b>decision tree</b>: a flowchart of questions about the position, each answer leading to the next question, ending in a verdict.</p>
@@ -16927,6 +17022,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-08', '3B-AP-09'],
       title: 'Checkpoint two', checkpoint: true, summary: 'No new ideas: mixed questions on perceptrons, gradient descent and decision trees, then a choice of model and a program that picks the best question.',
       blocks: [
         `<p>Three lessons, three kinds of model: a weighted vote that draws a line, a descent that finds the best numbers by feeling the slope, and a tree of questions chosen by information gain. The questions below mix them on purpose, along with the ideas that are easy to confuse: the learning rate and the slope, the entropy of a group and the gain of a question.</p>
@@ -18698,7 +18794,8 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
         el('div', { class: 'course-groups' }, groupedCatalog('')),
         el('p', { class: 'more-pages' }, el('a', { href: '#/courses' }, 'All courses, with search'),
           window.ALGOS ? [' · ', el('a', { href: '#/algorithms' }, 'Algorithms in motion')] : null,
-          window.APPLIED ? [' · ', el('a', { href: '#/real-world' }, 'Where this is used in the real world')] : null)
+          window.APPLIED ? [' · ', el('a', { href: '#/real-world' }, 'Where this is used in the real world')] : null,
+          window.STANDARDS ? [' · ', el('a', { href: '#/standards' }, 'Standards alignment')] : null)
       ),
       el('section', { class: 'section' },
         el('h2', {}, 'Code Lab'),
@@ -18718,7 +18815,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
         el('h2', {}, 'For teachers'),
         el('div', { class: 'prose' }, el('p', {}, 'Running a class with this site? ', el('a', { href: '#/guide' }, 'Read the guide for teachers'), ': how the lessons are built, a plan for an hour of coding, the Code Lab, and how to set assignments and collect students\u2019 work with nothing to install and no accounts.'))
       ),
-      el('footer', { class: 'foot' }, el('span', {}, SITE.footer), el('span', { class: 'foot-links' }, window.ABOUT ? [el('a', { href: '#/about' }, 'About and credits'), ' \u00b7 '] : null, el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Clear all saved progress and code? (Save it to a file first if you want it back.) Click again to confirm', () => { Progress.reset(); if (window.REVIEW) window.REVIEW.reset(); route(); }) }, 'Reset my progress')))
+      el('footer', { class: 'foot' }, el('span', {}, SITE.footer), el('span', { class: 'foot-links' }, window.ABOUT ? [el('a', { href: '#/about' }, 'About and credits'), ' \u00b7 '] : null, window.STANDARDS ? [el('a', { href: '#/standards' }, 'Standards'), ' \u00b7 '] : null, el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Clear all saved progress and code? (Save it to a file first if you want it back.) Click again to confirm', () => { Progress.reset(); if (window.REVIEW) window.REVIEW.reset(); route(); }) }, 'Reset my progress')))
     );
     return main;
   }
@@ -18768,7 +18865,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
       })));
     const mobileNav = el('details', { class: 'nav-mobile' }, el('summary', {}, lbl('lesson', ' ' + (idx + 1)), ' of ' + course.lessons.length + ' — ' + L.title), nav.cloneNode(true));
     const art = el('article', { class: 'lesson-body' });
-    art.append(el('header', { class: 'lesson-head' }, el('p', { class: 'crumb' }, el('a', { href: '#/' + course.id }, course.code), ' · ', lbl('lesson', ' ' + (idx + 1)), devTag(course, true)), el('h1', {}, L.title), el('p', { class: 'lead' }, L.summary),
+    art.append(el('header', { class: 'lesson-head' }, el('p', { class: 'crumb' }, el('a', { href: '#/' + course.id }, course.code), ' · ', lbl('lesson', ' ' + (idx + 1)), devTag(course, true)), el('h1', {}, L.title), el('p', { class: 'lead' }, L.summary), window.STANDARDS ? window.STANDARDS.lessonBox(course, idx) : null,
       (() => { const m = lessonMinutes(course, L); return m > LONG_LESSON ? el('p', { class: 'lesson-time' }, 'This lesson may take longer than an hour: about ' + about5(m) + ' minutes. Plan for two sessions, or leave the exercises for the next one.') : null; })()));
     const parts = []; const body = renderBlocks(L.blocks, course, idx, parts);
     art.append(lessonMap(parts, course, idx), body);
@@ -18794,6 +18891,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
     if (parts[0] === 'courses') { document.documentElement.setAttribute('data-course', ''); document.title = 'Courses — ' + SITE.name; app.append(topBar('courses'), coursesPage()); window.scrollTo(0, 0); return; }
     if (parts[0] === 'algorithms' && window.ALGOS) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('algorithms'), window.ALGOS.page(parts[1])); window.scrollTo(0, 0); return; }
     if (parts[0] === 'arena' && window.ARENA && window.ARENA.page) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('arena'), window.ARENA.page(parts[1], query)); window.scrollTo(0, 0); return; }
+    if (parts[0] === 'standards' && window.STANDARDS) { document.documentElement.setAttribute('data-course', ''); document.title = 'Standards — ' + SITE.name; app.append(topBar('standards'), window.STANDARDS.page(parts[1])); if (parts[1]) { const t = document.getElementById('std-' + parts[1]); if (t && t.scrollIntoView) { t.scrollIntoView(); return; } } window.scrollTo(0, 0); return; }
     if (parts[0] === 'real-world' && window.APPLIED) { document.documentElement.setAttribute('data-course', ''); document.title = 'Where it is used — ' + SITE.name; app.append(topBar('applied'), window.APPLIED.page(parts[1])); if (parts[1]) { const t = document.getElementById(parts[1]); if (t && t.scrollIntoView) { t.scrollIntoView(); return; } } window.scrollTo(0, 0); return; }
     if ((parts[0] === 'lab' || parts[0] === 'assign' || parts[0] === 'review') && window.LAB) { document.title = 'Code Lab — ' + SITE.name; app.append(topBar('lab'), window.LAB.page(query, parts[0])); window.scrollTo(0, 0); return; }
     let course = parts[0] ? courseById(parts[0]) : null;
@@ -32899,6 +32997,313 @@ public class Main {
   const APPLIED = { page, TOPICS, FIELDS };
   if (typeof window !== 'undefined') window.APPLIED = APPLIED;
   if (typeof module !== 'undefined') module.exports = { TOPICS, FIELDS };
+})();
+
+;
+/* src/standards.js */
+/* Standards alignment: the #/standards page and the "Standards" box on every lesson, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
+   The data is of two kinds. This file holds the standards themselves (CSTA, MN) and the pages of the site that are not courses.
+   Which lessons address which standard is written on the lessons: each lesson in src/course_*.js has `standards: ['2-AP-11', ...]`.
+   - CSTA: the CSTA K-12 CS Standards (2017), grades 6-12, as short paraphrases of each standard (not the official wording).
+   - MN: the CS-integrated benchmarks of the 2022 Minnesota Academic Standards in Mathematics, grades 6-12, from the Minnesota Department of
+     Education's "Computer Science Learning Progressions" document. fit says whether lessons teach the benchmark in full or only in part.
+   - Not endorsed by CSTA or the Minnesota Department of Education. The lessons were mapped by the site's author from what each one teaches.
+   Every string here is our own constant text and is inserted as text (no html). test_standards.js checks the codes on the lessons.
+   scripts/standards-map.js writes STANDARDS_ALIGNMENT.md from this file and the lessons. */
+(function () {
+  'use strict';
+  // Short labels (paraphrased). The official list is at https://csteachers.org/k12standards/
+  const CSTA = {
+    '2-CS-01': 'Recommend improvements to device design from how users interact',
+    '2-CS-02': 'Design projects combining hardware and software to collect and exchange data',
+    '2-CS-03': 'Systematically identify and fix problems with computing devices',
+    '2-NI-04': 'Model the role of protocols in sending data across networks',
+    '2-NI-05': 'Explain how physical and digital security protect information',
+    '2-NI-06': 'Apply several methods of information protection and model how well each works',
+    '2-DA-07': 'Represent data using multiple encoding schemes',
+    '2-DA-08': 'Collect data with computational tools and transform it',
+    '2-DA-09': 'Refine computational models based on the data they generate',
+    '2-AP-10': 'Use flowcharts or pseudocode to express algorithms',
+    '2-AP-11': 'Create clearly named variables of different data types and operate on them',
+    '2-AP-12': 'Design programs combining control structures (nested loops, compound conditionals)',
+    '2-AP-13': 'Decompose problems into parts',
+    '2-AP-14': 'Create procedures with parameters to organize and reuse code',
+    '2-AP-15': 'Seek and use feedback from teammates and users',
+    '2-AP-16': 'Incorporate existing code, media and libraries, with attribution',
+    '2-AP-17': 'Systematically test and refine programs with a range of test cases',
+    '2-AP-18': 'Distribute tasks and keep a timeline when collaborating',
+    '2-AP-19': 'Document programs so they are easier to follow, test and debug',
+    '2-IC-20': 'Compare tradeoffs of computing technologies in everyday life and careers',
+    '2-IC-21': 'Discuss bias and accessibility in the design of technologies',
+    '2-IC-22': 'Collaborate with many contributors on a computational artifact',
+    '2-IC-23': 'Describe tradeoffs between public and private/secure information',
+    '3A-CS-01': 'Explain how abstractions hide implementation details of computing systems',
+    '3A-CS-02': 'Compare levels of abstraction: application software, system software, hardware',
+    '3A-CS-03': 'Develop guidelines for systematic troubleshooting',
+    '3A-NI-04': 'Evaluate scalability and reliability of networks (routers, switches, servers, topology, addressing)',
+    '3A-NI-05': 'Give examples of how malware and attacks affect sensitive data',
+    '3A-NI-06': 'Recommend security measures for scenarios (efficiency, feasibility, ethics)',
+    '3A-NI-07': 'Compare security measures and the usability/security tradeoff',
+    '3A-NI-08': 'Explain tradeoffs in selecting cybersecurity recommendations',
+    '3A-DA-09': 'Translate between bit representations of characters, numbers, images',
+    '3A-DA-10': 'Evaluate tradeoffs in how data is organized and where it is stored',
+    '3A-DA-11': 'Create interactive data visualizations',
+    '3A-DA-12': 'Create computational models of relationships among data elements',
+    '3A-AP-13': 'Create prototypes that use algorithms to solve problems',
+    '3A-AP-14': 'Use lists to simplify solutions instead of many simple variables',
+    '3A-AP-15': 'Justify the choice of control structures and discuss tradeoffs',
+    '3A-AP-16': 'Develop artifacts that use events to start instructions',
+    '3A-AP-17': 'Decompose problems using procedures, modules and/or objects',
+    '3A-AP-18': 'Build artifacts from procedures, data+procedures, or interrelated programs',
+    '3A-AP-19': 'Design and develop programs for broad audiences using user feedback',
+    '3A-AP-20': 'Evaluate licenses that limit use of computational artifacts',
+    '3A-AP-21': 'Evaluate and refine artifacts to make them more usable and accessible',
+    '3A-AP-22': 'Work in team roles using collaborative tools',
+    '3A-AP-23': 'Document design decisions in text, graphics, presentations or demonstrations',
+    '3A-IC-24': 'Evaluate how computing affects personal, ethical, social, economic, cultural practices',
+    '3A-IC-25': 'Test and refine artifacts to reduce bias and equity deficits',
+    '3A-IC-26': 'Show how an algorithm applies to problems across disciplines',
+    '3A-IC-27': 'Use collaboration tools to connect people across cultures and fields',
+    '3A-IC-28': 'Explain effects of intellectual property laws on innovation',
+    '3A-IC-29': 'Explain privacy concerns of automated data collection',
+    '3B-CS-01': 'Categorize the roles of operating system software',
+    '3B-CS-02': 'Illustrate how hardware implements logic, input and output',
+    '3B-NI-03': 'Describe issues that affect network functionality',
+    '3B-NI-04': 'Compare ways developers protect devices and information from unauthorized access',
+    '3B-DA-05': 'Use data analysis tools to find patterns in data from complex systems',
+    '3B-DA-06': 'Select data collection tools to build data sets that support a claim',
+    '3B-DA-07': 'Evaluate how well models and simulations test and refine hypotheses',
+    '3B-AP-08': 'Describe how artificial intelligence drives software and physical systems',
+    '3B-AP-09': 'Implement an AI algorithm to play a game or solve a problem',
+    '3B-AP-10': 'Use and adapt classic algorithms',
+    '3B-AP-11': 'Evaluate algorithms for efficiency, correctness and clarity',
+    '3B-AP-12': 'Compare and contrast fundamental data structures and their uses',
+    '3B-AP-13': 'Illustrate the flow of execution of a recursive algorithm',
+    '3B-AP-14': 'Construct solutions from student-created procedures, modules, objects',
+    '3B-AP-15': 'Analyze a large problem and find generalizable patterns',
+    '3B-AP-16': 'Demonstrate code reuse with libraries and APIs',
+    '3B-AP-17': 'Plan and develop programs for broad audiences with a software development process',
+    '3B-AP-18': 'Explain security issues that can compromise programs',
+    '3B-AP-20': 'Use version control, IDEs and collaborative tools in a group project',
+    '3B-AP-21': 'Develop test cases to verify a program meets its specification',
+    '3B-AP-22': 'Modify an existing program to add functionality and discuss implications',
+    '3B-AP-23': 'Evaluate key qualities of a program through code review',
+  };
+
+  // Minnesota 2022 Mathematics, CS-integrated benchmarks, grades 6-12: [code, short text, fit, note]. fit is 'yes' or 'partial' when a lesson
+  // is tagged with the code and says how well; '' when no lesson is. (Codes read grade.strand.standard.benchmark; 9 is high school.)
+  const MN = [
+    ['6.1.1.2', 'Design and conduct investigations to gather data', '', ''],
+    ['6.1.1.4', 'Create a visualization of a data set to answer a question', '', ''],
+    ['6.1.2.3', 'Experimental probability from experiments where the theoretical probability is known; make predictions', 'yes', 'Simulations compared with the exact probability (dice, the birthday problem).'],
+    ['6.2.3.1', 'Surface area of prisms, with justification by decomposition', '', ''],
+    ['6.2.3.2', 'Volume of prisms, with justification by decomposition', '', ''],
+    ['6.2.4.2', 'Decompose polygons into triangles to find the sum of interior angles', '', ''],
+    ['7.1.1.5', 'Create a visualization of a data set that tells a story', '', ''],
+    ['7.1.2.2', 'Approximate a probability from long-run frequency', 'yes', 'The lessons try it thousands of times and watch the share settle.'],
+    ['7.1.2.4', 'Sample spaces for compound events by decomposing them', 'partial', 'Counting rules are taught; sample spaces are not named as such.'],
+    ['7.1.2.5', 'Design and use a simulation for compound events', 'partial', 'Simulations of single dice and the birthday problem; no two-dice or other compound-event simulation.'],
+    ['7.1.2.6', 'Probabilities of compound events by lists, tables, trees or simulation', 'partial', 'Simulation yes; no tree diagrams or organized-list method.'],
+    ['7.3.6.3', 'Evaluate algebraic expressions applying the order of operations', 'partial', 'Arithmetic expressions and precedence; not algebraic expressions with exponents and absolute value as such.'],
+    ['8.1.1.4', 'Use the equation of a linear model; interpret the slope and intercepts', 'partial', 'Fits y = w x by minimizing squared error and reads the slope; no intercept, no bivariate data in context.'],
+    ['8.1.1.5', 'Create data visualizations (tables, scatter plots) that support a claim', '', ''],
+    ['8.1.1.6', 'Compare competing explanations for data trends; correlation versus causation', '', ''],
+    ['8.3.6.9', 'Systems of linear equations in two variables', '', ''],
+    ['8.3.7.2', 'Linear and non-linear visual patterns; the nth term', '', ''],
+    ['8.3.7.5', 'How changing m or b changes the graph of f(x) = mx + b', '', ''],
+    ['9.1.1.8', 'Inferences about a population from random samples, with simulated samples', '', ''],
+    ['9.1.1.11', 'Statistical models with linear and exponential functions, including regression; judge fit', 'partial', 'Fitting a line and measuring its error; no residuals or correlation coefficient.'],
+    ['9.1.1.15', 'Identify and explain misleading uses of data', 'partial', 'Accuracy misleads when labels are rare; not about distorted displays.'],
+    ['9.1.2.2', 'Events as subsets; Venn diagrams; unions, intersections and complements', 'partial', 'Sets, Venn diagrams, union and complement are taught, but not framed as events.'],
+    ['9.1.2.3', 'Conditional probability and independence', '', ''],
+    ['9.2.3.4', 'Decomposition to find surface area and volume of solids', '', ''],
+    ['9.2.4.5', 'if-then statements: inverse, converse and contrapositive', 'yes', 'Taught as implication, converse and contrapositive, with the theorem that an implication equals its contrapositive.'],
+    ['9.2.4.6', 'Validity of a logical argument; counterexamples', 'yes', 'Counterexamples, and why checking cases is not proving.'],
+    ['9.2.4.7', 'Construct logical arguments from definitions and theorems', 'yes', 'Proofs, including induction and a proof that Euclid’s algorithm is right.'],
+    ['9.2.4.14', 'Sequences of transformations of geometric figures', '', ''],
+    ['9.3.5.4', 'Matrices to represent and manipulate data', '', ''],
+    ['9.3.7.1', 'Systems of equations and inequalities, exponential and quadratic functions', '', ''],
+    ['9.3.7.4', 'Sequences expressed recursively and by an explicit formula', 'partial', 'Recursive definitions (Fibonacci, factorial); no arithmetic or geometric sequences with explicit formulas.'],
+    ['9.3.7.8', 'Compound interest as a recursive formula', '', ''],
+  ];
+
+  // Pages of the site that are not courses and practise a standard without a lesson teaching it.
+  const SUPPORT = [
+    { name: 'Algorithms in motion', href: '#/algorithms', note: '17 demos: sorting race, searching, paths, games, puzzles', codes: ['3B-AP-10', '3B-AP-11', '3A-IC-26'] },
+    { name: 'Bot Arena', href: '#/arena', note: 'Tron bots in Python, Java, C++ and Scheme', codes: ['3B-AP-09', '3A-AP-13'] },
+    { name: 'Where it is used', href: '#/real-world', note: '30 topics, 147 examples by field', codes: ['3A-IC-24', '3A-IC-26'] },
+    { name: 'Code Lab', href: '#/lab', note: 'write, run and test code in four languages', codes: ['2-AP-17', '3A-AP-21'] },
+  ];
+
+  const CONCEPTS = { CS: 'Computing systems', NI: 'Networks and the Internet', DA: 'Data and analysis', AP: 'Algorithms and programming', IC: 'Impacts of computing' };
+  const BANDS = { '2': 'Grades 6–8', '3A': 'Grades 9–10', '3B': 'Grades 11–12' };
+  const CSTA_RE = /^(2|3A|3B)-(CS|NI|DA|AP|IC)-\d\d$/;
+  const MN_RE = /^\d\.\d\.\d\.\d{1,2}$/;
+  const kind = (code) => (CSTA_RE.test(code) ? 'csta' : MN_RE.test(code) ? 'mn' : '');
+  const band = (code) => BANDS[code.split('-')[0]];
+  const concept = (code) => CONCEPTS[code.split('-')[1]];
+  const mnRow = (code) => MN.find((b) => b[0] === code);
+  const textOf = (code) => (kind(code) === 'csta' ? CSTA[code] : (mnRow(code) || [])[1]);
+  const known = (code) => (kind(code) === 'csta' ? !!CSTA[code] : kind(code) === 'mn' ? !!mnRow(code) : false);
+  const framework = (code) => (kind(code) === 'csta' ? 'CSTA' : 'Minnesota math');
+
+  // ---- from the lessons ---------------------------------------------------------------------------------------------------------------
+  function lessonsOf(code, courses) {
+    const out = [];
+    for (const c of courses || window.COURSES || []) (c.lessons || []).forEach((l, i) => { if ((l.standards || []).includes(code)) out.push({ course: c, n: i + 1, lesson: l }); });
+    return out;
+  }
+  const el = (...a) => window.__app.internal.el(...a);
+  const norm = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const lessonHref = (h) => '#/' + h.course.id + '/' + h.n;
+  const lessonLabel = (h) => h.course.code + ' L' + h.n + ' ' + h.lesson.title;
+
+  // The box under a lesson's summary: which standards the lesson addresses, as links to the standards page.
+  function lessonBox(course, idx) {
+    const codes = ((course.lessons[idx] || {}).standards || []).filter(known);
+    if (!codes.length) return null;
+    injectCSS();
+    const csta = codes.filter((c) => kind(c) === 'csta'), mn = codes.filter((c) => kind(c) === 'mn');
+    const count = [csta.length ? csta.length + ' CSTA' : '', mn.length ? mn.length + ' Minnesota' : ''].filter(Boolean).join(', ');
+    const item = (c) => el('li', {}, el('a', { href: '#/standards/' + c }, el('b', {}, c)), ' ' + textOf(c), kind(c) === 'mn' && mnRow(c)[2] === 'partial' ? el('span', { class: 'std-partial' }, ' (in part)') : null);
+    const group = (title, list) => (list.length ? [el('h3', {}, title), el('ul', {}, list.map(item))] : null);
+    return el('details', { class: 'lesson-stds' },
+      el('summary', {}, 'Standards: ' + count),
+      group('CSTA K-12 CS Standards (2017)', csta),
+      group('Minnesota mathematics standards (2022)', mn),
+      el('p', { class: 'std-note' }, 'Aligned by the author from what this lesson teaches; not endorsed by the standards’ owners. ', el('a', { href: '#/standards' }, 'All standards')));
+  }
+
+  // ---- the page ------------------------------------------------------------------------------------------------------------------------
+  const CSS = `
+.std [hidden] { display: none !important; }
+.std { max-width: 60rem; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+.std h1 { font-size: 2.4rem; font-weight: 400; }
+.std-intro { margin-top: 1rem; }
+.std-intro p { margin: 0 0 0.8rem; }
+.std-tools { margin: 1.8rem 0 0.5rem; padding: 1rem 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); font-family: var(--sans); }
+.std-search { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.8rem; margin-bottom: 0.8rem; }
+.std-search label { font-weight: 600; font-size: 0.95rem; }
+.std-search input { flex: 1 1 14rem; min-width: 0; font: inherit; font-size: 1rem; padding: 0.4rem 0.6rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); color: var(--ink); }
+.std-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.7rem; padding: 0; border: 0; }
+.std-chips legend { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.4rem; padding: 0; }
+.std-chip { font-family: var(--sans); font-size: 0.88rem; padding: 0.3rem 0.75rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper); color: var(--ink-2); cursor: pointer; line-height: 1.3; }
+.std-chip:hover { color: var(--ink); border-color: var(--ink-2); }
+.std-chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.std-status { margin: 0.4rem 0 0; font-size: 0.9rem; color: var(--ink-3); font-family: var(--sans); }
+.std-group { margin-top: 2.2rem; }
+.std-group h2 { font-size: 1.5rem; margin-bottom: 0.6rem; }
+.std-list { list-style: none; margin: 0; padding: 0; }
+.std-item { border-top: 1px solid var(--rule-2); padding: 0.7rem 0; scroll-margin-top: 1rem; display: grid; grid-template-columns: 6.5rem 1fr; gap: 0.2rem 1rem; }
+.std-item:target { background: var(--paper-2); }
+.std-code { font-family: var(--mono, monospace); font-weight: 600; font-size: 0.95rem; padding-top: 0.15rem; }
+.std-text { margin: 0; }
+.std-meta { font-family: var(--sans); font-size: 0.85rem; color: var(--ink-3); margin: 0.15rem 0 0; }
+.std-lessons { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.35rem 0.5rem; font-family: var(--sans); font-size: 0.9rem; grid-column: 2; }
+.std-lessons a { display: inline-block; padding: 0.15rem 0.5rem; border: 1px solid var(--rule); border-radius: 3px; text-decoration: none; color: var(--link); background: var(--paper-2); }
+.std-lessons a:hover { border-color: var(--link); }
+.std-none { font-family: var(--sans); font-size: 0.9rem; color: var(--ink-3); grid-column: 2; margin: 0.3rem 0 0; }
+.std-fit { font-family: var(--sans); font-size: 0.88rem; color: var(--ink-2); grid-column: 2; margin: 0.3rem 0 0; }
+.std-partial { font-family: var(--sans); font-size: 0.85rem; color: var(--ink-3); }
+.std-empty { font-family: var(--sans); color: var(--ink-2); margin-top: 2rem; }
+.lesson-stds { font-family: var(--sans); font-size: 0.92rem; margin: 0.9rem 0 0; color: var(--ink-2); }
+.lesson-stds summary { cursor: pointer; font-weight: 600; }
+.lesson-stds h3 { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); margin: 0.8rem 0 0.3rem; }
+.lesson-stds ul { margin: 0; padding-left: 1.2rem; }
+.lesson-stds li { margin-bottom: 0.2rem; }
+.lesson-stds .std-note { color: var(--ink-3); font-size: 0.85rem; margin: 0.7rem 0 0; }
+@media (max-width: 40rem) {
+  .std { padding: 1.5rem 1rem 3rem; }
+  .std h1 { font-size: 1.9rem; }
+  .std-item { grid-template-columns: 1fr; }
+  .std-lessons, .std-none, .std-fit { grid-column: 1; }
+}`;
+  function injectCSS() {
+    if (document.getElementById('standards-css')) return;
+    const s = document.createElement('style'); s.id = 'standards-css'; s.textContent = CSS; document.head.appendChild(s);
+  }
+
+  function page(sub) {
+    injectCSS();
+    const courses = window.COURSES || [];
+    const state = { fw: kind(sub || '') === 'mn' ? 'mn' : 'csta', band: '', show: '', q: '' };
+    const main = el('main', { class: 'std' });
+    const status = el('p', { class: 'std-status', role: 'status', 'aria-live': 'polite' });
+    const empty = el('p', { class: 'std-empty', hidden: 'hidden' }, 'Nothing matches. Try fewer words, or choose All.');
+
+    const entry = (code, extra) => {
+      const hits = lessonsOf(code, courses);
+      const sup = SUPPORT.filter((s) => s.codes.includes(code));
+      const li = el('li', { class: 'std-item', id: 'std-' + code });
+      li.append(el('span', { class: 'std-code' }, code), el('p', { class: 'std-text' }, textOf(code)));
+      if (extra) li.append(el('p', { class: 'std-fit' }, extra));
+      if (hits.length) li.append(el('ul', { class: 'std-lessons', 'aria-label': 'Lessons' }, hits.map((h) => el('li', {}, el('a', { href: lessonHref(h), title: h.course.title }, lessonLabel(h))))));
+      if (sup.length) li.append(el('ul', { class: 'std-lessons', 'aria-label': 'Also practised on' }, sup.map((s) => el('li', {}, el('a', { href: s.href, title: s.note }, 'Also: ' + s.name)))));
+      if (!hits.length && !sup.length) li.append(el('p', { class: 'std-none' }, 'No lesson addresses this yet.'));
+      li.dataset.covered = hits.length ? 'yes' : sup.length ? 'support' : 'no';
+      li.dataset.text = norm(code + ' ' + textOf(code) + ' ' + (extra || '') + ' ' + hits.map(lessonLabel).join(' '));
+      li.dataset.band = kind(code) === 'csta' ? code.split('-')[0] : '';
+      return li;
+    };
+
+    const groups = [];   // { fw, sec, items }
+    for (const key of Object.keys(CONCEPTS)) {
+      const codes = Object.keys(CSTA).filter((c) => c.split('-')[1] === key);
+      const items = codes.map((c) => entry(c));
+      const sec = el('section', { class: 'std-group', 'aria-labelledby': 'std-g-' + key }, el('h2', { id: 'std-g-' + key }, CONCEPTS[key]), el('ol', { class: 'std-list' }, items));
+      groups.push({ fw: 'csta', sec, items });
+    }
+    const mnItems = MN.map((b) => entry(b[0], b[2] ? (b[2] === 'yes' ? 'Taught: ' : 'In part: ') + b[3] : ''));
+    groups.push({ fw: 'mn', sec: el('section', { class: 'std-group', 'aria-labelledby': 'std-g-mn' }, el('h2', { id: 'std-g-mn' }, 'Minnesota mathematics benchmarks that are marked as computer science'), el('ol', { class: 'std-list' }, mnItems)), items: mnItems });
+
+    const chip = (label, on, fn) => el('button', { type: 'button', class: 'std-chip', 'aria-pressed': on() ? 'true' : 'false', onclick: () => { fn(); apply(); } }, label);
+    const chipRows = [];
+    const row = (legend, opts, get, set, only) => {
+      const btns = opts.map(([key, label]) => { const b = chip(label, () => get() === key, () => set(key)); b.dataset.key = key; return b; });
+      const fs = el('fieldset', { class: 'std-chips' }, el('legend', {}, legend), btns);
+      chipRows.push({ btns, get, only }); return fs;
+    };
+    const fwRow = row('Standards', [['csta', 'CSTA K-12 CS Standards'], ['mn', 'Minnesota mathematics']], () => state.fw, (k) => { state.fw = k; }, null);
+    const bandRow = row('Grades', [['', 'All'], ['2', '6–8'], ['3A', '9–10'], ['3B', '11–12']], () => state.band, (k) => { state.band = k; }, 'csta');
+    const showRow = row('Show', [['', 'All'], ['yes', 'With a lesson'], ['no', 'No lesson yet']], () => state.show, (k) => { state.show = k; }, null);
+    const input = el('input', { type: 'search', id: 'std-q', autocomplete: 'off', spellcheck: 'false', placeholder: 'e.g. recursion, loops, probability, 3A-AP-17' });
+
+    function apply() {
+      const words = norm(state.q).split(/\s+/).filter(Boolean);
+      for (const r of chipRows) { for (const b of r.btns) b.setAttribute('aria-pressed', b.dataset.key === r.get() ? 'true' : 'false'); if (r.only) r.btns[0].parentElement.hidden = r.only !== state.fw; }
+      let shown = 0, total = 0;
+      for (const g of groups) {
+        let n = 0;
+        for (const it of g.items) {
+          const ok = g.fw === state.fw && (!state.band || it.dataset.band === state.band) && words.every((w) => it.dataset.text.includes(w)) &&
+            (!state.show || (state.show === 'yes' ? it.dataset.covered !== 'no' : it.dataset.covered === 'no'));
+          it.hidden = !ok; if (ok) n++;
+        }
+        g.sec.hidden = n === 0; if (g.fw === state.fw) { shown += n; total += g.items.length; }
+      }
+      empty.hidden = shown > 0;
+      status.textContent = 'Showing ' + shown + ' of ' + total + ' standards.';
+    }
+    input.addEventListener('input', () => { state.q = input.value; apply(); });
+
+    main.append(
+      el('header', {},
+        el('h1', {}, 'Standards'),
+        el('p', { class: 'tagline' }, 'Which lessons address which learning standards.'),
+        el('div', { class: 'prose std-intro' },
+          el('p', {}, 'Two sets of standards are listed: the CSTA K-12 Computer Science Standards (2017), which many states and districts use, and the computer-science-integrated benchmarks in the 2022 Minnesota Academic Standards in Mathematics. Each lesson shows its standards under its summary; here you can start from a standard and find the lessons.'),
+          el('p', {}, 'The author matched lessons to standards by what each lesson teaches. A lesson is listed when it teaches or practises the standard, not when it only mentions it; where a lesson covers only part of a benchmark, the entry says so. These are not endorsed by CSTA or the Minnesota Department of Education, and the standards below are short paraphrases. Check the exact wording at ',
+            el('a', { href: 'https://csteachers.org/k12standards/', rel: 'noopener noreferrer' }, 'csteachers.org'), ' and at the ',
+            el('a', { href: 'https://education.mn.gov/MDE/dse/stds/ComputerScience/', rel: 'noopener noreferrer' }, 'Minnesota Department of Education'), '.'))),
+      el('div', { class: 'std-tools' }, el('div', { class: 'std-search' }, el('label', { for: 'std-q' }, 'Search'), input), fwRow, bandRow, showRow, status),
+      empty, ...groups.map((g) => g.sec));
+    apply();
+    return main;
+  }
+
+  const STANDARDS = { page, lessonBox, lessonsOf, kind, known, textOf, framework, CSTA, MN, SUPPORT, CONCEPTS, band, concept };
+  if (typeof window !== 'undefined') window.STANDARDS = STANDARDS;
+  if (typeof module !== 'undefined') module.exports = { CSTA, MN, SUPPORT, CONCEPTS, kind, known, textOf, band, concept, CSTA_RE, MN_RE };
 })();
 
 </script>

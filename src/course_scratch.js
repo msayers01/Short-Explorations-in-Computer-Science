@@ -29,6 +29,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['2-AP-10', '2-AP-11'],
       title: 'Say it in Python', summary: 'You already know how to program. This lesson shows how to type it: say becomes print, ask becomes input, and the computer tells you when you make a typo.',
       blocks: [
         `<p>Here is a secret. You already know how to program. You learned it in Scratch. Every idea in this course is one you have used before: say, ask, variables, repeat, if. The only new thing is how to <em>spell</em> them.</p>
@@ -123,6 +124,7 @@ turtle.done()`, caption: 'Run it and watch the canvas. Add one more t.right(90) 
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-11'],
       title: 'Keeping score: variables', summary: 'set and change become =, numbers and words are different kinds of thing, the maths blocks become symbols, and a program keeps a score.',
       blocks: [
         `<p>In 1972 a young engineer called Allan Alcorn built a game for a brand-new company, Atari. Two paddles, a ball, and two numbers at the top of the screen. The game was <em>Pong</em>. The numbers were the score. The first machine went into a bar in California. Within days it stopped working. The coin box was full.</p>`,
@@ -229,6 +231,7 @@ print("Score:", total)`, caption: 'Three variables, two kinds of thing. The scor
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12'],
       title: 'Repeat and forever', summary: 'The repeat block becomes a for loop, forever becomes while, the turtle draws squares, stars and spirals, and the lines inside a loop are marked by indenting them.',
       blocks: [
         `<p>Before Scratch there was Logo. And before the turtle on your screen, there was a real one. In 1967 a team in Massachusetts, with a mathematician called Seymour Papert, made a language for children called Logo. A couple of years later they gave it a robot. It was a round machine on wheels, about the size of a cake tin, with a pen underneath. Children typed <code>FORWARD 100</code> and <code>RIGHT 90</code>. The robot drove across big sheets of paper on the floor and drew. Papert called it the turtle.</p>
@@ -350,6 +353,7 @@ turtle.done()`, caption: 'The inner loop (j) draws one square. The outer loop (i
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12'],
       title: 'If, then, else', summary: 'The if block becomes if with a colon, else and else-if become else and elif, = becomes ==, and, or and not stay as words, and a program answers back depending on what you typed.',
       blocks: [
         `<p>In 1966 a computer scientist at MIT called Joseph Weizenbaum wrote a program that could hold a conversation. He named it ELIZA. You typed a sentence. It typed one back. One version played the part of a therapist, a kind of doctor you talk to about your worries. People found it amazingly good at it. Weizenbaum's own secretary had watched him build it. She knew exactly what it was. One day she asked him to leave the room, so she could talk to it in private.</p>`,
@@ -463,6 +467,7 @@ else:
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-11', '3A-AP-14'],
       title: 'Lists', summary: 'Scratch lists become Python lists in square brackets, add becomes append, item 1 becomes [0] because Python counts from zero, length of is len, contains is in, and a loop can walk through every item.',
       blocks: [
         `<p>The oldest writing in the world is lists. In the ruins of Uruk, a city in what is now Iraq, people dug up thousands of clay tablets. They are about five thousand years old. When the tablets were finally read, they were not stories or prayers. They were records. So many sacks of barley. So many jars of beer. Who got them. People invented writing because there were too many things to keep in their heads. A list on a tablet does not forget.</p>`,
@@ -590,6 +595,7 @@ print("The 8-ball says:", random.choice(answers))`, stdin: 'Will I get a dog?', 
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-14', '2-AP-19'],
       title: 'My blocks: functions', summary: 'A define block becomes def, its inputs become parameters, a block that reports an answer uses return, and a turtle draws a garden from one flower function.',
       blocks: [
         `<p>In 1949, at Cambridge University in England, a computer called EDSAC started working. It was one of the first in the world that could store its own program. Writing for it was slow. Every program had to be punched onto paper tape, hole by hole. Even printing a number took dozens of instructions.</p>`,
@@ -751,6 +757,7 @@ turtle.done()`, caption: 'A triangle, a square, a pentagon and so on, each in a 
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '2-AP-13', '2-AP-15', '2-AP-17'],
       title: 'Project: your own adventure game', summary: 'Everything from the course in one program: rooms with if and elif, a bag that is a list, a monster fight with while and random, and broadcasts that become functions. You build it piece by piece, then make it yours.',
       blocks: [
         `<p>In 1976 a programmer called Will Crowther wrote a game for his two daughters. He loved exploring caves, and he had helped map a real one in Kentucky. His game had no pictures at all. It printed <em>You are standing at the end of a road before a small brick building</em>, and waited. You typed <code>go north</code> or <code>take lamp</code>, and it printed what happened next. He called it <em>Adventure</em>. Another programmer, Don Woods, added more rooms and a dragon the next year. Thousands of people played it on university computers, and it started a whole kind of game.</p>`,
@@ -933,6 +940,7 @@ if health <= 0:
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '2-AP-14', '2-AP-16'],
       title: 'Project: turtle art', summary: 'Shapes become functions, colours and fills make them pretty, and loops turn one shape into a flower, a spiral and a sky full of stars.',
       blocks: [
         `<p>Remember Seymour Papert from lesson 3? He made Logo, a language for kids. His team gave it a robot with a pen underneath. Kids typed <code>FORWARD 50</code> and it rolled forward and drew a line. They typed <code>RIGHT 90</code> and it turned. Papert called it the turtle. He said kids should teach the computer, not the other way round. Scratch was made by his students, years later, with the same idea.</p>`,
@@ -1090,6 +1098,7 @@ turtle.done()`, caption: 'Fifteen stars, random places, random sizes, random col
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-11'],
       title: 'Words and letters', summary: 'join, letter of and length of become +, square brackets and len; a loop can go through a word one letter at a time; and words can be shouted, reversed and searched.',
       blocks: [
         `<p>In 1966 a programmer called Joseph Weizenbaum wrote a program that talked. You typed a sentence. It found a word in it, turned your sentence around, and asked a question. Type <em>I feel sad</em> and it said <em>Why do you feel sad?</em> He called it ELIZA. Some people thought it understood them. It did not understand a thing. It only played with words: cutting them, joining them, swapping them. That is what this lesson is about.</p>`,

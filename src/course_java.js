@@ -22,6 +22,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['2-AP-11', '3A-CS-02'],
       title: 'Hello, Java', summary: 'Where Java came from, the shape every Java program has, what the compiler checks, and the types a variable can have.',
       blocks: [
         `<p>In 1991 a small team at Sun Microsystems in California, led by James Gosling, set out to write software for the gadgets they expected to fill living rooms: television set-top boxes, handheld controllers, devices that did not yet exist. Every such device would have a different chip inside, so a program written for one would have to be rewritten for the next. Gosling's answer was a language whose programs were not translated for any particular chip. Instead they were translated into instructions for an imaginary machine, the <em>Java virtual machine</em>, and any real device that could pretend to be that machine could run every Java program ever written. He called the language Oak, after a tree outside his office window. The set-top boxes never came. The World Wide Web did, and in 1995 the language, renamed Java, was released to run the same program on every computer on the Internet. Its slogan was "write once, run anywhere".</p>`,
@@ -197,6 +198,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '3A-AP-15'],
       title: 'Making decisions', summary: 'Comparisons and boolean, if and else, combining conditions, comparing text with equals, and reading input you cannot trust.',
       blocks: [
         `<p>In February 2014 Apple shipped a fix for a bug in the code that checked whether a web site's security certificate was genuine, in every iPhone, iPad and Mac. The code, written in C, Java's older cousin, had a sequence of tests, each of the form <em>if this check fails, go to the failure handler</em>. One line, <code>goto fail;</code>, had been typed twice. The second copy was not inside any <code>if</code>; it ran every time, unconditionally, skipping the remaining checks and reporting success. Because C lets you leave out the braces around an <code>if</code> body, the extra line looked like part of the test above it, and it sat there, indented like its neighbour, for over a year. Anyone sitting between a user and a web site could pretend to be that site, and the device would believe them.</p>
@@ -376,6 +378,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '3A-AP-15'],
       title: 'Repetition', summary: 'while and for loops, counting and accumulating, nested loops, loops over the characters of a string, and the mistakes at the edges.',
       blocks: [
         `<p>In 1994 Thomas Nicely, a mathematics professor at Lynchburg College in Virginia, set a new Pentium computer to work on a problem that needed a great deal of repetition: adding up the reciprocals of the twin primes, pairs of primes two apart like 11 and 13, as far as the machine could reach. His program ran through hundreds of millions of numbers, dividing 1 by each. In June he noticed that its answers disagreed with results he had computed on older machines. By October he had narrowed the difference down to a single division, 1 divided by 824633702441, which the new chip got wrong in the tenth digit. The Pentium's floating-point division unit had a flaw in a lookup table, and it had taken a loop running billions of times to find the handful of inputs that exposed it. Intel eventually offered to replace every affected chip, at a cost of about 475 million dollars.</p>`,
@@ -588,6 +591,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-14', '3A-AP-17', '3A-AP-18'],
       title: 'Methods', summary: 'Writing a method once and calling it many times: parameters, return values, void, why a method cannot change your variables, and overloading.',
       blocks: [
         `<p>In 1949 the EDSAC at Cambridge University became one of the first computers that stored its program in memory alongside its data. Its users soon noticed that they were writing the same pieces of code over and over: a routine to print a number, a routine to take a square root, a routine to read paper tape. David Wheeler, a research student on the project, worked out how a program could jump into such a routine, let it do its work, and come back to the place it had left, with the routine none the wiser about who had called it. The trick is still called the Wheeler jump. By 1951 Wheeler, Maurice Wilkes and Stanley Gill had published the first textbook of programming, and most of it was about a library of these <em>subroutines</em>, kept on paper tape in a cabinet, that any program could borrow.</p>`,
@@ -819,6 +823,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-14', '3B-AP-12'],
       standard: 1, title: 'Arrays', summary: 'Many values under one name: making and indexing arrays, visiting every slot, the bounds Java checks, arrays shared between methods, counting with an array, and tables of rows and columns.',
       blocks: [
         `<p>In 1985 Friedhelm Hillebrand, an engineer at the German post office, was helping to plan GSM, the new mobile phone network that Europe was about to build, and he had to decide how long a text message could be. The messages were to travel in a spare corner of the network's signalling channel, where there was room for only a small, fixed amount of data, so the limit had to be chosen once, before a single phone was made. Hillebrand sat at his typewriter at home in Bonn, typed out the kind of sentences and questions people send each other, and counted the characters. Nearly all of them fitted in 160. So did most of the postcards and telex messages he looked at. The limit became 160 characters, each squeezed into 7 bits, so that a whole message fits in 140 bytes. When Twitter began in 2006 it kept its posts short enough to travel as one text message with room for the sender's name, and that is where its famous limit of 140 characters came from.</p>`,
@@ -1027,6 +1032,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-11', '3B-AP-16'],
       standard: 1, title: 'Strings', summary: 'Text as a row of characters: indexes and substrings, searching, why a String never changes, alphabetical order, characters as numbers, building text with StringBuilder, and splitting a line into parts.',
       blocks: [
         `<p>In 1987 three engineers, Joe Becker at Xerox and Lee Collins and Mark Davis at Apple, started work on a mess that every computer company had made for itself. Computers store letters as numbers, and each country, often each company, had its own table of which number meant which letter. The number that meant <em>é</em> on one computer meant a Greek letter or a line-drawing symbol on another, so a file written in Paris could arrive in Athens as nonsense. Becker's proposal of 1988, which he named <em>Unicode</em>, was one table for every writing system on Earth: Latin and Greek, Arabic and Hebrew, Devanagari and Thai, and the tens of thousands of Chinese characters, each with a number of its own. He reckoned that 16 bits, room for 65,536 characters, would be plenty for every script in modern use.</p>
@@ -1209,6 +1215,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-14', '3B-AP-12', '3B-AP-16'],
       standard: 1, title: 'ArrayList', summary: 'A list that grows as you add to it: adding, reading and removing, numbers in a list, the traps of removing inside a loop, when to choose a list over an array, and how a list grows.',
       blocks: [
         `<p>At 8:01 on the morning of 26 June 1974, in a Marsh supermarket in Troy, Ohio, a cashier named Sharon Buchanan slid a ten-pack of Wrigley's Juicy Fruit chewing gum across a glass window in her counter. A laser underneath read the black and white stripes on the packet, and the till looked up the price for itself: 67 cents. It was the first time anything in a shop had been sold by scanning a Universal Product Code, the barcode that is now printed on nearly everything you can buy. The packet of gum is kept at the Smithsonian's National Museum of American History.</p>`,
@@ -1386,6 +1393,7 @@ public class Main {
     },
     /* ================================================================== */
     {
+      standards: ['3A-CS-01', '3A-AP-17', '3B-AP-14'],
       standard: 1, title: 'Classes and objects', summary: 'Making your own types: fields, constructors and methods that belong to an object, private fields that protect a class’s rules, toString, references and null, static, and objects that work together.',
       blocks: [
         `<p>In the early 1960s, at the Norwegian Computing Center in Oslo, Kristen Nygaard was writing simulations: programs that imitate some part of the real world to find out how it will behave before anyone builds it or changes it. The things such programs imitate are full of separate parts acting at the same time: customers arriving at counters, ships moving through a port, jobs passing from machine to machine in a factory. Nygaard found that the languages of the day made it hard to say what he meant, and with Ole-Johan Dahl, a brilliant programmer, he set out to design a better one. Their second language, Simula 67, gave the world a new way to organise programs. A program could describe a <em>class</em> of things, say a customer, once: what every customer knows and what every customer can do. Then it could make as many customers, <em>objects</em> of that class, as the simulation needed, each with its own information.</p>

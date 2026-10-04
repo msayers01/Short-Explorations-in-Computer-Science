@@ -20,6 +20,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['3A-CS-02'],
       title: 'Expressions and the interpreter', summary: 'A language with one kind of sentence: what an expression is, how the interpreter finds its value, and how to give a value a name.',
       blocks: [
         `<p>In 1958 John McCarthy at MIT designed a language for research on artificial intelligence and called it Lisp, for LISt Processing. Only Fortran, from the year before, is an older programming language still in wide use. Lisp's look, with a parenthesis around every expression, has earned it a joking expansion, "Lots of Irritating Silly Parentheses". But its ideas turned up decades later in almost every language you have heard of, and by the end of this course you will see why the parentheses are the point.</p>
@@ -136,6 +137,7 @@ circumference`, caption: 'Once a name is defined it can be used in any later exp
     },
     /* ================================================================== */
     {
+      standards: ['3A-CS-01', '3A-AP-17', '3A-AP-18'],
       title: 'Procedures and the substitution model', summary: 'Naming a computation, a precise rule for what happens when you use it, and why the names inside a procedure belong to it alone.',
       blocks: [
         `<p>SICP begins by comparing programmers to sorcerers: a program is like a spell, a carefully arranged sequence of symbols that makes an invisible process happen inside the machine. As with any spell, a single wrong word can have unexpected effects, so a sorcerer needs to know exactly what each word will do. This lesson gives the first precise rule for predicting what a spell does.</p>
@@ -299,6 +301,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-15'],
       title: 'Making decisions', summary: 'Definitions by cases: predicates, cond and if, how they are evaluated, and why they cannot be ordinary procedures.',
       blocks: [
         `<p>Here is a small piece of history hiding in every language you will use. The conditional expression, an expression whose value depends on a test, the ancestor of Python's <code>if</code>/<code>else</code>, was invented by John McCarthy for Lisp in the late 1950s, and he proposed it for the language ALGOL, through which it spread everywhere. In Lisp it is still at its purest.</p>
@@ -464,6 +467,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-13'],
       title: 'Recursion', summary: 'Procedures defined in terms of themselves: why that is allowed, how the substitution model traces them, what makes them stop, and why they are right.',
       blocks: [
         `<p>An old cocoa tin from the Dutch company Droste showed a nurse carrying a tray, on which stood a tin of Droste cocoa, showing a nurse carrying a tray, on which stood a tin, and so on for ever; pictures that contain themselves are still called the Droste effect. Programmers have their own version. The name GNU, a free operating system project, stands for "GNU's Not Unix", an abbreviation that contains itself. And there is an old joke: "To understand recursion, you must first understand recursion." This lesson shows why a definition that refers to itself is not a joke at all, as long as it reaches the bottom.</p>`,
@@ -587,6 +591,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-11', '3B-AP-13'],
       title: 'The shape of a process', summary: 'Procedures and the processes they generate: recursive and iterative processes, tail calls, state variables with an invariant, and tree recursion.',
       blocks: [
         `<p>In 1202, Leonardo of Pisa, later known as Fibonacci, posed a puzzle about rabbits: start with one pair, suppose every pair produces a new pair each month from its second month of life, and ask how many pairs there are after a year. The answer grows through the sequence 1, 1, 2, 3, 5, 8, 13, …, which now bears his name. The numbers turn up far from rabbits too: the seeds in a sunflower head grow in two sets of spirals, one turning each way, and the numbers of spirals in the two sets are usually neighbours in the sequence, such as 34 and 55. This lesson computes those numbers two ways, and discovers that the obvious way is catastrophically slow for a reason you can see in the shape of the code.</p>`,
@@ -714,6 +719,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-12'],
       title: 'Pairs and lists', summary: 'One way to glue two things together, and everything that grows from it: pairs, the recursive definition of a list, box-and-pointer diagrams, and a pair made of nothing but procedures.',
       blocks: [
         `<p>Until now every value has been a single number or symbol. Real data comes in groups: a point has two coordinates, a sentence has many words, a family tree has branches inside branches. Lisp builds every one of these from a single operation that glues two values together. That is the whole kit. This lesson shows how far one kind of glue goes, and it ends with a small shock: the glue itself can be made out of procedures.</p>
@@ -842,6 +848,7 @@ colours
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-12', '3B-AP-13'],
       title: 'Recursion on lists', summary: 'The definition of a list writes your procedures for you: the template, three shapes (boil down, build, keep), a proof by induction on length, iterating over a list, and lists inside lists.',
       blocks: [
         `<p>Here is a claim that sounds too good to be true: once you know how a list is defined, you know how to write almost every procedure that works on lists, and you know why each one stops and why it is right. The definition from Lesson 6 does the work.</p>
@@ -990,6 +997,7 @@ boxes
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-17', '3B-AP-14'],
       title: 'Procedures as data', summary: 'Procedures are values like numbers: passing them in (higher-order procedures), making them on the spot (lambda), naming values locally (let), and handing them back (closures), with \u03c0 and a derivative on the way.',
       blocks: [
         `<p>Look at these three procedures side by side. One adds up the integers from <i>a</i> to <i>b</i>, one adds up their cubes, and one adds up the terms of a series that, strangely, closes in on π.</p>`,
@@ -1148,6 +1156,7 @@ boxes
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-14'],
       title: 'map, filter and accumulate', summary: 'Three higher-order procedures that replace almost every list recursion: signal-flow pipelines, a law proved by induction, folding in both directions, and nested mappings.',
       blocks: [
         `<p>Here is a puzzle, the second problem on the famous Project Euler list of programming challenges. The Fibonacci numbers go 1, 2, 3, 5, 8, 13, 21, …, each the sum of the two before. What is the sum of the <em>even</em> ones below four million? By the end of this lesson the answer is one line of Scheme, and the line reads almost like the question. The trick is to stop writing recursions one at a time.</p>
@@ -1303,6 +1312,7 @@ boxes
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-12'],
       title: 'Symbols, quotation, and code as data', summary: 'What the quote mark really does, symbols as values, three kinds of equality, association lists, and the idea at the heart of Lisp: a program is a list, so a program can read, build and even run other programs.',
       blocks: [
         `<p>SICP opens its section on symbols with a little puzzle about language. If someone says "say your name aloud", you say your name. If they say "say 'your name' aloud", you say the words "your name". The quotation marks change what is meant: not the thing the words stand for, but the words themselves. Programming languages need the same distinction, and Lisp takes it further than any other: in Lisp a quoted piece of <em>program</em> is ordinary data, which one program can take apart, change, build, and even run.</p>
@@ -1450,6 +1460,7 @@ d
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-14', '3B-AP-15'],
       title: 'Project: symbolic differentiation', summary: 'A program that does calculus on expressions, SICP\u2019s classic demonstration of code as data: wishful thinking, abstraction barriers, smart constructors, and a check of the symbolic answer against Lesson 8\u2019s numerical one.',
       blocks: [
         `<p>In the 1960s, researchers at MIT wrote programs that could do algebra and calculus with symbols, the way a person does with pencil and paper: not "the slope at 5 is 75.0001", but "the derivative of <i>x</i>³ is 3<i>x</i>²". They wrote them in Lisp, because in Lisp an expression is already a list that a program can take apart, and their descendants still run inside computer algebra systems today. This project builds the heart of one: a procedure <code>deriv</code> that takes an algebraic expression and a variable, and returns the derivative, symbolically, as another expression. It comes from SICP §2.3.2, and it fits on one screen.</p>

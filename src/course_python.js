@@ -19,6 +19,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['2-AP-11', '7.3.6.3'],
       title: 'Hello, Python', summary: 'What a program is, your first lines of Python, the kinds of values Python works with, and how to give a value a name.',
       blocks: [
         `<p>In 1843, a century before the first electronic computer, Ada Lovelace published a step-by-step method for a machine that had not been built, Charles Babbage's Analytical Engine, to calculate a sequence of numbers called the Bernoulli numbers. It is often called the first computer program. Everything since, from phone apps to spacecraft, is the same idea: a list of exact instructions for a machine that does precisely what it is told. The language in this course was released in 1991 by Guido van Rossum, who named it not after the snake but after the British comedy show <i>Monty Python's Flying Circus</i>, which is why so many Python examples mention spam.</p>`,
@@ -139,6 +140,7 @@ print(days, "days is", hours, "hours")`, caption: 'Three steps: read and convert
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '2-AP-17'],
       title: 'How Python reads your program', summary: 'The rules Python applies to every line, the two moments a program can fail, and why the spaces at the start of a line are part of the language.',
       blocks: [
         `<p>"Time flies like an arrow; fruit flies like a banana." Read that twice: in the first half <i>flies</i> is a verb, in the second it is a noun, and <i>like</i> changes meaning too. English is full of sentences a person can read two ways and sorts out from context without noticing. A programming language cannot afford that: every line must have exactly one meaning, fixed by rules.</p>
@@ -263,6 +265,7 @@ Total: 2.0</code></pre>
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '3A-AP-15'],
       title: 'Making decisions', summary: 'True and False, comparisons, if, elif and else, combining conditions with and, or and not, and the order in which Python checks them.',
       blocks: [
         `<p>Every time you press a button in a game, the program asks questions. Is the player touching the ground? Is there a wall to the left? Has the timer run out? A fast game asks thousands of such questions every second, and what happens next depends on each answer. Those yes-or-no questions, and the choices that follow them, are this lesson.</p>`,
@@ -418,6 +421,7 @@ else:
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '3A-AP-15'],
       title: 'Repetition', summary: 'for loops and range, while loops, loops that never end, and the accumulator pattern behind most loops you will ever write.',
       blocks: [
         `<p>A famous story tells of a teacher in Germany in the 1780s who kept a class busy by asking them to add up all the whole numbers from 1 to 100. Within moments a boy named Carl Friedrich Gauss, who became one of the greatest mathematicians in history, wrote down 5050. He had not added a hundred numbers; he had spotted a pattern. A computer has no such insight, but it does not need one: it can add a hundred numbers, or a hundred million, without getting bored or making a slip. That is what loops are for. Until the 1960s much of that patient arithmetic was done by people whose job title was <em>computer</em>, such as Katherine Johnson, who worked out the flight paths of America's first astronauts at NASA.</p>`,
@@ -599,6 +603,7 @@ print(digits)`, testStdin: '1234\n', caption: 'For 1234: the even numbers below 
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-14', '3A-DA-10', '3B-AP-12'],
       title: 'Lists', summary: 'Many values under one name: positions that start at 0, slices, looping, changing a list in place, and the famous surprise when two names share one list.',
       blocks: [
         `<p>A single variable holds one value. Real programs juggle many: a playlist of 2,000 songs, the ten best scores in a game, every word in a message. Python keeps an ordered collection of values under one name in a <em>list</em>. By the end of this lesson you will be able to pick out any song in a playlist, slice out the chorus of a list, and explain a bug that has confused programmers for as long as Python has existed.</p>
@@ -745,6 +750,7 @@ print(evens([3, 8, 5, 6, 2]))`, caption: 'Prints 2 and [8, 6, 2]. The second fun
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-11', '3A-AP-14'],
       title: 'Strings', summary: 'Text is a sequence too: positions and slices, why a string can never change, the methods worth knowing, splitting and joining, and building text piece by piece.',
       blocks: [
         `<p>Read this little poem, then read only the first letter of each line, top to bottom.</p>
@@ -900,6 +906,7 @@ print(same_letters("hello", "world"))`, caption: 'True, True, False. Cleaning fi
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-13', '2-AP-14', '2-AP-19', '3A-AP-17', '3A-AP-18', '3B-AP-14'],
       title: 'Functions', summary: 'Naming a computation so you can reuse it, test it and stop thinking about it: def, parameters and return, what happens during a call, scope, defaults, and testing with assert.',
       blocks: [
         `<p>Think of a vending machine. You put something in (money and a button press), something comes out (a snack), and you never need to know what happens inside. A <em>function</em> is a vending machine for a computation: values go in, one value comes out, and the rest of the program can forget how. You have been <em>calling</em> functions since the first lesson, <code>print</code>, <code>len</code>, <code>int</code>, and you have filled in the bodies of a few. Now you will build them from nothing, and by the end of the lesson you will test your own functions the way professional programmers do.</p>`,
@@ -1053,6 +1060,7 @@ print("has_digit passes its tests")`, caption: 'Putting return False inside the 
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-17', '3A-CS-03'],
       title: 'Finding and fixing bugs', summary: 'Every program has bugs; the skill is finding them fast. Three kinds of wrong, reading an error message, debugging as an experiment, testing, and handling the errors you expect with try and except.',
       blocks: [
         `<p>In September 1999, NASA's Mars Climate Orbiter reached Mars after a nine-month journey, fired its engine to slip into orbit, and was never heard from again. It had flown far too low into the Martian atmosphere. The investigation found the cause: one team's software reported the push of the thrusters in pounds, American units, and another team's software read those numbers as newtons, metric units. Nothing crashed and no error message appeared. Every program ran perfectly and gave the wrong answer, and a spacecraft costing well over a hundred million dollars was lost.</p>`,
@@ -1181,6 +1189,7 @@ print(safe_divide(1, 0, "n/a"))`, caption: 'Prints 2.5 and n/a. The return insid
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-14', '3A-DA-10', '3B-AP-12'],
       title: 'Dictionaries', summary: 'Looking things up by name instead of by position: keys and values, missing keys, looping over pairs, the counting pattern, which keys are allowed, and why lookup is fast however big the dictionary grows.',
       blocks: [
         `<p>A list is perfect when you know the <em>position</em> of what you want: the third song, the last score. But usually you know a <em>name</em>. You have a word and want its meaning, a student and want their score, a username and want the password check, a product and want its price. A paper dictionary works this way: you do not read it from page one; you jump to the word. Python's <em>dictionary</em> does the same, and it does it in a single step even when it holds millions of entries. This lesson shows how to use one, and how a dictionary makes one of the most useful patterns in programming, counting, a single line.</p>
@@ -1304,6 +1313,7 @@ print(top_scorer({"Ada": 92, "Grace": 95, "Linus": 95}))`, caption: "Prints {'b'
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-16', '2-DA-09', '3A-DA-12', '3B-DA-07', '6.1.2.3', '7.1.2.2', '7.1.2.5', '7.1.2.6'],
       title: 'Randomness and simulation', summary: 'Dice, coins and shuffled decks from the random module, repeatable randomness with seeds, and answering "how likely is that?" by running the experiment thousands of times, including two famous puzzles that fool almost everyone.',
       blocks: [
         `<p>Here is a question to try on your friends. In a class of 23 people, how likely is it that two of them share a birthday? Most people guess something small, perhaps one chance in 15, since there are 365 days to choose from. The true answer is just over one half. Nearly everyone's intuition gets this wrong, and a program can settle the argument in a few lines, without any probability theory, by simply trying it thousands of times. That trick, and the randomness it needs, is this lesson.</p>
@@ -1436,6 +1446,7 @@ print(fraction_at_least_five(3000))    # about 0.333`, caption: 'Calling random.
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-13', '9.3.7.4'],
       title: 'Recursion', summary: 'Functions that call themselves: base cases and progress, what the call stack does, why trusting the recursive call is justified, recursion on lists and strings, the Tower of Hanoi, and making slow recursion fast with a dictionary.',
       blocks: [
         `<p>In 1883 the French mathematician Édouard Lucas sold a puzzle with a story attached. In a temple, the story went, priests are moving a tower of 64 golden discs from one peg to another, one disc at a time, never putting a larger disc on a smaller one, using a third peg to help. When they finish, the world will end. Should we worry? By the end of this lesson you will have written a five-line program that solves the puzzle for any number of discs, and worked out exactly how long the priests need.</p>`,
@@ -1595,6 +1606,7 @@ print(count_char("banana", "a"))`, caption: 'Prints 21 and 3. Both shrink the in
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-11'],
       title: 'Searching and sorting', summary: 'Your first real algorithms and the question that separates programs that finish from programs that never do: how does the work grow? Linear and binary search, bubble sort, and merge sort, with exact step counts.',
       blocks: [
         `<p>Think of a number from 1 to a million, and I will find it with twenty yes-or-no questions. Every time. The trick is to ask "is it bigger than 500,000?", and whatever you answer, half of the possibilities are gone; after twenty questions, a million possibilities are down to one. That strategy is <em>binary search</em>, and it is one of the algorithms in this lesson.</p>
@@ -1737,6 +1749,7 @@ print(is_sorted([1, 3, 3, 8]), is_sorted([3, 1, 2]))`, caption: 'Prints 3 (the 1
     },
     /* ================================================================== */
     {
+      standards: ['2-NI-06', '3A-AP-13', '3A-DA-09', '3B-DA-05'],
       title: 'Project: the Caesar cipher', summary: 'Encrypt, decrypt, and then break a 2,000-year-old cipher, first by trying every key and then by frequency analysis, the method that sent a queen to her execution.',
       blocks: [
         `<p>In 1586, Mary, Queen of Scots, was imprisoned in England, and she and her supporters wrote to each other in cipher about a plot to put her on the English throne. The letters were intercepted, and Thomas Phelippes, a codebreaker working for Queen Elizabeth's spymaster, broke the cipher by counting how often each symbol appeared. The decoded letters were used at Mary's trial, and she was executed the next year. The counting method he used had been described some seven hundred years earlier by al-Kindi, a scholar in Baghdad, in the first known book on codebreaking.</p>`,
