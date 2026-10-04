@@ -8,7 +8,7 @@ window.COURSES.push({
   id: 'ml', code: 'SC 109', short: 'Machine learning', lang: 'python', status: 'developing', standard: 1,
   title: 'How Machines Learn',
   grades: 'Grades 9–12 · after Python up to dictionaries',
-  audience: `<p><b>Grades 9–12</b>, after <em>Introduction to Python</em> (SC 101) up to lesson 9, Dictionaries: you should be able to write a function with a loop, use a list, and count things with a dictionary. No mathematics beyond Pythagoras' theorem is needed; where a lesson uses more, it says what and shows it.</p>`,
+  audience: `<p><b>Grades 9–12</b>, after <em>Introduction to Python</em> (SC 101) up to lesson 11, Dictionaries: you should be able to write a function with a loop, use a list, and count things with a dictionary. No mathematics beyond Pythagoras' theorem is needed; where a lesson uses more, it says what and shows it.</p>`,
   tagline: 'Spam filters, nearest neighbours, honest tests, perceptrons, gradient descent and decision trees: build the models behind machine learning yourself, small enough to understand every line.',
   description: `<p>A program that learns is still a program. Somebody wrote it, it follows its instructions, and it can be read line by line. What is different is where its decisions come from: not from rules a programmer typed in, but from <em>examples</em>, counted, compared and measured.</p>
 <p>In this course you write those programs yourself, in Python, on datasets small enough to print: a dozen messages, sixteen pieces of fruit. You build a spam filter that learns from labelled messages, a classifier that asks a new example's nearest neighbours, and, most important of all, the honest test that tells you whether a model is any good or has only memorised its examples.</p>

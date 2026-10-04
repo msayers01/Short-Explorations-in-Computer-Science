@@ -117,7 +117,7 @@
     { oj: 'nibi', en: 'water', src: E('nibi-ni') },
     { oj: 'mitig', en: 'tree (the animate noun; the inanimate mitig is wood, a stick)', src: E('mitig-na') }
   ];
-  const LESSON_WHERE = 'Python lesson 9 (Dictionaries) and Lisp lesson 10 (Symbols, quotation, and code as data)';
+  const LESSON_WHERE = 'Python lesson 11 (Dictionaries) and Lisp lesson 12 (Symbols, quotation, and code as data)';
 
   // Interface words with no Ojibwe yet. `found` lists dictionary entries that may fit, for a speaker to accept,
   // change or reject; none of them is shown on the site.

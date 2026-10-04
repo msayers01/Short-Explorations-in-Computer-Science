@@ -420,7 +420,7 @@
   }
 
   // ================================================================== registration
-  const RECURSION = [{ href: '#/python/11', text: 'SC 101 Lesson 11: Recursion' }, { href: '#/dsa/7', text: 'SC 107 Lesson 7: Recursion' }];
+  const RECURSION = [{ href: '#/python/13', text: 'SC 101 Lesson 13: Recursion' }, { href: '#/dsa/7', text: 'SC 107 Lesson 7: Recursion' }];
   A.register({ id: 'hanoi', group: GROUP, title: 'Towers of Hanoi',
     blurb: 'Move the tower one disc at a time, never a big disc on a small one. Play it yourself and try for the fewest moves, then watch recursion do it perfectly.',
     mount: mountHanoi,
@@ -469,7 +469,7 @@
 <h2>How fast it gets better</h2>
 <p>Slowly. The error shrinks like 1/√n: to get one more decimal place right you need about 100 times as many drops. A thousand drops usually land within about 0.05 of π; a million drops usually get 3.14 right, and only sometimes 3.141. That is why the graph has a log scale, each mark ten times more drops than the one before.</p>
 <p>The method is named after the casino in Monte Carlo. Stanisław Ulam and John von Neumann developed it in the 1940s, at Los Alamos, to simulate neutrons, which no formula could follow. Today Monte Carlo simulations price insurance, forecast weather, plan cancer radiation treatment and render the light in animated films.</p>`,
-    taught: [{ href: '#/python/10', text: 'SC 101 Lesson 10: Randomness and simulation' }] });
+    taught: [{ href: '#/python/12', text: 'SC 101 Lesson 12: Randomness and simulation' }] });
 
   // ================================================================== tests (node test_algos.js)
   function selfTest() {

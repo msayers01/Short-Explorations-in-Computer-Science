@@ -320,7 +320,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await goto('#/standards/9.2.4.5');
   const mnInfo = await page.evaluate(() => { const li = document.getElementById('std-9.2.4.5'); return { there: !!li && !li.hidden, lessons: li ? li.querySelectorAll('.std-lessons a').length : 0, shown: [...document.querySelectorAll('.std-item')].filter((x) => !x.hidden).length }; });
   check('standards: a Minnesota code in the address opens the Minnesota list at that benchmark', mnInfo.there && mnInfo.lessons >= 1 && mnInfo.shown === 32, mnInfo);
-  await goto('#/python/7');
+  await goto('#/python/8');
   const lessonStd = await page.evaluate(() => { const d = document.querySelector('.lesson-stds'); return d && { summary: d.querySelector('summary').textContent, link: !!d.querySelector('a[href="#/standards/3A-AP-17"]') }; });
   check('standards: a lesson shows its standards under the summary, linking to the standards page', lessonStd && /^Standards: \d+ CSTA/.test(lessonStd.summary) && lessonStd.link, lessonStd);
   await goto('#/math/9');

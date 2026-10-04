@@ -911,7 +911,7 @@
 <p>How much alpha-beta saves depends on the order in which moves are tried. If the best move is always tried first, Donald Knuth and Ronald Moore showed in 1975 that it examines only <em>b</em><sup>⌈<em>d</em>/2⌉</sup> + <em>b</em><sup>⌊<em>d</em>/2⌋</sup> − 1 leaves, about <em>b</em><sup><em>d</em>/2</sup>: in the same time it can look twice as deep. If the worst move always comes first, it saves almost nothing. Use the Best order and Worst order buttons to see both. A real program does not know the best move in advance (that is what it is searching for) so it guesses: captures first in chess, the centre first in Connect Four, or the best move from a shallower search it has just done.</p>
 <h2>Where it is used</h2>
 <p>The idea of pruning was found independently by several researchers in the late 1950s and early 1960s; Knuth and Moore's paper gave its full analysis. IBM's Deep Blue, which beat the world chess champion Garry Kasparov in a six-game match in 1997, ran alpha-beta search on hundreds of special-purpose chess chips, examining up to about 200 million positions a second. Stockfish, the strongest chess program today, still searches with alpha-beta (with many refinements) and since 2020 scores positions with a small neural network called NNUE. DeepMind's AlphaGo (2016) and AlphaZero (2017) took a different road: Monte Carlo tree search guided by a neural network, which samples promising lines instead of trying to examine all of them.</p>`,
-    taught: [{ href: '#/dsa/7', text: 'SC 107 Lesson 7: Recursion' }, { href: '#/lisp/5', text: 'SC 102 Lesson 5: tree recursion' }, { href: '#/python/11', text: 'SC 101 Lesson 11: Recursion' }, { href: '#/math/11', text: 'SC 104 Lesson 11: Counting steps' }]
+    taught: [{ href: '#/dsa/7', text: 'SC 107 Lesson 7: Recursion' }, { href: '#/lisp/6', text: 'SC 102 Lesson 6: tree recursion' }, { href: '#/python/13', text: 'SC 101 Lesson 13: Recursion' }, { href: '#/math/11', text: 'SC 104 Lesson 11: Counting steps' }]
   });
   A.register({
     id: 'tic-tac-toe', title: 'Tic-tac-toe against minimax', group: GROUP,
@@ -922,7 +922,7 @@
 <p>The scores on the empty squares are the same numbers, seen from your side: <em>win</em> means you can force a win by playing there, <em>lose</em> means the computer can then force one. From the empty board every square says <em>draw</em>: perfect play by both sides always ends in a draw.</p>
 <h2>How much work it is</h2>
 <p>Plain minimax from the empty board visits 549,946 positions, counting the empty board itself: the whole game tree, which contains 255,168 different games. Alpha-beta, trying squares in reading order, reaches the same decision after visiting far fewer; the panel shows the exact counts for each move. Most of those positions are the same ones reached by different move orders: tic-tac-toe has only 5,478 distinct legal positions. A program that remembers positions it has already solved (a <em>transposition table</em>, which real chess programs use too) does even less work. This page uses one to show the score of every square instantly.</p>`,
-    taught: [{ href: '#/python/11', text: 'SC 101 Lesson 11: Recursion' }, { href: '#/dsa/7', text: 'SC 107 Lesson 7: Recursion' }]
+    taught: [{ href: '#/python/13', text: 'SC 101 Lesson 13: Recursion' }, { href: '#/dsa/7', text: 'SC 107 Lesson 7: Recursion' }]
   });
   A.register({
     id: 'connect-four', title: 'Connect Four: search with a horizon', group: GROUP,
