@@ -25,6 +25,7 @@
     el('pre', { class: 'arena-sample' }, '20 20          the board: width height\n1 2            you are player 1; 2 players are still alive\n3 2 1          where each player’s head is: x y player\n16 17 2\n....................   one line per row, top row first:\n..#1................   . empty   # a wall (a trail)   1-4 a head\n...                    (20 rows in all; (0, 0) is the top left)'),
     el('p', {}, 'All players move at the same time. A player crashes by leaving the board, running into a wall or a head, or moving into the same cell as another player; the last player left wins. A bot that prints something that is not a move, takes too long, or fails is moved UP for that turn (you can make that a forfeit instead), and the reason appears in the log.'),
     el('p', {}, 'To see what your bot is thinking, print a line that starts with ', el('code', {}, 'LOG '), ', for example ', el('code', {}, 'print("LOG going", move)'), '. Those lines go to your bot’s tab in the log and the arena ignores them (the sandboxes have no separate error channel). Anything else you print counts as your move.'),
+    el('p', {}, el('b', {}, 'Restart or persistent. '), 'In restart mode (the default) the arena runs your program afresh every turn: it reads one board, prints one move and ends, so it remembers nothing. In persistent mode the program is started once and kept running: the arena sends the first turn after a line ', el('code', {}, 'TRON 1'), ', ends every turn with a line ', el('code', {}, 'END'), ', and sends ', el('code', {}, 'GAMEOVER'), ' when the match is over. The starter bots already loop until their input ends, so they work in both modes; in persistent mode a variable kept outside the loop remembers things from turn to turn, and nothing is parsed or started again. A bot that takes too long is ended, and starts again, forgetting everything, on the next turn. Persistent mode needs the site to be opened from its web address (not from a file, and not inside another page\u2019s frame).'),
     el('p', {}, 'Time: each move gets 500 ms (2 seconds for C++, which this site runs on a slower interpreter), unless the match says otherwise. The same seed and the same moves always replay the same match.'));
 
   // =================================================================== the play page
@@ -116,6 +117,10 @@
     const timeSel = el('select', { 'aria-label': 'Time per move' }, [[0, 'By language (500 ms, C++ 2 s)'], [100, '100 ms'], [250, '250 ms'], [500, '500 ms'], [1000, '1 second'], [2000, '2 seconds'], [5000, '5 seconds']].map(([v, t]) => el('option', { value: v }, t)));
     const seedIn = el('input', { type: 'text', inputmode: 'numeric', placeholder: 'random', value: S.setup.seed, 'aria-label': 'Seed', class: 'arena-seed' });
     const invalidSel = el('select', { 'aria-label': 'An invalid move' }, [['up', 'is moved UP'], ['forfeit', 'forfeits the match']].map(([v, t]) => el('option', { value: v }, t)));
+    const canPersist = A.persistentAvailable();
+    const modeSel = el('select', { 'aria-label': 'How bots are run' }, [el('option', { value: 'restart' }, 'Restart: afresh every turn'), el('option', Object.assign({ value: 'persistent' }, canPersist ? {} : { disabled: '' }), 'Persistent: keeps running' + (canPersist ? '' : ' (not available here)'))]);
+    modeSel.title = canPersist ? '' : 'Persistent mode needs the site to be opened from its web address, outside another page\u2019s frame.';
+    modeSel.value = canPersist && S.setup.mode === 'persistent' ? 'persistent' : 'restart';
     players.value = String(S.setup.players); timeSel.value = String([0, 100, 250, 500, 1000, 2000, 5000].includes(S.setup.timeMs) ? S.setup.timeMs : 0); invalidSel.value = S.setup.invalid;
     const slotValues = () => { const d = ['me', BUILTIN_VALUE('random'), BUILTIN_VALUE('hugger'), BUILTIN_VALUE('flood')]; return d.map((v, i) => S.setup.slots[i] || v); };
     function slotOptions(i) {
@@ -138,9 +143,9 @@
       }
     }
     players.addEventListener('change', () => { fillSlots(); saveSoon(); });
-    for (const x of [widthIn, heightIn, timeSel, seedIn, invalidSel]) x.addEventListener('change', () => { remember(); });
-    function remember() { Object.assign(S.setup, { width: intIn(widthIn, 10, 40, 20), height: intIn(heightIn, 10, 40, 20), players: +players.value, timeMs: +timeSel.value, seed: seedIn.value.replace(/[^0-9]/g, '').slice(0, 10), invalid: invalidSel.value }); saveSoon(); }
-    const settingsNow = () => { remember(); return T.settingsOf({ width: S.setup.width, height: S.setup.height, players: +players.value, timeMs: +timeSel.value, invalid: invalidSel.value }); };
+    for (const x of [widthIn, heightIn, timeSel, seedIn, invalidSel, modeSel]) x.addEventListener('change', () => { remember(); });
+    function remember() { Object.assign(S.setup, { width: intIn(widthIn, 10, 40, 20), height: intIn(heightIn, 10, 40, 20), players: +players.value, timeMs: +timeSel.value, seed: seedIn.value.replace(/[^0-9]/g, '').slice(0, 10), invalid: invalidSel.value, mode: modeSel.value }); saveSoon(); }
+    const settingsNow = () => { remember(); return T.settingsOf({ width: S.setup.width, height: S.setup.height, players: +players.value, timeMs: +timeSel.value, invalid: invalidSel.value, mode: modeSel.value }); };
     const seedNow = () => { const t = seedIn.value.replace(/[^0-9]/g, ''); return t ? T.seedOf(Number(t)) : (Math.floor(Math.random() * 4294967296) >>> 0) || 1; };
     function entryOf(value) {
       if (value === 'me') return { name: bot.name, lang: bot.lang, source: bot.source };
@@ -275,6 +280,7 @@
       status.textContent = 'Running your bot on the empty board…';
       try {
         const t0 = performance.now(), d = A.driverFor(entryOf('me'), s, 1, 0), start = await d.start({ settings: s, player: 0, input }), r = start.ok ? await d.move(input) : { text: '', err: start.error, status: 'error' };
+        if (d.stop) d.stop();
         const sp = T.splitOutput(r.text), pm = T.parseMove(sp.text), ms = Math.round(performance.now() - t0);
         const out = [];
         if (!start.ok) out.push('The program did not start:\n' + String(start.error).slice(0, 3000));
@@ -301,7 +307,7 @@
       linkSlot, pasteDetails, paneNote, solutionNote);
     const setup = el('section', { class: 'arena-setup', 'aria-label': 'The match' },
       el('div', { class: 'toolbar' }, el('label', { class: 'arena-field' }, 'Players ', players), slotsBox),
-      el('div', { class: 'toolbar arena-opts' }, el('label', { class: 'arena-field' }, 'Board ', widthIn, ' × ', heightIn), el('label', { class: 'arena-field' }, 'Time per move ', timeSel), el('label', { class: 'arena-field' }, 'Seed ', seedIn), el('label', { class: 'arena-field' }, 'An invalid move ', invalidSel)),
+      el('div', { class: 'toolbar arena-opts' }, el('label', { class: 'arena-field' }, 'Board ', widthIn, ' × ', heightIn), el('label', { class: 'arena-field' }, 'Time per move ', timeSel), el('label', { class: 'arena-field' }, 'Seed ', seedIn), el('label', { class: 'arena-field' }, 'An invalid move ', invalidSel), el('label', { class: 'arena-field' }, 'Run bots ', modeSel)),
       el('div', { class: 'toolbar' }, playBtn, seriesBtn, stopBtn, testBtn, status));
     const watchPane = el('section', { class: 'arena-pane', 'aria-label': 'The match' }, viewerHost, matchTools, matchLink, seriesBox,
       el('div', { class: 'arena-logs' }, el('div', { class: 'toolbar' }, tabs, el('label', { class: 'arena-showinput small' }, showInput, ' Show input')), inputHead, inputOut, logOut));
@@ -386,6 +392,8 @@
     const seedIn = el('input', { type: 'text', inputmode: 'numeric', placeholder: 'random', 'aria-label': 'Seed', class: 'arena-seed' });
     const timeSel = el('select', { 'aria-label': 'Time per move' }, [[0, 'By language'], [250, '250 ms'], [500, '500 ms'], [1000, '1 second'], [2000, '2 seconds']].map(([v, t]) => el('option', { value: v }, t)));
     const invalidSel = el('select', { 'aria-label': 'An invalid move' }, [['up', 'is moved UP'], ['forfeit', 'forfeits the match']].map(([v, t]) => el('option', { value: v }, t)));
+    const canPersist = A.persistentAvailable();
+    const modeSel = el('select', { 'aria-label': 'How bots are run' }, [el('option', { value: 'restart' }, 'Restart: afresh every turn'), el('option', Object.assign({ value: 'persistent' }, canPersist ? {} : { disabled: '' }), 'Persistent: keeps running' + (canPersist ? '' : ' (not available here)'))]);
     roundsIn.addEventListener('input', renderEntries);
     const bar = el('progress', { max: 1, value: 0, 'aria-label': 'Progress', hidden: '' }), barText = el('span', { class: 'small', role: 'status' });
     const runBtn = el('button', { class: 'btn primary', onclick: () => run() }, 'Run the tournament');
@@ -398,7 +406,7 @@
     async function run() {
       if (running || entries.length < 2) return;
       stopFlag = false; running = true; runBtn.disabled = true; stopBtn.hidden = false; bar.hidden = false; say(''); resultsBox.hidden = true;
-      const s = T.settingsOf({ width: intIn(widthIn, 10, 40, 20), height: intIn(heightIn, 10, 40, 20), players: 2, timeMs: +timeSel.value, invalid: invalidSel.value });
+      const s = T.settingsOf({ width: intIn(widthIn, 10, 40, 20), height: intIn(heightIn, 10, 40, 20), players: 2, timeMs: +timeSel.value, invalid: invalidSel.value, mode: canPersist ? modeSel.value : 'restart' });
       const seedText = seedIn.value.replace(/[^0-9]/g, ''), seed = seedText ? T.seedOf(Number(seedText)) : (Math.floor(Math.random() * 4294967296) >>> 0) || 1;
       const snapshot = entries.slice(), bots = snapshot.map((e) => ({ name: e.name, lang: e.lang, driver: (sd) => A.driverFor(e, s, sd, 0) }));
       const rounds = intIn(roundsIn, 1, 10, 2);
@@ -499,7 +507,7 @@
         el('div', { class: 'toolbar' }, el('span', { class: 'small' }, 'Built-in bots to compare against:'), builtinBtns),
         el('h3', {}, 'My saved bots'), saved, el('h3', {}, 'Bot files and links'), drop, paste, el('div', { class: 'toolbar' }, pasteBtn), msg),
       el('section', {}, el('h2', {}, '2. The tournament'),
-        el('div', { class: 'toolbar arena-opts' }, el('label', { class: 'arena-field' }, 'Board ', widthIn, ' × ', heightIn), el('label', { class: 'arena-field' }, 'Matches per pairing ', roundsIn), el('label', { class: 'arena-field' }, 'Time per move ', timeSel), el('label', { class: 'arena-field' }, 'Seed ', seedIn), el('label', { class: 'arena-field' }, 'An invalid move ', invalidSel)),
+        el('div', { class: 'toolbar arena-opts' }, el('label', { class: 'arena-field' }, 'Board ', widthIn, ' × ', heightIn), el('label', { class: 'arena-field' }, 'Matches per pairing ', roundsIn), el('label', { class: 'arena-field' }, 'Time per move ', timeSel), el('label', { class: 'arena-field' }, 'Seed ', seedIn), el('label', { class: 'arena-field' }, 'An invalid move ', invalidSel), el('label', { class: 'arena-field' }, 'Run bots ', modeSel)),
         el('p', { class: 'small' }, 'Every pair plays the number of matches you choose, and the two bots swap starting corners each time. A win is 3 points, a draw 1; ties are broken by the turns a bot survived in all its matches.'),
         el('div', { class: 'toolbar' }, runBtn, stopBtn, bar, barText)),
       resultsBox);

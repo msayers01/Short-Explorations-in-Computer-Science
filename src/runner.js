@@ -236,4 +236,21 @@
     check: (code) => cpp.run({ t: 'check', totalMs: 7000, idleMs: 7000, opts: {}, payload: { code: String(code), maxTimeout: 4000 } }),
     cancel: () => cpp.cancel()
   };
+  // A program that stays running between turns (Bot Arena persistent mode, src/botsession.js): its own Web Worker, built from the same data block as the
+  // interpreter's usual one, and a block of shared memory in which the page hands it each turn. That needs the site to be cross-origin isolated
+  // (the COOP and COEP headers build.js writes), which is not so for a copy opened from a file or shown inside another site's frame.
+  const BOT_SRC = { python: 'py-src', cpp: 'cpp-src', java: 'java-src', scheme: 'scheme-src' };
+  window.BOTRUN = {
+    available: () => !!(window.BOTSESSION && window.BOTSESSION.available() && window.crossOriginIsolated === true && typeof Worker !== 'undefined'),
+    /** open(lang, source, {startMs, maxOut}) → Promise<{err} | {session}>; session.turn(text, limitMs) → Promise<{out, err, timedOut, exited}>, session.close() */
+    open(lang, source, opts) {
+      const id = BOT_SRC[lang];
+      if (!id) return Promise.resolve({ err: 'There is no sandbox for ' + lang + '.' });
+      return window.BOTSESSION.open(() => {
+        const url = URL.createObjectURL(new Blob([text(id)], { type: 'text/javascript' })), w = new Worker(url);
+        return { postMessage: (m) => w.postMessage(m), terminate: () => { w.terminate(); URL.revokeObjectURL(url); },
+          set onmessage(f) { w.onmessage = (e) => f(e.data); }, set onerror(f) { w.onerror = (e) => { if (e.preventDefault) e.preventDefault(); f(e); }; } };
+      }, source, opts);
+    }
+  };
 })();

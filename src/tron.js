@@ -19,7 +19,7 @@
   const FROM_LETTER = { U: 'UP', D: 'DOWN', L: 'LEFT', R: 'RIGHT' };
   const LANGS = ['python', 'cpp', 'java', 'scheme'];
   const LIMITS = { minSize: 10, maxSize: 40, minPlayers: 2, maxPlayers: 4, minTime: 50, maxTime: 10000, maxName: 40, maxSource: 20000, maxPlayerName: 40 };
-  const DEFAULTS = { width: 20, height: 20, players: 2, timeMs: 0, invalid: 'up' };
+  const DEFAULTS = { width: 20, height: 20, players: 2, timeMs: 0, invalid: 'up', mode: 'restart' };
   /** The time a bot gets per move when the match says 0 ("by language"): the teaching C++ interpreter is the slow one. */
   const LANG_TIME = { python: 500, java: 500, scheme: 500, cpp: 2000, js: 500 };
   const limitFor = (lang, timeMs) => timeMs || LANG_TIME[lang] || 500;
@@ -35,7 +35,8 @@
       height: clampInt(s.height, LIMITS.minSize, LIMITS.maxSize, DEFAULTS.height),
       players: clampInt(s.players, LIMITS.minPlayers, LIMITS.maxPlayers, DEFAULTS.players),
       timeMs: Number(s.timeMs) === 0 ? 0 : clampInt(s.timeMs, LIMITS.minTime, LIMITS.maxTime, DEFAULTS.timeMs),
-      invalid: s.invalid === 'forfeit' ? 'forfeit' : 'up'
+      invalid: s.invalid === 'forfeit' ? 'forfeit' : 'up',
+      mode: s.mode === 'persistent' ? 'persistent' : 'restart'   // how bots are run: afresh every turn, or started once and kept running
     };
   }
   const seedOf = (x) => { x = Math.floor(Number(x)); return Number.isFinite(x) ? (x >>> 0) : 1; };
@@ -236,6 +237,30 @@
       stop() { } };
   }
 
+  /** A driver for a program that is started once and kept running (persistent mode). open(source, {startMs}) → Promise<{err} | {session}> starts it
+      (src/botsession.js); session.turn(text, limitMs) → Promise<{out, err, timedOut, exited}>; session.close(). The turn text is framed as the spec says:
+      the first turn a program is sent starts with the line "TRON 1", every turn ends with "END", and GAMEOVER is sent when the match is over.
+      start() waits until the program is waiting for its first turn, so a program that does not compile or crashes on start forfeits before turn 1.
+      A program that is too slow is ended; the next turn starts a new one (and it forgets everything, as it is a new program). */
+  function persistentDriver(def, open) {
+    const limit = () => def.limitMs || limitFor(def.lang, 0);
+    let session = null, fresh = true;
+    const spawn = async () => { const r = await open(def.source, { startMs: Math.max(8000, 4 * limit()) }); if (!r.err) { session = r.session; fresh = true; } return r; };
+    return { name: def.name, lang: def.lang, builtin: false, persistent: true, limitMs: limit(),
+      async start() { const r = await spawn(); return r.err ? { ok: false, error: r.err } : { ok: true }; },
+      async move(text) {
+        if (!session) { const r = await spawn(); if (r.err) return { text: '', err: String(r.err), status: 'error', note: 'could not start again' }; }
+        const framed = (fresh ? 'TRON 1\n' : '') + text + 'END\n';
+        fresh = false;
+        const r = await session.turn(framed, limit());
+        if (r.timedOut) { session = null; return { text: '', err: '', status: 'timeout' }; }
+        if (r.err) { session = null; const e = String(r.err); return { text: r.out, err: e, status: 'error', note: e.split('\n')[0].slice(0, 120) }; }
+        if (r.exited) session = null;   // it answered and ended, as a restart-mode bot does: the next turn starts it again
+        return { text: r.out, err: '', status: 'ok' };
+      },
+      stop() { if (session) { session.close(); session = null; } } };
+  }
+
   /** Play one match. opts: {settings, seed, drivers: one per player, onTurn(info), onLog(player, kind, text), shouldStop()}.
       Resolves to {replay, frames, state, aborted}. replay is the small file (settings, seed, moves, result); frames are snapshots, one per turn
       (frames[0] is the empty board), which the viewer draws. */
@@ -243,39 +268,41 @@
     const s = settingsOf(Object.assign({}, opts.settings, { players: opts.drivers.length })), st = create(s, opts.seed);
     const drivers = opts.drivers, log = opts.onLog || (() => { });
     const frames = [snapshot(st, [])], moves = [], crashes = [];
-    const starts = await Promise.all(drivers.map(async (d, p) => { try { return (await d.start({ settings: s, player: p, input: serialize(st, p) })) || { ok: true }; } catch (e) { return { ok: false, error: String(e && e.message || e) }; } }));
-    const failed = starts.map((r) => (r.ok === false ? String(r.error || 'the bot did not start') : ''));
-    failed.forEach((f, p) => { if (f) log(p, 'referee', 'Player ' + (p + 1) + ' (' + drivers[p].name + ') forfeits before turn 1: ' + f.split('\n')[0].slice(0, 300), 0);
-      if (f.includes('\n')) log(p, 'stderr', f.slice(0, 2000), 0); });
     let aborted = false;
-    while (!st.over) {
-      if (opts.shouldStop && opts.shouldStop()) { aborted = true; break; }
-      const turn = st.turn + 1, alive = aliveList(st), inputs = new Array(st.n).fill(''), chosen = new Array(st.n).fill(null), why = new Array(st.n).fill('');
-      await Promise.all(alive.map(async (p) => {
-        if (failed[p]) { chosen[p] = 'X'; why[p] = 'did not start: ' + failed[p].split('\n')[0].slice(0, 200); return; }
-        const obs = observe(st, p); inputs[p] = serialize(st, p);
-        let res;
-        try { res = await drivers[p].move(inputs[p], obs, turn); } catch (e) { res = { text: '', err: String(e && e.message || e), status: 'crash' }; }
-        res = res || { text: '', err: '', status: 'crash' };
-        const sp = splitOutput(res.text); res = Object.assign({}, res, { text: sp.text });
-        if (sp.log) log(p, 'stderr', sp.log, turn);
-        if (res.err) log(p, 'stderr', res.err, turn);
-        let problem = '';
-        if (res.status === 'timeout') problem = 'took longer than ' + (drivers[p].limitMs || limitFor(drivers[p].lang, s.timeMs)) + ' ms';
-        else if (res.status === 'error' || res.status === 'crash') problem = 'crashed' + (res.note ? ' (' + res.note + ')' : '');
-        else { const r = parseMove(res.text); if (r.move) chosen[p] = r.move; else problem = r.error; }
-        if (problem) {
-          const act = s.invalid === 'forfeit' ? 'forfeits' : 'is moved UP';
-          log(p, 'referee', 'Turn ' + turn + ': player ' + (p + 1) + ' (' + drivers[p].name + ') ' + problem + '; ' + act + '.', turn);
-          if (s.invalid === 'forfeit') { chosen[p] = 'X'; why[p] = 'forfeit: ' + problem; } else chosen[p] = 'UP';
-        }
-      }));
-      const events = step(st, chosen, why);
-      moves.push(chosen.map((m, p) => (!alive.includes(p) ? '-' : m === 'X' ? 'X' : LETTER[m])).join(''));
-      for (const e of events) crashes.push(e);
-      const frame = snapshot(st, events); frames.push(frame);
-      if (opts.onTurn) opts.onTurn({ turn, frame, moves: moves[moves.length - 1], inputs, events, state: st });
-    }
+    try {
+      const starts = await Promise.all(drivers.map(async (d, p) => { try { return (await d.start({ settings: s, player: p, input: serialize(st, p) })) || { ok: true }; } catch (e) { return { ok: false, error: String(e && e.message || e) }; } }));
+      const failed = starts.map((r) => (r.ok === false ? String(r.error || 'the bot did not start') : ''));
+      failed.forEach((f, p) => { if (f) log(p, 'referee', 'Player ' + (p + 1) + ' (' + drivers[p].name + ') forfeits before turn 1: ' + f.split('\n')[0].slice(0, 300), 0);
+        if (f.includes('\n')) log(p, 'stderr', f.slice(0, 2000), 0); });
+      while (!st.over) {
+        if (opts.shouldStop && opts.shouldStop()) { aborted = true; break; }
+        const turn = st.turn + 1, alive = aliveList(st), inputs = new Array(st.n).fill(''), chosen = new Array(st.n).fill(null), why = new Array(st.n).fill('');
+        await Promise.all(alive.map(async (p) => {
+          if (failed[p]) { chosen[p] = 'X'; why[p] = 'did not start: ' + failed[p].split('\n')[0].slice(0, 200); return; }
+          const obs = observe(st, p); inputs[p] = serialize(st, p);
+          let res;
+          try { res = await drivers[p].move(inputs[p], obs, turn); } catch (e) { res = { text: '', err: String(e && e.message || e), status: 'crash' }; }
+          res = res || { text: '', err: '', status: 'crash' };
+          const sp = splitOutput(res.text); res = Object.assign({}, res, { text: sp.text });
+          if (sp.log) log(p, 'stderr', sp.log, turn);
+          if (res.err) log(p, 'stderr', res.err, turn);
+          let problem = '';
+          if (res.status === 'timeout') problem = 'took longer than ' + (drivers[p].limitMs || limitFor(drivers[p].lang, s.timeMs)) + ' ms';
+          else if (res.status === 'error' || res.status === 'crash') problem = 'crashed' + (res.note ? ' (' + res.note + ')' : '');
+          else { const r = parseMove(res.text); if (r.move) chosen[p] = r.move; else problem = r.error; }
+          if (problem) {
+            const act = s.invalid === 'forfeit' ? 'forfeits' : 'is moved UP';
+            log(p, 'referee', 'Turn ' + turn + ': player ' + (p + 1) + ' (' + drivers[p].name + ') ' + problem + '; ' + act + '.', turn);
+            if (s.invalid === 'forfeit') { chosen[p] = 'X'; why[p] = 'forfeit: ' + problem; } else chosen[p] = 'UP';
+          }
+        }));
+        const events = step(st, chosen, why);
+        moves.push(chosen.map((m, p) => (!alive.includes(p) ? '-' : m === 'X' ? 'X' : LETTER[m])).join(''));
+        for (const e of events) crashes.push(e);
+        const frame = snapshot(st, events); frames.push(frame);
+        if (opts.onTurn) opts.onTurn({ turn, frame, moves: moves[moves.length - 1], inputs, events, state: st });
+      }
+    } finally { for (const d of drivers) { try { if (d.stop) d.stop(); } catch (e) { /* a driver that cannot stop is the driver's problem */ } } }
     const replay = { format: 'tronreplay', version: 1, settings: s, seed: st.seed, players: drivers.map((d) => ({ name: cleanText(d.name, LIMITS.maxPlayerName), lang: LANGS.includes(d.lang) ? d.lang : 'js' })), moves,
       result: { winner: st.winner, draw: st.draw, capped: st.capped, turns: st.turn, crashes: crashes.map((c) => ({ player: c.player, turn: c.turn, at: c.at, reason: c.reason })) } };
     return { replay, frames, state: st, aborted };
@@ -403,5 +430,5 @@
   }
 
   return { MOVES, DELTA, LETTER, LANGS, LIMITS, DEFAULTS, LANG_TIME, limitFor, settingsOf, seedOf, rng, startCells, create, step, aliveList, observe, serialize, parseObs, parseMove, legalMoves,
-    BUILTINS, builtinById, builtinDriver, botDriver, splitOutput, playMatch, snapshot, fromFrame, cleanReplay, simulate, describeResult, cleanBot, botFile, fileSafe, cleanText, schedule, runTournament, standings, rank, standingsCsv, zip, crc32 };
+    BUILTINS, builtinById, builtinDriver, botDriver, persistentDriver, splitOutput, playMatch, snapshot, fromFrame, cleanReplay, simulate, describeResult, cleanBot, botFile, fileSafe, cleanText, schedule, runTournament, standings, rank, standingsCsv, zip, crc32 };
 });

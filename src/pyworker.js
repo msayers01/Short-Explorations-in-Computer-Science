@@ -69,8 +69,30 @@
       .then((err) => { flush(); cur = null; post({ t: 'done', id, err }); });
   }
 
+  // A program that stays running (Bot Arena persistent mode): input() waits, in this worker, for the next turn (src/botio.js), and the
+  // program is never ended by a clock here: the page ends the worker when a turn takes too long.
+  function startBot(msg) {
+    const id = msg.id, io = BOTIO.make(msg.sab, post, id);
+    cur = { id, waitInput: null, waitStep: null, fast: false };
+    let pending = '';
+    const inputfun = () => {   // one line; '' when the input has ended
+      for (;;) {
+        const i = pending.indexOf('\n');
+        if (i >= 0) { const line = pending.slice(0, i); pending = pending.slice(i + 1); return line; }
+        const t = io.more();
+        if (!t) { const rest = pending; pending = ''; return rest; }
+        pending += t;
+      }
+    };
+    Sk.configure({ output: io.write, read, __future__: Sk.python3, execLimit: 1e9, yieldLimit: null, inputfun, inputfunTakesPrompt: false, retainglobals: false });
+    Sk.misceval.asyncToPromise(() => Sk.importMainWithBody('<stdin>', false, String(msg.code), true))
+      .then(() => null, (e) => errText(e))
+      .then((err) => { io.flush(); cur = null; post({ t: 'done', id, err }); });
+  }
+
   listen((m) => {
     if (!m || typeof m !== 'object') return;
+    if (m.t === 'bot') { if (cur) post({ t: 'done', id: m.id, err: 'The Python sandbox is busy with another program.' }); else startBot(m); return; }
     if (m.t === 'run' || m.t === 'trace') { if (cur) post({ t: 'done', id: m.id, err: 'The Python sandbox is busy with another program.' }); else start(m); }
     else if (m.t === 'input' && cur && cur.waitInput && m.id === cur.id) { const f = cur.waitInput; cur.waitInput = null; f(String(m.value == null ? '' : m.value)); }
     else if (m.t === 'next' && cur && cur.waitStep) { const f = cur.waitStep; cur.waitStep = null; f(); }

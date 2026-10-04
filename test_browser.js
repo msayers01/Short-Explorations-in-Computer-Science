@@ -515,12 +515,14 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   const http = require('http');
   const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.gz': 'application/gzip', '.md': 'text/plain' };
   const root = path.join(__dirname, 'dist');
+  // The page is served with the headers of dist/_headers (its rules for /index.html and /*), so what ships is what is tested: cross-origin isolation among them.
+  const indexHeaders = {}; { let on = false; for (const line of fs.readFileSync(path.join(root, '_headers'), 'utf8').split('\n')) { if (!line.trim()) { on = false; continue; } if (!/^\s/.test(line)) { if (line.trim() === '/index.html' || line.trim() === '/*') on = true; continue; } if (on) { const i = line.indexOf(':'); indexHeaders[line.slice(0, i).trim()] = line.slice(i + 1).trim(); } } }
   let tamper = false;   // when set, the server hands out a changed compiler script
   const server = http.createServer((req, res) => {
     const p = path.join(root, decodeURIComponent(req.url.split('?')[0]).replace(/^\/$/, '/index.html'));
     if (!p.startsWith(root) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); res.end('no'); return; }
     if (tamper && p.endsWith('toolchain.js')) { const body = Buffer.concat([fs.readFileSync(p), Buffer.from(';self.__tampered = true;')]); res.writeHead(200, { 'Content-Type': 'text/javascript', 'Content-Length': body.length }); res.end(body); return; }
-    res.writeHead(200, { 'Content-Type': types[path.extname(p)] || 'application/octet-stream', 'Content-Length': fs.statSync(p).size }); fs.createReadStream(p).pipe(res);
+    res.writeHead(200, Object.assign({ 'Content-Type': types[path.extname(p)] || 'application/octet-stream', 'Content-Length': fs.statSync(p).size }, p.endsWith('index.html') ? indexHeaders : {})); fs.createReadStream(p).pipe(res);
   });
   await new Promise((ok) => server.listen(0, '127.0.0.1', ok));
   const origin = 'http://127.0.0.1:' + server.address().port;
@@ -644,6 +646,63 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await fp.click('.clang-gate button:has-text("Not now")'); await fp.waitForTimeout(500);
   check('full c++ assignment: "Not now" downloads nothing and says so', freshReqs.length === 0 && /not downloaded/.test(await fp.locator('.asg-bar .verdict').innerText()), freshReqs);
   await fresh.close();
+  // ---- Bot Arena, persistent mode: needs the page to be cross-origin isolated, which the headers in dist/_headers make it (not so for a file)
+  {
+    check('arena persistent: the shipped headers isolate the page', indexHeaders['Cross-Origin-Opener-Policy'] === 'same-origin' && indexHeaders['Cross-Origin-Embedder-Policy'] === 'require-corp', indexHeaders);
+    check('arena persistent: a page opened as a file is not isolated, so persistent mode is off and says so', await page.evaluate(() => !window.crossOriginIsolated && !window.BOTRUN.available()) && (await (async () => { await goto('#/arena'); return page.evaluate(() => document.querySelector('select[aria-label="How bots are run"] option[value=persistent]').disabled); })()));
+    await hp.goto(origin + '/index.html#/arena'); await hp.waitForSelector('.arena');
+    check('arena persistent: over http with the headers the page is isolated and persistent mode is on', await hp.evaluate(() => window.crossOriginIsolated === true && window.BOTRUN.available()) && !(await hp.evaluate(() => document.querySelector('select[aria-label="How bots are run"] option[value=persistent]').disabled)));
+    // a Python turtle drawing (a sandboxed frame, an iframe inside a cross-origin isolated page) still works
+    await hp.goto(origin + '/index.html#/lab'); await hp.waitForSelector('.editor textarea');
+    await hp.click('.lang-btn:has-text("Python")');
+    await hp.evaluate(() => { const t = document.querySelector('.editor textarea'); t.value = 'import turtle\nt = turtle.Turtle()\nt.forward(50)\nturtle.done()\nprint("drawn")'; t.dispatchEvent(new Event('input', { bubbles: true })); });
+    await hp.click('.lab-toolbar button:has-text("Run")');
+    await hp.waitForFunction(() => /^(exit|error|stopped)/.test(document.querySelector('.lab-out .term-status').textContent), null, { timeout: 20000 }).catch(() => { });
+    check('arena persistent: turtle graphics (a sandboxed frame) still work in the isolated page', /^exit 0/.test(await hp.locator('.lab-out .term-status').textContent()) && (await hp.frameLocator('#lab-turtle iframe').locator('canvas').count()) > 0);
+    await hp.goto(origin + '/index.html#/arena'); await hp.waitForSelector('.arena');
+    await hp.selectOption('select[aria-label="How bots are run"]', 'persistent');
+    const B = require('./src/arena_bots.js');
+    const setCode = (code) => hp.evaluate((c) => { const t = document.querySelector('.arena-editor textarea'); t.value = c; t.dispatchEvent(new Event('input', { bubbles: true })); }, code);
+    const playHp = async () => { await hp.click('.arena-setup button:text-is("Play")'); await hp.waitForSelector('.arena-banner:not([hidden])', { timeout: 120000 }); return hp.locator('.arena-banner').innerText(); };
+    await hp.selectOption('select[aria-label="Player 2"]', 'b:flood');
+    for (const lang of ['python', 'java', 'cpp', 'scheme']) {
+      await hp.selectOption('select[aria-label="Language"]', lang);
+      const t0 = Date.now(); const banner = await playHp();
+      const log = await hp.locator('.arena-log').last().innerText();
+      check('arena persistent: the ' + lang + ' starter plays a match with a bot that stays running, no invalid moves', /wins after|draw/i.test(banner) && !/is moved UP|forfeits/.test(log), [banner, log.slice(0, 200)]);
+      console.log('     ' + lang + ' persistent match: ' + (Date.now() - t0) + ' ms');
+    }
+    // a bot that remembers: it turns right every third turn using a counter that restart mode would lose
+    const counter = { python: 'n = 0\nwhile True:\n    line = input()\n    if line == "" or line == "GAMEOVER":\n        break\n    if line == "END":\n        n += 1\n        print("DOWN" if n % 3 == 0 else "RIGHT")\n',
+      java: 'import java.util.Scanner;\npublic class Main { public static void main(String[] a) { Scanner in = new Scanner(System.in); int n = 0; while (in.hasNext()) { String w = in.next(); if (w.equals("END")) { n++; System.out.println(n % 3 == 0 ? "DOWN" : "RIGHT"); } if (w.equals("GAMEOVER")) break; } } }',
+      cpp: '#include <iostream>\n#include <cstring>\nusing namespace std;\nint main() { int n = 0; char w[64]; while (cin >> w) { if (strcmp(w, "END") == 0) { n++; if (n % 3 == 0) cout << "DOWN" << endl; else cout << "RIGHT" << endl; } } return 0; }',
+      scheme: '(define n 0)\n(let loop ((w (read)))\n  (cond ((eof-object? w) 0)\n        ((eq? w (quote END)) (set! n (+ n 1)) (display (if (= (remainder n 3) 0) "DOWN" "RIGHT")) (newline) (loop (read)))\n        (else (loop (read)))))' };
+    await hp.selectOption('select[aria-label="Player 2"]', 'b:random');
+    for (const lang of ['python', 'java', 'cpp', 'scheme']) {
+      await hp.selectOption('select[aria-label="Language"]', lang);
+      await hp.evaluate(() => { const l = document.querySelector('.arena-swap:not([hidden]) button'); if (l) l.click(); });   // "Replace my code" when the language is changed after an edit
+      await setCode(counter[lang]);
+      await hp.fill('input[aria-label="Seed"]', '5');
+      await playHp();
+      const dl = await Promise.all([hp.waitForEvent('download'), hp.click('button:has-text("Download replay")')]);
+      const rep = JSON.parse(require('fs').readFileSync(await dl[0].path(), 'utf8'));
+      const first = rep.moves.slice(0, 6).map((m) => m[0]).join('');
+      check('arena persistent: the ' + lang + ' bot keeps its counter between turns (RIGHT, RIGHT, DOWN, RIGHT, ...)', first.startsWith('RRDR'.slice(0, Math.min(4, first.length))) && first.length >= 3, first);
+    }
+    // a bot that never finishes a turn is ended, the match goes on, and the page stays alive
+    await hp.selectOption('select[aria-label="Language"]', 'python');
+    await hp.evaluate(() => { const l = document.querySelector('.arena-swap:not([hidden]) button'); if (l) l.click(); });
+    await setCode('n = 0\nwhile True:\n    line = input()\n    if line == "END":\n        n += 1\n        if n == 3:\n            while True:\n                pass\n        print("RIGHT")\n');   // answers twice, then gets stuck
+    await hp.fill('input[aria-label="Seed"]', '');
+    await hp.selectOption('select[aria-label="Time per move"]', '250');
+    const bannerLoop = await playHp();
+    check('arena persistent: a bot that gets stuck in a loop on turn 3 is ended (logged as too slow), and the match still ends', /wins|draw/i.test(bannerLoop) && /took longer than 250 ms/.test(await hp.locator('.arena-log').last().innerText()), bannerLoop);
+    await setCode('def f(:\n');
+    const bannerBad = await playHp();
+    check('arena persistent: a syntax error forfeits before turn 1', /Player 2 .* wins after 1 turn/.test(bannerBad) && /forfeits before turn 1/.test(await hp.locator('.arena-log').last().innerText()), bannerBad);
+    void B;
+    await hp.goto(origin + '/index.html#/lab'); await hp.waitForSelector('#app > *');
+  }
   check('full c++: no policy violations, no page errors', hpViolations.length === 0 && hpErrors.length === 0, [hpViolations, hpErrors]);
   await hp.close(); server.close();
 

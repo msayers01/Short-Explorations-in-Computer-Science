@@ -61,6 +61,7 @@ const scripts = [
   'src/mathgrade.js',
   'src/cppfull.js',
   'src/javautil.js',
+  'src/botsession.js', // a bot that stays running (Bot Arena persistent mode): the page's side of the shared-memory channel (also loaded by node)
   'src/runner.js',
   'src/parsons.js',    // Parsons problems: blocks, order, program (also loaded by node: test_course.js)
   'src/app.js',
@@ -163,9 +164,11 @@ fs.writeFileSync('THIRD-PARTY-NOTICES.md', '# Third-party notices\n\nThe built s
 // Web Worker (or a sandboxed iframe) from its text, so Python, C++ and Java programs run where they can reach nothing of the page.
 const clean = (text) => scriptSafe(text.replace(/\r\n?/g, '\n'));   // the HTML parser turns CR and CRLF into LF, so do it here, and the hashes match
 // (Skulpt looks at importScripts to learn what kind of place it is running in, so for Python the lockdown comes just after Skulpt loads.)
-const pySrc = ['node_modules/skulpt/dist/skulpt.min.js', 'node_modules/skulpt/dist/skulpt-stdlib.js', 'src/lockdown.js', 'src/sandbox.js', 'src/pyworker.js'].map(r).join(';\n');
-const cppSrc = ['src/lockdown.js', 'vendor/jscpp.min.js', 'src/cpputil.js', 'src/cppstep.js', 'src/cppworker.js'].map(r).join(';\n');
-const javaSrc = ['src/lockdown.js', 'src/java.js', 'src/javaworker.js'].map(r).join(';\n');   // the site's own Java interpreter
+const WS = require('./scripts/worker-sources.js');   // which files make each worker (test_arena.js uses the same list)
+const pySrc = WS.py.map(r).join(';\n');
+const cppSrc = WS.cpp.map(r).join(';\n');
+const javaSrc = WS.java.map(r).join(';\n');
+const schemeSrc = WS.scheme.map(r).join(';\n');   // Scheme runs in the page, except for a Bot Arena bot that stays running between turns
 const bootSrc = r('src/pyboot.js');
 const clangSrc = r('src/clangworker.js');   // the toolchain itself is downloaded (see CLANG_DIR); only this glue is in the page
 const dataBlock = (id, text) => `<script type="text/plain" id="${id}">${clean(text)}</script>\n`;
@@ -176,7 +179,7 @@ let body = scriptTag(`/* build info and third-party licences (build.js) */\nwind
 // Content-Security-Policy line of dist/_headers past the 2000 characters Cloudflare allows for a line of that file, and the deploy failed.)
 // The files are joined with a semicolon between them, so a file that ends in `})()` cannot call the next file's opening parenthesis.
 body += scriptTag(scripts.map((s) => `/* ${s} */\n${scriptSafe(r(s))}\n`).join(';\n'));
-body += dataBlock('py-src', pySrc) + dataBlock('cpp-src', cppSrc) + dataBlock('java-src', javaSrc) + dataBlock('py-boot', bootSrc) + dataBlock('clang-src', clangSrc);
+body += dataBlock('py-src', pySrc) + dataBlock('cpp-src', cppSrc) + dataBlock('java-src', javaSrc) + dataBlock('scheme-src', schemeSrc) + dataBlock('py-boot', bootSrc) + dataBlock('clang-src', clangSrc);
 const indexHashes = inline.map(sha).concat(sha(clean(bootSrc)));   // the last one is the script inside the sandboxed iframe (see pyboot.js)
 const html = headFor(indexHashes) + body + '</body>\n</html>\n';
 fs.mkdirSync('dist', { recursive: true });
@@ -198,9 +201,17 @@ if (gm) {
 // tags in the pages, plus the headers a <meta> cannot carry. The site is allowed to be framed, because teachers embed it in
 // learning-management systems; to forbid that, add "frame-ancestors 'none'" to the policy below (csp's second argument).
 const common = ['X-Content-Type-Options: nosniff', 'Referrer-Policy: no-referrer', 'Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()'];
-const rule = (paths, hashes) => paths.map(p => p + '\n').join('') + ['Content-Security-Policy: ' + csp(hashes)].concat(common).map(h => '  ' + h + '\n').join('') + '\n';
+// The main page is also cross-origin isolated (COOP and COEP), which a SharedArrayBuffer needs: the Bot Arena's persistent mode shares memory with a worker
+// so that a bot can wait for its next turn (written as one rule for "/*", below). The page loads nothing from any other origin (see the policy), so COEP require-corp costs it nothing. In a frame
+// of another site, or opened from a file, the page is not isolated, and persistent mode says so and is off.
+const isolation = ['Cross-Origin-Opener-Policy: same-origin', 'Cross-Origin-Embedder-Policy: require-corp'];
+const rule = (paths, hashes, extra) => paths.map(p => p + '\n').join('') + ['Content-Security-Policy: ' + csp(hashes)].concat(common, extra || []).map(h => '  ' + h + '\n').join('') + '\n';
 const immutable = ['/' + CLANG_DIR + '*', '/img/*'].map((p) => p + '\n  Cache-Control: public, max-age=31536000, immutable\n  X-Content-Type-Options: nosniff\n\n').join('');
-const headersText = '# Written by build.js. Do not edit.\n' + immutable + rule(['/', '/index.html'], indexHashes) + rule(['/teacher-guide', '/teacher-guide.html'], guideHashes);
+// Cloudflare serves the page at "/" from index.html, and a rule written for "/" or "/index.html" is not applied to that response (a request for /index.html only gets
+// a redirect to "/", which carries the headers: the document itself does not), so the isolation headers are on "/*", which matches "/" too. They do no harm to the other
+// files (every page and file here is same-origin). The policy above stays in the page's <meta> as well, which is what applies at "/".
+const isolationRule = '/*\n' + isolation.map(h => '  ' + h + '\n').join('') + '\n';
+const headersText = '# Written by build.js. Do not edit.\n' + immutable + isolationRule + rule(['/', '/index.html'], indexHashes) + rule(['/teacher-guide', '/teacher-guide.html'], guideHashes);
 const longLine = headersText.split('\n').findIndex((l) => l.length > 2000);
 if (longLine >= 0) throw new Error('dist/_headers line ' + (longLine + 1) + ' is ' + headersText.split('\n')[longLine].length + ' characters; Cloudflare refuses lines over 2000');
 fs.writeFileSync('dist/_headers', headersText);

@@ -10,12 +10,19 @@
   'use strict';
 
   const templates = {
-    python: `# A Tron bot. The arena runs this program once per turn: it reads the board
-# from input and prints ONE move: UP, DOWN, LEFT or RIGHT.
+    python: `# A Tron bot. The arena gives this program the board on standard input (input())
+# and it prints ONE move per turn: UP, DOWN, LEFT or RIGHT. In restart mode the arena
+# runs it afresh every turn; in persistent mode it stays running, so variables kept
+# outside the loop remember things from turn to turn. Either way: loop until the input ends.
 # print("LOG ...") writes to your log tab; the referee ignores those lines.
 
 def readTurn():
-    width, height = map(int, input().split())    # line 1: board size
+    line = input()
+    while line == "TRON 1" or line == "END":     # lines the arena adds when a bot stays running
+        line = input()
+    if line == "" or line == "GAMEOVER":
+        return None                              # no more turns
+    width, height = map(int, line.split())       # line 1: board size
     you, alive = map(int, input().split())       # line 2: your number, players left
     heads = {}
     for _ in range(alive):                       # one line per player: x y player
@@ -34,17 +41,25 @@ def legalMoves(grid, width, height, x, y):
             moves.append(name)
     return moves
 
-width, height, you, heads, grid = readTurn()
-x, y = heads[you]
-moves = legalMoves(grid, width, height, x, y)
-print("LOG I am at", x, y, "and can go", moves)
-print(moves[0] if moves else "UP")               # first safe move; boxed in? any move will do
+while True:
+    turn = readTurn()
+    if turn is None:
+        break
+    width, height, you, heads, grid = turn
+    x, y = heads[you]
+    moves = legalMoves(grid, width, height, x, y)
+    print("LOG I am at", x, "and can go", moves)
+    print(moves[0] if moves else "UP")           # first safe move; boxed in? any move will do
 `,
-    cpp: `// A Tron bot. The arena runs this program once per turn: it reads the board
-// from cin and prints ONE move: UP, DOWN, LEFT or RIGHT.
+    cpp: `// A Tron bot. The arena gives this program the board on cin and it prints ONE move per
+// turn: UP, DOWN, LEFT or RIGHT. In restart mode the arena runs it afresh every turn; in
+// persistent mode it stays running, so variables kept outside the loop remember things from
+// turn to turn. Either way: loop until the input ends.
 // cout << "LOG ..." writes to your log tab; the referee ignores those lines.
 // (This C++ is the site's teaching interpreter: arrays and char strings, no vector.)
 #include <iostream>
+#include <cstring>
+#include <cstdlib>
 using namespace std;
 
 int width, height, you, alive;
@@ -53,18 +68,28 @@ char grid[40][41];                           // grid[y][x]
 int dx[4] = {0, 0, -1, 1};                   // direction 0 UP, 1 DOWN, 2 LEFT, 3 RIGHT
 int dy[4] = {-1, 1, 0, 0};
 
-void readTurn() {
-    cin >> width >> height;                  // line 1: board size
-    cin >> you >> alive;                     // line 2: your number, players left
-    for (int i = 0; i < alive; i++) {        // one line per player: x y player
-        int x, y, player;
-        cin >> x >> y >> player;
-        headX[player] = x;
-        headY[player] = y;
+bool readTurn() {                            // false when there are no more turns
+    char word[20];
+    while (cin >> word) {
+        if (strcmp(word, "TRON") == 0) cin >> word;      // "TRON 1" and "END" are lines the
+        else if (strcmp(word, "END") != 0) {             // arena adds when a bot stays running
+            if (strcmp(word, "GAMEOVER") == 0) return false;
+            width = atoi(word);                  // line 1: board size
+            cin >> height;
+            cin >> you >> alive;                 // line 2: your number, players left
+            for (int i = 0; i < alive; i++) {    // one line per player: x y player
+                int x, y, player;
+                cin >> x >> y >> player;
+                headX[player] = x;
+                headY[player] = y;
+            }
+            for (int i = 0; i < height; i++) {   // '.' empty, '#' wall, digit = a head
+                cin >> grid[i];
+            }
+            return true;
+        }
     }
-    for (int i = 0; i < height; i++) {       // '.' empty, '#' wall, digit = a head
-        cin >> grid[i];
-    }
+    return false;
 }
 
 bool isOpen(int x, int y) {
@@ -90,17 +115,20 @@ void printMove(int d) {
 }
 
 int main() {
-    readTurn();
-    int moves[4];
-    int count = legalMoves(headX[you], headY[you], moves);
-    cout << "LOG I am at " << headX[you] << " " << headY[you] << endl;
-    if (count > 0) printMove(moves[0]);      // first safe move
-    else printMove(0);                       // boxed in: any move will do
+    while (readTurn()) {
+        int moves[4];
+        int count = legalMoves(headX[you], headY[you], moves);
+        cout << "LOG I am at " << headX[you] << " " << headY[you] << endl;
+        if (count > 0) printMove(moves[0]);  // first safe move
+        else printMove(0);                   // boxed in: any move will do
+    }
     return 0;
 }
 `,
-    java: `// A Tron bot. The arena runs this program once per turn: it reads the board
-// from System.in and prints ONE move: UP, DOWN, LEFT or RIGHT.
+    java: `// A Tron bot. The arena gives this program the board on System.in and it prints ONE move
+// per turn: UP, DOWN, LEFT or RIGHT. In restart mode the arena runs it afresh every turn; in
+// persistent mode it stays running, so variables kept outside the loop remember things from
+// turn to turn. Either way: loop until the input ends.
 // System.out.println("LOG ...") writes to your log tab; the referee ignores those lines.
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -111,8 +139,15 @@ public class Main {
     static int[] headY = new int[5];
     static String[] grid;
 
-    static void readTurn(Scanner in) {
-        width = in.nextInt();                    // line 1: board size
+    static boolean readTurn(Scanner in) {        // false when there are no more turns
+        String word = "END";
+        while (word.equals("END") || word.equals("TRON")) {   // "TRON 1" and "END" are lines the
+            if (!in.hasNext()) return false;                  // arena adds when a bot stays running
+            word = in.next();
+            if (word.equals("TRON")) in.next();
+        }
+        if (word.equals("GAMEOVER")) return false;
+        width = Integer.parseInt(word);          // line 1: board size
         height = in.nextInt();
         you = in.nextInt();                      // line 2: your number, players left
         alive = in.nextInt();
@@ -127,6 +162,7 @@ public class Main {
         for (int i = 0; i < height; i++) {       // '.' empty, '#' wall, digit = a head
             grid[i] = in.next();
         }
+        return true;
     }
 
     static boolean isOpen(int x, int y) {
@@ -143,36 +179,52 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        readTurn(new Scanner(System.in));
-        ArrayList<String> moves = legalMoves(headX[you], headY[you]);
-        System.out.println("LOG I am at " + headX[you] + " " + headY[you]);
-        System.out.println(moves.size() > 0 ? moves.get(0) : "UP");   // first safe move; boxed in: any move
+        Scanner in = new Scanner(System.in);
+        while (readTurn(in)) {
+            ArrayList<String> moves = legalMoves(headX[you], headY[you]);
+            System.out.println("LOG I am at " + headX[you] + " " + headY[you]);
+            System.out.println(moves.size() > 0 ? moves.get(0) : "UP");   // first safe move; boxed in: any move
+        }
     }
 }
 `,
-    scheme: `; A Tron bot. The arena runs this program once per turn: it reads the board
-; from standard input and prints ONE move: UP, DOWN, LEFT or RIGHT.
+    scheme: `; A Tron bot. The arena gives this program the board on standard input ((read) and
+; (read-line)) and it prints ONE move per turn: UP, DOWN, LEFT or RIGHT. In restart mode the
+; arena runs it afresh every turn; in persistent mode it stays running, so variables kept
+; outside the loop remember things from turn to turn. Either way: loop until the input ends.
 ; (display "LOG ...") on a line of its own writes to your log tab.
 
-(define width (read))                        ; line 1: board size
-(define height (read))
-(define you (read))                          ; line 2: your number, players left
-(define alive (read))
+(define width 0) (define height 0) (define you 0) (define alive 0)
+(define heads '())                           ; a list of (player x y)
+(define grid '())                            ; a list of strings
 
 (define (readHeads n)                        ; one line per player: x y player
   (if (= n 0)
       '()
       (let* ((x (read)) (y (read)) (p (read)))
         (cons (list p x y) (readHeads (- n 1))))))
-(define heads (readHeads alive))
 
 (define (readRows n)                         ; '.' empty, '#' wall, digit = a head
   (if (= n 0)
       '()
       (let ((row (read-line)))
         (cons row (readRows (- n 1))))))
-(read-line)                                  ; read leaves the end of its line: skip it
-(define grid (readRows height))
+
+(define (readTurn)                           ; #f when there are no more turns
+  (let ((w (read)))
+    (cond ((eof-object? w) #f)
+          ((eq? w 'GAMEOVER) #f)
+          ((eq? w 'TRON) (read) (readTurn))  ; "TRON 1" and "END" are lines the arena
+          ((eq? w 'END) (readTurn))          ; adds when a bot stays running
+          (else
+           (set! width w)                    ; line 1: board size
+           (set! height (read))
+           (set! you (read))                 ; line 2: your number, players left
+           (set! alive (read))
+           (set! heads (readHeads alive))
+           (read-line)                       ; read leaves the end of its line: skip it
+           (set! grid (readRows height))
+           #t))))
 
 (define (isOpen x y)
   (and (>= x 0) (< x width) (>= y 0) (< y height)
@@ -184,10 +236,14 @@ public class Main {
           (if (isOpen (- x 1) y) '("LEFT") '())
           (if (isOpen (+ x 1) y) '("RIGHT") '())))
 
-(define me (cdr (assv you heads)))           ; my head: (x y)
-(define moves (legalMoves (car me) (cadr me)))
-(display (if (null? moves) "UP" (car moves))) ; first safe move; boxed in: any move
-(newline)
+(define (play)
+  (if (readTurn)
+      (let* ((me (cdr (assv you heads)))     ; my head: (x y)
+             (moves (legalMoves (car me) (cadr me))))
+        (display (if (null? moves) "UP" (car moves)))   ; first safe move; boxed in: any move
+        (newline)
+        (play))))
+(play)
 `
   };
 
@@ -198,7 +254,12 @@ public class Main {
 DIRS = [("UP", 0, -1), ("DOWN", 0, 1), ("LEFT", -1, 0), ("RIGHT", 1, 0)]
 
 def readTurn():
-    width, height = map(int, input().split())
+    line = input()
+    while line == "TRON 1" or line == "END":
+        line = input()
+    if line == "" or line == "GAMEOVER":
+        return None
+    width, height = map(int, line.split())
     you, alive = map(int, input().split())
     heads = {}
     for _ in range(alive):
@@ -231,19 +292,25 @@ def regionSize(grid, width, height, x, y):
                 queue.append((nx, ny))
     return len(seen)
 
-width, height, you, heads, grid = readTurn()
-x, y = heads[you]
-best, bestSize = "UP", -1
-for name, nx, ny in legalMoves(grid, width, height, x, y):
-    size = regionSize(grid, width, height, nx, ny)
-    print("LOG", name, "leaves room for", size)
-    if size > bestSize:
-        best, bestSize = name, size
-print(best)
+while True:
+    turn = readTurn()
+    if turn is None:
+        break
+    width, height, you, heads, grid = turn
+    x, y = heads[you]
+    best, bestSize = "UP", -1
+    for name, nx, ny in legalMoves(grid, width, height, x, y):
+        size = regionSize(grid, width, height, nx, ny)
+        print("LOG", name, "leaves room for", size)
+        if size > bestSize:
+            best, bestSize = name, size
+    print(best)
 `,
     cpp: `// Flood Fill: for each safe move, count the cells the head could still reach if
 // it stepped there (a breadth-first flood), and take the move with the most room.
 #include <iostream>
+#include <cstring>
+#include <cstdlib>
 using namespace std;
 
 int width, height, you, alive;
@@ -254,18 +321,28 @@ int dy[4] = {-1, 1, 0, 0};
 int seen[1600];
 int queue[1600];
 
-void readTurn() {
-    cin >> width >> height;
-    cin >> you >> alive;
-    for (int i = 0; i < alive; i++) {
-        int x, y, player;
-        cin >> x >> y >> player;
-        headX[player] = x;
-        headY[player] = y;
+bool readTurn() {
+    char word[20];
+    while (cin >> word) {
+        if (strcmp(word, "TRON") == 0) cin >> word;
+        else if (strcmp(word, "END") != 0) {
+            if (strcmp(word, "GAMEOVER") == 0) return false;
+            width = atoi(word);
+            cin >> height;
+            cin >> you >> alive;
+            for (int i = 0; i < alive; i++) {
+                int x, y, player;
+                cin >> x >> y >> player;
+                headX[player] = x;
+                headY[player] = y;
+            }
+            for (int i = 0; i < height; i++) {
+                cin >> grid[i];
+            }
+            return true;
+        }
     }
-    for (int i = 0; i < height; i++) {
-        cin >> grid[i];
-    }
+    return false;
 }
 
 bool isOpen(int x, int y) {
@@ -304,21 +381,22 @@ void printMove(int d) {
 }
 
 int main() {
-    readTurn();
-    int x = headX[you];
-    int y = headY[you];
-    int best = 0;
-    int bestSize = -1;
-    for (int d = 0; d < 4; d++) {
-        if (!isOpen(x + dx[d], y + dy[d])) continue;
-        int size = regionSize(x + dx[d], y + dy[d]);
-        cout << "LOG direction " << d << " leaves room for " << size << endl;
-        if (size > bestSize) {
-            best = d;
-            bestSize = size;
+    while (readTurn()) {
+        int x = headX[you];
+        int y = headY[you];
+        int best = 0;
+        int bestSize = -1;
+        for (int d = 0; d < 4; d++) {
+            if (!isOpen(x + dx[d], y + dy[d])) continue;
+            int size = regionSize(x + dx[d], y + dy[d]);
+            cout << "LOG direction " << d << " leaves room for " << size << endl;
+            if (size > bestSize) {
+                best = d;
+                bestSize = size;
+            }
         }
+        printMove(best);
     }
-    printMove(best);
     return 0;
 }
 `,
@@ -336,8 +414,15 @@ public class Main {
     static int[] dy = {-1, 1, 0, 0};
     static String[] names = {"UP", "DOWN", "LEFT", "RIGHT"};
 
-    static void readTurn(Scanner in) {
-        width = in.nextInt();
+    static boolean readTurn(Scanner in) {
+        String word = "END";
+        while (word.equals("END") || word.equals("TRON")) {
+            if (!in.hasNext()) return false;
+            word = in.next();
+            if (word.equals("TRON")) in.next();
+        }
+        if (word.equals("GAMEOVER")) return false;
+        width = Integer.parseInt(word);
         height = in.nextInt();
         you = in.nextInt();
         alive = in.nextInt();
@@ -352,6 +437,7 @@ public class Main {
         for (int i = 0; i < height; i++) {
             grid[i] = in.next();
         }
+        return true;
     }
 
     static boolean isOpen(int x, int y) {
@@ -382,40 +468,54 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        readTurn(new Scanner(System.in));
-        int x = headX[you];
-        int y = headY[you];
-        String best = "UP";
-        int bestSize = -1;
-        for (int d = 0; d < 4; d++) {
-            if (!isOpen(x + dx[d], y + dy[d])) continue;
-            int size = regionSize(x + dx[d], y + dy[d]);
-            System.out.println("LOG " + names[d] + " leaves room for " + size);
-            if (size > bestSize) {
-                best = names[d];
-                bestSize = size;
+        Scanner in = new Scanner(System.in);
+        while (readTurn(in)) {
+            int x = headX[you];
+            int y = headY[you];
+            String best = "UP";
+            int bestSize = -1;
+            for (int d = 0; d < 4; d++) {
+                if (!isOpen(x + dx[d], y + dy[d])) continue;
+                int size = regionSize(x + dx[d], y + dy[d]);
+                System.out.println("LOG " + names[d] + " leaves room for " + size);
+                if (size > bestSize) {
+                    best = names[d];
+                    bestSize = size;
+                }
             }
+            System.out.println(best);
         }
-        System.out.println(best);
     }
 }
 `,
     scheme: `; Flood Fill: for each safe move, count the cells the head could still reach if
 ; it stepped there (a breadth-first flood), and take the move with the most room.
 
-(define width (read))
-(define height (read))
-(define you (read))
-(define alive (read))
+(define width 0) (define height 0) (define you 0) (define alive 0)
+(define heads '())
+(define grid '())
+
 (define (readHeads n)
   (if (= n 0) '()
       (let* ((x (read)) (y (read)) (p (read)))
         (cons (list p x y) (readHeads (- n 1))))))
-(define heads (readHeads alive))
 (define (readRows n)
   (if (= n 0) '() (let ((row (read-line))) (cons row (readRows (- n 1))))))
-(read-line)
-(define grid (readRows height))
+(define (readTurn)
+  (let ((w (read)))
+    (cond ((eof-object? w) #f)
+          ((eq? w 'GAMEOVER) #f)
+          ((eq? w 'TRON) (read) (readTurn))
+          ((eq? w 'END) (readTurn))
+          (else
+           (set! width w)
+           (set! height (read))
+           (set! you (read))
+           (set! alive (read))
+           (set! heads (readHeads alive))
+           (read-line)
+           (set! grid (readRows height))
+           #t))))
 
 (define (isOpen x y)
   (and (>= x 0) (< x width) (>= y 0) (< y height)
@@ -443,21 +543,23 @@ public class Main {
               (list (cons 0 -1) (cons 0 1) (cons -1 0) (cons 1 0)))
             (loop (append rest new) (+ count (length new))))))))
 
-(define me (cdr (assv you heads)))
-(define x (car me))
-(define y (cadr me))
 (define (try name nx ny best)                  ; best is (size . name)
   (if (isOpen nx ny)
       (let ((size (regionSize nx ny)))
         (if (> size (car best)) (cons size name) best))
       best))
-(define best
-  (try "RIGHT" (+ x 1) y
-    (try "LEFT" (- x 1) y
-      (try "DOWN" x (+ y 1)
-        (try "UP" x (- y 1) (cons -1 "UP"))))))
-(display (cdr best))
-(newline)
+
+(define (play)
+  (if (readTurn)
+      (let* ((me (cdr (assv you heads))) (x (car me)) (y (cadr me))
+             (best (try "RIGHT" (+ x 1) y
+                     (try "LEFT" (- x 1) y
+                       (try "DOWN" x (+ y 1)
+                         (try "UP" x (- y 1) (cons -1 "UP")))))))
+        (display (cdr best))
+        (newline)
+        (play))))
+(play)
 `
   };
 

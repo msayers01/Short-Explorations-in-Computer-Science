@@ -33,7 +33,30 @@
     post({ t: 'done', id, err });
   }
 
+  // A program that stays running (Bot Arena persistent mode). JSCPP reads cin from a string it takes once, so cin's buffer is replaced by one that,
+  // whenever nothing but white space is left, waits here for the next turn (src/botio.js). A normal run (botIO is null) is untouched.
+  let botIO = null;
+  const plainLoad = JSCPP.includes.iostream.load;
+  JSCPP.includes.iostream.load = function (rt) {
+    plainLoad.call(this, rt);
+    if (!botIO) return;
+    const io = botIO, cin = rt.scope[0].variables.cin;
+    let buf = cin.v.buf || '';
+    Object.defineProperty(cin.v, 'buf', { get() { while (!/\S/.test(buf)) { const t = io.more(); if (!t) break; buf += t; } return buf; }, set(v) { buf = v; } });
+  };
+  function startBot(msg) {
+    busy = true;
+    const id = msg.id, io = BOTIO.make(msg.sab, post, id);
+    let err = null;
+    botIO = io;
+    try { JSCPP.run(CPPUTIL.ensureMainReturns(String(msg.code)), '', { stdio: { write: io.write }, unsigned_overflow: 'warn' }); }   // no maxTimeout: the page ends a turn that takes too long
+    catch (e) { err = CPPUTIL.cppErrorText(e && e.message ? e.message : String(e)); }
+    botIO = null; io.flush(); busy = false;
+    post({ t: 'done', id, err });
+  }
+
   listen((m) => {
+    if (m && typeof m === 'object' && m.t === 'bot') { if (busy) post({ t: 'done', id: m.id, err: 'The C++ sandbox is busy with another program.' }); else startBot(m); return; }
     if (!m || typeof m !== 'object' || (m.t !== 'run' && m.t !== 'trace' && m.t !== 'check')) return;
     if (busy) post({ t: 'done', id: m.id, err: 'The C++ sandbox is busy with another program.' }); else start(m);
   });
