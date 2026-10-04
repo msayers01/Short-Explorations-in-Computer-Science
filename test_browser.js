@@ -241,7 +241,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await page.click('#sh-2-2 .toolbar button:has-text("Check")'); await page.waitForSelector('#sh-2-2 .verdict.fail', { timeout: 10000 });
   check('shell lesson: an untouched exercise fails with the files named', /desk\/photos\/cat\.jpg exists/.test(await page.locator('#sh-2-2 .verdict').innerText()));
   // ---- Scratch lesson 8: a turtle example with fill and colour draws in its sandboxed frame and finishes
-  await goto('#/scratch/8'); await page.waitForSelector('.play');
+  await goto('#/scratch/9'); await page.waitForSelector('.play');
   await page.locator('.play').nth(2).scrollIntoViewIfNeeded(); await page.locator('.play').nth(2).locator('.toolbar button:has-text("Run")').click();
   await page.waitForFunction(() => /^(exit|error|stopped)/.test([...document.querySelectorAll('.play .term-status')][2].textContent), null, { timeout: 60000 }).catch(() => { });
   check('scratch lesson 8: the filled star draws and the run finishes', /^exit 0/.test(await page.locator('.play .term-status').nth(2).innerText()) && (await page.locator('.play').nth(2).locator('iframe').count()) === 1, await page.locator('.play .term-status').nth(2).innerText());
@@ -617,7 +617,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   const quizWrong = await quiz.locator('.bq-msg').textContent();
   await quiz.locator('.bq-input').fill("if score > 100:"); await quiz.locator('button:has-text("Check")').click();
   check('the translate-the-block quiz marks a missing colon and accepts the right line', /colon/.test(quizWrong) && (await quiz.locator('.bq-msg.ok').count()) === 1, quizWrong);
-  for (const h of ['#/', '#/lisp/2', '#/math/1', '#/dsa/2', '#/dsa/3', '#/dsa/4', '#/scratch/5', '#/scratch/6', '#/scratch/7', '#/guide', '#/about', '#/portfolio']) await goto(h);
+  for (const h of ['#/', '#/lisp/2', '#/math/1', '#/dsa/2', '#/dsa/3', '#/dsa/4', '#/scratch/6', '#/scratch/7', '#/scratch/8', '#/guide', '#/about', '#/portfolio']) await goto(h);
 
   // ---- 6b. saving and restoring work
   const fs = require('fs');

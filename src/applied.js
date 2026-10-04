@@ -71,7 +71,7 @@
         { f: 'data', t: 'Spreadsheet formulas such as SUM and AVERAGE are functions, and a data pipeline is a chain of functions, each taking a table and returning a new one.' }
       ],
       jobs: ['Software developer', 'API developer', 'Library maintainer', 'Test engineer'],
-      learn: ['scratch/6', 'python/8', 'cpp/4', 'java/4', 'lisp/2'],
+      learn: ['scratch/7', 'python/8', 'cpp/4', 'java/4', 'lisp/2'],
       teach: 'Activity: have students list the "functions" in a recipe or a morning routine, with their inputs and outputs. Which ones are used more than once?'
     },
     {
@@ -84,7 +84,7 @@
         { f: 'sec', t: 'Reading or writing past the end of an array is a classic C and C++ security hole: the 1988 Morris worm and the 2014 Heartbleed bug both came from it.' }
       ],
       jobs: ['Graphics programmer', 'Machine-learning engineer', 'Signal-processing engineer', 'C/C++ developer'],
-      learn: ['scratch/5', 'python/6', 'cpp/7', 'modern/2', 'dsa/1'],
+      learn: ['scratch/6', 'python/6', 'cpp/7', 'modern/2', 'dsa/1'],
       teach: 'Hook: open any photo and zoom in until you see squares. Each square is one item of an array. How many numbers does one photo hold?'
     },
     {
@@ -98,7 +98,7 @@
         { f: 'data', t: 'Log files, a server\'s diary of what it did, are lines of text that engineers split and search to find out what went wrong.' }
       ],
       jobs: ['Web developer', 'Security analyst', 'Bioinformatician', 'Localization engineer'],
-      learn: ['scratch/9', 'python/7', 'computer/6', 'cpp/8', 'modern/1', 'java/2'],
+      learn: ['scratch/11', 'python/7', 'computer/6', 'cpp/8', 'modern/1', 'java/2'],
       teach: 'Discussion: a form asks for your name. What should a program do if someone types a name with an apostrophe (O\'Brien), an accent (José), or a piece of code?'
     },
     {
