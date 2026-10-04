@@ -581,7 +581,7 @@
 
   const LIB_PKG = { String: 'java.lang', Object: 'java.lang', Integer: 'java.lang', Long: 'java.lang', Double: 'java.lang', Float: 'java.lang', Character: 'java.lang', Boolean: 'java.lang', Short: 'java.lang', Byte: 'java.lang', Number: 'java.lang', Math: 'java.lang', System: 'java.lang', StringBuilder: 'java.lang', Comparable: 'java.lang', CharSequence: 'java.lang', Iterable: 'java.lang', PrintStream: 'java.io', InputStream: 'java.io',
     Throwable: 'java.lang', Exception: 'java.lang', RuntimeException: 'java.lang', Error: 'java.lang', ArithmeticException: 'java.lang', IllegalArgumentException: 'java.lang', IllegalStateException: 'java.lang', NumberFormatException: 'java.lang', IndexOutOfBoundsException: 'java.lang', ArrayIndexOutOfBoundsException: 'java.lang', StringIndexOutOfBoundsException: 'java.lang', NullPointerException: 'java.lang', ClassCastException: 'java.lang', NegativeArraySizeException: 'java.lang', UnsupportedOperationException: 'java.lang', StackOverflowError: 'java.lang', OutOfMemoryError: 'java.lang', ArrayStoreException: 'java.lang', CloneNotSupportedException: 'java.lang', InterruptedException: 'java.lang',
-    ArrayList: 'java.util', List: 'java.util', Collection: 'java.util', HashMap: 'java.util', LinkedHashMap: 'java.util', LinkedHashSet: 'java.util', TreeMap: 'java.util', Map: 'java.util', Entry: 'java.util', HashSet: 'java.util', TreeSet: 'java.util', Set: 'java.util', Scanner: 'java.util', Random: 'java.util', Arrays: 'java.util', Collections: 'java.util', NoSuchElementException: 'java.util', InputMismatchException: 'java.util', ConcurrentModificationException: 'java.util', Iterator: 'java.util', LinkedList: 'java.util', Deque: 'java.util', Queue: 'java.util',
+    ArrayList: 'java.util', List: 'java.util', Collection: 'java.util', PriorityQueue: 'java.util', HashMap: 'java.util', LinkedHashMap: 'java.util', LinkedHashSet: 'java.util', TreeMap: 'java.util', Map: 'java.util', Entry: 'java.util', HashSet: 'java.util', TreeSet: 'java.util', Set: 'java.util', Scanner: 'java.util', Random: 'java.util', Arrays: 'java.util', Collections: 'java.util', NoSuchElementException: 'java.util', InputMismatchException: 'java.util', ConcurrentModificationException: 'java.util', Iterator: 'java.util', LinkedList: 'java.util', Deque: 'java.util', Queue: 'java.util',
     IOException: 'java.io', FileNotFoundException: 'java.io', UncheckedIOException: 'java.io', IllegalFormatException: 'java.util', IllegalFormatConversionException: 'java.util', MissingFormatArgumentException: 'java.util', UnknownFormatConversionException: 'java.util', NoSuchFieldException: 'java.lang', ArrayDeque: 'java.util', Comparator: 'java.util', Objects: 'java.util' };
   const qualified = (n) => (LIB_PKG[n] ? LIB_PKG[n] + '.' : '') + n;
 
@@ -1046,6 +1046,28 @@
   const mkDeque = (items) => { const l = new JList(items); l.kind = 'ArrayDeque'; return l; };
   def('ArrayDeque', { tparams: ['E'], impl: ['Deque'], ctors: { '': () => mkDeque(), 'int': () => mkDeque(), 'Collection<E>': (o, a, R) => { const items = collItems(R, a[0]); const l = mkDeque(); for (const x of items) l.a.push(noNull(R, l, x)); return l; } }, methods: DEQUE_METHODS });
   const mkLinked = (items) => { const l = new JList(items); l.kind = 'LinkedList'; return l; };
+  // PriorityQueue: the same binary heap as OpenJDK's, in a plain array (siftUp, siftDown, heapify and removeAt as there), so that printing a queue or
+  // iterating it shows the heap's array order, as Java does. Elements are ordered by a Comparator, or by compareTo when there is none.
+  const pqCmp = (l, R) => (l.cmpFn ? l.cmpFn : (x, y) => jcmp(x, y, R));
+  const pqUp = (l, k, x, R) => { const c = pqCmp(l, R); while (k > 0) { const parent = (k - 1) >>> 1; const e = l.a[parent]; if (c(x, e) >= 0) break; l.a[k] = e; k = parent; } l.a[k] = x; };
+  const pqDown = (l, k, x, R) => { const c = pqCmp(l, R); const n = l.a.length; const half = n >>> 1; while (k < half) { let child = 2 * k + 1; let ch = l.a[child]; const right = child + 1; if (right < n && c(ch, l.a[right]) > 0) { child = right; ch = l.a[child]; } if (c(x, ch) <= 0) break; l.a[k] = ch; k = child; } l.a[k] = x; };
+  const pqOffer = (l, x, R) => { if (x === null) throwJ(R, 'NullPointerException', null); if (!l.cmpFn) jcmp(x, x, R); l.a.push(x); pqUp(l, l.a.length - 1, x, R); return true; };
+  const pqPoll = (l, R) => { if (!l.a.length) return null; const result = l.a[0]; const x = l.a.pop(); if (l.a.length) pqDown(l, 0, x, R); return result; };
+  const pqRemoveAt = (l, i, R) => { const last = l.a.length - 1; if (i === last) { l.a.pop(); return; } const moved = l.a.pop(); pqDown(l, i, moved, R); if (l.a[i] === moved) pqUp(l, i, moved, R); };
+  const mkPQ = (cmpFn) => { const l = new JList(); l.kind = 'PriorityQueue'; l.cmpFn = cmpFn || null; return l; };
+  const PQ_METHODS = Object.assign({}, QUEUE_METHODS, {
+    'add(E)': ['boolean', (l, a, R) => pqOffer(l, a[0], R)], 'offer(E)': ['boolean', (l, a, R) => pqOffer(l, a[0], R)],
+    'poll()': ['E', (l, a, R) => pqPoll(l, R)], 'remove()': ['E', (l, a, R) => { emptyQ(R, l); return pqPoll(l, R); }],
+    'remove(Object)': ['boolean', (l, a, R) => { const i = l.a.findIndex(x => jeq(a[0], x, R)); if (i < 0) return false; pqRemoveAt(l, i, R); return true; }],
+    'addAll(Collection<E>)': ['boolean', (l, a, R) => { const items = collItems(R, a[0]); for (const x of items) pqOffer(l, x, R); return items.length > 0; }],
+    'comparator()': ['Comparator<E>', (l) => l.cmpObj || null]
+  });
+  const pqFrom = (R, src, cmpFn) => { const l = mkPQ(cmpFn); for (const x of collItems(R, src)) { if (x === null) throwJ(R, 'NullPointerException', null); l.a.push(x); } if (!(src instanceof JList && src.kind === 'PriorityQueue') && !(src instanceof JSet && src.m.sorted)) { if (!cmpFn) for (const x of l.a) jcmp(x, x, R); for (let i = (l.a.length >>> 1) - 1; i >= 0; i--) pqDown(l, i, l.a[i], R); } return l; };
+  def('PriorityQueue', { tparams: ['E'], impl: ['Queue'], ctors: {
+    '': () => mkPQ(), 'int': (o, a, R) => { if (a[0] < 1) throwJ(R, 'IllegalArgumentException', null); return mkPQ(); },
+    'Comparator<E>': (o, a, R) => { const l = mkPQ(a[0] === null ? null : cmpWith(R, a[0])); l.cmpObj = a[0]; return l; },
+    'int,Comparator<E>': (o, a, R) => { if (a[0] < 1) throwJ(R, 'IllegalArgumentException', null); const l = mkPQ(a[1] === null ? null : cmpWith(R, a[1])); l.cmpObj = a[1]; return l; },
+    'Collection<E>': (o, a, R) => pqFrom(R, nn(R, a[0]), a[0] instanceof JList && a[0].kind === 'PriorityQueue' ? a[0].cmpFn : null) }, methods: PQ_METHODS });
   def('LinkedList', { tparams: ['E'], impl: ['List', 'Deque'], ctors: { '': () => mkLinked(), 'Collection<E>': (o, a, R) => mkLinked(collItems(R, a[0])) }, methods: Object.assign({}, DEQUE_METHODS, LIST_METHODS, { 'remove()': DEQUE_METHODS['remove()'] }) });
   def('Set', { isInterface: true, tparams: ['E'], impl: ['Collection'], methods: SET_METHODS, statics: { 'of(T...)': ['Set<T>', (o, a, R) => { const s = new JSet(false); for (const x of a[0].a) { if (s.m.find(x, R)) throwJ(R, 'IllegalArgumentException', 'duplicate element: ' + dstr(x, R)); s.m.put(x, true, R); } s.immutable = true; return s; }] } });
   def('HashSet', { tparams: ['E'], impl: ['Set'], ctors: { '': () => new JSet(false), 'int': () => new JSet(false), 'Collection<E>': (o, a, R) => { const s = new JSet(false); for (const x of collItems(R, a[0])) s.m.put(x, true, R); return s; } }, methods: SET_METHODS });

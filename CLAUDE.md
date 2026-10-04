@@ -116,7 +116,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   **Checked exceptions** (added October 2026): `throws` is now parsed and enforced like javac does for what can be seen in the source: `throw new X`
   where X is checked, and calls of the program's own methods and constructors that declare `throws`; plus "exception X is never thrown in body of
   corresponding try statement". Not checked: `throw e` of a variable (precise rethrow), overriding rules for `throws`, initializer blocks. The lessons
-  teach custom exceptions as `extends RuntimeException` and show `extends Exception` once, with `throws`. `LinkedHashMap` and `LinkedHashSet` exist.
+  teach custom exceptions as `extends RuntimeException` and show `extends Exception` once, with `throws`. `LinkedHashMap`, `LinkedHashSet` and `PriorityQueue` exist (the queue is OpenJDK's binary heap, so `System.out.println(pq)` shows the heap's array order as Java does; `difftest/java/probe-pq.java`).
   Probes: `difftest/java/probe-x1..x8.java`, `probe-lh.java`.
 - SC 102 Introduction to Lisp (`src/course_lisp.js`, 11 lessons after SICP 1.1-2.3 plus the symbolic-differentiation project, 22 exercises `ls-<n>-<k>`):
   every lesson has `standard: 1` (lesson level, October 2026: stories end on a question, `predict: true` on the key example of each section with the

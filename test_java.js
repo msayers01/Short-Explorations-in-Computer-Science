@@ -125,6 +125,9 @@ t('checked exceptions that are declared or caught run normally', probe('probe-x5
 t('LinkedHashMap and LinkedHashSet keep the order of first insertion', probe('probe-lh.java'),
   '{apple=9, mango=3, zebra=4} [apple, mango, zebra] [9, 3, 4] 3\n[a, b, z, c] true\napple9 mango3 zebra4 new0 \ntrue\n');
 
+t('PriorityQueue is the same binary heap as the JDK\'s: printing shows the array order, ties and removals included', probe('probe-pq.java'),
+  "[5]\n[3, 5]\n[3, 5, 8]\n[1, 3, 8, 5]\n[1, 3, 8, 5, 9]\n[1, 3, 2, 5, 9, 8]\n[1, 3, 2, 5, 9, 8, 7]\n[1, 3, 2, 4, 9, 8, 7, 5]\n[1, 3, 2, 4, 9, 8, 7, 5, 6]\n[0, 1, 2, 4, 3, 8, 7, 5, 6, 9]\n0 10 true false\n[0, 1, 2, 4, 3, 9, 7, 5, 6]\n[0, 1, 2, 4, 3, 9, 7, 6] false\n[1, 3, 2, 4, 6, 9, 7]\n[2, 3, 7, 4, 6, 9]\n[3, 4, 7, 9, 6]\n[4, 6, 7, 9]\n[6, 9, 7]\n[7, 9]\n[9]\n[]\n0 1 2 3 4 6 7 9 null null\n[9, 7, 2, 4, 7, 1] 9 [7, 7, 2, 4, 1]\n[fig, pear, plum, kiwi, apple, banana]\nfig,pear,plum,kiwi,apple,banana,\nfig pear kiwi plum apple banana \n[1, 2, 3, 6, 5, 4, 7, 8, 9]\n[0, 1, 3, 6, 2, 4, 7, 8, 9, 5] [1, 2, 3, 6, 5, 4, 7, 8, 9]\n[d0, a1, c2, b2] d0 a1 c2 b2 null\nNSE null\nNSE2\nCCE\nNPE\n");
+
 // ---- regressions found by comparing with the real JDK 21 (expected outputs are what javac + java print)
 t("printf rounds the shortest decimal half-up", M("System.out.println(String.format(\"%.2f %.2f %.1f %.1f %.2f %.2f %.0f %.0f\", 2.675, 1.005, 0.15, 0.35, 0.015, 1.115, 0.5, 2.5)); System.out.println(String.format(\"%.20f|%.3e|%.2e|%e|%.3g|%.1g|%g\", 0.1, 9.9995, 1234.5, 0.0, 9.995, 0.0000972, 0.0001234)); System.out.printf(\"%.2f %.3f %,.2f %10.3f|%n\", 1.005f, 0.2285f, 1234567.125, -2.0005); System.out.println(Double.MIN_VALUE + \" \" + Float.MIN_VALUE + \" \" + String.format(\"%e\", Double.MIN_VALUE));"),
   "2.68 1.01 0.2 0.4 0.02 1.12 1 3\n0.10000000000000000000|1.000e+01|1.23e+03|0.000000e+00|10.0|0.0001|0.000123400\n1.00 0.228 1,234,567.13     -2.001|\n4.9E-324 1.4E-45 4.900000e-324\n");
