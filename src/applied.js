@@ -113,7 +113,7 @@
         { f: 'web', t: 'Caches keep recent answers so a site does not have to work them out again; they are hash tables keyed by the question. Memcached and Redis are well-known examples.' }
       ],
       jobs: ['Backend developer', 'Security engineer', 'DevOps engineer', 'Database engineer'],
-      learn: ['python/9', 'java/11', 'modern/7', 'math/11'],
+      learn: ['python/9', 'java/13', 'modern/7', 'math/11'],
       teach: 'Hook: explain why "Forgot your password?" sends a reset link instead of your old password. (The site does not know it: it only kept a hash.)'
     },
     {
@@ -270,7 +270,7 @@
         { f: 'eng', t: 'Engineering simulations model physical parts (a beam, a pump, a circuit element) as objects with properties and rules.' }
       ],
       jobs: ['App developer', 'Game developer', 'Software architect'],
-      learn: ['modern/4', 'modern/5', 'java/8', 'java/9', 'modern/8', 'dsa/5'],
+      learn: ['modern/4', 'modern/5', 'java/9', 'java/11', 'modern/8', 'dsa/5'],
       teach: 'Activity: design a Student or a Book type on the board. What data does it hold? Which rules should it refuse to break, whatever the rest of the program does?'
     },
     {
@@ -283,7 +283,7 @@
         { f: 'swe', t: 'Checking input where it enters a program (is it really a number? is it in range?) is the first defence against bugs and attacks alike.' }
       ],
       jobs: ['Backend developer', 'Site reliability engineer', 'Safety engineer'],
-      learn: ['python/2', 'python/8', 'java/10', 'lisp/1'],
+      learn: ['python/2', 'python/8', 'java/12', 'lisp/1'],
       teach: 'Discussion: what should a cash machine do if the network drops halfway through a withdrawal? List the possible states and what is safe in each.'
     },
     {
