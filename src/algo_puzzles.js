@@ -420,7 +420,7 @@
   }
 
   // ================================================================== registration
-  const RECURSION = [{ href: '#/python/13', text: 'SC 101 Lesson 13: Recursion' }, { href: '#/dsa/7', text: 'SC 107 Lesson 7: Recursion' }];
+  const RECURSION = [{ href: '#/python/13', text: 'SC 101 Lesson 13: Recursion' }, { href: '#/dsa/8', text: 'SC 107 Lesson 8: Recursion' }];
   A.register({ id: 'hanoi', group: GROUP, title: 'Towers of Hanoi',
     blurb: 'Move the tower one disc at a time, never a big disc on a small one. Play it yourself and try for the fewest moves, then watch recursion do it perfectly.',
     mount: mountHanoi,

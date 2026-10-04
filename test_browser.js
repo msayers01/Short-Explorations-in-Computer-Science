@@ -416,17 +416,17 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('DSA figures render', (await page.locator('.fig-mount svg').count()) >= 3);
   await goto('#/scratch/1');
   check('the Under development tag is shown (on a course still being written)', (await page.locator('.dev-tag').count()) >= 1);
-  await goto('#/dsa/5');
-  check('the linked-list figure renders', (await page.locator('.fig-mount svg').count()) >= 1);
   await goto('#/dsa/6');
+  check('the linked-list figure renders', (await page.locator('.fig-mount svg').count()) >= 1);
+  await goto('#/dsa/7');
   const sq = page.locator('.fig-mount').first(); await sq.locator('button:has-text("Push")').click(); await sq.locator('button:has-text("Push")').click(); await sq.locator('button:has-text("Pop")').click();
   check('the stack figure pops what was pushed last', /pop\(\).*= 2/.test(await sq.locator('.fig-status').textContent()));
-  await goto('#/dsa/7');
+  await goto('#/dsa/8');
   const cs = page.locator('.fig-mount').first(); for (let i = 0; i < 4; i++) await cs.locator('button:has-text("Step")').click();
   check('the call-stack figure piles up frames', (await cs.locator('svg rect').count()) >= 4);
   {
   // ---- DSA lesson 8: the hash table figure (Insert, Step to the end of each insertion; the seventh key doubles the table)
-  await goto('#/dsa/8');
+  await goto('#/dsa/9');
   const ht = page.locator('.fig-mount').filter({ has: page.locator('.ht-rows') }).first();
   const htDone = async () => { for (let i = 0; i < 40; i++) { const st = ht.locator('.fig-tools button:has-text("Step")'); if (await st.isEnabled()) await st.click(); else break; } };
   const htInsert = async (word) => { await ht.locator('input.ht-input').fill(word); await ht.locator('button:has-text("Insert")').click(); await htDone(); };
@@ -446,7 +446,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('dsa: with the bad hash (length of the word) three 3-letter words share one bucket', (await ht.locator('.ht-row.ht-coll .ht-node').count()) === 3 && (await ht.locator('.ht-row').count()) === 8);
   }
   {
-  await goto('#/dsa/9');
+  await goto('#/dsa/11');
   const bst = page.locator('.fig-mount').first();
   check('dsa: the search-tree figure renders six nodes and their height', (await bst.locator('.bst-node').count()) === 6 && /6 keys, height 3/.test(await bst.locator('.bst-stats').textContent()));
   await bst.locator('input[type=number]').fill('7'); await bst.locator('button:has-text("Insert")').click();
@@ -469,7 +469,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('dsa: Enter inserts into the empty tree and the key becomes the root', (await bst.locator('.bst-node').count()) === 1 && /becomes the root/.test(await bst.locator('.fig-status').first().textContent()));
   }
   {
-  await goto('#/dsa/10');
+  await goto('#/dsa/12');
   const hp = page.locator('.fig-mount').first();
   const hpArr = async () => (await hp.locator('.hp-cell .hp-val').allTextContents()).join(' ');
   check('dsa: the heap figure draws the tree and the array side by side', (await hp.locator('.hp-node').count()) === 7 && (await hp.locator('.hp-cell:not(.is-empty)').count()) === 7 && (await hpArr()) === '2 5 3 9 6 4 8');
@@ -495,7 +495,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   }
   {
   // ---- DSA lesson 11 (graphs): the three runs of the graph figure end where the lesson says they do
-  await goto('#/dsa/11');
+  await goto('#/dsa/13');
   const gfigs = page.locator('.fig-mount').filter({ has: page.locator('svg.gr-svg') });
   check('dsa: lesson 11 has three graph figures (BFS, DFS, Dijkstra)', (await gfigs.count()) === 3);
   const runGraph = async (fig) => { for (let i = 0; i < 80; i++) { const step = fig.locator('button:has-text("Step")'); if (await step.isDisabled()) break; await step.click(); } };
@@ -515,7 +515,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await runGraph(dijG);
   check('dsa: Dijkstra ends with the distances 0 4 1 3 7 6 11 12', /A 0, B 4, C 1, D 3, E 7, F 6, G 11, H 12/.test(await dijG.locator('.gr-msg').textContent()), await dijG.locator('.gr-msg').textContent());
   check('dsa: Dijkstra shows the road lengths on the edges', (await dijG.locator('svg.gr-svg text').allTextContents()).includes('8'));
-  await goto('#/dsa/11');
+  await goto('#/dsa/13');
   const g2 = page.locator('.fig-mount').filter({ has: page.locator('svg.gr-svg') }).nth(0);
   await g2.locator('button:has-text("Play")').click(); await page.waitForTimeout(2800); await g2.locator('button:has-text("Pause")').click();
   check('dsa: the graph figure plays on its own and pauses', !/step 1 of/.test(await g2.locator('.fig-note').textContent()));

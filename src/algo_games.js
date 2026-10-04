@@ -911,7 +911,7 @@
 <p>How much alpha-beta saves depends on the order in which moves are tried. If the best move is always tried first, Donald Knuth and Ronald Moore showed in 1975 that it examines only <em>b</em><sup>⌈<em>d</em>/2⌉</sup> + <em>b</em><sup>⌊<em>d</em>/2⌋</sup> − 1 leaves, about <em>b</em><sup><em>d</em>/2</sup>: in the same time it can look twice as deep. If the worst move always comes first, it saves almost nothing. Use the Best order and Worst order buttons to see both. A real program does not know the best move in advance (that is what it is searching for) so it guesses: captures first in chess, the centre first in Connect Four, or the best move from a shallower search it has just done.</p>
 <h2>Where it is used</h2>
 <p>The idea of pruning was found independently by several researchers in the late 1950s and early 1960s; Knuth and Moore's paper gave its full analysis. IBM's Deep Blue, which beat the world chess champion Garry Kasparov in a six-game match in 1997, ran alpha-beta search on hundreds of special-purpose chess chips, examining up to about 200 million positions a second. Stockfish, the strongest chess program today, still searches with alpha-beta (with many refinements) and since 2020 scores positions with a small neural network called NNUE. DeepMind's AlphaGo (2016) and AlphaZero (2017) took a different road: Monte Carlo tree search guided by a neural network, which samples promising lines instead of trying to examine all of them.</p>`,
-    taught: [{ href: '#/dsa/7', text: 'SC 107 Lesson 7: Recursion' }, { href: '#/lisp/6', text: 'SC 102 Lesson 6: tree recursion' }, { href: '#/python/13', text: 'SC 101 Lesson 13: Recursion' }, { href: '#/math/11', text: 'SC 104 Lesson 11: Counting steps' }]
+    taught: [{ href: '#/dsa/8', text: 'SC 107 Lesson 8: Recursion' }, { href: '#/lisp/6', text: 'SC 102 Lesson 6: tree recursion' }, { href: '#/python/13', text: 'SC 101 Lesson 13: Recursion' }, { href: '#/math/11', text: 'SC 104 Lesson 11: Counting steps' }]
   });
   A.register({
     id: 'tic-tac-toe', title: 'Tic-tac-toe against minimax', group: GROUP,
@@ -922,7 +922,7 @@
 <p>The scores on the empty squares are the same numbers, seen from your side: <em>win</em> means you can force a win by playing there, <em>lose</em> means the computer can then force one. From the empty board every square says <em>draw</em>: perfect play by both sides always ends in a draw.</p>
 <h2>How much work it is</h2>
 <p>Plain minimax from the empty board visits 549,946 positions, counting the empty board itself: the whole game tree, which contains 255,168 different games. Alpha-beta, trying squares in reading order, reaches the same decision after visiting far fewer; the panel shows the exact counts for each move. Most of those positions are the same ones reached by different move orders: tic-tac-toe has only 5,478 distinct legal positions. A program that remembers positions it has already solved (a <em>transposition table</em>, which real chess programs use too) does even less work. This page uses one to show the score of every square instantly.</p>`,
-    taught: [{ href: '#/python/13', text: 'SC 101 Lesson 13: Recursion' }, { href: '#/dsa/7', text: 'SC 107 Lesson 7: Recursion' }]
+    taught: [{ href: '#/python/13', text: 'SC 101 Lesson 13: Recursion' }, { href: '#/dsa/8', text: 'SC 107 Lesson 8: Recursion' }]
   });
   A.register({
     id: 'connect-four', title: 'Connect Four: search with a horizon', group: GROUP,
@@ -935,7 +935,7 @@
 <p>The guess can be wrong, and the search cannot see anything beyond its horizon: a threat that takes one more move than the depth to appear is invisible to it (the <em>horizon effect</em>). Set the depth to 1 or 2 and you can beat it; at 7 or more it is hard to beat.</p>
 <h2>Iterative deepening and move ordering</h2>
 <p>The computer first searches 1 move deep, then 2, then 3, and so on, up to the depth you asked for. That looks wasteful but is not: each search costs several times more than the one before, so the earlier ones add only a small fraction, and they pay for themselves. Each search starts with the best move of the previous one, which is exactly the good move ordering alpha-beta needs to prune well. And when the time limit runs out in the middle of a search, the computer plays the move from the deepest search it finished. Inside the search it tries the centre columns first, since central moves are usually better; untick that box to see the number of positions grow. The search runs in slices of a few milliseconds, so the page stays responsive while it thinks.</p>`,
-    taught: [{ href: '#/dsa/7', text: 'SC 107 Lesson 7: Recursion' }, { href: '#/dsa/1', text: 'SC 107 Lesson 1: Counting the cost' }]
+    taught: [{ href: '#/dsa/8', text: 'SC 107 Lesson 8: Recursion' }, { href: '#/dsa/1', text: 'SC 107 Lesson 1: Counting the cost' }]
   });
   A.register({
     id: 'nim', title: 'Nim: a game solved by arithmetic', group: GROUP,

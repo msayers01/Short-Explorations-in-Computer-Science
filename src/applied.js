@@ -156,7 +156,7 @@
         { f: 'games', t: 'Games collect events (key presses, network messages) in a queue and handle them in order each frame.' }
       ],
       jobs: ['Systems programmer', 'Backend developer', 'Exploit developer', 'Game developer'],
-      learn: ['dsa/6', 'dsa/7', 'python/13', 'math/8'],
+      learn: ['dsa/7', 'dsa/8', 'python/13', 'math/8'],
       teach: 'Discussion: which is fairer for a school cafeteria, a stack or a queue? Then: why does Undo use the other one?'
     },
     {
@@ -169,7 +169,7 @@
         { f: 'swe', t: 'Garbage collectors in Java and JavaScript follow references from object to object to find which memory is still in use and free the rest.' }
       ],
       jobs: ['Systems programmer', 'Kernel developer', 'Backend developer'],
-      learn: ['dsa/5', 'lisp/7', 'lisp/8'],
+      learn: ['dsa/6', 'lisp/7', 'lisp/8'],
       teach: 'Activity: a human linked list. Each student holds a card with the name of the next student. Insert someone in the middle; then try to find the 7th person without walking the chain.'
     },
     {
@@ -183,7 +183,7 @@
         { f: 'swe', t: 'Divide-and-conquer algorithms such as merge sort, quicksort and the Fast Fourier Transform are recursive.' }
       ],
       jobs: ['Compiler engineer', 'Game AI programmer', 'Backend developer'],
-      learn: ['python/13', 'lisp/4', 'lisp/8', 'dsa/7', 'cpp/4', 'java/4'],
+      learn: ['python/13', 'lisp/4', 'lisp/8', 'dsa/8', 'cpp/4', 'java/4'],
       teach: 'Hook: two mirrors facing each other, or a set of nesting dolls. Where is the base case? What would happen without one?'
     },
     {
@@ -198,7 +198,7 @@
         { f: 'games', t: 'Characters in games find their way around a level with A* search on a grid or a "navigation mesh".' }
       ],
       jobs: ['Network engineer', 'Penetration tester', 'Backend developer', 'Game AI programmer'],
-      learn: ['math/5', 'dsa/6'],
+      learn: ['math/5', 'dsa/7'],
       teach: 'Activity: draw the classroom friendships (or the school\'s hallways) as a graph. Find the shortest path between two points by breadth-first search, one ring at a time.'
     },
     {
@@ -270,7 +270,7 @@
         { f: 'eng', t: 'Engineering simulations model physical parts (a beam, a pump, a circuit element) as objects with properties and rules.' }
       ],
       jobs: ['App developer', 'Game developer', 'Software architect'],
-      learn: ['modern/4', 'modern/5', 'java/9', 'java/11', 'modern/8', 'dsa/5'],
+      learn: ['modern/4', 'modern/5', 'java/9', 'java/11', 'modern/8', 'dsa/6'],
       teach: 'Activity: design a Student or a Book type on the board. What data does it hold? Which rules should it refuse to break, whatever the rest of the program does?'
     },
     {
