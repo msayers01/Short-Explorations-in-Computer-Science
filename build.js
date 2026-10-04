@@ -42,6 +42,7 @@ ${r('src/style.css')}
 <div id="app"><noscript>These pages need JavaScript to run the code examples.</noscript></div>
 `;
 const scripts = [
+  'src/domsafe.js',   // first: the DOM's own append() and friends skip null, undefined and false instead of printing them
   'src/cppstep.js',   // only render() and describe() run in the page; the program is traced in the C++ sandbox
 
   'src/scheme.js',

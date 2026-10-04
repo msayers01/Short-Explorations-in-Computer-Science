@@ -534,7 +534,7 @@ in the tests) wraps method-writing exercises in a class with a `main`.
 
 A command line for learning the Unix shell, in the Code Lab (the **Terminal** button; a course on it is planned). Design notes:
 
-- **It is a shell, not an emulator.** `shell.js` has its own tokenizer and parser (words with `' " \` quoting, `$VAR ${VAR} $? $# $@ $1`,
+- **It is a shell, not an emulator.** `shell.js` has its own tokenizer and parser (words with `' " \` quoting, `$VAR ${VAR} $? $# $@ $1` and the `${…}` forms (default `:-` `:=` `:+`, length, slices with negative offsets, `#` `##` `%` `%%` pattern removal, `/` `//` `/#` `/%` substitution, `^` `,` case; others are "bad substitution"),
   `$(…)`, `$((…))`, `{a,b}` and `{1..5}`, `~`, `* ? […]`, `> >> < 2> 2>&1 | ; && || !`, `if/elif/else/fi`, `for/in/do/done`, `while`, `until`,
   `{ }` and `( )`), an executor that runs pipelines stage by stage (each stage's output buffered into the next: nothing runs concurrently),
   and about seventy commands written here with GNU's wording for their errors (`ls: cannot access 'x': No such file or directory`,
@@ -795,9 +795,10 @@ Students write a bot (Python, Java, C++ or Scheme) that plays Tron against built
   figure numbers its arrow markers).
 - Tables in lesson prose (`.prose table`) are `display: block` with `overflow-x: auto`, so a wide one scrolls inside
   itself on a phone instead of pushing the page sideways.
-- The DOM's own `append`, `prepend`, `replaceChildren`, `before` and `after` print `null` (and `false`) as text. Build
-  nodes with `el()` (which skips `null`, `undefined` and `false`), or pass `[...].filter(Boolean)`; never hand a
-  possibly-empty value straight to those methods.
+- The DOM's own `append`, `prepend`, `replaceChildren`, `before`, `after` and `replaceWith` print `null`, `undefined` and `false` as text (and an array as
+  `[object HTMLElement]`): a bare `parent.append(a, cond ? b : null)` once put the word null on the Life demo and on a machine-learning figure. `src/domsafe.js` (the
+  first file of the page's script) now makes those methods skip them and flatten arrays, so the mistake cannot reach a student; `test_browser.js` checks it. Still build
+  nodes with `el()`, and do not rely on the net in code that also runs in node. (The sandboxes' frames are separate documents and have no such net.)
 - Assignment/back-up links are compressed; browsers without `DecompressionStream` (pre-2023 Safari)
   cannot open them, and the code says so.
 - QR codes hold ~2.9 KB; longer links show a note instead of a code.

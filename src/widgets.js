@@ -1596,7 +1596,7 @@ xs mapped kept result`;
       el('span', { class: 'fig-note' }, 'drag the ? (or focus it and use the arrow keys)'));
     const key = el('p', { class: 'fig-note knn-key' }, el('span', { class: 'knn-sw knn-o', 'aria-hidden': 'true' }), ' orange (circle)  ', el('span', { class: 'knn-sw knn-l', 'aria-hidden': 'true' }), ' lemon (triangle)  · shading: the label a new fruit there would get');
     render();
-    mount.append(svg, tools, status, b.test ? score : null, key);
+    mount.append(svg, tools, status, ...(b.test ? [score] : []), key);
   };
   /* ---------- the perceptron: every mistake moves the line (SC 109 lesson 5) ---------- */
   // The sixteen fruit of the knn figure, lemons +1 and oranges -1, trained with Rosenblatt's rule at a rate of 0.1, one step per

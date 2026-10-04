@@ -1125,7 +1125,9 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .bq-input { flex: 1; min-width: 0; font-family: var(--mono); font-size: 0.95rem; padding: 0.4rem 0.6rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); }
 .bq-input:disabled { color: var(--ink-2); }
 .bq-msg { min-height: 1.4em; }
-@media (max-width: 640px) { .sb-pair { grid-template-columns: minmax(0, 1fr); } .sb-arrow { display: none; } }
+@media (max-width: 640px) { .sb-pair { grid-template-columns: minmax(0, 1fr); } .sb-arrow { display: none; } .sb-row { white-space: normal; } .sb-stack { max-width: 100%; } }
+.sb-pair > * { min-width: 0; }   /* a wide block line scrolls inside its own box rather than widening the page */
+.sb-pair > div { overflow-x: auto; }
 
 /* ---------- the courses page and the grouped catalogue (app.js: coursesPage, groupedCatalog) */
 .courses-head h1 { font-size: 2.4rem; font-weight: 400; margin-bottom: 0.6rem; }
@@ -1180,7 +1182,8 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .arena-sample { background: var(--code-bg); padding: 0.7rem 0.9rem; border-radius: 3px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; }
 .arena-setup { border: 1px solid var(--rule); border-radius: 4px; padding: 0.4rem 1rem; margin: 1rem 0 1.4rem; background: var(--paper); }
 .arena-slots { display: flex; flex-wrap: wrap; gap: 0.5rem 1.2rem; }
-.arena-slot, .arena-field { font-family: var(--sans); font-size: 0.92rem; color: var(--ink-2); display: inline-flex; align-items: center; gap: 0.4rem; }
+.arena-slot, .arena-field { font-family: var(--sans); font-size: 0.92rem; color: var(--ink-2); display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; max-width: 100%; }
+.arena-slot select, .arena-field select { min-width: 0; }
 .arena-opts { gap: 0.5rem 1.4rem; }
 .arena select, .arena input[type=number], .arena input[type=text], .arena textarea { font: inherit; font-family: var(--sans); font-size: 0.92rem; color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 3px; padding: 0.3rem 0.45rem; max-width: 100%; }
 .arena input[type=number] { width: 4.2rem; } .arena-seed { width: 8rem; } .arena-name { width: 14rem; }

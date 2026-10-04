@@ -49,7 +49,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   null-prototype dictionaries (a key may be `__proto__`), size-capped `unpack`. Add a hostile-input test with each new field (see
   `test_backup.js`).
 - Ids of exercises are never renumbered (progress and portfolios are keyed by them); `lint/exercise-ids.txt` and `test_lessons.js` enforce it.
-- Build nodes with `el()`; the DOM's `append` prints `null`/`false` as text.
+- Build nodes with `el()` (the DOM's own `append` prints `null`/`false` as text; `src/domsafe.js` is a net under that, not a licence).
 - JSCPP is patched (`patches/*.patch`, applied to node_modules by `scripts/patch-jscpp.js`, baked into `vendor/jscpp.min.js`).
 
 ## Java (ARCHITECTURE §9e)
@@ -85,7 +85,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - Merged: everything below through PR #35 (`main` = `aea174b`), except SC 109, which is on the working branch. PRs #21-#26: the practice terminal, SC 108 lessons 1-4, the one-inline-script
   build, SC 099, Scratch lessons 8-9, the tour. PR #27 was a bug sweep (four reviews: shell against bash, Java against javac/java 21, the
   app and Scheme, course text): see its commit messages. Bugs it found but left: Java `switch` with `yield`, `%1$s`, TreeSet/TreeMap with
-  a comparator; shell `${s/a/b}` and other unlisted `${...}` forms (they report "bad substitution"); Scheme character literals.
+  a comparator; Scheme character literals. (Shell `${s/a/b}`, `${f%.txt}`, `${p##*/}`, `${s^^}` and negative slices were added in October 2026 and are checked against bash in `difftest/shell.txt`; `${x@Q}`-style transforms and arrays still report "bad substitution".)
 - SC 105 Modern C++ has 8 lessons (string, vector, references, struct, class, algorithms/lambdas, map/set, gradebook project), 15 exercises.
 - SC 107 Data Structures and Algorithms (Java, `src/course_dsa.js`): lessons 1-7 (cost and arrays; searching; simple sorts; merge sort and
   quicksort; linked lists; stacks and queues; recursion), 24 exercises (code and `answer` kinds), figures growth, arrayops, dynarray, sortlab,
@@ -149,7 +149,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - **Pictures show things and ideas, not people** (the owner's rule, October 2026): no portraits. The one exception the owner asked to keep
   is Ada Lovelace in SC 101. A machine with someone standing beside it is fine; a person as the subject is not. Prefer a picture
   that explains the concept (dice for Monte Carlo, a sieve for the Sieve of Eratosthenes, a plan for a class).
-- The DOM's own `append`/`replaceChildren` do not flatten arrays (they print `[object HTMLElement]`): spread them, or use `el()`, which does.
+- The DOM's own `append`/`replaceChildren` used to print `null`/`false` and arrays as text: `src/domsafe.js` (first in the script) now makes them skip those and flatten arrays (the stray "null" in the Life demo, the bits and knn figures and the shell lesson's tree came from this). Still prefer `el()`.
 - Ideas not started: C in the Code Lab (same compiler); lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
   beside the single-page design and needs a policy change); splitting CI (about 4 minutes now); a Java step-through debugger like the C++ memory stepper.

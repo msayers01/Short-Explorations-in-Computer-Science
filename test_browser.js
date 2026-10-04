@@ -24,6 +24,21 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('no Skulpt, JSCPP or the Java interpreter in the page', (await page.evaluate(() => [typeof Sk, typeof JSCPP, typeof JAVA])).join() === 'undefined,undefined,undefined');
   check('CSP is in the page', (await page.locator('meta[http-equiv="Content-Security-Policy"]').count()) === 1);
 
+  // ---- 1b. the DOM's own append() and friends skip null, undefined and false (src/domsafe.js): a stray "null" must never reach a page
+  check('the DOM append skips null, undefined and false, flattens arrays, and keeps 0 and text', await page.evaluate(() => {
+    const d = document.createElement('div'), b = document.createElement('b'); b.textContent = 'B';
+    d.append('a', null, undefined, false, 0, [b, null, ['c', false]]);
+    const p = document.createElement('p'); p.textContent = 'p'; d.append(p); p.after(null, 'z'); p.before(undefined, 'y'); d.prepend(null, '<');
+    const f = document.createDocumentFragment(); f.append(null, 'f', [false]); d.append(f);
+    const r = document.createElement('div'); r.append('x'); r.replaceChildren(null, 'r');
+    const e = document.createElement('div'); e.append('x'); e.replaceChildren();
+    return d.textContent === '<a0Bcypzf' && r.textContent === 'r' && e.textContent === '';
+  }));
+  await goto('#/algorithms/life');
+  check('algorithms: a demonstration with no "about" or "taught in" text shows no stray null', !/\bnull\b/.test(await page.locator('main.algo-one').innerText()));
+  await goto('#/ml/2');
+  check('a figure without its optional score line shows no stray null', !/\bnull\b/.test(await page.locator('.fig-mount').first().innerText()));
+
   // ---- 2. programs run, and are confined
   let r = await py('print(sum(range(5)))\nimport math\nprint(math.sqrt(16))');
   check('python runs', r.out === '10\n4.0\n' && !r.err, r);

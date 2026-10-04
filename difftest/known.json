@@ -25,7 +25,6 @@
     "echo ~/notes ~student": "~student: the practice computer has a user called student; the machine running the test does not.",
     "echo $0": "$0 is the script file on the real side (the test runs each case as a script) and bash in the terminal.",
     "echo ${#HOME}": "HOME is a temporary directory on the real side, so its length differs.",
-    "echo ${s/a/b}; echo after": "${var/pattern/replacement} is not supported: it reports a bad substitution.",
     ")": "Run as a script, bash also echoes the offending line; at the prompt it prints only the message, as ours does."
   }
 }
