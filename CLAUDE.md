@@ -123,6 +123,10 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   caption rewritten as the explanation, `wrong` reasons on all 33 quick checks, followups on every exercise). Not done: course-level skills and
   checkpoint lessons (they would renumber lessons that other pages link to as `lisp/N`), a networks of ideas beyond SICP (vectors, `set!` and
   state, streams), and Scheme character literals. The captions' computed values were checked by running the examples.
+- SC 103 Introduction to C++ (`src/course_cpp.js`, 11 lessons on JSCPP, 22 exercises `cp-<n>-<k>`): every lesson has `standard: 1` at lesson level (October 2026, same
+  treatment as SC 102: stories end on a question, predictions, `wrong` reasons, followups). Lesson 9 (random numbers) has no `predict: true`, only "Guess first"
+  reveals about properties, because its output varies. Examples were trimmed to 25 lines rather than marked `long`. Not done: course-level skills and
+  checkpoints (they would renumber lessons). Structs, classes, references and `std::` containers are deliberately left to SC 105.
 - **The practice terminal** (ARCHITECTURE §9f): `src/shell.js` (a real shell: parser, pipelines, redirections, variables, loops, ~70 commands,
   virtual file system with caps, saved under `shortcourses.shell.v1`, in backups) and `src/terminal.js` (the Terminal panel in the Code Lab:
   history, Tab completion, nano, `edit`, the `~/lab` mirror). `g++`/`javac` compile through check-only modes of the sandboxes; `./prog`,
