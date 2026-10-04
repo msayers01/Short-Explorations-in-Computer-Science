@@ -6,7 +6,7 @@
    64-bit long as BigInt, double, char), String, StringBuilder, arrays (any depth), ArrayList, HashMap, HashSet, TreeMap, TreeSet,
    Map.Entry, Scanner on System.in, Random (Java's own generator, so a seeded program prints what real Java prints), Math, Integer,
    Double, Character, Arrays, Collections, System.out.print/println/printf, String.format, exceptions with try/catch/finally and
-   user-defined exception classes, switch (classic and arrow), enhanced for, labelled break/continue, var.
+   user-defined exception classes, switch (classic and arrow, and switch expressions with yield), enhanced for, labelled break/continue, var.
    Not covered: generics in user classes, lambdas and method references, nested or anonymous classes, enums, interfaces with default
    methods, threads, files, checked-exception analysis ("unreported exception"), definite assignment ("might not have been
    initialized"), unreachable-code errors.
@@ -291,6 +291,9 @@
       const tok = toks[p], line = tok.line;
       if (atOp('{')) return parseBlock();
       if (atOp(';')) { next(); return { k: 'Empty', line }; }
+      if (at('id') && tok.v === 'yield' && !(peek(1).t === 'op' && ['=', '.', '[', '++', '--', '+=', '-=', '*=', '/=', '%=', '&=', '|=', '^=', '<<=', '>>=', '>>>=', ')', ';', ','].includes(peek(1).v))) {
+        next(); const e = parseExpr(); expectOp(';'); return { k: 'Yield', e, line };   // yield value;  ends the switch expression with that value
+      }
       if (at('kw')) {
         switch (tok.v) {
           case 'if': { next(); expectOp('('); const cond = parseExpr(); expectOp(')'); const then = parseStatement(); let els = null; if (atKw('else')) { next(); els = parseStatement(); } return { k: 'If', cond, then, els, line }; }
@@ -315,7 +318,7 @@
           case 'break': { next(); const label = at('id') ? next().v : null; expectOp(';'); return { k: 'Break', label, line }; }
           case 'continue': { next(); const label = at('id') ? next().v : null; expectOp(';'); return { k: 'Continue', label, line }; }
           case 'throw': { next(); const e = parseExpr(); expectOp(';'); return { k: 'Throw', e, line }; }
-          case 'switch': return parseSwitch();
+          case 'switch': return parseSwitch(false);
           case 'try': {
             next(); if (atOp('(')) fail('try-with-resources is not supported by this interpreter');
             const block = parseBlock(); const catches = []; let fin = null;
@@ -355,26 +358,35 @@
       return { k: 'LocalDecl', vars, final: !!mods.final, line };
     }
     function parseArrayInit() { const line = toks[p].line; expectOp('{'); const items = []; while (!atOp('}')) { items.push(atOp('{') ? parseArrayInit() : parseExpr()); if (atOp(',')) { next(); continue; } break; } expectOp('}'); return { k: 'ArrayInit', items, line }; }
-    function parseSwitch() {
+    let inSwitchExpr = 0;   // how many switch expressions we are inside (a yield statement elsewhere is an error, which the checker reports)
+    function parseSwitch(isExpr) {
       const line = toks[p].line; next(); expectOp('('); const subject = parseExpr(); expectOp(')'); expectOp('{');
       const cases = []; let arrow = null;
-      while (!atOp('}')) {
-        if (at('eof')) fail("reached end of file while parsing");
-        const c = { labels: [], isDefault: false, body: [], line: toks[p].line };
-        for (;;) {
-          if (atKw('default')) { next(); c.isDefault = true; }
-          else if (atKw('case')) { next(); c.labels.push(parseTernary()); while (atOp(',')) { next(); c.labels.push(parseTernary()); } }
-          else fail("'case', 'default', or '}' expected");
-          if (atOp('->')) { if (arrow === false) fail('different case kinds used in the switch'); arrow = true; next(); break; }
-          expectOp(':', null, "':' or '->'"); if (arrow === true) fail('different case kinds used in the switch'); arrow = false;
-          if (!(atKw('case') || atKw('default'))) break;
+      if (isExpr) inSwitchExpr++;
+      try {
+        while (!atOp('}')) {
+          if (at('eof')) fail("reached end of file while parsing");
+          const c = { labels: [], isDefault: false, body: [], line: toks[p].line };
+          for (;;) {
+            if (atKw('default')) { next(); c.isDefault = true; }
+            else if (atKw('case')) { next(); c.labels.push(parseTernary()); while (atOp(',')) { next(); c.labels.push(parseTernary()); } }
+            else fail("'case', 'default', or '}' expected");
+            if (atOp('->')) { if (arrow === false) fail('different case kinds used in the switch'); arrow = true; next(); break; }
+            expectOp(':', null, "':' or '->'"); if (arrow === true) fail('different case kinds used in the switch'); arrow = false;
+            if (!(atKw('case') || atKw('default'))) break;
+          }
+          if (arrow) {
+            if (atOp('{')) c.body.push(parseBlock()); else if (atKw('throw')) c.body.push(parseStatement());
+            else if (isExpr) { const el = toks[p].line; const e = parseExpr(); expectOp(';'); c.body.push({ k: 'Yield', e, line: el, implicit: true }); }   // case 1 -> "one";  yields the value
+            else { const t0 = toks[p], el = t0.line; const e = parseExpr(); if (!['Assign', 'Call', 'New', 'PreInc', 'PostInc', 'CtorCall'].includes(e.k)) fail('not a statement', t0); expectOp(';'); c.body.push({ k: 'ExprStmt', e, line: el }); }
+            if (!isExpr) c.body.push({ k: 'Break', label: null, line: c.line, implicit: true });
+          }
+          else while (!atKw('case') && !atKw('default') && !atOp('}')) { if (at('eof')) fail("reached end of file while parsing"); c.body.push(parseStatement()); }
+          cases.push(c);
         }
-        if (arrow) { if (atOp('{')) c.body.push(parseBlock()); else if (atKw('throw')) c.body.push(parseStatement()); else { const el = toks[p].line; const e = parseExpr(); expectOp(';'); c.body.push({ k: 'ExprStmt', e, line: el }); } c.body.push({ k: 'Break', label: null, line: c.line, implicit: true }); }
-        else while (!atKw('case') && !atKw('default') && !atOp('}')) { if (at('eof')) fail("reached end of file while parsing"); c.body.push(parseStatement()); }
-        cases.push(c);
-      }
-      next();
-      return { k: 'Switch', subject, cases, line };
+      } finally { if (isExpr) inSwitchExpr--; }
+      const close = next();
+      return { k: isExpr ? 'SwitchExpr' : 'Switch', subject, cases, line, endLine: close.line, arrow: arrow === true };
     }
 
     // ----- expressions
@@ -472,6 +484,7 @@
               if (atOp('(')) { const args = parseArgs(); return { k: 'Call', target: { k: 'Super', line: tok.line }, name, args, line: nameTok.line }; }
               return { k: 'Field', target: { k: 'Super', line: tok.line }, name, line: nameTok.line };
             }
+            case 'switch': return parseSwitch(true);
             case 'new': {
               next(); const type = parseType(true);
               if (type.k === 'var') fail("'var' is not allowed here");
@@ -1356,6 +1369,10 @@
           }
           case 'Binary': { if (e.op === '&&' || e.op === '||') { const l = dae(e.l, da); dae(e.r, l); return l; } return dae(e.r, dae(e.l, da)); }
           case 'Cond': { const c = dae(e.cond, da); return inter(dae(e.a, c), dae(e.b, c)); }
+          case 'SwitchExpr': {   // the state after it is what holds at every yield
+            const d = dae(e.subject, da); const ctx = { label: null, isLoop: false, isSwitch: false, isSwitchExpr: true, breaks: [], yields: [] }; jumps.push(ctx);
+            try { let cur = ALL; for (const c of e.cases) { cur = inter(cur, d); for (const x of c.body) cur = das(x, cur); } let out = ALL; for (const y of ctx.yields) out = inter(out, y); return isAll(out) ? d : out; } finally { jumps.pop(); }
+          }
           case 'Call': { let d = e.target ? dae(e.target, da) : da; for (const a of e.args) d = dae(a, d); return d; }
           case 'New': { let d = da; for (const a of e.args) d = dae(a, d); return d; }
           case 'NewArray': { let d = da; for (const a of e.dims) d = dae(a, d); return e.init ? dae(e.init, d) : d; }
@@ -1397,6 +1414,7 @@
           case 'ForEach': { const d = dae(s.iter, da); const ctx = { label: s.label || null, isLoop: true, breaks: [] }; jumps.push(ctx); try { das(s.body, isAll(d) ? d : union(d, new Set([s.slot]))); let out = d; for (const b of ctx.breaks) out = inter(out, b); return out; } finally { jumps.pop(); } }
           case 'Return': { if (s.e) dae(s.e, da); return ALL; }
           case 'Throw': { dae(s.e, da); return ALL; }
+          case 'Yield': { const d = dae(s.e, da); const target = jumps.slice().reverse().find(j => j.isSwitchExpr); if (target) target.yields.push(d); return ALL; }
           case 'Break': { const target = s.label ? jumps.slice().reverse().find(j => j.label === s.label) : jumps.slice().reverse().find(j => j.isLoop || j.isSwitch); if (target) target.breaks.push(da); return ALL; }
           case 'Continue': return ALL;
           case 'Switch': {
@@ -1442,7 +1460,7 @@
     function completes(s) {   // can this statement complete normally? (JLS 14.22, simplified)
       if (!s) return true;
       switch (s.k) {
-        case 'Return': case 'Throw': return false;
+        case 'Return': case 'Throw': case 'Yield': return false;
         case 'Block': { for (const x of s.body) if (!completes(x)) return false; return true; }
         case 'If': return !s.els || completes(s.then) || completes(s.els);
         case 'While': return !isLit(s.cond, true) || hasBreak(s.body, s.label);
@@ -1462,13 +1480,49 @@
     }
     function hasBreak(s, label) {   // a break that leaves the statement s (unlabelled and not inside an inner loop/switch, or with this label)
       let found = false;
-      const walk = (n, inner) => { if (!n || typeof n !== 'object' || found) return; if (n.k === 'Break') { if ((n.label === null && !inner) || (n.label && n.label === label)) found = true; return; } const nested = inner || ['While', 'DoWhile', 'For', 'ForEach', 'Switch'].includes(n.k); for (const key in n) if (n[key] && typeof n[key] === 'object' && key !== 'cond' && key !== 'subject') { if (Array.isArray(n[key])) n[key].forEach(x => walk(x, nested)); else if (n[key].k) walk(n[key], nested); } };
+      const walk = (n, inner) => { if (!n || typeof n !== 'object' || found) return; if (n.k === 'Break') { if ((n.label === null && !inner) || (n.label && n.label === label)) found = true; return; } const nested = inner || ['While', 'DoWhile', 'For', 'ForEach', 'Switch', 'SwitchExpr'].includes(n.k); for (const key in n) if (n[key] && typeof n[key] === 'object' && key !== 'cond' && key !== 'subject') { if (Array.isArray(n[key])) n[key].forEach(x => walk(x, nested)); else if (n[key].k) walk(n[key], nested); } };
       walk(s, false); return found;
     }
+    // the type of  c ? a : b  (and of a switch expression with several results)
+    function condType(at, bt, na, nb, line) {
+      let t;
+      if (same(at, bt)) t = at;
+      else if (at.k === 'null') t = boxed(bt); else if (bt.k === 'null') t = boxed(at);
+      else if (promote(at, bt)) { t = promote(at, bt); if ((unboxed(at).n === 'char' && nb.const !== undefined && fits(nb.const, T.char)) || (unboxed(bt).n === 'char' && na.const !== undefined && fits(na.const, T.char))) t = T.char; }
+      else if (isBoolean(unboxed(at)) && isBoolean(unboxed(bt))) t = T.boolean;
+      else if (assignable(at, bt, false)) t = bt; else if (assignable(bt, at, false)) t = at;
+      else if ((isRef(at) || at.k === 'prim') && (isRef(bt) || bt.k === 'prim')) t = lub(boxed(at), boxed(bt));   // true ? 1 : "s" is an Object
+      else err(line, 'incompatible types in conditional expression: ' + typeStr(at) + ' and ' + typeStr(bt));
+      return t;
+    }
+    // the part a switch statement and a switch expression share: the value switched on, and the case labels
+    function switchHead(s, ctx) {
+      const what = s.k === 'SwitchExpr' ? 'switch expressions' : 'switch statements';
+      const st = expr(s.subject, ctx); const u = unboxed(st);
+      const ok = (u.k === 'prim' && ['int', 'char', 'short', 'byte'].includes(u.n)) || isString(st);
+      if (!ok) err(s.subject.line, (u.k === 'prim' && ['long', 'double', 'float', 'boolean'].includes(u.n)) ? 'selector type ' + typeStr(u) + ' is not allowed' : 'patterns in ' + what + ' are not supported by this interpreter: the value must be an int, a char or a String');
+      s.subject = conv(s.subject, st, isString(st) ? st : u, ctx); s.subjectType = isString(st) ? st : u;
+      const seen = [];
+      let defaults = 0;
+      for (const c of s.cases) {
+        if (c.isDefault && ++defaults > 1) err(c.line, 'duplicate default label');
+        c.labels = c.labels.map(l => { const lt = expr(l, ctx); if (l.const === undefined && !(l.k === 'Lit')) err(l.line, 'constant expression required'); if (isString(st) ? !isString(lt) : !assignable(lt, u, false, l)) err(l.line, 'incompatible types: ' + typeStr(lt) + ' cannot be converted to ' + typeStr(s.subjectType)); if (seen.some(x => x === l.const)) err(l.line, 'duplicate case label'); seen.push(l.const); return conv(l, lt, s.subjectType, ctx); });
+      }
+    }
     function cond(e, ctx) { const t = expr(e, ctx); if (!isBoolean(unboxed(t))) err(e.line, 'incompatible types: ' + typeStr(t) + ' cannot be converted to boolean'); return conv(e, t, T.boolean, ctx); }
+    // the statements of a block or of a case group: one that follows a statement that cannot complete normally can never run (javac: unreachable statement).
+    // Only a jump (return, throw, yield, break, continue) or something completes() says cannot finish counts, so a valid program is never refused.
+    function stmts(list, ctx) {
+      let dead = false;
+      for (const x of list) {
+        if (dead && !x.implicit) err(x.line, 'unreachable statement');
+        stmt(x, ctx);
+        if (!dead && !x.implicit) dead = ['Return', 'Throw', 'Yield', 'Break', 'Continue'].includes(x.k) || !completes(x);
+      }
+    }
     function stmt(s, ctx) {
       switch (s.k) {
-        case 'Block': { s.endLine = lastLine(s); if (s.label) ctx.loops.push({ kind: 'label', label: s.label }); try { withScope(ctx, () => { for (const x of s.body) stmt(x, ctx); }); } finally { if (s.label) ctx.loops.pop(); } return; }
+        case 'Block': { s.endLine = lastLine(s); if (s.label) ctx.loops.push({ kind: 'label', label: s.label }); try { withScope(ctx, () => { stmts(s.body, ctx); }); } finally { if (s.label) ctx.loops.pop(); } return; }
         case 'Empty': return;
         case 'LocalDecl': {
           for (const v of s.vars) {
@@ -1502,28 +1556,25 @@
           return;
         }
         case 'Return': {
+          if (ctx.loops.some(l => l.kind === 'switchexpr')) err(s.line, 'attempt to return out of a switch expression');
           if (ctx.fieldInit || ctx.method.name === '<init>') err(s.line, 'return outside method');
           if (ctx.retType.k === 'void') { if (s.e) { const t = expr(s.e, ctx); err(s.line, 'incompatible types: unexpected return value' + (ctx.inCtor ? '' : '') + (t ? '' : '')); } return; }
           if (!s.e) err(s.line, 'incompatible types: missing return value');
           const t = expr(s.e, ctx, ctx.retType); s.e = conv(s.e, t, ctx.retType, ctx); return;
         }
-        case 'Break': { if (s.label) { if (!ctx.loops.some(l => l.label === s.label)) err(s.line, 'undefined label: ' + s.label); } else if (!ctx.loops.some(l => l.kind !== 'label')) err(s.line, 'break outside switch or loop'); return; }
-        case 'Continue': { if (s.label) { const l = ctx.loops.find(l => l.label === s.label); if (!l) err(s.line, 'undefined label: ' + s.label); if (l.kind !== 'loop') err(s.line, 'not a loop label: ' + s.label); } else if (!ctx.loops.some(l => l.kind === 'loop')) err(s.line, 'continue outside of loop'); return; }
+        case 'Break': { if (s.label) { if (!ctx.loops.some(l => l.label === s.label)) err(s.line, 'undefined label: ' + s.label); const li = ctx.loops.map(l => l.label).lastIndexOf(s.label); if (ctx.loops.slice(li + 1).some(l => l.kind === 'switchexpr')) err(s.line, 'attempt to break out of a switch expression'); } else { const inner = ctx.loops.slice().reverse().find(l => l.kind !== 'label'); if (!inner) err(s.line, 'break outside switch or loop'); if (inner.kind === 'switchexpr') err(s.line, 'attempt to break out of a switch expression'); } return; }
+        case 'Continue': { if (s.label) { const l = ctx.loops.find(l => l.label === s.label); if (!l) err(s.line, 'undefined label: ' + s.label); if (l.kind !== 'loop') err(s.line, 'not a loop label: ' + s.label); if (ctx.loops.slice(ctx.loops.indexOf(l) + 1).some(x => x.kind === 'switchexpr')) err(s.line, 'attempt to continue out of a switch expression'); } else { let li = -1; ctx.loops.forEach((l, i) => { if (l.kind === 'loop') li = i; }); if (li < 0) err(s.line, 'continue outside of loop'); if (ctx.loops.slice(li + 1).some(x => x.kind === 'switchexpr')) err(s.line, 'attempt to continue out of a switch expression'); } return; }
         case 'Throw': { const t = expr(s.e, ctx); if (!(t.k === 'class' && isSubclass(t.n, 'Throwable')) && t.k !== 'null') err(s.line, 'incompatible types: ' + typeStr(t) + ' cannot be converted to Throwable'); return; }
         case 'Switch': {
-          const st = expr(s.subject, ctx); const u = unboxed(st);
-          const ok = (u.k === 'prim' && ['int', 'char', 'short', 'byte'].includes(u.n)) || isString(st);
-          if (!ok) err(s.subject.line, (u.k === 'prim' && u.n === 'long') || (u.k === 'prim' && (u.n === 'double' || u.n === 'float' || u.n === 'boolean')) ? 'incompatible types: possible lossy conversion from ' + typeStr(u) + ' to int' : 'patterns in switch statements are not supported by this interpreter: the value must be an int, a char or a String');
-          s.subject = conv(s.subject, st, isString(st) ? st : u, ctx); s.subjectType = isString(st) ? st : u;
-          const seen = [];
-          let defaults = 0;
-          for (const c of s.cases) {
-            if (c.isDefault && ++defaults > 1) err(c.line, 'duplicate default label');
-            c.labels = c.labels.map(l => { const lt = expr(l, ctx); if (l.const === undefined && !(l.k === 'Lit')) err(l.line, 'constant expression required'); if (isString(st) ? !isString(lt) : !assignable(lt, u, false, l)) err(l.line, 'incompatible types: ' + typeStr(lt) + ' cannot be converted to ' + typeStr(s.subjectType)); if (seen.some(x => x === l.const)) err(l.line, 'duplicate case label'); seen.push(l.const); return conv(l, lt, s.subjectType, ctx); });
-          }
+          switchHead(s, ctx);
           ctx.loops.push({ kind: 'switch', label: s.label || null });
-          try { withScope(ctx, () => { for (const c of s.cases) for (const x of c.body) stmt(x, ctx); }); } finally { ctx.loops.pop(); }
+          try { withScope(ctx, () => { for (const c of s.cases) stmts(c.body, ctx); }); } finally { ctx.loops.pop(); }
           return;
+        }
+        case 'Yield': {
+          const frame = ctx.yields && ctx.yields[ctx.yields.length - 1];
+          if (!frame) err(s.line, 'yield outside of switch expression');
+          const t = expr(s.e, ctx, frame.expected); frame.items.push({ node: s, t }); return;
         }
         case 'Try': {
           stmt(s.block, ctx);
@@ -1727,15 +1778,29 @@
         case 'Cond': {
           n.cond = cond(n.cond, ctx);
           const at = expr(n.a, ctx, expected), bt = expr(n.b, ctx, expected);
-          let t;
-          if (same(at, bt)) t = at;
-          else if (at.k === 'null') t = boxed(bt); else if (bt.k === 'null') t = boxed(at);
-          else if (promote(at, bt)) { t = promote(at, bt); if ((unboxed(at).n === 'char' && n.b.const !== undefined && fits(n.b.const, T.char)) || (unboxed(bt).n === 'char' && n.a.const !== undefined && fits(n.a.const, T.char))) t = T.char; }
-          else if (isBoolean(unboxed(at)) && isBoolean(unboxed(bt))) t = T.boolean;
-          else if (assignable(at, bt, false)) t = bt; else if (assignable(bt, at, false)) t = at;
-          else if ((isRef(at) || at.k === 'prim') && (isRef(bt) || bt.k === 'prim')) t = lub(boxed(at), boxed(bt));   // true ? 1 : "s" is an Object
-          else err(n.line, 'incompatible types in conditional expression: ' + typeStr(at) + ' and ' + typeStr(bt));
+          const t = condType(at, bt, n.a, n.b, n.line);
           n.a = conv(n.a, at, t, ctx); n.b = conv(n.b, bt, t, ctx); return t;
+        }
+        case 'SwitchExpr': {
+          switchHead(n, ctx);
+          if (!n.cases.some(c => c.isDefault)) err(n.line, 'the switch expression does not cover all possible input values');
+          const frame = { expected: expected && expected.k !== 'void' ? expected : undefined, items: [] };
+          (ctx.yields = ctx.yields || []).push(frame);
+          ctx.loops.push({ kind: 'switchexpr' });
+          try { withScope(ctx, () => { for (const c of n.cases) stmts(c.body, ctx); }); } finally { ctx.loops.pop(); ctx.yields.pop(); }
+          if (n.arrow) { for (const c of n.cases) { const b = c.body[0]; if (b && b.k === 'Block' && completes(b)) err(b.closeLine || c.line, 'switch rule completes without providing a value\n  (switch rules in switch expressions should either provide a value or throw)'); } }
+          else { const last = n.cases[n.cases.length - 1]; if (last && completes({ k: 'Block', body: last.body })) err(n.endLine, 'switch expression completes without providing a value\n  (switch expressions must either provide a value or throw for all possible input values)'); }
+          if (!frame.items.length) err(n.line, 'switch expression does not have any result expressions');
+          let t;
+          if (frame.expected) {   // assigned, returned: every result has to fit what it goes into, and that is the type
+            for (const it of frame.items) if (!assignable(it.t, frame.expected, false, it.node.e)) err(it.node.e.line || it.node.line, 'incompatible types: bad type in switch expression\n    ' + typeStr(it.t) + ' cannot be converted to ' + typeStr(frame.expected));
+            t = frame.expected;
+          } else {   // on its own: the types of the results are brought together as for ?:
+            t = frame.items[0].t;
+            for (let i = 1; i < frame.items.length; i++) t = condType(t, frame.items[i].t, frame.items[0].node.e, frame.items[i].node.e, frame.items[i].node.line);
+          }
+          for (const it of frame.items) it.node.e = conv(it.node.e, it.t, t, ctx);
+          return t;
         }
         case 'Cast': {
           const from = expr(n.e, ctx); const to = resolveType(n.type, n.line);
@@ -1977,6 +2042,16 @@
       if (!isInstance(v, to)) cce(v, to);
       return v;
     }
+    // its own function: locals added to ev() would make every Java call use more of the JS stack (the browser's worker allows about 270 frames)
+    function switchExpr(n, F) {
+      const v = ev(n.subject, F);
+      if (v === null) npe(R, 'Cannot invoke "String.hashCode()" because ' + describe(n.subject) + ' is null');
+      let start = -1;
+      outer: for (let i = 0; i < n.cases.length; i++) for (const l of n.cases[i].labels) if (ev(l, F) === v) { start = i; break outer; }
+      if (start < 0) start = n.cases.findIndex(c => c.isDefault);   // the checker made sure there is one
+      for (let i = start; i < n.cases.length; i++) for (const x of n.cases[i].body) { const r = exec(x, F); if (r) { if (r.k === 'yield') return r.v; throw new Error('a jump out of a switch expression'); } }
+      throw new Error('a switch expression ended without a value');
+    }
     function ev(n, F) {
       switch (n.k) {
         case 'Lit': return n.v;
@@ -1999,6 +2074,7 @@
         case 'Unary': { const v = ev(n.e, F); const t = n.t; switch (n.op) { case '!': return !v; case '+': return v; case '-': return t.n === 'long' ? BigInt.asIntN(64, -v) : t.n === 'int' ? (-v) | 0 : -v; case '~': return t.n === 'long' ? ~v : ~v; } break; }
         case 'Binary': return binary(n, F);
         case 'Cond': return ev(n.cond, F) ? ev(n.a, F) : ev(n.b, F);
+        case 'SwitchExpr': return switchExpr(n, F);
         case 'Cast': return cast(n, F);
         case 'InstanceOf': { const v = ev(n.e, F); const r = isInstance(v, n.type); if (r && n.bind) F.locals[n.slot] = v; return r; }
         case 'ClassLit': return { classOf: n.e ? (n.e.cls ? n.e.cls.name : 'Object') : 'int' };
@@ -2029,6 +2105,7 @@
           return undefined;
         }
         case 'Return': return new Signal('return', null, s.e ? ev(s.e, F) : undefined);
+        case 'Yield': return new Signal('yield', null, ev(s.e, F));
         case 'Break': return new Signal('break', s.label);
         case 'Continue': return new Signal('continue', s.label);
         case 'Throw': { const v = ev(s.e, F); if (v === null || v === undefined) npe(R, 'Cannot throw exception because ' + describe(s.e) + ' is null'); if (!v.trace) v.trace = R.frames.slice(); throw new JavaThrow(v); }
