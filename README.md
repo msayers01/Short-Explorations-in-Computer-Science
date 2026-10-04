@@ -33,6 +33,7 @@ add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is w
     src/course_math.js     SC 104 Introduction to the Mathematics of Computing (uses Python)
     src/course_modern.js   SC 105 Modern C++ (runs on the real compiler)
     src/course_java.js     SC 106 Introduction to Java (the first lessons; runs on the site's own Java interpreter)
+    src/tron.js, arena*.js  Bot Arena: Tron, the referee, bots in four languages, viewer, tournaments (ARCHITECTURE 9j)
     src/course_dsa.js      SC 107 Data Structures and Algorithms (the first lessons; Java, with interactive figures)
     src/course_shell.js    SC 108 The Command Line (the first lessons; taught in the practice terminal)
     src/course_ml.js       SC 109 How Machines Learn (units one and two; Python, written to LESSON_STANDARD.md)

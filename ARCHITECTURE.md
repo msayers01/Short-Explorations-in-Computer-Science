@@ -147,6 +147,7 @@ Hash routes; a `?query` after the path is split off first.
 | `#/` | home (greeting, Ojibwe clock, course catalog in groups, Code Lab card, portfolio and teacher links, footer with About and "Reset my progress") |
 | `#/courses` | every course in groups (`COURSE_GROUPS` in app.js; a course in no group is listed under "More courses"), with a search box |
 | `#/algorithms`, `#/algorithms/<demo-id>` | Algorithms in motion: the index of demos, or one demo (§9g) |
+| `#/arena`, `#/arena/tournament`, `#/arena?bot=` / `?replay=` | Bot Arena: write a bot that plays Tron; the teacher's tournament; a shared bot or replay (§9j) |
 | `#/real-world`, `#/real-world/<topic-id>` | where the ideas of the courses are used, scrolled to a topic (§9g) |
 | `#/<course>` | course page (audience, outcomes, "Your skills" once started (§9i), lesson list with progress) |
 | `#/<course>/<n>` | lesson n (1-based) |
@@ -627,6 +628,34 @@ higher (right at the 1- and 3-day reviews), *practising* = something done, else 
 course is started) and on `#/today`. The top bar shows **Review** with the number due once there is anything to review. Lesson recaps say
 when their checks come back. Pure parts (`next`, `itemId`, `clean`, `merge`, `dueIds`) are tested in node by `test_review.js`, which
 also checks that all quick checks on the site have distinct ids; `test_backup.js` covers the backup file; `test_browser.js` the loop.
+
+## 9j. Bot Arena (`tron.js`, `arena_bots.js`, `arena_run.js`, `arena_view.js`, `arena.js`)
+
+Students write a bot (Python, Java, C++ or Scheme) that plays Tron against built-in bots or each other, entirely in the browser.
+
+- **`tron.js`** (no DOM, also loaded by `test_arena.js`): the rules (`create`, `step`), the protocol text (`serialize`, `parseObs`, `parseMove`, `splitOutput`),
+  a seeded RNG, the three built-in bots (Random, Wall Hugger, Flood Fill, as JavaScript), the **referee** `playMatch` (async; asks every bot for a move each turn,
+  applies them together, returns a replay and one snapshot per turn), `botDriver` (any program, given a `run(source, stdin, limitMs)`), replays and bot files
+  (`cleanReplay`, `cleanBot`: every field from a link or file is clamped), `runTournament`/`standings`/`standingsCsv`, and a stored-method `zip`.
+- **Protocol.** A bot is run afresh every turn ("restart mode"): stdin is `width height / you alive / x y player per live player / the rows` (`.` `#` and head digits);
+  stdout is one line `UP|DOWN|LEFT|RIGHT`. Fixed starts (two in from the corners; 3 and 4 players use further corners); simultaneous moves; head-on and head-swap
+  both crash; turn cap width x height is a draw. An invalid move (bad text, timeout, crash) is moved `UP`, or the bot forfeits if the match says so (replay letter `X`).
+  A bot that fails its dry run on the empty board (syntax or compile error) forfeits before turn 1. The sandboxes have **no stderr**, so a stdout line starting `LOG`
+  is the bot's log line (shown in its tab, ignored by the referee). A replay is `{format:'tronreplay', settings, seed, players, moves:['UD',...], result}`; the file is
+  re-simulated, so it stays small; `result.crashes[].reason` carries the words (including why a bot forfeited).
+- **Time.** `settings.timeMs` 0 means by language: 500 ms, 2 s for C++ (JSCPP is the slow engine; the JVM-startup reason in the spec does not apply, our Java is an interpreter).
+- **`arena_run.js`**: `run(lang)` over the existing runners (`PYRUN`, `CPPRUN`, `JAVARUN` take `maxMs`/`execLimit`; Scheme takes `stdin` and `stepLimit` and runs in the page,
+  stopped by steps, since the page cannot interrupt it). Bots of a language take turns (one worker each), a new worker is warmed up outside the clock, a bot past its limit
+  has its worker ended. Saved bots: `shortcourses.arena.v1` (sanitised on load; **not yet in the backup file**). Links: `#/arena?bot=` / `?replay=` via `TEACH.pack` (deflate,
+  size-capped inflate; fragments never reach a server; a warning past 8 KB).
+- **`arena_view.js`**: canvas viewer driven only by frames (live match and loaded replay take the same path); heads carry their number; hover shows coordinates.
+- **`arena.js`**: `#/arena` (editor, My bots, templates, setup bar, Play / Play 10 / Test my bot once, logs with "Show input", import/export/links) and
+  `#/arena/tournament` (bot files by pick, drop or pasted links, round robin with swapped starts, sortable table, head-to-head grid, CSV, zip, projector mode).
+- **Not built (spec phase 4):** persistent mode (a bot that stays running and keeps state). It needs blocking stdin in a worker (SharedArrayBuffer + Atomics.wait, so
+  cross-origin isolation); none of the current runners can block on stdin. The starter bots are written as `readTurn()` then play, so a loop around them is the change.
+  Also not built: a worker pool for tournaments (student bots of one language share one worker, so matches run one at a time; built-in matches take milliseconds).
+- Tests: `test_arena.js` (rules, determinism, hostile replays, every starter and solution on the real runtimes, timeouts, forfeits, zip checked with Python's unzipper, a 132-match
+  tournament) and the Arena section of `test_browser.js`. The Flood Fill solutions in all four languages choose identical moves on every board of a game (tested).
 
 ## 9h. Pictures in lessons (`img/`, `scripts/fetch-image.js`, `app.js: photoBlock`)
 

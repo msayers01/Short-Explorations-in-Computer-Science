@@ -241,7 +241,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   // ---- the top bar, the courses page (grouped, with search), Algorithms in motion and the real-world page
   await goto('#/');
   const topLinks = await page.locator('.top-links a').allInnerTexts();
-  check('top bar: Courses, Algorithms, Real world and Code Lab instead of a link per course', topLinks.join('|') === 'Courses|Algorithms|Real world|Code Lab', topLinks);
+  check('top bar: Courses, Algorithms, Real world, Arena and Code Lab instead of a link per course', topLinks.join('|') === 'Courses|Algorithms|Real world|Arena|Code Lab', topLinks);
   await goto('#/courses');
   const courseCount = await page.evaluate(() => window.COURSES.length);
   const listed = await page.locator('.courses-page .catalog li').evaluateAll((ls) => ls.map((l) => l.getAttribute('data-course')));
@@ -646,6 +646,81 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await fresh.close();
   check('full c++: no policy violations, no page errors', hpViolations.length === 0 && hpErrors.length === 0, [hpViolations, hpErrors]);
   await hp.close(); server.close();
+
+  // ---- Bot Arena: a bot in each sandbox plays through the page, the viewer shows it, links and files carry it, a tournament runs
+  {
+    await goto('#/arena');
+    await page.waitForSelector('.arena');
+    const play = async () => { await page.click('.arena-setup button:text-is("Play")'); await page.waitForSelector('.arena-banner:not([hidden])', { timeout: 90000 }); return page.locator('.arena-banner').innerText(); };
+    check('arena: the page opens with a starter bot and a canvas', (await page.locator('.arena-canvas').count()) === 1 && /readTurn/.test(await page.locator('.arena-editor textarea').inputValue()));
+    let banner = await play();
+    check('arena: the Python starter plays Random in its sandbox and the banner says who won', /wins after \d+ turns?|draw/i.test(banner), banner);
+    const painted = await page.evaluate(() => { const c = document.querySelector('.arena-canvas'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const seen = new Set(); for (let i = 0; i < d.length; i += 4 * 97) seen.add(d[i] + ',' + d[i + 1] + ',' + d[i + 2]); return seen.size; });
+    check('arena: the board is painted (more than one colour on the canvas)', painted > 2, painted);
+    await page.click('button[aria-label="Back to the start"]');
+    check('arena: stepping back to the start shows turn 0', /^Turn 0 of/.test(await page.locator('.arena-turn').innerText()));
+    // every language, against the built-in Flood Fill: a program in each sandbox answers within its limit
+    for (const lang of ['java', 'cpp', 'scheme', 'python']) {
+      await page.selectOption('select[aria-label="Language"]', lang);
+      await page.selectOption('select[aria-label="Player 2"]', 'b:flood');
+      banner = await play();
+      const log = await page.locator('.arena-log').last().innerText();
+      check('arena: the ' + lang + ' starter plays through the page with no invalid moves', /wins after|draw/i.test(banner) && !/is moved UP/.test(log), [banner, log.slice(0, 200)]);
+    }
+    // an infinite loop times out, the page stays alive, and the match still ends
+    await page.selectOption('select[aria-label="Language"]', 'python');
+    await page.evaluate(() => { const t = document.querySelector('.arena-editor textarea'); t.value = 'while True:\n    pass\n'; t.dispatchEvent(new Event('input', { bubbles: true })); });
+    await page.selectOption('select[aria-label="Time per move"]', '250');
+    banner = await play();
+    check('arena: a bot stuck in a loop times out (logged), and the page is not frozen', /wins|draw/i.test(banner) && /took longer than 250 ms/.test(await page.locator('.arena-log').last().innerText()), banner);
+    await page.evaluate(() => { const t = document.querySelector('.arena-editor textarea'); t.value = 'def f(:\n'; t.dispatchEvent(new Event('input', { bubbles: true })); });
+    banner = await play();
+    check('arena: a bot with a syntax error forfeits and its error is shown', /Player 2 .* wins after 1 turn/.test(banner) && /forfeits before turn 1/.test(await page.locator('.arena-log').last().innerText()), banner);
+    // saved in the browser, shared by link and by file
+    await page.reload(); await page.waitForSelector('.arena');
+    check('arena: the bot is still there after a reload', /def f\(:/.test(await page.locator('.arena-editor textarea').inputValue()));
+    await page.evaluate(() => { const t = document.querySelector('.arena-editor textarea'); t.value = 'print("RIGHT")\n'; t.dispatchEvent(new Event('input', { bubbles: true })); });
+    await page.click('button:text-is("Copy link")');
+    const link = await page.locator('.arena-link').inputValue();
+    check('arena: a bot link carries the bot in the fragment', /#\/arena\?bot=[A-Za-z0-9_-]+$/.test(link), link.slice(0, 80));
+    await goto('#/arena?' + link.split('?')[1]);
+    check('arena: opening a bot link shows the code first and runs nothing', (await page.locator('.arena-incoming').count()) === 1 && /RIGHT/.test(await page.locator('.arena-peek').innerText()) && (await page.locator('.arena-banner:not([hidden])').count()) === 0);
+    await page.click('.arena-incoming button:has-text("Open it as a new bot")');
+    check('arena: the shared bot becomes a new bot of the student', /RIGHT/.test(await page.locator('.arena-editor textarea').inputValue()) && (await page.locator('.arena-botsel option').count()) === 2);
+    banner = await play();
+    const rl = await (async () => { await page.click('button:has-text("Copy replay link")'); return page.locator('.arena-linkbox .arena-link').last().inputValue(); })();
+    const fresh = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    await fresh.goto(SITE + '#/arena?' + rl.split('?')[1]); await fresh.reload(); await fresh.waitForSelector('.arena-banner:not([hidden])', { timeout: 20000 }).catch(() => { });
+    await fresh.evaluate(() => { const b = document.querySelector('button[aria-label="Jump to the end"]'); if (b) b.click(); });
+    const again = await fresh.locator('.arena-banner').innerText().catch(() => '');
+    check('arena: a replay link opened in a fresh browser plays the same match', again === banner, [again, banner]);
+    await fresh.close();
+    await goto('#/arena?bot=not-a-real-token');
+    check('arena: a broken link says so and does not run anything', /could not be opened/.test(await page.locator('.arena-incoming').innerText()));
+    // the tournament page: built-in bots and a bot file, a round robin, a table, a head-to-head box that opens a replay, the exports, the projector
+    await goto('#/arena/tournament');
+    for (const n of ['Random', 'Wall Hugger', 'Flood Fill']) await page.click('button:has-text("+ ' + n + '")');
+    await page.setInputFiles('input[type=file]', [{ name: 'a.tronbot.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ format: 'tronbot', version: 1, name: '<b>Evil</b>', lang: 'scheme', source: '(display "UP")' })) }, { name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{"x":1}') }]);
+    await page.waitForFunction(() => document.querySelectorAll('.arena-entries li').length === 4);
+    check('arena tournament: a bad file is reported and does not stop the good one; names are text', /bad\.json/.test(await page.locator('.arena-panenote').first().innerText()) && (await page.locator('.arena-entries b:has-text("<b>Evil</b>")').count()) === 1 && (await page.locator('.arena-entries li b b').count()) === 0);
+    await page.fill('input[aria-label="Matches per pairing"]', '2');
+    const t0 = Date.now();
+    await page.click('button:has-text("Run the tournament")');
+    await page.waitForSelector('.arena-results:not([hidden])', { timeout: 120000 });
+    check('arena tournament: 6 pairings x 2 matches finish with a standings table', (await page.locator('.arena-results table.arena-table tbody tr').count()) === 4 && /12 matches/.test(await page.locator('progress + span').innerText()), await page.locator('progress + span').innerText());
+    console.log('     tournament of 12 matches took ' + (Date.now() - t0) + ' ms');
+    await page.click('.arena-sortbtn:has-text("Bot")');
+    const names = await page.locator('.arena-results table.arena-table tbody tr td:nth-child(2) b').allInnerTexts();
+    check('arena tournament: the table sorts by a column', names.join('|') === names.slice().sort((a, b) => a.toLowerCase() < b.toLowerCase() ? -1 : 1).join('|'), names);
+    await page.click('.arena-cell >> nth=0'); await page.waitForSelector('.arena-banner:not([hidden])', { timeout: 30000 });
+    check('arena tournament: a box of the head-to-head grid opens that match in the viewer', /Watching:/.test(await page.locator('.arena-results p[role=status]').innerText()));
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('button:has-text("Download all replays")')]);
+    check('arena tournament: the replays come as a zip', dl.suggestedFilename() === 'replays.zip');
+    await page.click('button:has-text("Projector mode")'); await page.waitForSelector('.arena-projector');
+    check('arena tournament: projector mode shows the match and standings', /Match 1 of 12/.test(await page.locator('.proj-count').innerText()) && !/null/.test(await page.locator('.proj-title').innerText()));
+    await page.keyboard.press('Escape');
+    check('arena tournament: Escape leaves projector mode', (await page.locator('.arena-projector').count()) === 0);
+  }
 
   check('no Content Security Policy violations', violations.length === 0, violations.slice(0, 3));
   check('no page errors', errors.length === 0, errors.slice(0, 3));

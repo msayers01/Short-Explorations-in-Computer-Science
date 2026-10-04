@@ -79,6 +79,11 @@ const scripts = [
   'src/classroom.js',
   'src/ojibwe.js',
   'src/about.js',
+  'src/tron.js',       // Bot Arena: the game, the referee, the built-in bots (also loaded by node: test_arena.js)
+  'src/arena_bots.js', // the starter and solution bots, in each language
+  'src/arena_run.js',  // how a bot is run, saved, shared
+  'src/arena_view.js', // the match viewer
+  'src/arena.js',      // the #/arena and #/arena/tournament pages
   'src/algos.js',      // the #/algorithms page: the frame and the shared player; the demos follow
   'src/algo_search.js',
   'src/algo_sort.js',
