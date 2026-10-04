@@ -8,7 +8,7 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 - **CSTA wording.** The standard names below are short paraphrases written from memory of the 2017 CSTA K-12 CS Standards, so codes should be checked against the official list at <https://csteachers.org/k12standards/> before the table is quoted to anyone (a district, a grant). Five codes whose numbering I could not vouch for were left out (3B-AP-19, 3B-IC-24 to 27); see "Not mapped".
 - **Grade bands.** CSTA level 2 is grades 6-8, 3A is 9-10, 3B is 11-12. A course is listed against the standards its content reaches, whatever its stated grades: an 8th grader in SC 101 meets 3A standards.
 - **The teacher standards.** The 2020 *CSTA Standards for CS Teachers* describe what teachers know and do, not what students learn, so they cannot be mapped to lessons. The last section says where a teacher can build the content knowledge they name.
-- **Minnesota.** Not yet mapped. See the last section.
+- **Minnesota.** Only the 2022 Mathematics CS-integrated benchmarks are mapped (the document I was given). See the Minnesota section.
 
 ## By course
 
@@ -274,9 +274,34 @@ No lesson addresses these. Grouped so a gap reads as a topic.
 
 Standards met by exactly one lesson (thin coverage): 2-DA-07, 2-DA-08, 2-AP-10, 2-AP-15, 3A-NI-06, 3A-IC-24, 3B-NI-04.
 
-## Minnesota
+## Minnesota (2022 Mathematics standards, CS-integrated benchmarks)
 
-Minnesota has no stand-alone computer science standards. CS concepts and practices are integrated into the benchmarks of the other content areas (mathematics, science, and so on) and are collected in the Department of Education's *Minnesota K-12 Integrated Computer Science Benchmarks*. That document was not available to me (the education.mn.gov site blocked the automated fetch and the saved copy was a captcha page), so no Minnesota benchmark is mapped and none is guessed here. To add it: supply the benchmark list (a PDF or pasted text), add a `MN` table to `scripts/standards-map.js` next to `STD`, and rerun.
+Source: *2022 Minnesota Academic Standards in Mathematics, Computer Science Learning Progressions* (Minnesota Department of Education). Minnesota has no stand-alone CS standards; this document lists the mathematics benchmarks the standards committee marked "#" as CS-integrated, in the CSTA concepts Data and Analysis and Algorithms and Programming. It is the only Minnesota source mapped here: the CS-integrated benchmarks of other subjects (science and so on) are not in it, so they are not mapped.
+
+Benchmark codes read grade.strand.standard.benchmark (9 = high school). "Yes" means a lesson teaches or practises the benchmark's content; "partial" means it touches part of it (what is missing is in the note). Checked against the lesson text by searching it for the key terms, not by reading every lesson.
+
+| Benchmark | Lessons | Fit |
+|---|---|---|
+| **6.1.2.3** Experimental probability from experiments where the theoretical probability is known; predict | SC 101 L10, SC 103 L9 | Yes: simulations compared with the exact probability (dice, birthday problem) |
+| **7.1.2.2** Approximate a probability from long-run frequency | SC 101 L10, SC 103 L9 | Yes: "try it thousands of times" |
+| **7.1.2.5** Design and use a simulation in a computational tool for compound events | SC 101 L10, SC 103 L9 | Partial: simulations of single dice and the birthday problem; no two-dice or other compound-event simulation |
+| **7.1.2.6** Probabilities of compound events by lists, tables, trees or computational simulation | SC 101 L10 | Partial: simulation yes; no tree diagrams or organized-list method |
+| **7.1.2.4** Sample spaces for compound events by decomposing them | SC 104 L2 | Partial: counting rules, not sample spaces named as such |
+| **9.1.2.2** Events as subsets; Venn diagrams; unions, intersections, complements | SC 104 L2 | Partial: sets, Venn diagrams, union and complement are taught, but not framed as events |
+| **9.2.4.5** if-then, converse, inverse, contrapositive | SC 104 L1 | Yes |
+| **9.2.4.6** Validity of a logical argument; counterexamples | SC 104 L1, SC 104 L3 | Yes |
+| **9.2.4.7** Construct logical arguments from definitions and theorems | SC 104 L2, SC 104 L3, SC 104 L4 | Yes: proofs, including induction and Euclid's algorithm |
+| **9.3.7.4** Sequences defined recursively and by an explicit formula | SC 101 L11 | Partial: recursive definitions (Fibonacci, factorial); no arithmetic or geometric sequences with explicit formulas |
+| **7.3.6.3** Evaluate algebraic expressions applying the order of operations | SC 101 L1 | Partial: arithmetic expressions and precedence; not algebraic expressions with exponents and absolute value as such |
+| **8.1.1.4** Use a linear model; interpret the slope | SC 109 L6 | Partial: fits y = w x by minimizing squared error and reads the slope; no intercept, no bivariate data in context |
+| **9.1.1.11** Statistical models with linear functions, including regression; judge fit | SC 109 L6 | Partial: fitting a line and measuring error; no residuals or correlation coefficient |
+| **9.1.1.15** Identify and explain misleading uses of data | SC 109 L3 | Partial: accuracy misleads when labels are rare; not about distorted displays |
+
+**Benchmarks with no lesson** (grades 6-12 in the progression): 6.1.1.2 design investigations and gather data; 6.1.1.4, 7.1.1.5, 8.1.1.5 create data visualizations (the lessons show visualizations; students do not make them); 8.1.1.6 competing explanations for trends, correlation versus causation; 8.3.7.2 and 8.3.7.5 linear patterns, effect of m and b; 8.3.6.9 and 9.3.7.1 systems of equations; 9.1.1.8 inferences from random samples; 9.1.2.3 conditional probability and independence; 9.2.3.4, 6.2.3.1, 6.2.3.2 and 6.2.4.2 decomposition in geometry; 9.2.4.14 transformations; 9.3.5.4 matrices; 9.3.7.8 compound interest.
+
+**Out of range:** the kindergarten to grade 5 benchmarks in the document (0.x to 5.x) are below the site's youngest course (SC 100, grades 5-8) and are not mapped.
+
+Most Minnesota matches are in the probability and logic strands; the site's lessons are programming lessons, so a math teacher should expect to use them as applications of these benchmarks, not as the teaching of them.
 
 ## The 2020 CSTA teacher standards (1a-1f, knowledge and skills)
 
