@@ -957,24 +957,25 @@ print(same_letters("hello", "world"))`, caption: 'True, True, False. Cleaning fi
     },
     /* ================================================================== */
     {
+      standard: 1,
       standards: ['2-AP-13', '2-AP-14', '2-AP-19', '3A-AP-17', '3A-AP-18', '3B-AP-14'],
       title: 'Functions', summary: 'Naming a computation so you can reuse it, test it and stop thinking about it: def, parameters and return, what happens during a call, scope, defaults, and testing with assert.',
       blocks: [
-        `<p>Think of a vending machine. You put something in (money and a button press), something comes out (a snack), and you never need to know what happens inside. A <em>function</em> is a vending machine for a computation: values go in, one value comes out, and the rest of the program can forget how. You have been <em>calling</em> functions since the first lesson, <code>print</code>, <code>len</code>, <code>int</code>, and you have filled in the bodies of a few. Now you will build them from nothing, and by the end of the lesson you will test your own functions the way professional programmers do.</p>`,
+        `<p>Think of a vending machine. You put something in (money and a button press), something comes out (a snack), and you never need to know what happens inside. A <em>function</em> is a vending machine for a computation: values go in, one value comes out, and the rest of the program can forget how. You have been <em>calling</em> functions since the first lesson, <code>print</code>, <code>len</code>, <code>int</code>, and you have filled in the bodies of a few. Now you will build them from nothing, and by the end of the lesson you will test your own functions the way professional programmers do. But what really happens, step by step, when a program calls a function and the answer comes back?</p>`,
         { photo: 'vending-machines', caption: "Three vending machines on a street in Tokyo. Coins and a button press go in, a drink comes out, and nobody needs to know what happens inside: that is the idea of a function." },
         `
 <h2>Defining and calling</h2>
 <div class="stmt"><p><span class="kind">Rule (def).</span> <code>def <i>name</i>(<i>parameters</i>):</code> followed by an indented block creates a function. The <em>parameters</em> are names, separated by commas, for the values the function will be given. Defining a function does not run its block.</p>
 <p><span class="kind">Rule (return).</span> <code>return <i>expression</i></code> ends the call at once and hands the expression's value back to whoever called the function. A call that reaches the end of the block without a <code>return</code> hands back <code>None</code>.</p>
 <p><span class="kind">Rule (call).</span> <code><i>name</i>(<i>arguments</i>)</code> first works out each argument, then runs the function's block with each parameter set to the matching argument. The call itself then has the value that was returned.</p></div>`,
-        { play: `def greet(name):
+        { predict: true, play: `def greet(name):
     message = f"Hello, {name}!"
     return message
 
 print(greet("Ada"))
 print(greet("Grace"))
 text = greet("Linus")
-print(text.upper())`, caption: 'The def lines print nothing; the three calls do the work. greet("Linus") is an expression whose value is a string, so it can be stored and used like any other string.' },
+print(text.upper())`, caption: 'It prints Hello, Ada!, then Hello, Grace!, then HELLO, LINUS! in capitals. The def lines print nothing; the three calls do the work. greet("Linus") is an expression whose value is a string, so it can be stored and used like any other string. Change the greeting inside the function and watch all three calls change.' },
         `<p>Keep two words apart. The <em>parameter</em> <code>name</code> is the placeholder written in the definition; the <em>argument</em> <code>"Ada"</code> is the value supplied in one particular call. Each call can supply a different argument, and that is the whole point.</p>
 <details class="reveal"><summary>Predict: after <code>def f(x): return x * 2</code>, what does <code>print(f(f(3)))</code> show? And what does <code>print(f)</code> show?</summary><p><code>12</code>: by the call rule, the argument <code>f(3)</code> is worked out first, giving 6, and then the outer call doubles it. <code>print(f)</code>, with no parentheses, does not call anything: it shows the function itself, something like <code>&lt;function f&gt;</code>. Parentheses are what make a call happen.</p></details>
 <h2>Print or return?</h2>
@@ -990,7 +991,7 @@ b = double_return(5)
 print("a is", a)
 print("b is", b)
 print(double_return(5) + 1)`, caption: 'double_print shows 10, but a is None: nothing was handed back. b is 10, and double_return(5) + 1 is 11. A function that computes something should return it, and leave printing to the caller.' },
-        { check: "<code>def f(x): print(x * 2)</code>, then <code>a = f(5)</code>. What is <code>a</code>?", options: ["10", "<code>None</code>: the function printed but returned nothing", "5"], answer: 1, why: "print shows a value; return hands it back. A function without a return gives back None, whatever it printed." },
+        { check: "<code>def f(x): print(x * 2)</code>, then <code>a = f(5)</code>. What is <code>a</code>?", options: ["10", "<code>None</code>: the function printed but returned nothing", "5"], answer: 1, why: "print shows a value; return hands it back. A function without a return gives back None, whatever it printed.", wrong: ["This treats print as if it handed the value back. print only shows 10 on the screen; with no return, the call has no value to store, so a is None.", null, "This takes the argument to be what comes back. A call has the value its function returns, and this function returns nothing."] },
         `<h2>What happens during a call</h2>
 <p>Each call gets its own private workspace, called a <em>frame</em>, holding its parameters and any variables it creates. When the call returns, its frame is thrown away. Step through this trace and watch frames appear and disappear.</p>`,
         {
@@ -1027,12 +1028,12 @@ def tick():
     count = count + 1    # assigning makes count local in tick...
 
 tick()`, expectError: true, caption: 'UnboundLocalError: local variable \'count\' referenced before assignment. Because tick assigns to count, count is local in tick, and the right-hand side tries to read the local count before it has a value.' },
-        { check: "A function assigns <code>total = 0</code> inside its block. The program also has a global <code>total</code>. What does the assignment do?", options: ["Changes the global total", "Makes a new local total that lives only in this call", "Causes an error"], answer: 1, why: "A name assigned anywhere inside a function is local to that function. The global is untouched; pass values in and return results instead." },
+        { check: "A function assigns <code>total = 0</code> inside its block. The program also has a global <code>total</code>. What does the assignment do?", options: ["Changes the global total", "Makes a new local total that lives only in this call", "Causes an error"], answer: 1, why: "A name assigned anywhere inside a function is local to that function. The global is untouched; pass values in and return results instead.", wrong: ["This believes an assignment inside a function reaches out to the global of the same name. It does not: the assignment makes a new local name, and the global keeps its value.", null, "This believes two variables with one name must clash. They do not: the local and the global live in different places, and no error happens (the error in the example came from reading a local before giving it a value)."] },
         `<p>The cure is not a trick but a habit: pass what a function needs in as parameters, and hand what it produces back with <code>return</code>. Here that means <code>def tick(count): return count + 1</code>, called as <code>count = tick(count)</code>. A function that only talks to the outside world through its parameters and its return value can be understood, tested and reused on its own. That one habit is most of what makes large programs manageable.</p>
-<h2>Defaults, keywords and returning several values</h2>
+<h2>Defaults and several results</h2>
 <div class="stmt"><p><span class="kind">Rule (defaults and keywords).</span> A parameter written <code><i>name</i>=<i>value</i></code> has a <em>default</em>: if the caller leaves that argument out, the default is used. A caller may also name an argument, <code>f(b=5)</code>, in which case its position does not matter.</p>
 <p><span class="kind">Rule (several results).</span> <code>return a, b</code> hands back a pair of values, called a <em>tuple</em>. The caller can unpack it: <code>x, y = f()</code>.</p></div>`,
-        { play: `def power(base, exponent=2):      # exponent is optional
+        { predict: true, play: `def power(base, exponent=2):      # exponent is optional
     return base ** exponent
 
 print(power(5), power(2, 10), power(exponent=3, base=2))
@@ -1041,8 +1042,8 @@ def min_max(xs):
     return min(xs), max(xs)        # a tuple of two values
 
 lo, hi = min_max([4, 9, 1, 7])
-print(lo, hi)`, caption: 'Prints 25 1024 8, then 1 9. print itself has defaults: print(a, b, sep="-") changes the separator from its default of a space.' },
-        { check: "<code>def area(w, h=1): return w * h</code>. What does <code>area(5)</code> give?", options: ["An error: h is missing", "5, because h takes its default of 1", "0"], answer: 1, why: "A parameter written <code>name=value</code> has a default that is used when the caller leaves it out." },
+print(lo, hi)`, caption: 'It prints 25 1024 8, then 1 9. power(5) leaves the exponent out, so it uses 2 and gives 5 squared. In the third call the names say which value is which, so their order does not matter. min_max returns two values and the caller unpacks them into lo and hi. print itself has defaults: print(a, b, sep="-") changes the separator from its default of a space.' },
+        { check: "<code>def area(w, h=1): return w * h</code>. What does <code>area(5)</code> give?", options: ["An error: h is missing", "5, because h takes its default of 1", "0"], answer: 1, why: "A parameter written <code>name=value</code> has a default that is used when the caller leaves it out.", wrong: ["This believes every parameter must be given a value in every call. A parameter with a default is optional: leave it out and the default is used.", null, "This believes a missing argument counts as 0. Python uses the default the definition names, which here is 1, so 5 * 1 is 5."] },
         `<h2>Testing your functions</h2>
 <p>A function can be tested on its own, before the rest of the program exists, and that is one of the best reasons to write functions at all. Python has a statement made for it.</p>
 <div class="stmt"><p><span class="kind">Rule (assert).</span> <code>assert <i>condition</i>, <i>message</i></code> does nothing if the condition is <code>True</code>, and stops the program with an <code>AssertionError</code> showing the message if it is <code>False</code>.</p></div>
@@ -1062,7 +1063,7 @@ print("all tests passed")
 assert sign(0.5) == 0, "a deliberately wrong test"`, expectError: true, caption: 'The first three asserts pass silently and the program prints "all tests passed". The last one is wrong on purpose: it stops with AssertionError: a deliberately wrong test. Delete it and run again.' },
         `<p>Notice how <code>sign</code> is written: three <code>return</code> statements, one per case. Because <code>return</code> ends the call immediately, the second <code>if</code> is only reached when the first case did not apply, and the last line is only reached when neither did. No <code>else</code> is needed.</p>
 <h2>Before the exercises</h2>
-<p>The first exercise has three cases, exactly like <code>sign</code>: one <code>return</code> per case. The second searches for something inside a loop and must decide when it may give its answer. Here is a worked example of that second shape: does a number contain a given digit? Return <code>True</code> the moment you find it; you may only return <code>False</code> once every digit has been checked, after the loop.</p>`,
+<p>First you will trace two calls by hand, as in the figure. The first function to write after that has three cases, exactly like <code>sign</code>: one <code>return</code> per case. The second searches for something inside a loop and must decide when it may give its answer. Here is a worked example of that second shape: does a number contain a given digit? Return <code>True</code> the moment you find it; you may only return <code>False</code> once every digit has been checked, after the loop.</p>`,
         { play: `def has_digit(n, d):
     while n > 0:
         if n % 10 == d:
@@ -1074,7 +1075,27 @@ assert has_digit(1974, 7) == True
 assert has_digit(1974, 2) == False
 assert has_digit(5, 5) == True
 print("has_digit passes its tests")`, caption: 'Putting return False inside the loop, as an else, would give up after looking at only the last digit. The "not found" answer belongs after the loop.' },
+        `<details class="reveal"><summary>Guess first: if <code>return False</code> were indented inside the loop, as the <code>else</code> of the <code>if</code>, what would <code>has_digit(1974, 7)</code> give?</summary><p><code>False</code>, which is wrong. The loop looks at the last digit, 4, finds it is not 7, and returns <code>False</code> at once, before it ever reaches the 7. A search may only say "not found" after it has looked everywhere. Try it: indent the line, run the example again and watch the first assert fail.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> Printing the answer instead of returning it, so the caller gets <code>None</code>. Forgetting the parentheses, so the function is never called. Writing code after a <code>return</code>, where it never runs. Using a variable from inside a function after it has returned. Assigning to a global name inside a function and getting <code>UnboundLocalError</code>; pass it in and return it instead. Calling a function above the <code>def</code> that creates it. In a search, returning the "not found" answer inside the loop.</p>` },
+        {
+          ex: {
+            id: 'py-7-3', kind: 'trace', title: 'Trace two calls',
+            prompt: `<p>Work through this program by hand and fill in the table. Each row is a moment just after the line it names has run, and the cells are the values of the names then. Line 2 is reached once for each call of <code>step</code>, and a dash <code>-</code> means that the name does not exist at that moment. The first row is done for you.</p>`,
+            code: `def step(n, k):\n    n = n + k\n    return n * 2\n\na = 3\nb = step(a, 4)\nc = step(b, 1)\nprint(a, b, c)`,
+            vars: ['a', 'b', 'c', 'n', 'k'],
+            steps: [
+              { line: 5, values: { a: '3', b: '-', c: '-', n: '-', k: '-' }, show: true },
+              { line: 2, values: { a: '3', b: '-', c: '-', n: '7', k: '4' }, why: { a: { '7': 'The n inside step is a separate name in the call’s own frame. Changing n does not change a, which is still 3.' } } },
+              { line: 6, values: { a: '3', b: '14', c: '-', n: '-', k: '-' }, why: { n: { '7': 'The frame of step was thrown away when it returned, so n and k no longer exist: write -.', '14': 'The frame of step was thrown away when it returned, so n and k no longer exist: write -.' } } },
+              { line: 2, values: { a: '3', b: '14', c: '-', n: '15', k: '1' }, why: { n: { '5': 'The second call gets a fresh frame. n starts as the argument b, which is 14, so n + k is 15.' } } },
+              { line: 7, values: { a: '3', b: '14', c: '30', n: '-', k: '-' } }
+            ],
+            hints: ['Start with the call on line 6: its frame has n = 3 and k = 4 (a is passed in, and its value is copied). Line 2 then makes n bigger, inside that frame only.', 'After line 2 of the first call, n is 7 and k is 4. The return hands back 7 * 2 = 14, which b receives, and the frame disappears, so n and k are - again. The second call starts from b, which is 14.'],
+            solution: '<p>a: 3, 3, 3, 3, 3. b: -, -, 14, 14, 14. c: -, -, -, -, 30. n: -, 7, -, 15, -. k: -, 4, -, 1, -. The program prints <code>3 14 30</code>.</p>',
+            failTip: 'If a changes to 7, remember that n is a separate local name inside the call: it starts out equal to the argument and changing it never changes a.',
+            followup: 'Change the first call to step(a, 0) and trace it before running it. Then check yourself in the Code Lab: print n on the last line of the program and read the NameError.'
+          }
+        },
         {
           ex: {
             id: 'py-7-1', title: 'Clamp',
@@ -1111,10 +1132,11 @@ print("has_digit passes its tests")`, caption: 'Putting return False inside the 
     },
     /* ================================================================== */
     {
+      standard: 1,
       standards: ['2-AP-17', '3A-CS-03'],
       title: 'Finding and fixing bugs', summary: 'Every program has bugs; the skill is finding them fast. Three kinds of wrong, reading an error message, debugging as an experiment, testing, and handling the errors you expect with try and except.',
       blocks: [
-        `<p>In September 1999, NASA's Mars Climate Orbiter reached Mars after a nine-month journey, fired its engine to slip into orbit, and was never heard from again. It had flown far too low into the Martian atmosphere. The investigation found the cause: one team's software reported the push of the thrusters in pounds, American units, and another team's software read those numbers as newtons, metric units. Nothing crashed and no error message appeared. Every program ran perfectly and gave the wrong answer, and a spacecraft costing well over a hundred million dollars was lost.</p>`,
+        `<p>In September 1999, NASA's Mars Climate Orbiter reached Mars after a nine-month journey, fired its engine to slip into orbit, and was never heard from again. It had flown far too low into the Martian atmosphere. The investigation found the cause: one team's software reported the push of the thrusters in pounds, American units, and another team's software read those numbers as newtons, metric units. Nothing crashed and no error message appeared. Every program ran perfectly and gave the wrong answer, and a spacecraft costing well over a hundred million dollars was lost. So how do you find a bug when the program gives you no error message at all?</p>`,
         { photo: 'mars-climate-orbiter', caption: "The Mars Climate Orbiter in May 1998, being prepared for tests that imitate the noise of a launch. Sixteen months later it burned up in the Martian atmosphere because of a units mix-up between two programs." },
         `<p>Here is a secret beginners are rarely told: professional programmers spend more time fixing code than writing it. Bugs are not a sign that you are bad at this; they are the normal state of code being worked on. What separates an expert from a beginner is how calmly and quickly they track a bug down. This lesson is the method.</p>
 <h2>Three kinds of wrong</h2>
@@ -1134,7 +1156,7 @@ for s in scores:
     total += s
 average = totl / len(scores)
 print("average:", average)`, expectError: true, caption: 'NameError means "you used a name I have never seen". The line number points at line 5, and the description names totl. Fix the typo and run again.' },
-        { check: "A program runs to the end and prints a wrong answer, with no message. What kind of error is that?", options: ["A syntax error", "A runtime error", "A logic error"], answer: 2, why: "Syntax errors stop the program before it starts; runtime errors stop it with a message; logic errors give wrong answers silently, and only a test can catch them." },
+        { check: "A program runs to the end and prints a wrong answer, with no message. What kind of error is that?", options: ["A syntax error", "A runtime error", "A logic error"], answer: 2, why: "Syntax errors stop the program before it starts; runtime errors stop it with a message; logic errors give wrong answers silently, and only a test can catch them.", wrong: ["This believes a wrong answer means Python could not read the program. But this program ran, so Python read it without trouble: a syntax error would have stopped it before it started.", "This believes every kind of error shows itself. A runtime error stops the program with a message, and here nothing stopped and nothing was printed about an error.", null] },
         `<p>The kinds you will meet most often, and what they usually mean:</p>
 <div class="tbl-wrap"><table>
 <tr><th>error</th><th>usual cause</th></tr>
@@ -1151,7 +1173,7 @@ print("average:", average)`, expectError: true, caption: 'NameError means "you u
 <p>When a program runs and gives the wrong answer, changing things at random rarely helps. What works is the method of a scientist: make a guess about where the fault is, and design an experiment that could prove the guess wrong.</p>
 <div class="stmt"><p><span class="kind">The debugging loop.</span> 1. <em>Reproduce</em> the bug: find an input that makes it happen every time. 2. <em>Shrink</em> the input until it is small enough to work out the right answer by hand. 3. <em>Hypothesise</em>: say exactly where you think the program first goes wrong. 4. <em>Test</em> the guess by printing the values at that point. 5. <em>Fix</em> it, then run every earlier test again, to make sure the fix broke nothing else.</p></div>
 <p>The experiment in step 4 is usually a <code>print</code>. Print the values you believe are right, at the points where you believe they are still right. The bug lies between the last print that looks correct and the first that looks wrong. This is called <em>print debugging</em>, and everyone does it, including people with much fancier tools.</p>`,
-        { play: `def count_evens(xs):
+        { predict: true, play: `def count_evens(xs):
     count = 0
     for i in range(1, len(xs)):
         print("looking at position", i, "value", xs[i])   # debugging print
@@ -1159,7 +1181,7 @@ print("average:", average)`, expectError: true, caption: 'NameError means "you u
             count += 1
     return count
 
-print(count_evens([2, 4, 5, 6]))`, caption: 'The answer should be 3 but it prints 2. The debugging print shows which item is never looked at. Fix the bug, run again, then delete the print.' },
+print(count_evens([2, 4, 5, 6]))`, caption: 'It prints three "looking at" lines, for positions 1, 2 and 3, and then 2. The answer should be 3, because 2, 4 and 6 are even. The debugging print shows the bug: position 0 is never looked at, since range(1, len(xs)) starts at 1, so the first 2 is never counted. Fix the bug, run again, then delete the print.' },
         `<details class="reveal"><summary>Predict: a function has 64 lines, and a print after any line can tell you whether things are still right there. If you always put the next print in the middle of the lines still under suspicion, how many prints do you need, at most, to find the first wrong line?</summary><p>Six. Each print cuts the suspect region in half: 64, 32, 16, 8, 4, 2, 1. This is binary search, which Lesson 12 turns into an algorithm, and it is why even a huge program can be debugged in a handful of well-chosen experiments.</p></details>
 <p>One more technique sounds silly and works astonishingly often: explain your code, line by line and out loud, to someone who knows nothing about it, or to a rubber duck on your desk. Having to say what each line does makes you notice the line that does not do what you meant. Programmers really do call this <em>rubber duck debugging</em>.</p>
 <h2>Tests that catch bugs</h2>
@@ -1176,7 +1198,7 @@ assert count_vowels("xyz") == 0, "no vowels"
 assert count_vowels("banana") == 3, "three vowels"
 assert count_vowels("Apple") == 2, "capital A counts too"
 print("all tests passed")`, expectError: true, caption: 'The first two tests pass: they cannot see the bug, because the answer is 0 either way. The third fails. Find and fix that bug; then the fourth test finds a second one. Both are small fixes.' },
-        { check: "Which test is most useful for a function that counts the even numbers in a list?", options: ["One where the answer is 0, such as an empty list", "One where a wrong program could fail, such as a list with evens and odds mixed", "Any test: all tests are equally useful"], answer: 1, why: "A test is useful when a wrong program could fail it. A test whose answer is 0 either way cannot tell a working function from a broken one." },
+        { check: "Which test is most useful for a function that counts the even numbers in a list?", options: ["One where the answer is 0, such as an empty list", "One where a wrong program could fail, such as a list with evens and odds mixed", "Any test: all tests are equally useful"], answer: 1, why: "A test is useful when a wrong program could fail it. A test whose answer is 0 either way cannot tell a working function from a broken one.", wrong: ["This believes a test with the answer 0 is the safest. But a function that always returns 0 would pass it, so it cannot catch that bug.", null, "This believes more tests always help equally. A test no wrong program could fail tells you nothing, however many of them you write."] },
         `<p>Notice which tests passed: the ones whose answer was 0 whether the code was right or not. A test is only useful if a wrong program could fail it. That is why "banana" is a better test than "xyz" here.</p>
 <h2>Errors you expect: try and except</h2>
 <p>Sometimes a runtime error is not a bug at all. If you ask a person for a number and they type "seven", then <code>int("seven")</code> raising <code>ValueError</code> is correct behaviour; what you want is to handle it gracefully instead of crashing.</p>
@@ -1188,20 +1210,38 @@ try:
 except ValueError:
     print("That is not a whole number.")
 print("The program keeps going either way.")`, stdin: 'seven', caption: 'This run types "seven", so int raises ValueError, the print inside try is skipped, and the except block runs. Change the input to 21 and the try block completes normally.' },
-        { check: "Inside <code>try:</code>, a line raises a <code>ZeroDivisionError</code>. The only handler is <code>except ValueError:</code>. What happens?", options: ["The except block runs anyway", "The error is not caught and the program stops, as usual", "Python skips the line and carries on"], answer: 1, why: "<code>except</code> catches only the kind it names. Any other kind passes through and stops the program, which is what you want for errors you did not expect." },
+        { check: "Inside <code>try:</code>, a line raises a <code>ZeroDivisionError</code>. The only handler is <code>except ValueError:</code>. What happens?", options: ["The except block runs anyway", "The error is not caught and the program stops, as usual", "Python skips the line and carries on"], answer: 1, why: "<code>except</code> catches only the kind it names. Any other kind passes through and stops the program, which is what you want for errors you did not expect.", wrong: ["This believes any except block catches any error. An except block catches only the kind it names, and ZeroDivisionError is not a ValueError.", null, "This believes Python can quietly skip a line that fails. It cannot: an error that no handler catches stops the program."] },
         `<p>Keep the <code>try</code> block small, around just the risky line, and name the exact kind of error you expect. The last sentence of the rule is a feature: an error you did not expect should still stop the program, because it is probably a real bug. A bare <code>except:</code> with no error kind catches everything, including typos and <code>NameError</code>s, and hides real bugs; avoid it.</p>
 <details class="reveal"><summary>Predict: what does this print? <code>try:</code> / <code>n = int("12")</code> / <code>print(10 / (n - 12))</code> / <code>except ValueError:</code> / <code>print("not a number")</code></summary><p>Nothing is caught: the program stops with <code>ZeroDivisionError</code>. <code>int("12")</code> succeeds, and the error comes from the division by zero, which is not a <code>ValueError</code>, so the <code>except</code> block does not apply. That is exactly the behaviour you want: "not a number" would have been a lie.</p></details>
 <h2>Before the exercises</h2>
-<p>The first exercise has two logic errors in a short function. Use the loop: work out the right answer for a tiny input by hand, work out what the buggy code does with the same input, and let the difference tell you where to look. The second asks you to handle an expected error with <code>try</code>. Here is a worked example of that shape, for a different error.</p>`,
-        { play: `def safe_divide(a, b, default):
+<p>First you will trace a buggy function by hand. Then you will fix it: it has two logic errors in a short function. Use the loop: work out the right answer for a tiny input by hand, work out what the buggy code does with the same input, and let the difference tell you where to look. The last exercise asks you to handle an expected error with <code>try</code>. Here is a worked example of that shape, for a different error.</p>`,
+        { predict: true, play: `def safe_divide(a, b, default):
     try:
         return a / b                  # the one risky line
     except ZeroDivisionError:
         return default                # what to give back instead
 
 print(safe_divide(10, 4, 0))
-print(safe_divide(1, 0, "n/a"))`, caption: 'Prints 2.5 and n/a. The return inside try hands back the answer when the division works; when it fails, the except block returns the default instead.' },
+print(safe_divide(1, 0, "n/a"))`, caption: 'It prints 2.5 and then n/a. The return inside try hands back the answer when the division works; when it fails, the except block returns the default instead. Change the second call to safe_divide(8, 2, 0) and the default is never used.' },
         { aside: `<p><b>A debugging checklist.</b> Read the whole error message: kind, description and line number. For a syntax error, check the line above the one reported too; a missing bracket is often noticed late. Reproduce the bug, then shrink the input until you can work out the answer by hand. Say where you think it goes wrong, then print to find out. Change one thing at a time, and run your tests after every change. Write a failing test before you fix a bug. Catch only the errors you expect, by name.</p>` },
+        {
+          ex: {
+            id: 'py-8-3', kind: 'trace', title: 'Trace the buggy average',
+            prompt: `<p>This is the function you are about to fix, with the call <code>average([2, 4, 6])</code>. It should give 4.0. Instead of guessing, follow it by hand and fill in the table: each row is a moment just after the line it names has run, and the cells are the values of the names then. Line 3 is the loop header, reached once for each pass; line 4 is the line inside the loop. The first row is done for you.</p>`,
+            code: `def average(xs):\n    total = 0\n    for i in range(len(xs) - 1):\n        total = xs[i]\n    return total / len(xs)\n\nprint(average([2, 4, 6]))`,
+            vars: ['i', 'total'],
+            steps: [
+              { line: 3, values: { i: '0', total: '0' }, show: true },
+              { line: 4, values: { i: '0', total: '2' }, why: { total: { '0': 'This row is after line 4 has run, so total has changed: it is now xs[0], which is 2.' } } },
+              { line: 3, values: { i: '1', total: '2' }, why: { i: { '2': 'range(len(xs) - 1) is range(2), which gives the positions 0 and 1 only: the second pass has i = 1.' } } },
+              { line: 4, values: { i: '1', total: '4' }, why: { total: { '6': 'Nothing is added: total = xs[i] replaces the old total with xs[1], which is 4.' } } }
+            ],
+            hints: ['len(xs) is 3, so range(len(xs) - 1) is range(2). Which values does i take?', 'Line 4 does not add. It sets total to the item at position i, so after the pass for i = 1, total is xs[1].'],
+            solution: '<p>i: 0, 0, 1, 1. total: 0, 2, 2, 4. The loop stops after position 1, so the 6 is never looked at, and total is 4 where it should be 12. Then 4 / 3 is about 1.33, not 4.0: the table has found both bugs.</p>',
+            failTip: 'If you wrote 8 or 6 for total, look at line 4 again: it replaces total with xs[i] instead of adding to it.',
+            followup: 'Fix one bug at a time and trace the program again after each fix. Which table cell changes first?'
+          }
+        },
         {
           ex: {
             id: 'py-8-1', title: 'Fix the bugs',
@@ -1230,7 +1270,7 @@ print(safe_divide(1, 0, "n/a"))`, caption: 'Prints 2.5 and n/a. The return insid
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
-<li>Syntax errors stop the program before it starts; runtime errors stop it with a message; logic errors give wrong answers silently.</li>
+<li>Syntax errors stop the program before it starts; runtime errors stop it with a message; logic errors give wrong answers silently. So how do you find a bug with no message? With a test that fails, and an experiment that narrows down where.</li>
 <li>Read the error's kind, description and line number before changing anything.</li>
 <li>Debug like a scientist: reproduce, shrink, hypothesise, print to test the guess, fix, and rerun every test. Halving the suspect region finds a fault fast.</li>
 <li>A useful test is one a wrong program could fail. Write a failing test before fixing a bug.</li>
@@ -1240,14 +1280,15 @@ print(safe_divide(1, 0, "n/a"))`, caption: 'Prints 2.5 and n/a. The return insid
     },
     /* ================================================================== */
     {
+      standard: 1,
       standards: ['3A-AP-14', '3A-DA-10', '3B-AP-12'],
       title: 'Dictionaries', summary: 'Looking things up by name instead of by position: keys and values, missing keys, looping over pairs, the counting pattern, which keys are allowed, and why lookup is fast however big the dictionary grows.',
       blocks: [
-        `<p>A list is perfect when you know the <em>position</em> of what you want: the third song, the last score. But usually you know a <em>name</em>. You have a word and want its meaning, a student and want their score, a username and want the password check, a product and want its price. A paper dictionary works this way: you do not read it from page one; you jump to the word. Python's <em>dictionary</em> does the same, and it does it in a single step even when it holds millions of entries. This lesson shows how to use one, and how a dictionary makes one of the most useful patterns in programming, counting, a single line.</p>
+        `<p>A list is perfect when you know the <em>position</em> of what you want: the third song, the last score. But usually you know a <em>name</em>. You have a word and want its meaning, a student and want their score, a username and want the password check, a product and want its price. A paper dictionary works this way: you do not read it from page one; you jump to the word. Python's <em>dictionary</em> does the same, and it does it in a single step even when it holds millions of entries. This lesson shows how to use one, and how a dictionary makes one of the most useful patterns in programming, counting, a single line. But how can a program jump straight to one entry among millions without reading the others?</p>
 <h2>Keys and values</h2>
 <div class="stmt"><p><span class="kind">Rule (dictionaries).</span> A dictionary holds <em>pairs</em>, each made of a <em>key</em> and a <em>value</em>. It is written in curly braces: <code>{<i>key</i>: <i>value</i>, …}</code>; the empty dictionary is <code>{}</code>. Each key appears at most once. <code>d[<i>key</i>]</code> is the value stored with that key. <code>d[<i>key</i>] = <i>value</i></code> stores a value: it adds a new pair if the key is new, and replaces the old value if the key is already there. <code>len(d)</code> is the number of pairs.</p></div>
 <p>Here is a small dictionary of Ojibwe words, the language of the Anishinaabe people of the Great Lakes, with their English meanings. The Ojibwe word is the key; its meaning is the value.</p>`,
-        { play: `ojibwe = {
+        { predict: true, play: `ojibwe = {
     "boozhoo": "hello",
     "miigwech": "thank you",
     "makwa": "bear",
@@ -1258,9 +1299,9 @@ print(len(ojibwe))
 
 ojibwe["mitig"] = "tree"          # a new key: adds a pair
 ojibwe["nibi"] = "water (noun)"   # an existing key: replaces its value
-print(ojibwe)
-print(len(ojibwe))`, caption: 'bear, then 4; after adding mitig and changing nibi, 5 pairs. Notice that storing under nibi a second time did not make a second nibi: each key appears once.' },
-        { check: "<code>d = {\"a\": 1}</code>, then <code>d[\"a\"] = 5</code>, then <code>d[\"b\"] = 2</code>. What is <code>len(d)</code>?", options: ["3", "2", "1"], answer: 1, why: "Storing under an existing key replaces its value; storing under a new key adds a pair. Two keys, a and b." },
+print(ojibwe["nibi"])
+print(len(ojibwe))`, caption: 'It prints bear, then 4, then water (noun), then 5. Adding mitig made a fifth pair. Storing under nibi a second time did not make a second nibi: each key appears once, so the new value replaced the old one and the length stayed at 5. Add a key of your own and print the length again.' },
+        { check: "<code>d = {\"a\": 1}</code>, then <code>d[\"a\"] = 5</code>, then <code>d[\"b\"] = 2</code>. What is <code>len(d)</code>?", options: ["3", "2", "1"], answer: 1, why: "Storing under an existing key replaces its value; storing under a new key adds a pair. Two keys, a and b.", wrong: ["This believes every assignment adds a pair. Storing under a key that is already there replaces its value, so the first assignment adds nothing.", null, "This believes a dictionary holds one pair at a time, so the new pair replaced the old. Only the same key is replaced; the key b is new, so it is added."] },
         `<h2>Missing keys</h2>
 <div class="stmt"><p><span class="kind">Rule (missing keys).</span> <code>d[<i>key</i>]</code> for a key that is not in the dictionary raises <code>KeyError</code>. <code><i>key</i> in d</code> asks whether the key is there. <code>d.get(<i>key</i>, <i>fallback</i>)</code> gives the value if the key is there and the fallback if it is not, without an error.</p></div>`,
         { play: `prices = {"apple": 0.5, "fig": 1.25}
@@ -1268,11 +1309,11 @@ print("fig" in prices, "mango" in prices)
 print(prices.get("apple", 0))
 print(prices.get("mango", 0))     # not there: the fallback, 0
 print(prices["mango"])            # not there: an error`, expectError: true, caption: 'True False, then 0.5 and 0, and then the last line raises KeyError: mango. Delete it and the program runs cleanly.' },
-        { check: "Which expression looks up <code>\"pear\"</code> safely, giving 0 if it is missing?", options: ["<code>d[\"pear\"] or 0</code>", "<code>d.get(\"pear\", 0)</code>", "<code>d[\"pear\", 0]</code>"], answer: 1, why: "<code>get</code> returns the value if the key is there and the fallback if not, without an error. <code>d[\"pear\"]</code> raises KeyError first." },
+        { check: "Which expression looks up <code>\"pear\"</code> safely, giving 0 if it is missing?", options: ["<code>d[\"pear\"] or 0</code>", "<code>d.get(\"pear\", 0)</code>", "<code>d[\"pear\", 0]</code>"], answer: 1, why: "<code>get</code> returns the value if the key is there and the fallback if not, without an error. <code>d[\"pear\"]</code> raises KeyError first.", wrong: ["This believes <code>or 0</code> can rescue a missing key. The square brackets raise KeyError before <code>or</code> is ever reached; <code>or</code> only helps with a value that is there but false.", null, "This believes a lookup can take a fallback inside square brackets. Square brackets take one key; <code>d[\"pear\", 0]</code> looks for the key <code>(\"pear\", 0)</code>, a tuple, and raises KeyError."] },
         `<p>Use square brackets when a missing key would be a bug, so that the error tells you about it (Lesson 8). Use <code>get</code> when a missing key is a normal situation, such as a word you have not counted yet. One more trap: <code>in</code> checks the <em>keys</em> only. <code>"bear" in ojibwe</code> is <code>False</code>, because "bear" is a value, not a key.</p>
 <h2>Looping over a dictionary</h2>
 <div class="stmt"><p><span class="kind">Rule (looping).</span> <code>for k in d:</code> visits the keys, in the order they were first added. <code>d.values()</code> gives the values, and <code>d.items()</code> gives the pairs, so <code>for k, v in d.items():</code> visits each key together with its value.</p></div>`,
-        { play: `scores = {"Ada": 92, "Grace": 88, "Linus": 79}
+        { predict: true, play: `scores = {"Ada": 92, "Grace": 88, "Linus": 79}
 
 for name in scores:
     print(name, scores[name])
@@ -1282,7 +1323,7 @@ for name, score in scores.items():
     if score >= 85:
         print(name, "gets an A")
 
-print("total:", sum(scores.values()))`, caption: 'Keys come out in the order they were added. sum works on the values, since each is a number.' },
+print("total:", sum(scores.values()))`, caption: 'It prints each name with its score (Ada 92, Grace 88, Linus 79), then ---, then Ada gets an A and Grace gets an A, then total: 259. The keys come out in the order they were added. The second loop unpacks each pair into name and score, so Linus, with 79, is left out. sum works on the values, since each is a number. Change 85 to 90 and see who is left.' },
         `<details class="reveal"><summary>Puzzle: turn <code>ojibwe</code> round into an English-to-Ojibwe dictionary, <code>english</code>, so that <code>english["bear"]</code> is <code>"makwa"</code>. What could go wrong if two words had the same meaning?</summary><p>Start with <code>english = {}</code> and loop: <code>for word, meaning in ojibwe.items(): english[meaning] = word</code>. The keys and values swap places. If two Ojibwe words had the same meaning, they would compete for the same English key, and since each key appears once, the second would replace the first: one of them would be lost. Reversing a dictionary is only safe when no value appears twice.</p></details>
 <h2>The counting pattern</h2>
 <p>The most useful thing a dictionary does is count. How many times does each word appear in a text? Make each word a key, with its count so far as the value. This is Lesson 4's accumulator pattern, with a whole dictionary as the accumulator.</p>`,
@@ -1290,11 +1331,11 @@ print("total:", sum(scores.values()))`, caption: 'Keys come out in the order the
 counts = {}
 for word in text.split():
     counts[word] = counts.get(word, 0) + 1
-print(counts)
+print(len(counts), counts["the"], counts["sat"])
 
 for word, n in counts.items():
     if n > 1:
-        print(word, "appears", n, "times")`, caption: 'Read the line inside the loop slowly: look up the count so far (0 if the word is new), add one, and store it back under the same key.' },
+        print(word, "appears", n, "times")`, caption: 'It prints 7 3 1, then the appears 3 times and cat appears 2 times. The ten words have seven different spellings, so there are seven keys. Read the line inside the loop slowly: look up the count so far (0 if the word is new), add one, and store it back under the same key. Change the text and predict again.' },
         `<details class="reveal"><summary>Trace it: what is <code>counts</code> after each of the first five words of "the cat sat on the mat"?</summary><p>After "the": <code>{'the': 1}</code>. After "cat": <code>{'the': 1, 'cat': 1}</code>. After "sat" and "on", two more keys with 1. After the second "the", <code>get</code> finds 1, so <code>counts['the']</code> becomes 2. A new word adds a key; a repeated word changes a value.</p></details>
 <p>Counting letters instead of words is the first step in breaking secret codes: in English text, e is the most common letter by a long way, and a code that replaces each letter by another one leaves the counts unchanged, only relabelled. The Caesar cipher project at the end of this course uses exactly that idea.</p>
 <h2>What can be a key?</h2>
@@ -1307,11 +1348,11 @@ student["scores"].append(90)
 print(student["name"], "average:", sum(student["scores"]) / len(student["scores"]))
 
 bad = {[1, 2]: "no"}                           # a list as a key`, expectError: true, caption: 'Coordinates make natural keys for a game map. The last line raises TypeError: unhashable type: \'list\', because a list could change after being used as a key.' },
-        { check: "Which of these can be a dictionary key?", options: ["A list, <code>[1, 2]</code>", "A tuple, <code>(1, 2)</code>", "Another dictionary"], answer: 1, why: "A key must be a value that can never change: numbers, strings, True and False, and tuples of these. Lists and dictionaries can change, so they cannot be keys." },
+        { check: "Which of these can be a dictionary key?", options: ["A list, <code>[1, 2]</code>", "A tuple, <code>(1, 2)</code>", "Another dictionary"], answer: 1, why: "A key must be a value that can never change: numbers, strings, True and False, and tuples of these. Lists and dictionaries can change, so they cannot be keys.", wrong: ["This believes any value can be a key. A list can change after it is stored, which would break the dictionary's lookup, so Python refuses it with a TypeError.", null, "This believes a dictionary can be a key because it can be a value. Values may be anything, but a dictionary can change, so it cannot be a key."] },
         `<p>Why the restriction? A dictionary finds a key in one step by computing a number from it, called a <em>hash</em>, and using that number to decide where to store the pair. (The mathematics course's Lesson 11 calls this a hash table and explains why it matters so much for speed.) If a key could change after it was stored, its hash would change, and the dictionary would look for it in the wrong place. So keys must be values that never change. That one design decision is why <code>word in counts</code> takes one step however many words have been counted, while <code>word in some_list</code> may have to check every item.</p>
 <h2>Before the exercises</h2>
-<p>The first exercise is the counting pattern, wrapped in a function. The second counts, then looks through the counts for the largest, with Lesson 4's "best so far" pattern: start with nothing, and replace the best only when something is strictly bigger. Here are worked examples of both shapes: counting the letters of a word, and finding the highest scorer.</p>`,
-        { play: `def count_letters(word):
+<p>First you will trace the counting pattern by hand. The next exercise is the counting pattern, wrapped in a function. The last one counts, then looks through the counts for the largest, with Lesson 4's "best so far" pattern: start with nothing, and replace the best only when something is strictly bigger. Here are worked examples of both shapes: counting the letters of a word, and finding the highest scorer.</p>`,
+        { predict: true, play: `def count_letters(word):
     counts = {}
     for ch in word:
         counts[ch] = counts.get(ch, 0) + 1
@@ -1326,9 +1367,29 @@ def top_scorer(scores):
             best_name = name
     return best_name
 
-print(count_letters("banana"))
-print(top_scorer({"Ada": 92, "Grace": 95, "Linus": 95}))`, caption: "Prints {'b': 1, 'a': 3, 'n': 2} and Grace. Grace and Linus tie at 95, and the strict > keeps the one that came first." },
+letters = count_letters("banana")
+print(letters["a"], letters["n"], len(letters))
+print(top_scorer({"Ada": 92, "Grace": 95, "Linus": 95}))`, caption: "It prints 3 2 3, then Grace. banana has three a's, two n's and three different letters, so the dictionary has three keys. Grace and Linus tie at 95, and the strict > keeps the one that came first. Change > to >= and see who wins the tie." },
         { aside: `<p><b>Common mistakes in this lesson.</b> Using square brackets on a key that may be missing; use <code>get</code> or check with <code>in</code> first. Testing <code>value in d</code> when <code>in</code> only looks at keys. Using a list as a key. Forgetting <code>.items()</code>, so the loop variable is only the key. Expecting two pairs with the same key: storing again replaces the value. Spelling a key differently in two places, such as "Ada" and "ada"; lower-case text before counting it.</p>` },
+        {
+          ex: {
+            id: 'py-9-3', kind: 'trace', title: 'Trace the counts',
+            prompt: `<p>Watch a dictionary being filled. Work through this program by hand and fill in the table: each row is a moment just after line 5 has run, once for each word, and the cells are the values then. <code>len(counts)</code> is the number of keys so far. The first row is done for you.</p>`,
+            code: `words = ["to", "be", "or", "to", "be"]\ncounts = {}\nfor w in words:\n    n = counts.get(w, 0)\n    counts[w] = n + 1\nprint(counts["to"], counts["be"])`,
+            vars: ['w', 'n', 'len(counts)'],
+            steps: [
+              { line: 5, values: { w: 'to', n: '0', 'len(counts)': '1' }, show: true },
+              { line: 5, values: { w: 'be', n: '0', 'len(counts)': '2' } },
+              { line: 5, values: { w: 'or', n: '0', 'len(counts)': '3' } },
+              { line: 5, values: { w: 'to', n: '1', 'len(counts)': '3' }, why: { n: { '2': 'n is the count so far, read on line 4 before the +1 on line 5. The second "to" finds 1.' }, 'len(counts)': { '4': 'A word that is already a key adds no new pair: there are still three keys.' } } },
+              { line: 5, values: { w: 'be', n: '1', 'len(counts)': '3' }, why: { 'len(counts)': { '4': 'A word that is already a key adds no new pair: there are still three keys.', '5': 'Count the keys, not the words: to, be and or.' } } }
+            ],
+            hints: ['Line 4 asks: how many times have I seen this word before? A word that is new gets 0 from get. Line 5 stores that number plus one.', 'The keys, in order of arrival, are to, be, or. The second "to" and the second "be" are already keys, so len(counts) stops growing, and n is 1 for them.'],
+            solution: '<p>w: to, be, or, to, be. n: 0, 0, 0, 1, 1. len(counts): 1, 2, 3, 3, 3. The program prints <code>2 2</code>.</p>',
+            failTip: 'If n looks one too big, remember that n is the old count: line 4 reads it, and line 5 adds one afterwards.',
+            followup: 'Change the list to ["a", "a", "a", "b"] and trace it before running it. What is len(counts) at the end, and what does it count?'
+          }
+        },
         {
           ex: {
             id: 'py-9-1', title: 'Word counts',
@@ -1350,7 +1411,8 @@ print(top_scorer({"Ada": 92, "Grace": 95, "Linus": 95}))`, caption: "Prints {'b'
             hints: ['Inside the second loop: if n > best_count, remember both n and word.', 'Because the dictionary keeps the order in which words were first added, and > is strict, the first word to reach the top count wins a tie.'],
             tests: [{ call: 'most_common("the cat sat on the mat")', expect: "'the'" }, { call: 'most_common("b a b a")', expect: "'b'" }, { call: 'most_common("Hello hello HELLO world")', expect: "'hello'" }, { call: 'most_common("one")', expect: "'one'" }, { call: 'most_common("x y z z y z")', expect: "'z'" }],
             mustNotContain: [{ re: /\bmax\s*\(|\bsorted\s*\(|Counter/, msg: 'Write the "best so far" loop yourself; no max(), sorted() or Counter.' }],
-            failTip: 'If "b a b a" gives a, the comparison is >= : a later word with an equal count replaced the earlier one.'
+            failTip: 'If "b a b a" gives a, the comparison is >= : a later word with an equal count replaced the earlier one.',
+            followup: 'Write most_common again so that a tie goes to the word that comes first in the alphabet instead. Which comparison changes, and what extra test does a tie now need?'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
@@ -1358,7 +1420,7 @@ print(top_scorer({"Ada": 92, "Grace": 95, "Linus": 95}))`, caption: "Prints {'b'
 <li>A missing key raises <code>KeyError</code>; <code>key in d</code> checks keys, and <code>d.get(key, fallback)</code> avoids the error.</li>
 <li><code>for k, v in d.items():</code> visits pairs, in the order keys were added.</li>
 <li>Counting: <code>counts[k] = counts.get(k, 0) + 1</code>. Finding the largest count: best so far, with a strict <code>&gt;</code>.</li>
-<li>Keys must be unchangeable (numbers, strings, tuples); that is what lets a dictionary find any key in one step.</li>
+<li>Keys must be unchangeable (numbers, strings, tuples). That is how a program can jump straight to one entry among millions: the dictionary computes a hash from the key and goes directly to that place, so it finds any key in one step.</li>
 </ul></div>`
       ]
     },
