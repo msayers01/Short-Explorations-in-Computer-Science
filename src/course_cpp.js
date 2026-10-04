@@ -1024,14 +1024,14 @@ int main() {
     /* ================================================================== */
     {
       standards: ['3A-AP-14', '3B-AP-12', '3B-AP-18'],
-      title: 'Arrays', summary: 'A row of values of one type: declaring and indexing, why nothing stops you running off the end, why an array\u2019s name is an address, and how functions share arrays.',
+      title: 'Arrays', standard: 1, summary: 'A row of values of one type: declaring and indexing, why nothing stops you running off the end, why an array\u2019s name is an address, and how functions share arrays.',
       blocks: [
-        `<p>Picture a corridor of school lockers, all the same size, numbered from 0, standing shoulder to shoulder. That is an <em>array</em>: a fixed number of values of one type, stored next to each other in memory. It is the oldest data structure in computing and still the fastest, and it hides a famous danger. This lesson gives the rules, shows exactly why arrays are fast, and explains the bug behind some of the most expensive security holes in history.</p>`,
+        `<p>Picture a corridor of school lockers, all the same size, numbered from 0, standing shoulder to shoulder. That is an <em>array</em>: a fixed number of values of one type, stored next to each other in memory. It is the oldest data structure in computing and still the fastest, and it hides a famous danger. This lesson gives the rules, shows exactly why arrays are fast, and explains the bug behind some of the most expensive security holes in history. So what happens when a program reaches for a locker that is not there?</p>`,
         { photo: 'school-lockers', caption: 'A corridor of numbered lockers at a college in Hong Kong. Each locker is the same size and has its own number, so finding B4013 takes no searching: that is what an array index buys you.' },
         `<h2>Declaring and using an array</h2>
 <div class="stmt"><p><span class="kind">Rule (declaration).</span> <code><i>type</i> <i>name</i>[<i>N</i>];</code> declares an array of <i>N</i> values of the given type, where <i>N</i> is a constant known to the compiler. It may be given starting values in braces: <code>int scores[5] = {90, 72, 85, 60, 99};</code>. The size never changes.</p>
 <p><span class="kind">Rule (elements).</span> The elements are <code><i>name</i>[0]</code> up to <code><i>name</i>[<i>N</i> − 1]</code>. Each one is an ordinary variable of the array's type: it can be read, assigned, and passed to a function.</p></div>
-<p>Unlike a Python list, an array has no <code>len</code> and cannot grow. Its size is part of its type, fixed when the program is compiled, and you are responsible for remembering it. The usual habit is to give the size a name with <code>const</code>, so that it is written in only one place.</p>`,
+<p>Unlike a Python list, an array has no <code>len</code> and cannot grow. Its size is part of its type, fixed when the program is compiled, and you are responsible for remembering it. The usual habit is to give the size a name with <code>const</code>, so that it is written in only one place. Predict what the program below prints before you run it.</p>`,
         { play: `#include <iostream>
 using namespace std;
 
@@ -1047,8 +1047,8 @@ int main() {
     }
     cout << "average: " << total / (double) N << endl;
     return 0;
-}`, caption: 'Prints 90 99, then average: 81.8. The loop runs i from 0 to N - 1, which by Lesson 3\u2019s counting rule is exactly N passes, one per element.' },
-        { check: "<code>int a[5];</code>. Which index is the last valid one?", options: ["5", "4", "6"], answer: 1, why: "Elements are a[0] to a[N − 1]. a[5] is past the end, and C++ will not stop you." },
+}`, predict: true, caption: 'Prints 90 99, then average: 81.8. The first number is the first element, scores[0], and the second is the last one, scores[N - 1], not scores[N]. The assignment changed 72 to 75 before the loop, so the total is 90 + 75 + 85 + 60 + 99 = 409, and 409 / 5.0 is 81.8: the (double) makes the division keep its fraction. The loop runs i from 0 to N - 1, which by Lesson 3’s counting rule is exactly N passes, one per element. Change scores[1] = 75 to another number and predict the new average first.' },
+        { check: "<code>int a[5];</code>. Which index is the last valid one?", options: ["5", "4", "6"], answer: 1, why: "Elements are a[0] to a[N − 1]. a[5] is past the end, and C++ will not stop you.", wrong: ["This counts from 1, the way people number lockers. In C++ the first element is a[0], so five elements end at a[4]; a[5] would be the sixth, past the end.",null,"Index 6 is two places past the end. The valid indexes run from 0 to N − 1, so for N = 5 the last one is 4."] },
         `<p>Lesson 1's warning about uninitialised variables applies to every element: an array declared without starting values holds garbage. Standard C++ fills in zeros when you give <em>some</em> but not all of the starting values, as in <code>int a[5] = {1, 2};</code>, but the interpreter on this site does not, so on this site list every starting value.</p>
 <h2>Running off the end</h2>
 <p>Now the danger. Change the loop above to <code>i &lt;= N</code> and run it.</p>`,
@@ -1065,7 +1065,7 @@ int main() {
     cout << total << endl;
     return 0;
 }`, expectError: true, caption: 'This site stops at scores[5]: "index out of bound 5 >= 5". A real compiled program would not stop at all.' },
-        { check: "What does reading <code>a[10]</code> from a 5-element array do on a real machine?", options: ["Raises an error", "Undefined behaviour: reads whatever lies beyond the array", "Returns 0"], answer: 1, why: "C++ does not check bounds. It may print nonsense, change another variable, or crash later somewhere unrelated." },
+        { check: "What does reading <code>a[10]</code> from a 5-element array do on a real machine?", options: ["Raises an error", "Undefined behaviour: reads whatever lies beyond the array", "Returns 0"], answer: 1, why: "C++ does not check bounds. It may print nonsense, change another variable, or crash later somewhere unrelated.", wrong: ["Some languages check every index, but C++ does not. The program quietly reads whatever memory lies there, and no error message appears.",null,"Memory beyond an array is not cleared for you. It holds whatever was there before, so the value is unpredictable, not 0."] },
         `<div class="stmt"><p><span class="kind">Rule (bounds).</span> Using an index outside 0 … <i>N</i> − 1 is an error that C++ does <em>not</em> check. The program reads or writes whatever memory happens to lie beyond the array, and the result is undefined: it may print nonsense, change some other variable, crash immediately, or crash much later somewhere unrelated.</p></div>
 <p>This is not a curiosity. In 1988 the Morris worm spread across the early internet partly by sending a program more characters than its array could hold, overwriting the memory beyond it. In 2014 the Heartbleed bug let attackers ask a server to send back "the 64,000 bytes starting here" from an array that was far shorter, so the server leaked whatever lay beyond it, including passwords and secret keys, from a large share of the world's secure websites. Both were, at bottom, a missing check that an index was less than a length. Write <code>i &lt; N</code>, and whenever an index comes from input or from arithmetic, ask what stops it going out of range.</p>`,
         { photo: 'morris-worm-disk', caption: 'A floppy disk holding the source code of the Morris worm, shown at the Museum of Science in Boston in 2006. The worm brought large parts of the early Internet to a halt on 2 November 1988.' },
@@ -1077,7 +1077,7 @@ int main() {
         `<details class="reveal"><summary>Predict: with <code>int a[4] = {10, 20, 30, 40}; int* p = a;</code>, what are <code>*p</code>, <code>*(p + 2)</code> and <code>p[3]</code>? And if <code>a</code> starts at address 1000, what address is <code>p + 3</code>?</summary><p><code>10</code>, <code>30</code> and <code>40</code>: square brackets are pointer arithmetic in disguise, and they work on any pointer, not just on an array's name. <code>p + 3</code> is 1012: three elements along, and each <code>int</code> is four bytes.</p></details>
 <p>One consequence surprises people: you cannot copy an array with <code>=</code>. <code>a = b;</code> with two arrays is rejected by real compilers, because the name <code>a</code> is not a variable that can be given a new value; it names a fixed place in memory. (This site's interpreter is lenient and silently accepts it, so the rule is yours to keep.) To copy an array, copy its elements one at a time in a loop.</p>
 <h2>Counting with an array</h2>
-<p>Because an index can be any integer expression, an array can use a <em>value</em> as a position. Here is a trick worth remembering: to count how often each dice face comes up, keep an array of counters and let the face itself choose which counter to increase. Twenty rolls, and a bar chart.</p>`,
+<p>Because an index can be any integer expression, an array can use a <em>value</em> as a position. Here is a trick worth remembering: to count how often each dice face comes up, keep an array of counters and let the face itself choose which counter to increase. Twenty rolls, and a bar chart. Count the sixes in the list of rolls and predict the last bar before you run it.</p>`,
         { play: `#include <iostream>
 using namespace std;
 
@@ -1098,11 +1098,11 @@ int main() {
         cout << " (" << counts[face] << ")" << endl;
     }
     return 0;
-}`, caption: 'Six came up six times. The array has seven counters so that face 6 can use counts[6]; the extra counts[0] costs one int and saves a "- 1" everywhere. Change a roll to 7 and see the bounds rule enforced.' },
+}`, predict: true, caption: 'Prints a bar for each face: 1: ** (2), 2: ** (2), 3: ***** (5), 4: *** (3), 5: ** (2), 6: ****** (6). Six came up six times, and the face itself chose which counter to increase. The array has seven counters so that face 6 can use counts[6]; the extra counts[0] costs one int and saves a "- 1" everywhere. Change a roll to 7 and see the bounds rule enforced.' },
         `<p>This is called a <em>tally</em> or <em>histogram</em>, and it is fast because it never searches: each roll goes straight to its counter in one step. Lesson 9 uses exactly this idea to test whether a simulated die is fair.</p>
 <h2>Arrays and functions</h2>
 <div class="stmt"><p><span class="kind">Rule (array parameters).</span> A parameter written <code>int arr[]</code> is really a pointer, <code>int* arr</code>. Calling <code>f(data, n)</code> passes the address of <code>data</code>'s first element, so the array is <em>not</em> copied: the function works on the caller's elements, and changes it makes are seen by the caller. The function cannot find out the array's length, so the length is passed as a separate parameter.</p></div>
-<p>This is Lesson 5's pointer rule once more: the address is copied, and a copy of an address leads back to the original.</p>`,
+<p>This is Lesson 5's pointer rule once more: the address is copied, and a copy of an address leads back to the original. Predict what the three lines below print.</p>`,
         { play: `#include <iostream>
 using namespace std;
 
@@ -1127,8 +1127,8 @@ int main() {
     cout << sum(data, 4) << endl;
     cout << data[3] << endl;
     return 0;
-}`, caption: 'Prints 10, 20, 8. doubleAll returns nothing, yet main sees the change: the array was never copied, only its address.' },
-        { check: "A function takes <code>int arr[]</code>. What does it really receive?", options: ["A copy of the array", "A pointer to the first element", "The array and its length"], answer: 1, why: "The name of an array stands for its address. Changes are seen by the caller, and the length must be passed separately." },
+}`, predict: true, caption: 'Prints 10, 20, 8. First sum adds 1 + 2 + 3 + 4 = 10. doubleAll returns nothing, yet the second sum is 20 and data[3] is 8: the array was never copied, only its address, so doubleAll changed main’s own elements. Change doubleAll to add 1 instead of doubling and predict the three numbers first.' },
+        { check: "A function takes <code>int arr[]</code>. What does it really receive?", options: ["A copy of the array", "A pointer to the first element", "The array and its length"], answer: 1, why: "The name of an array stands for its address. Changes are seen by the caller, and the length must be passed separately.", wrong: ["Copying a whole array on every call would be slow, so C++ does not do it. The function gets only the address, and changes it makes are seen by the caller.",null,"An address carries no length at all. That is why the length has to be passed as a separate parameter."] },
         `<p>Passing <code>n</code> separately has a useful side effect: a function can work on just the first <code>n</code> elements of a larger array. The next example reads a count and then that many values into an array with room for 100, a common shape when the amount of input is not known in advance.</p>`,
         { play: `#include <iostream>
 using namespace std;
@@ -1149,7 +1149,7 @@ int main() {
     return 0;
 }`, stdin: '5\n3 17 4 12 9', caption: 'The first number of input is the count. The loop that walks backwards starts at n - 1, the last filled element, and stops after 0. What would happen if the input said 150?' },
         `<h2>Before the exercises</h2>
-<p>Both exercises are functions that receive an array and its length. The first is an accumulator over the elements, like <code>sum</code>, but keeping the largest so far instead of a total; start it at <code>arr[0]</code>, never at 0, or an array of negative numbers would report 0, a value it does not even contain. The second pairs up elements from the two ends of the array. Here is a worked example of that pairing: a function that checks whether an array reads the same forwards and backwards.</p>`,
+<p>Both exercises are functions that receive an array and its length. The first is an accumulator over the elements, like <code>sum</code>, but keeping the largest so far instead of a total; start it at <code>arr[0]</code>, never at 0, or an array of negative numbers would report 0, a value it does not even contain. The second pairs up elements from the two ends of the array. Here is a worked example of that pairing: a function that checks whether an array reads the same forwards and backwards. Predict what it prints for the two arrays.</p>`,
         { play: `#include <iostream>
 using namespace std;
 
@@ -1167,7 +1167,7 @@ int main() {
     int b[4] = {1, 2, 2, 3};
     cout << isPalindrome(a, 5) << " " << isPalindrome(b, 4) << endl;
     return 0;
-}`, caption: 'Prints 1 0. Element 0 pairs with n - 1, element 1 with n - 2, and so on; for n = 5 the middle element, 2, pairs with itself and needs no check. The loop stops at the middle, i < n / 2.' },
+}`, predict: true, caption: 'Prints 1 0. In {1, 2, 3, 2, 1}, element 0 pairs with element 4, element 1 with element 3, and the middle element, 3, pairs with itself and needs no check; every pair matches, so it prints 1 (true). In {1, 2, 2, 3}, element 0 (1) already differs from element 3 (3), so it returns false at once and prints 0. The loop stops at the middle, i < n / 2. Change b to {1, 2, 2, 1} and predict again.' },
         { aside: `<p><b>Common mistakes in this lesson.</b> <code>arr[n]</code> when the last element is <code>arr[n - 1]</code>, or <code>i &lt;= n</code> in a loop. Assuming a real compiler will catch an index out of range: it will not. Leaving elements without starting values. Trying to copy an array with <code>=</code>. Forgetting to pass the length, or passing the wrong one. Declaring <code>int a[n]</code> with a variable <code>n</code>: this site allows it, standard C++ does not, so use a constant maximum. Starting a "largest so far" at 0.</p>` },
         {
           ex: {
@@ -1183,7 +1183,8 @@ int main() {
               { setup: '    int a[6] = {1, 2, 3, 4, 5, 6};', call: 'largest(a, 6)', expect: '6' },
               { setup: '    int a[5] = {1, 2, 3, 99, 100};', call: 'largest(a, 4)', expect: '99' }
             ],
-            failTip: 'The last test passes n = 4 for an array of five: only the first n elements count. If the all-negative test fails, best started at 0 instead of arr[0].'
+            failTip: 'The last test passes n = 4 for an array of five: only the first n elements count. If the all-negative test fails, best started at 0 instead of arr[0].',
+            followup: 'Change largest so that it returns the index of the largest element instead of its value (keep best as an index and compare arr[i] with arr[best]). Which index should it return if the largest value appears twice?'
           }
         },
         {
@@ -1206,6 +1207,7 @@ int main() {
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
+<li>The opening question: a program that reaches for an element that is not there gets no error. It reads or changes whatever memory lies beyond the array, which is undefined behaviour.</li>
 <li><code>int a[N]</code> is <i>N</i> ints side by side, <code>a[0]</code> to <code>a[N - 1]</code>, with <i>N</i> a constant; give every element a starting value.</li>
 <li>C++ does not check indexes. Going out of range is undefined behaviour and has caused famous security holes: write <code>i &lt; N</code> and think about every index.</li>
 <li>An array's name stands for the address of its first element; <code>a[i]</code> is <code>*(a + i)</code>, found in one step, which is why indexes start at 0.</li>
@@ -1217,9 +1219,9 @@ int main() {
     /* ================================================================== */
     {
       standards: ['3A-DA-09', '3B-AP-12'],
-      title: 'Characters and strings', summary: 'Text as numbers, and a string as an array of char with a zero at the end: walking it, building it, comparing it, and sending a secret message.',
+      title: 'Characters and strings', standard: 1, summary: 'Text as numbers, and a string as an array of char with a zero at the end: walking it, building it, comparing it, and sending a secret message.',
       blocks: [
-        `<p>Inside a computer there are no letters, only numbers. The word <code>Hi!</code> is stored as the three numbers 72, 105 and 33, followed by a 0 that says "the text stops here". This lesson is about that one design decision, made for the C language in the early 1970s and inherited by C++: how it makes text simple, how it makes text dangerous, and how to work with it one character at a time. At the end you will write a function that turns messages into secret code.</p>
+        `<p>Inside a computer there are no letters, only numbers. The word <code>Hi!</code> is stored as the three numbers 72, 105 and 33, followed by a 0 that says "the text stops here". This lesson is about that one design decision, made for the C language in the early 1970s and inherited by C++: how it makes text simple, how it makes text dangerous, and how to work with it one character at a time. At the end you will write a function that turns messages into secret code. But first: if a computer holds only numbers, how does it know where a word stops?</p>
 <h2>Characters are numbers</h2>
 <div class="stmt"><p><span class="kind">Rule (characters).</span> A <code>char</code> holds one character as its code, a small integer. In single quotes, <code>'A'</code> is a <code>char</code> whose value is 65. The codes of <code>'a'</code> to <code>'z'</code> are consecutive, as are those of <code>'A'</code> to <code>'Z'</code> and of <code>'0'</code> to <code>'9'</code> (Lesson 2). Arithmetic on a <code>char</code> is arithmetic on its code, and <code>(char)</code> turns a number back into a character.</p></div>`,
         { play: `#include <iostream>
@@ -1233,10 +1235,10 @@ int main() {
     char lower = 'g';
     cout << (char) (lower - 'a' + 'A') << endl;                // the capital of g
     return 0;
-}`, caption: 'Prints A has code 65, then BC, then 25, then G. The last line moves g from the lower-case range to the same place in the capital range: that one idea handles every letter.' },
-        { check: "What is <code>'7' - '0'</code>?", options: ["The char 7", "The int 7", "0"], answer: 1, why: "Digit characters have consecutive codes, so subtracting '0' gives the digit's value as a number." },
-        `<details class="reveal"><summary>Predict: what are <code>'7' - '0'</code> and <code>'a' - 'A'</code>?</summary><p><code>7</code>: the digit characters are consecutive, so subtracting <code>'0'</code> turns a digit character into its value. And <code>32</code>: every lower-case letter's code is 32 more than its capital's. You never need to memorise the codes; subtracting a known character gives you the distance.</p></details>
-<h2>Strings: an array with a marker at the end</h2>
+}`, predict: true, caption: 'Prints A has code 65, then BC, then 25, then G. (char) (c + 1) is the character whose code is one more than A’s, so B, and then C. \'z\' - \'a\' is the distance between the two codes, 25. The last line moves g from the lower-case range to the same place in the capital range, G: that one idea handles every letter. Change lower to another letter and predict the result first.' },
+        { check: "What is <code>'7' - '0'</code>?", options: ["The char 7", "The int 7", "0"], answer: 1, why: "Digit characters have consecutive codes, so subtracting '0' gives the digit's value as a number.", wrong: ["Arithmetic on chars gives an int, so the result is the number 7, not a character. That is what lets you use it in sums and as an index.",null,"'0' is the character whose code is 48, not the number 0. Subtracting it from '7' gives the distance between the two codes, which is 7."] },
+        `<details class="reveal"><summary>Predict: what are <code>'7' - '0'</code> and <code>'a' - 'A'</code>?</summary><p><code>7</code>: the digit characters are consecutive, so subtracting <code>'0'</code> turns a digit character into its value. And <code>32</code>: every lower-case letter's code is 32 more than its capital's. You never need to memorise the codes; subtracting a known character gives you the distance.</p></details>`,
+`<h2>Strings: an array with a marker at the end</h2>
 <div class="stmt"><p><span class="kind">Rule (C strings).</span> A string is an array of <code>char</code> holding the characters in order, followed by the character with code 0, written <code>'\\0'</code> and called the <em>null terminator</em>. A string literal in double quotes is exactly this: <code>"cat"</code> occupies four <code>char</code>s, and the fourth is <code>'\\0'</code>. <code>char word[] = "cat";</code> declares an array of four <code>char</code>s holding it.</p></div>
 <p>The terminator is how every piece of code knows where the text ends without being told its length: walk the array until you meet <code>'\\0'</code>. Notice the two kinds of quotes: <code>'a'</code> is one <code>char</code>, but <code>"a"</code> is an array of two, the letter and the terminator.</p>`,
         { play: `#include <iostream>
@@ -1257,10 +1259,10 @@ int main() {
     word[0] = 'j';                         // an ordinary array: change it
     cout << word << endl;
     return 0;
-}`, caption: 'Prints hello, ho, 0, length 5, jello. A string is an ordinary array, so indexing, changing and looping all work as in Lesson 6.' },
-        { check: "How many chars does <code>char w[] = \"cat\";</code> occupy?", options: ["3", "4: the three letters and the terminator '\\0'", "5"], answer: 1, why: "A C string ends with the null character. Leave room for it in every array you build." },
-        `<details class="reveal"><summary>Predict: how many <code>char</code>s does <code>char s[] = "Ojibwe";</code> occupy, and what is <code>s[6]</code>?</summary><p>Seven: six letters and the terminator, and <code>s[6]</code> is the terminator, <code>'\\0'</code>. The length of the text, 6, is always one less than the size of the array that holds it.</p></details>
-<h2>Reading and building strings</h2>
+}`, predict: true, caption: 'Prints hello, ho, 0, length 5, jello. cout prints a char array up to its terminator. word[0] and word[4] are h and o, and (int) word[5] is 0: the terminator is the sixth cell, because hello has five letters. The while loop counts letters until it meets it. Then word[0] = \'j\' changes an ordinary array element, so the string becomes jello. A string is an ordinary array, so indexing, changing and looping all work as in Lesson 6.' },
+        { check: "How many chars does <code>char w[] = \"cat\";</code> occupy?", options: ["3", "4: the three letters and the terminator '\\0'", "5"], answer: 1, why: "A C string ends with the null character. Leave room for it in every array you build.", wrong: ["Three counts only the letters. The string also holds the terminator '\\0', so the array needs a fourth cell, and an array of exactly 3 would have no room for it.",null,"Five has no basis: the array holds the letters and one terminator, nothing more. Count the letters, then add one."] },
+        `<details class="reveal"><summary>Predict: how many <code>char</code>s does <code>char s[] = "Ojibwe";</code> occupy, and what is <code>s[6]</code>?</summary><p>Seven: six letters and the terminator, and <code>s[6]</code> is the terminator, <code>'\\0'</code>. The length of the text, 6, is always one less than the size of the array that holds it.</p></details>`,
+`<h2>Reading and building strings</h2>
 <p><code>cin &gt;&gt; word</code> reads one word, up to the first space, into a <code>char</code> array and adds the terminator for you. The array must be big enough for the longest possible word <em>plus one</em>. A longer word spills past the end of the array: this is the <em>buffer overflow</em> from Lesson 6, and reading text is the classic way it happens.</p>
 <p>When you build a string yourself, you must put the terminator on yourself. Here is a word reversed, and its vowels counted.</p>`,
         { play: `#include <iostream>
@@ -1269,17 +1271,14 @@ using namespace std;
 int main() {
     char word[30];
     cin >> word;
-
     int len = 0;
     while (word[len] != '\\0') len++;
-
     char reversed[30];
     for (int i = 0; i < len; i++) {
         reversed[i] = word[len - 1 - i];     // Lesson 6's pairing: i with len - 1 - i
     }
     reversed[len] = '\\0';                    // do not forget this
     cout << reversed << endl;
-
     int vowels = 0;
     for (int i = 0; i < len; i++) {
         char c = word[i];
@@ -1289,9 +1288,10 @@ int main() {
     }
     cout << vowels << " vowels" << endl;
     return 0;
-}`, stdin: 'stressed', caption: 'stressed reversed is desserts. On this site, leaving out the terminator line happens to work, because the unused cells hold zeros; on a real computer they hold whatever was there before, and cout keeps printing garbage until it happens to meet a zero.' },
+}`, stdin: 'stressed', predict: true, caption: 'stressed reversed is desserts, and it has 2 vowels, the two e’s. Each reversed[i] takes the letter from the opposite end, Lesson 6’s pairing. On this site, leaving out the terminator line happens to work, because the unused cells hold zeros; on a real computer they hold whatever was there before, and cout keeps printing garbage until it happens to meet a zero.' },
         `<h2>The cstring library, and why == does not compare strings</h2>
 <p>The header <code>&lt;cstring&gt;</code> provides <code>strlen</code>, the length, and <code>strcmp</code>, which compares two strings in dictionary order: negative if the first comes first, 0 if they are equal, positive if the first comes later. There is no magic in them. They are loops that stop at the terminator, exactly like the one you just wrote.</p>`,
+        `<details class="reveal"><summary>Guess first: <code>a</code> and <code>c</code> below both hold <code>"apple"</code>. Is <code>a == c</code> true or false?</summary><p>False, which surprises almost everyone. The two arrays are two different places in memory, and <code>==</code> compares their addresses, not their letters. The program prints 0 for it, and uses <code>strcmp</code> to compare the text.</p></details>`,
         { play: `#include <iostream>
 #include <cstring>
 using namespace std;
@@ -1306,7 +1306,7 @@ int main() {
     cout << (a == c) << endl;           // 0: two different arrays!
     return 0;
 }`, caption: 'a and c hold the same text, yet a == c is false. By Lesson 6\u2019s rule the name of an array stands for its address, so == asks "are these the same array?", and they are not. strcmp compares the characters.' },
-        { check: "Two char arrays hold the same text. What does <code>a == c</code> compare?", options: ["The characters", "The addresses of the two arrays, so it is false", "The lengths"], answer: 1, why: "An array name stands for its address. Use strcmp to compare text." },
+        { check: "Two char arrays hold the same text. What does <code>a == c</code> compare?", options: ["The characters", "The addresses of the two arrays, so it is false", "The lengths"], answer: 1, why: "An array name stands for its address. Use strcmp to compare text.", wrong: ["== never looks inside an array. An array name stands for its address, so it compares where the arrays are, and two separate arrays are never in the same place. Use strcmp for text.",null,"== does not look at lengths either; it compares two addresses. Two arrays of the same length still compare false."] },
         `<p>This is the single most common string bug in C and C++: <code>if (answer == "yes")</code> compiles, and is always false. Compare text with <code>strcmp(answer, "yes") == 0</code>.</p>
 <p>Modern C++ also has <code>std::string</code>, which manages its own memory, knows its length, grows as needed, and does compare with <code>==</code>. It is what you should use in real programs; the interpreter here does not include it. It is built on exactly the ideas of this lesson, and a great deal of existing code, including every operating system, still works with character arrays directly.</p>
 <h2>Before the exercises</h2>
@@ -1327,7 +1327,7 @@ int main() {
     toUpper(msg);
     cout << msg << endl;
     return 0;
-}`, caption: 'Prints MEET ME AT 3PM!. Digits, spaces and punctuation fail the range test and are left alone. The array is changed in place, because an array parameter is a pointer (Lesson 6).' },
+}`, predict: true, caption: 'Prints MEET ME AT 3PM!. Every lower-case letter moves into the capital range. The digit 3, the spaces and the ! fail the range test and are left alone. The array is changed in place, because an array parameter is a pointer (Lesson 6). Change msg and predict the result first.' },
         `<p>The secret-message exercise uses the same range test, plus one more idea. A shift of 3 moves <code>x</code> to <code>a</code>, wrapping round the end of the alphabet. Work with the letter's position <code>p = text[i] - 'a'</code>, from 0 to 25. The shifted position is <code>(p + k) % 26</code>, which wraps round because remainders mod 26 go 24, 25, 0, 1, … (the mathematics course's Lesson 4 calls this arithmetic modulo 26). Then turn the position back into a letter by adding <code>'a'</code>.</p>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> Forgetting the terminator when building a string by hand. Making an array exactly as long as the text, with no room for the terminator. Comparing strings with <code>==</code>, which compares addresses. Mixing up <code>'a'</code>, one <code>char</code>, and <code>"a"</code>, an array of two. Changing characters that are not letters when only letters should change. Forgetting the <code>% 26</code>, so letters near the end of the alphabet shift into punctuation.</p>` },
         {
@@ -1367,6 +1367,7 @@ int main() {
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
+<li>The opening question: a computer keeps text as numbers, one code for each letter, and marks the end of a string with a zero, so any code that walks a string knows where to stop.</li>
 <li>A <code>char</code> is a small number; letters and digits have consecutive codes, so <code>c - 'a'</code> is a letter's position and <code>'7' - '0'</code> is 7.</li>
 <li>A C string is a <code>char</code> array ending in <code>'\\0'</code>; <code>"cat"</code> needs four <code>char</code>s. Walk it until the terminator, and put one on any string you build.</li>
 <li><code>cin &gt;&gt;</code> into an array that is too small overflows it.</li>
@@ -1378,9 +1379,9 @@ int main() {
     /* ================================================================== */
     {
       standards: ['2-AP-17', '3A-CS-03', '3B-AP-18'],
-      title: 'Finding and fixing bugs', summary: 'Three kinds of wrong, reading compiler errors, the bugs C++ lets you make, and debugging as an experiment: reproduce, shrink, hypothesise, test, with a moth and an exploding rocket along the way.',
+      title: 'Finding and fixing bugs', standard: 1, summary: 'Three kinds of wrong, reading compiler errors, the bugs C++ lets you make, and debugging as an experiment: reproduce, shrink, hypothesise, test, with a moth and an exploding rocket along the way.',
       blocks: [
-        `<p>On 9 September 1947, engineers working on the Harvard Mark II computer found that a relay had stopped working. Inside it was a moth. They taped it into the logbook with the note "First actual case of bug being found", and the word stuck, although engineers had called faults "bugs" for decades before that. Since then, every programmer has spent more time finding bugs than writing new code. This lesson is about doing that calmly and systematically: knowing which kind of bug you are facing, reading what the compiler tells you, recognising the bugs that C++ lets through, and hunting the rest down like a scientist.</p>`,
+        `<p>On 9 September 1947, engineers working on the Harvard Mark II computer found that a relay had stopped working. Inside it was a moth. They taped it into the logbook with the note "First actual case of bug being found", and the word stuck, although engineers had called faults "bugs" for decades before that. Since then, every programmer has spent more time finding bugs than writing new code. This lesson is about doing that calmly and systematically: knowing which kind of bug you are facing, reading what the compiler tells you, recognising the bugs that C++ lets through, and hunting the rest down like a scientist. So when a program gives the wrong answer and no message at all, how do you find the one line to blame?</p>`,
         { photo: 'first-computer-bug', caption: 'The page from the Mark II logbook, with the moth still taped to it. The entry at 15:45 reads "Relay #70 Panel F (moth) in relay". The page is now at the Smithsonian\'s National Museum of American History.' },
         `<h2>Three kinds of wrong</h2>
 <div class="tbl-wrap"><table>
@@ -1404,7 +1405,7 @@ int main() {
     cout << "sum: " << total << endl;
     return 0;
 }`, expectError: true, caption: 'Two errors. The first message points at line 6, but the mistake, a missing semicolon, is at the end of line 5 (Rule 2). Fix it, run again, and the second error appears: totl was never declared. Fix that too.' },
-        { check: "The compiler reports an error on line 6. Where should you look first?", options: ["Line 6 only", "Line 6 and the line above it", "The last line"], answer: 1, why: "A missing semicolon or bracket is noticed only when the compiler reaches the next line. And fix the first error only, then compile again." },
+        { check: "The compiler reports an error on line 6. Where should you look first?", options: ["Line 6 only", "Line 6 and the line above it", "The last line"], answer: 1, why: "A missing semicolon or bracket is noticed only when the compiler reaches the next line. And fix the first error only, then compile again.", wrong: ["The compiler reports where it got confused, which is not always where the mistake is. A missing semicolon is only noticed on the next line, so the real mistake is often on the line above.",null,"The last line is where you stop reading, not where the fault is. The report names a line, and the cause is on it or just before it."] },
         `<h2>Bugs that compile</h2>
 <p>These are the C++ classics. Every one of them compiles without complaint, and you have met most of them already.</p>
 <div class="tbl-wrap"><table>
@@ -1445,11 +1446,11 @@ int main() {
     return 0;
 }`, expectError: true, caption: 'This site reports the overflow. A real compiler accepts the line, perhaps with a warning, and the result is a meaningless number. A type is a promise about a range of values; the bug is a value that breaks the promise.' },
         { photo: 'ariane-501-fragment', caption: 'Wreckage recovered after the Ariane 501 launch: a scorched part of the structure that held the satellites the rocket was carrying.' },
-        { check: "An int holds 2,147,483,647 and 1 is added, in a real program. What happens?", options: ["An error message", "Silent overflow: a meaningless number, perhaps −2,147,483,648", "It becomes a long"], answer: 1, why: "Overflow compiles and runs. Ariane 5 was lost to one. Use a wider type for big values." },
+        { check: "An int holds 2,147,483,647 and 1 is added, in a real program. What happens?", options: ["An error message", "Silent overflow: a meaningless number, perhaps −2,147,483,648", "It becomes a long"], answer: 1, why: "Overflow compiles and runs. Ariane 5 was lost to one. Use a wider type for big values.", wrong: ["That is what this site does, but a real C++ program says nothing: overflow is silent. A program that never complains can still be wrong.",null,"An int stays an int. Adding 1 does not change its type or give it more room; the value just wraps round. To hold bigger numbers you must declare a long or long long yourself."] },
         `<h2>Debugging is an experiment</h2>
 <p>When a program runs and gives the wrong answer, staring at the code and changing things at random rarely works. What works is the method of a scientist: form a guess about where the fault is, design an experiment that could prove the guess wrong, and run it.</p>
 <div class="stmt"><p><span class="kind">The debugging loop.</span> 1. <em>Reproduce</em> the bug: find an input that makes it happen every time. 2. <em>Shrink</em> the input until it is as small as possible while still failing, small enough to work out the right answer by hand. 3. <em>Hypothesise</em>: say exactly where you think the program first goes wrong. 4. <em>Test</em> the hypothesis by printing the values at that point. 5. <em>Fix</em> the fault, then run all your earlier tests again, to make sure the fix broke nothing else.</p></div>
-<p>The tool for step 4 is <code>cout</code>. Print the values you believe are right at the points where you believe they are still right. The bug lies between the last print that looks correct and the first that looks wrong.</p>`,
+<p>The tool for step 4 is <code>cout</code>. Print the values you believe are right at the points where you believe they are still right. The bug lies between the last print that looks correct and the first that looks wrong. Read the function below and predict what it prints, debugging lines included.</p>`,
         { play: `#include <iostream>
 using namespace std;
 
@@ -1468,23 +1469,18 @@ int main() {
     int data[4] = {2, 4, 5, 6};
     cout << countEvens(data, 4) << endl;
     return 0;
-}`, caption: 'The answer should be 3 but it prints 2. The debugging print shows which element is never looked at. Fix the bug, run, then delete the print.' },
-        `<details class="reveal"><summary>Predict: a function has 64 lines, and a debugging print placed after any line can tell you whether things are still right there. If you always put the next print in the middle of the lines still under suspicion, how many prints do you need, at most, to find the first wrong line?</summary><p>Six. Each print cuts the suspect region in half: 64, 32, 16, 8, 4, 2, 1. This is binary search, which C++ Lesson 10 turns into an algorithm, and it is why debugging a huge program is less hopeless than it sounds: a million lines need only about twenty well-placed experiments.</p></details>
-<p>One more technique sounds silly and works astonishingly often. Explain the code, line by line and out loud, to someone who knows nothing about it, or even to a rubber duck on your desk. Having to say what each line does forces you to notice the line that does not do what you meant. Programmers really do call this <em>rubber duck debugging</em>.</p>
+}`, predict: true, caption: 'Prints looking at arr[1] = 4, arr[2] = 5, arr[3] = 6, and then 2, though the right answer is 3. The prints show that arr[0], the first 2, is never looked at: the loop starts at i = 1, so the first even number is missed. That is the hypothesis, confirmed by a test. Change i = 1 to i = 0, run it again, then delete the print.' },
+        `<details class="reveal"><summary>Predict: a function has 64 lines, and a debugging print placed after any line can tell you whether things are still right there. If you always put the next print in the middle of the lines still under suspicion, how many prints do you need, at most, to find the first wrong line?</summary><p>Six. Each print cuts the suspect region in half: 64, 32, 16, 8, 4, 2, 1. This is binary search, which C++ Lesson 10 turns into an algorithm, and it is why debugging a huge program is less hopeless than it sounds: a million lines need only about twenty well-placed experiments.</p></details>`,
+`<p>One more technique sounds silly and works astonishingly often. Explain the code, line by line and out loud, to someone who knows nothing about it, or even to a rubber duck on your desk. Having to say what each line does forces you to notice the line that does not do what you meant. Programmers really do call this <em>rubber duck debugging</em>.</p>
 <h2>Catching bugs before they hide</h2>
 <p>The cheapest bug is the one a test finds the moment you write it. Real C++ has an <code>assert</code> for this; the interpreter on this site does not include it, so here is a homemade version, a function that counts passing checks and reports failing ones. Choose tests on purpose: an ordinary case, and the <em>edge cases</em> where bugs live, such as 0, 1, a negative number, an empty range, or a value exactly on a boundary.</p>`,
         { play: `#include <iostream>
 using namespace std;
 
 int passed = 0, failed = 0;
-
 void check(bool ok, const char* what) {
-    if (ok) {
-        passed++;
-    } else {
-        failed++;
-        cout << "FAILED: " << what << endl;
-    }
+    if (ok) { passed++; }
+    else { failed++; cout << "FAILED: " << what << endl; }
 }
 
 int sumTo(int n) {                 // should be 1 + 2 + ... + n
@@ -1502,12 +1498,12 @@ int main() {
     check(sumTo(100) == 5050, "the sum up to 100 should be 5050");
     cout << passed << " passed, " << failed << " failed" << endl;
     return 0;
-}`, caption: 'Three of the four checks fail, and the one that passes, sumTo(0), is exactly the case that cannot see the bug. The edge case sumTo(1) points straight at it. Fix the loop condition and run the checks again.' },
-        { check: "Which test is most likely to catch a bug in a loop?", options: ["A typical middle value", "An edge case: 0, 1, the last element, an empty input", "A very large value"], answer: 1, why: "Off-by-one and empty-input bugs live at the edges. A test that passes either way cannot see the bug." },
+}`, predict: true, caption: 'Prints FAILED: the sum up to 1 should be 1, FAILED: the sum up to 4 should be 10, FAILED: the sum up to 100 should be 5050, then 1 passed, 3 failed. The loop condition i < n stops one short, so every sum misses n itself. The one check that passes, sumTo(0), is exactly the case that cannot see the bug; the edge case sumTo(1) points straight at it. Fix the loop condition and run the checks again.' },
+        { check: "Which test is most likely to catch a bug in a loop?", options: ["A typical middle value", "An edge case: 0, 1, the last element, an empty input", "A very large value"], answer: 1, why: "Off-by-one and empty-input bugs live at the edges. A test that passes either way cannot see the bug.", wrong: ["A typical value is the one you already tried while writing the code, so it nearly always passes. Off-by-one bugs live at the edges, where a middle value cannot see them.",null,"A huge value can find overflow, but the most common loop bugs show up at the smallest cases: 0, 1 and the last element. Try those first."] },
         `<h2>Why this site is kinder than a real compiler</h2>
 <p>Reading past an array, using an uninitialised variable and overflowing an <code>int</code> are <em>undefined behaviour</em> in real C++: the language makes no promise about what happens. Often nothing visible goes wrong, until the day it does. The interpreter on this site stops and tells you. When you move to a real compiler, ask it to tell you too: <code>g++ -Wall -Wextra</code> turns on many warnings, and <code>-fsanitize=address,undefined</code> makes the program check itself while it runs, much as this site does.</p>
 <h2>Before the exercises</h2>
-<p>The first exercise is all compile errors: apply the two rules, one error at a time. The second has two logic errors in a function that compiles and runs. Use the loop: work out the right answer for a small input by hand, predict what the buggy code returns, and let the difference tell you where to look. Here is the method on a different function, which should return the largest of the first <code>n</code> elements.</p>`,
+<p>The first exercise is all compile errors: apply the two rules, one error at a time. The second has two logic errors in a function that compiles and runs. Use the loop: work out the right answer for a small input by hand, predict what the buggy code returns, and let the difference tell you where to look. Here is the method on a different function, which should return the largest of the first <code>n</code> elements. Predict what it prints for the two arrays.</p>`,
         { play: `#include <iostream>
 using namespace std;
 
@@ -1526,7 +1522,7 @@ int main() {
     int b[3] = {-5, -2, -9};             // a small input where the answer is known: -2
     cout << largest(a, 3) << " " << largest(b, 3) << endl;
     return 0;
-}`, caption: 'It prints 9 0. The ordinary test passes and the edge case fails, which confirms the hypothesis: 0 is not in the array at all. The fix is best = arr[0], as in Lesson 6.' },
+}`, predict: true, caption: 'Prints 9 0. For {3, 9, 2} the answer 9 is right whatever best starts at. For {-5, -2, -9} the right answer is -2, but best starts at 0 and no element beats 0, so it returns 0, a value that is not in the array at all. The ordinary test passes and the edge case fails, which confirms the hypothesis. The fix is best = arr[0], as in Lesson 6.' },
         { aside: `<p><b>A debugging checklist.</b> Fix the first compiler error, then compile again. Check the line above the one reported. Reproduce the bug, then shrink the input until you can work out the right answer by hand. Say where you think it goes wrong, then print the values there to find out. Change one thing at a time, and run all your tests after every change. Initialise everything. Test the edge cases: 0, 1, negative, empty, on the boundary.</p>` },
         {
           ex: {
@@ -1561,6 +1557,7 @@ int main() {
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
+<li>The opening question: to find the line to blame, do not stare and guess. Reproduce the bug, shrink the input, say where you think it goes wrong, and print the values there to find out.</li>
 <li>Compile errors, runtime errors and logic errors are found in that order of ease; testing turns hidden logic errors into visible failures.</li>
 <li>Fix the first compiler error, then compile again; look at the reported line and the one above.</li>
 <li>Integer division, uninitialised variables, <code>=</code> for <code>==</code>, off-by-one, overflow and <code>==</code> on strings all compile. Overflow brought down Ariane 5.</li>
@@ -1572,12 +1569,13 @@ int main() {
     /* ================================================================== */
     {
       standards: ['2-DA-09', '3A-DA-12', '3B-DA-07', '6.1.2.3', '7.1.2.2', '7.1.2.5'],
-      title: 'Randomness and simulation', summary: 'Where a computer\u2019s random numbers come from, how to shape them into dice and coins, seeds, why more trials help only slowly, and estimating chances (and \u03c0) by simulation.',
+      title: 'Randomness and simulation', standard: 1, summary: 'Where a computer\u2019s random numbers come from, how to shape them into dice and coins, seeds, why more trials help only slowly, and estimating chances (and \u03c0) by simulation.',
       blocks: [
         `<p>In 1946 the mathematician Stanisław Ulam was recovering from an illness and passing the time with games of solitaire. He wondered what the chance was that a game would come out, tried to calculate it, and gave up: the combinations were hopeless. Then he had a better idea. Why not just play a hundred games and count how many came out? With the new electronic computers, you could play thousands. His colleagues named the method after the casino at Monte Carlo, and it was soon being used to design nuclear reactors. Today <em>Monte Carlo simulation</em> prices insurance, forecasts weather and elections, and plans rocket launches. This lesson builds it from the bottom: where a computer gets random numbers at all, how to turn them into dice and coins, and how much to trust what a simulation tells you.</p>`,
         { photo: 'dice-pile', caption: 'Dice: the simplest machine for making random choices. A Monte Carlo program throws its dice millions of times, one random number for each throw, and lets the average of what happens answer a question too hard to work out exactly.' },
         `<h2>Numbers that only look random</h2>
 <p>A computer follows instructions exactly, so it cannot really produce chance. What it produces instead are <em>pseudorandom</em> numbers: a sequence computed by a fixed rule, designed so that it looks random. Here is a small generator of the kind used for decades, a <em>linear congruential generator</em>: multiply the last number by a constant, add another constant, and keep the remainder (mathematics course, Lesson 4). These particular constants are the ones the 1981 Sinclair ZX81 home computer used.</p>`,
+        `<details class="reveal"><summary>Guess first: if you run the program below twice, will it print the same eight numbers both times? And what if the starting state is 2?</summary><p>Yes, the same eight both times: the rule and the seed decide everything, and nothing is left to chance. Starting from 2 gives a different sequence, but again the same one every time. That is what <em>pseudo</em> means.</p></details>`,
         { play: `#include <iostream>
 using namespace std;
 
@@ -1611,11 +1609,12 @@ int main() {
     cout << rand() % 2 << endl;         // a coin: 0 or 1
     return 0;
 }`, caption: 'Run it several times: the same four numbers every time, because the seed never changes. That is not a bug in rand; it is the rule.' },
-        { check: "What does <code>rand() % 6</code> give?", options: ["1 to 6", "0 to 5", "1 to 5"], answer: 1, why: "The remainder of division by 6 is 0 to 5. For a die, add 1: rand() % 6 + 1." },
-        `<details class="reveal"><summary>Predict: what values can <code>rand() % 10 + 5</code> produce? And how would you get a random number from −3 to 3?</summary><p>5 to 14: <code>% 10</code> gives 0 to 9, then add 5. For −3 to 3 there are seven values starting at −3, so <code>rand() % 7 - 3</code>. Counting the values first, then choosing the starting point, avoids off-by-one mistakes.</p></details>
-<p>One subtlety, for the careful. The remainder trick is very slightly unfair unless <code>RAND_MAX + 1</code> is a multiple of <i>n</i>. Imagine a tiny generator whose <code>RAND_MAX</code> is 7, giving 0 to 7, used with <code>% 3</code>: the remainders of 0, 1, …, 7 are 0, 1, 2, 0, 1, 2, 0, 1, so 0 and 1 each come up three times in eight and 2 only twice. With the real <code>RAND_MAX</code> the imbalance for a die is about one part in 350 million, far too small to matter in a game, but a program that shuffles cards for real money must use a more careful method.</p>
+        { check: "What does <code>rand() % 6</code> give?", options: ["1 to 6", "0 to 5", "1 to 5"], answer: 1, why: "The remainder of division by 6 is 0 to 5. For a die, add 1: rand() % 6 + 1.", wrong: ["That is what a die needs, but % 6 alone gives the remainders 0 to 5 and never 6. Add 1 to shift the range to 1 to 6.",null,"The remainders of division by 6 include 0, and 5 is the largest. There are six values, not five: 0, 1, 2, 3, 4, 5."] },
+        `<details class="reveal"><summary>Predict: what values can <code>rand() % 10 + 5</code> produce? And how would you get a random number from −3 to 3?</summary><p>5 to 14: <code>% 10</code> gives 0 to 9, then add 5. For −3 to 3 there are seven values starting at −3, so <code>rand() % 7 - 3</code>. Counting the values first, then choosing the starting point, avoids off-by-one mistakes.</p></details>`,
+`<p>One subtlety, for the careful. The remainder trick is very slightly unfair unless <code>RAND_MAX + 1</code> is a multiple of <i>n</i>. Imagine a tiny generator whose <code>RAND_MAX</code> is 7, giving 0 to 7, used with <code>% 3</code>: the remainders of 0, 1, …, 7 are 0, 1, 2, 0, 1, 2, 0, 1, so 0 and 1 each come up three times in eight and 2 only twice. With the real <code>RAND_MAX</code> the imbalance for a die is about one part in 350 million, far too small to matter in a game, but a program that shuffles cards for real money must use a more careful method.</p>
 <h2>Seeds</h2>
 <p>A fixed seed means a fixed sequence. That is a nuisance in a game, where every player would get the same dice, and a gift when debugging, because a bug happens the same way every time. Real programs seed from the clock with <code>srand(time(0))</code>, after <code>#include &lt;ctime&gt;</code>, so that each run starts somewhere different.</p>`,
+        `<details class="reveal"><summary>Guess first: the program below calls <code>srand(42)</code>, prints three numbers, calls <code>srand(42)</code> again and prints three more, then calls <code>srand(7)</code>. Which lines will match?</summary><p>The first two lines are identical, because the same seed replays the same sequence. The third line, from seed 7, is different (though two numbers could match by chance).</p></details>`,
         { play: `#include <iostream>
 #include <cstdlib>
 using namespace std;
@@ -1629,9 +1628,10 @@ int main() {
     cout << rand() % 100 << " " << rand() % 100 << " " << rand() % 100 << endl;
     return 0;
 }`, caption: 'The same seed replays the same sequence; a different seed gives a different one. Add #include &lt;ctime&gt; and srand(time(0)), and each run differs.' },
-        { check: "Why does a program that never calls <code>srand</code> print the same \"random\" numbers every run?", options: ["A bug in rand", "The seed is always the same, so the sequence is the same", "The compiler caches them"], answer: 1, why: "The numbers are pseudorandom: a fixed rule applied from a seed. srand(time(0)) seeds from the clock." },
+        { check: "Why does a program that never calls <code>srand</code> print the same \"random\" numbers every run?", options: ["A bug in rand", "The seed is always the same, so the sequence is the same", "The compiler caches them"], answer: 1, why: "The numbers are pseudorandom: a fixed rule applied from a seed. srand(time(0)) seeds from the clock.", wrong: ["rand is working as designed. Pseudorandom numbers are a fixed rule applied from a seed, so the same seed gives the same numbers: they are not truly random.",null,"Nothing is stored between runs. rand computes its sequence afresh each time, and from the same starting seed it computes the same numbers."] },
         `<h2>How much can you trust a simulation?</h2>
 <p>A fair die shows each face with probability 1/6. Roll it 60 times and a face will rarely come up exactly 10 times; roll it 6000 times and each face comes up close to 1000 times, as a fraction much closer to 1/6. That the fraction settles down as the number of trials grows is the <em>law of large numbers</em>. Lesson 6's tally array shows it.</p>`,
+        `<details class="reveal"><summary>Guess first: after 60 rolls will every face be close to 1/6 = 0.1667? After 6000?</summary><p>With 60 rolls some faces are well off: on this site the fractions run from 0.133 to 0.2. With 6000 rolls every face is within about 0.01 of 0.1667. The more trials, the closer, though only slowly.</p></details>`,
         { play: `#include <iostream>
 #include <cstdlib>
 using namespace std;
@@ -1653,6 +1653,7 @@ int main() {
         `<p>But "settles down" happens slowly. The typical error of an estimate from <i>n</i> trials shrinks in proportion to 1/√<i>n</i>, not 1/<i>n</i>. So to make an estimate ten times more precise, one more correct decimal digit, you need a <em>hundred</em> times as many trials. That is the price of Monte Carlo, and the reason real simulations run for hours.</p>
 <h2>Asking a question by simulation</h2>
 <p>How likely is it that two dice show the same number? You could reason it out: 36 equally likely pairs, 6 of them doubles, so 1/6. Or roll two dice thousands of times and count. The pattern is always the same: repeat an experiment, count the successes, divide by the number of trials, as <code>double</code>s.</p>`,
+        `<details class="reveal"><summary>Guess first: out of 5000 throws of two dice, roughly what fraction will be doubles?</summary><p>About 1/6, so around 0.167 and roughly 830 doubles. Of the 36 equally likely pairs, 6 are doubles.</p></details>`,
         { play: `#include <iostream>
 #include <cstdlib>
 using namespace std;
@@ -1670,9 +1671,10 @@ int main() {
     cout << "fraction of doubles: " << (double) matches / trials << endl;
     return 0;
 }`, caption: 'Expect about 0.167. Without the (double), matches / trials is integer division and prints 0. Now change the question: how often do two dice add up to 7? Work out the exact answer too, and compare.' },
-        { check: "<code>int matches = 167, trials = 1000;</code>. What does <code>matches / trials</code> give?", options: ["0.167", "0", "0.17"], answer: 1, why: "Integer division. Cast one operand: (double) matches / trials." },
+        { check: "<code>int matches = 167, trials = 1000;</code>. What does <code>matches / trials</code> give?", options: ["0.167", "0", "0.17"], answer: 1, why: "Integer division. Cast one operand: (double) matches / trials.", wrong: ["That is the answer you want, but both operands are ints, so this is an integer division and the fraction is thrown away. Cast one operand to double first.",null,"Nothing is rounded to two places here. Integer division throws the whole fraction away: 167 / 1000 is 0."] },
         `<h2>Throwing darts at π</h2>
 <p>Here is Monte Carlo at its most charming. Draw a square with sides of length 1 and, inside it, a quarter of a circle of radius 1 centred at one corner. The quarter circle has area π/4 and the square has area 1. Now throw darts at the square at random. The fraction that land inside the quarter circle should be about π/4, so four times that fraction estimates π. A dart at (<i>x</i>, <i>y</i>) is inside when <i>x</i>² + <i>y</i>² ≤ 1; below, coordinates are whole numbers from 0 to 1000, standing for 0 to 1.</p>`,
+        `<details class="reveal"><summary>Guess first: the quarter circle has area π/4 and the square has area 1. If darts land evenly over the square, roughly what fraction land inside the circle?</summary><p>About π/4, which is about 0.785, so near 7850 of the 10000 darts below. Four times that fraction is the estimate of π.</p></details>`,
         { play: `#include <iostream>
 #include <cstdlib>
 using namespace std;
@@ -1693,6 +1695,7 @@ int main() {
 }`, caption: 'Ten thousand darts give π to within about 0.02, in line with the 1/√n rule: a million darts would be needed for an error ten times smaller. Change the seed and watch the estimate wobble. (It takes a second: this interpreter is far slower than a compiled program.)' },
         `<h2>Before the exercises</h2>
 <p>The first exercise wraps a die roll in a function. The second is a complete simulation: repeat, count, divide. Here are worked examples of both shapes: a coin as a function, and the chance that a single die shows 5 or more, which is exactly 2/6.</p>`,
+        `<details class="reveal"><summary>Guess first: roughly what will <code>fractionAtLeastFive(3000)</code> print? And what could it print if the die were rolled only once, before the loop?</summary><p>About 0.333. If the roll were made once before the loop, the same roll would be counted 3000 times, so the answer could only be exactly 0 or exactly 1.</p></details>`,
         { play: `#include <iostream>
 #include <cstdlib>
 using namespace std;
@@ -1730,7 +1733,8 @@ int main() {
               { setup: '    int seen[7] = {0, 0, 0, 0, 0, 0, 0};\n    for (int i = 0; i < 600; i++) { int r = roll(); if (r >= 1 && r <= 6) seen[r] = 1; }\n    int faces = seen[1] + seen[2] + seen[3] + seen[4] + seen[5] + seen[6];', call: 'faces', expect: '6' }
             ],
             mustContain: [{ re: /\brand\s*\(\s*\)/, msg: 'Use rand() to roll the die.' }],
-            failTip: 'If the first test fails, a result was out of range: rand() % 6 alone gives 0 to 5. If the second fails, some face never appears: check the + 1 and the % 6.'
+            failTip: 'If the first test fails, a result was out of range: rand() % 6 alone gives 0 to 5. If the second fails, some face never appears: check the + 1 and the % 6.',
+            followup: 'Write int rollTwo(), the sum of two dice, and use it to count how often each total from 2 to 12 comes up in 6000 rolls, with an array of 13 counters (the tally from Lesson 6). Which total is the most common, and why is the spread not flat?'
           }
         },
         {
@@ -1751,6 +1755,7 @@ int main() {
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
+<li>Ulam’s question, why not just play the games and count, is the Monte Carlo method: repeat the experiment many times with random numbers and count how often it succeeds.</li>
 <li>A computer's random numbers are pseudorandom: a fixed rule applied from a seed. The same seed gives the same sequence.</li>
 <li><code>rand()</code> gives 0 to <code>RAND_MAX</code>; <code>rand() % n + lo</code> gives <i>n</i> values from <i>lo</i>. <code>srand(time(0))</code> seeds from the clock.</li>
 <li>Monte Carlo: to estimate a probability, repeat the experiment, count, and divide as doubles.</li>
@@ -1762,7 +1767,7 @@ int main() {
     /* ================================================================== */
     {
       standards: ['3B-AP-10', '3B-AP-11'],
-      title: 'Searching and sorting', summary: 'Selection sort and binary search written out in full, each with an invariant that proves it right and an exact count of its work, plus the famous bug that hid in binary search for years.',
+      title: 'Searching and sorting', standard: 1, summary: 'Selection sort and binary search written out in full, each with an invariant that proves it right and an exact count of its work, plus the famous bug that hid in binary search for years.',
       blocks: [
         `<p>Play a game with a friend: they think of a whole number from 1 to a million, and you may ask only yes-or-no questions. How many questions do you need? Twenty always suffice: ask "is it bigger than 500,000?", and whatever the answer, half the possibilities are gone. After twenty halvings a million possibilities are down to one, since 2<sup>20</sup> is just over a million. That strategy, applied to a sorted array, is <em>binary search</em>, and this lesson writes it, together with a sorting algorithm to prepare the array for it.</p>
 <p>These algorithms look simple, and are famously easy to get wrong. When Jon Bentley taught binary search to professional programmers at Bell Labs and IBM (he tells the story in his book <i>Programming Pearls</i>), about ninety percent of them wrote a version with a bug, even with two hours to work. So this lesson does not just show the code: for each algorithm it states an <em>invariant</em>, a fact that stays true every time round the loop, and uses it to show why the code is right.</p>
@@ -1773,7 +1778,6 @@ int main() {
         { fig: 'sort', algo: 'selection', caption: 'The highlighted bar is the smallest found so far in the unsorted part; grey bars are in their final places, which is the invariant. Shuffle and play again.' },
         { play: `#include <iostream>
 using namespace std;
-
 void selectionSort(int arr[], int n) {
     for (int i = 0; i < n - 1; i++) {
         int minIndex = i;                        // smallest seen so far in arr[i..n-1]
@@ -1796,11 +1800,11 @@ int main() {
     }
     cout << endl;
     return 0;
-}`, caption: 'Prints 5 8 10 13 14 21 29 37. The inner loop is "find the smallest of the rest"; the three lines after it are Lesson 5\u2019s swap, done on array elements.' },
-        { check: "What is the invariant of selection sort after the pass for i?", options: ["The array is sorted", "Positions 0 to i hold the i + 1 smallest elements, in order, and never move again", "Position i holds the largest element"], answer: 1, why: "The invariant is how you show the loop is right: when i reaches the end, the whole array is sorted." },
+}`, predict: true, caption: 'Prints 5 8 10 13 14 21 29 37: the same eight numbers in increasing order. The inner loop is "find the smallest of the rest"; the three lines after it are Lesson 5’s swap, done on array elements. After the pass for i = 0 the 5 is at the front, and it never moves again: that is the invariant. Add a cout inside the outer loop to print the array after each pass and watch the sorted front grow.' },
+        { check: "What is the invariant of selection sort after the pass for i?", options: ["The array is sorted", "Positions 0 to i hold the i + 1 smallest elements, in order, and never move again", "Position i holds the largest element"], answer: 1, why: "The invariant is how you show the loop is right: when i reaches the end, the whole array is sorted.", wrong: ["That is only true at the very end. In the middle of the algorithm only the front is sorted: the invariant says what is true after every pass, not just the last.",null,"Selection sort puts the smallest of the rest at position i, not the largest. The front of the array holds the smallest elements, in increasing order."] },
         `<p>Count the work exactly. The pass for <i>i</i> makes <i>n</i> − 1 − <i>i</i> comparisons, so the total is (<i>n</i> − 1) + (<i>n</i> − 2) + … + 1 = <i>n</i>(<i>n</i> − 1)/2, however the data starts out. That is O(<i>n</i>²): doubling the data quadruples the work. It is fine for a hundred items and hopeless for ten million. Faster methods, merge sort and quicksort, use about <i>n</i> log<sub>2</sub> <i>n</i> comparisons, and the standard library's <code>sort</code> uses one of them.</p>
-<details class="reveal"><summary>Predict: for 8 items, how many comparisons does selection sort make, and at most how many swaps?</summary><p>7 + 6 + 5 + 4 + 3 + 2 + 1 = 28 comparisons, whatever the order of the data. But only 7 swaps, one per pass. That is selection sort's one virtue: when moving an item is expensive and comparing is cheap, it moves each item at most once.</p></details>
-<h2>Binary search</h2>
+<details class="reveal"><summary>Predict: for 8 items, how many comparisons does selection sort make, and at most how many swaps?</summary><p>7 + 6 + 5 + 4 + 3 + 2 + 1 = 28 comparisons, whatever the order of the data. But only 7 swaps, one per pass. That is selection sort's one virtue: when moving an item is expensive and comparing is cheap, it moves each item at most once.</p></details>`,
+`<h2>Binary search</h2>
 <div class="stmt"><p><span class="kind">Binary search.</span> In a sorted array, keep a range <code>lo</code> to <code>hi</code>, starting as the whole array. While the range is not empty, look at the middle element: if it is the target, return its index; if it is smaller than the target, the target can only be to its right, so set <code>lo = mid + 1</code>; otherwise set <code>hi = mid - 1</code>. If the range becomes empty, the target is not there.</p>
 <p><span class="kind">Invariant.</span> If the target is anywhere in the array, it is somewhere in positions <code>lo</code> to <code>hi</code>.</p></div>
 <p>The invariant holds at the start, when the range is the whole array. Each step keeps it, because the array is sorted: if the middle element is smaller than the target, so is everything to its left, and throwing that part away cannot lose the target. And the loop must stop, because the range gets strictly smaller on every pass, thanks to the <code>+ 1</code> and <code>- 1</code>. So when the range is empty, the invariant says the target was never there.</p>`,
@@ -1829,7 +1833,7 @@ int main() {
     cout << binarySearch(data, 16, 61) << endl;
     cout << binarySearch(data, 16, 7) << endl;
     return 0;
-}`, caption: 'Prints 9, the index of 61, then -1. Returning -1 for "not found" is a C tradition: an index can never be negative, so -1 cannot be mistaken for an answer.' },
+}`, predict: true, caption: 'Prints 9, the index of 61, then -1. Counting from 0, the elements 2, 5, 8, ... put 61 at index 9, not 10. The number 7 is not in the array, so the range lo..hi shrinks until it is empty and the function returns -1. Returning -1 for "not found" is a C tradition: an index can never be negative, so -1 cannot be mistaken for an answer. Add a cout inside the loop to print lo, hi and mid and watch the range halve.' },
         `<p>How many passes? Each one at least halves the range, so by the mathematics course's count of halvings, an array of <i>n</i> elements needs at most ⌊log<sub>2</sub> <i>n</i>⌋ + 1 passes. Sixteen elements take at most five; a million take at most twenty; every doubling of the data adds a single step.</p>
 <h2>The bug that hid for years</h2>
 <p>You may have noticed that <code>mid</code> is computed as <code>lo + (hi - lo) / 2</code> rather than the more obvious <code>(lo + hi) / 2</code>. They are equal in mathematics. In C++ they are not: <code>lo + hi</code> can be larger than the biggest <code>int</code>, about 2.1 billion, even when <code>lo</code>, <code>hi</code> and the answer all fit.</p>`,
@@ -1845,14 +1849,14 @@ int main() {
     cout << mid << endl;
     return 0;
 }`, expectError: true, caption: 'The safe version prints 1750000000. The obvious one overflows: this site stops, and a real program would get a negative mid and then read from a negative index.' },
-        { check: "Why compute the middle as <code>lo + (hi - lo) / 2</code>?", options: ["It is faster", "<code>lo + hi</code> can overflow an int for huge arrays", "It rounds up"], answer: 1, why: "The sum of two large indexes can exceed the largest int and go negative. The subtraction form cannot." },
+        { check: "Why compute the middle as <code>lo + (hi - lo) / 2</code>?", options: ["It is faster", "<code>lo + hi</code> can overflow an int for huge arrays", "It rounds up"], answer: 1, why: "The sum of two large indexes can exceed the largest int and go negative. The subtraction form cannot.", wrong: ["It does an extra subtraction, so it is not faster. The point is safety: when nothing overflows, both forms give the same answer.",null,"Both forms round down, because integer division throws the fraction away. The difference is only whether lo + hi can exceed the largest int."] },
         `<p>In 2006 Joshua Bloch, a software engineer at Google, reported exactly this bug in the binary search of Java's standard library, where it had sat unnoticed for about nine years; the same line appeared in textbooks, including Bentley's own. It only struck on arrays of more than a billion elements, which had been rare when the code was written. The lesson is not that you should memorise the fix, but that "obviously correct" code deserves the same check as any other: every variable must stay within the range of its type at every step, not just at the end.</p>`,
         `<h2>Sort once, search many times</h2>
 <p>Why sort at all? Searching an unsorted array means looking at every element, <i>n</i> steps. If you will search it <i>k</i> times, that is <i>kn</i> steps. Sorting first costs <i>n</i>(<i>n</i> − 1)/2 comparisons with selection sort, or about <i>n</i> log<sub>2</sub> <i>n</i> with a fast sort, and then each search costs only about log<sub>2</sub> <i>n</i>. For a phone book searched millions of times, sorting once is overwhelmingly worth it. That trade, paying once up front to make every later question cheap, is one of the oldest ideas in computing.</p>
 <h2>Before the exercises</h2>
 <p>The first exercise is <em>insertion sort</em>, the way most people sort a hand of cards: take each card in turn and slide it left past every larger card into its place. Its invariant: before the pass for position <i>i</i>, positions 0 to <i>i</i> − 1 are sorted. Here it is by hand on {5, 2, 9, 1}, one row per pass.</p>
 <table class="small"><tr><th>pass for</th><th>key</th><th>array after the pass</th><th>what happened</th></tr><tr><td>i = 1</td><td>2</td><td>2 5 9 1</td><td>5 is larger, so it shifts right; 2 goes in front</td></tr><tr><td>i = 2</td><td>9</td><td>2 5 9 1</td><td>5 is not larger than 9: nothing shifts</td></tr><tr><td>i = 3</td><td>1</td><td>1 2 5 9</td><td>9, 5 and 2 all shift right; 1 goes at the front</td></tr></table>
-<p>The second exercise is a variant of binary search that finds a <em>boundary</em> rather than an exact match, with its own invariant, given in its hints. Before either, here is a small tool worth having whenever you write a sort: a function that checks the result.</p>`,
+<p>The second exercise is a variant of binary search that finds a <em>boundary</em> rather than an exact match, with its own invariant, given in its hints. Before either, here is a small tool worth having whenever you write a sort: a function that checks the result. Predict what it prints for the two arrays.</p>`,
         { play: `#include <iostream>
 using namespace std;
 
@@ -1870,8 +1874,8 @@ int main() {
     int b[4] = {3, 1, 2, 4};
     cout << isSorted(a, 5) << " " << isSorted(b, 4) << endl;
     return 0;
-}`, caption: 'Prints 1 0. Equal neighbours, like the two 2s, are allowed. The condition i + 1 < n keeps arr[i + 1] inside the array, the bounds rule from Lesson 6.' },
-        { check: "You will search a 1,000,000-element array 10,000 times. What is the right plan?", options: ["Linear search each time", "Sort once (n log n), then binary search each time (log n)", "Binary search without sorting"], answer: 1, why: "Sorting once makes every later search cheap. Binary search on unsorted data gives wrong answers." },
+}`, predict: true, caption: 'Prints 1 0. In {1, 2, 2, 7, 9} no element is larger than its right neighbour (equal neighbours, like the two 2s, are allowed), so it returns true and prints 1. In {3, 1, 2, 4} the very first pair, 3 and 1, is out of order, so it returns false at once and prints 0. The condition i + 1 < n keeps arr[i + 1] inside the array, the bounds rule from Lesson 6.' },
+        { check: "You will search a 1,000,000-element array 10,000 times. What is the right plan?", options: ["Linear search each time", "Sort once (n log n), then binary search each time (log n)", "Binary search without sorting"], answer: 1, why: "Sorting once makes every later search cheap. Binary search on unsorted data gives wrong answers.", wrong: ["Ten thousand linear searches of a million elements is about ten billion steps. Sorting once costs far less, and then each search takes about 20 steps.",null,"Binary search relies on the array being sorted: its invariant is false otherwise, and it silently gives wrong answers. Sort first."] },
         { aside: `<p><b>Common mistakes in this lesson.</b> Binary search on an unsorted array: it gives wrong answers with no error. <code>hi = n</code> instead of <code>n - 1</code> in the version that searches <code>lo</code> to <code>hi</code> inclusive, which reads past the end. Forgetting the <code>+ 1</code> or <code>- 1</code> when moving <code>lo</code> or <code>hi</code>, so the range stops shrinking and the loop never ends. <code>(lo + hi) / 2</code> on very large ranges. In insertion sort, testing <code>arr[j] &gt; key</code> before <code>j &gt;= 0</code>, which reads <code>arr[-1]</code>. Swapping without a temporary, which loses a value.</p>` },
         {
           ex: {
@@ -1912,6 +1916,7 @@ int main() {
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
+<li>The opening question: twenty yes-or-no questions are enough for a million possibilities, because each question halves them. On a sorted array that strategy is binary search.</li>
 <li>An invariant is a fact that stays true every time round a loop; it is how you show a loop is right.</li>
 <li>Selection sort: swap the smallest of the rest into place. Invariant: the front is sorted and final. Exactly <i>n</i>(<i>n</i> − 1)/2 comparisons.</li>
 <li>Binary search on a sorted array: invariant "if present, the target is in lo..hi"; at most ⌊log<sub>2</sub> <i>n</i>⌋ + 1 passes.</li>
@@ -1923,9 +1928,9 @@ int main() {
     /* ================================================================== */
     {
       standards: ['3B-AP-10', '3B-AP-11'],
-      title: 'Project: Sieve of Eratosthenes', summary: 'A 2,200-year-old algorithm for finding every prime up to a limit, written with a bool array, proved correct, and put to work on questions mathematicians still cannot answer.',
+      title: 'Project: Sieve of Eratosthenes', standard: 1, summary: 'A 2,200-year-old algorithm for finding every prime up to a limit, written with a bool array, proved correct, and put to work on questions mathematicians still cannot answer.',
       blocks: [
-        `<p>Eratosthenes of Cyrene ran the great library of Alexandria around 240 BC. He is famous for measuring the size of the Earth, using the length of a shadow at noon in two cities, and getting it roughly right. He is also famous for a method of finding prime numbers that is still, more than two thousand years later, one of the fastest known. This project writes it in C++, proves that it works, and then uses it to explore questions about primes that nobody has yet been able to answer.</p>`,
+        `<p>Eratosthenes of Cyrene ran the great library of Alexandria around 240 BC. He is famous for measuring the size of the Earth, using the length of a shadow at noon in two cities, and getting it roughly right. He is also famous for a method of finding prime numbers that is still, more than two thousand years later, one of the fastest known. This project writes it in C++, proves that it works, and then uses it to explore questions about primes that nobody has yet been able to answer. But first: how do you find every prime up to a million without testing each number on its own?</p>`,
         { photo: 'kitchen-sieve', caption: 'A sieve keeps back what is too big to pass through its holes. The Sieve of Eratosthenes works the same way: every number that is a multiple of a smaller one is held back, and only the primes come through.' },
         `<p>A prime is a whole number greater than 1 whose only divisors are 1 and itself. In Lesson 4 you tested one number at a time by trial division. To find <em>all</em> the primes up to some limit <i>N</i>, Eratosthenes turned the question round: instead of asking of each number "is this prime?", he crossed out everything that is not.</p>
 <div class="stmt"><p><span class="kind">The sieve.</span> Write down the numbers 2, 3, …, <i>N</i>, none crossed out. Repeatedly take the smallest number <i>p</i> that is not crossed out and has not been used yet: it is prime, so cross out its multiples. When there is nothing left to use, the numbers not crossed out are exactly the primes up to <i>N</i>.</p></div>`,
@@ -1945,12 +1950,9 @@ using namespace std;
 int main() {
     const int N = 50;
     bool isPrime[N + 1];                 // isPrime[0] .. isPrime[N]
-    for (int i = 0; i <= N; i++) {
-        isPrime[i] = true;
-    }
+    for (int i = 0; i <= N; i++) isPrime[i] = true;
     isPrime[0] = false;                  // 0 and 1 are not prime
     isPrime[1] = false;
-
     for (int p = 2; p * p <= N; p++) {                          // second shortcut
         if (isPrime[p]) {
             for (int multiple = p * p; multiple <= N; multiple += p) {   // first shortcut
@@ -1966,8 +1968,8 @@ int main() {
     }
     cout << endl;
     return 0;
-}`, caption: 'The fifteen primes up to 50. const int N makes N a constant known to the compiler, which a real compiler requires for an array size. Change it to 200.' },
-        { check: "When sieving up to N, at which p can you stop crossing out?", options: ["When p reaches N / 2", "When p² exceeds N", "Never: every p must be used"], answer: 1, why: "Every composite up to N has a prime factor whose square is at most N, so larger primes cross out nothing new." },
+}`, predict: true, caption: 'Prints the fifteen primes up to 50: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47. Only p = 2, 3, 5 and 7 cross anything out, because 11 × 11 is already past 50, and the last loop prints every index still marked true. const int N makes N a constant known to the compiler, which a real compiler requires for an array size. Change it to 200.' },
+        { check: "When sieving up to N, at which p can you stop crossing out?", options: ["When p reaches N / 2", "When p² exceeds N", "Never: every p must be used"], answer: 1, why: "Every composite up to N has a prime factor whose square is at most N, so larger primes cross out nothing new.", wrong: ["Stopping at N / 2 is safe but wasteful. Every composite up to N has a prime factor whose square is at most N, so you can stop much sooner, at the square root of N.",null,"Larger primes would only cross out multiples that a smaller prime factor already crossed out. Using every p still works, but it does a lot of useless work."] },
         `<p>Read the inner loop carefully: it starts at <code>p * p</code> and steps by <code>p</code>, and the outer loop stops when <code>p * p</code> passes <code>N</code>. Notice also what the sieve never does: divide. It only adds and crosses out. The total work grows only slightly faster than <i>N</i> itself (in proportion to <i>N</i> log log <i>N</i>, for those who know logarithms), so a compiled version finds all the primes below a hundred million in about a second.</p>
 <h2>Questions nobody can answer</h2>
 <p>With a list of primes you can explore questions that have puzzled mathematicians for centuries, and still do. In 1742 Christian Goldbach wrote to Leonhard Euler suggesting that every even number greater than 2 is the sum of two primes: 4 = 2 + 2, 10 = 3 + 7, 100 = 3 + 97. Computers have checked it for every even number up to 4 × 10<sup>18</sup>, and nobody has found a proof. Here is a check up to 1000, using the sieve.</p>`,
@@ -1978,8 +1980,7 @@ int main() {
     const int N = 1000;
     bool isPrime[N + 1];
     for (int i = 0; i <= N; i++) isPrime[i] = true;
-    isPrime[0] = false;
-    isPrime[1] = false;
+    isPrime[0] = false; isPrime[1] = false;
     for (int p = 2; p * p <= N; p++) {
         if (isPrime[p]) {
             for (int m = p * p; m <= N; m += p) isPrime[m] = false;
@@ -1990,22 +1991,17 @@ int main() {
     for (int even = 4; even <= N; even += 2) {
         bool found = false;
         for (int p = 2; p <= even / 2 && !found; p++) {
-            if (isPrime[p] && isPrime[even - p]) {     // two lookups, no division
-                found = true;
-            }
+            if (isPrime[p] && isPrime[even - p]) found = true;   // two lookups, no division
         }
-        if (!found) {
-            cout << "counterexample: " << even << endl;
-            failures++;
-        }
+        if (!found) { cout << "counterexample: " << even << endl; failures++; }
     }
     cout << "even numbers up to " << N << " with no pair of primes: " << failures << endl;
     return 0;
-}`, caption: 'No counterexample below 1000. Each test is two array lookups, which is why having the whole sieve in hand beats testing primality again and again.' },
-        { check: "The inner loop starts crossing out at <code>p</code> instead of <code>p * p</code>. What goes wrong?", options: ["Nothing, it is just slower", "p itself is crossed out, so no primes are found", "The array overflows"], answer: 1, why: "The first multiple of p is p. Start at p * p (or 2 * p) so the prime survives." },
+}`, predict: true, caption: 'Prints even numbers up to 1000 with no pair of primes: 0. Had there been a counterexample, it would have been printed on a line of its own first. Each test is two array lookups, which is why having the whole sieve in hand beats testing primality again and again.' },
+        { check: "The inner loop starts crossing out at <code>p</code> instead of <code>p * p</code>. What goes wrong?", options: ["Nothing, it is just slower", "p itself is crossed out, so no primes are found", "The array overflows"], answer: 1, why: "The first multiple of p is p. Start at p * p (or 2 * p) so the prime survives.", wrong: ["It is not just slower. The first multiple of p, starting at p, is p itself, so the prime is crossed out and lost. (Starting at 2 * p would be slower but correct.)",null,"The loop still stops at N, so nothing is written past the array. The damage is to the answer: p itself gets crossed out."] },
         `<p>Checking is not proving, as the mathematics course insists: a million confirmed cases leave the next one open. That is exactly why Goldbach's conjecture is still a conjecture.</p>
 <h2>Before the exercises</h2>
-<p>The first exercise turns the program above into one that reads <i>N</i>. Since an array size must be a constant, declare the array with a fixed maximum, <code>bool isPrime[5001]</code>, and use only the first <i>N</i> + 1 entries, as Lesson 6 did with input. The second puts the sieve inside a function that counts the primes. Plan it with three parts: fill, sieve, count. Here is the counting part on its own, the accumulator of Lesson 3 over an array.</p>`,
+<p>The first exercise turns the program above into one that reads <i>N</i>. Since an array size must be a constant, declare the array with a fixed maximum, <code>bool isPrime[5001]</code>, and use only the first <i>N</i> + 1 entries, as Lesson 6 did with input. The second puts the sieve inside a function that counts the primes. Plan it with three parts: fill, sieve, count. Here is the counting part on its own, the accumulator of Lesson 3 over an array. Predict what it prints.</p>`,
         { play: `#include <iostream>
 using namespace std;
 
@@ -2023,8 +2019,8 @@ int main() {
     bool f[6] = {true, false, true, true, false, true};
     cout << countTrue(f, 0, 5) << " " << countTrue(f, 2, 4) << endl;
     return 0;
-}`, caption: 'Prints 4 2. For primes, count from 2 to n: 0 and 1 are not prime whatever the array says.' },
-        { check: "How many entries does the sieve array need to cover 2 … N?", options: ["N", "N + 1, so that index N exists", "N − 1"], answer: 1, why: "Index N must be valid. Every loop over the sieve must include N itself, with <=." },
+}`, predict: true, caption: 'Prints 4 2. In {true, false, true, true, false, true} there are four trues in all, and in positions 2 to 4 (true, true, false) there are two. For primes, count from 2 to n: 0 and 1 are not prime whatever the array says.' },
+        { check: "How many entries does the sieve array need to cover 2 … N?", options: ["N", "N + 1, so that index N exists", "N − 1"], answer: 1, why: "Index N must be valid. Every loop over the sieve must include N itself, with <=.", wrong: ["An array of N entries has indexes 0 to N − 1, so isPrime[N] would be one past the end. Remember the arrays lesson: N entries end at N − 1.",null,"N − 1 entries end at index N − 2, which is even shorter. To use index N you need N + 1 entries, 0 to N."] },
         { aside: `<p><b>Common mistakes in this project.</b> Starting the inner loop at <code>p</code> instead of <code>p * p</code> or <code>2 * p</code>, which crosses out <i>p</i> itself. Bounds: the array needs <i>N</i> + 1 entries, and every loop must include <i>N</i> itself, with <code>&lt;=</code>. Forgetting that 0 and 1 are not prime. Testing with <code>%</code>, which turns the sieve back into trial division. An array declared with a variable size, which this site allows and standard C++ does not.</p>` },
         {
           ex: {
@@ -2037,7 +2033,8 @@ int main() {
             tests: [{ stdin: '30', expect: '2 3 5 7 11 13 17 19 23 29' }, { stdin: '2', expect: '2' }, { stdin: '1', expect: '' }, { stdin: '49', expect: '2 3 5 7 11 13 17 19 23 29 31 37 41 43 47' }, { stdin: '100', expect: '2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97' }],
             mustContain: [{ re: /\+=\s*\w+|\bm\s*=\s*m\s*\+|multiple\s*=\s*multiple\s*\+/, msg: 'The sieve crosses out multiples by stepping the inner loop by p.' }],
             mustNotContain: [{ re: /\%\s*\w+\s*==\s*0/, msg: 'That looks like trial division (n % d == 0). The sieve never divides.' }],
-            failTip: 'If 49 is printed as prime, the outer loop stopped too early: it must run while p * p <= n, including equality, so that 7 crosses out 49.'
+            failTip: 'If 49 is printed as prime, the outer loop stopped too early: it must run while p * p <= n, including equality, so that 7 crosses out 49.',
+            followup: 'After the list, print how many primes there were on a line of its own. Check it: there are 25 up to 100 and 168 up to 1000. (The checker wants only the list, so try this in the Code Lab.)'
           }
         },
         {
@@ -2055,7 +2052,7 @@ int main() {
         `<h2>Stretch goals</h2>
 <p>Find the largest gap between consecutive primes below 5000, and the two primes on either side of it. Count the <em>twin primes</em> below 5000, pairs like 11 and 13 that differ by 2; whether there are infinitely many is another famous open question. And rewrite the sieve as a function <code>void sieve(bool isPrime[], int n)</code> that fills an array belonging to the caller, as Lesson 6 described, and use it in both programs above.</p>
 <h2>Where to go from here</h2>
-<p>You have used the core of C++ that everything else is built on: types, control flow, functions, pointers, arrays and text. The next things to learn, with a real compiler, are <code>std::string</code> and <code>std::vector</code> (arrays that know their own size and can grow), references, and then classes, C++'s way of bundling data with the functions that work on it. The algorithms you have written here are the ones a data structures course begins with, where the questions become: how can we make them faster, and how can we prove they are right? You have already started answering both.</p>
+<p>So how do you find every prime up to a million without testing each number on its own? You cross out the multiples of each prime you find, and what is left is the primes. You have used the core of C++ that everything else is built on: types, control flow, functions, pointers, arrays and text. The next things to learn, with a real compiler, are <code>std::string</code> and <code>std::vector</code> (arrays that know their own size and can grow), references, and then classes, C++'s way of bundling data with the functions that work on it. The algorithms you have written here are the ones a data structures course begins with, where the questions become: how can we make them faster, and how can we prove they are right? You have already started answering both.</p>
 <p>If you have not yet, the <a href="#/lisp">Lisp short course</a> approaches the same ideas from the opposite direction, with no types and no memory addresses, only procedures, and the contrast is instructive.</p>`
       ]
     }
