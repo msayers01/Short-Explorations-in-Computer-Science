@@ -38,6 +38,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   r = await java('import java.util.Scanner;\npublic class Main { public static void main(String[] args) { Scanner in = new Scanner(System.in); int n = in.nextInt(); System.out.println("Twice " + n + " is " + 2 * n); } }', { stdin: '21' }); check('java runs, with input', r.out === 'Twice 21 is 42\n' && !r.err, r);
   r = await java('public class Main { public static void main(String[] args) { int x = "a"; } }'); check('java compile error text', /Main\.java:1: error: incompatible types: String cannot be converted to int/.test(r.err || ''), r);
   r = await java('public class Main { public static void main(String[] args) { int[] a = new int[2]; a[2] = 1; } }'); check('java exception text', /ArrayIndexOutOfBoundsException: Index 2 out of bounds for length 2/.test(r.err || ''), r);
+  r = await java('public class Main {\n static int sum(int[] a, int i) { if (i == a.length) return 0; return a[i] + sum(a, i + 1); }\n public static void main(String[] x) { System.out.println(sum(new int[200], 0)); } }'); check('java recursion 200 deep works in the browser worker (the lessons stay under it)', r.out === '0\n', r);
 
   // ---- 3. even an interpreter that was fully compromised could not reach the page
   // The sandboxes run whatever they are sent, so send them hostile JavaScript directly, built the way runner.js builds them.

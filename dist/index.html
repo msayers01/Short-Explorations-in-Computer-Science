@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xoDJZhMaily7Ql79Q8k//KIMpD4L8S2vU4hwcA2bRl4=' 'sha256-H8N6oNI/Vih9EfwboEfPwti4SEfYwRgcWgtL+LTmu1g=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xoDJZhMaily7Ql79Q8k//KIMpD4L8S2vU4hwcA2bRl4=' 'sha256-fSpEsCaSLioOvQTEv/M+Z8GWbkMC2ge5ikqPU2h6q9s=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -14670,7 +14670,7 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        int n = 1000;
+        int n = 200;
         for (boolean middle : new boolean[] {false, true}) {
             int[] sorted = new int[n], shuffled = new int[n];
             for (int i = 0; i < n; i++) { sorted[i] = i; shuffled[i] = (i * 7919) % 1009; }
@@ -14681,7 +14681,7 @@ public class Main {
         }
         System.out.println("n log2 n is about " + Math.round(n * Math.log(n) / Math.log(2)) + "; n^2 / 2 is " + n * n / 2);
     }
-}`, caption: 'With the last value as pivot, sorted input costs n²/2 comparisons: a thousand values take half a million, fifty times the shuffled case, and the recursion goes a thousand calls deep. Taking the middle value as pivot makes sorted input the best case instead. Real implementations choose the pivot at random, or as the median of three samples, so that no fixed input shape can be the bad one.' },
+}`, caption: 'With the last value as pivot, sorted input costs n²/2 comparisons: two hundred values take 19,900, thirteen times the shuffled case, and the recursion goes two hundred calls deep. Taking the middle value as pivot makes sorted input the best case instead. Real implementations choose the pivot at random, or as the median of three samples, so that no fixed input shape can be the bad one.' },
         { check: "Quicksort with the last value as pivot is given an already sorted array. What happens?", options: ["Its best case: O(n log n)", "Its worst case: every partition peels off one value, O(n²)", "It stops early"], answer: 1, why: "The pivot is the largest, so one side is empty each time and the recursion goes n deep: n²/2 comparisons for the easiest possible input." },
         `<p>Three fixes are in common use. <em>Random pivot</em>: swap a randomly chosen cell to the end before partitioning; no input is bad in advance, and the quadratic case becomes an event of vanishing probability. <em>Median of three</em>: look at the first, middle and last values and use the middle one; cheap and good on sorted and reverse-sorted input. <em>Introsort</em>: keep a count of the recursion depth and, if it exceeds about <code>2 log₂ n</code>, finish that part with heapsort (a later lesson), which guarantees <code>n log n</code>. C++'s <code>std::sort</code> is an introsort.</p>
 <h2>Which one, and which does the library run?</h2>
@@ -15393,8 +15393,8 @@ public class Main {
     public static void main(String[] args) {
         countDown(3);
     }
-}`, expectError: true, caption: 'The site’s interpreter stops at 1,200 frames; a real JVM manages about ten thousand before the same error, more if asked. Either way the fix is the same: a base case that is reached. Here, if (n == 0) return 0; at the top.' },
-        `<p>That limit matters for a design decision. A recursion that goes <code>n</code> deep, like <code>sum</code> above, is fine for an array of a thousand and fatal for an array of a million. A loop has no such limit. The rule of thumb: recursion is for problems whose depth is small, which means problems that <em>halve</em> rather than problems that <em>decrement</em>. Binary search and merge sort go log n deep; summing an array one element at a time goes n deep, and should be a loop.</p>`,
+}`, expectError: true, caption: 'The site’s interpreter stops after a few hundred frames (the exact number depends on the browser); a real JVM manages about ten thousand before the same error, more if asked. Either way the fix is the same: a base case that is reached. Here, if (n == 0) return 0; at the top.' },
+        `<p>That limit matters for a design decision. A recursion that goes <code>n</code> deep, like <code>sum</code> above, is fine for an array of a hundred, already too deep for the interpreter on this site at a thousand (a real JVM copes with that), and fatal for an array of a million. A loop has no such limit. The rule of thumb: recursion is for problems whose depth is small, which means problems that <em>halve</em> rather than problems that <em>decrement</em>. Binary search and merge sort go log n deep; summing an array one element at a time goes n deep, and should be a loop.</p>`,
         { play: `public class Main {
     // the binary search of lesson 2, written as it is usually thought: look in the half that can contain it
     static int search(int[] a, int target, int lo, int hi) {
@@ -16991,12 +16991,14 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
      shift is how many lines the checker put before the student's code (error messages are moved back by that much). */
 (function () {
   'use strict';
+  // the code with comments and string/char literals blanked, so a check for `class` or `main(` is not fooled by a word in a comment or a text
+  const stripCode = (code) => String(code).replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g, ' ');
   function harness(ex, code) {
     const tests = ex.tests || [];
     const calls = tests.filter((t) => t.call !== undefined || t.main !== undefined).length;
     if (calls && calls !== tests.length) return { error: 'This exercise mixes two kinds of test; the checker cannot run it.' };
     if (!calls) return { src: code, stdins: tests.map((t) => t.stdin || ''), shift: 0 };
-    if (/\bint\s+main\s*\(/.test(code)) return { error: 'For this exercise write only the function(s) — the checker supplies its own main() to call them.' };
+    if (/\bint\s+main\s*\(/.test(stripCode(code))) return { error: 'For this exercise write only the function(s) — the checker supplies its own main() to call them.' };
     const pre = ex.prelude || '#include <iostream>\nusing namespace std;\n';
     const cases = tests.map((t, i) => '    case ' + i + ': {\n' + (t.main !== undefined ? t.main : (t.setup || '') + '\n        cout << (' + t.call + ') << endl;') + '\n    } break;').join('\n');
     return {
@@ -17026,17 +17028,20 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
   else root.JAVAUTIL = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
+  // the code with comments and string/char literals blanked, so a check for `class` or `main(` is not fooled by a word in a comment or a text
+  const stripCode = (code) => String(code).replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g, ' ');
   function harness(ex, code, test) {
     const prelude = ex.prelude ? ex.prelude.replace(/\s*$/, '\n') : '';
     const body = test.main !== undefined ? test.main : (test.setup ? test.setup + '\n' : '') + '        System.out.println(' + test.call + ');';
+    const bare = stripCode(code);   // the checks below look at code, not at comments or text
     if (ex.classes) {
       const several = /class[\s\S]*class/.test(ex.starter || '');
-      if (/\bstatic\s+void\s+main\s*\(/.test(code)) return { error: 'For this exercise write only the class' + (several ? 'es' : '') + ': the checker supplies its own main to test ' + (several ? 'them' : 'it') + '.' };
+      if (/\bstatic\s+void\s+main\s*\(/.test(bare)) return { error: 'For this exercise write only the class' + (several ? 'es' : '') + ': the checker supplies its own main to test ' + (several ? 'them' : 'it') + '.' };
       const head = prelude + 'class Check {\n    public static void main(String[] args) {\n' + body + '\n    }\n}\n';
       return { src: head + code, shift: head.split('\n').length - 1 };
     }
-    if (/\bstatic\s+void\s+main\s*\(/.test(code)) return { error: 'For this exercise write only the method: the checker supplies its own main() to call it.' };
-    if (/\bclass\s+\w+/.test(code)) return { error: 'For this exercise write only the method, without a class around it: the checker supplies the class and a main() to call it.' };
+    if (/\bstatic\s+void\s+main\s*\(/.test(bare)) return { error: 'For this exercise write only the method: the checker supplies its own main() to call it.' };
+    if (/\bclass\s+\w+/.test(bare)) return { error: 'For this exercise write only the method, without a class around it: the checker supplies the class and a main() to call it.' };
     const head = prelude + 'public class Main {\n';
     return { src: head + code + '\n\n    public static void main(String[] args) {\n' + body + '\n    }\n}\n', shift: head.split('\n').length - 1 };
   }
@@ -33071,6 +33076,7 @@ lodash/lodash.js:
   function dstr(v, R, depth) {
     depth = depth || 0; if (depth > 20) return '...';
     if (v === null || v === undefined) return 'null';
+    if (typeof v === 'object' && v.classOf !== undefined && !(v instanceof JObj)) return 'class ' + qualified(v.classOf);   // what getClass() returns
     switch (typeof v) { case 'string': return v; case 'number': return String(v); case 'bigint': return v.toString(); case 'boolean': return String(v); }
     if (v instanceof JBox) return v.kind === 'D' ? fmtDouble(v.v) : v.kind === 'F' ? fmtFloat(v.v) : String.fromCharCode(v.v);
     if (v instanceof JObj) {

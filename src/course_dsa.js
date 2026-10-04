@@ -780,7 +780,7 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        int n = 1000;
+        int n = 200;
         for (boolean middle : new boolean[] {false, true}) {
             int[] sorted = new int[n], shuffled = new int[n];
             for (int i = 0; i < n; i++) { sorted[i] = i; shuffled[i] = (i * 7919) % 1009; }
@@ -791,7 +791,7 @@ public class Main {
         }
         System.out.println("n log2 n is about " + Math.round(n * Math.log(n) / Math.log(2)) + "; n^2 / 2 is " + n * n / 2);
     }
-}`, caption: 'With the last value as pivot, sorted input costs n²/2 comparisons: a thousand values take half a million, fifty times the shuffled case, and the recursion goes a thousand calls deep. Taking the middle value as pivot makes sorted input the best case instead. Real implementations choose the pivot at random, or as the median of three samples, so that no fixed input shape can be the bad one.' },
+}`, caption: 'With the last value as pivot, sorted input costs n²/2 comparisons: two hundred values take 19,900, thirteen times the shuffled case, and the recursion goes two hundred calls deep. Taking the middle value as pivot makes sorted input the best case instead. Real implementations choose the pivot at random, or as the median of three samples, so that no fixed input shape can be the bad one.' },
         { check: "Quicksort with the last value as pivot is given an already sorted array. What happens?", options: ["Its best case: O(n log n)", "Its worst case: every partition peels off one value, O(n²)", "It stops early"], answer: 1, why: "The pivot is the largest, so one side is empty each time and the recursion goes n deep: n²/2 comparisons for the easiest possible input." },
         `<p>Three fixes are in common use. <em>Random pivot</em>: swap a randomly chosen cell to the end before partitioning; no input is bad in advance, and the quadratic case becomes an event of vanishing probability. <em>Median of three</em>: look at the first, middle and last values and use the middle one; cheap and good on sorted and reverse-sorted input. <em>Introsort</em>: keep a count of the recursion depth and, if it exceeds about <code>2 log₂ n</code>, finish that part with heapsort (a later lesson), which guarantees <code>n log n</code>. C++'s <code>std::sort</code> is an introsort.</p>
 <h2>Which one, and which does the library run?</h2>
@@ -1503,8 +1503,8 @@ public class Main {
     public static void main(String[] args) {
         countDown(3);
     }
-}`, expectError: true, caption: 'The site’s interpreter stops at 1,200 frames; a real JVM manages about ten thousand before the same error, more if asked. Either way the fix is the same: a base case that is reached. Here, if (n == 0) return 0; at the top.' },
-        `<p>That limit matters for a design decision. A recursion that goes <code>n</code> deep, like <code>sum</code> above, is fine for an array of a thousand and fatal for an array of a million. A loop has no such limit. The rule of thumb: recursion is for problems whose depth is small, which means problems that <em>halve</em> rather than problems that <em>decrement</em>. Binary search and merge sort go log n deep; summing an array one element at a time goes n deep, and should be a loop.</p>`,
+}`, expectError: true, caption: 'The site’s interpreter stops after a few hundred frames (the exact number depends on the browser); a real JVM manages about ten thousand before the same error, more if asked. Either way the fix is the same: a base case that is reached. Here, if (n == 0) return 0; at the top.' },
+        `<p>That limit matters for a design decision. A recursion that goes <code>n</code> deep, like <code>sum</code> above, is fine for an array of a hundred, already too deep for the interpreter on this site at a thousand (a real JVM copes with that), and fatal for an array of a million. A loop has no such limit. The rule of thumb: recursion is for problems whose depth is small, which means problems that <em>halve</em> rather than problems that <em>decrement</em>. Binary search and merge sort go log n deep; summing an array one element at a time goes n deep, and should be a loop.</p>`,
         { play: `public class Main {
     // the binary search of lesson 2, written as it is usually thought: look in the half that can contain it
     static int search(int[] a, int target, int lo, int hi) {
