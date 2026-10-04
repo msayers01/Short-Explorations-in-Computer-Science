@@ -22,6 +22,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['3B-AP-12', '3B-AP-16'],
       title: 'Text that looks after itself', summary: 'std::string: reading, building, searching and comparing text, and why it replaced the character arrays of the first C++ course.',
       blocks: [
         `<p>On the evening of 2 November 1988, a graduate student at Cornell named Robert Tappan Morris released a small program onto the Internet, which then connected only about sixty thousand computers. Within a day it had infected roughly one in ten of them and forced many to be taken offline. One of the ways it got in was through a program called <code>fingerd</code>, which read a line of text sent over the network into a fixed-size array of characters, without checking that the line fit. Morris sent a line that was too long. The extra characters spilled past the end of the array and overwrote whatever lay next to it in memory, and the overwritten memory held instructions that Morris's program had chosen.</p>`,
@@ -162,6 +163,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-14', '3B-AP-12', '3B-AP-16'],
       title: 'Lists that grow', summary: 'std::vector: a sequence that can grow and shrink, the range-based for loop, and what happens when an index is out of range.',
       blocks: [
         `<p>In the early 1990s Alexander Stepanov, a mathematician turned programmer working at Hewlett-Packard, had an unfashionable idea: that the tools for sorting, searching and storing data should be written once, for every kind of data, and be as fast as hand-written code. With his colleague Meng Lee he built a library on that idea. It was adopted into the C++ standard in 1998 and is still called, after its origin, the Standard Template Library. Its most-used part is the <code>vector</code>.</p>`,
@@ -292,6 +294,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-17', '3A-CS-01'],
       title: 'Another name for a variable', summary: 'References: how a function can change its caller’s variable, and how to pass a big object without copying it.',
       blocks: [
         `<p>Here is a function that tries to swap two numbers. It looks right. Run it.</p>`,
@@ -436,6 +439,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-17', '3A-AP-18', '3B-AP-14'],
       title: 'Your own types', summary: 'struct: bundling several values into one type, and keeping collections of them.',
       blocks: [
         `<p>In September 1999 NASA lost the Mars Climate Orbiter, a spacecraft that had cost about 125 million dollars, as it arrived at Mars. It passed far too close to the planet and was destroyed. The investigation found that two teams had written software that exchanged a number describing the strength of the thrusters. One team's program produced the number in pound-force seconds; the other's expected newton-seconds. Both sides saw the same kind of value, a <code>double</code>, and nothing in the language knew that they meant different things.</p>`,
@@ -565,6 +569,7 @@ Settings s;          // volume 5, muted false</code></pre>
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-17', '3B-AP-14', '3A-CS-01'],
       title: 'Types with rules', summary: 'class: private data, constructors and member functions, so that a value can never be put into a state the program forbids.',
       blocks: [
         `<p>In 1962 Kristen Nygaard and Ole-Johan Dahl, two Norwegian computer scientists, began work on a language for simulating real systems: ships in a harbour, customers in a queue. They found that the natural way to describe such things was as <em>objects</em>, each with its own data and its own behaviour, and in 1967 their language Simula 67 introduced the word <em>class</em>. A young Dane named Bjarne Stroustrup, who had learned Simula as a student in Aarhus, used it for his doctoral research at Cambridge in the late 1970s. Years later, at Bell Labs, he wanted its classes in a language that ran at the speed of C. That was the beginning of "C with Classes", and so of C++.</p>`,
@@ -714,6 +719,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-16'],
       title: 'Algorithms without the loops', summary: 'sort, find, count and friends from <algorithm>, and the small anonymous functions (lambdas) that tell them what you mean.',
       blocks: [
         `<p>In 1959 a twenty-five-year-old British student named Tony Hoare was in Moscow studying machine translation. To look words up quickly in a dictionary stored on magnetic tape, he needed to sort lists of words, and he thought of a method: pick one item, move everything smaller to its left and everything larger to its right, then do the same to each side. He called it Quicksort. He later said he wrote it down first as a way to explain it, and was surprised that people wanted it. You wrote a slower sort of your own, selection sort, in SC 103. Every serious C++ library contains a refined Quicksort already, and you are not expected to write another.</p>`,
@@ -844,6 +850,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-DA-10', '3B-AP-12'],
       title: 'Looking things up', summary: 'map and set: collections found by name instead of by position, and counting with them.',
       blocks: [
         `<p>In 1986 the magazine <em>Communications of the ACM</em> ran a column by Jon Bentley on a simple task: read a text file and print its most frequent words. For the column he invited Donald Knuth, the author of <em>The Art of Computer Programming</em>, to write a program, and Knuth produced about ten pages of carefully explained code, with a purpose-built data structure for the words. Then Bentley asked Doug McIlroy, who had helped invent the Unix pipeline, to comment. McIlroy's answer was one line of six standard commands joined together, which did the same job. Neither answer was foolish: Knuth was demonstrating a style of writing programs, and McIlroy was demonstrating the value of good tools.</p>`,
@@ -955,6 +962,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-13', '3B-AP-14'],
       title: 'Project: a gradebook report', summary: 'Putting the course together: a program that reads scores, keeps a record for each student, and prints a report.',
       blocks: [
         `<p>Every lesson so far has been one idea and two small exercises. Real programs are made of many ideas working together, and the skill that matters then is not knowing one more library function but <em>breaking a task into pieces</em>, each of which you can write and check on its own. This lesson is one larger exercise, with the steps laid out. The standard library does the heavy lifting; your job is to choose the right tools and join them.</p>

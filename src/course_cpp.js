@@ -20,6 +20,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['2-AP-11', '3A-CS-02'],
       title: 'Hello, C++', summary: 'What a compiler does, the rules every C++ line follows, and why a variable must have a type before it has a value.',
       blocks: [
         `<p>In 1979, Bjarne Stroustrup, a Danish computer scientist at Bell Labs in New Jersey, started adding new features to the language C, which his colleagues had created a few years earlier to write the Unix operating system. He called the result "C with Classes". In 1983 it was renamed C++, a programmer's joke: in C, <code>++</code> means "add one", so C++ is "one more than C". Today it runs underneath web browsers, game engines, and the software on space probes.</p>`,
@@ -179,6 +180,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '3A-AP-15'],
       title: 'Making decisions', summary: 'Comparisons and bool, if and else, combining conditions, and the traps that C++ accepts but Python would refuse.',
       blocks: [
         `<p>In February 2014 Apple rushed out an urgent update for iPhones and Macs. In the code that checked whether a secure website was genuine, one line had accidentally been written twice, directly after an <code>if</code> with no braces. The second copy was not part of the <code>if</code>, whatever the indentation suggested, so it ran every time and skipped the rest of the check. For over a year, devices had accepted fake certificates. Programmers called it the "goto fail" bug, after the duplicated line. This lesson covers <code>if</code> in C++, and that exact trap.</p>
@@ -367,6 +369,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-12', '3A-AP-15'],
       title: 'Loops', summary: 'while and for, stated exactly; how to count the passes of a loop, loops that never end, nested loops, and the accumulator pattern.',
       blocks: [
         `<p>On 31 December 2008, thousands of Microsoft Zune music players froze at the same moment, all over the world. The cause was a loop in the code that worked out the date. On the last day of a leap year, the loop's condition stayed true for ever and the loop never ended, so the players hung until their batteries ran flat. The next morning, a new year, they worked again. This lesson is about writing loops that stop, and knowing exactly when they will.</p>`,
@@ -581,6 +584,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-14', '3A-AP-17', '3A-AP-18'],
       title: 'Functions', summary: 'Typed functions stated exactly: parameters, return, declaration before use, pass by value, scope, early return, and a first look at recursion.',
       blocks: [
         `<p>A cookbook recipe for a lasagne might say "make the tomato sauce (page 12)" and "make the white sauce (page 40)". The lasagne recipe does not repeat those recipes; it names them, trusts them, and gets on with its own job. Functions are how programs do the same, and by the end of this lesson you will write functions that call other functions, and even themselves.</p>
@@ -776,6 +780,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-CS-02', '3B-AP-12'],
       title: 'Pointers', summary: 'Addresses and the variables that hold them, stated exactly: &, * and the three meanings of the star; why passing a pointer still passes by value; and how a function changes the caller\u2019s variables.',
       blocks: [
         `<p>In 1965 the computer scientist Tony Hoare added a special "points nowhere" value to a programming language he was designing, because it was so easy to implement. In 2009 he apologised for it in public, calling it his "billion-dollar mistake", after decades of programs crashing because they followed a pointer that pointed nowhere. Pointers are powerful and they are sharp. This lesson shows how they work, and how not to cut yourself.</p>`,
@@ -986,6 +991,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-14', '3B-AP-12', '3B-AP-18'],
       title: 'Arrays', summary: 'A row of values of one type: declaring and indexing, why nothing stops you running off the end, why an array\u2019s name is an address, and how functions share arrays.',
       blocks: [
         `<p>Picture a corridor of school lockers, all the same size, numbered from 0, standing shoulder to shoulder. That is an <em>array</em>: a fixed number of values of one type, stored next to each other in memory. It is the oldest data structure in computing and still the fastest, and it hides a famous danger. This lesson gives the rules, shows exactly why arrays are fast, and explains the bug behind some of the most expensive security holes in history.</p>`,
@@ -1178,6 +1184,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3A-DA-09', '3B-AP-12'],
       title: 'Characters and strings', summary: 'Text as numbers, and a string as an array of char with a zero at the end: walking it, building it, comparing it, and sending a secret message.',
       blocks: [
         `<p>Inside a computer there are no letters, only numbers. The word <code>Hi!</code> is stored as the three numbers 72, 105 and 33, followed by a 0 that says "the text stops here". This lesson is about that one design decision, made for the C language in the early 1970s and inherited by C++: how it makes text simple, how it makes text dangerous, and how to work with it one character at a time. At the end you will write a function that turns messages into secret code.</p>
@@ -1338,6 +1345,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['2-AP-17', '3A-CS-03', '3B-AP-18'],
       title: 'Finding and fixing bugs', summary: 'Three kinds of wrong, reading compiler errors, the bugs C++ lets you make, and debugging as an experiment: reproduce, shrink, hypothesise, test, with a moth and an exploding rocket along the way.',
       blocks: [
         `<p>On 9 September 1947, engineers working on the Harvard Mark II computer found that a relay had stopped working. Inside it was a moth. They taped it into the logbook with the note "First actual case of bug being found", and the word stuck, although engineers had called faults "bugs" for decades before that. Since then, every programmer has spent more time finding bugs than writing new code. This lesson is about doing that calmly and systematically: knowing which kind of bug you are facing, reading what the compiler tells you, recognising the bugs that C++ lets through, and hunting the rest down like a scientist.</p>`,
@@ -1531,6 +1539,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['2-DA-09', '3A-DA-12', '3B-DA-07', '6.1.2.3', '7.1.2.2', '7.1.2.5'],
       title: 'Randomness and simulation', summary: 'Where a computer\u2019s random numbers come from, how to shape them into dice and coins, seeds, why more trials help only slowly, and estimating chances (and \u03c0) by simulation.',
       blocks: [
         `<p>In 1946 the mathematician Stanisław Ulam was recovering from an illness and passing the time with games of solitaire. He wondered what the chance was that a game would come out, tried to calculate it, and gave up: the combinations were hopeless. Then he had a better idea. Why not just play a hundred games and count how many came out? With the new electronic computers, you could play thousands. His colleagues named the method after the casino at Monte Carlo, and it was soon being used to design nuclear reactors. Today <em>Monte Carlo simulation</em> prices insurance, forecasts weather and elections, and plans rocket launches. This lesson builds it from the bottom: where a computer gets random numbers at all, how to turn them into dice and coins, and how much to trust what a simulation tells you.</p>`,
@@ -1720,6 +1729,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-11'],
       title: 'Searching and sorting', summary: 'Selection sort and binary search written out in full, each with an invariant that proves it right and an exact count of its work, plus the famous bug that hid in binary search for years.',
       blocks: [
         `<p>Play a game with a friend: they think of a whole number from 1 to a million, and you may ask only yes-or-no questions. How many questions do you need? Twenty always suffice: ask "is it bigger than 500,000?", and whatever the answer, half the possibilities are gone. After twenty halvings a million possibilities are down to one, since 2<sup>20</sup> is just over a million. That strategy, applied to a sorted array, is <em>binary search</em>, and this lesson writes it, together with a sorting algorithm to prepare the array for it.</p>
@@ -1880,6 +1890,7 @@ int main() {
     },
     /* ================================================================== */
     {
+      standards: ['3B-AP-10', '3B-AP-11'],
       title: 'Project: Sieve of Eratosthenes', summary: 'A 2,200-year-old algorithm for finding every prime up to a limit, written with a bool array, proved correct, and put to work on questions mathematicians still cannot answer.',
       blocks: [
         `<p>Eratosthenes of Cyrene ran the great library of Alexandria around 240 BC. He is famous for measuring the size of the Earth, using the length of a shadow at noon in two cities, and getting it roughly right. He is also famous for a method of finding prime numbers that is still, more than two thousand years later, one of the fastest known. This project writes it in C++, proves that it works, and then uses it to explore questions about primes that nobody has yet been able to answer.</p>`,

@@ -92,7 +92,8 @@ const scripts = [
   'src/algo_paths.js',
   'src/algo_games.js',
   'src/algo_puzzles.js',
-  'src/applied.js'     // the #/real-world page: where the ideas of the courses are used
+  'src/applied.js',    // the #/real-world page: where the ideas of the courses are used
+  'src/standards.js'   // the #/standards page and the standards box under each lesson's summary
 ];
 // Third-party code bundled into the page, with each licence text read from the installed package, so the credits
 // on #/about always match what is bundled (the MIT licence asks for its notice to accompany every copy).

@@ -68,6 +68,7 @@ window.COURSES.push({
   lessons: [
     /* ================================================================== */
     {
+      standards: ['3A-CS-02', '3B-CS-01'],
       title: 'Where am I?', summary: 'What a shell is, how to read the prompt, the tree of directories, absolute and relative paths, and moving around with cd.',
       blocks: [
         `<p>In the summer of 1969, Ken Thompson's wife took their baby son to California for three weeks to visit family. Thompson, a programmer at Bell Labs in New Jersey, stayed behind with a small computer nobody else wanted, a PDP-7, and a plan. He gave himself one week each for the four pieces of an operating system: the part that manages the machine, an editor, an assembler, and a program whose only job was to read what a person typed and run it. He called that last program the <em>shell</em>. The system it belonged to became Unix.</p>`,
@@ -149,6 +150,7 @@ cd pond`, setup: 'lesson1', expectError: true, caption: 'A misspelled name is "N
     },
     /* ================================================================== */
     {
+      standards: ['3A-DA-10', '3B-CS-01'],
       title: 'Making and moving things', summary: 'mkdir, touch and echo to make things; cp and mv to copy, move and rename; rm to remove, and why it needs care; wildcards that name many files at once.',
       blocks: [
         `<p>Late on the evening of 31 January 2017, an engineer at GitLab, a company whose servers hold the source code of thousands of projects, was trying to fix a slow database. There were two database servers, a main one and a spare. Tired, and meaning to clear out the spare, he typed a remove command on the main one. He realised within seconds and stopped it, but by then most of the directory was gone. Then the company found that its backups had quietly been failing for weeks. About six hours of other people's work was lost for good. GitLab wrote the whole story up and published it, so that nobody else would have to learn it the same way.</p>`,
@@ -236,6 +238,7 @@ ls`, setup: 'lesson2', caption: '<code>echo *.tmp</code> is the way to see what 
     },
     /* ================================================================== */
     {
+      standards: ['2-DA-08', '3B-DA-05'],
       title: 'Looking inside files', summary: 'cat, head and tail to read; wc to count; grep to search inside files; find to search for files; diff to compare two.',
       blocks: [
         `<p>In 1973 Lee McMahon, a researcher at Bell Labs, was trying to work out who had written each of the <em>Federalist Papers</em>, the anonymous essays of 1787 that argued for the American constitution. He wanted to count how often certain words appeared in each essay, and the editor he was using could not hold the text. He mentioned it to Ken Thompson. The next morning Thompson handed him a small program that read a file and printed every line matching a pattern. In the editor <code>ed</code>, the command for that was <code>g/re/p</code>: <em>globally</em> find the <em>regular expression</em> and <em>print</em>. So the program was called <code>grep</code>, and half a century later it is still the first thing a programmer types when looking for something.</p>`,
@@ -308,6 +311,7 @@ file poem.txt projects scores.csv`, setup: 'lesson3', expectError: true, caption
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-18', '3A-CS-02', '3B-DA-05'],
       title: 'Pipes and redirection', summary: 'Sending output to a file with > and >>, reading input from a file with <, and joining commands with | so that small tools do big jobs.',
       blocks: [
         `<p>In 1986 the programmer Jon Bentley asked Donald Knuth, the author of <em>The Art of Computer Programming</em>, to write a program for his column in a computing magazine: read a text and print the most common words with their counts. Knuth, who had just invented a way of writing programs as readable essays, produced ten pages of beautifully explained Pascal. Bentley then asked Doug McIlroy, the Bell Labs researcher who had first proposed the idea of pipes in 1964, to review it. McIlroy admired the program, and then did the same job in six commands joined by five vertical bars: split the text into words, make them lowercase, sort them, count the repeats, sort by count, show the top. It fitted on one line.</p>`,

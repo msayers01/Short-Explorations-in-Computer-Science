@@ -301,6 +301,30 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   const realLinks = await page.evaluate(() => [...document.querySelectorAll('main a[href^="#/"]')].map((a) => a.getAttribute('href')).filter((h) => /^#\/[a-z]+\/\d+/.test(h)));
   const badLinks = await page.evaluate((hs) => hs.filter((h) => { const [, c, n] = h.match(/^#\/([a-z]+)\/(\d+)/); const course = window.COURSES.find((x) => x.id === c); return !course || !course.lessons[+n - 1]; }), realLinks);
   check('real world: the page lists topics, and every lesson it links to exists', realLinks.length >= 20 && badLinks.length === 0, badLinks.slice(0, 5));
+  // ---- standards: the page lists them with their lessons, filters work, and a lesson shows its own standards
+  await goto('#/standards');
+  const stdInfo = await page.evaluate(() => {
+    const items = [...document.querySelectorAll('.std-item')].filter((li) => !li.hidden);
+    const links = [...document.querySelectorAll('.std-lessons a')].map((a) => a.getAttribute('href')).filter((h) => /^#\/[a-z]+\/\d+$/.test(h));
+    const badLinks = links.filter((h) => { const [, c, n] = h.match(/^#\/([a-z]+)\/(\d+)/); const course = window.COURSES.find((x) => x.id === c); return !course || !course.lessons[n - 1]; });
+    return { shown: items.length, links: links.length, badLinks, first: items[0] && items[0].id };
+  });
+  check('standards: the CSTA list is shown with lesson links that all resolve', stdInfo.shown === 74 && stdInfo.links > 150 && stdInfo.badLinks.length === 0, stdInfo);
+  await page.fill('#std-q', 'recursive');
+  const stdSearch = await page.evaluate(() => [...document.querySelectorAll('.std-item')].filter((li) => !li.hidden).map((li) => li.id));
+  check('standards: searching for "recursive" finds 3B-AP-13 and nothing unrelated', stdSearch.includes('std-3B-AP-13') && stdSearch.length < 10, stdSearch);
+  await page.fill('#std-q', '');
+  await page.click('.std-chips:nth-of-type(3) .std-chip:nth-child(4)');
+  const stdNone = await page.evaluate(() => [...document.querySelectorAll('.std-item')].filter((li) => !li.hidden).every((li) => li.dataset.covered === 'no') && document.querySelectorAll('.std-item:not([hidden])').length > 10);
+  check('standards: "No lesson yet" lists only standards without a lesson', stdNone);
+  await goto('#/standards/9.2.4.5');
+  const mnInfo = await page.evaluate(() => { const li = document.getElementById('std-9.2.4.5'); return { there: !!li && !li.hidden, lessons: li ? li.querySelectorAll('.std-lessons a').length : 0, shown: [...document.querySelectorAll('.std-item')].filter((x) => !x.hidden).length }; });
+  check('standards: a Minnesota code in the address opens the Minnesota list at that benchmark', mnInfo.there && mnInfo.lessons >= 1 && mnInfo.shown === 32, mnInfo);
+  await goto('#/python/7');
+  const lessonStd = await page.evaluate(() => { const d = document.querySelector('.lesson-stds'); return d && { summary: d.querySelector('summary').textContent, link: !!d.querySelector('a[href="#/standards/3A-AP-17"]') }; });
+  check('standards: a lesson shows its standards under the summary, linking to the standards page', lessonStd && /^Standards: \d+ CSTA/.test(lessonStd.summary) && lessonStd.link, lessonStd);
+  await goto('#/math/9');
+  check('standards: a lesson with no standard shows no box', (await page.locator('.lesson-stds').count()) === 0);
   // ---- pictures in lessons: they load (lazily), carry a credit, open larger and close with Esc; a missing file shows its description
   await goto('#/computer/1');
   const photo = page.locator('.blk-photo').first();
