@@ -584,6 +584,708 @@ xs mapped kept result`;
     mount.append(row, out, el('p', { class: 'fig-note' }, 'Click a switch to flip it. Each one is worth twice the one to its right; the number is the sum of the ones that are on. Eight switches give 256 different patterns, 0 to 255.'));
   };
 
+  /* ---------- SC 099: text is numbers. Type, and see each character's code and its bytes ---------- */
+  W.codes = function (mount, b) {
+    const enc = new TextEncoder();
+    const input = el('input', { type: 'text', maxlength: '12', value: b.text || 'Hi!', 'aria-label': 'Some text, up to 12 characters', spellcheck: 'false', autocomplete: 'off' });
+    const body = el('tbody');
+    const note = el('p', { class: 'fig-note' });
+    const render = () => {
+      const chars = Array.from(input.value).slice(0, 12);
+      body.replaceChildren(...chars.map((ch) => {
+        const bytes = enc.encode(ch);
+        return el('tr', {}, el('td', {}, el('code', {}, ch === ' ' ? '(space)' : ch)), el('td', {}, String(ch.codePointAt(0))),
+          el('td', {}, el('code', {}, Array.from(bytes, (x) => x.toString(2).padStart(8, '0')).join(' '))), el('td', {}, String(bytes.length)));
+      }));
+      const n = chars.reduce((a, ch) => a + enc.encode(ch).length, 0);
+      note.textContent = chars.length ? chars.length + ' character' + (chars.length === 1 ? '' : 's') + ' take ' + n + ' byte' + (n === 1 ? '' : 's') + '.' : 'Type something.';
+    };
+    input.addEventListener('input', render); render();
+    mount.append(el('div', { class: 'fig-tools' }, el('label', {}, 'Type here: '), input),
+      el('table', { class: 'fill codes-tbl' }, el('thead', {}, el('tr', {}, ['Character', 'Its number', 'Its bytes (bits)', 'Bytes'].map((h) => el('th', {}, h)))), body), note);
+  };
+
+  /* ---------- SC 099: a picture is a grid of numbers. An 8 by 8 black-and-white picture, one byte per row ---------- */
+  W.pixels = function (mount) {
+    const PRESETS = { smiley: ['00111100', '01000010', '10100101', '10000001', '10100101', '10011001', '01000010', '00111100'], heart: ['00000000', '01100110', '11111111', '11111111', '11111111', '01111110', '00111100', '00011000'], clear: Array(8).fill('00000000') };
+    let g = PRESETS.smiley.map((r) => r.split('').map(Number));
+    const grid = el('div', { class: 'px-grid', role: 'group', 'aria-label': 'An 8 by 8 picture: click a square to flip it' });
+    const rows = el('div', { class: 'px-rows' });
+    const render = () => {
+      grid.replaceChildren(...g.flatMap((row, y) => row.map((v, x) => el('button', { type: 'button', class: 'px-cell' + (v ? ' on' : ''), 'aria-pressed': v ? 'true' : 'false', 'aria-label': 'row ' + (y + 1) + ', column ' + (x + 1) + (v ? ', black' : ', white'), onclick: () => { g[y][x] = 1 - g[y][x]; render(); } }))));
+      rows.replaceChildren(...g.map((row) => el('div', { class: 'px-row' }, el('code', {}, row.join('')), el('span', {}, ' = ' + parseInt(row.join(''), 2)))));
+    };
+    render();
+    const preset = (name) => el('button', { type: 'button', class: 'btn sm', onclick: () => { g = PRESETS[name].map((r) => r.split('').map(Number)); render(); } }, name[0].toUpperCase() + name.slice(1));
+    mount.append(el('div', { class: 'fig-tools' }, preset('smiley'), preset('heart'), preset('clear'), el('span', { class: 'fig-note' }, 'Each row is one byte: 8 bytes hold the whole picture.')), el('div', { class: 'px-fig' }, grid, rows));
+  };
+
+  /* ---------- SC 099: a colour is three numbers: red, green and blue light, one byte each ---------- */
+  W.colour = function (mount, b) {
+    const val = Object.assign({ r: 255, g: 140, b: 0 }, b.start || {});
+    const swatch = el('div', { class: 'sw-chip', role: 'img', 'aria-label': 'The colour you made' });
+    const out = el('p', { class: 'bits-out' });
+    const sliders = {};
+    const render = () => {
+      swatch.style.background = 'rgb(' + val.r + ',' + val.g + ',' + val.b + ')';
+      const hex = ['r', 'g', 'b'].map((k) => val[k].toString(16).padStart(2, '0')).join('').toUpperCase();
+      out.replaceChildren(el('code', {}, '(' + val.r + ', ' + val.g + ', ' + val.b + ')'), ' = ', el('code', {}, '#' + hex), ' = 3 bytes = 24 bits');
+    };
+    const row = (k, label) => {
+      const s = el('input', { type: 'range', min: '0', max: '255', value: String(val[k]), 'aria-label': label + ' light, 0 to 255' });
+      s.addEventListener('input', () => { val[k] = +s.value; render(); }); sliders[k] = s;
+      return el('label', { class: 'sw-row' }, el('span', {}, label), s);
+    };
+    const preset = (name, r, g, bl) => el('button', { type: 'button', class: 'btn sm', onclick: () => { val.r = r; val.g = g; val.b = bl; for (const k of ['r', 'g', 'b']) sliders[k].value = String(val[k]); render(); } }, name);
+    const rows3 = el('div', {}, row('r', 'Red'), row('g', 'Green'), row('b', 'Blue'));
+    render();
+    mount.append(el('div', { class: 'sw-fig' }, rows3, swatch),
+      out, el('div', { class: 'fig-tools' }, preset('White', 255, 255, 255), preset('Yellow', 255, 255, 0), preset('Grey', 128, 128, 128), preset('Black', 0, 0, 0)),
+      el('p', { class: 'fig-note' }, 'Each slider is one byte, 0 to 255. Red and green light together look yellow.'));
+  };
+
+  /* ---------- SC 099: sound is a list of measurements. A wave measured 4, 8, 16 or 32 times per second ---------- */
+  W.sampling = function (mount) {
+    const Wd = 640, H = 200, mid = 100, amp = 70;
+    const f = (t) => 0.75 * Math.sin(2 * Math.PI * t) + 0.25 * Math.sin(6 * Math.PI * t + 0.5);
+    const X = (t) => 20 + t * (Wd - 40), Y = (v) => mid - v * amp / 1.0;
+    const svg = sv('svg', { viewBox: '0 0 ' + Wd + ' ' + H, role: 'img', 'aria-label': 'A wave, measured at evenly spaced moments' });
+    const note = el('p', { class: 'fig-note' });
+    const sel = el('select', { 'aria-label': 'Measurements per second' }, [4, 8, 16, 32].map((n) => el('option', { value: String(n) }, n + ' per second')));
+    sel.value = '8';
+    const render = () => {
+      const n = +sel.value; svg.replaceChildren();
+      svg.append(sv('line', { x1: 20, y1: mid, x2: Wd - 20, y2: mid, stroke: 'var(--rule)' }));
+      let d = ''; for (let i = 0; i <= 200; i++) { const t = i / 200; d += (i ? 'L' : 'M') + X(t).toFixed(1) + ' ' + Y(f(t)).toFixed(1); }
+      svg.append(sv('path', { d, fill: 'none', stroke: 'var(--ink-3)', 'stroke-width': 1.5 }));
+      let st = ''; for (let i = 0; i < n; i++) { const v = f(i / n); st += (i ? 'L' : 'M') + X(i / n).toFixed(1) + ' ' + Y(v).toFixed(1) + 'L' + X((i + 1) / n).toFixed(1) + ' ' + Y(v).toFixed(1); }
+      svg.append(sv('path', { d: st, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5 }));
+      for (let i = 0; i < n; i++) svg.append(sv('circle', { cx: X(i / n), cy: Y(f(i / n)), r: 3.5, fill: 'var(--accent)' }));
+      note.textContent = 'The thin line is the sound. The thick steps are what the computer keeps: ' + n + ' numbers for this one second. More measurements per second follow the wave more closely and need more bytes. A CD takes 44,100 per second.';
+    };
+    sel.addEventListener('change', render); render();
+    mount.append(el('div', { class: 'fig-tools' }, el('label', {}, 'Measure it '), sel), svg, note);
+  };
+
+  /* ---------- SC 099: logic gates. Flip the inputs, watch the output ---------- */
+  const GATES = {
+    NOT: { n: 1, f: (a) => 1 - a, say: 'Output is 1 when the input is 0, and 0 when it is 1.' },
+    AND: { n: 2, f: (a, b) => a & b, say: 'Output is 1 only when both inputs are 1.' },
+    OR: { n: 2, f: (a, b) => a | b, say: 'Output is 1 when at least one input is 1.' },
+    XOR: { n: 2, f: (a, b) => a ^ b, say: 'Output is 1 when the inputs are different.' },
+    NAND: { n: 2, f: (a, b) => 1 - (a & b), say: 'The opposite of AND: output is 0 only when both inputs are 1.' }
+  };
+  W.gates = function (mount, b) {
+    const names = b.gates || ['NOT', 'AND', 'OR', 'XOR', 'NAND'];
+    let gate = names[0], inA = 0, inB = 0;
+    const svg = sv('svg', { viewBox: '0 0 420 150', role: 'img', 'aria-label': 'A logic gate with its inputs and output' });
+    const table = el('table', { class: 'fill gate-tbl' });
+    const say = el('p', { class: 'fig-note' });
+    const tabs = el('div', { class: 'fig-tools', role: 'group', 'aria-label': 'Choose a gate' });
+    const wire = (x1, y1, x2, y2, on) => sv('line', { x1, y1, x2, y2, stroke: on ? 'var(--accent)' : 'var(--ink-3)', 'stroke-width': on ? 4 : 2.5, 'stroke-linecap': 'round' });
+    const render = () => {
+      const G = GATES[gate]; const out = G.f(inA, inB);
+      for (const t of tabs.children) t.setAttribute('aria-pressed', t.dataset.g === gate ? 'true' : 'false');
+      svg.replaceChildren();
+      const ys = G.n === 1 ? [75] : [50, 100];
+      ys.forEach((y, i) => { const v = i ? inB : inA; svg.append(wire(70, y, 160, y, v));
+        const g = sv('g', { class: 'gate-in', tabindex: '0', role: 'button', 'aria-pressed': v ? 'true' : 'false', 'aria-label': 'Input ' + (i ? 'B' : 'A') + ' is ' + v + '. Click to flip' });
+        g.append(sv('rect', { x: 20, y: y - 18, width: 50, height: 36, rx: 6, fill: v ? 'var(--accent)' : 'var(--paper-2)', stroke: 'var(--rule)' }), txt(45, y + 5, (i ? 'B ' : 'A ') + v, { 'text-anchor': 'middle', 'font-weight': 700, fill: v ? 'var(--accent-ink)' : 'var(--ink)' }));
+        const flip = () => { if (i) inB = 1 - inB; else inA = 1 - inA; render(); };
+        g.addEventListener('click', flip); g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
+        svg.append(g); });
+      svg.append(sv('rect', { x: 160, y: 25, width: 100, height: 100, rx: 10, fill: 'var(--paper-2)', stroke: 'var(--ink-2)', 'stroke-width': 2 }), txt(210, 82, gate, { 'text-anchor': 'middle', 'font-size': 20, 'font-weight': 700 }));
+      svg.append(wire(260, 75, 330, 75, out), sv('circle', { cx: 365, cy: 75, r: 28, fill: out ? 'var(--accent)' : 'var(--paper-2)', stroke: 'var(--ink-2)', 'stroke-width': 2 }), txt(365, 82, String(out), { 'text-anchor': 'middle', 'font-size': 20, 'font-weight': 700, fill: out ? 'var(--accent-ink)' : 'var(--ink)' }));
+      const combos = G.n === 1 ? [[0], [1]] : [[0, 0], [0, 1], [1, 0], [1, 1]];
+      table.replaceChildren(el('thead', {}, el('tr', {}, (G.n === 1 ? ['A', 'Output'] : ['A', 'B', 'Output']).map((h) => el('th', {}, h)))),
+        el('tbody', {}, combos.map((c) => el('tr', { class: (c[0] === inA && (G.n === 1 || c[1] === inB)) ? 'hl' : '' }, c.map((v) => el('td', {}, String(v))), el('td', {}, String(G.f(c[0], c[1])))))));
+      say.textContent = G.say;
+    };
+    for (const n of names) tabs.append(el('button', { type: 'button', class: 'btn sm', 'data-g': n, onclick: () => { gate = n; render(); } }, n));
+    render();
+    mount.append(tabs, el('div', { class: 'gate-fig' }, svg, table), say);
+  };
+
+  /* ---------- SC 099: adding with gates. Four columns, each one a small circuit of gates ---------- */
+  W.adder = function (mount, b) {
+    const start = b.start || [5, 3];
+    let A = [0, 1, 2, 3].map((i) => (start[0] >> (3 - i)) & 1), B = [0, 1, 2, 3].map((i) => (start[1] >> (3 - i)) & 1);
+    const box = el('div', { class: 'adder' });
+    const render = () => {
+      const carry = [0, 0, 0, 0, 0], sum = [0, 0, 0, 0];   // carry[i] is the carry INTO column i (column 3 is the rightmost)
+      for (let i = 3; i >= 0; i--) { const cin = carry[i + 1]; sum[i] = A[i] ^ B[i] ^ cin; carry[i] = (A[i] & B[i]) | (cin & (A[i] ^ B[i])); }
+      const toggle = (arr, i, name) => el('button', { type: 'button', class: 'bit' + (arr[i] ? ' on' : ''), 'aria-pressed': arr[i] ? 'true' : 'false', 'aria-label': name + ' column worth ' + (8 >> i), onclick: () => { arr[i] = 1 - arr[i]; render(); } }, el('span', { class: 'bit-w' }, String(8 >> i)), el('span', { class: 'bit-v' }, String(arr[i])));
+      const num = (arr) => arr.reduce((a, v) => a * 2 + v, 0);
+      const total = carry[0] * 16 + num(sum);
+      box.replaceChildren(
+        el('div', { class: 'adder-row' }, el('span', { class: 'adder-k' }, 'carry in'), ...[0, 1, 2, 3].map((i) => el('span', { class: 'adder-c' + (carry[i + 1] ? ' on' : '') }, carry[i + 1] ? '1' : '·')), el('span', { class: 'adder-k' })),
+        el('div', { class: 'adder-row' }, el('span', { class: 'adder-k' }, 'A'), ...[0, 1, 2, 3].map((i) => toggle(A, i, 'A')), el('span', { class: 'adder-k' }, '= ' + num(A))),
+        el('div', { class: 'adder-row' }, el('span', { class: 'adder-k' }, '+ B'), ...[0, 1, 2, 3].map((i) => toggle(B, i, 'B')), el('span', { class: 'adder-k' }, '= ' + num(B))),
+        el('div', { class: 'adder-row adder-sum' }, el('span', { class: 'adder-k' }, 'sum'), ...[0, 1, 2, 3].map((i) => el('span', { class: 'adder-s' + (sum[i] ? ' on' : '') }, String(sum[i]))), el('span', { class: 'adder-k' }, '= ' + total)),
+        el('p', { class: 'fig-note' }, carry[0] ? 'The last column carried a 1 out. Four switches cannot hold it, so a real adder would need a fifth: this is overflow.' : 'Each column adds its two bits and the carry from the column on its right: the same carrying you do on paper, but with ones and twos.'));
+    };
+    render();
+    mount.append(box);
+  };
+
+  /* ---------- SC 099: a message cut into numbered packets, sent by different routes, put back in order ---------- */
+  W.packets = function (mount) {
+    const N = { H: ['You', 50, 115], A: ['Router A', 190, 45], B: ['Router B', 190, 185], D: ['Router D', 360, 45], C: ['Router C', 360, 150], S: ['Server', 585, 115] };
+    const E = [['H', 'A'], ['H', 'B'], ['A', 'C'], ['B', 'C'], ['A', 'D'], ['D', 'C'], ['C', 'S']];
+    const P = [{ n: 1, t: 'HEL', route: 'HADCS' }, { n: 2, t: 'LO ', route: 'HBCS' }, { n: 3, t: 'WOR', route: 'HACS' }, { n: 4, t: 'LD!', route: 'HBCS' }];
+    const svg = sv('svg', { viewBox: '0 0 640 230', role: 'img', 'aria-label': 'Four packets crossing a small network of routers' });
+    const note = el('p', { class: 'fig-note', 'aria-live': 'polite' });
+    const maxHops = Math.max(...P.map((p) => p.route.length - 1));
+    const render = (t) => {
+      svg.replaceChildren();
+      for (const [a, b2] of E) svg.append(sv('line', { x1: N[a][1], y1: N[a][2], x2: N[b2][1], y2: N[b2][2], stroke: 'var(--rule)', 'stroke-width': 3 }));
+      for (const k in N) { svg.append(sv('rect', { x: N[k][1] - 34, y: N[k][2] - 15, width: 68, height: 30, rx: 6, fill: 'var(--paper-2)', stroke: 'var(--ink-3)' }), txt(N[k][1], N[k][2] + 5, N[k][0], { 'text-anchor': 'middle', 'font-size': 12 })); }
+      const seen = {};
+      P.forEach((p) => { const at = p.route[Math.min(t, p.route.length - 1)]; seen[at] = (seen[at] || 0) + 1; const slot = seen[at] - 1; const [, x, y] = N[at];
+        svg.append(sv('rect', { x: x - 22, y: y + 17 + slot * 15, width: 44, height: 14, rx: 4, fill: 'var(--accent)' }), txt(x, y + 27.5 + slot * 15, p.n + ':' + p.t.replace(' ', '\u00b7'), { 'text-anchor': 'middle', 'font-size': 10, fill: 'var(--accent-ink)', 'font-family': 'var(--mono)' })); });
+      const arrived = P.filter((p) => t >= p.route.length - 1).sort((a, c) => (a.route.length - c.route.length) || (a.n - c.n));
+      note.textContent = t === 0 ? 'Your message, HELLO WORLD!, is cut into four packets. Each one carries a number and a piece of the message. All four are at your computer.'
+        : t <= maxHops ? 'Hop ' + t + '. Each router sends every packet on towards the server, and each packet may take a different road. Arrived at the server so far: ' + (arrived.length ? arrived.map((p) => '#' + p.n).join(', ') : 'none') + '.'
+          : 'The server has all four, but #1 came last because its road was longer. It puts them in order by number: ' + P.map((p) => p.t).join('') + '. The message is whole.';
+    };
+    const ctl = stepper(maxHops + 2, render, { interval: 1200 });
+    mount.append(svg, note, ctl.el);
+  };
+
+  /* ---------- SC 099: how many guesses does a password take? Choose a length and the kinds of character ---------- */
+  W.passwords = function (mount) {
+    const kinds = [['lower', 'letters a to z', 26], ['upper', 'capital letters', 26], ['digits', 'digits 0 to 9', 10], ['symbols', 'symbols such as ! ? #', 32]];
+    const on = { lower: true, upper: false, digits: false, symbols: false };
+    const len = el('input', { type: 'range', min: '4', max: '20', value: '8', 'aria-label': 'Password length' });
+    const lenOut = el('b', {});
+    const out = el('p', { class: 'pw-out', 'aria-live': 'polite' });
+    const UNITS = [[3.15576e16, 'billion years'], [3.15576e13, 'million years'], [3.15576e10, 'thousand years'], [31557600, 'year'], [86400, 'day'], [3600, 'hour'], [60, 'minute'], [1, 'second']];
+    const when = (s) => {
+      if (s < 1) return 'less than a second';
+      const u = UNITS.find((x) => s >= x[0]); const v = s / u[0];
+      return 'about ' + (v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString('en-US')) + ' ' + u[1] + (u[1].indexOf(' ') < 0 && Math.round(v * 10) !== 10 ? 's' : '');
+    };
+    const render = () => {
+      const pool = kinds.reduce((a, k) => a + (on[k[0]] ? k[2] : 0), 0);
+      lenOut.textContent = len.value + ' characters';
+      if (!pool) { out.textContent = 'Choose at least one kind of character.'; return; }
+      const combos = Math.pow(pool, +len.value);
+      const exp = Math.floor(Math.log10(combos));
+      const secs = combos / 1e10;
+      out.replaceChildren('A choice of ' + pool + ' characters, ' + len.value + ' places: about ', el('b', {}, (combos / Math.pow(10, exp)).toFixed(1) + ' × 10' + String(exp).split('').map((c) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[+c]).join('')), ' possible passwords. Trying every one at 10 billion guesses a second takes ', el('b', {}, when(secs)), '.');
+    };
+    const boxes = kinds.map((k) => { const c = el('input', { type: 'checkbox', 'aria-label': k[1] }); c.checked = on[k[0]]; c.addEventListener('change', () => { on[k[0]] = c.checked; render(); }); return el('label', { class: 'pw-kind' }, c, ' ' + k[1] + ' (' + k[2] + ')'); });
+    len.addEventListener('input', render); render();
+    mount.append(el('div', { class: 'fig-tools' }, el('label', {}, 'Length '), len, lenOut), el('div', { class: 'pw-kinds' }, boxes), out,
+      el('p', { class: 'fig-note' }, 'The attacker’s speed is an assumption: a computer built for guessing. These are random characters; a password made of a word, a name or a date falls far faster. This figure never asks for a real password.'));
+  };
+
+  /* ---------- SC 099: instructions followed exactly. Steer a robot with three commands ---------- */
+  W.robot = function (mount, b) {
+    const LEVELS = [
+      { name: 'Level 1: three steps', goal: [0, 1], walls: [], best: 3 },
+      { name: 'Level 2: turn a corner', goal: [2, 2], walls: [], best: 5 },
+      { name: 'Level 3: around the wall', goal: [3, 2], walls: [[1, 2], [1, 3], [1, 4]], best: 9 }
+    ];
+    const D = [[0, -1], [1, 0], [0, 1], [-1, 0]], ARROW = ['▲', '▶', '▼', '◀'];
+    let li = Math.min(b.level || 0, LEVELS.length - 1), prog = [], timer = null, state = null, msg = '';
+    const lvl = () => LEVELS[li];
+    const board = el('div', { class: 'rb-board', role: 'img', 'aria-label': 'A five by five grid with a robot, a star and some walls' });
+    const list = el('ol', { class: 'rb-prog', 'aria-label': 'Your commands' });
+    const say = el('p', { class: 'fig-note', 'aria-live': 'polite' });
+    const select = el('select', { 'aria-label': 'Level' }, LEVELS.map((l, i) => el('option', { value: String(i) }, l.name)));
+    select.value = String(li);
+    const fresh = () => ({ x: 0, y: 4, d: 0, at: -1 });
+    const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+    const draw = () => {
+      const st = state || fresh(), L = lvl();
+      board.replaceChildren(...Array.from({ length: 25 }, (_, i) => { const x = i % 5, y = Math.floor(i / 5);
+        const wall = L.walls.some((w) => w[0] === x && w[1] === y), goal = L.goal[0] === x && L.goal[1] === y, bot = st.x === x && st.y === y;
+        return el('div', { class: 'rb-cell' + (wall ? ' wall' : '') }, bot ? el('span', { class: 'rb-bot' }, ARROW[st.d]) : goal ? el('span', { class: 'rb-goal' }, '★') : null); }));
+      list.replaceChildren(...prog.map((c, i) => el('li', { class: i === st.at ? 'now' : '' }, c)));
+      say.textContent = msg || (prog.length ? prog.length + ' command' + (prog.length === 1 ? '' : 's') + '. Press Run.' : 'The robot starts in the bottom-left corner, facing up. Add commands, then press Run.');
+    };
+    const add = (c) => { if (timer || prog.length >= 24) return; prog.push(c); state = null; msg = ''; draw(); };
+    const step = (st, c) => {
+      const n = Object.assign({}, st, { bump: false });
+      if (c === 'Turn right') n.d = (st.d + 1) % 4; else if (c === 'Turn left') n.d = (st.d + 3) % 4;
+      else { const x = st.x + D[st.d][0], y = st.y + D[st.d][1]; if (x < 0 || y < 0 || x > 4 || y > 4 || lvl().walls.some((w) => w[0] === x && w[1] === y)) n.bump = true; else { n.x = x; n.y = y; } }
+      return n;
+    };
+    const run = () => {
+      if (timer || !prog.length) return;
+      state = fresh(); msg = ''; let i = 0; draw();
+      timer = setInterval(() => {
+        if (i >= prog.length) { stop(); const L = lvl(); const won = state.x === L.goal[0] && state.y === L.goal[1];
+          msg = won ? 'The robot reached the star with ' + prog.length + ' commands' + (prog.length <= L.best ? ': as few as possible.' : '. Can you do it in ' + L.best + '?') : 'The robot did what you wrote, and ended here. It did not reach the star. Change a command and run it again.'; state.at = -1; draw(); return; }
+        state = step(state, prog[i]); state.at = i; if (state.bump) msg = 'Bump: the robot cannot go there, so it stays where it is and carries on with the next command.'; i++; draw();
+      }, 600);
+    };
+    select.addEventListener('change', () => { stop(); li = +select.value; prog = []; state = null; msg = ''; draw(); });
+    const btn = (label, fn, cls) => el('button', { type: 'button', class: 'btn sm ' + (cls || ''), onclick: fn }, label);
+    draw();
+    mount.append(el('div', { class: 'fig-tools' }, el('label', {}, 'Level '), select),
+      el('div', { class: 'rb-fig' }, board, el('div', {}, el('div', { class: 'fig-tools' }, btn('Forward', () => add('Forward')), btn('Turn left', () => add('Turn left')), btn('Turn right', () => add('Turn right'))), list)),
+      el('div', { class: 'fig-tools' }, btn('Run', run, 'primary'), btn('Undo', () => { if (timer) return; prog.pop(); state = null; msg = ''; draw(); }), btn('Clear', () => { stop(); prog = []; state = null; msg = ''; draw(); }, 'quiet')), say);
+  };
+
+  /* ---------- 31. a hash table with chaining: insert and search words, see the hash, the collisions, the load factor and the doubling (DSA lesson 8) ---------- */
+  W.hashtable = function (mount, b) {
+    const LIMIT = 0.75, START = 8, MAXKEYS = 12;           // 12 keys fill 16 buckets exactly to the limit: the demo stops there
+    const WORDS = ['cat', 'dog', 'bee', 'owl', 'fox', 'ant', 'eel', 'hen', 'yak', 'gnu', 'emu', 'ram'];
+    const fm = (a, n) => ((a % n) + n) % n;                 // Math.floorMod
+    const javaHash = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0; return h; };   // String.hashCode, in 32 bits
+    let mode = b.bad ? 'len' : 'java', nb = START, rows, size, steps, ctl;
+    const hashOf = (s) => (mode === 'java' ? javaHash(s) : s.length);
+    const fresh = () => { nb = START; rows = Array.from({ length: nb }, () => []); size = 0; };
+    const snap = (r) => r.map((c) => c.slice());
+    const longest = (r) => r.reduce((m, c) => Math.max(m, c.length), 0);
+    const fill = (node, kids) => { node.textContent = ''; for (const k of kids) if (k) node.appendChild(k); };
+    // the arithmetic of the hash, as a line of text: ((99·31 + 97)·31 + 116) = 98262
+    function working(s) {
+      if (mode === 'len') return 'hash("' + s + '") = the number of letters = ' + s.length + '   (a bad hash: every 3-letter word gets the same number)';
+      let t = String(s.charCodeAt(0)), big = BigInt(s.charCodeAt(0));
+      for (let i = 1; i < s.length; i++) { t = '(' + t + '·31 + ' + s.charCodeAt(i) + ')'; big = big * 31n + BigInt(s.charCodeAt(i)); }
+      if (s.length > 1) t = t.slice(1, -1);
+      const wrapped = BigInt.asIntN(32, big) !== big;
+      return 'hash("' + s + '") = ' + t + ' = ' + (wrapped ? big + ', which wraps round in 32 bits to ' + javaHash(s) : javaHash(s));
+    }
+    const indexLine = (h, n) => 'index = floorMod(' + h + ', ' + n + ') = ' + fm(h, n);
+
+    const input = el('input', { type: 'text', value: WORDS[0], maxlength: '12', 'aria-label': 'a key to insert or search for', autocomplete: 'off', spellcheck: 'false', class: 'ht-input' });
+    const calc = el('div', { class: 'ht-calc', 'aria-hidden': 'true' });
+    const list = el('ul', { class: 'ht-rows', 'aria-label': 'the buckets of the table' });
+    const meterFill = el('div', { class: 'ht-fill' });
+    const meterTxt = el('div', { class: 'ht-meter-txt' });
+    const meter = el('div', { class: 'ht-meter', role: 'img', 'aria-label': 'load factor' }, meterFill, el('div', { class: 'ht-limit' }));
+    const log = el('div', { class: 'fig-status ht-log', role: 'status', 'aria-live': 'polite' });
+
+    function render(i) {
+      const st = steps[i];
+      fill(calc, (st.calc || []).map((l) => el('div', { class: 'ht-line' }, l)));
+      fill(list, st.rows.map((chain, bi) => {
+        const kids = [el('span', { class: 'ht-i' }, String(bi)), el('span', { class: 'ht-slot' }, chain.length ? '•' : '∅')];
+        chain.forEach((k, ci) => {
+          let cls = 'ht-node';
+          if (st.newKey === k && st.hot === bi) cls += ' ht-new';
+          if (st.moved && st.moved.has(k)) cls += ' ht-moved';
+          if (st.walk && st.walk.i === bi) { if (ci < st.walk.at) cls += ' ht-seen'; else if (ci === st.walk.at) cls += st.walk.found ? ' ht-found' : ' ht-now'; }
+          kids.push(el('span', { class: 'ht-arrow', 'aria-hidden': 'true' }, '→'), el('span', { class: cls }, k));
+        });
+        if (chain.length > 1) kids.push(el('span', { class: 'ht-len' }, chain.length + ' keys in one bucket: a collision'));
+        return el('li', { class: 'ht-row' + (bi === st.hot ? ' ht-hot' : '') + (chain.length > 1 ? ' ht-coll' : ''), 'aria-label': 'bucket ' + bi + (chain.length ? ': ' + chain.join(', ') : ': empty') }, kids);
+      }));
+      const load = st.count / st.nb;
+      meterFill.style.width = Math.min(100, Math.round(load * 100)) + '%';
+      meterFill.className = 'ht-fill' + (load > LIMIT ? ' ht-over' : '');
+      meter.setAttribute('aria-label', 'load factor ' + load.toFixed(2));
+      meterTxt.textContent = st.count + ' keys / ' + st.nb + ' buckets = load factor ' + load.toFixed(2) + (load > LIMIT ? ' (over ' + LIMIT + ')' : '') + '   ·   longest chain: ' + longest(st.rows);
+      log.textContent = st.msg;
+    }
+    const show = (list_) => { steps = list_; if (ctl) ctl.stop(); const old = ctl && ctl.el; ctl = stepper(steps.length, render, { interval: 800 }); if (old) old.replaceWith(ctl.el); };
+    const base = (extra) => Object.assign({ rows: snap(rows), nb, count: size, hot: -1 }, extra);
+    const nextWord = () => WORDS.find((w) => !rows.some((c) => c.includes(w))) || '';
+
+    function insert() {
+      const key = input.value.trim();
+      if (!key) { show([base({ msg: 'Type a word first.' })]); return; }
+      const h = hashOf(key), i = fm(h, nb), out = [];
+      const l1 = working(key), l2 = indexLine(h, nb);
+      if (rows[i].includes(key)) {
+        out.push(base({ calc: [l1], msg: 'Insert "' + key + '": the hash function turns the key into the number ' + h + '.' }), base({ calc: [l1, l2], hot: i, msg: 'The index is ' + i + ': look in bucket ' + i + '.' }),
+          base({ calc: [l1, l2], hot: i, walk: { i, at: rows[i].indexOf(key), found: true }, msg: '"' + key + '" is already in the chain: only its value would change. No new node, and the size stays ' + size + '.' }));
+        show(out); return;
+      }
+      if (size >= MAXKEYS) { show([base({ msg: 'This demo holds 12 keys at most: a real table would double to 32 buckets here. Press Reset to start again (you can still Search).' })]); return; }
+      out.push(base({ calc: [l1], msg: 'Insert "' + key + '": the hash function turns the key into the number ' + h + '.' }));
+      out.push(base({ calc: [l1, l2], hot: i, msg: 'The index is ' + i + (h < 0 ? '. The hash is negative, so a plain % would give a negative index; floorMod always gives 0 to ' + (nb - 1) + '.' : ': the key belongs in bucket ' + i + '.') }));
+      const before = rows[i].slice(), collided = before.length > 0;
+      rows[i].unshift(key); size++;
+      out.push(base({ calc: [l1, l2], hot: i, newKey: key, msg: collided ? 'Bucket ' + i + ' already holds ' + before.join(', ') + ': a collision. Two keys, one bucket: "' + key + '" joins the chain, at the front.' : 'Bucket ' + i + ' was empty: "' + key + '" goes straight in.' }));
+      const load = size / nb;
+      if (load <= LIMIT) out.push(base({ calc: [l1, l2], hot: i, msg: 'Load factor ' + size + '/' + nb + ' = ' + load.toFixed(2) + ', not over ' + LIMIT + ': no need to grow.' }));
+      else {
+        const old = snap(rows), n2 = nb * 2, fresh2 = Array.from({ length: n2 }, () => []), moved = new Set();
+        out.push(base({ hot: -1, msg: 'Load factor ' + size + '/' + nb + ' = ' + load.toFixed(2) + ' is over ' + LIMIT + ': chains are getting long. Double the table to ' + n2 + ' buckets, and place every key again, because floorMod(hash, ' + n2 + ') can differ from floorMod(hash, ' + nb + ').' }));
+        let placed = 0;
+        old.forEach((chain, bi) => chain.forEach((k) => {
+          const hk = hashOf(k), j = fm(hk, n2); fresh2[j].unshift(k); placed++;
+          if (j !== bi) moved.add(k);
+          out.push({ rows: snap(fresh2), nb: n2, count: placed, hot: j, newKey: k, moved: new Set(moved), calc: ['hash("' + k + '") = ' + hk, indexLine(hk, n2) + '    (it was in bucket ' + bi + ')'], msg: 'Place "' + k + '" again: bucket ' + j + (j !== bi ? ', not bucket ' + bi + ' as before.' : ', the same as before.') + '  ' + placed + ' of ' + size + ' placed.' });
+        }));
+        nb = n2; rows = fresh2;
+        out.push(base({ moved: new Set(moved), msg: 'The table now has ' + nb + ' buckets and all ' + size + ' keys are placed again; ' + moved.size + ' of them are in a different bucket from before (outlined). The longest chain is ' + longest(rows) + ', and the load factor is ' + (size / nb).toFixed(2) + '.' }));
+      }
+      input.value = nextWord();
+      show(out);
+    }
+    function search() {
+      const key = input.value.trim();
+      if (!key) { show([base({ msg: 'Type a word first.' })]); return; }
+      const h = hashOf(key), i = fm(h, nb), chain = rows[i], l1 = working(key), l2 = indexLine(h, nb);
+      const out = [base({ calc: [l1], msg: 'Search for "' + key + '": hash it, exactly as insert did: ' + h + '.' }), base({ calc: [l1, l2], hot: i, msg: 'Go straight to bucket ' + i + '. No other bucket is looked at.' })];
+      if (!chain.length) out.push(base({ calc: [l1, l2], hot: i, msg: 'Bucket ' + i + ' is empty, so "' + key + '" is not in the table. 0 keys compared.' }));
+      else for (let c = 0; c < chain.length; c++) {
+        const same = chain[c] === key;
+        out.push(base({ calc: [l1, l2], hot: i, walk: { i, at: c, found: same }, msg: 'Compare "' + key + '" with "' + chain[c] + '": ' + (same ? 'equal. Found, after ' + (c + 1) + ' comparison' + (c ? 's' : '') + '.' : 'different' + (c + 1 < chain.length ? '; try the next key in the chain.' : '; that was the end of the chain. "' + key + '" is not in the table (' + chain.length + ' comparison' + (chain.length > 1 ? 's' : '') + ').') ) }));
+        if (same) break;
+      }
+      show(out);
+    }
+    const insertBtn = el('button', { class: 'btn sm primary', type: 'submit' }, 'Insert');
+    const searchBtn = el('button', { class: 'btn sm', type: 'button', onclick: search }, 'Search');
+    const nextBtn = el('button', { class: 'btn sm quiet', type: 'button', onclick: () => { input.value = nextWord(); input.focus(); } }, 'Next word');
+    const resetBtn = el('button', { class: 'btn sm quiet', type: 'button', onclick: () => { fresh(); input.value = WORDS[0]; show([base({ msg: 'An empty table of ' + START + ' buckets. Insert words one at a time and step through the work.' })]); } }, 'Empty the table');
+    const pick = el('select', { 'aria-label': 'hash function', onchange: () => { mode = pick.value; fresh(); input.value = WORDS[0]; show([base({ msg: mode === 'java' ? 'Hash function: String.hashCode. A new empty table.' : 'Hash function: the length of the word. It is a number, it is the same every time, and it is a bad hash: try inserting three words.' })]); } },
+      el('option', { value: 'java' }, 'hash: String.hashCode'), el('option', { value: 'len' }, 'hash: length of the word (bad)'));
+    if (mode === 'len') pick.value = 'len';
+    const form = el('form', { class: 'fig-tools ht-form', onsubmit: (e) => { e.preventDefault(); insert(); } }, el('label', {}, 'key ', input), insertBtn, searchBtn, nextBtn, pick, resetBtn);
+    fresh();
+    show([base({ msg: 'An empty table of ' + START + ' buckets. Insert words one at a time and step through the work (or press Play).' })]);
+    mount.append(form, calc, list, el('div', { class: 'ht-meter-wrap' }, meter, meterTxt), log, ctl.el,
+      el('p', { class: 'ht-key' }, el('span', { class: 'ht-node ht-new' }, 'new'), ' just placed   ', el('span', { class: 'ht-node ht-moved' }, 'moved'), ' in a different bucket after doubling   ', el('span', { class: 'ht-node ht-now' }, 'compared'), ' during a search'));
+  };
+
+  /* ---------- 31. a binary search tree: insert and search one comparison at a time, an in-order walk, and the height beside it (DSA lesson 9) ---------- */
+  W.bst = function (mount, b) {
+    const MAXN = 15, DX = 36, DY = 46, PAD = 26, R = 15;
+    let keys = (b.keys || []).filter((k, i, a) => Number.isInteger(k) && a.indexOf(k) === i).slice(0, MAXN);   // in the order they were inserted
+    const build = (ks) => {
+      let root = null;
+      for (const k of ks) {
+        const n = { key: k, l: null, r: null };
+        if (!root) { root = n; continue; }
+        let c = root;
+        for (;;) { if (k < c.key) { if (!c.l) { c.l = n; break; } c = c.l; } else if (k > c.key) { if (!c.r) { c.r = n; break; } c = c.r; } else break; }
+      }
+      return root;
+    };
+    const height = (t) => t ? 1 + Math.max(height(t.l), height(t.r)) : 0;
+    const inorder = (t, out) => { if (t) { inorder(t.l, out); out.push(t.key); inorder(t.r, out); } return out; };
+    const pathTo = (root, k) => { const p = []; let c = root; while (c) { p.push(c.key); if (k === c.key) break; c = k < c.key ? c.l : c.r; } return p; };
+    const note = (root) => { const n = inorder(root, []).length, h = height(root); return n + (n === 1 ? ' key' : ' keys') + ', height ' + h + (n ? ': no search needs more than ' + h + (h === 1 ? ' comparison' : ' comparisons') : ''); };
+
+    const svg = sv('svg', { class: 'bst-svg', viewBox: '0 0 300 120', role: 'img', 'aria-label': 'A binary search tree' });
+    const log = el('div', { class: 'fig-status', role: 'status' });
+    const stats = el('div', { class: 'bst-stats' });
+    const num = el('input', { type: 'number', value: '7', min: '1', max: '99', 'aria-label': 'key, 1 to 99', onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); doInsert(); } } });
+    let steps = [];
+
+    function render(i) {
+      const st = steps[i], root = st.root;
+      const nodes = []; let ix = 0;
+      (function go(t, d) { if (!t) return; go(t.l, d + 1); t.ix = ix++; t.d = d; nodes.push(t); go(t.r, d + 1); })(root, 0);
+      const h = height(root), cols = Math.max(nodes.length, 6), W2 = PAD * 2 + (cols - 1) * DX, H2 = PAD * 2 + (Math.max(h, 3) - 1) * DY + 18;
+      const X = (t) => PAD + t.ix * DX + (cols - nodes.length) * DX / 2, Y = (t) => PAD + t.d * DY;
+      svg.replaceChildren();
+      svg.setAttribute('viewBox', '0 0 ' + W2 + ' ' + H2);
+      const visited = new Set(st.path || []), done = new Set(st.out || []);
+      const edge = (a, c, on) => svg.append(sv('line', { class: 'bst-edge' + (on ? ' bst-on' : ''), x1: X(a), y1: Y(a), x2: X(c), y2: Y(c) }));
+      for (const t of nodes) { if (t.l) edge(t, t.l, visited.has(t.key) && (visited.has(t.l.key) || st.cur === t.l.key)); if (t.r) edge(t, t.r, visited.has(t.key) && (visited.has(t.r.key) || st.cur === t.r.key)); }
+      if (st.slot) {   // the empty link where the search ended: the new key belongs here
+        const p = nodes.find((t) => t.key === st.slot.parent);
+        if (p) { const sx = X(p) + (st.slot.side === 'l' ? -1 : 1) * DX * 0.5, sy = Y(p) + DY; svg.append(sv('line', { class: 'bst-edge bst-on bst-dash', x1: X(p), y1: Y(p), x2: sx, y2: sy }), sv('rect', { class: 'bst-slot', x: sx - 16, y: sy - 9, width: 32, height: 18, rx: 3 }), sv('text', { class: 'bst-nulltxt', x: sx, y: sy + 4, 'text-anchor': 'middle' }, 'null')); }
+      }
+      for (const t of nodes) {
+        const cls = 'bst-node' + (st.cur === t.key ? ' bst-cur' : '') + (st.nu === t.key ? ' bst-new' : '') + (st.found === t.key ? ' bst-found' : '') + (visited.has(t.key) ? ' bst-seen' : '') + (done.has(t.key) ? ' bst-done' : '');
+        svg.append(sv('g', { class: cls }, sv('circle', { cx: X(t), cy: Y(t), r: R }), sv('text', { x: X(t), y: Y(t) + 4.5, 'text-anchor': 'middle' }, String(t.key))));
+      }
+      if (!nodes.length) svg.append(sv('text', { class: 'bst-nulltxt', x: W2 / 2, y: H2 / 2, 'text-anchor': 'middle' }, 'empty tree (root is null)'));
+      svg.append(sv('text', { class: 'bst-h', x: W2 - 6, y: 16, 'text-anchor': 'end' }, 'height ' + h));
+      if (st.out && st.out.length) svg.append(sv('text', { class: 'bst-h', x: 6, y: 16 }, 'out: ' + st.out.join(' ')));
+      const desc = nodes.length ? 'Tree of ' + nodes.length + ' keys, height ' + h + ', root ' + root.key + '. In order: ' + inorder(root, []).join(' ') + '.' : 'An empty tree.';
+      svg.setAttribute('aria-label', desc);
+      log.textContent = st.msg;
+      stats.textContent = note(root);
+    }
+    let ctl = stepper(1, () => {});
+    const show = (list) => { steps = list; ctl.stop(); const old = ctl.el; ctl = stepper(steps.length, render, { interval: 900 }); old.replaceWith(ctl.el); };
+    steps = [{ root: build(keys), msg: keys.length ? 'A search tree built by inserting ' + keys.join(', ') + ' in that order. Insert or Search a key, or walk the tree in order.' : 'An empty tree. Insert a key: it becomes the root.' }];
+    ctl.stop(); ctl = stepper(steps.length, render, { interval: 900 });
+
+    const val = () => { const x = Number(num.value); return Number.isInteger(x) && x >= 1 && x <= 99 && num.value.trim() !== '' ? x : null; };
+    const bad = () => show([{ root: build(keys), msg: 'Type a whole number from 1 to 99.' }]);
+    function trail(root, k, verb) {   // one step per comparison, then the last step is added by the caller
+      const p = pathTo(root, k), out = [];
+      p.forEach((q, j) => {
+        const eq = q === k;
+        out.push({ root, path: p.slice(0, j), cur: q, msg: 'Comparison ' + (j + 1) + ': ' + k + ' against ' + q + (eq ? ': equal, ' + (verb === 'insert' ? 'the key is already in the tree.' : 'found.') : (k < q ? ': less, so go left.' : ': greater, so go right.')) });
+      });
+      return { p, out };
+    }
+    function doInsert() {
+      const k = val(); if (k === null) return bad();
+      const root = build(keys), { p, out } = trail(root, k, 'insert');
+      if (!root) { keys = [k]; return show([{ root: build(keys), nu: k, msg: 'The tree is empty, so ' + k + ' becomes the root. No comparisons.' }]); }
+      const last = p[p.length - 1];
+      if (last === k) { out.push({ root, path: p.slice(0, -1), found: k, msg: 'Nothing to do: a search tree holds each key once. ' + p.length + ' comparisons.' }); return show(out); }
+      if (keys.length >= MAXN) return show([{ root, msg: 'The figure holds at most ' + MAXN + ' keys. Press Clear or load another tree.' }]);
+      const side = k < last ? 'l' : 'r';
+      out.push({ root, path: p, slot: { parent: last, side }, msg: 'The ' + (side === 'l' ? 'left' : 'right') + ' link of ' + last + ' is null: that is where ' + k + ' belongs.' });
+      keys = keys.concat(k);
+      const nr = build(keys), h = height(nr);
+      out.push({ root: nr, nu: k, msg: 'Insert ' + k + ' as a new leaf. It took ' + p.length + (p.length === 1 ? ' comparison' : ' comparisons') + '; no existing node moved. The tree now has height ' + h + '.' });
+      show(out);
+    }
+    function doSearch() {
+      const k = val(); if (k === null) return bad();
+      const root = build(keys);
+      if (!root) return show([{ root, msg: 'The tree is empty: ' + k + ' is not here. No comparisons.' }]);
+      const { p, out } = trail(root, k, 'search'), last = p[p.length - 1];
+      if (last === k) out.push({ root, path: p.slice(0, -1), found: k, msg: 'Found ' + k + ' after ' + p.length + (p.length === 1 ? ' comparison' : ' comparisons') + '.' });
+      else { const side = k < last ? 'l' : 'r'; out.push({ root, path: p, slot: { parent: last, side }, msg: 'The ' + (side === 'l' ? 'left' : 'right') + ' link of ' + last + ' is null: ' + k + ' is not in the tree. ' + p.length + ' comparisons, at most the height.' }); }
+      show(out);
+    }
+    function doWalk() {
+      const root = build(keys); if (!root) return show([{ root, msg: 'The tree is empty: there is nothing to walk.' }]);
+      const order = inorder(root, []), out = [{ root, out: [], msg: 'In-order: walk the left subtree, then visit the node, then walk the right subtree. Step to visit the keys.' }];
+      order.forEach((k, j) => out.push({ root, cur: k, out: order.slice(0, j + 1), msg: 'Visit ' + k + ': every key smaller than it has been visited already, and every larger one is still to come.' + (j === order.length - 1 ? ' Done: the keys came out in increasing order.' : '') }));
+      show(out);
+    }
+    function load(ks, what) {
+      keys = ks.slice(0, MAXN);
+      const root = build(keys);
+      if (!keys.length) return show([{ root, msg: 'An empty tree. Insert a key: it becomes the root.' }]);
+      show([{ root, msg: what + ' inserted in the order ' + keys.join(', ') + '. Height ' + height(root) + ' for ' + keys.length + (keys.length === 1 ? ' key.' : ' keys.') + (height(root) >= keys.length && keys.length > 3 ? ' A chain: every key went to the right of the last.' : '') }]);
+    }
+    const random = () => { const pool = []; for (let k = 1; k <= 99; k++) pool.push(k); const out = []; while (out.length < 9) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]); return out; };
+    const btn = (label, fn, cls) => el('button', { class: 'btn sm' + (cls ? ' ' + cls : ''), type: 'button', onclick: fn }, label);
+    const finish = btn('Finish', () => ctl.set(steps.length - 1), 'quiet');
+    mount.append(
+      el('div', { class: 'fig-tools' }, el('label', {}, 'key ', num), btn('Insert', doInsert, 'primary'), btn('Search', doSearch), btn('Walk in order', doWalk), finish),
+      el('div', { class: 'fig-scroll bst-wrap' }, svg), stats, log, ctl.el,
+      el('div', { class: 'fig-tools' }, el('span', { class: 'bst-lbl' }, 'load'),
+        btn('Balanced', () => load([40, 20, 60, 10, 30, 50, 70], 'Balanced example: keys'), 'quiet'),
+        btn('Random', () => load(random(), 'Random keys'), 'quiet'),
+        btn('Sorted 1–9', () => load([1, 2, 3, 4, 5, 6, 7, 8, 9], 'Sorted keys'), 'quiet'),
+        btn('Clear', () => load([], 'Empty tree'), 'quiet')));
+    ctl.el.setAttribute('aria-label', 'step through the operation');
+  };
+
+  /* ---------- 31. a binary min-heap as a tree and as an array: insert (sift up), remove the minimum (sift down) (DSA lesson 10) ---------- */
+  W.heap = function (mount, b) {
+    const CAP = 15, VW = 560, CW = 36, CX0 = (VW - CAP * CW) / 2, TREE_Y = 30, LEVEL_H = 50, ARR_Y = 232;
+    const presets = [
+      { name: 'Start heap', arr: Array.isArray(b.start) ? b.start.slice(0, CAP) : [2, 5, 3, 9, 6, 4, 8] },
+      { name: 'Empty', arr: [] },
+      { name: 'Full: 15 items', arr: [1, 3, 2, 6, 4, 5, 9, 8, 7, 10, 11, 12, 13, 14, 15] },
+      { name: 'Random: 10 items', random: true }
+    ];
+    function randomHeap() { const a = []; for (let i = 0; i < 10; i++) { a.push(1 + Math.floor(Math.random() * 40)); let k = a.length - 1; while (k > 0 && a[(k - 1) >> 1] > a[k]) { const p = (k - 1) >> 1; [a[p], a[k]] = [a[k], a[p]]; k = p; } } return a; }
+
+    /* every step of an operation is a frame: the array as it then stands, the cells being compared, the item that travels, and what to say */
+    function insertFrames(base, x) {
+      const a = base.slice(), fr = []; let swaps = 0, i = a.length;
+      a.push(x);
+      fr.push({ arr: a.slice(), hot: [], mover: i, swaps, note: 'Insert ' + x + ': write it in the first free cell, index ' + i + '. The tree is still complete, but ' + x + ' may be smaller than its parent, so it has to climb.' });
+      while (i > 0) {
+        const p = (i - 1) >> 1;
+        if (a[p] > a[i]) {
+          fr.push({ arr: a.slice(), hot: [p, i], mover: i, swaps, note: 'Compare ' + a[i] + ' (index ' + i + ') with its parent ' + a[p] + ' (index ' + p + ' = (' + i + ' − 1) / 2): the parent is larger, so they swap.' });
+          [a[p], a[i]] = [a[i], a[p]]; swaps++; i = p;
+          fr.push({ arr: a.slice(), hot: [], mover: i, swaps, note: 'Swapped: ' + x + ' is now at index ' + i + '. Swaps so far: ' + swaps + '.' });
+        } else {
+          fr.push({ arr: a.slice(), hot: [p, i], mover: i, swaps, note: 'Compare ' + a[i] + ' (index ' + i + ') with its parent ' + a[p] + ' (index ' + p + '): the parent is not larger, so the rule holds. Stop.' });
+          break;
+        }
+      }
+      if (i === 0 && a.length > 1) fr.push({ arr: a.slice(), hot: [0], mover: 0, swaps, note: x + ' reached the root, which has no parent. Stop.' });
+      fr.push({ arr: a.slice(), hot: [], mover: -1, swaps, done: true, note: 'Done: insert(' + x + ') made ' + swaps + ' swap' + (swaps === 1 ? '' : 's') + (a.length > 1 ? ', at most the height of the tree, about log₂ ' + a.length + ' = ' + Math.log2(a.length).toFixed(1) : '') + '.' });
+      return fr;
+    }
+    function removeFrames(base) {
+      const a = base.slice(), fr = [], min = a[0]; let swaps = 0;
+      fr.push({ arr: a.slice(), hot: [0], mover: -1, swaps, note: 'The smallest item is always the root: ' + min + '. Reading it (peek) is one step. To remove it, the root cell must be filled by something.' });
+      const last = a.pop();
+      if (!a.length) { fr.push({ arr: [], hot: [], mover: -1, swaps, removed: min, done: true, note: 'removeMin() returned ' + min + '. That was the only item: the heap is empty.' }); return fr; }
+      a[0] = last;
+      fr.push({ arr: a.slice(), hot: [], mover: 0, swaps, removed: min, note: 'Take the last item, ' + last + ', and put it at the root. The tree is complete again (one cell shorter), but ' + last + ' may be larger than its children, so it has to sink.' });
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1, r = l + 1;
+        if (l >= a.length) { fr.push({ arr: a.slice(), hot: [i], mover: i, swaps, removed: min, note: a[i] + ' (index ' + i + ') has no children: it is a leaf. Stop.' }); break; }
+        const c = r < a.length && a[r] < a[l] ? r : l, kids = r < a.length ? 'its children are ' + a[l] + ' and ' + a[r] + '; the smaller is ' + a[c] : 'its only child is ' + a[l];
+        if (a[i] > a[c]) {
+          fr.push({ arr: a.slice(), hot: [i, c], alt: r < a.length ? [l + r - c] : [], mover: i, swaps, removed: min, note: 'At index ' + i + ', ' + a[i] + ': ' + kids + ' (index ' + c + '). ' + a[c] + ' < ' + a[i] + ', so they swap. (Always the smaller child, or the other child would sit under a larger parent.)' });
+          const v = a[i]; [a[i], a[c]] = [a[c], a[i]]; swaps++; i = c;
+          fr.push({ arr: a.slice(), hot: [], mover: i, swaps, removed: min, note: 'Swapped: ' + v + ' is now at index ' + i + '. Swaps so far: ' + swaps + '.' });
+        } else {
+          fr.push({ arr: a.slice(), hot: [i, c], alt: r < a.length ? [l + r - c] : [], mover: i, swaps, removed: min, note: 'At index ' + i + ', ' + a[i] + ': ' + kids + ' (index ' + c + '). ' + a[i] + ' is not larger than it, so the rule holds. Stop.' });
+          break;
+        }
+      }
+      fr.push({ arr: a.slice(), hot: [], mover: -1, swaps, removed: min, done: true, note: 'Done: removeMin() returned ' + min + ' after ' + swaps + ' swap' + (swaps === 1 ? '' : 's') + ', at most the height of the tree, about log₂ ' + a.length + ' = ' + Math.log2(Math.max(1, a.length)).toFixed(1) + '.' });
+      return fr;
+    }
+
+    let frames = [{ arr: [], hot: [], mover: -1, swaps: 0, done: true, note: '' }], fi = 0, timer = null;
+    const svg = sv('svg', { viewBox: '0 0 ' + VW + ' 272', role: 'img' });
+    const note = el('div', { class: 'fig-status hp-note', role: 'status', 'aria-live': 'polite' });
+    const swapsOut = el('span', { class: 'fig-note hp-swaps' });
+    const val = el('input', { type: 'number', value: '4', min: '-99', max: '999', 'aria-label': 'value to insert' });
+    const sel = el('select', { 'aria-label': 'starting heap' }, presets.map((p, k) => el('option', { value: String(k) }, p.name)));
+    const base = () => frames[frames.length - 1].arr;
+    const pos = (i) => { const d = Math.floor(Math.log2(i + 1)), k = i + 1 - (1 << d), w = VW / (1 << d); return [(k + 0.5) * w, TREE_Y + d * LEVEL_H]; };
+    function render() {
+      const f = frames[fi], a = f.arr; svg.innerHTML = '';
+      const cls = (i) => 'hp-n' + (f.hot.includes(i) ? ' is-hot' : '') + (f.alt && f.alt.includes(i) ? ' is-alt' : '') + (f.mover === i ? ' is-mover' : '');
+      for (let i = 1; i < a.length; i++) { const [x1, y1] = pos((i - 1) >> 1), [x2, y2] = pos(i); svg.append(sv('line', { class: 'hp-edge', x1, y1, x2, y2 })); }
+      for (let i = 0; i < a.length; i++) {
+        const [x, y] = pos(i);
+        svg.append(sv('g', { class: 'hp-node ' + cls(i), 'data-i': i }, sv('circle', { cx: x, cy: y, r: 17 }), sv('text', { class: 'hp-val', x, y: y + 5, 'text-anchor': 'middle' }, String(a[i])), sv('text', { class: 'hp-idx', x: x + 18, y: y - 13, 'text-anchor': 'start' }, String(i))));
+      }
+      for (let i = 0; i < CAP; i++) {
+        const x = CX0 + i * CW, used = i < a.length;
+        svg.append(sv('text', { class: 'hp-idx', x: x + CW / 2, y: ARR_Y - 6, 'text-anchor': 'middle' }, String(i)));
+        svg.append(sv('g', { class: 'hp-cell ' + (used ? cls(i) : 'is-empty'), 'data-i': used ? i : null }, sv('rect', { x, y: ARR_Y, width: CW, height: 32 }), used ? sv('text', { class: 'hp-val', x: x + CW / 2, y: ARR_Y + 21, 'text-anchor': 'middle' }, String(a[i])) : null));
+      }
+      if (f.removed != null) svg.append(sv('text', { class: 'hp-removed', x: 8, y: 18 }, 'removed: ' + f.removed));
+      if (!a.length) svg.append(sv('text', { class: 'hp-idx', x: VW / 2, y: 90, 'text-anchor': 'middle' }, 'empty heap'));
+      svg.setAttribute('aria-label', 'A min-heap of ' + a.length + ' item' + (a.length === 1 ? '' : 's') + ', drawn as a tree and as an array' + (a.length ? ': ' + a.join(', ') : ''));
+      note.textContent = f.note || (a.length ? 'A min-heap: every parent is at most its children. Insert a number, or remove the minimum.' : 'An empty heap. Insert a number.');
+      swapsOut.textContent = 'swaps: ' + f.swaps + ' · items: ' + a.length;
+      back.disabled = fi === 0; fwd.disabled = fi === frames.length - 1; fin.disabled = fi === frames.length - 1;
+      if (fi === frames.length - 1) stop();
+    }
+    function stop() { if (timer) { clearInterval(timer); timer = null; play.textContent = 'Play'; } }
+    function show(fr) { stop(); frames = fr; fi = 0; render(); }
+    const say = (a, text) => show([{ arr: a, hot: [], mover: -1, swaps: 0, done: true, note: text }]);
+    function load(k) { const p = presets[k], a = p.random ? randomHeap() : p.arr.slice(); say(a, a.length ? 'A min-heap of ' + a.length + ' items. Insert a number, or remove the minimum.' : ''); }
+    function insert() {
+      const x = parseInt(val.value, 10);
+      if (!Number.isFinite(x)) return say(base(), 'Type a whole number to insert.');
+      if (base().length >= CAP) return say(base(), 'This picture holds ' + CAP + ' items. Remove one first (a real heap would double its array, as in lesson 1).');
+      show(insertFrames(base(), x));
+    }
+    function removeMin() {
+      if (!base().length) return say([], 'The heap is empty: removeMin() has nothing to give. A real one throws, or returns null.');
+      show(removeFrames(base()));
+    }
+    const ins = el('button', { class: 'btn sm primary', onclick: insert }, 'Insert');
+    const rem = el('button', { class: 'btn sm', onclick: removeMin }, 'Remove min');
+    const back = el('button', { class: 'btn sm', onclick: () => { stop(); fi = Math.max(0, fi - 1); render(); } }, 'Back');
+    const fwd = el('button', { class: 'btn sm primary', onclick: () => { stop(); fi = Math.min(frames.length - 1, fi + 1); render(); } }, 'Step');
+    const play = el('button', { class: 'btn sm', onclick: () => { if (timer) return stop(); if (fi === frames.length - 1) return; play.textContent = 'Pause'; timer = setInterval(() => { fi = Math.min(frames.length - 1, fi + 1); render(); }, 1000); } }, 'Play');
+    const fin = el('button', { class: 'btn sm quiet', onclick: () => { stop(); fi = frames.length - 1; render(); } }, 'Finish');
+    const reset = el('button', { class: 'btn sm quiet', onclick: () => load(parseInt(sel.value, 10)) }, 'Reset');
+    sel.addEventListener('change', () => load(parseInt(sel.value, 10)));
+    val.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); insert(); } });
+    mount.append(svg,
+      el('div', { class: 'fig-tools' }, el('label', {}, 'value ', val), ins, rem, el('label', {}, 'start from ', sel), reset),
+      el('div', { class: 'fig-tools' }, back, fwd, play, fin, swapsOut), note);
+    load(0);
+  };
+
+  /* ---------- graphs: breadth-first, depth-first and Dijkstra on one small fixed graph (SC 107 lesson 11) ---------- */
+  W.graph = function (mount, b) {
+    const mode = b.mode === 'dfs' || b.mode === 'dijkstra' ? b.mode : 'bfs';
+    const N = 'ABCDEFGH', R = 17, INF = Infinity;
+    const pos = [[40, 125], [120, 45], [120, 205], [230, 75], [230, 185], [340, 95], [340, 200], [450, 150]];
+    const E = [[0, 1, 4], [0, 2, 1], [1, 3, 5], [2, 3, 2], [2, 4, 8], [3, 5, 3], [4, 5, 1], [4, 6, 4], [5, 7, 6], [6, 7, 2]];
+    const adj = N.split('').map(() => []);
+    for (const [a, c, w] of E) { adj[a].push([c, w]); adj[c].push([a, w]); }
+    adj.forEach((l) => l.sort((x, y) => x[0] - y[0]));
+    const steps = [];
+    const names = (l) => l.map((x) => N[x[0]]).join(', ');
+
+    function bfs() {
+      const dist = Array(8).fill(-1), parent = Array(8).fill(-1), done = Array(8).fill(false), q = [0], fin = [];
+      dist[0] = 0;
+      const snap = (cur, edge, kind, msg) => steps.push({ cur, edge, kind, msg, ft: q.map((v) => N[v]), val: dist.map((d) => d < 0 ? '' : String(d)), seen: dist.map((d) => d >= 0), done: done.slice(), parent: parent.slice(), fin: fin.slice() });
+      snap(-1, null, '', 'Start: A gets distance 0 and goes into the queue. Nothing else is known yet.');
+      while (q.length) {
+        const v = q.shift();
+        snap(v, null, '', 'Take ' + N[v] + ' from the front of the queue. Its neighbours are ' + names(adj[v]) + '.');
+        adj[v].forEach(([w], k) => {
+          const last = k === adj[v].length - 1, fin1 = () => { if (last) { done[v] = true; fin.push(N[v]); } return last ? ' ' + N[v] + ' is finished.' : ''; };
+          if (dist[w] < 0) { dist[w] = dist[v] + 1; parent[w] = v; q.push(w); const t = fin1(); snap(v, [v, w], 'new', N[w] + ' is new: distance ' + dist[v] + ' + 1 = ' + dist[w] + ', parent ' + N[v] + '. It joins the back of the queue.' + t); }
+          else { const t = fin1(); snap(v, [v, w], 'skip', N[w] + ' was seen before: skip it. (This check is what stops the search going round and round.)' + t); }
+        });
+      }
+      const path = []; for (let v = 7; v >= 0; v = parent[v]) path.unshift(N[v]);
+      snap(-1, null, '', 'The queue is empty, so the search is over. Following the parent links back from H gives the route ' + path.join(' → ') + ': ' + (path.length - 1) + ' edges, the fewest possible.');
+    }
+
+    function dfs() {
+      const num = Array(8).fill(0), parent = Array(8).fill(-1), done = Array(8).fill(false), st = [], fin = []; let count = 0;
+      const snap = (cur, edge, kind, msg) => steps.push({ cur, edge, kind, msg, ft: st.map((v) => N[v]), val: num.map((d) => d ? String(d) : ''), seen: num.map((d) => d > 0), done: done.slice(), parent: parent.slice(), fin: fin.slice() });
+      function visit(v, p) {
+        num[v] = ++count; parent[v] = p; st.push(v); fin.push(N[v]);
+        snap(v, p < 0 ? null : [p, v], p < 0 ? '' : 'new', p < 0 ? 'Start at A: visit it (number 1) and put it on the call stack.' : 'From ' + N[p] + ', ' + N[v] + ' is unvisited: go deeper. Visit ' + N[v] + ' (number ' + num[v] + ') and put it on the stack.');
+        for (const [w] of adj[v]) {
+          if (!num[w]) visit(w, v);
+          else if (w !== p) snap(v, [v, w], 'skip', N[w] + ' is already visited: skip it.');
+        }
+        st.pop(); done[v] = true;
+        snap(p, null, '', N[v] + ' has no unvisited neighbours left: it is finished and leaves the stack.' + (p < 0 ? ' The first call returns.' : ' Back to ' + N[p] + '.'));
+      }
+      visit(0, -1);
+      steps[steps.length - 1].msg += ' Every vertex was visited, in the order ' + fin.join(' ') + '.';
+    }
+
+    function dijkstra() {
+      const dist = Array(8).fill(INF), parent = Array(8).fill(-1), done = Array(8).fill(false), fin = []; let pq = [[0, 0]];
+      dist[0] = 0;
+      const fmt = (d) => d === INF ? '∞' : String(d);
+      const snap = (cur, edge, kind, msg) => steps.push({ cur, edge, kind, msg, ft: pq.map((e) => N[e[0]] + ':' + e[1]), val: dist.map(fmt), seen: dist.map((d) => d < INF), done: done.slice(), parent: parent.slice(), fin: fin.slice() });
+      snap(-1, null, '', 'Start: A has distance 0; every other vertex is ∞ (no route known). The priority queue holds A:0.');
+      while (pq.length) {
+        pq.sort((x, y) => x[1] - y[1] || x[0] - y[0]);
+        const [v, d] = pq.shift();
+        if (d > dist[v]) { snap(v, null, '', 'Take ' + N[v] + ':' + d + ' from the queue. It is stale: ' + N[v] + ' already has the better distance ' + dist[v] + ', so skip it.'); continue; }
+        done[v] = true; fin.push(N[v] + ' ' + d);
+        snap(v, null, '', 'Take the smallest entry, ' + N[v] + ':' + d + '. The distance of ' + N[v] + ' is now final: ' + d + '. Relax its edges.');
+        for (const [w, wt] of adj[v]) {
+          const nd = d + wt;
+          if (nd < dist[w]) {
+            const old = dist[w]; dist[w] = nd; parent[w] = v; pq.push([w, nd]);
+            snap(v, [v, w], 'new', N[v] + '–' + N[w] + ': ' + d + ' + ' + wt + ' = ' + nd + ' beats ' + fmt(old) + '. Update ' + N[w] + ' to ' + nd + ' and add ' + N[w] + ':' + nd + ' to the queue.');
+          } else snap(v, [v, w], 'skip', N[v] + '–' + N[w] + ': ' + d + ' + ' + wt + ' = ' + nd + ' does not beat ' + dist[w] + '. No change.');
+        }
+      }
+      snap(-1, null, '', 'The queue is empty. Every distance is final: ' + dist.map((x, i) => N[i] + ' ' + x).join(', ') + '.');
+    }
+    (mode === 'bfs' ? bfs : mode === 'dfs' ? dfs : dijkstra)();
+
+    const front = { bfs: 'queue (front → back)', dfs: 'call stack (bottom → top)', dijkstra: 'priority queue (smallest first)' }[mode];
+    const lower = { bfs: 'finished, in order', dfs: 'visited, in order', dijkstra: 'final distances, in order' }[mode];
+    const svg = sv('svg', { class: 'gr-svg', viewBox: '0 0 490 250', role: 'img', 'aria-label': 'A graph of eight vertices' });
+    const frontRow = el('div', { class: 'gr-chips' }), finRow = el('div', { class: 'gr-chips' });
+    const msg = el('div', { class: 'fig-status gr-msg', role: 'status', 'aria-live': 'polite' });
+    const chips = (host, items, hotIndex) => host.replaceChildren(...(items.length ? items.map((t, k) => el('span', { class: 'gr-chip' + (k === hotIndex ? ' gr-next' : '') }, t)) : [el('span', { class: 'gr-chip gr-empty' }, 'empty')]));
+
+    function render(i) {
+      const s = steps[i];
+      svg.innerHTML = '';
+      E.forEach(([a, c]) => {
+        const hot = s.edge && ((s.edge[0] === a && s.edge[1] === c) || (s.edge[0] === c && s.edge[1] === a));
+        const tree = s.parent[a] === c || s.parent[c] === a;
+        svg.append(sv('line', { x1: pos[a][0], y1: pos[a][1], x2: pos[c][0], y2: pos[c][1], stroke: hot ? 'var(--ink)' : tree ? 'var(--accent)' : 'var(--rule)', 'stroke-width': hot ? 4 : tree ? 3 : 1.8, 'stroke-dasharray': hot && s.kind === 'skip' ? '6 4' : null, 'stroke-linecap': 'round' }));
+      });
+      if (mode === 'dijkstra') E.forEach(([a, c, w]) => {
+        const x = (pos[a][0] + pos[c][0]) / 2, y = (pos[a][1] + pos[c][1]) / 2;
+        svg.append(sv('rect', { x: x - 9, y: y - 9, width: 18, height: 17, rx: 3, fill: 'var(--paper)', stroke: 'var(--rule)' }), mono(x, y + 4, String(w), { 'text-anchor': 'middle', 'font-size': 12 }));
+      });
+      for (let v = 0; v < 8; v++) {
+        const [x, y] = pos[v], done = s.done[v], waiting = s.seen[v] && !done;
+        svg.append(sv('circle', { cx: x, cy: y, r: R, fill: done ? 'var(--accent)' : waiting ? 'var(--accent-soft)' : 'var(--paper-2)', stroke: s.cur === v ? 'var(--ink)' : s.seen[v] ? 'var(--accent)' : 'var(--rule)', 'stroke-width': s.cur === v ? 3.5 : 1.8 }));
+        svg.append(txt(x, y + 5, N[v], { 'text-anchor': 'middle', 'font-size': 15, 'font-weight': 700, fill: done ? 'var(--accent-ink)' : 'var(--ink)' }));
+        if (s.val[v] !== '') svg.append(mono(x, y + R + 14, s.val[v], { 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 600, fill: s.val[v] === '∞' ? 'var(--ink-3)' : 'var(--ink)' }));
+      }
+      chips(frontRow, s.ft, mode === 'dfs' ? s.ft.length - 1 : 0);
+      chips(finRow, s.fin, -1);
+      msg.textContent = s.msg;
+      svg.setAttribute('aria-label', 'Graph of eight vertices' + (mode === 'dijkstra' ? ' with edge weights. ' : '. ') + s.msg);
+    }
+    const ctl = stepper(steps.length, render, { interval: 1200 });
+    const key = { bfs: 'Number under a vertex: its distance from A. Dark: finished. Tinted: in the queue. Ring: the vertex being looked at. Heavy lines: parent links.', dfs: 'Number under a vertex: the order it was visited. Dark: finished. Tinted: on the stack. Ring: the current vertex. Heavy lines: the edges the search went along.', dijkstra: 'Number under a vertex: the best distance found so far (∞ if none). Dark: final. Ring: the vertex being processed. Heavy lines: the best route found so far to each vertex.' }[mode];
+    mount.append(
+      el('div', { class: 'gr-wrap' },
+        el('div', { class: 'gr-left fig-scroll' }, svg),
+        el('div', { class: 'gr-side' }, el('div', { class: 'gr-lab' }, front), frontRow, el('div', { class: 'gr-lab' }, lower), finRow)),
+      el('p', { class: 'gr-key' }, key), msg, ctl.el);
+  };
+
   /* ---------- the directory tree of a shell lesson: click a name to see its paths; "go here" moves the marker ---------- */
   // params: tree (the same shape as a lesson's setup, keys as paths from the home directory), cwd ('~' or '~/x'), the home is /home/student
   W.fstree = function (mount, b) {

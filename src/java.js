@@ -8,8 +8,8 @@
    Double, Character, Arrays, Collections, System.out.print/println/printf, String.format, exceptions with try/catch/finally and
    user-defined exception classes, switch (classic and arrow, and switch expressions with yield), enhanced for, labelled break/continue, var.
    Not covered: generics in user classes, lambdas and method references, nested or anonymous classes, enums, interfaces with default
-   methods, threads, files, checked-exception analysis ("unreported exception"), definite assignment ("might not have been
-   initialized"), unreachable-code errors.
+   methods, threads, files, and checked-exception analysis of library calls and of `throw e` (`throw new X` and calls of the program's own
+   methods and constructors are checked, as are catches that cannot happen).
 
    Exposed as window.JAVA (browser) or module.exports (node):
      JAVA.run(code, stdin, { maxSteps, maxMs, write(text), more() }) → { out, err, exit }   err is the compile error or the uncaught exception text
@@ -232,8 +232,8 @@
         if (atOp('<')) fail('generic methods are not supported by this interpreter');
         // constructor: Name (
         if (at('id') && toks[p].v === c.name && peek(1).t === 'op' && peek(1).v === '(') {
-          const line = toks[p].line; next(); const params = parseParams(); parseThrows();
-          c.ctors.push({ k: 'ctor', mods: m, params, body: parseBlock(), line });
+          const line = toks[p].line; next(); const params = parseParams(); const thr = parseThrows();
+          c.ctors.push({ k: 'ctor', mods: m, params, body: parseBlock(), line, throws: thr });
           continue;
         }
         if (at('id') && peek(1).t === 'op' && peek(1).v === '(') fail('invalid method declaration; return type required');
@@ -241,14 +241,14 @@
         if (type.k === 'var') fail("'var' is not allowed here");
         const nameTok = toks[p]; const name = ident();
         if (atOp('(')) {
-          const params = parseParams(); parseThrows();
+          const params = parseParams(); const thr = parseThrows();
           let body = null;
           if (atOp(';')) { next(); if (!isInterface && !m.abstract && !m.native) fail('missing method body, or declare abstract', nameTok); }
           else { if (m.abstract) fail('abstract methods cannot have a body', nameTok); body = parseBlock(); }
           if (isInterface && !m.static && !body) m.abstract = true;
           if (isInterface && body && !m.static && !m.default) fail('interface abstract methods cannot have body', nameTok);
           if (isInterface) m.public = true;
-          c.methods.push({ k: 'method', name, type, params, body, mods: m, line: nameTok.line, abstract: !!m.abstract, static: !!m.static });
+          c.methods.push({ k: 'method', name, type, params, body, mods: m, line: nameTok.line, abstract: !!m.abstract, static: !!m.static, throws: thr });
         } else {
           // field(s): Type a, b = 1, c[];
           let fname = name, fline = nameTok.line;
@@ -279,7 +279,7 @@
       }
       expectOp(')'); return params;
     }
-    function parseThrows() { if (atKw('throws')) { next(); parseType(true); while (atOp(',')) { next(); parseType(true); } } }
+    function parseThrows() { const list = []; if (atKw('throws')) { next(); list.push(parseType(true)); while (atOp(',')) { next(); list.push(parseType(true)); } } return list; }
 
     // ----- statements
     function parseBlock() {
@@ -581,7 +581,7 @@
 
   const LIB_PKG = { String: 'java.lang', Object: 'java.lang', Integer: 'java.lang', Long: 'java.lang', Double: 'java.lang', Float: 'java.lang', Character: 'java.lang', Boolean: 'java.lang', Short: 'java.lang', Byte: 'java.lang', Number: 'java.lang', Math: 'java.lang', System: 'java.lang', StringBuilder: 'java.lang', Comparable: 'java.lang', CharSequence: 'java.lang', Iterable: 'java.lang', PrintStream: 'java.io', InputStream: 'java.io',
     Throwable: 'java.lang', Exception: 'java.lang', RuntimeException: 'java.lang', Error: 'java.lang', ArithmeticException: 'java.lang', IllegalArgumentException: 'java.lang', IllegalStateException: 'java.lang', NumberFormatException: 'java.lang', IndexOutOfBoundsException: 'java.lang', ArrayIndexOutOfBoundsException: 'java.lang', StringIndexOutOfBoundsException: 'java.lang', NullPointerException: 'java.lang', ClassCastException: 'java.lang', NegativeArraySizeException: 'java.lang', UnsupportedOperationException: 'java.lang', StackOverflowError: 'java.lang', OutOfMemoryError: 'java.lang', ArrayStoreException: 'java.lang', CloneNotSupportedException: 'java.lang', InterruptedException: 'java.lang',
-    ArrayList: 'java.util', List: 'java.util', Collection: 'java.util', HashMap: 'java.util', TreeMap: 'java.util', Map: 'java.util', Entry: 'java.util', HashSet: 'java.util', TreeSet: 'java.util', Set: 'java.util', Scanner: 'java.util', Random: 'java.util', Arrays: 'java.util', Collections: 'java.util', NoSuchElementException: 'java.util', InputMismatchException: 'java.util', ConcurrentModificationException: 'java.util', Iterator: 'java.util', LinkedList: 'java.util', Deque: 'java.util', Queue: 'java.util',
+    ArrayList: 'java.util', List: 'java.util', Collection: 'java.util', PriorityQueue: 'java.util', HashMap: 'java.util', LinkedHashMap: 'java.util', LinkedHashSet: 'java.util', TreeMap: 'java.util', Map: 'java.util', Entry: 'java.util', HashSet: 'java.util', TreeSet: 'java.util', Set: 'java.util', Scanner: 'java.util', Random: 'java.util', Arrays: 'java.util', Collections: 'java.util', NoSuchElementException: 'java.util', InputMismatchException: 'java.util', ConcurrentModificationException: 'java.util', Iterator: 'java.util', LinkedList: 'java.util', Deque: 'java.util', Queue: 'java.util',
     IOException: 'java.io', FileNotFoundException: 'java.io', UncheckedIOException: 'java.io', IllegalFormatException: 'java.util', IllegalFormatConversionException: 'java.util', MissingFormatArgumentException: 'java.util', UnknownFormatConversionException: 'java.util', NoSuchFieldException: 'java.lang', ArrayDeque: 'java.util', Comparator: 'java.util', Objects: 'java.util' };
   const qualified = (n) => (LIB_PKG[n] ? LIB_PKG[n] + '.' : '') + n;
 
@@ -682,7 +682,7 @@
     switch (typeof v) { case 'string': return 'String'; case 'number': return 'Integer'; case 'bigint': return 'Long'; case 'boolean': return 'Boolean'; }
     if (v instanceof JBox) return v.kind === 'D' ? 'Double' : v.kind === 'F' ? 'Float' : 'Character';
     if (v instanceof JObj) return v.cls.name; if (v instanceof JArr) return typeStr(v.et) + '[]'; if (v instanceof JList) return v.kind || 'ArrayList';
-    if (v instanceof JMap) return v.sorted ? 'TreeMap' : 'HashMap'; if (v instanceof JSet) return v.m.sorted ? 'TreeSet' : 'HashSet';
+    if (v instanceof JMap) return v.sorted ? 'TreeMap' : v.linked ? 'LinkedHashMap' : 'HashMap'; if (v instanceof JSet) return v.m.sorted ? 'TreeSet' : v.m.linked ? 'LinkedHashSet' : 'HashSet';
     if (v instanceof JSB) return 'StringBuilder'; if (v instanceof JEntry) return 'Entry'; if (v instanceof JIter) return 'Iterator'; if (v instanceof JCmp) return 'Comparator'; if (v instanceof JScanner) return 'Scanner'; if (v instanceof JRandom) return 'Random';
     if (v === SYSOUT || v === SYSERR) return 'PrintStream'; if (v === SYSIN) return 'InputStream';
     return 'Object';
@@ -692,7 +692,7 @@
   // HashMap iterates in the order of its buckets, and a program that prints a map shows that order; so the buckets are modelled
   // (hash spread, table size 16 doubling at 3/4 full), and within a bucket entries keep the order they were added in. TreeMap is sorted.
   class JMap {
-    constructor(sorted, cmpFn) { this.sorted = !!sorted; this.cmpFn = cmpFn || null; this.buckets = new Map(); this.size = 0; this.cap = 16; this.seq = 0; this.id = ++JObj.n; this.cache = null; }
+    constructor(sorted, cmpFn, linked) { this.sorted = !!sorted; this.linked = !!linked; this.cmpFn = cmpFn || null; this.buckets = new Map(); this.size = 0; this.cap = 16; this.seq = 0; this.id = ++JObj.n; this.cache = null; }
     cmp(x, y, R) { return this.cmpFn ? this.cmpFn(x, y) : jcmp(x, y, R); }   // a TreeMap or TreeSet made with a Comparator orders, and tells keys apart, by that
     find(key, R) {
       if (this.cmpFn) { for (const e of this.entries(R)) if (this.cmpFn(e.key, key) === 0) return e; return null; }   // keys are the same when the comparator says 0, not when equals() does
@@ -712,11 +712,12 @@
       if (this.cache) return this.cache;
       const all = []; for (const b of this.buckets.values()) for (const e of b) all.push(e);
       if (this.sorted) all.sort((x, y) => this.cmp(x.key, y.key, R));
+      else if (this.linked) all.sort((x, y) => x.seq - y.seq);   // LinkedHashMap: the order the keys were first put in
       else { const n = this.cap; const idx = (h) => (h ^ (h >>> 16)) & (n - 1); all.sort((x, y) => (idx(x.h) - idx(y.h)) || (x.seq - y.seq)); }
       return (this.cache = all);
     }
   }
-  class JSet { constructor(sorted, cmpFn) { this.m = new JMap(sorted, cmpFn); this.id = ++JObj.n; } }
+  class JSet { constructor(sorted, cmpFn, linked) { this.m = new JMap(sorted, cmpFn, linked); this.id = ++JObj.n; } }
 
   class JScanner {
     constructor(src, more) { this.s = src; this.p = 0; this.closed = false; this.id = ++JObj.n; this.more = more || null; }   // more(): a program that stays running (Bot Arena) waits here for the next text; '' ends the input
@@ -1008,7 +1009,7 @@
     'containsKey(Object)': ['boolean', (m, a, R) => !!m.find(a[0], R)], 'containsValue(Object)': ['boolean', (m, a, R) => m.entries(R).some(e => jeq(e.value, a[0], R))], 'remove(Object)': ['V', (m, a, R) => { const v = m.remove(a[0], R); return v === undefined ? null : v; }],
     'size()': ['int', (m) => m.size], 'isEmpty()': ['boolean', (m) => m.size === 0], 'clear()': ['void', (m) => m.clear()], 'putIfAbsent(K,V)': ['V', (m, a, R) => { const e = m.find(a[0], R); if (e && e.value !== null) return e.value; m.put(a[0], a[1], R); return null; }],
     'putAll(Map<K,V>)': ['void', (m, a, R) => { for (const e of nn(R, a[0]).entries(R)) m.put(e.key, e.value, R); }],
-    'keySet()': ['Set<K>', (m, a, R) => { const s = new JSet(m.sorted); for (const e of m.entries(R)) s.m.put(e.key, true, R); return s; }], 'values()': ['Collection<V>', (m, a, R) => new JList(m.entries(R).map(e => e.value))],
+    'keySet()': ['Set<K>', (m, a, R) => { const s = new JSet(m.sorted, null, m.linked); for (const e of m.entries(R)) s.m.put(e.key, true, R); return s; }], 'values()': ['Collection<V>', (m, a, R) => new JList(m.entries(R).map(e => e.value))],
     'entrySet()': ['Set<Entry<K,V>>', (m, a, R) => { const s = new JSet(false); s.ordered = m.entries(R).map(entryOf); for (const e of s.ordered) s.m.put(e, true, R); return s; }],
     'toString()': ['String', (m, a, R) => dstr(m, R)], 'equals(Object)': ['boolean', (m, a, R) => jeq(m, a[0], R)], 'hashCode()': ['int', (m, a, R) => jhash(m, R)],
     'firstKey()': ['K', (m, a, R) => { const e = m.entries(R); if (!e.length) throwJ(R, 'NoSuchElementException', null); return e[0].key; }], 'lastKey()': ['K', (m, a, R) => { const e = m.entries(R); if (!e.length) throwJ(R, 'NoSuchElementException', null); return e[e.length - 1].key; }],
@@ -1045,6 +1046,28 @@
   const mkDeque = (items) => { const l = new JList(items); l.kind = 'ArrayDeque'; return l; };
   def('ArrayDeque', { tparams: ['E'], impl: ['Deque'], ctors: { '': () => mkDeque(), 'int': () => mkDeque(), 'Collection<E>': (o, a, R) => { const items = collItems(R, a[0]); const l = mkDeque(); for (const x of items) l.a.push(noNull(R, l, x)); return l; } }, methods: DEQUE_METHODS });
   const mkLinked = (items) => { const l = new JList(items); l.kind = 'LinkedList'; return l; };
+  // PriorityQueue: the same binary heap as OpenJDK's, in a plain array (siftUp, siftDown, heapify and removeAt as there), so that printing a queue or
+  // iterating it shows the heap's array order, as Java does. Elements are ordered by a Comparator, or by compareTo when there is none.
+  const pqCmp = (l, R) => (l.cmpFn ? l.cmpFn : (x, y) => jcmp(x, y, R));
+  const pqUp = (l, k, x, R) => { const c = pqCmp(l, R); while (k > 0) { const parent = (k - 1) >>> 1; const e = l.a[parent]; if (c(x, e) >= 0) break; l.a[k] = e; k = parent; } l.a[k] = x; };
+  const pqDown = (l, k, x, R) => { const c = pqCmp(l, R); const n = l.a.length; const half = n >>> 1; while (k < half) { let child = 2 * k + 1; let ch = l.a[child]; const right = child + 1; if (right < n && c(ch, l.a[right]) > 0) { child = right; ch = l.a[child]; } if (c(x, ch) <= 0) break; l.a[k] = ch; k = child; } l.a[k] = x; };
+  const pqOffer = (l, x, R) => { if (x === null) throwJ(R, 'NullPointerException', null); if (!l.cmpFn) jcmp(x, x, R); l.a.push(x); pqUp(l, l.a.length - 1, x, R); return true; };
+  const pqPoll = (l, R) => { if (!l.a.length) return null; const result = l.a[0]; const x = l.a.pop(); if (l.a.length) pqDown(l, 0, x, R); return result; };
+  const pqRemoveAt = (l, i, R) => { const last = l.a.length - 1; if (i === last) { l.a.pop(); return; } const moved = l.a.pop(); pqDown(l, i, moved, R); if (l.a[i] === moved) pqUp(l, i, moved, R); };
+  const mkPQ = (cmpFn) => { const l = new JList(); l.kind = 'PriorityQueue'; l.cmpFn = cmpFn || null; return l; };
+  const PQ_METHODS = Object.assign({}, QUEUE_METHODS, {
+    'add(E)': ['boolean', (l, a, R) => pqOffer(l, a[0], R)], 'offer(E)': ['boolean', (l, a, R) => pqOffer(l, a[0], R)],
+    'poll()': ['E', (l, a, R) => pqPoll(l, R)], 'remove()': ['E', (l, a, R) => { emptyQ(R, l); return pqPoll(l, R); }],
+    'remove(Object)': ['boolean', (l, a, R) => { const i = l.a.findIndex(x => jeq(a[0], x, R)); if (i < 0) return false; pqRemoveAt(l, i, R); return true; }],
+    'addAll(Collection<E>)': ['boolean', (l, a, R) => { const items = collItems(R, a[0]); for (const x of items) pqOffer(l, x, R); return items.length > 0; }],
+    'comparator()': ['Comparator<E>', (l) => l.cmpObj || null]
+  });
+  const pqFrom = (R, src, cmpFn) => { const l = mkPQ(cmpFn); for (const x of collItems(R, src)) { if (x === null) throwJ(R, 'NullPointerException', null); l.a.push(x); } if (!(src instanceof JList && src.kind === 'PriorityQueue') && !(src instanceof JSet && src.m.sorted)) { if (!cmpFn) for (const x of l.a) jcmp(x, x, R); for (let i = (l.a.length >>> 1) - 1; i >= 0; i--) pqDown(l, i, l.a[i], R); } return l; };
+  def('PriorityQueue', { tparams: ['E'], impl: ['Queue'], ctors: {
+    '': () => mkPQ(), 'int': (o, a, R) => { if (a[0] < 1) throwJ(R, 'IllegalArgumentException', null); return mkPQ(); },
+    'Comparator<E>': (o, a, R) => { const l = mkPQ(a[0] === null ? null : cmpWith(R, a[0])); l.cmpObj = a[0]; return l; },
+    'int,Comparator<E>': (o, a, R) => { if (a[0] < 1) throwJ(R, 'IllegalArgumentException', null); const l = mkPQ(a[1] === null ? null : cmpWith(R, a[1])); l.cmpObj = a[1]; return l; },
+    'Collection<E>': (o, a, R) => pqFrom(R, nn(R, a[0]), a[0] instanceof JList && a[0].kind === 'PriorityQueue' ? a[0].cmpFn : null) }, methods: PQ_METHODS });
   def('LinkedList', { tparams: ['E'], impl: ['List', 'Deque'], ctors: { '': () => mkLinked(), 'Collection<E>': (o, a, R) => mkLinked(collItems(R, a[0])) }, methods: Object.assign({}, DEQUE_METHODS, LIST_METHODS, { 'remove()': DEQUE_METHODS['remove()'] }) });
   def('Set', { isInterface: true, tparams: ['E'], impl: ['Collection'], methods: SET_METHODS, statics: { 'of(T...)': ['Set<T>', (o, a, R) => { const s = new JSet(false); for (const x of a[0].a) { if (s.m.find(x, R)) throwJ(R, 'IllegalArgumentException', 'duplicate element: ' + dstr(x, R)); s.m.put(x, true, R); } s.immutable = true; return s; }] } });
   def('HashSet', { tparams: ['E'], impl: ['Set'], ctors: { '': () => new JSet(false), 'int': () => new JSet(false), 'Collection<E>': (o, a, R) => { const s = new JSet(false); for (const x of collItems(R, a[0])) s.m.put(x, true, R); return s; } }, methods: SET_METHODS });
@@ -1061,7 +1084,9 @@
   def('TreeSet', { tparams: ['E'], impl: ['Set'], ctors: { '': () => new JSet(true), 'Comparator<E>': (o, a, R) => new JSet(true, a[0] === null ? null : cmpWith(R, a[0])), 'Collection<E>': (o, a, R) => { const s = new JSet(true); for (const x of collItems(R, a[0])) s.m.put(x, true, R); return s; } }, methods: TREESET_METHODS });
   def('Entry', { isInterface: true, tparams: ['K', 'V'], methods: { 'getKey()': ['K', (e) => e.key], 'getValue()': ['V', (e) => e.value], 'setValue(V)': ['V', (e, a) => { const old = e.value; e.value = a[0]; if (e.src) e.src.value = a[0]; return old; }], 'toString()': ['String', (e, a, R) => dstr(e, R)], 'equals(Object)': ['boolean', (e, a, R) => jeq(e, a[0], R)], 'hashCode()': ['int', (e, a, R) => jhash(e, R)] } });
   def('Map', { isInterface: true, tparams: ['K', 'V'], methods: MAP_METHODS, statics: { 'of()': ['Map<K,V>', () => { const m = new JMap(false); m.immutable = true; return m; }], 'entry(K,V)': ['Entry<K,V>', (o, a) => new JEntry(a[0], a[1])] } });
+  def('LinkedHashSet', { tparams: ['E'], impl: ['Set'], ctors: { '': () => new JSet(false, null, true), 'int': () => new JSet(false, null, true), 'Collection<E>': (o, a, R) => { const s = new JSet(false, null, true); for (const x of collItems(R, a[0])) s.m.put(x, true, R); return s; } }, methods: SET_METHODS });
   def('HashMap', { tparams: ['K', 'V'], impl: ['Map'], ctors: { '': () => new JMap(false), 'int': () => new JMap(false), 'Map<K,V>': (o, a, R) => { const m = new JMap(false); for (const e of nn(R, a[0]).entries(R)) m.put(e.key, e.value, R); return m; } }, methods: MAP_METHODS });
+  def('LinkedHashMap', { tparams: ['K', 'V'], impl: ['Map'], ctors: { '': () => new JMap(false, null, true), 'int': () => new JMap(false, null, true), 'Map<K,V>': (o, a, R) => { const m = new JMap(false, null, true); for (const e of nn(R, a[0]).entries(R)) m.put(e.key, e.value, R); return m; } }, methods: MAP_METHODS });
   const subMap = (m, R, test) => { const r = new JMap(true, m.cmpFn); for (const e of m.entries(R)) if (test(e.key)) r.put(e.key, e.value, R); return r; };
   const TREEMAP_METHODS = Object.assign({}, MAP_METHODS, {
     'firstEntry()': ['Entry<K,V>', (m, a, R) => { const e = m.entries(R); return e.length ? new JEntry(e[0].key, e[0].value) : null; }], 'lastEntry()': ['Entry<K,V>', (m, a, R) => { const e = m.entries(R); return e.length ? new JEntry(e[e.length - 1].key, e[e.length - 1].value) : null; }],
@@ -1319,6 +1344,42 @@
       const v = { slot: ctx.nslots.n++, type, final: !!final, name }; ctx.scope.vars.set(name, v); return v;
     }
     const withScope = (ctx, f) => { const saved = ctx.scope; ctx.scope = new Scope(saved); try { return f(); } finally { ctx.scope = saved; } };
+    // Checked exceptions (JLS 11.2, simplified; javac's "unreported exception" and "never thrown" errors). A checked exception is a Throwable that is
+    // neither a RuntimeException nor an Error. It must be caught by an enclosing try, or the method must declare it with `throws`. Only what can be seen
+    // in the source is checked: `throw new X(...)`, calls of methods and constructors of the program's own classes that declare `throws`.
+    const isChecked = (n) => isSubclass(n, 'Throwable') && !isSubclass(n, 'RuntimeException') && !isSubclass(n, 'Error');
+    const SKIP_KEYS = new Set(['m', 'ctor', 'ci', 'recvType', 'type', 't', 'decl', 'cls', 'superCtor', 'explicit', 'mods']);
+    function checkedExceptions(body, throwsTypes, line) {
+      const declared = (throwsTypes || []).map(t => resolveType(t, line).n);
+      const frames = [];   // open try blocks, innermost last: { catches: [class names], thrown: [class names] }
+      const raise = (n, at) => {
+        if (!isChecked(n)) return;
+        for (let i = frames.length - 1; i >= 0; i--) { frames[i].thrown.push(n); if (frames[i].catches.some(c => isSubclass(n, c))) return; }
+        if (!declared.some(d => isSubclass(n, d))) err(at, 'unreported exception ' + n + '; must be caught or declared to be thrown');
+      };
+      const raiseAll = (rec, at) => { for (const t of (rec && rec.decl && rec.decl.throws) || []) raise(resolveType(t, at).n, at); };
+      const seen = new Set();
+      function walk(x) {
+        if (Array.isArray(x)) { for (const y of x) walk(y); return; }
+        if (!x || typeof x !== 'object' || seen.has(x)) return;
+        seen.add(x);
+        switch (x.k) {
+          case 'Try': {
+            const frame = { catches: [], thrown: [] };
+            for (const c of x.catches) for (const t of c.types) frame.catches.push(t.n);
+            frames.push(frame); walk(x.block); frames.pop();
+            for (const c of x.catches) for (const t of c.types) if (isChecked(t.n) && t.n !== 'Exception' && t.n !== 'Throwable' && !frame.thrown.some(w => isSubclass(w, t.n) || isSubclass(t.n, w))) err(c.line, 'exception ' + t.n + ' is never thrown in body of corresponding try statement');
+            for (const c of x.catches) walk(c.body);
+            walk(x.fin); return;
+          }
+          case 'Throw': walk(x.e); if (x.e && x.e.k === 'New' && x.e.ci) raise(x.e.ci.name, x.line); return;
+          case 'Call': walk(x.target); walk(x.args); raiseAll(x.m, x.line); return;
+          case 'New': walk(x.args); raiseAll(x.ctor, x.line); return;
+        }
+        for (const key in x) if (!SKIP_KEYS.has(key)) walk(x[key]);
+      }
+      walk(body);
+    }
     function checkBodies() {
       for (const name in classes) {
         const c = classes[name];
@@ -1332,6 +1393,7 @@
           if (m.ret.k !== 'void' && completes(m.body)) err(m.body.closeLine || m.body.endLine || lastLine(m.body), 'missing return statement');
           m.nslots = ctx.nslots.n;
           definiteAssignment(m.body);
+          checkedExceptions(m.body, m.decl && m.decl.throws, m.line);
         }
         for (const k of c.ctors) {
           const ctx = { cls: c, isStatic: false, method: k, scope: new Scope(null), nslots: { n: 0 }, loops: [], retType: T.void, inCtor: true };
@@ -1343,7 +1405,7 @@
           for (let i = 0; i < body.length; i++) if (body[i].k === 'ExprStmt' && body[i].e.k === 'CtorCall') err(body[i].line, 'call to ' + body[i].e.which + ' must be first statement in constructor');
           if (k.body) stmt(k.body, ctx);
           k.nslots = ctx.nslots.n;
-          if (k.body) definiteAssignment(k.body);
+          if (k.body) { definiteAssignment(k.body); checkedExceptions(k.body, k.decl && k.decl.throws, k.line); }
         }
       }
     }

@@ -96,7 +96,7 @@ site/
     shellgrade.js        the shell course's setups (file trees) and grader → window.SHELLGRADE; node: test_course.js shell (§9f)
     course_shell.js      SC 108 The Command Line (lang 'shell': examples and exercises are terminals)
     course_ml.js         SC 109 How Machines Learn (Python; the first course written to LESSON_STANDARD.md: named skills, checkpoints; figures knn, perceptron, descent, dtree)
-    course_computer.js   SC 099 What Is a Computer? (lang 'none': no runnable code; answer/choice/table exercises; figures parts, cpu, bits)
+    course_computer.js   SC 099 What Is a Computer? (lang 'none': no runnable code; 11 lessons, 2 checkpoints; answer/choice/table exercises; figures parts, cpu, bits, codes, pixels, colour, sampling, gates, adder, packets, passwords, robot)
     guide.js             the teacher guide (one HTML string) → window.GUIDE; build.js also writes dist/teacher-guide.html
     qr.js                QR encoder → window.QR
     teach.js             assignments / submissions / grade book → window.TEACH
@@ -513,7 +513,7 @@ in the tests) wraps method-writing exercises in a class with a `main`.
   Exception messages use JDK 21's wording (`Index 5 out of bounds for length 3`, `Range [2, 1) out of bounds for length 3`).
 - **Not covered** (the parser says so in plain words): generics in user classes, lambdas and method references, nested/anonymous/local
   classes, enums, records, interfaces with default-method bodies on user classes are fine but `switch` patterns are not, try-with-resources,
-  streams, threads, files, checked-exception analysis (`throws` is parsed and ignored). `==` between two Strings compares the text (Java
+  streams, threads, files, checked-exception analysis beyond what is written in the source (`throws` is enforced for `throw new X` and for calls of the program's own methods and constructors: `checkedExceptions` in java.js). `==` between two Strings compares the text (Java
   compares references), so lesson 2 shows that trap as a listing, not a runnable example. Recursion deeper than `MAX_DEPTH` (1200) calls is a
   `StackOverflowError`, and in a browser the worker's JS stack gives out sooner, at about 270 calls (real Java allows about ten thousand).
 - **Limits and safety.** The worker's watchdog is 8 s and the interpreter's own `maxMs` 5 s (checked every 1024 steps); output is capped
@@ -721,7 +721,7 @@ Students write a bot (Python, Java, C++ or Scheme) that plays Tron against built
   experiment timed in the page; param `algo`), mergeviz (bottom-up merge sort, every merge step and the comparison count), partition (Lomuto
   partition with its invariant), linkedlist (nodes and arrows; get, insert, add first/last, remove first, with hop counts; all three take `items`),
   stackqueue (`kind: 'stack' | 'queue'`: eight cells, push/pop or enqueue/dequeue with wrap-round, one operation at a time), callstack
-  (`fn: 'sum' | 'fact' | 'fib'`, `n`: frames pushed and popped step by step, with the call count); and blocks (From Scratch to Python: a stack of Scratch-style blocks drawn with the palette
+  (`fn: 'sum' | 'fact' | 'fib'`, `n`: frames pushed and popped step by step, with the call count); hashtable (a chained table: hash arithmetic, collisions, load factor, doubling, a bad-hash switch; lesson 8), bst (insert, search, walk in order, presets; lesson 9), heap (min-heap as tree and array, sift up and down, step by step; lesson 10), graph (`mode: 'bfs' | 'dfs' | 'dijkstra'` on one fixed eight-vertex graph; lesson 11); and blocks (From Scratch to Python: a stack of Scratch-style blocks drawn with the palette
   colours beside highlighted Python; `stack: [[category, text, children?, elseChildren?]]`, `python`, in text `[words]` is a text input, `(10)`
   a number, `<cond>` a boolean), and blockquiz (the same blocks as a quiz: `items: [{stack, answer | [answers], hint}]`; the typed line is
   compared with spaces outside quotes removed and single quotes read as double; capitals and colons are not forgiven; two-line answers are

@@ -58,7 +58,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   (`src/javaworker.js`, data block `java-src`), `JAVARUN` in `runner.js`, harness for method exercises in `src/javautil.js`.
 - Error messages are javac's words; outputs match real Java (number formatting, HashMap order, Random sequence, stack traces). When adding
   a lesson example, make sure its expected output is what a real JVM would print, not what seems reasonable.
-- Not covered: user generics, lambdas, nested classes, enums, records, streams, files, threads, checked-exception analysis; `==` on Strings compares text (so that trap is taught with a listing, not a runnable example).
+- Not covered: user generics, lambdas, nested classes, enums, records, streams, files, threads; `==` on Strings compares text (so that trap is taught with a listing, not a runnable example).
 - Queue/Deque/ArrayDeque have their own method tables (no index methods; `remove(x)` removes a value, `remove()` the head), as in Java.
   Comparator works only as a user class implementing `compare` (no lambdas), or `Collections.reverseOrder()`; `TreeSet`/`TreeMap` take one and then treat keys as the same when it says 0, as Java does. `%f %e %g` round the shortest decimal half-up, like
   `java.util.Formatter`. Exception messages follow JDK 21's wording. `test_java.js` expectations were produced by a real JDK: keep it so.
@@ -86,16 +86,17 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   app and Scheme, course text): see its commit messages. Bugs it found but left: Scheme character literals. (Java switch expressions and `yield` were added in October 2026, with javac's errors for a missing `default`, `yield` outside a switch expression, `break`/`return` out of one, and unreachable statements: `difftest/java/probe-sw*.java`, `probe-e*.java`, `probe-u*.java`. Pattern matching in `case` is still not covered.) (Java `%1$s` / `%<s`
   and `new TreeSet<>(comparator)` / `new TreeMap<>(comparator)` were fixed in October 2026: `difftest/java/probe-tc.java`.) (Shell `${s/a/b}`, `${f%.txt}`, `${p##*/}`, `${s^^}` and negative slices were added in October 2026 and are checked against bash in `difftest/shell.txt`; `${x@Q}`-style transforms and arrays still report "bad substitution".)
 - SC 105 Modern C++ has 8 lessons (string, vector, references, struct, class, algorithms/lambdas, map/set, gradebook project), 15 exercises.
-- SC 107 Data Structures and Algorithms (Java, `src/course_dsa.js`): lessons 1-7 (cost and arrays; searching; simple sorts; merge sort and
-  quicksort; linked lists; stacks and queues; recursion), 24 exercises (code and `answer` kinds), figures growth, arrayops, dynarray, sortlab,
-  mergeviz, partition, linkedlist, stackqueue, callstack. The interpreter has no `java.util.Stack` (taught as legacy, not run); `ArrayDeque`
-  works as stack, queue and deque. A `\n` inside a Java string in a lesson must be written `\\n` in the template literal.
-  Linked-list exercises use `classes: true` with two top-level classes (no nested classes in the interpreter). The interpreter's recursion
-  limit is `MAX_DEPTH` = 1200 frames in node, but in Chromium's worker the JS stack runs out at about 270 Java frames (measured October 2026: a
-  `sum(a, i+1)` recursion fails between 250 and 300): keep recursion demos and exercise tests under about 200 deep, and check examples in
-  a browser, since node-based tests cannot see this. Fixing it properly means fewer JS frames per Java call in `java.js`. Planned next:
-  hash tables; binary search trees; heaps and priority queues; graphs; a project. (Lesson text already points at hash tables as lesson 8,
-  trees as 9, heaps as 10, graphs as 11.)
+- SC 107 Data Structures and Algorithms (Java, `src/course_dsa.js`, finished October 2026): 12 lessons (cost and arrays; searching; simple sorts; merge sort and
+  quicksort; linked lists; stacks and queues; recursion; hash tables; binary search trees; heaps and priority queues; graphs; a project, the busiest words),
+  about 50 exercises (`ds-<n>-<k>`; code and `answer` kinds), every lesson `standard: 1` at lesson level. Figures growth, arrayops, dynarray, search, sortlab,
+  mergeviz, partition, linkedlist, stackqueue, callstack, hashtable, bst, heap, graph (modes bfs, dfs, dijkstra). Lessons 8-11 were written by parallel
+  agents and checked against a real JDK 21 (`test_diff.js java` runs every example and exercise solution). The interpreter has no `java.util.Stack` (taught as legacy,
+  not run); `ArrayDeque` works as stack, queue and deque; `PriorityQueue` is OpenJDK's heap, so printing it shows the heap array. A `\n` inside a Java string in a
+  lesson must be written `\\n` in the template literal. Linked-list, tree and heap exercises use `classes: true` with top-level classes (no nested classes in the
+  interpreter). Graph exercises take a ragged `int[][]` adjacency list because a `{call}` test cannot build a `List<List<Integer>>`. The interpreter's recursion
+  limit is `MAX_DEPTH` = 1200 frames in node, but in Chromium's worker the JS stack runs out at about 270 Java frames (measured October 2026): keep recursion demos and
+  exercise tests under about 200 deep, and check examples in a browser, since node-based tests cannot see this. Fixing it properly means fewer JS frames per Java call
+  in `java.js`. Not done: course-level skills and checkpoints (they would renumber lessons), AVL/red-black rotations as code, minimum spanning trees, union-find, dynamic programming.
 - SC 100 From Scratch to Python (`src/course_scratch.js`, grades 5-8): lessons 1-9 (say and ask; variables; repeat, forever and the turtle;
   if/elif/else; lists; functions; a text-adventure project; turtle art: shapes as functions, colour, fill, spirals, a flower, random stars;
   words and letters: + len [] slices, for letter in word, upper/lower/replace/count/split), 18 exercises, the `blocks` figure (Scratch blocks beside Python; C-blocks take an else child list) and
@@ -106,11 +107,27 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   end the game, or the loop runs on empty input until the time limit. Skulpt's turtle supports color (named colours), pensize, begin_fill/
   end_fill, penup/pendown, goto, speed. Planned next: a dictionaries lesson (a Scratch list of pairs → dict) and a final "what next" lesson
   handing over to SC 101.
-- Courses still being written carry `status: 'developing'` (Scratch to Python, Modern C++, Java, DSA): an "Under development" tag (app.js `devTag`).
-- SC 106 Introduction to Java: the interpreter and 8 lessons (Hello Java and types; decisions and Scanner; loops; methods; arrays; Strings;
-  ArrayList; classes and objects), 16 exercises. Lessons 1, 4, 7 and 8 use Minecraft (stacks of 64, slotsNeeded, ItemStack/Inventory).
-  The interpreter lacks `String.chars()`, `codePointCount`, `"".formatted(...)`, and infers `List<Object>` for `new ArrayList<>(Arrays.asList(..))`
-  used directly as an argument (fine when assigned to a typed variable). Planned next: inheritance and interfaces; exceptions; HashMap; a project.
+- Courses still being written carry `status: 'developing'` (Scratch to Python, Modern C++, The Command Line, How Machines Learn): an "Under development" tag (app.js `devTag`).
+- SC 106 Introduction to Java (finished October 2026): the interpreter and 12 lessons (Hello Java and types; decisions and Scanner; loops; methods;
+  arrays; Strings; ArrayList; classes and objects; 9 inheritance and interfaces; 10 exceptions; 11 HashMap and HashSet; 12 project, a text-mode
+  Minecraft crafting table), 22 exercises (`jv-<n>-<k>`). Every lesson has `standard: 1` (lesson level: no course-level skills or checkpoints, so no
+  renumbering). Lessons 1, 4, 7, 8, 9, 10, 12 use Minecraft. The interpreter lacks `String.chars()`, `codePointCount`, `"".formatted(...)`, and infers
+  `List<Object>` for `new ArrayList<>(Arrays.asList(..))` used directly as an argument (fine when assigned to a typed variable). Exercises that use
+  `classes: true` get their imports from `ex.prelude` (the harness puts a `Check` class before the student's code, so the student must not write imports).
+  **Checked exceptions** (added October 2026): `throws` is now parsed and enforced like javac does for what can be seen in the source: `throw new X`
+  where X is checked, and calls of the program's own methods and constructors that declare `throws`; plus "exception X is never thrown in body of
+  corresponding try statement". Not checked: `throw e` of a variable (precise rethrow), overriding rules for `throws`, initializer blocks. The lessons
+  teach custom exceptions as `extends RuntimeException` and show `extends Exception` once, with `throws`. `LinkedHashMap`, `LinkedHashSet` and `PriorityQueue` exist (the queue is OpenJDK's binary heap, so `System.out.println(pq)` shows the heap's array order as Java does; `difftest/java/probe-pq.java`).
+  Probes: `difftest/java/probe-x1..x8.java`, `probe-lh.java`.
+- SC 102 Introduction to Lisp (`src/course_lisp.js`, 11 lessons after SICP 1.1-2.3 plus the symbolic-differentiation project, 22 exercises `ls-<n>-<k>`):
+  every lesson has `standard: 1` (lesson level, October 2026: stories end on a question, `predict: true` on the key example of each section with the
+  caption rewritten as the explanation, `wrong` reasons on all 33 quick checks, followups on every exercise). Not done: course-level skills and
+  checkpoint lessons (they would renumber lessons that other pages link to as `lisp/N`), a networks of ideas beyond SICP (vectors, `set!` and
+  state, streams), and Scheme character literals. The captions' computed values were checked by running the examples.
+- SC 103 Introduction to C++ (`src/course_cpp.js`, 11 lessons on JSCPP, 22 exercises `cp-<n>-<k>`): every lesson has `standard: 1` at lesson level (October 2026, same
+  treatment as SC 102: stories end on a question, predictions, `wrong` reasons, followups). Lesson 9 (random numbers) has no `predict: true`, only "Guess first"
+  reveals about properties, because its output varies. Examples were trimmed to 25 lines rather than marked `long`. Not done: course-level skills and
+  checkpoints (they would renumber lessons). Structs, classes, references and `std::` containers are deliberately left to SC 105.
 - **The practice terminal** (ARCHITECTURE §9f): `src/shell.js` (a real shell: parser, pipelines, redirections, variables, loops, ~70 commands,
   virtual file system with caps, saved under `shortcourses.shell.v1`, in backups) and `src/terminal.js` (the Terminal panel in the Code Lab:
   history, Tab completion, nano, `edit`, the `~/lab` mirror). `g++`/`javac` compile through check-only modes of the sandboxes; `./prog`,
@@ -127,10 +144,15 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   sandboxes, so test_course.js shell will need a Python runner for its exercises); 6 Windows cmd and PowerShell (a dialect switch over the
   same file system); 7 a first script (variables, for, if, chmod +x, #!); 8 a project (tidy a messy folder). Lesson 3 promises lesson 7
   says more about regular expressions.
-- SC 099 What Is a Computer? (`src/course_computer.js`, `lang: 'none'`, first in the catalogue): 4 lessons (the parts; the processor and
-  memory; storage, input and output; software), 8 exercises (`cs-<n>-<k>`, all answer/choice/table kinds), figures `parts` (clickable
-  diagram), `cpu` (fetch-decode-execute stepper over a 4-instruction program), `bits` (a byte of switches) and the existing `pipeline`.
-  No code runs; `test_course.js computer` grades the math-kind exercises only.
+- SC 099 What Is a Computer? (`src/course_computer.js`, `lang: 'none'`, `standard: 1`, first in the catalogue; finished October 2026): 11 lessons in
+  three units. Unit one, the machine: 1 the parts; 2 the processor and memory; 3 storage, input and output; 4 software; 5 Checkpoint one.
+  Unit two, inside the bytes: 6 everything is numbers (ASCII/Unicode, pixels and colour, sound samples, compression); 7 switches that think
+  (transistors, NOT/AND/OR/XOR, an adder); 8 computers talking (IP, DNS, packets, routers, a trip to a web page); 9 Checkpoint two. Unit three:
+  10 staying safe (passwords as counting guesses, phishing, malware, https, privacy); 11 giving instructions (algorithms, a robot, and three
+  listings of Python to READ, never run). 22 exercises (`cs-<n>-<k>`, answer/choice/table kinds only), 26 named skills. Figures `parts`, `cpu`, `bits`,
+  `pipeline` and, new, `codes`, `pixels`, `colour`, `sampling`, `gates`, `adder`, `packets`, `passwords`, `robot` (all in widgets.js, no code runs).
+  The owner's rule for this course: the most introductory one, so no coding beyond a tiny read-only taste at the end. Lessons 1-4 keep their
+  numbers (urls, exercise ids, review items); new lessons are appended. `test_course.js computer` grades the exercises; test_browser.js drives every figure.
 - **The tour** (`src/tour.js`, ARCHITECTURE §9a): the Tour button in the top bar (`.top-tools`, beside the classroom and theme buttons;
   it pulses until opened once, `shortcourses.tour.v1`) spotlights twelve real elements across `#/`, `#/python/1` and `#/lab`. Steps are
   `{route, target, title, text, place?, optional?}`; a target that moves or is renamed breaks its step silently (the card says the part is

@@ -348,6 +348,42 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   for (const [i, v] of ['7', '129', '00000101', '32', '3000000000'].entries()) await page.locator('#cs-2-1 input.ans').nth(i).fill(v);
   await page.click('#cs-2-1 .toolbar button:has-text("Check")'); await page.waitForSelector('#cs-2-1 .verdict.pass, #cs-2-1 .verdict.fail');
   check('computer course: an answer exercise grades', (await page.locator('#cs-2-1 .verdict').getAttribute('class')) === 'verdict pass', await page.locator('#cs-2-1 .verdict').innerText());
+  // ---- SC 099 lessons 6-11: the figures
+  await goto('#/computer/6'); await page.waitForSelector('.codes-tbl');
+  await page.fill('.fig-mount input[type=text]', 'caf\u00e9');
+  check('computer course: the text figure counts bytes (cafe with an accent is 5 bytes)', /4 characters take 5 bytes/.test(await page.locator('.codes-tbl + .fig-note').innerText()), await page.locator('.codes-tbl + .fig-note').innerText());
+  await page.locator('.px-cell').first().click();
+  check('computer course: the pixel figure turns a clicked square into a number', /^10111100/.test((await page.locator('.px-row').first().innerText()).trim()) && (await page.locator('.px-row span').first().innerText()).includes('188'), await page.locator('.px-row').first().innerText());
+  await page.locator('.sw-fig button, .fig-mount button:has-text("White")').first().click().catch(() => {});
+  await page.locator('.fig-mount button:has-text("White")').click();
+  check('computer course: the colour figure shows hex for white and a filled swatch', /#FFFFFF/.test(await page.locator('.sw-fig + .bits-out').innerText()) && /rgb\(255, ?255, ?255\)/.test(await page.locator('.sw-chip').evaluate((e) => e.style.background)));
+  await page.selectOption('.fig-mount select', '32');
+  check('computer course: the sound figure redraws with more measurements', (await page.locator('.fig-mount svg circle').count()) === 32);
+  await goto('#/computer/7'); await page.waitForSelector('.gate-fig');
+  await page.locator('.fig-mount button[data-g="AND"]').click();
+  await page.locator('.gate-in').nth(0).click(); await page.locator('.gate-in').nth(1).click();
+  check('computer course: the AND gate gives 1 only with both inputs on', /AND/.test(await page.locator('.gate-fig svg').innerHTML()) && (await page.locator('.gate-tbl tr.hl td').last().innerText()) === '1' && (await page.locator('.gate-tbl tr.hl td').count()) === 3);
+  await page.locator('.gate-in').nth(1).click();
+  check('computer course: with one input off the AND output is 0', (await page.locator('.gate-tbl tr.hl td').last().innerText()) === '0');
+  check('computer course: the adder adds 5 and 3 (= 8)', /= 8/.test(await page.locator('.adder-sum').innerText()), await page.locator('.adder-sum').innerText());
+  await page.locator('.adder .bit').nth(3).click();   // A: 0101 -> 0100 (4) + 3 = 7
+  check('computer course: flipping an adder bit changes the sum', /= 7/.test(await page.locator('.adder-sum').innerText()), await page.locator('.adder-sum').innerText());
+  await goto('#/computer/8'); await page.waitForSelector('.fig-mount svg');
+  for (let i = 0; i < 6; i++) await page.locator('.fig-tools button:has-text("Step")').first().click().catch(() => {});
+  check('computer course: the packet figure ends with the message put back in order', /HELLO WORLD!/.test(await page.locator('.fig-mount .fig-note').first().innerText()), await page.locator('.fig-mount .fig-note').first().innerText());
+  await goto('#/computer/10'); await page.waitForSelector('.pw-out');
+  check('computer course: the password figure counts 8 lowercase letters as about 21 seconds', /about 21 seconds/.test(await page.locator('.pw-out').innerText()), await page.locator('.pw-out').innerText());
+  await page.locator('.pw-kind input').nth(1).check(); await page.locator('.pw-kind input').nth(2).check();
+  check('computer course: letters and digits at length 8 take about 6 hours', /about 6\.\d hours/.test(await page.locator('.pw-out').innerText()), await page.locator('.pw-out').innerText());
+  await page.locator('.fig-tools input[type=range]').evaluate((e) => { e.value = '12'; e.dispatchEvent(new Event('input')); });
+  check('computer course: four more characters make it thousands of years', /thousand years/.test(await page.locator('.pw-out').innerText()), await page.locator('.pw-out').innerText());
+  await goto('#/computer/11'); await page.waitForSelector('.rb-fig');
+  for (let i = 0; i < 3; i++) await page.locator('.rb-fig button:has-text("Forward")').click();
+  await page.locator('.fig-mount button:has-text("Run")').click();
+  await page.waitForFunction(() => /reached the star/.test(document.querySelector('.rb-fig').parentElement.textContent), null, { timeout: 10000 }).catch(() => { });
+  check('computer course: the robot reaches the star with three Forward commands', /reached the star with 3 commands/.test(await page.locator('.rb-fig').locator('xpath=..').innerText()), await page.locator('.rb-fig').locator('xpath=..').innerText());
+  await goto('#/computer/5');
+  check('computer course: a checkpoint lesson has its mixed questions', (await page.locator('.qc').count()) >= 8);
   await goto('#/shell/4');
   const pipeTerm = page.locator('#sh-4-1 .term-inp');
   await pipeTerm.fill('tr -s " " "\\n" < speech.txt | sort | uniq -c | sort -rn | head -n 3 > top.txt'); await pipeTerm.press('Enter'); await page.waitForFunction(() => /^exit/.test(document.querySelector('#sh-4-1 .term-status').textContent), null, { timeout: 10000 });
@@ -378,7 +414,8 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('a lesson example draws with turtle in a sandboxed frame', (await page.locator('.play-turtle iframe').count()) === 1 && (await page.locator('.play-turtle iframe').getAttribute('sandbox')) === 'allow-scripts' && (await page.frameLocator('.play-turtle iframe').locator('canvas').count()) > 0);
   await goto('#/dsa/1');
   check('DSA figures render', (await page.locator('.fig-mount svg').count()) >= 3);
-  check('the Under development tag is shown', (await page.locator('.dev-tag').count()) >= 1);
+  await goto('#/scratch/1');
+  check('the Under development tag is shown (on a course still being written)', (await page.locator('.dev-tag').count()) >= 1);
   await goto('#/dsa/5');
   check('the linked-list figure renders', (await page.locator('.fig-mount svg').count()) >= 1);
   await goto('#/dsa/6');
@@ -387,6 +424,102 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await goto('#/dsa/7');
   const cs = page.locator('.fig-mount').first(); for (let i = 0; i < 4; i++) await cs.locator('button:has-text("Step")').click();
   check('the call-stack figure piles up frames', (await cs.locator('svg rect').count()) >= 4);
+  {
+  // ---- DSA lesson 8: the hash table figure (Insert, Step to the end of each insertion; the seventh key doubles the table)
+  await goto('#/dsa/8');
+  const ht = page.locator('.fig-mount').filter({ has: page.locator('.ht-rows') }).first();
+  const htDone = async () => { for (let i = 0; i < 40; i++) { const st = ht.locator('.fig-tools button:has-text("Step")'); if (await st.isEnabled()) await st.click(); else break; } };
+  const htInsert = async (word) => { await ht.locator('input.ht-input').fill(word); await ht.locator('button:has-text("Insert")').click(); await htDone(); };
+  check('dsa: the hash table figure shows 8 empty buckets', (await ht.locator('.ht-row').count()) === 8 && (await ht.locator('.ht-rows .ht-node').count()) === 0);
+  for (const w of ['cat', 'dog', 'bee', 'owl']) await htInsert(w);
+  check('dsa: owl lands in the bucket where dog already is (a collision, shown in the log and the row)', (await ht.locator('.ht-row.ht-coll .ht-node').allTextContents()).join() === 'owl,dog' && /Load factor 4\/8 = 0\.50/.test(await ht.locator('.ht-log').textContent()));
+  await ht.locator('input.ht-input').fill('dog'); await ht.locator('button:has-text("Search")').click(); await htDone();
+  check('dsa: searching for dog compares owl, then dog, and says found after 2 comparisons', /Found, after 2 comparisons/.test(await ht.locator('.ht-log').textContent()) && (await ht.locator('.ht-node.ht-found').textContent()) === 'dog');
+  for (const w of ['fox', 'ant']) await htInsert(w);
+  check('dsa: six keys in 8 buckets: load factor 0.75 does not double the table', (await ht.locator('.ht-row').count()) === 8 && /0\.75, not over 0\.75/.test(await ht.locator('.ht-log').textContent()));
+  await ht.locator('input.ht-input').fill('eel'); await ht.locator('button:has-text("Insert")').click();
+  for (let i = 0; i < 3; i++) await ht.locator('.fig-tools button:has-text("Step")').click();
+  check('dsa: the seventh key pushes the load factor over 0.75 and the figure announces the doubling', /over 0\.75: chains are getting long\. Double the table to 16/.test(await ht.locator('.ht-log').textContent()) && (await ht.locator('.ht-row').count()) === 8);
+  await htDone();
+  check('dsa: after the doubling there are 16 buckets, all 7 keys, and some are marked as moved', (await ht.locator('.ht-row').count()) === 16 && (await ht.locator('.ht-rows .ht-node').count()) === 7 && (await ht.locator('.ht-rows .ht-moved').count()) >= 1 && /placed again/.test(await ht.locator('.ht-log').textContent()));
+  await ht.locator('select').selectOption('len'); await htInsert('cat'); await htInsert('dog'); await htInsert('bee');
+  check('dsa: with the bad hash (length of the word) three 3-letter words share one bucket', (await ht.locator('.ht-row.ht-coll .ht-node').count()) === 3 && (await ht.locator('.ht-row').count()) === 8);
+  }
+  {
+  await goto('#/dsa/9');
+  const bst = page.locator('.fig-mount').first();
+  check('dsa: the search-tree figure renders six nodes and their height', (await bst.locator('.bst-node').count()) === 6 && /6 keys, height 3/.test(await bst.locator('.bst-stats').textContent()));
+  await bst.locator('input[type=number]').fill('7'); await bst.locator('button:has-text("Insert")').click();
+  check('dsa: the search-tree figure starts an insertion at the root, comparing', /7 against 8: less, so go left/.test(await bst.locator('.fig-status').first().textContent()) && (await bst.locator('.bst-cur').count()) === 1);
+  await bst.locator('button:has-text("Finish")').click();
+  check('dsa: the search-tree figure adds 7 as a leaf under 6 and the height grows to 4', (await bst.locator('.bst-node').count()) === 7 && (await bst.locator('.bst-new').count()) === 1 && /7 keys, height 4/.test(await bst.locator('.bst-stats').textContent()));
+  await bst.locator('input[type=number]').fill('5'); await bst.locator('button:has-text("Search")').click(); await bst.locator('button:has-text("Finish")').click();
+  check('dsa: the search-tree figure shows the empty link where an absent key would go', (await bst.locator('.bst-slot').count()) === 1 && /5 is not in the tree/.test(await bst.locator('.fig-status').first().textContent()));
+  await bst.locator('button:has-text("Walk in order")').click(); await bst.locator('button:has-text("Finish")').click();
+  check('dsa: the search-tree figure walks the keys in increasing order', /out: 1 3 6 7 8 10 14/.test(await bst.locator('svg').textContent()) && (await bst.locator('.bst-done').count()) === 7);
+  await bst.locator('button:has-text("Sorted 1–9")').click();
+  check('dsa: sorted keys make a chain: height 9 for 9 keys', /9 keys, height 9/.test(await bst.locator('.bst-stats').textContent()));
+  await bst.locator('button:has-text("Balanced")').click();
+  check('dsa: the balanced example has height 3 for 7 keys', /7 keys, height 3/.test(await bst.locator('.bst-stats').textContent()));
+  await bst.locator('input[type=number]').fill('40'); await bst.locator('button:has-text("Insert")').click(); await bst.locator('button:has-text("Finish")').click();
+  check('dsa: inserting a key that is already there changes nothing', (await bst.locator('.bst-node').count()) === 7 && /already in the tree|Nothing to do/.test(await bst.locator('.fig-status').first().textContent()));
+  await bst.locator('button:has-text("Random")').click();
+  check('dsa: the random tree has nine keys', (await bst.locator('.bst-node').count()) === 9);
+  await bst.locator('button:has-text("Clear")').click(); await bst.locator('input[type=number]').fill('12'); await bst.locator('input[type=number]').press('Enter');
+  check('dsa: Enter inserts into the empty tree and the key becomes the root', (await bst.locator('.bst-node').count()) === 1 && /becomes the root/.test(await bst.locator('.fig-status').first().textContent()));
+  }
+  {
+  await goto('#/dsa/10');
+  const hp = page.locator('.fig-mount').first();
+  const hpArr = async () => (await hp.locator('.hp-cell .hp-val').allTextContents()).join(' ');
+  check('dsa: the heap figure draws the tree and the array side by side', (await hp.locator('.hp-node').count()) === 7 && (await hp.locator('.hp-cell:not(.is-empty)').count()) === 7 && (await hpArr()) === '2 5 3 9 6 4 8');
+  await hp.locator('input[type=number]').fill('1'); await hp.locator('button:has-text("Insert")').click();
+  check('dsa: an insert starts by putting the value in the next free cell', (await hpArr()) === '2 5 3 9 6 4 8 1' && (await hp.locator('.hp-cell.is-mover').count()) === 1);
+  await hp.locator('button:has-text("Step")').click();
+  check('dsa: the next step highlights the item and its parent in the tree and in the array', (await hp.locator('.hp-node.is-hot').count()) === 2 && (await hp.locator('.hp-cell.is-hot').count()) === 2);
+  await hp.locator('button:has-text("Finish")').click();
+  check('dsa: inserting 1 climbs to the root in 3 swaps', (await hpArr()) === '1 2 3 5 6 4 8 9' && /3 swaps/.test(await hp.locator('.hp-note').textContent()) && /swaps: 3/.test(await hp.locator('.hp-swaps').textContent()));
+  await hp.locator('button:has-text("Remove min")').click(); await hp.locator('button:has-text("Step")').click(); await hp.locator('button:has-text("Step")').click();
+  check('dsa: remove min moves the last item to the root and shows what was removed', (await hpArr()) === '9 2 3 5 6 4 8' && /removed: 1/.test(await hp.locator('svg').textContent()));
+  await hp.locator('button:has-text("Finish")').click();
+  check('dsa: it sinks past the smaller child, 2 swaps, and the heap is the start heap again', (await hpArr()) === '2 5 3 9 6 4 8' && /2 swaps/.test(await hp.locator('.hp-note').textContent()));
+  await hp.locator('select').selectOption({ label: 'Full: 15 items' }); await hp.locator('button:has-text("Insert")').click();
+  check('dsa: a full figure refuses an insert and says so', /holds 15 items/.test(await hp.locator('.hp-note').textContent()) && (await hp.locator('.hp-node').count()) === 15);
+  await hp.locator('select').selectOption({ label: 'Empty' }); await hp.locator('button:has-text("Remove min")').click();
+  check('dsa: removing from an empty heap says it is empty', /empty/.test(await hp.locator('.hp-note').textContent()));
+  await hp.locator('input[type=number]').fill('5'); await hp.locator('input[type=number]').press('Enter');
+  check('dsa: Enter in the value box inserts, and the figure describes itself to a screen reader', (await hpArr()) === '5' && /min-heap of 1 item/.test(await hp.locator('svg').getAttribute('aria-label')) && (await hp.locator('.hp-note').getAttribute('aria-live')) === 'polite');
+  await hp.locator('select').selectOption({ label: 'Random: 10 items' });
+  const rnd = (await hp.locator('.hp-cell .hp-val').allTextContents()).map(Number);
+  check('dsa: the random starting heap obeys the heap rule', rnd.length === 10 && rnd.every((v, i) => i === 0 || rnd[(i - 1) >> 1] <= v), rnd);
+  }
+  {
+  // ---- DSA lesson 11 (graphs): the three runs of the graph figure end where the lesson says they do
+  await goto('#/dsa/11');
+  const gfigs = page.locator('.fig-mount').filter({ has: page.locator('svg.gr-svg') });
+  check('dsa: lesson 11 has three graph figures (BFS, DFS, Dijkstra)', (await gfigs.count()) === 3);
+  const runGraph = async (fig) => { for (let i = 0; i < 80; i++) { const step = fig.locator('button:has-text("Step")'); if (await step.isDisabled()) break; await step.click(); } };
+  const bfsG = gfigs.nth(0), dfsG = gfigs.nth(1), dijG = gfigs.nth(2);
+  check('dsa: the graph figure draws eight vertices', (await bfsG.locator('svg.gr-svg circle').count()) === 8);
+  await bfsG.locator('button:has-text("Step")').click();
+  check('dsa: BFS starts by putting A in the queue, then takes it out', /A gets distance 0/.test(await bfsG.locator('.gr-msg').textContent()) === false && /Take A from the front/.test(await bfsG.locator('.gr-msg').textContent()));
+  await bfsG.locator('button:has-text("Step")').click();
+  check('dsa: BFS puts B in the queue with distance 1', /B is new: distance 0 \+ 1 = 1/.test(await bfsG.locator('.gr-msg').textContent()) && (await bfsG.locator('.gr-chips').first().textContent()).includes('B'));
+  await runGraph(bfsG);
+  check('dsa: BFS ends with the shortest route to H, four edges', /A → B → D → F → H: 4 edges/.test(await bfsG.locator('.gr-msg').textContent()), await bfsG.locator('.gr-msg').textContent());
+  check('dsa: BFS finishes all eight vertices in the order of the rings', (await bfsG.locator('.gr-chips').nth(1).textContent()).replace(/\s/g, '') === 'ABCDEFGH');
+  await bfsG.locator('button:has-text("Reset")').click();
+  check('dsa: Reset returns the figure to its first step', /step 1 of/.test(await bfsG.locator('.fig-note').textContent()));
+  await runGraph(dfsG);
+  check('dsa: DFS visits A B D C E F H G', /order A B D C E F H G/.test(await dfsG.locator('.gr-msg').textContent()), await dfsG.locator('.gr-msg').textContent());
+  await runGraph(dijG);
+  check('dsa: Dijkstra ends with the distances 0 4 1 3 7 6 11 12', /A 0, B 4, C 1, D 3, E 7, F 6, G 11, H 12/.test(await dijG.locator('.gr-msg').textContent()), await dijG.locator('.gr-msg').textContent());
+  check('dsa: Dijkstra shows the road lengths on the edges', (await dijG.locator('svg.gr-svg text').allTextContents()).includes('8'));
+  await goto('#/dsa/11');
+  const g2 = page.locator('.fig-mount').filter({ has: page.locator('svg.gr-svg') }).nth(0);
+  await g2.locator('button:has-text("Play")').click(); await page.waitForTimeout(2800); await g2.locator('button:has-text("Pause")').click();
+  check('dsa: the graph figure plays on its own and pauses', !/step 1 of/.test(await g2.locator('.fig-note').textContent()));
+  }
   await goto('#/python/1');
   const pp = page.locator('.play').filter({ has: page.locator('.guess') }).first();
   const capHidden = await pp.locator('.play-cap').isHidden();

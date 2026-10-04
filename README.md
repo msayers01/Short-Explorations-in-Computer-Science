@@ -35,7 +35,7 @@ add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is w
     src/course_java.js     SC 106 Introduction to Java (the first lessons; runs on the site's own Java interpreter)
     src/tron.js, arena*.js  Bot Arena: Tron, the referee, bots in four languages, viewer, tournaments (ARCHITECTURE 9j)
     src/botio.js, botsession.js, schemeworker.js, scripts/worker-sources.js   bots that stay running (persistent mode)
-    src/course_dsa.js      SC 107 Data Structures and Algorithms (the first lessons; Java, with interactive figures)
+    src/course_dsa.js      SC 107 Data Structures and Algorithms (12 lessons; Java, with interactive figures)
     src/course_shell.js    SC 108 The Command Line (the first lessons; taught in the practice terminal)
     src/course_ml.js       SC 109 How Machines Learn (units one and two; Python, written to LESSON_STANDARD.md)
     src/standards.js       the #/standards page and the standards box under each lesson (tags are `standards: [...]` on the lessons; STANDARDS_ALIGNMENT.md is generated)
