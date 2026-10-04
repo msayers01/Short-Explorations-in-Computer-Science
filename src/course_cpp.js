@@ -21,19 +21,19 @@ window.COURSES.push({
     /* ================================================================== */
     {
       standards: ['2-AP-11', '3A-CS-02'],
-      title: 'Hello, C++', summary: 'What a compiler does, the rules every C++ line follows, and why a variable must have a type before it has a value.',
+      title: 'Hello, C++', standard: 1, summary: 'What a compiler does, the rules every C++ line follows, and why a variable must have a type before it has a value.',
       blocks: [
         `<p>In 1979, Bjarne Stroustrup, a Danish computer scientist at Bell Labs in New Jersey, started adding new features to the language C, which his colleagues had created a few years earlier to write the Unix operating system. He called the result "C with Classes". In 1983 it was renamed C++, a programmer's joke: in C, <code>++</code> means "add one", so C++ is "one more than C". Today it runs underneath web browsers, game engines, and the software on space probes.</p>`,
-        `<p>You already know Python. C++ has the same ideas underneath: values, names, decisions, loops, functions. What changes is how much the language makes you say, and when your mistakes are caught. C++ is the language of operating systems, game engines and browsers, and it earns that place by letting the programmer control exactly what the machine does. The price is ceremony. This lesson is about reading the ceremony so it stops looking like noise.</p>
+        `<p>You already know Python. C++ has the same ideas underneath: values, names, decisions, loops, functions. What changes is how much the language makes you say, and when your mistakes are caught. C++ is the language of operating systems, game engines and browsers, and it earns that place by letting the programmer control exactly what the machine does. The price is ceremony. This lesson is about reading the ceremony so it stops looking like noise. So here is the question: what is all that ceremony for, and what does the computer do with it before your program ever runs?</p>
 <h2>The first program</h2>
-<p>Here is the traditional first program. It is seven lines where Python needed one. Run it, then read the table below it, which takes it apart line by line.</p>`,
+<p>Here is the traditional first program. It is seven lines where Python needed one. Predict what it prints, then run it, then read the table below it, which takes it apart line by line.</p>`,
         { play: `#include <iostream>
 using namespace std;
 
 int main() {
     cout << "Hello, world!" << endl;
     return 0;
-}`, caption: 'Change the message and run again. Then read on before changing anything else.' },
+}`, predict: true, caption: 'It prints <code>Hello, world!</code> and ends the line, because <code>endl</code> sends the line break. Everything else in the program is ceremony the compiler needs, and the table below explains each piece. Change the message and run again. Then read on before changing anything else.' },
         `<div class="tbl-wrap"><table>
 <tr><th>line</th><th>what it does</th></tr>
 <tr><td><code>#include &lt;iostream&gt;</code></td><td>Brings in the part of the standard library that knows how to print and read. In C++ nothing is available until you ask for it.</td></tr>
@@ -83,8 +83,8 @@ int main() {
     apples = apples + 3;
     cout << apples << endl;
     return 0;
-}`, caption: 'Four declarations, then some use. Line 11 shows a char\u2019s hidden number: the letter A is stored as 65. Try changing initial to \u0027a\u0027. Then press Step through memory: each variable appears as its line runs, with its type, its address and its size in bytes.' },
-        { check: "What does <code>cout &lt;&lt; 'A' + 1;</code> print?", options: ["A1", "66", "B"], answer: 1, why: "A char is its code, 65. Arithmetic gives an int, 66. Casting back with (char) would print B." },
+}`, predict: true, caption: 'It prints <code>3.5</code>, then <code>A 65</code>, then <code>1</code>, then <code>10</code>. The first is 7 times 0.5. The second shows a char\u2019s hidden number: the letter A is stored as 65, and <code>(int)</code> asks to see it. The third is a bool, which prints as 1 for true. The last is 7 + 3. Try changing initial to \u0027a\u0027 and see which number appears. Then press Step through memory: each variable appears as its line runs, with its type, its address and its size in bytes.' },
+        { check: "What does <code>cout &lt;&lt; 'A' + 1;</code> print?", options: ["A1", "66", "B"], answer: 1, wrong: ["Nothing is joined: <code>+</code> does not glue text together here. 'A' is a char, not text, so <code>+</code> adds: A counts as its code, 65, and 65 + 1 is a number.", null, "A char plus an int is an int, and cout prints an int as a number. Only a cast, <code>(char)</code>, would turn 66 back into the letter B."], why: "A char is its code, 65. Arithmetic gives an int, 66. Casting back with (char) would print B." },
         `<details class="reveal"><summary>Predict: what happens if you declare <code>int n;</code> with no starting value, and print it?</summary><p>You get whatever bytes happened to be in that memory: a meaningless number. C++ does not set a new variable to zero for you. Here it prints <code>-858993460</code>, a pattern this interpreter uses to mark memory nobody has written to. Always give a variable a starting value when you declare it, unless the very next line assigns one.</p></details>
 <h2>Printing</h2>
 <p><code>cout</code> takes a chain of things separated by <code>&lt;&lt;</code> and prints them one after another with <strong>nothing</strong> between them. This is different from Python's <code>print</code>, which puts spaces between its arguments. If you want a space, print one: <code>cout &lt;&lt; a &lt;&lt; " " &lt;&lt; b;</code>. A line ends only when you send <code>endl</code>. Predict the output before running.</p>
@@ -115,8 +115,8 @@ int main() {
     double y = 7 / 2;             // still 3: the division happened first, as ints
     cout << x << " " << y << endl;
     return 0;
-}`, caption: 'Change line 10 to  double y = 7 / 2.0;  and run again.' },
-        { check: "What is <code>7 / 2</code> in C++?", options: ["3.5", "3", "4"], answer: 1, why: "Both operands are int, so the result is an int: the fraction is thrown away. 7 / 2.0 gives 3.5." },
+}`, predict: true, caption: 'It prints <code>3</code>, <code>1</code>, <code>3.5</code>, <code>3.5</code> and <code>3 3</code>. The last line is the trap: <code>y</code> is a double, but <code>7 / 2</code> was already worked out as ints. Change line 10 to  double y = 7 / 2.0;  and run again: now y is 3.5.' },
+        { check: "What is <code>7 / 2</code> in C++?", options: ["3.5", "3", "4"], answer: 1, wrong: ["That is Python\u2019s answer, where <code>/</code> always gives a fraction. In C++ two ints give an int, so the .5 is thrown away.", null, "Integer division does not round, it truncates: the fraction is dropped, so 3.99 would still be 3."], why: "Both operands are int, so the result is an int: the fraction is thrown away. 7 / 2.0 gives 3.5." },
         `<p>Integer division is not a defect; it is the tool for the same jobs it does in Python with <code>//</code>. <code>total / 60</code> is the number of whole minutes in <code>total</code> seconds, and <code>total % 60</code> is what is left over. Both exercises below rely on this pair.</p>
 <h2>Reading input</h2>
 <p><code>cin &gt;&gt; variable</code> reads a value typed by the person and stores it in the variable, converting the text according to the variable's type. Read the arrows as pointing from <code>cin</code>, the console input, into the variable. There is no <code>int()</code> to remember, because the declaration already said what type the variable is. Chaining reads several values; spaces or new lines separate them.</p>`,
@@ -129,7 +129,7 @@ int main() {
     cin >> a >> b;
     cout << a << " + " << b << " = " << a + b << endl;
     return 0;
-}`, stdin: '12 30', caption: 'On this site a C++ program reads its input from the box shown beneath it. Change the two numbers there and run. Line 5 declares two ints in one statement.' },
+}`, stdin: '12 30', predict: true, caption: 'It prints <code>Two numbers: 12 + 30 = 42</code>, with no line break after the prompt because the prompt has no <code>endl</code>. On this site a C++ program reads its input from the box shown beneath it. Change the two numbers there and run. Line 5 declares two ints in one statement.' },
         `<h2>Before the exercises</h2>
 <p>Each exercise reads numbers, computes something, and prints lines in an exact format. The tests compare your output character by character, so <code>Area: 12</code> and <code>Area:12</code> are different answers. Here is a program of the same shape, worked in full: read a number of days and print the hours.</p>`,
         { play: `#include <iostream>
@@ -142,7 +142,7 @@ int main() {
     cout << days << " days is " << hours << " hours" << endl;
     return 0;
 }`, stdin: '3', caption: 'Three steps: declare and read, compute into a named variable, print a chain with the spaces written explicitly. Output for 3: "3 days is 72 hours".' },
-        { check: "Which statement is a complete, correct C++ declaration?", options: ["<code>apples = 7;</code>", "<code>int apples = 7;</code>", "<code>int apples = 7</code>"], answer: 1, why: "Type, name, starting value, semicolon. Without the type the name is undeclared; without the semicolon the statement is unfinished." },
+        { check: "Which statement is a complete, correct C++ declaration?", options: ["<code>apples = 7;</code>", "<code>int apples = 7;</code>", "<code>int apples = 7</code>"], answer: 1, wrong: ["That is Python style: a name appears by being assigned. C++ needs the type first, so the compiler knows how many bytes to reserve, and complains the variable does not exist.", null, "The type and the value are right, but the statement is unfinished: every statement ends with a semicolon, because line breaks mean nothing to C++."], why: "Type, name, starting value, semicolon. Without the type the name is undeclared; without the semicolon the statement is unfinished." },
         `<p>Look at the spaces inside the quoted pieces: <code>" days is "</code> has a space at each end, because <code>cout</code> adds none. Your exercises follow the same three steps.</p>`,
         `<details class="reveal"><summary>Puzzle: in C++, what do <code>7 / 2</code>, <code>7.0 / 2</code> and <code>7 % 2</code> give?</summary><p><code>3</code>, <code>3.5</code> and <code>1</code>. When both numbers are <code>int</code>s, <code>/</code> is integer division and throws the fraction away; if either is a <code>double</code>, the division keeps it. <code>%</code> gives the remainder. The same program in Python would print 3.5 for <code>7 / 2</code>: one of the first places where the two languages part ways.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> A missing semicolon: the error often points at the <em>next</em> line, because that is where the compiler noticed. Forgetting <code>#include &lt;iostream&gt;</code>, after which <code>cout</code> "does not exist". Using a variable without declaring it, or declaring it without a starting value. Writing <code>'</code> and <code>"</code> interchangeably: <code>'A'</code> is a char, <code>"A"</code> is text. Expecting <code>7 / 2</code> to be 3.5. Forgetting that <code>cout</code> puts no spaces between the things it prints.</p>` },
@@ -155,7 +155,8 @@ int main() {
             sampleStdin: '3 4',
             hints: ['Area is width * height; the perimeter is 2 * (width + height).', 'Chain cout: cout << "Area: " << width * height << endl; Note the space after the colon inside the quotes.'],
             tests: [{ stdin: '3 4', expect: 'Area: 12\nPerimeter: 14' }, { stdin: '10 10', expect: 'Area: 100\nPerimeter: 40' }, { stdin: '1 250', expect: 'Area: 250\nPerimeter: 502' }],
-            failTip: 'The output must match exactly: capital A, a colon, one space, then the number, then a new line.'
+            failTip: 'The output must match exactly: capital A, a colon, one space, then the number, then a new line.',
+            followup: 'Also read a third number, the depth, and print the volume and the surface area of a box, 2 * (w*h + w*d + h*d), on two more lines. Then think: what does a very large width and height do to the area? An int holds about two billion at most.'
           }
         },
         {
@@ -171,7 +172,7 @@ int main() {
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
-<li>A compiler checks and translates the whole program before it runs, so mistakes in the rules are caught before anything happens.</li>
+<li>The ceremony exists for the compiler. It checks and translates the whole program before it runs, so mistakes in the rules are caught before anything happens, and it needs every type in advance to reserve the right memory.</li>
 <li>Statements end with <code>;</code>, braces make blocks, capitals count, <code>"text"</code> and <code>'c'</code> are different, <code>//</code> starts a comment.</li>
 <li>Every variable is declared with a type that never changes: <code>int</code>, <code>double</code>, <code>char</code>, <code>bool</code>. Declare before use, and give a starting value.</li>
 <li><code>int / int</code> throws away the remainder; <code>%</code> keeps it. <code>cout &lt;&lt;</code> prints with no spaces of its own; <code>cin &gt;&gt;</code> reads, converting by type.</li>
@@ -181,14 +182,14 @@ int main() {
     /* ================================================================== */
     {
       standards: ['2-AP-12', '3A-AP-15'],
-      title: 'Making decisions', summary: 'Comparisons and bool, if and else, combining conditions, and the traps that C++ accepts but Python would refuse.',
+      title: 'Making decisions', standard: 1, summary: 'Comparisons and bool, if and else, combining conditions, and the traps that C++ accepts but Python would refuse.',
       blocks: [
         `<p>In February 2014 Apple rushed out an urgent update for iPhones and Macs. In the code that checked whether a secure website was genuine, one line had accidentally been written twice, directly after an <code>if</code> with no braces. The second copy was not part of the <code>if</code>, whatever the indentation suggested, so it ran every time and skipped the rest of the check. For over a year, devices had accepted fake certificates. Programmers called it the "goto fail" bug, after the duplicated line. This lesson covers <code>if</code> in C++, and that exact trap.</p>
-<p>Every program in Lesson 1 did the same thing each time it ran. A program that <em>decides</em>, doing one thing for some inputs and something else for others, needs two ingredients: a way to ask a yes-or-no question, and a way to choose what to run from the answer. You know both from Python. This lesson gives the C++ rules for each, and then the traps that exist only in C++, because C++ accepts some things that Python refuses.</p>
+<p>Every program in Lesson 1 did the same thing each time it ran. A program that <em>decides</em>, doing one thing for some inputs and something else for others, needs two ingredients: a way to ask a yes-or-no question, and a way to choose what to run from the answer. You know both from Python. This lesson gives the C++ rules for each, and then the traps that exist only in C++, because C++ accepts some things that Python refuses. So here is the question for the lesson: how can a decision go wrong without the compiler saying a word?</p>
 <h2>Asking a question: comparisons and bool</h2>
 <div class="stmt"><p><span class="kind">Rule (comparisons).</span> The six comparison operators are <code>==</code> (equal), <code>!=</code> (not equal), <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code> and <code>&gt;=</code>. Each compares two values and produces a value of type <code>bool</code>: <code>true</code> or <code>false</code>.</p>
 <p><span class="kind">Rule (bool and numbers).</span> A <code>bool</code> printed with <code>cout</code> appears as <code>1</code> for true and <code>0</code> for false. In the other direction, a number used where a <code>bool</code> is expected counts as false if it is 0 and as true otherwise.</p></div>
-<p>The second rule has no counterpart you would notice in Python, and it is behind both traps later in this lesson. For now, predict the four lines this program prints. The parentheses around each comparison are required; the caption explains why.</p>`,
+<p>The second rule has no counterpart you would notice in Python, and it is behind both traps later in this lesson. For now, predict the three lines this program prints. The parentheses around each comparison are required; the caption explains why.</p>`,
         { play: `#include <iostream>
 using namespace std;
 
@@ -199,8 +200,8 @@ int main() {
     cout << (x == 7) << " " << (x != 7) << endl;
     cout << (x >= 8) << endl;
     return 0;
-}`, caption: 'Output: 1, then 1 0, then 0. The parentheses are needed because << is applied before ==: without them, cout << x == 7 would mean (cout << x) == 7, which compares the output stream with 7, and a real compiler rejects it.' },
-        { check: "What does <code>cout &lt;&lt; (3 &lt; 5);</code> print?", options: ["true", "1", "3 &lt; 5"], answer: 1, why: "A comparison gives a bool, and cout prints a bool as 1 or 0." },
+}`, predict: true, caption: 'Output: 1, then 1 0, then 0. Each comparison gives a bool, and a bool prints as 1 or 0. The parentheses are needed because << is applied before ==: without them, cout << x == 7 would mean (cout << x) == 7, which compares the output stream with 7, and a real compiler rejects it.' },
+        { check: "What does <code>cout &lt;&lt; (3 &lt; 5);</code> print?", options: ["true", "1", "3 &lt; 5"], answer: 1, wrong: ["Python would print True, but C++ has no such text for a bool. cout prints the number inside it: 1 for true, 0 for false (unless you ask otherwise).", null, "The comparison is worked out before anything is printed, so the characters 3 &lt; 5 never reach the screen; what is printed is its value."], why: "A comparison gives a bool, and cout prints a bool as 1 or 0." },
         `<p>Line 6 stores the answer to a question in a variable, exactly as Lesson 1 stored a number in an <code>int</code>. A comparison is an expression with a value like any other; the type of that value is <code>bool</code>.</p>
 <h2>Choosing: if and else</h2>
 <div class="stmt"><p><span class="kind">Rule (if).</span> <code>if (<i>condition</i>) { <i>statements</i> }</code> runs the statements in the braces when the condition is true and skips them when it is false. The parentheses around the condition are required.</p>
@@ -222,7 +223,7 @@ int main() {
     }
     cout << "done" << endl;
     return 0;
-}`, stdin: '22', caption: 'Change the input to 35 and to 3. Exactly one of the three branches runs each time; the last line is not part of the chain and runs every time.' },
+}`, stdin: '22', predict: true, caption: 'It prints <code>pleasant</code> and then <code>done</code>: 22 is not above 30, but it is above 15. Change the input to 35 and to 3. Exactly one of the three branches runs each time; the last line is not part of the chain and runs every time.' },
         `<p>Follow it for 22. The first condition, 22 &gt; 30, is false, so its block is skipped. The second, 22 &gt; 15, is true, so <code>pleasant</code> is printed, and the final <code>else</code> is skipped without being looked at. Notice that the second condition does not need to say "and not above 30": it is only ever tested when the first one was false.</p>
 <details class="reveal"><summary>Predict: swap the first two tests, so the chain asks <code>temperature &gt; 15</code> first and <code>temperature &gt; 30</code> second. What does 35 print?</summary><p><code>pleasant</code>. 35 &gt; 15 is true, the first true condition wins, and the rest of the chain is skipped. In fact the <code>hot</code> branch can now never run: any temperature above 30 is also above 15 and is caught first. When conditions overlap, put the most demanding one first.</p></details>
 <h2>Combining conditions</h2>
@@ -240,7 +241,7 @@ int main() {
     int d = 0;
     cout << (d != 0 && 10 / d > 2) << endl;     // the division never happens
     return 0;
-}`, caption: 'Output: 1, 0, 0, 0. The last line would divide by zero, but d != 0 is false, so && already knows the answer and never evaluates 10 / d. Change && to & on that line to see what short-circuiting saved you from.' },
+}`, predict: true, caption: 'Output: 1, 0, 0, 0. 7 is between 3 and 10; it is neither even nor a multiple of 3; <code>!(x &gt; 5)</code> is false because x &gt; 5 is true. The last line would divide by zero, but d != 0 is false, so && already knows the answer and never evaluates 10 / d. Change && to & on that line to see what short-circuiting saved you from.' },
         `<p>That last line is a common and useful pattern: put the test that makes the rest safe on the left of <code>&amp;&amp;</code>.</p>
 <p>One Python habit fails silently. Python lets you write a range test as <code>3 &lt;= x &lt;= 10</code>. C++ accepts the same characters but reads them by its own rules, one comparison at a time from the left: <code>(3 &lt;= x) &lt;= 10</code>. The part in parentheses is a <code>bool</code>, which counts as 0 or 1, and both 0 and 1 are at most 10. So the whole test is true for every <code>x</code>.</p>`,
         { play: `#include <iostream>
@@ -252,7 +253,7 @@ int main() {
     cout << (3 <= x && x <= 10) << endl;    // what was meant
     return 0;
 }`, caption: 'The first line prints 1 although 50 is not between 3 and 10, and the compiler gives no error. Only a person can catch this one. Always split a range test into two comparisons joined by &&.' },
-        { check: "<code>int x = 50;</code>. What does <code>3 &lt;= x &lt;= 10</code> give?", options: ["false", "true: (3 &lt;= x) is 1, and 1 &lt;= 10", "A compile error"], answer: 1, why: "C++ evaluates left to right: the first comparison gives 1, and 1 <= 10 is true. Write 3 <= x && x <= 10." },
+        { check: "<code>int x = 50;</code>. What does <code>3 &lt;= x &lt;= 10</code> give?", options: ["false", "true: (3 &lt;= x) is 1, and 1 &lt;= 10", "A compile error"], answer: 1, wrong: ["That is what the same characters mean in Python, which chains the two comparisons. C++ reads them one at a time from the left, and the first one gives 1.", null, "The compiler accepts it: a bool counts as the number 0 or 1, so comparing it with 10 is legal. Only a person notices the mistake."], why: "C++ evaluates left to right: the first comparison gives 1, and 1 <= 10 is true. Write 3 <= x && x <= 10." },
         `<h2>Two traps</h2>
 <p>These two have caught everyone who has written C++, so meet them now on purpose. Both compile, and both run.</p>
 <p><b>One equals sign.</b> <code>if (x = 5)</code> is an <em>assignment</em>, not a comparison. It stores 5 in <code>x</code>, and the value of the assignment is the 5 just stored, which by the rule on bool and numbers counts as true. So the branch always runs, and <code>x</code> has been changed as a side effect. Python refuses to compile this; C++ does not. In a condition, always <code>==</code>.</p>
@@ -271,8 +272,8 @@ int main() {
         cout << "passed" << endl;
         cout << "well done" << endl;         // NOT inside the if, despite the indentation
     return 0;
-}`, caption: 'Both bugs compile and run: the first block runs although x was 3, and "well done" prints for a score of 40. Fix them: == on line 6, and braces around the two lines at the bottom.' },
-        { check: "What does <code>if (x = 3)</code> do in C++?", options: ["Compares x with 3", "Assigns 3 to x and is always true; it compiles", "Does not compile"], answer: 1, why: "Unlike Java, C++ accepts the assignment as a condition. 3 counts as true. Only a person catches this." },
+}`, predict: true, caption: 'It prints <code>x is now 5</code> and <code>well done</code>. Both bugs compile and run: the first block runs although x was 3, and "well done" prints for a score of 40. Fix them: == on line 6, and braces around the two lines at the bottom.' },
+        { check: "What does <code>if (x = 3)</code> do in C++?", options: ["Compares x with 3", "Assigns 3 to x and is always true; it compiles", "Does not compile"], answer: 1, wrong: ["One equals sign is assignment, not comparison, even inside the parentheses of an if. The comparison is written ==.", null, "A language that refuses it exists (Python does), but C++ accepts any expression as a condition, and an assignment is an expression whose value is the number stored."], why: "Unlike Java, C++ accepts the assignment as a condition. 3 counts as true. Only a person catches this." },
         `<details class="reveal"><summary>Predict: what does this print? <code>int a = 5; if (a &gt; 3 &amp;&amp; a &lt; 4) cout &lt;&lt; "A"; else cout &lt;&lt; "B";</code></summary><p><code>B</code>. No whole number is both greater than 3 and less than 4, so the condition is false. (An <code>if</code> and <code>else</code> without braces are legal when each branch is one statement; they are just risky to edit later.)</p></details>
 <h2>Characters are numbers</h2>
 <div class="stmt"><p><span class="kind">Rule (characters).</span> A <code>char</code> is stored as a small whole number, its character code, and comparing chars compares their codes. The codes of <code>'a'</code> to <code>'z'</code> are consecutive (97 to 122), and so are those of <code>'A'</code> to <code>'Z'</code> (65 to 90) and of the digits <code>'0'</code> to <code>'9'</code> (48 to 57).</p></div>
@@ -293,7 +294,7 @@ int main() {
         cout << "something else" << endl;
     }
     return 0;
-}`, stdin: 'g', caption: "Try G, 7 and ?. Subtracting '0' from a digit character gives its numeric value: '7' - '0' is 7. The (char) in line 10 prints the number c + 32 as a character rather than as a number." },
+}`, stdin: 'g', predict: true, caption: "It prints <code>lower case, position 7 in the alphabet</code>: g is the seventh letter, and 'g' - 'a' + 1 is 7. Try G, 7 and ?. Subtracting '0' from a digit character gives its numeric value: '7' - '0' is 7. The (char) in line 10 prints the number c + 32 as a character rather than as a number." },
         `<h2>switch</h2>
 <p>When one value is compared against a list of specific constants, C++ has a second way to choose.</p>
 <div class="stmt"><p><span class="kind">Rule (switch).</span> <code>switch (<i>expression</i>) { case <i>constant</i>: … }</code> evaluates the expression once, jumps to the <code>case</code> label with the matching value, or to <code>default:</code> if none matches, and runs from there until a <code>break</code> or the closing brace. The labels must be constants such as <code>3</code> or <code>'q'</code>, not ranges or conditions.</p></div>
@@ -310,7 +311,7 @@ int main() {
         default: cout << "some other day" << endl;
     }
     return 0;
-}`, caption: 'Remove the break after "Tuesday" and set day to 2: both Tuesday and Wednesday print. Because labels must be constants, a switch cannot express "score >= 90"; an else if chain can.' },
+}`, predict: true, caption: 'It prints <code>Wednesday</code>: the switch jumps to case 3 and the break stops it. Remove the break after "Tuesday" and set day to 2: both Tuesday and Wednesday print. Because labels must be constants, a switch cannot express "score >= 90"; an else if chain can.' },
         `<h2>Before the exercises</h2>
 <p>Both exercises read a number and print one of a few answers. The first needs a single condition built from <code>%</code>, <code>&amp;&amp;</code> and <code>||</code>; the second needs an <code>else if</code> chain in the right order. Here is a worked example that needs both skills. Read a number and print <code>Fizz</code> if it is a multiple of 3, <code>Buzz</code> if it is a multiple of 5, <code>FizzBuzz</code> if it is a multiple of both, and the number itself otherwise.</p>
 <p>Plan in words first. "A multiple of 3" is <code>n % 3 == 0</code>: dividing leaves no remainder. "A multiple of both" is <code>n % 3 == 0 &amp;&amp; n % 5 == 0</code>. The order of the chain matters, because the conditions overlap: 15 is a multiple of 3, so a chain that tested for 3 first would print <code>Fizz</code> for 15 and never reach the "both" case. The most demanding test goes first.</p>`,
@@ -330,7 +331,7 @@ int main() {
         cout << n << endl;
     }
     return 0;
-}`, stdin: '15', caption: 'Try 9, 10, 15 and 7. Then move the FizzBuzz test to the bottom of the chain, just above else, and run 15 again: it prints Fizz, because the first true condition wins.' },
+}`, stdin: '15', predict: true, caption: 'For 15 it prints <code>FizzBuzz</code>, because the both-test comes first. Try 9, 10, 15 and 7. Then move the FizzBuzz test to the bottom of the chain, just above else, and run 15 again: it prints Fizz, because the first true condition wins.' },
         `<p>The leap-year exercise needs a condition of the same kind with one more part, and the grade exercise needs a chain of the same kind with more steps. In both, write the conditions in words first, decide the order, then translate. The tests compare your output exactly, so print the words precisely as the exercise shows them.</p>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> <code>=</code> where <code>==</code> was meant. Forgetting the braces around a branch of more than one line. <code>3 &lt;= x &lt;= 10</code> for a range: it is always true; write <code>3 &lt;= x &amp;&amp; x &lt;= 10</code>. <code>x == 1 || 2</code>, which is also always true, since 2 counts as true; you need <code>x == 1 || x == 2</code>. <code>!x &gt; 5</code> for "not greater than 5"; write <code>!(x &gt; 5)</code>. A semicolon straight after the condition, <code>if (x &gt; 3);</code>, which gives the <code>if</code> an empty statement to control, so the block after it runs every time. Overlapping conditions in the wrong order in an <code>else if</code> chain. A missing <code>break</code> in a <code>switch</code>.</p>` },
         {
@@ -355,10 +356,12 @@ int main() {
             sampleStdin: '85',
             hints: ['Test the highest boundary first: if (score >= 90) ... else if (score >= 80) ...', 'Because earlier branches catch the higher scores, each else if needs only a lower bound, just as the temperature example did.'],
             tests: [{ stdin: '95', expect: 'A' }, { stdin: '100', expect: 'A' }, { stdin: '90', expect: 'A' }, { stdin: '89', expect: 'B' }, { stdin: '70', expect: 'C' }, { stdin: '65', expect: 'D' }, { stdin: '60', expect: 'D' }, { stdin: '59', expect: 'F' }, { stdin: '12', expect: 'F' }],
-            failTip: 'Check the boundary scores 90, 60 and 59: >= includes the boundary, > does not.'
+            failTip: 'Check the boundary scores 90, 60 and 59: >= includes the boundary, > does not.',
+            followup: 'Add plus and minus: the top three points of a band get a +, the bottom three get a -, so 87 is B+ and 81 is B-. Decide first whether you need a second chain or a second test inside each branch.'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
+<li>So how can a decision go wrong without the compiler saying a word? Through <code>=</code> for <code>==</code>, a range written as <code>3 &lt;= x &lt;= 10</code>, or braces left out: all three are legal C++.</li>
 <li>A comparison produces a <code>bool</code>, which prints as 1 or 0; a number used as a condition is false when 0 and true otherwise.</li>
 <li><code>if (condition) { … } else if (…) { … } else { … }</code>: the first true condition's block runs and the rest are skipped, so overlapping conditions go most demanding first. The braces, not the indentation, define a branch.</li>
 <li><code>&amp;&amp;</code>, <code>||</code>, <code>!</code> combine conditions, and <code>&amp;&amp;</code> and <code>||</code> stop as soon as the answer is known. Write <code>!(x &gt; 5)</code>, and split a range test into two comparisons.</li>
@@ -370,11 +373,11 @@ int main() {
     /* ================================================================== */
     {
       standards: ['2-AP-12', '3A-AP-15'],
-      title: 'Loops', summary: 'while and for, stated exactly; how to count the passes of a loop, loops that never end, nested loops, and the accumulator pattern.',
+      title: 'Loops', standard: 1, summary: 'while and for, stated exactly; how to count the passes of a loop, loops that never end, nested loops, and the accumulator pattern.',
       blocks: [
         `<p>On 31 December 2008, thousands of Microsoft Zune music players froze at the same moment, all over the world. The cause was a loop in the code that worked out the date. On the last day of a leap year, the loop's condition stayed true for ever and the loop never ended, so the players hung until their batteries ran flat. The next morning, a new year, they worked again. This lesson is about writing loops that stop, and knowing exactly when they will.</p>`,
         { photo: 'zune-30', caption: 'A Zune 30, the first Zune model, released in 2006: the players that froze on 31 December 2008 were of this kind.' },
-        `<p>A loop runs the same statements again and again. Python gave you two kinds, <code>while</code> for "until something happens" and <code>for</code> over a <code>range</code> for counting, and C++ has the same two ideas with different spellings. This lesson states the rule for each exactly, because the most common loop bugs, running once too often or once too few, or never stopping at all, come from being vague about exactly when the condition is tested.</p>
+        `<p>A loop runs the same statements again and again. Python gave you two kinds, <code>while</code> for "until something happens" and <code>for</code> over a <code>range</code> for counting, and C++ has the same two ideas with different spellings. This lesson states the rule for each exactly, because the most common loop bugs, running once too often or once too few, or never stopping at all, come from being vague about exactly when the condition is tested. So the question for this lesson: how do you write a loop that is sure to stop, and how can you say in advance how many times it will run?</p>
 <h2>while</h2>
 <div class="stmt"><p><span class="kind">Rule (while).</span> <code>while (<i>condition</i>) { <i>statements</i> }</code> tests the condition. If it is false, the loop is over and the program continues after the closing brace. If it is true, the statements run, and then the program goes back and tests the condition again.</p></div>
 <p>Two consequences are worth saying aloud. The condition is tested <em>before</em> every pass, including the first, so if it is false at the start the body runs zero times. And the condition is tested only at that moment: if it becomes false halfway through the body, the rest of the body still runs, and the loop ends at the next test. Predict what this program prints.</p>`,
@@ -390,8 +393,8 @@ int main() {
     cout << endl;
     cout << "after the loop, n is " << n << endl;
     return 0;
-}`, caption: 'It prints the powers of 2 up to 64, then "after the loop, n is 128". Change the starting value to 200 and run: the body never runs, and n is still 200.' },
-        { check: "A while loop's condition is false at the first test. How many times does the body run?", options: ["Once", "Zero times", "Forever"], answer: 1, why: "while tests before every pass, including the first." },
+}`, predict: true, caption: 'It prints the powers of 2 up to 64 on one line, then "after the loop, n is 128". The loop stops at the first n that fails the test, and that value is still in n afterwards. Change the starting value to 200 and run: the body never runs, and n is still 200.' },
+        { check: "A while loop's condition is false at the first test. How many times does the body run?", options: ["Once", "Zero times", "Forever"], answer: 1, wrong: ["Running once before testing is how a do...while loop works. A while loop tests first, so when the condition is false at the start the body is skipped entirely.", null, "A loop runs for ever when its condition never becomes false. A condition that is false at the first test ends the loop before it begins."], why: "while tests before every pass, including the first." },
         `<details class="reveal"><summary>Trace it by hand: what is <code>n</code> at each test, and what happens?</summary><table class="small"><tr><th>test number</th><th><code>n</code></th><th><code>n &lt;= 100</code>?</th><th>printed</th></tr><tr><td>1</td><td>1</td><td>true</td><td>1</td></tr><tr><td>2</td><td>2</td><td>true</td><td>2</td></tr><tr><td>3</td><td>4</td><td>true</td><td>4</td></tr><tr><td>4</td><td>8</td><td>true</td><td>8</td></tr><tr><td>5</td><td>16</td><td>true</td><td>16</td></tr><tr><td>6</td><td>32</td><td>true</td><td>32</td></tr><tr><td>7</td><td>64</td><td>true</td><td>64</td></tr><tr><td>8</td><td>128</td><td>false</td><td>(loop ends)</td></tr></table><p>Eight tests, seven passes. The value that ends the loop, 128, is the first one that fails the test, and it is still in <code>n</code> afterwards. A table like this, one row per test, is the most reliable way to find out what any loop does.</p></details>
 <h2>Loops that never end</h2>
 <p>A <code>while</code> loop stops only when its condition becomes false, and the only thing that can make it false is a statement in the body. So every <code>while</code> loop needs three parts: a variable given a value before the loop, a condition that tests it, and a statement in the body that changes it <em>towards</em> making the condition false. Leave out the third, or change the variable in a way that never reaches the stopping point, and the loop runs for ever.</p>`,
@@ -434,7 +437,7 @@ int main() {
 <p>This is the whole story of the <em>off-by-one error</em>, the most common loop bug in every language. When you write a loop, say its first and last values aloud and count the passes. <code>for (int i = 1; i &lt;= 10; i++)</code> and <code>for (int i = 0; i &lt; 10; i++)</code> both run ten times, but with different values of <code>i</code>.</p>
 <details class="reveal"><summary>Predict: how many times does <code>for (int i = 10; i &lt; 20; i += 2)</code> run, and what is the last value of <code>i</code> inside the loop?</summary><p>Five times, with <code>i</code> = 10, 12, 14, 16, 18. After the pass with 18 the step makes <code>i</code> 20, the test 20 &lt; 20 fails, and the loop ends. The counting rule above is for a step of 1; with any other step, list the values and count them.</p></details>
 <p>The last sentence of the rule for <code>for</code> has a consequence that surprises people coming from Python, where the loop variable survives the loop:</p>`,
-        { check: "How many times does <code>for (int i = 2; i &lt; 7; i++)</code> run?", options: ["5", "6", "7"], answer: 0, why: "i takes 2, 3, 4, 5, 6: b − a = 7 − 2 = 5 passes. With <= 7 it would be 6." },
+        { check: "How many times does <code>for (int i = 2; i &lt; 7; i++)</code> run?", options: ["5", "6", "7"], answer: 0, wrong: [null, "That counts both ends, i = 2 and i = 7. But i &lt; 7 stops before 7, so the last value is 6: the passes are b \u2212 a, not b \u2212 a + 1 (that is the rule for &lt;=).", "7 is the limit b, not the number of passes. The counter starts at 2, not 0, so the first two values never happen: 7 \u2212 2."], why: "i takes 2, 3, 4, 5, 6: b − a = 7 − 2 = 5 passes. With <= 7 it would be 6." },
         { play: `#include <iostream>
 using namespace std;
 
@@ -461,7 +464,7 @@ int main() {
     }
     cout << "sum: " << total << ", multiples of 3: " << count << endl;
     return 0;
-}`, caption: 'Two accumulators in one loop: the sum 1 + 2 + … + 10 = 55, and a count of the multiples of 3 (3, 6 and 9). Change 10 to 100 and predict the sum before running.' },
+}`, predict: true, caption: 'It prints <code>sum: 55, multiples of 3: 3</code>. Two accumulators in one loop: the sum 1 + 2 + … + 10 = 55, and a count of the multiples of 3 (3, 6 and 9). Change 10 to 100 and predict the sum before running.' },
         `<details class="reveal"><summary>What is the sum from 1 to 100, and is there a way to know without the loop?</summary><p>5050. Pair the numbers from the outside in: 1 + 100, 2 + 99, 3 + 98, and so on. That is 50 pairs, each adding to 101, so 50 × 101 = 5050. In general the sum from 1 to <i>n</i> is <i>n</i>(<i>n</i> + 1)/2. The loop and the formula agree; the formula takes one step whatever <i>n</i> is.</p></details>
 <h2>Loops whose length you do not know</h2>
 <p>A <code>for</code> loop suits a count known in advance. When the loop should run "until something happens", <code>while</code> is clearer. How many digits does a positive whole number have? Keep dividing by 10, which with integer division removes the last digit, and count how many times that takes to reach 0.</p>`,
@@ -478,7 +481,7 @@ int main() {
     }
     cout << digits << endl;
     return 0;
-}`, stdin: '1234', caption: 'For 1234: 123, 12, 1, 0, so four passes. Try 7 and 100000. Then try 0: the body runs zero times and the program says 0 digits, a case the loop does not handle. Every loop has edge cases like this; test them.' },
+}`, stdin: '1234', predict: true, caption: 'It prints 4. For 1234 the value of n goes 123, 12, 1, 0, so four passes. Try 7 and 100000. Then try 0: the body runs zero times and the program says 0 digits, a case the loop does not handle. Every loop has edge cases like this; test them.' },
         `<h2>Nested loops</h2>
 <div class="stmt"><p><span class="kind">Rule (nesting).</span> A loop inside another loop runs its whole course, from its start to its final test, on every single pass of the outer loop.</p></div>
 <p>So if the outer loop makes 4 passes and the inner loop makes 3 passes each time, the inner body runs 4 × 3 = 12 times. When the inner loop's length depends on the outer counter, add up the passes instead. That is how the triangle below is drawn: row 1 has one star, row 2 two, and so on.</p>`,
@@ -493,7 +496,7 @@ int main() {
         cout << endl;
     }
     return 0;
-}`, caption: 'The inner loop runs row times, and the endl after it ends each line. That is 1 + 2 + 3 + 4 = 10 stars. Change the inner condition to col <= 5 - row to draw the triangle upside down.' },
+}`, predict: true, caption: 'It prints a triangle of stars, one star on the first line and four on the last. The inner loop runs row times, and the endl after it ends each line. That is 1 + 2 + 3 + 4 = 10 stars. Change the inner condition to col <= 5 - row to draw the triangle upside down.' },
         `<h2>break and continue</h2>
 <div class="stmt"><p><span class="kind">Rule (break, continue).</span> <code>break;</code> leaves the innermost loop at once, and the program continues after it. <code>continue;</code> skips the rest of the current pass; in a <code>for</code> loop the step still happens, and then the condition is tested as usual.</p></div>
 <p>Both are handy and both are easy to overuse. If the loop's own condition can say when to stop, prefer that, because then the reason the loop ends is written in one place. Here is the same search written both ways, and a <code>continue</code> that skips even numbers.</p>`,
@@ -516,7 +519,13 @@ int main() {
         n++;
     }
     cout << n << endl;
+    return 0;
+}`, predict: true, caption: 'Both searches print <code>105</code>. <code>while (true)</code> runs until a <code>break</code> leaves it; the second version says the same thing in its condition and is easier to read. Change 101 to 106 and predict the answer before you run.' },
+        `<p>Now <code>continue</code>. In a <code>for</code> loop it jumps to the step and then the next test, so the lines after it are skipped for that pass only.</p>`,
+        { play: `#include <iostream>
+using namespace std;
 
+int main() {
     for (int i = 1; i <= 10; i++) {
         if (i % 2 == 0) {
             continue;    // skip the even numbers
@@ -525,8 +534,8 @@ int main() {
     }
     cout << endl;
     return 0;
-}`, caption: 'Both searches print 105. while (true) runs until a break; the second version says the same thing in its condition and is easier to read. The last loop prints the odd numbers 1 3 5 7 9.' },
-        { check: "Inside a for loop, what does <code>continue;</code> do?", options: ["Leaves the loop", "Skips the rest of this pass; the step still happens and the condition is tested again", "Restarts the loop from the beginning"], answer: 1, why: "break leaves; continue skips to the next pass." },
+}`, caption: 'It prints the odd numbers 1 3 5 7 9. For every even i the continue skips the cout, and the loop carries on with the next i.' },
+        { check: "Inside a for loop, what does <code>continue;</code> do?", options: ["Leaves the loop", "Skips the rest of this pass; the step still happens and the condition is tested again", "Restarts the loop from the beginning"], answer: 1, wrong: ["That is what break does. continue only skips the rest of this pass, and the loop goes on with the next one.", null, "The counter is not reset: the step still happens, so the loop carries on from where it was with the next value."], why: "break leaves; continue skips to the next pass." },
         `<h2>Before the exercises</h2>
 <p>The first exercise is a loop whose length you cannot know in advance, like the digit counter: repeat a rule until a number reaches 1, and count the passes. Write the three parts of the <code>while</code> loop first (what is set before, what is tested, what changes), then fill in the body.</p>
 <p>The second exercise prints rows of numbers separated by single spaces, with no space at the end of a row. The standard trick is to print the separator <em>before</em> every item except the first, because "is this the first item?" is easy to test. Here it is on one row, with commas.</p>`,
@@ -574,7 +583,7 @@ int main() {
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
-<li><code>while (<i>condition</i>)</code> tests before every pass, so the body may run zero times. Something in the body must move the condition towards false, or the loop never ends.</li>
+<li>A loop that is sure to stop has three parts: a variable set before it, a condition that tests it, and a step in the body that moves it towards false. <code>while (<i>condition</i>)</code> tests before every pass, so the body may run zero times; with no such step the loop never ends.</li>
 <li><code>for (<i>start</i>; <i>condition</i>; <i>step</i>)</code> is a <code>while</code> loop with its three parts on one line; its variable exists only inside the loop.</li>
 <li><code>for (int i = a; i &lt; b; i++)</code> runs <i>b</i> − <i>a</i> times; with <code>&lt;=</code>, once more. Count passes by saying the first and last values.</li>
 <li>Accumulators: set before, update inside, use after. <code>+=</code>, <code>++</code> and friends are shorthand for updates.</li>
@@ -585,17 +594,17 @@ int main() {
     /* ================================================================== */
     {
       standards: ['2-AP-14', '3A-AP-17', '3A-AP-18'],
-      title: 'Functions', summary: 'Typed functions stated exactly: parameters, return, declaration before use, pass by value, scope, early return, and a first look at recursion.',
+      title: 'Functions', standard: 1, summary: 'Typed functions stated exactly: parameters, return, declaration before use, pass by value, scope, early return, and a first look at recursion.',
       blocks: [
         `<p>A cookbook recipe for a lasagne might say "make the tomato sauce (page 12)" and "make the white sauce (page 40)". The lasagne recipe does not repeat those recipes; it names them, trusts them, and gets on with its own job. Functions are how programs do the same, and by the end of this lesson you will write functions that call other functions, and even themselves.</p>
-<p>A function names a computation so you can use it again, test it on its own, and stop thinking about how it works. You know the idea from Python's <code>def</code>. C++ adds one thing, the same thing it added to variables in Lesson 1: every value going in and coming out has a type, stated in advance, and the compiler checks every call against it.</p>
+<p>A function names a computation so you can use it again, test it on its own, and stop thinking about how it works. You know the idea from Python's <code>def</code>. C++ adds one thing, the same thing it added to variables in Lesson 1: every value going in and coming out has a type, stated in advance, and the compiler checks every call against it. So here is the question: when you hand a value to a function, does the function get the thing itself, or something else?</p>
 <h2>Defining a function</h2>
 <div class="stmt"><p><span class="kind">Rule (definition).</span> A function definition has the form</p>
 <p style="text-align:center"><code><i>returnType</i> <i>name</i>(<i>type</i><sub>1</sub> <i>param</i><sub>1</sub>, <i>type</i><sub>2</sub> <i>param</i><sub>2</sub>, …) { <i>statements</i> }</code></p>
 <p>The <em>return type</em> says what kind of value the function gives back. Each <em>parameter</em> is a variable declaration, with a type, that receives a value when the function is called.</p>
 <p><span class="kind">Rule (return).</span> <code>return <i>expression</i>;</code> ends the function at once and gives the expression's value back to the caller, converted to the return type. A function whose return type is <code>void</code> gives nothing back; it may use a plain <code>return;</code> to stop early, or simply reach its closing brace.</p>
 <p><span class="kind">Rule (call).</span> In a call <code><i>name</i>(<i>arguments</i>)</code>, each argument is evaluated, converted to its parameter's type, and copied into that parameter. Then the function's statements run.</p></div>
-<p>So <code>main</code>, which you have written in every program, is simply a function whose return type is <code>int</code>. Here are four more, one of each common kind, all called from <code>main</code>.</p>`,
+<p>So <code>main</code>, which you have written in every program, is simply a function whose return type is <code>int</code>. Here are four more, one of each common kind, in two programs. First two that give a value back. Predict the two lines.</p>`,
         { play: `#include <iostream>
 using namespace std;
 
@@ -606,6 +615,15 @@ int square(int x) {
 bool isEven(int n) {
     return n % 2 == 0;
 }
+
+int main() {
+    cout << square(12) << endl;
+    cout << isEven(7) << endl;
+    return 0;
+}`, predict: true, caption: 'It prints <code>144</code>, then <code>0</code>: 7 is not even, so isEven gives false, and a bool prints as 0. Each call is replaced by the value the function returns, so <code>square(12)</code> works like the number 144. Change the 7 to an even number and run again.' },
+        `<p>Two more: one takes two <code>double</code>s, and one is <code>void</code>, so it does something but hands nothing back.</p>`,
+        { play: `#include <iostream>
+using namespace std;
 
 double average(double a, double b) {
     return (a + b) / 2;
@@ -619,12 +637,10 @@ void greet(int times) {
 }
 
 int main() {
-    cout << square(12) << endl;
-    cout << isEven(7) << endl;
     cout << average(3, 4) << endl;
     greet(3);
     return 0;
-}`, caption: 'Prints 144, then 0 (7 is not even), then 3.5, then hi hi hi. greet is void: it does something but hands back no value, so it is called as a statement on its own.' },
+}`, caption: 'Prints 3.5, then hi hi hi. greet is void: it is called as a statement on its own, because there is no value to use.' },
         `<details class="reveal"><summary>Predict: <code>average(3, 4)</code> printed 3.5. What would <code>(3 + 4) / 2</code> print inside <code>main</code>?</summary><p><code>3</code>. In <code>main</code>, 3 and 4 are <code>int</code>s, so Lesson 1's rule makes the division an integer division. In the call <code>average(3, 4)</code>, the call rule converted 3 and 4 to <code>double</code> on the way into the parameters, so inside the function it is a <code>double</code> division. The parameter types decide.</p></details>
 <p>The conversions go the other way too, and there they can lose information. Passing 7.9 to a parameter of type <code>int</code> gives the function 7: the fractional part is dropped, not rounded. And the type of a <em>call</em> is the function's return type, so the compiler rejects a call used where its value makes no sense, such as <code>int x = greet(3);</code> with a <code>void</code> function, or <code>square("hello")</code>, where text cannot become an <code>int</code>.</p>
 <h2>Every path must return</h2>
@@ -645,7 +661,7 @@ int main() {
     cout << sign(0) << endl;
     return 0;
 }`, expectError: true, caption: 'sign(5) prints 1, but for 0 neither branch runs and the function falls off its end. This site stops with "you must return a value". A real compiler only warns, and the program prints some meaningless number. Add return 0; before the closing brace of sign.' },
-        { check: "An <code>int</code> function can reach its closing brace without returning. What does a real compiler do?", options: ["Refuses the program", "Warns at most; the program returns a meaningless number", "Returns 0"], answer: 1, why: "This site stops with \"you must return a value\"; a real compiler only warns. Return on every path." },
+        { check: "An <code>int</code> function can reach its closing brace without returning. What does a real compiler do?", options: ["Refuses the program", "Warns at most; the program returns a meaningless number", "Returns 0"], answer: 1, wrong: ["Some languages (Java, for one) refuse. g++ only warns, and only with -Wall, so the mistake is easy to miss.", null, "Nothing fills in a default 0. The caller gets whatever happens to be left over, just like an int declared with no starting value."], why: "This site stops with \"you must return a value\"; a real compiler only warns. Return on every path." },
         `<p>The warning a real compiler gives is easy to scroll past, and the bug it points at is silent, so treat that warning as an error. When you finish writing a function, trace each path through it and check that each one ends in a <code>return</code>.</p>
 <h2>Declare before use</h2>
 <div class="stmt"><p><span class="kind">Rule (declaration before use).</span> A compiler reads a file from top to bottom, and a function must be <em>declared</em> above any line that calls it. A definition counts as a declaration. So does a <em>prototype</em>: the first line of the definition followed by a semicolon, such as <code>int square(int x);</code>, which promises that the full definition appears somewhere later.</p></div>
@@ -663,7 +679,7 @@ int main() {
 int square(int x) {         // the definition keeps the promise
     return x * x;
 }`, caption: 'Legal in every compiler: square is declared above main by its prototype, and defined below it.' },
-        { check: "main calls <code>square</code>, which is defined further down the file with no prototype. A real compiler says…", options: ["Fine", "Error: square was not declared before use", "Warning only"], answer: 1, why: "The compiler reads top to bottom. Define the function above, or put a prototype such as int square(int x); above main." },
+        { check: "main calls <code>square</code>, which is defined further down the file with no prototype. A real compiler says…", options: ["Fine", "Error: square was not declared before use", "Warning only"], answer: 1, wrong: ["You can see the definition below, but the compiler reads from the top and has not met square when it reaches the call. It does not look ahead.", null, "A call to an unknown name is not a warning. g++ stops with \"was not declared in this scope\", because without the declaration it cannot check the types."], why: "The compiler reads top to bottom. Define the function above, or put a prototype such as int square(int x); above main." },
         `<h2>Pass by value</h2>
 <p>The call rule says each argument is <em>copied</em> into its parameter. The parameter is a brand-new variable, private to the function, and the function works on the copy. This is called <em>pass by value</em>, and it has a consequence that surprises everyone once: a function cannot change a variable of the caller's by assigning to its parameter. Step through the trace and watch <code>n</code> in <code>main</code>.</p>`,
         { fig: 'trace', lang: 'cpp', code: `void addOne(int n) {
@@ -707,8 +723,8 @@ int main() {
     cout << containsDigit(1974, 7) << endl;
     cout << containsDigit(1974, 2) << endl;
     return 0;
-}`, caption: 'Prints 1, then 0. For 1974 and 7 the loop looks at 4, then 7, and returns at once. The final return false is reached only after every digit has been checked. Notice that changing n inside the function does not affect the 1974 in main: it is a copy.' },
-        { check: "<code>void f(int a) { a = a * 2; }</code>, then <code>int a = 5; f(a); cout &lt;&lt; a;</code>. What prints?", options: ["10", "5: the function changed its own copy", "20"], answer: 1, why: "Arguments are copied into parameters. The caller's variable is untouched." },
+}`, predict: true, caption: 'Prints 1, then 0. For 1974 and 7 the loop looks at 4, then 7, and returns at once. The final return false is reached only after every digit has been checked. Notice that changing n inside the function does not affect the 1974 in main: it is a copy.' },
+        { check: "<code>void f(int a) { a = a * 2; }</code>, then <code>int a = 5; f(a); cout &lt;&lt; a;</code>. What prints?", options: ["10", "5: the function changed its own copy", "20"], answer: 1, wrong: ["That would need the parameter to be the caller's own variable. It is a new variable holding a copy of 5, so the doubling happens to the copy only.", null, "f is called once, so the value is doubled at most once, and only on the copy: there is nothing to double twice."], why: "Arguments are copied into parameters. The caller's variable is untouched." },
         `<p>A common mistake with this pattern is to put the "not found" answer inside the loop, as an <code>else</code>: <code>if (n % 10 == d) return true; else return false;</code>. Then the function gives up after looking at the first digit. "Not found" can only be decided after the loop has finished.</p>
 <h2>Recursion</h2>
 <p>A function can call itself. Each call gets its own frame, with its own copies of the parameters, so the calls do not interfere with each other. As in any language, a recursive function needs a base case that it answers without calling itself, and every call must move towards it.</p>`,
@@ -736,7 +752,7 @@ int main() {
     }
     cout << endl;
     return 0;
-}`, caption: 'factorial(10) is 3628800, and the first twelve Fibonacci numbers follow. Try factorial(13): it is too large for an int. This site reports the overflow; a real compiler silently produces a wrong number, which is worse.' },
+}`, predict: true, caption: 'factorial(10) is 3628800, and the first twelve Fibonacci numbers follow: 0 1 1 2 3 5 8 13 21 34 55 89, each the sum of the two before it. Try factorial(13): it is too large for an int. This site reports the overflow; a real compiler silently produces a wrong number, which is worse.' },
         `<p>An <code>int</code> holds values up to about 2 billion, as Lesson 1's table said, and 13! is about 6 billion. Choosing a type is choosing a range, and a function's return type must be large enough for every answer it can give.</p>
 <h2>Before the exercises</h2>
 <p>In both exercises you write only the function: the checker supplies a <code>main</code> that calls it with test values and prints the result. The Run button needs a <code>main</code>, so to try your function yourself, add a small one below it, like the ones above, and delete it before you press Check.</p>
@@ -765,10 +781,12 @@ int main() {
             hints: ['for (int d = 2; d * d <= n; d++) tries divisors up to the square root without any decimals.', 'Inside the loop, return false the moment n % d == 0. After the loop, every divisor has been tried: return true. Do not put return true inside the loop.'],
             tests: [{ call: 'isPrime(2)', expect: '1' }, { call: 'isPrime(7)', expect: '1' }, { call: 'isPrime(9)', expect: '0' }, { call: 'isPrime(1)', expect: '0' }, { call: 'isPrime(25)', expect: '0' }, { call: 'isPrime(97)', expect: '1' }, { call: 'isPrime(7919)', expect: '1' }, { call: 'isPrime(7917)', expect: '0' }],
             mustContain: [{ re: /\bbool\s+isPrime\s*\(\s*int\s+\w+\s*\)/, msg: 'Keep the signature bool isPrime(int n).' }],
-            failTip: 'If 9 or 25 is reported prime, check the loop condition: it must be d * d <= n, including equality, so that 3 is tried for 9 and 5 for 25.'
+            failTip: 'If 9 or 25 is reported prime, check the loop condition: it must be d * d <= n, including equality, so that 3 is tried for 9 and 5 for 25.',
+            followup: 'Add a main that uses isPrime to print every prime below 100, then to count the primes below 10000. How many divisors does isPrime try for n near 10000? Compare that with trying every d below n.'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
+<li>So does a function get the thing itself? No: it gets a copy, and what it does to the copy is lost unless it returns it.</li>
 <li><code><i>returnType</i> <i>name</i>(<i>type</i> <i>param</i>, …) { … }</code>; <code>void</code> means no value comes back. Every other function must <code>return</code> on every path.</li>
 <li>A call evaluates each argument, converts it to the parameter's type, and copies it in: pass by value. The function cannot change the caller's variables through its parameters.</li>
 <li>Declare a function above its first call, by defining it there or with a prototype.</li>
@@ -781,10 +799,10 @@ int main() {
     /* ================================================================== */
     {
       standards: ['3A-CS-02', '3B-AP-12'],
-      title: 'Pointers', summary: 'Addresses and the variables that hold them, stated exactly: &, * and the three meanings of the star; why passing a pointer still passes by value; and how a function changes the caller\u2019s variables.',
+      title: 'Pointers', standard: 1, summary: 'Addresses and the variables that hold them, stated exactly: &, * and the three meanings of the star; why passing a pointer still passes by value; and how a function changes the caller\u2019s variables.',
       blocks: [
         `<p>In 1965 the computer scientist Tony Hoare added a special "points nowhere" value to a programming language he was designing, because it was so easy to implement. In 2009 he apologised for it in public, calling it his "billion-dollar mistake", after decades of programs crashing because they followed a pointer that pointed nowhere. Pointers are powerful and they are sharp. This lesson shows how they work, and how not to cut yourself.</p>`,
-        `<p>Lesson 4 ended with a limitation: a function receives copies, so it cannot change the caller's variables, and it can hand back only one value. C++'s answer is one of the ideas it is best known for. It has a fearsome reputation, but it rests on three small rules, and the whole difficulty is keeping those rules separate in your head.</p>
+        `<p>Lesson 4 ended with a limitation: a function receives copies, so it cannot change the caller's variables, and it can hand back only one value. C++'s answer is one of the ideas it is best known for. It has a fearsome reputation, but it rests on three small rules, and the whole difficulty is keeping those rules separate in your head. So here is the question: if every argument is only a copy, how can one function change a variable that belongs to another?</p>
 <h2>Addresses</h2>
 <p>Lesson 1's memory figure showed each variable occupying some bytes, laid out by the compiler. Every byte of memory has a number, its <em>address</em>, just as every house on a street has a number.</p>
 <div class="stmt"><p><span class="kind">Rule (address).</span> The <em>address</em> of a variable is the address of its first byte. For a variable <code>x</code>, the expression <code>&amp;x</code> ("address of x") is that address. If <code>x</code> is an <code>int</code>, the type of <code>&amp;x</code> is <code>int*</code>, "pointer to int".</p>
@@ -810,8 +828,8 @@ int main() {
     *p = *p + 1;
     cout << x << " " << y << endl;
     return 0;
-}`, caption: 'Prints 5, 42, 1 (true), then 42 8. After p = &y, *p means y, and x is left alone. A real compiler would also let you print p itself, as an address such as 0x7ffd3c2a; this site\u2019s interpreter only allows comparing addresses. Press Step through memory to watch it happen: the value of p is an address, and pointing at p lights up the variable it points to.' },
-        { check: "<code>int x = 4; int* p = &amp;x; *p = 9;</code>. What is x?", options: ["4", "9", "An address"], answer: 1, why: "p holds the address of x, so *p is x. Assigning to *p assigns to x." },
+}`, predict: true, caption: 'Prints 5, 42, 1 (true), then 42 8. After p = &y, *p means y, and x is left alone. A real compiler would also let you print p itself, as an address such as 0x7ffd3c2a; this site\u2019s interpreter only allows comparing addresses. Press Step through memory to watch it happen: the value of p is an address, and pointing at p lights up the variable it points to.' },
+        { check: "<code>int x = 4; int* p = &amp;x; *p = 9;</code>. What is x?", options: ["4", "9", "An address"], answer: 1, wrong: ["4 is x before the assignment. *p = 9 writes through the pointer into x itself, so x changes: *p is not a copy of x.", null, "x is an int variable, so it holds a number. The address of x is what p holds; reading *p goes to the number at that address."], why: "p holds the address of x, so *p is x. Assigning to *p assigns to x." },
         `<h2>One symbol, three meanings</h2>
 <p>The star is where the confusion lives, because C++ uses it for three unrelated things, and <code>&amp;</code> has a second meaning too. Which one is meant depends only on where the symbol appears.</p>
 <table class="small"><tr><th>you write</th><th>where</th><th>it means</th></tr><tr><td><code>int* p</code></td><td>in a declaration, after a type</td><td>p is a pointer to an int</td></tr><tr><td><code>*p</code></td><td>in an expression, before a pointer</td><td>the variable p points to</td></tr><tr><td><code>a * b</code></td><td>between two values</td><td>multiplication</td></tr><tr><td><code>&amp;x</code></td><td>in an expression, before a variable</td><td>the address of x</td></tr></table>
@@ -827,7 +845,7 @@ int main() {
     cout << *p << endl;  // follow it: to where?
     return 0;
 }`, expectError: true, caption: 'This site refuses: "you cannot dereference an uninitialized pointer". A real program may print garbage, crash, or silently change some other variable. Always give a pointer an address when you declare it.' },
-        { check: "What does following an uninitialised pointer do on a real computer?", options: ["Gives 0", "Anything: garbage, a crash, or a silent change elsewhere", "A compile error"], answer: 1, why: "The pointer holds whatever bits were in memory. This site refuses; a real program may do anything." },
+        { check: "What does following an uninitialised pointer do on a real computer?", options: ["Gives 0", "Anything: garbage, a crash, or a silent change elsewhere", "A compile error"], answer: 1, wrong: ["Nothing sets a new pointer to 0 for you, just as a new int is not set to 0. It holds whatever bits were left in that memory, so following it goes to a random place.", null, "The line is perfectly legal, so the compiler accepts it. The trouble appears only when the program runs, which is what makes it dangerous."], why: "The pointer holds whatever bits were in memory. This site refuses; a real program may do anything." },
         `<p>Real C++ has a special value, <code>nullptr</code>, meaning "points nowhere", which you can store in a pointer and test for; following it is always an error. (This site's interpreter does not know <code>nullptr</code>.) The types must also match: <code>double* q = &amp;x;</code> with an <code>int x</code> is rejected, because a pointer's type says what kind of value is found at the address.</p>
 <h2>Passing an address to a function</h2>
 <p>Now the payoff. Lesson 4's call rule still holds, unchanged: every argument is copied into its parameter. But if the argument is an <em>address</em>, the parameter receives a copy of the address, and a copy of an address points to the same place as the original.</p>
@@ -868,6 +886,18 @@ void tryToSwap(int a, int b) {     // pass by value: swaps copies only
     b = temp;
 }
 
+int main() {
+    int x = 1, y = 2;
+    tryToSwap(x, y);
+    cout << x << " " << y << endl;
+    swap(&x, &y);
+    cout << x << " " << y << endl;
+    return 0;
+}`, predict: true, caption: 'Prints 1 2, then 2 1. tryToSwap swaps its own copies of the values and main sees nothing. Only swap assigns through the pointers, so only swap reaches x and y.' },
+        `<p>One slip is very common: writing the swap without the stars. Predict what <code>x</code> and <code>y</code> hold afterwards.</p>`,
+        { play: `#include <iostream>
+using namespace std;
+
 void swapTheArrows(int* a, int* b) {  // forgot the stars
     int* temp = a;
     a = b;
@@ -876,15 +906,11 @@ void swapTheArrows(int* a, int* b) {  // forgot the stars
 
 int main() {
     int x = 1, y = 2;
-    tryToSwap(x, y);
-    cout << x << " " << y << endl;
     swapTheArrows(&x, &y);
     cout << x << " " << y << endl;
-    swap(&x, &y);
-    cout << x << " " << y << endl;
     return 0;
-}`, caption: 'Prints 1 2, then 1 2, then 2 1. tryToSwap swaps its own copies of the values. swapTheArrows swaps its own copies of the addresses, which changes where its a and b point, but not x or y. Only swap assigns through the pointers.' },
-        { check: "To let a function change the caller's int x, what do you pass?", options: ["<code>x</code>", "<code>&amp;x</code>, and the function assigns through <code>*</code>", "<code>*x</code>"], answer: 1, why: "A copy of an address still points to the original. Inside, *a is the caller's x." },
+}`, caption: 'Prints 1 2: nothing changed. swapTheArrows swaps its own copies of the addresses, which changes where its a and b point, but not x or y. Add the stars to each line (int temp = *a; *a = *b; *b = temp;) and it works.' },
+        { check: "To let a function change the caller's int x, what do you pass?", options: ["<code>x</code>", "<code>&amp;x</code>, and the function assigns through <code>*</code>", "<code>*x</code>"], answer: 1, wrong: ["Passing x passes a copy of the number, and the function can change only that copy. To reach x itself it needs x\u2019s address.", null, "x is an int, not a pointer, so there is nothing for * to follow. The star goes inside the function; the caller supplies the address, &x."], why: "A copy of an address still points to the original. Inside, *a is the caller's x." },
         `<p>The call must supply addresses. <code>swap(x, y)</code>, without the ampersands, passes two <code>int</code>s to a function whose parameters are <code>int*</code>, and the compiler rejects it (on this site: "no method swap … accepts int,int"). That is a helpful error: the types caught the mistake before anything ran.</p>
 <h2>More than one result</h2>
 <p>The same idea lets a function give back several answers. The caller passes the addresses of the variables that should receive them, and the function fills them in. This is how C and C++ return two or more values from one call.</p>`,
@@ -905,7 +931,7 @@ int main() {
     minMax(7, 3, 9, &smallest, &largest);
     cout << smallest << " " << largest << endl;
     return 0;
-}`, caption: 'Prints 3 9. smallest and largest belong to main and start with no value; minMax gives them their values through the pointers. The pointers lo and hi are called output parameters.' },
+}`, predict: true, caption: 'Prints 3 9. smallest and largest belong to main and start with no value; minMax gives them their values through the pointers. The pointers lo and hi are called output parameters.' },
         `<h2>A note on references</h2>
 <p>Modern C++ has a second way to do this job, called a <em>reference</em>: a parameter declared <code>int&amp; n</code> becomes another name for the caller's variable, so the function writes <code>n</code> instead of <code>*n</code>, and the caller writes <code>swap(x, y)</code> instead of <code>swap(&amp;x, &amp;y)</code>. The interpreter on this site does not support references. On a real compiler, prefer them for this job: they cannot be left pointing nowhere. But a reference is a pointer that the compiler follows for you, and the next lesson needs real pointers, because arrays are built on them.</p>
 <h2>Before the exercises</h2>
@@ -919,7 +945,16 @@ void sumAndDifference(int a, int b, int* sum, int* diff) {
     *diff = a - b;
 }
 
-// Put two variables in order, using swap
+int main() {
+    int s, d;
+    sumAndDifference(10, 4, &s, &d);
+    cout << s << " " << d << endl;
+    return 0;
+}`, caption: 'Prints 14 6. The caller passes the addresses of s and d, and the function fills them in through the stars.' },
+        `<p>The second skill puts two variables in order by reusing <code>swap</code>. Inside <code>order2</code>, <code>a</code> and <code>b</code> are already addresses, so they go on to <code>swap</code> as they are.</p>`,
+        { play: `#include <iostream>
+using namespace std;
+
 void swap(int* p, int* q) {
     int temp = *p;
     *p = *q;
@@ -933,15 +968,11 @@ void order2(int* a, int* b) {
 }
 
 int main() {
-    int s, d;
-    sumAndDifference(10, 4, &s, &d);
-    cout << s << " " << d << endl;
-
     int x = 9, y = 2;
     order2(&x, &y);
     cout << x << " " << y << endl;
     return 0;
-}`, caption: 'Prints 14 6, then 2 9. In order2, a is already an int*, so it goes to swap as it is. Writing swap(&a, &b) would pass the addresses of the pointers themselves, which is not what swap expects.' },
+}`, caption: 'Prints 2 9. In order2, a is already an int*, so it goes to swap as it is. Writing swap(&a, &b) would pass the addresses of the pointers themselves, which is not what swap expects.' },
         `<details class="reveal"><summary>Puzzle: if <code>x</code> is an <code>int</code>, what is <code>*&amp;x</code>? And if <code>p</code> is a pointer to an <code>int</code>, what is <code>&amp;*p</code>?</summary><p><code>*&amp;x</code> is <code>x</code> itself: <code>&amp;x</code> is its address, and <code>*</code> follows that address straight back to <code>x</code>. <code>&amp;*p</code> is <code>p</code>: <code>*p</code> is the variable <code>p</code> points to, and its address is exactly what <code>p</code> holds. <code>&amp;</code> and <code>*</code> undo each other, which is a good way to remember what each one does.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> Forgetting the <code>&amp;</code> at the call, so values are passed where addresses are expected. Forgetting the <code>*</code> inside the function, so <code>a = b</code> changes where the local copy points instead of the value pointed to. Adding a <code>&amp;</code> to something that is already a pointer. Following a pointer that was never given an address. Reading <code>int* p</code> and <code>*p</code> as the same star: one declares, the other follows. Expecting a function to change the caller's variable when it received only a copy of its value.</p>` },
         {
@@ -958,7 +989,8 @@ int main() {
               { name: 'divide(3725, 60)', main: '    int quot = 0, rem = 0;\n    divide(3725, 60, &quot, &rem);\n    cout << quot << " " << rem << endl;', expect: '62 5' }
             ],
             mustContain: [{ re: /\*\s*q\s*=/, msg: 'Assign through the pointer: *q = ...' }],
-            failTip: 'If the checker prints 0 0, the function assigned to its own copies: write *q = and *r =, with the stars.'
+            failTip: 'If the checker prints 0 0, the function assigned to its own copies: write *q = and *r =, with the stars.',
+            followup: 'Write void splitTime(int total, int* hours, int* minutes, int* seconds) so that one call gives back all three answers of Lesson 1\u2019s seconds exercise. Why could it not simply return them?'
           }
         },
         {
@@ -984,7 +1016,7 @@ int main() {
 <li>Every variable has an address; <code>&amp;x</code> is the address of <code>x</code>, and a pointer <code>int* p</code> is a variable that holds one.</li>
 <li><code>*p</code> is the variable <code>p</code> points to: reading it reads that variable, assigning to it assigns to that variable.</li>
 <li>The star declares a pointer after a type, follows a pointer before one, and multiplies between two values.</li>
-<li>Arguments are still copied, but a copy of an address points to the original, so a function can change the caller's variables through <code>*</code> and return several results.</li>
+<li>So how can a function change a variable that belongs to another? Arguments are still copied, but a copy of an address points to the original, so a function can change the caller's variables through <code>*</code> and return several results.</li>
 <li>Give every pointer an address before following it. References (<code>int&amp;</code>) are the modern spelling of the same idea.</li>
 </ul></div>`
       ]
