@@ -113,7 +113,7 @@
         { f: 'web', t: 'Caches keep recent answers so a site does not have to work them out again; they are hash tables keyed by the question. Memcached and Redis are well-known examples.' }
       ],
       jobs: ['Backend developer', 'Security engineer', 'DevOps engineer', 'Database engineer'],
-      learn: ['python/11', 'java/13', 'modern/7', 'math/13'],
+      learn: ['python/11', 'java/13', 'modern/8', 'math/13'],
       teach: 'Hook: explain why "Forgot your password?" sends a reset link instead of your old password. (The site does not know it: it only kept a hash.)'
     },
     {
@@ -270,7 +270,7 @@
         { f: 'eng', t: 'Engineering simulations model physical parts (a beam, a pump, a circuit element) as objects with properties and rules.' }
       ],
       jobs: ['App developer', 'Game developer', 'Software architect'],
-      learn: ['modern/4', 'modern/5', 'java/9', 'java/11', 'modern/8', 'dsa/6'],
+      learn: ['modern/4', 'modern/6', 'java/9', 'java/11', 'modern/10', 'dsa/6'],
       teach: 'Activity: design a Student or a Book type on the board. What data does it hold? Which rules should it refuse to break, whatever the rest of the program does?'
     },
     {
@@ -324,7 +324,7 @@
         { f: 'data', t: 'Spreadsheet and database work is mostly maps (compute a new column), filters (keep some rows) and reductions (SUM, COUNT).' }
       ],
       jobs: ['Data engineer', 'Front-end developer', 'Backend developer'],
-      learn: ['lisp/9', 'lisp/11', 'modern/6'],
+      learn: ['lisp/9', 'lisp/11', 'modern/7'],
       teach: 'Activity: give a spreadsheet of made-up scores. Which operations are a map, which a filter, which a reduce?'
     },
     {
@@ -350,7 +350,7 @@
         { f: 'swe', t: 'Testing every combination of settings explodes by the product rule: 10 on/off options make 2¹⁰ = 1,024 combinations, so testers choose a smaller set that still covers every pair of options (pairwise testing).' }
       ],
       jobs: ['Security analyst', 'Database developer', 'Data analyst', 'Test engineer'],
-      learn: ['math/2', 'math/13', 'modern/7'],
+      learn: ['math/2', 'math/13', 'modern/8'],
       teach: 'Hook: how many 4-digit phone PINs are there? How long would it take to try them all at one a second? What does a lockout after 10 tries change?'
     },
     {
