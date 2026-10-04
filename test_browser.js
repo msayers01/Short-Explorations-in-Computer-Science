@@ -221,6 +221,19 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('terminal: a listed fit can be chosen with the keyboard', (await page.locator('.term-inp').inputValue()) === 'cd notes/' && (await page.locator('.term-ac').isHidden()), await page.locator('.term-inp').inputValue());
   await page.fill('.term-inp', 'ec'); await page.keyboard.press('Tab');
   check('terminal: Tab completes a command', (await page.locator('.term-inp').inputValue()) === 'echo ');
+  // readline keys: Ctrl+R searches the history backwards (again for older), Enter runs the match; Ctrl+A/E/K/W/Y edit the line
+  await page.fill('.term-inp', ''); await page.keyboard.press('Control+r'); await page.keyboard.type('tr a');
+  check('terminal: Ctrl+R finds the newest command containing the text', /reverse-i-search\)`tr a'/.test(await page.locator('.lab-term .term-ps1').textContent()) && /tr a-z A-Z/.test(await page.locator('.term-inp').inputValue()), [await page.locator('.lab-term .term-ps1').textContent(), await page.locator('.term-inp').inputValue()]);
+  await page.keyboard.press('Control+g');
+  check('terminal: Ctrl+G leaves the search with the line as it was', (await page.locator('.term-inp').inputValue()) === '' && /\$ $/.test(await page.locator('.lab-term .term-ps1').textContent()));
+  await page.keyboard.press('Control+r'); await page.keyboard.type('xyzzy-not-there');
+  check('terminal: a search with no match says so', /failed reverse-i-search/.test(await page.locator('.lab-term .term-ps1').textContent()));
+  await page.keyboard.press('Escape');
+  await page.fill('.term-inp', 'echo one two three'); await page.keyboard.press('Control+w'); await page.keyboard.press('Control+a'); await page.keyboard.press('Control+k'); await page.keyboard.press('Control+y');
+  check('terminal: Ctrl+W cuts a word, Ctrl+A goes to the start, Ctrl+K cuts to the end and Ctrl+Y puts it back', (await page.locator('.term-inp').inputValue()) === 'echo one two ', await page.locator('.term-inp').inputValue());
+  await page.click('.lab-term .term-size');
+  check('terminal: Taller makes the panel taller', await page.evaluate(() => document.querySelector('.lab-term').classList.contains('term-big') && document.querySelector('.lab-term .term-scroll').getBoundingClientRect().height > 300));
+  await page.click('.lab-term .term-size');
   await page.fill('.term-inp', '');
   tt = await term('while true; do :; done');
   check('terminal: a loop that never ends is stopped', /stopped: more than 20000 commands/.test(tt) && (await termStatus()) === 'exit 1', tt.slice(-200));

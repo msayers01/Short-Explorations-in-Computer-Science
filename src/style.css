@@ -596,6 +596,8 @@ html.classroom .out-text, html.classroom .term-input, html.classroom .nano { fon
 .lab-term { margin-top: 0.7rem; } .lab-term[hidden] { display: none; }
 .lab-term .cmd::before { content: none; }   /* the prompt is in the line itself */
 .lab-term .term-scroll { max-height: 22rem; min-height: 6rem; }
+.term-spacer { flex: 1; } .term-size { color: var(--t-dim); font-family: var(--sans); font-size: 0.74rem; padding: 0 0.3rem; } .term-size:hover { color: var(--t-fg); }
+.term.term-big .term-scroll { max-height: 70vh; min-height: 50vh; }   /* the Taller button */
 .lab-term .term-scroll:empty { min-height: 0; padding: 0; }
 .term-reset, .term-close { color: var(--t-dim); font-family: var(--sans); font-size: 0.74rem; padding: 0 0.3rem; } .term-reset:hover, .term-close:hover { color: var(--t-fg); }
 .term-close { font-size: 1rem; line-height: 1; }
