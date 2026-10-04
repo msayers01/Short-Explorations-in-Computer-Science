@@ -521,7 +521,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('dsa: the graph figure plays on its own and pauses', !/step 1 of/.test(await g2.locator('.fig-note').textContent()));
   }
   await goto('#/python/1');
-  const pp = page.locator('.play').filter({ has: page.locator('.guess') }).first();
+  const pp = page.locator('.play').filter({ has: page.locator('.guess') }).nth(3);   // the apples example (the fourth with a prediction)
   const capHidden = await pp.locator('.play-cap').isHidden();
   await pp.locator('.toolbar .btn.primary').click();
   const nudged = await pp.locator('.guess-nudge').isVisible();
