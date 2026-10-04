@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xoDJZhMaily7Ql79Q8k//KIMpD4L8S2vU4hwcA2bRl4=' 'sha256-QXc5vziazeBeEUW1Zq80W4NDuUhA8FwbFONu5v/qI9w=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xoDJZhMaily7Ql79Q8k//KIMpD4L8S2vU4hwcA2bRl4=' 'sha256-H8N6oNI/Vih9EfwboEfPwti4SEfYwRgcWgtL+LTmu1g=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -16895,7 +16895,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
     if (g === w) return true;
     const gn = asNum(got), wn = asNum(want);
     if (gn !== null && wn !== null) {
-      if (Number.isInteger(gn) && Number.isInteger(wn) && Math.abs(wn) > 2 ** 31) return gn === wn;   // a relative tolerance would accept off-by-one big integers
+      if (Number.isInteger(gn) && Number.isInteger(wn)) return gn === wn;   // a relative tolerance would accept off-by-one integers of a billion or more
       return Math.abs(gn - wn) <= Math.max(1e-12, 1e-9 * Math.abs(wn));
     }
     // true/false answers: yes/no/t/f are accepted, but only when the expected answer is itself such a word
@@ -20489,8 +20489,8 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
         requestAnimationFrame(() => { inp.selectionStart = inp.selectionEnd = inp.value.length; });
         return;
       }
-      if (e.key === 'Tab') { e.preventDefault(); if (!running) complete(); return; }
-      if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) { e.preventDefault(); if (running) { sh.cancel(); if (asking) { const a = asking; asking = null; a.resolve(''); } } else { line(sh.prompt() + inp.value + '^C', 'cmd'); inp.value = ''; } return; }
+      if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); if (!running) complete(); return; }
+      if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) { if (!running && inp.selectionStart !== inp.selectionEnd) return; e.preventDefault(); if (running) { sh.cancel(); if (asking) { const a = asking; asking = null; a.resolve(''); } } else { line(sh.prompt() + inp.value + '^C', 'cmd'); inp.value = ''; } return; }
       if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); io.clear(); return; }
       if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); inp.value = ''; return; }
     });
@@ -20600,10 +20600,11 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
       if (!fs.isDir(LAB_DIR)) { if (fs.exists(LAB_DIR)) fs.unlink(LAB_DIR); fs.mkdir(LAB_DIR, true); }
       const files = ctx.labFiles(), names = new Set();
       for (const f of files) {
-        if (!fs.validName(f.name) || names.has(f.name)) continue; names.add(f.name);
+        if (!fs.validName(f.name) || names.has(f.name)) continue;
         const p = LAB_DIR + '/' + f.name, n = fs.stat(p);
         if (n && n.t === 'd') continue;
-        if (!n || n.d !== f.code) { try { fs.write(p, f.code); } catch (e) { /* over the limits: the Lab file is simply not shown here */ } }
+        if (!n || n.d !== f.code) { try { fs.write(p, f.code); } catch (e) { continue; /* over the limits: not shown here, and never treated as removed by the terminal */ } }
+        names.add(f.name);
       }
       for (const name of mirrored) if (!names.has(name) && fs.isFile(LAB_DIR + '/' + name)) { try { fs.unlink(LAB_DIR + '/' + name); } catch (e) { /* ignore */ } }
       mirrored = names;
@@ -21023,7 +21024,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     for (const l in LANG_INFO) { if (!Array.isArray(S.files[l])) S.files[l] = []; S.files[l] = S.files[l].filter(f => f && typeof f.name === 'string' && typeof f.code === 'string'); }
     for (const l in LANG_INFO) {
       if (!S.files[l] || !S.files[l].length) S.files[l] = [{ name: LANG_INFO[l].first, code: TEMPLATES[l][0].code }];
-      if (S.active[l] == null || S.active[l] >= S.files[l].length) S.active[l] = 0;
+      if (!Number.isInteger(S.active[l]) || S.active[l] < 0 || S.active[l] >= S.files[l].length) S.active[l] = 0;
     }
     if (!S.panels) S.panels = {};
     S.fullCpp = S.fullCpp === true;
@@ -21515,7 +21516,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const traceStop = el('button', { class: 'btn quiet', onclick: () => tracer && tracer.stop() }, 'Stop');
     const traceRestart = el('button', { class: 'btn quiet', onclick: () => { if (tracer) tracer.stop(); setTimeout(startTrace, 50); } }, 'Restart');
     const traceBox = el('div', { class: 'trace-box', hidden: '', tabindex: '0' }, el('div', { class: 'panel-head' }, el('b', {}, 'Step through'), traceMsg), el('div', { class: 'toolbar' }, traceNext, traceRun, traceRestart, traceStop, el('span', { class: 'panel-note' }, 'Enter or N: next line')), traceVars);
-    traceBox.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === 'n' || e.key === 'N') && tracer) { e.preventDefault(); tracer.next(); } });
+    traceBox.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.closest && e.target.closest('button')) return; if ((e.key === 'Enter' || e.key === 'n' || e.key === 'N') && tracer) { e.preventDefault(); tracer.next(); } });
     const repl = makeRepl();
     const replBox = el('div', { class: 'repl-box', hidden: S.lang !== 'scheme' ? '' : null }, el('div', { class: 'panel-head' }, el('b', {}, 'REPL'), el('span', { class: 'panel-note' }, 'Type an expression and press Enter. Run the file first to load its definitions. ↑ ↓ recall earlier lines.')), repl.el);
 
@@ -21533,7 +21534,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       const lang = S.lang, code = editor.value; out.start((window.__app.COMMANDS || {})[lang === 'cpp' && isFull() ? 'cppfull' : lang] || '');
       let exit = 0, stopped = false;
       const reads = lang === 'cpp' ? /\bcin\b/.test(code) : lang === 'java' ? /\bScanner\b/.test(code) : false;
-      if (reads) { stdinBox.hidden = false; if (!stdinTa.value.trim() && !stdinTa.dataset.warned) { stdinTa.dataset.warned = '1'; out.note('This program reads input with ' + (lang === 'java' ? 'a Scanner' : 'cin') + '. Type the values in the Program input box, one per line, then Run again.'); stdinTa.focus(); return; } }
+      if (reads) { stdinBox.hidden = false; if (!stdinTa.value.trim() && !stdinTa.dataset.warned) { stdinTa.dataset.warned = '1'; out.note('This program reads input with ' + (lang === 'java' ? 'a Scanner' : 'cin') + '. Type the values in the Program input box, one per line, then Run again.'); stdinTa.focus(); out.finish({ stopped: true }); return; } }
       setRunning(true);
       try {
         if (lang === 'python') {
@@ -21610,6 +21611,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     memSlider.addEventListener('input', () => memShow(+memSlider.value));
     memBox.addEventListener('keydown', (e) => {
       if (!memTrace || e.target === memSlider) return;
+      if (e.key === 'Enter' && e.target.closest && e.target.closest('button')) return;   // Enter on a button presses it
       if (e.key === 'Enter' || e.key === 'n' || e.key === 'N' || e.key === 'ArrowRight') { e.preventDefault(); memShow(memIdx + 1); }
       else if (e.key === 'b' || e.key === 'B' || e.key === 'ArrowLeft') { e.preventDefault(); memShow(memIdx - 1); }
     });
@@ -21658,7 +21660,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const substAll = el('button', { class: 'btn', onclick: () => substShow(Infinity) }, 'Show all');
     const substRestart = el('button', { class: 'btn quiet', onclick: () => startSubst() }, 'Restart');
     const substBox = el('div', { class: 'subst-box', hidden: '', tabindex: '0' }, el('div', { class: 'panel-head' }, el('b', {}, 'Substitution model'), substMsg), el('div', { class: 'toolbar' }, substNext, substAll, substRestart, el('button', { class: 'btn quiet', onclick: () => { substBox.hidden = true; } }, 'Close'), el('span', { class: 'panel-note' }, 'Enter or N: next step')), substList);
-    substBox.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === 'n' || e.key === 'N') { e.preventDefault(); substShow(1); } });
+    substBox.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.closest && e.target.closest('button')) return; if (e.key === 'Enter' || e.key === 'n' || e.key === 'N') { e.preventDefault(); substShow(1); } });
     let substQueue = [], substShown = 0;
     function startSubst() {
       if (!window.SUBST) return;
@@ -24698,7 +24700,7 @@ xs mapped kept result`;
     const toData = (e) => { const r = svg.getBoundingClientRect(), sx = W0 / r.width, sy = H0 / r.height; const px = (e.clientX - r.left) * sx, py = (e.clientY - r.top) * sy;
       return [Math.max(X0, Math.min(X1, X0 + (px - L) / (W0 - L - R) * (X1 - X0))), Math.max(Y0, Math.min(Y1, Y0 + (1 - (py - T) / (H0 - T - B)) * (Y1 - Y0)))]; };
     let dragging = false;
-    svg.addEventListener('pointerdown', (e) => { dragging = true; try { svg.setPointerCapture(e.pointerId); } catch (x) { /* old browser */ } q = toData(e); render(); e.preventDefault(); });
+    svg.addEventListener('pointerdown', (e) => { if (e.button) return; dragging = true; try { svg.setPointerCapture(e.pointerId); } catch (x) { /* old browser */ } q = toData(e); render(); e.preventDefault(); });
     svg.addEventListener('pointermove', (e) => { if (!dragging) return; q = toData(e); render(); });
     const end = () => { dragging = false; const f = svg.querySelector('.knn-new'); if (f && document.activeElement === document.body) f.focus({ preventScroll: true }); };
     svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);

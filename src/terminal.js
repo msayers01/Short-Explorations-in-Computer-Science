@@ -120,8 +120,8 @@
         requestAnimationFrame(() => { inp.selectionStart = inp.selectionEnd = inp.value.length; });
         return;
       }
-      if (e.key === 'Tab') { e.preventDefault(); if (!running) complete(); return; }
-      if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) { e.preventDefault(); if (running) { sh.cancel(); if (asking) { const a = asking; asking = null; a.resolve(''); } } else { line(sh.prompt() + inp.value + '^C', 'cmd'); inp.value = ''; } return; }
+      if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); if (!running) complete(); return; }
+      if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) { if (!running && inp.selectionStart !== inp.selectionEnd) return; e.preventDefault(); if (running) { sh.cancel(); if (asking) { const a = asking; asking = null; a.resolve(''); } } else { line(sh.prompt() + inp.value + '^C', 'cmd'); inp.value = ''; } return; }
       if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); io.clear(); return; }
       if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); inp.value = ''; return; }
     });
@@ -231,10 +231,11 @@
       if (!fs.isDir(LAB_DIR)) { if (fs.exists(LAB_DIR)) fs.unlink(LAB_DIR); fs.mkdir(LAB_DIR, true); }
       const files = ctx.labFiles(), names = new Set();
       for (const f of files) {
-        if (!fs.validName(f.name) || names.has(f.name)) continue; names.add(f.name);
+        if (!fs.validName(f.name) || names.has(f.name)) continue;
         const p = LAB_DIR + '/' + f.name, n = fs.stat(p);
         if (n && n.t === 'd') continue;
-        if (!n || n.d !== f.code) { try { fs.write(p, f.code); } catch (e) { /* over the limits: the Lab file is simply not shown here */ } }
+        if (!n || n.d !== f.code) { try { fs.write(p, f.code); } catch (e) { continue; /* over the limits: not shown here, and never treated as removed by the terminal */ } }
+        names.add(f.name);
       }
       for (const name of mirrored) if (!names.has(name) && fs.isFile(LAB_DIR + '/' + name)) { try { fs.unlink(LAB_DIR + '/' + name); } catch (e) { /* ignore */ } }
       mirrored = names;

@@ -49,5 +49,13 @@ check('unsigned char 250 + 10', runCpp('unsigned char c = 250; c = c + 10; cout 
 check('unsigned short 65535 + 1', runCpp('unsigned short s = 65535; s++; cout << s;'), '0');
 console.error = quiet;
 
+// the maths grader: a near-miss integer is wrong however large it is
+{
+  const MG = require('./src/mathgrade.js'), g = (want, got) => MG.grade({ kind: 'answer', parts: [{ answer: want }] }, [got]).results ? MG.grade({ kind: 'answer', parts: [{ answer: want }] }, [got]).results[0].ok : MG.grade({ kind: 'answer', parts: [{ answer: want }] }, [got])[0].ok;
+  check('INT_MAX is accepted', g('2147483647', '2147483647'), true);
+  check('INT_MAX - 1 is not', g('2147483647', '2147483646'), false);
+  check('a decimal keeps its tolerance', g('0.3333333333', '0.33333333333'), true);
+}
+
 if (bad) { console.log(bad + ' problems'); process.exit(1); }
 console.log('app helpers OK');
