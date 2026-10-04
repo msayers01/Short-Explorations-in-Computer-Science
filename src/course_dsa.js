@@ -28,42 +28,28 @@ window.COURSES.push({
     /* ================================================================== */
     {
       standards: ['3A-DA-10', '3B-AP-11', '3B-AP-12'],
-      title: 'Counting the cost', summary: 'Why speed is a property of the method, not the machine; the array, what it makes cheap and expensive; how a growing array grows; and the orders of growth that describe every algorithm in this course.',
+      standard: 1, title: 'Counting the cost', summary: 'Why speed is a property of the method, not the machine; the array, what it makes cheap and expensive; how a growing array grows; and the orders of growth that describe every algorithm in this course.',
       blocks: [
         `<p>The United States counts its population every ten years, and by 1880 the count had become the largest data-processing job in the world: fifty million people, each with a dozen facts to record, every total worked out by clerks with pencils and tally sheets. The tabulation of the 1880 census took most of the decade. The Census Office could see that the 1890 count would not be finished before the 1900 count began. A young engineer who had worked on the 1880 census, Herman Hollerith, proposed a different arrangement of the data: each person's facts punched as holes in a card, and machines that could read the holes and count them electrically. The cards for the 1890 census were run through his tabulators, and the population total was announced within months. The company Hollerith founded to sell the machines later became part of IBM.</p>`,
         { photo: 'hollerith-1890-census', caption: 'Hollerith\'s machines at work on the 1890 census, from <i>Scientific American</i>, August 1890. Each card goes into the press on the desk; wherever a pin finds a hole, a dial on the cabinet above moves on by one.' },
-        `<p>The lesson usually drawn from this is that machines are faster than people. The lesson that matters for this course is different. Hollerith's machines did not count faster because the electricity was quick; they counted faster because a card could be <em>sorted and counted in one pass</em>, and the pencil method could not. The arrangement of the data decided the cost. Sixty years later, when computers arrived, the same thing turned out to be true inside them: for most problems the computer's speed is fixed and the arrangement is the only thing you control. This course is about that arrangement.</p>
+        `<p>The lesson usually drawn from this is that machines are faster than people. The lesson that matters for this course is different. Hollerith's machines did not count faster because the electricity was quick; they counted faster because a card could be <em>sorted and counted in one pass</em>, and the pencil method could not. The arrangement of the data decided the cost. Sixty years later, when computers arrived, the same thing turned out to be true inside them: for most problems the computer's speed is fixed and the arrangement is the only thing you control. This course is about that arrangement. But how can you tell, before you run anything, how much a method will cost when the input gets a thousand times bigger? That is the question of this lesson.</p>
 <h2>Measure steps, not seconds</h2>
 <p>How long does a program take? In seconds, that depends on the computer, on what else it is doing, and on the day. What does <em>not</em> depend on any of that is the number of basic steps the program performs: an addition, a comparison, a look into an array. So that is what we count. And we count it not for one input but as a <em>function of the input's size</em>, usually written <code>n</code>: a program that takes 1,000 steps for 10 items and 1,000,000 for 1,000 items is telling you something a stopwatch cannot.</p>
-<p>The three methods below each add up something about an array of <code>n</code> numbers. Each counts its own steps. Run it, then change <code>n</code> to 100 and to 1000, and watch how each count grows.</p>`,
-        { play: `public class Main {
+<p>The three methods below each do something with an array of <code>n</code> numbers. Each counts its own steps. Predict the three counts for <code>n = 10</code>, then run it. Then change <code>n</code> to 100 and to 1000, and watch how each count grows.</p>`,
+        { predict: true, play: `public class Main {
     static long steps;
-
-    static int first(int[] a) {               // one step, whatever n is
-        steps++;
-        return a[0];
-    }
-
+    static int first(int[] a) { steps++; return a[0]; }    // one step, whatever n is
     static int sum(int[] a) {                 // one step per item
         int total = 0;
-        for (int i = 0; i < a.length; i++) {
-            total += a[i];
-            steps++;
-        }
+        for (int i = 0; i < a.length; i++) { total += a[i]; steps++; }
         return total;
     }
-
     static int pairs(int[] a) {               // one step per pair of items
         int count = 0;
-        for (int i = 0; i < a.length; i++) {
-            for (int j = i + 1; j < a.length; j++) {
-                if (a[i] + a[j] == 10) count++;
-                steps++;
-            }
-        }
+        for (int i = 0; i < a.length; i++)
+            for (int j = i + 1; j < a.length; j++) { if (a[i] + a[j] == 10) count++; steps++; }
         return count;
     }
-
     public static void main(String[] args) {
         int n = 10;
         int[] a = new int[n];
@@ -72,7 +58,7 @@ window.COURSES.push({
         steps = 0; sum(a);   System.out.println("sum:    " + steps + " steps");
         steps = 0; pairs(a); System.out.println("pairs:  " + steps + " steps");
     }
-}`, caption: 'For n = 10: 1, 10 and 45 steps. For n = 100: 1, 100 and 4,950. For n = 1000: 1, 1000 and 499,500. Multiply n by 10 and the three counts multiply by 1, 10 and about 100.' },
+}`, caption: 'It prints 1, 10 and 45 steps: <code>first</code> does one thing, <code>sum</code> looks at each of the 10 items, and <code>pairs</code> looks at each pair, 10 × 9 / 2 = 45. Now change <code>n</code> to 100: 1, 100 and 4,950. For n = 1000: 1, 1000 and 499,500. Multiply n by 10 and the three counts multiply by 1, 10 and about 100.' },
         `<p>The three shapes have names, and most of this course is about telling them apart. <code>first</code> takes a <em>constant</em> number of steps: the input could be a billion items and it would still be one. <code>sum</code> takes a number of steps <em>proportional to n</em>: double the input, double the work. <code>pairs</code> takes about <code>n²/2</code> steps, <em>proportional to n²</em>: double the input, four times the work. Here they are side by side, with the other shapes you will meet.</p>`,
         { fig: 'growth', caption: 'Tick the curves on and off and drag the range. Every curve below n² looks flat next to 2ⁿ; next to n², even n log n looks tame. The table underneath turns the counts into time at a billion steps a second: n² is fine for a thousand items and hopeless for a billion.' },
         `<div class="stmt"><p><span class="kind">Definition (order of growth).</span> When the number of steps is at most a constant times <code>f(n)</code> for all large <code>n</code>, we say the algorithm takes <b>O(f(n))</b> steps, read "order f of n". Constants and smaller terms are dropped: <code>3n + 7</code> is O(n), <code>n²/2 + n</code> is O(n²). The O says how the cost <em>grows</em>, not what it is.</p>
@@ -82,8 +68,9 @@ window.COURSES.push({
 <p>You rarely need to count exactly. Three rules give the order of growth of most code at a glance.</p>
 <div class="stmt"><p><span class="kind">Rule 1.</span> A loop that runs <code>n</code> times, doing constant work each time, is O(n). Two such loops one after the other are still O(n).</p>
 <p><span class="kind">Rule 2.</span> A loop <em>inside</em> a loop multiplies: <code>n</code> times <code>n</code> is O(n²). An inner loop that runs <code>i</code> times for <code>i</code> from 1 to <code>n</code> does <code>1 + 2 + … + n = n(n+1)/2</code> steps, which is still O(n²): half of n² is not a different shape.</p>
-<p><span class="kind">Rule 3.</span> A loop that halves (or doubles) its variable each time runs about <code>log₂ n</code> times: 20 times for a million, 30 for a billion. That is O(log n), and it is the shape to hope for.</p></div>`,
-        { play: `public class Main {
+<p><span class="kind">Rule 3.</span> A loop that halves (or doubles) its variable each time runs about <code>log₂ n</code> times: 20 times for a million, 30 for a billion. That is O(log n), and it is the shape to hope for.</p></div>
+<p>Predict how many times a loop that halves <code>n</code> runs when <code>n</code> is a million, and how many doublings it takes to get from 1 up to a million. Then check.</p>`,
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         int n = 1000000;
         int halvings = 0;
@@ -98,16 +85,16 @@ window.COURSES.push({
         System.out.println("doubling 1 up to " + n + " takes " + doublings + " steps");
         System.out.println("log2 of " + n + " is " + Math.log(n) / Math.log(2));
     }
-}`, caption: 'A million is just under 2²⁰: nineteen halvings bring it down to 1, and twenty doublings pass it. Change n to a billion (1000000000): 29 and 30. Logarithms grow so slowly that for any n you will ever meet, log₂ n is under 64.' },
+}`, caption: 'It prints 19 and 20 (the third line, the exact logarithm, is about 19.93). A million is just under 2²⁰: nineteen halvings bring it down to 1, and twenty doublings pass it. Change n to a billion (1000000000): 29 and 30. Logarithms grow so slowly that for any n you will ever meet, log₂ n is under 64.' },
         `<h2>The array</h2>
 <p>The first data structure is the one the machine gives you for free. An <em>array</em> is a row of cells of one type, side by side in memory, with nothing between them. Because the cells are the same size and adjacent, the machine can find any cell by arithmetic: cell <code>i</code> of an array of <code>int</code>s that starts at address <code>b</code> is at <code>b + 4i</code>. No searching, no counting along: one multiplication and one addition, whether <code>i</code> is 3 or 3 million. That single fact is why arrays are everywhere, and it is the thing to remember when every other structure in this course is compared with them.</p>
 <p>In Java, <code>int[] a = new int[8];</code> makes eight cells, all 0, and <code>a.length</code> is 8 for ever: an array cannot grow or shrink. <code>a[i]</code> reads or writes cell <code>i</code>, counting from 0, and an <code>i</code> outside <code>0 … length − 1</code> stops the program with <code>ArrayIndexOutOfBoundsException</code>. (In C++, the same arithmetic happens with no check at all; you met the consequences in SC 103.)</p>
 <p>So reading or writing a cell is O(1). What about everything else one wants to do with a collection? The figure keeps six values in an array with room for eight. Try getting, inserting and removing at different positions, and watch the count of moves.</p>`,
         { fig: 'arrayops', caption: 'Get costs one step at any index. Insert at index i must first move every later value one cell to the right, from the end backwards so that nothing is overwritten; remove must move every later value left. Try index 0 and the last index: the cost ranges from 0 moves to n.' },
-        { check: "An array of a million values. Reading <code>a[700000]</code> costs how much?", options: ["About 700,000 steps", "One step: the address is arithmetic", "About a million steps"], answer: 1, why: "The cell's address is start + index × size. No walking, whatever the index." },
+        { check: "An array of a million values. Reading <code>a[700000]</code> costs how much?", options: ["About 700,000 steps", "One step: the address is arithmetic", "About a million steps"], answer: 1, wrong: ["That would be true if the machine had to count along from the first cell, as it does in a linked list. In an array the cells are the same size and side by side, so it jumps straight to the address.", null, "A million steps would be a scan of the whole array. Indexing never scans, even for the last cell."], why: "The cell's address is start + index × size. No walking, whatever the index." },
         `<div class="stmt"><p><span class="kind">The array's bill.</span> Read or write by index: O(1). Insert or remove at the end: O(1). Insert or remove at the front or in the middle: O(n), because of the shifting. Find a value when you do not know its index: O(n), a scan of every cell (lesson 2 shows how to do far better when the array is sorted). Grow: impossible; see below.</p></div>
-<p>Here is the shifting in code. Both methods take the array and the number of cells in use, <code>n</code>, which may be smaller than <code>a.length</code>: the usual arrangement is an array with spare room at the end, and a count.</p>`,
-        { play: `import java.util.Arrays;
+<p>Here is the shifting in code. The method takes the array and the number of cells in use, <code>n</code>, which may be smaller than <code>a.length</code>: the usual arrangement is an array with spare room at the end, and a count. Predict what the array holds after the four inserts.</p>`,
+        { predict: true, play: `import java.util.Arrays;
 
 public class Main {
     // insert x at index i, moving a[i..n-1] right; returns the new count
@@ -115,13 +102,11 @@ public class Main {
         for (int j = n - 1; j >= i; j--) {
             a[j + 1] = a[j];
         }
-        a[i] = x;
-        return n + 1;
+        a[i] = x; return n + 1;
     }
 
     public static void main(String[] args) {
-        int[] a = new int[8];
-        int n = 0;
+        int[] a = new int[8]; int n = 0;
         n = insertAt(a, n, 0, 12);
         n = insertAt(a, n, 1, 7);
         n = insertAt(a, n, 2, 3);
@@ -129,47 +114,38 @@ public class Main {
         System.out.println(n + " values: " + Arrays.toString(Arrays.copyOf(a, n)));
         System.out.println("the whole array: " + Arrays.toString(a));
     }
-}`, caption: 'The loop runs from the end backwards. Reverse it (j from i upwards) and run again: the first move overwrites the value that was about to be moved, and the same number fills every cell.' },
+}`, caption: 'It prints <code>4 values: [12, 99, 7, 3]</code> and then the whole array with four spare zeros after them. The last insert, at index 1, moved 7 and 3 one cell right to make room for 99. The loop runs from the end backwards so that no value is overwritten before it has been moved. Reverse it (j from i upwards) and run again: the first move overwrites the value that was about to be moved, and every cell after i ends up holding a copy of the same number.' },
         `<h2>A growing array</h2>
 <p>An array cannot grow, and yet <code>ArrayList</code> grows every time you call <code>add</code>. The trick is that an <code>ArrayList</code> is an array with spare room, plus a count. When the room runs out it makes a <em>new, bigger</em> array, copies everything across, and forgets the old one. The question is how much bigger. Grow by one cell each time and every append copies everything: appending <code>n</code> items costs <code>1 + 2 + … + n</code>, O(n²). Grow by <em>doubling</em> and something better happens. Append items in the figure and keep an eye on the copies.</p>`,
         { fig: 'dynarray', caption: 'Appends are usually one step. Now and then the array is full, and every value is copied into a new array twice the size. Append thirty or so and compare the two counts: the copies never reach twice the appends.' },
         `<p>Count the copies when the capacity has just reached <code>n</code>: the last doubling copied <code>n/2</code> values, the one before it <code>n/4</code>, and so on: <code>n/2 + n/4 + n/8 + … &lt; n</code>. By then more than <code>n/2</code> values have been appended, so the copies are fewer than twice the appends: under two copies per append on average. Any single append may be expensive, but the expense is paid for by the cheap ones around it. The technical word is <em>amortized</em>: appending to a doubling array is O(1) amortized, and that is why <code>ArrayList.add</code> is safe to call in a loop a million times.</p>`,
-        { play: `import java.util.Arrays;
+        { predict: true, play: `import java.util.Arrays;
 
 public class Main {
     static int copies = 0;
-
     // append x; the array may have to be replaced, so the (possibly new) array is returned
     static int[] append(int[] a, int n, int x) {
         if (n == a.length) {
             int[] bigger = new int[Math.max(1, 2 * a.length)];
-            for (int i = 0; i < n; i++) {
-                bigger[i] = a[i];
-                copies++;
-            }
+            for (int i = 0; i < n; i++) { bigger[i] = a[i]; copies++; }
             a = bigger;
         }
         a[n] = x;
         return a;
     }
-
     public static void main(String[] args) {
         int[] a = new int[1];
         int n = 0;
-        for (int i = 1; i <= 1000; i++) {
-            a = append(a, n, i);
-            n++;
-        }
+        for (int i = 1; i <= 1000; i++) { a = append(a, n, i); n++; }
         System.out.println(n + " appends, " + copies + " copies, capacity " + a.length);
         System.out.println("first five: " + Arrays.toString(Arrays.copyOf(a, 5)));
     }
-}`, caption: '1000 appends, 1023 copies: about one copy per append, and a capacity of 1024, the next power of two. Change the growth to a.length + 1 and run again: 499,500 copies.' },
-        { check: "A growing array doubles when full. What is the cost of adding n items, in total?", options: ["O(n²), because of the copying", "O(n): the copies add up to less than 2n moves", "O(n log n)"], answer: 1, why: "Each doubling copies the array, but the copies sum to n + n/2 + n/4 + … < 2n. Amortised O(1) per add." },
+}`, caption: 'It prints <code>1000 appends, 1023 copies, capacity 1024</code>, then <code>[1, 2, 3, 4, 5]</code>. The capacity goes 1, 2, 4, … 1024, and the copies are 1 + 2 + 4 + … + 512 = 1023: about one copy per append. Change the growth to a.length + 1 and run again: 499,500 copies.' },
+        { check: "A growing array doubles when full. What is the cost of adding n items, in total?", options: ["O(n²), because of the copying", "O(n): the copies add up to less than 2n moves", "O(n log n)"], answer: 1, wrong: ["Each doubling does copy everything, but the doublings come less and less often: the copies are n/2 + n/4 + … and stay under n. It is growing by one cell at a time that costs O(n²).", null, "That would need about log n rounds of copying about n values each. Only the last doubling copies about n/2 values, and the earlier ones are smaller still."], why: "Each doubling copies the array, but the copies sum to n + n/2 + n/4 + … < 2n. Amortised O(1) per add." },
         `<h2>The doubling experiment</h2>
 <p>You will sometimes meet code whose shape you cannot read, or a claim you want to check. The test is to run the code on an input of size <code>n</code>, then <code>2n</code>, then <code>4n</code>, and look at the <em>ratio</em> of the costs. A ratio of 2 means O(n); 4 means O(n²); 8 means O(n³); about 2 with a slow drift upward means O(n log n); barely more than 1 means O(log n). The ratio is independent of the machine, which is the whole point.</p>`,
         { play: `public class Main {
     static long steps;
-
     static int pairs(int[] a) {
         int count = 0;
         for (int i = 0; i < a.length; i++) {
@@ -180,7 +156,6 @@ public class Main {
         }
         return count;
     }
-
     public static void main(String[] args) {
         long previous = 0;
         for (int n = 250; n <= 2000; n *= 2) {
@@ -194,7 +169,7 @@ public class Main {
         }
     }
 }`, caption: 'The ratio settles at 4: quadratic. Replace the body of pairs with a single loop and the ratio becomes 2. On a real machine you would time the runs with System.nanoTime() instead of counting; the ratios come out the same.' },
-        { check: "A doubling experiment shows the step count going ×4 each time n doubles. What is the order of growth?", options: ["O(n)", "O(n²)", "O(2ⁿ)"], answer: 1, why: "Doubling n multiplies n² by four. O(n) would double; O(2ⁿ) would square the count." },
+        { check: "A doubling experiment shows the step count going ×4 each time n doubles. What is the order of growth?", options: ["O(n)", "O(n²)", "O(2ⁿ)"], answer: 1, wrong: ["A linear algorithm does twice the work for twice the input: the ratio is 2. A ratio of 4 is not linear.", null, "Exponential growth is far steeper: doubling n squares the count, so the ratio itself keeps growing. A steady ×4 is a fixed power of n."], why: "Doubling n multiplies n² by four. O(n) would double; O(2ⁿ) would square the count." },
         `<details class="reveal"><summary>Puzzle: a program takes 1 second for n = 1,000 and is O(n²). Roughly how long for n = 1,000,000?</summary><p>About a million seconds, eleven and a half days. The input grew by a factor of 1,000, so the work grew by 1,000², a million. If the program were O(n log n) instead, the factor would be about 1,000 × 2 = 2,000: half an hour. That difference is the reason the next lessons exist.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> Timing in seconds on one input and calling the result "the speed". Counting two loops in sequence as n² (it is 2n, which is O(n)). Reading <code>n²/2</code> as "better than n²"; the shape is the same. Thinking an array can grow. Shifting in the wrong direction when inserting, so one value overwrites the rest. Forgetting that <code>a.length</code> is the capacity, not the number of values in use. Treating O(log n) as expensive: it is the second-cheapest shape there is.</p>` },
         {
@@ -205,6 +180,7 @@ public class Main {
             starter: `static int removeAt(int[] a, int n, int index) {\n    // move a[index + 1 .. n - 1] one cell to the left\n    return n;\n}`,
             solution: `static int removeAt(int[] a, int n, int index) {\n    for (int j = index; j < n - 1; j++) {\n        a[j] = a[j + 1];\n    }\n    return n - 1;\n}`,
             hints: ['A loop over j from index up to n - 2, copying a[j + 1] into a[j]. Going upwards is right here: each cell is overwritten only after its value has been copied left.', 'Return n - 1. The checker prints the first n - 1 cells, so the old last value may stay where it is.'],
+            followup: 'Write insertAt, the opposite of removeAt, so that removeAt(insertAt(...)) gives back the array you started with. Then say which of the two does fewer moves when the index is 0, and when the index is the last cell.',
             tests: [
               { setup: '        int[] a = {5, 8, 1, 9, 4}; int n = removeAt(a, 5, 1);', call: 'n + " " + Arrays.toString(Arrays.copyOf(a, n))', expect: '4 [5, 1, 9, 4]', name: 'remove index 1 of [5, 8, 1, 9, 4]' },
               { setup: '        int[] a = {5, 8, 1, 9, 4}; int n = removeAt(a, 5, 0);', call: 'n + " " + Arrays.toString(Arrays.copyOf(a, n))', expect: '4 [8, 1, 9, 4]', name: 'remove the first' },
@@ -225,7 +201,7 @@ public class Main {
               { label: '(c) <code>for (int k = n; k &gt; 1; k = k / 2) steps++;</code>', answer: '6', width: '7rem', wrong: [{ match: '7', msg: 'Trace it: k is 100, 50, 25, 12, 6, 3, then 1, and the loop stops when k is 1. Count the values that were greater than 1.' }, { match: ['50', '100'], msg: 'The variable is halved each time, not decreased by one. Write out the values of k.' }] },
               { label: '(d) <code>for (int i = 0; i &lt; n; i++) for (int j = 0; j &lt; 10; j++) steps++;</code>', answer: '1000', width: '7rem', wrong: [{ match: '10000', msg: 'The inner loop runs 10 times, whatever n is: n × 10, and the shape is O(n), not O(n²).' }] }
             ],
-            hints: ['(a) n × n. (b) the inner loop runs 0 times, then 1, then 2, … up to n − 1 times: add them. (c) write out the values k takes. (d) the inner loop does not depend on n.'],
+            hints: ['(a) n × n. (b) the inner loop runs 0 times, then 1, then 2, … up to n − 1 times: add them. (c) write out the values k takes. (d) the inner loop does not depend on n.', 'For (b), the sum 0 + 1 + … + (n − 1) is (n − 1) × n / 2. For (c), count how many values of k are greater than 1 before the loop stops.'],
             solution: `<p>(a) 100 × 100 = <b>10,000</b>: O(n²). (b) 0 + 1 + … + 99 = 99 × 100 / 2 = <b>4,950</b>: still O(n²), half of it. (c) k takes the values 100, 50, 25, 12, 6, 3 before reaching 1: <b>6</b>, about log₂ 100: O(log n). (d) 100 × 10 = <b>1,000</b>: the inner loop is a constant, so this is O(n).</p>`,
             followup: 'Part (d) is the one people get wrong under pressure: a nested loop is not automatically n². Ask what each loop depends on.'
           }
@@ -245,11 +221,12 @@ public class Main {
               { setup: '        int[] a = new int[1]; int n = 0; for (int i = 1; i <= 100; i++) { a = append(a, n, i); n++; }', call: 'a.length + " " + a[0] + " " + a[99]', expect: '128 1 100', name: '100 appends from capacity 1' },
               { setup: '        int[] a = {1, 2, 3, 0, 0}; a = append(a, 3, 4);', call: 'a.length + " " + Arrays.toString(a)', expect: '5 [1, 2, 3, 4, 0]', name: 'room to spare: the same array' }
             ],
+            followup: 'Add a static counter that counts every value copied, run 1000 appends from capacity 1, and check that it is under 2000. Then change the growth to a.length + 1 and compare.',
             failTip: 'If the third append fails, the growth is not happening or the copy is incomplete; if the capacity-0 test fails, 2 × 0 is 0: use Math.max(1, 2 * a.length).'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
-<li>Count steps as a function of <code>n</code>, not seconds on one input. Constants and smaller terms are dropped: the <em>order of growth</em>, O(f(n)), says how the cost scales.</li>
+<li>The answer to the opening question: count steps as a function of <code>n</code>, not seconds on one input, and read the shape off the code before you run it. Constants and smaller terms are dropped: the <em>order of growth</em>, O(f(n)), says how the cost scales.</li>
 <li>The shapes: O(1), O(log n), O(n), O(n log n), O(n²), O(2ⁿ). Read them off the code: a loop is n, a nested loop multiplies, halving is log n.</li>
 <li>An array is cells side by side; cell i is at <code>base + 4i</code>, so indexing is O(1). Inserting or removing in the middle shifts everything after it: O(n). Finding a value by scanning: O(n). An array cannot grow.</li>
 <li>A growing array doubles when full; the copies total less than twice the appends, so an append is O(1) amortized. That is <code>ArrayList</code>.</li>
@@ -260,13 +237,13 @@ public class Main {
     /* ================================================================== */
     {
       standards: ['3B-AP-10', '3B-AP-11'],
-      title: 'Searching', summary: 'Linear search and its cost; binary search, why it works and why it is so fast; the overflow bug that hid in it for twenty years; and the variants that find a boundary rather than a value.',
+      standard: 1, title: 'Searching', summary: 'Linear search and its cost; binary search, why it works and why it is so fast; the overflow bug that hid in it for twenty years; and the variants that find a boundary rather than a value.',
       blocks: [
         `<p>In 2006 Joshua Bloch, who had written much of Java's standard library, published a short article with the title "Nearly All Binary Searches and Mergesorts are Broken". The binary search in Jon Bentley's <em>Programming Pearls</em>, a book that Bloch had learned from, had been proved correct in the text, tested, and reprinted for twenty years. It had a bug. So did the binary search Bloch himself had written for Java's <code>java.util.Arrays</code>, where it had lain for nine years before someone's program broke on it. The bug was a single line, the one that finds the middle of a range: <code>int mid = (low + high) / 2;</code>. For a range inside an array of more than about a billion elements, <code>low + high</code> is larger than an <code>int</code> can hold, wraps round to a negative number, and the search looks at a cell that does not exist.</p>`,
-        `<p>Nobody had noticed because nobody had searched an array of a billion elements, and then, around 2006, people did. The algorithm was right; the arithmetic was not; and the lesson, which you will see at the end of this lesson, is that the cheapest-looking line of a correct algorithm still has to be checked against the machine it runs on. First, the algorithm, which is one of the oldest and best ideas in the subject.</p>
+        `<p>Nobody had noticed because nobody had searched an array of a billion elements, and then, around 2006, people did. The algorithm was right; the arithmetic was not; and the lesson, which you will see at the end of this lesson, is that the cheapest-looking line of a correct algorithm still has to be checked against the machine it runs on. But first, the question that makes the bug possible at all: how can a method find one value among a billion in about thirty steps? The answer is one of the oldest and best ideas in the subject.</p>
 <h2>Linear search</h2>
 <p>To find a value in an array when you know nothing about the order of its contents, there is only one method: look at each cell in turn until you find it or run out. This is <em>linear search</em>, and it is O(n): a miss costs <code>n</code> comparisons, a hit costs <code>n/2</code> on average, and nothing can be done about it, because any cell you skip might have been the one.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     static int comparisons;
 
     static int linearSearch(int[] a, int target) {
@@ -285,17 +262,16 @@ public class Main {
             System.out.println(target + ": index " + where + " after " + comparisons + " comparison" + (comparisons == 1 ? "" : "s"));
         }
     }
-}`, caption: 'The first value costs 1 comparison, the last 10, and a value that is not there 10. Returning from inside the loop is what makes a hit cheaper than a miss.' },
+}`, caption: 'It prints index 0 after 1 comparison, index 5 after 6, index 9 after 10, and, for 99, index -1 after 10. A hit costs as many comparisons as its index plus one; a miss has to look at every cell. Returning from inside the loop is what makes a hit cheaper than a miss. Move 99 into the array and watch its cost change.' },
         `<h2>Binary search</h2>
 <p>Now suppose the array is <em>sorted</em>. One comparison then tells you more than whether you have found the value: compare the target with the middle cell, and you know which half it must be in. The other half can be thrown away without looking at it. Repeat on the half that remains. Every comparison halves the range, so a range of a million cells is down to one after twenty comparisons: 20 instead of 1,000,000. This is <em>binary search</em>, and you have used it every time you looked up a word in a dictionary by opening it somewhere in the middle.</p>`,
         { fig: 'search', items: [2, 5, 8, 12, 16, 23, 38, 42, 56, 61, 72, 79, 85, 91, 97, 104], caption: 'Sixteen sorted values. Type a target and step: lo and hi mark the range that can still hold it, mid is the cell compared. Try 2, 104 and 50 (which is absent). No search takes more than 5 comparisons, because 2⁴ ≤ 16 < 2⁵.' },
-        `<p>The code keeps two indexes, <code>lo</code> and <code>hi</code>, with the promise that <em>if the target is in the array at all, it is in cells <code>lo</code> to <code>hi</code> inclusive</em>. Each pass compares the target with the middle cell and moves <code>lo</code> or <code>hi</code> so that the promise still holds while the range shrinks. When <code>lo</code> passes <code>hi</code>, the range is empty and the promise says the target is not there.</p>`,
-        { play: `public class Main {
+        `<p>Before you run the code, predict how many comparisons a search among a million values will need, at most. The code keeps two indexes, <code>lo</code> and <code>hi</code>, with the promise that <em>if the target is in the array at all, it is in cells <code>lo</code> to <code>hi</code> inclusive</em>. Each pass compares the target with the middle cell and moves <code>lo</code> or <code>hi</code> so that the promise still holds while the range shrinks. When <code>lo</code> passes <code>hi</code>, the range is empty and the promise says the target is not there.</p>`,
+        { predict: true, play: `public class Main {
     static int comparisons;
 
     static int binarySearch(int[] a, int target) {
-        int lo = 0;
-        int hi = a.length - 1;
+        int lo = 0, hi = a.length - 1;
         while (lo <= hi) {
             int mid = lo + (hi - lo) / 2;
             comparisons++;
@@ -312,19 +288,18 @@ public class Main {
         for (int i = 0; i < n; i++) a[i] = 3 * i;          // sorted: 0, 3, 6, ...
         for (int target : new int[] {0, 2999997, 1500000, 1500001}) {
             comparisons = 0;
-            int where = binarySearch(a, target);
-            System.out.println(target + ": index " + where + " after " + comparisons + " comparisons");
+            System.out.println(target + ": index " + binarySearch(a, target) + " after " + comparisons + " comparisons");
         }
     }
-}`, caption: 'A million values, never more than 20 comparisons. 1500001 is not a multiple of 3, so it is absent: the search still stops after 20. Linear search would have made up to a million.' },
-        { check: "Binary search on 1,000,000 sorted values needs at most about how many comparisons?", options: ["About 20", "About 1,000", "About 500,000"], answer: 0, why: "Each comparison halves the range; a million halves to one in 20 steps, since 2²⁰ ≈ 1,048,576." },
+}`, caption: 'It prints 19, 20, 19 and 20 comparisons for the four targets. A million values, never more than 20 comparisons: each one halves the range, and 2²⁰ is just over a million. 1500001 is not a multiple of 3, so it is absent and the search ends with -1, still after 20. Linear search would have made up to a million. Change n to 2000000: only one more comparison.' },
+        { check: "Binary search on 1,000,000 sorted values needs at most about how many comparisons?", options: ["About 20", "About 1,000", "About 500,000"], answer: 0, wrong: [null, "A thousand is what you get by dividing the range by 1,000 once. Binary search halves the range at every comparison, so it shrinks far faster than that: twenty halvings reach one cell.", "Half a million is the average cost of a linear search on a million values. Binary search throws away half of what is left each time, not one cell."], why: "Each comparison halves the range; a million halves to one in 20 steps, since 2²⁰ ≈ 1,048,576." },
         `<div class="stmt"><p><span class="kind">Why it works (the invariant).</span> Before every pass: <em>if target is in a, then it is in a[lo..hi]</em>. True at the start, when the range is the whole array. If <code>a[mid] &lt; target</code>, every cell up to <code>mid</code> is smaller than the target too, because the array is sorted, so the target can only be in <code>mid + 1 … hi</code>; setting <code>lo = mid + 1</code> keeps the promise. The other case is the mirror. A statement that is true before the loop and kept true by every pass is called a <em>loop invariant</em>, and it is how you convince yourself, or a reader, that a loop is right.</p>
 <p><span class="kind">Why it stops.</span> <code>mid</code> is always inside <code>lo … hi</code>, so <code>lo = mid + 1</code> and <code>hi = mid − 1</code> each shrink the range by at least one cell. A range that shrinks every pass must become empty.</p>
 <p><span class="kind">Why it is fast.</span> The range starts at <code>n</code> and is at most halved each pass, so after <code>k</code> passes it holds at most <code>n / 2ᵏ</code> cells. It is empty once <code>2ᵏ &gt; n</code>, that is, after about <code>log₂ n</code> passes: O(log n).</p></div>
 <p>The requirement is that the array is sorted. Binary search on an unsorted array does not fail loudly; it quietly returns −1 for values that are present, or the wrong index. Keeping an array sorted costs something at every insert (lesson 1: a shift), and that is a trade this course will return to: pay at insertion to make every search cheap, or insert cheaply and search slowly.</p>
 <h2>The bug</h2>
-<p>Here is the line Bloch found. For a range inside an ordinary array it is harmless. Make the array big enough and it breaks.</p>`,
-        { play: `public class Main {
+<p>Here is the line Bloch found. For a range inside an ordinary array it is harmless. Make the array big enough and it breaks. Predict what <code>lo + hi</code> will print.</p>`,
+        { predict: true, play: `public class Main {
     public static void main(String[] args) {
         int lo = 1500000000;                    // indexes inside an array of two billion cells
         int hi = 2000000000;
@@ -336,13 +311,13 @@ public class Main {
         int alsoSafe = (lo + hi) >>> 1;         // the JDK's fix: treat the sum as unsigned and halve it
         System.out.println("(lo + hi) >>> 1 = " + alsoSafe);
     }
-}`, caption: 'lo + hi is 3.5 billion, above the int limit of about 2.1 billion, so it wraps to a negative number and mid is negative: a[mid] would throw. Both fixes give the right middle. Java’s Arrays.binarySearch has used >>> 1 since 2006.' },
-        { check: "Why did <code>(lo + hi) / 2</code> hide a bug for twenty years?", options: ["It rounds the wrong way", "lo + hi can overflow an int when the array is huge, giving a negative middle", "It is slower than subtraction"], answer: 1, why: "For arrays over a billion elements the sum exceeds the largest int, wraps negative, and the index is garbage. lo + (hi − lo) / 2 cannot overflow." },
+}`, caption: 'It prints <code>lo + hi = -794967296</code>, then <code>(lo + hi) / 2 = -397483648</code>, then 1750000000 twice. lo + hi is 3.5 billion, above the int limit of about 2.1 billion, so it wraps to a negative number and mid is negative: a[mid] would throw. Both fixes give the right middle, 1,750,000,000. Java’s Arrays.binarySearch has used >>> 1 since 2006. Change lo and hi to 1000 and 2000: now all three lines agree.' },
+        { check: "Why did <code>(lo + hi) / 2</code> hide a bug for twenty years?", options: ["It rounds the wrong way", "lo + hi can overflow an int when the array is huge, giving a negative middle", "It is slower than subtraction"], answer: 1, wrong: ["Rounding down is harmless here: mid only has to lie inside lo … hi, and it does. The trouble comes earlier, in the sum, before the division.", null, "Speed was never the problem: an addition is as fast as a subtraction. The sum can be larger than an int can hold, and then it wraps to a negative number."], why: "For arrays over a billion elements the sum exceeds the largest int, wraps negative, and the index is garbage. lo + (hi − lo) / 2 cannot overflow." },
         `<div class="stmt"><p><span class="kind">Rule.</span> Write the middle as <code>lo + (hi − lo) / 2</code>. It costs nothing, it is right for every array Java can make, and it marks you as someone who has read Bloch's article.</p></div>
 <h2>Finding a boundary instead of a value</h2>
 <p>Binary search is more than a way to find a value. The same halving finds the <em>boundary</em> in any array that is false up to some point and true from there on. Where does 3 first appear in a sorted array that has several 3s? Where would 4 go if we inserted it? What is the largest whole number whose square is at most 10¹²? Each of these is "find the first index where a condition becomes true", and each takes O(log n).</p>
 <p>The version below finds the first index whose value is at least <code>x</code>, the <em>lower bound</em>; if every value is smaller, it returns <code>n</code>. The invariant is different, and worth reading: every cell before <code>lo</code> is less than <code>x</code>, every cell from <code>hi</code> on is at least <code>x</code>, and the answer is somewhere in <code>lo … hi</code>.</p>`,
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     // the first index i with a[i] >= x, or a.length if there is none
     static int lowerBound(int[] a, int x) {
         int lo = 0;
@@ -362,7 +337,11 @@ public class Main {
         System.out.println("4 would be inserted at " + lowerBound(a, 4));
         System.out.println("0 would be inserted at " + lowerBound(a, 0));
         System.out.println("100 would be inserted at " + lowerBound(a, 100));
-        // the same idea on a question, not an array: the largest k with k*k <= 1000000000000
+    }
+}`, caption: 'It prints 1, 3 threes, then insertion points 4, 0 and 8. Two lower bounds count the threes in O(log n): the lower bound of 4 is where the 3s end. A value larger than everything goes at index 8, the length, and a value smaller than everything at 0.' },
+        `<p>The same idea works on a question rather than an array: the largest whole number <code>k</code> with <code>k * k &lt;= 10¹²</code>. The condition is true up to a point and false after it, which is all binary search needs.</p>`,
+        { play: `public class Main {
+    public static void main(String[] args) {
         long lo = 0, hi = 2000000;
         while (lo < hi) {
             long mid = lo + (hi - lo + 1) / 2;
@@ -370,8 +349,8 @@ public class Main {
         }
         System.out.println("largest k with k*k <= 10^12: " + lo);
     }
-}`, caption: 'Two lower bounds count the threes in O(log n). The last loop searches a range of numbers rather than an array: the condition k*k <= 10^12 is true up to a point and false after it, which is all binary search needs.' },
-        { check: "Binary search is run on an array that is not sorted. What happens?", options: ["It finds the value, slowly", "It may return \"not found\" for a value that is there, with no error", "Java throws an exception"], answer: 1, why: "The algorithm relies on the invariant \"if present, the target is between lo and hi\". Unsorted data breaks it silently." },
+}`, caption: 'The loop searches a range of numbers rather than an array. It prints 1000000, the square root of 10¹², after about 21 halvings of a range of two million. Change the limit and the upper bound to find a square root of your own.' },
+        { check: "Binary search is run on an array that is not sorted. What happens?", options: ["It finds the value, slowly", "It may return \"not found\" for a value that is there, with no error", "Java throws an exception"], answer: 1, wrong: ["Binary search never goes back to look at the half it threw away, so a wrong guess is final. It is not slow, it is wrong.", null, "Nothing in the algorithm checks the order: it compares values and moves lo and hi, always inside the array. No exception happens; it just gives a wrong answer quietly."], why: "The algorithm relies on the invariant \"if present, the target is between lo and hi\". Unsorted data breaks it silently." },
         `<p>Java's own <code>Arrays.binarySearch(a, x)</code> returns the index when <code>x</code> is present and otherwise <code>−(insertion point) − 1</code>, a negative number that encodes where <code>x</code> would go. The encoding looks odd until you see that it lets one call answer both questions.</p>
 <div class="stmt"><p><span class="kind">Cost comparison.</span> For a million sorted values, a search costs at most 20 comparisons instead of a million: fifty thousand times fewer. For a billion, 30 instead of a billion. A sorted array with binary search is the first structure in this course that makes "find" cheap, and the price is that the array must be sorted, which is the subject of the next lesson.</p></div>`,
         `<details class="reveal"><summary>Puzzle: the loop condition in the first version is <code>lo &lt;= hi</code> and in <code>lowerBound</code> it is <code>lo &lt; hi</code>. Why the difference?</summary><p>In the first version the range <code>lo … hi</code> is inclusive at both ends and a range of one cell (<code>lo == hi</code>) still has to be examined, so the loop runs while <code>lo ≤ hi</code>. In <code>lowerBound</code>, <code>hi</code> is one past the end of the range, and a range of one cell is already the answer: when <code>lo == hi</code> there is nothing left to decide. Both are right for their own invariant; copying the condition from one into the other is the commonest way to break a binary search. Decide what <code>hi</code> means first, then write the condition.</p></details>`,
@@ -393,6 +372,7 @@ public class Main {
               { setup: '        int[] a = {};', call: 'binarySearch(a, 1)', expect: '-1', name: 'no cells' },
               { setup: '        int[] a = new int[100000]; for (int i = 0; i < a.length; i++) a[i] = 2 * i;', call: 'binarySearch(a, 123456) + " " + binarySearch(a, 123457) + " " + binarySearch(a, 199998)', expect: '61728 -1 99999', name: 'a hundred thousand values' }
             ],
+            followup: 'Add a static counter of comparisons and check that a million cells never need more than 20. Then make the method return -(insertion point) - 1 for a miss, as Java’s Arrays.binarySearch does.',
             failTip: 'If the one-cell or last-cell tests fail, check the loop condition (<=) and the two updates (mid + 1 and mid - 1). If the absent values loop for ever, one of the updates is lo = mid or hi = mid.'
           }
         },
@@ -411,6 +391,7 @@ public class Main {
               { setup: '        int[] a = {5, 5, 5, 5};', call: 'lowerBound(a, 5) + " " + lowerBound(a, 6)', expect: '0 4', name: 'all equal' },
               { setup: '        int[] a = new int[1000000]; for (int i = 0; i < a.length; i++) a[i] = i / 3; int total = 0; for (int q = 0; q < 2000; q++) total += lowerBound(a, q * 100);', call: 'total', expect: '599700000', name: 'two thousand searches in a million values (O(log n) only)' }
             ],
+            followup: 'Use lowerBound twice to count how many times x occurs in a sorted array: lowerBound(a, x + 1) - lowerBound(a, x). Test it on an array with many repeats, and on a value that is absent.',
             failTip: 'If the all-equal test gives 3 instead of 0, the "else" branch is hi = mid - 1; it must keep mid, because mid may be the first cell that is at least x.'
           }
         },
@@ -424,14 +405,14 @@ public class Main {
               { label: '(c) n = 8,000,000,000 (the people on Earth)', answer: '33', width: '6rem', wrong: [{ match: '32', msg: '2³² ≈ 4.3 billion, less than 8 billion. One more.' }, { match: '30', msg: '2³⁰ ≈ 1.07 billion. Keep doubling.' }] },
               { label: '(d) Linear search on the same 8,000,000,000: the most comparisons it can need', answer: '8000000000', width: '9rem', wrong: [{ match: '33', msg: 'That is binary search. A linear search that misses looks at every cell.' }] }
             ],
-            hints: ['2¹⁰ = 1,024. 2²⁰ is about a million. 2³⁰ is about a billion, and each further doubling is one more.'],
+            hints: ['2¹⁰ = 1,024. 2²⁰ is about a million. 2³⁰ is about a billion, and each further doubling is one more.', 'Write out 1, 2, 4, 8, … and stop at the first power of two that is at least n. For (d), a miss in a linear search has to look at every cell.'],
             solution: `<p>(a) <b>10</b>, since 2¹⁰ = 1,024. (b) <b>20</b>: 2¹⁹ = 524,288 is too small, 2²⁰ = 1,048,576 is enough. (c) <b>33</b>: 2³² ≈ 4.29 billion is too small, 2³³ ≈ 8.59 billion is enough. (d) <b>8,000,000,000</b>: a miss looks at every cell.</p>`,
             followup: 'Thirty-three comparisons to find one person among everyone alive, against eight billion. Logarithms are the reason large things are searchable at all.'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
 <li>Linear search looks at every cell: O(n), and nothing better is possible when the order is unknown.</li>
-<li>Binary search on a sorted array halves the range at each comparison: O(log n), 20 comparisons for a million cells, 30 for a billion. It needs the array sorted.</li>
+<li>Binary search on a sorted array halves the range at each comparison: O(log n), 20 comparisons for a million cells, 30 for a billion. It needs the array sorted. That answers the opening question: one value among a billion in about thirty steps.</li>
 <li>A loop invariant (<em>if the target is present, it is in lo…hi</em>) is how you know a loop is right; a shrinking range is how you know it stops.</li>
 <li>Write the middle as <code>lo + (hi − lo) / 2</code>: <code>(lo + hi) / 2</code> overflows for large arrays and hid in textbooks and the JDK for years.</li>
 <li>The same halving finds a boundary: the first cell at least <code>x</code> (lower bound), an insertion point, the largest number with a property. Decide what <code>hi</code> means before writing the loop condition.</li>
@@ -441,11 +422,11 @@ public class Main {
     /* ================================================================== */
     {
       standards: ['3B-AP-10', '3B-AP-11'],
-      title: 'Sorting, the slow way first', summary: 'Why so much computing is sorting; selection sort and insertion sort with their invariants and their counts; best and worst cases; stability; and the doubling experiment that shows what quadratic means.',
+      standard: 1, title: 'Sorting, the slow way first', summary: 'Why so much computing is sorting; selection sort and insertion sort with their invariants and their counts; best and worst cases; stability; and the doubling experiment that shows what quadratic means.',
       blocks: [
         `<p>In the third volume of <em>The Art of Computer Programming</em>, published in 1973, Donald Knuth reported an estimate from the computer manufacturers of the 1960s: more than a quarter of all the running time on their customers' machines was spent sorting. The machines were mostly doing business: payroll, inventory, billing, and every one of those jobs began by putting records in order, by account number, by date, by name, so that matching ones could be found next to each other. The data arrived on punched cards and magnetic tape, and the sorting algorithms of the time were written to work with a few hundred cards in memory and the rest waiting on a tape drive.</p>`,
         { photo: 'ibm-card-sorter', caption: 'An IBM Type 83 card sorter from 1955, in a museum. A metal brush felt for the hole in one column of each card, and the card dropped into one of 13 pockets: about 1,000 cards a minute. The stacks in the rack above are cards sorted by one column. Sorting a whole number took one pass per digit.' },
-        `<p>A quarter of all computing is no longer sorting, but sorting is still underneath more of it than anything else: every search index, every database, every spreadsheet column you click to order, and, from the last lesson, every binary search. The subject has two halves. This lesson is the first: the simple sorts, which are O(n²), and which you should know not because you will use them on large inputs but because they are where the ideas of invariant, cost and best-and-worst case become concrete. The next lesson is the second half, the O(n log n) sorts that the world actually runs.</p>
+        `<p>A quarter of all computing is no longer sorting, but sorting is still underneath more of it than anything else: every search index, every database, every spreadsheet column you click to order, and, from the last lesson, every binary search. The subject has two halves. This lesson is the first: the simple sorts, which are O(n²), and which you should know not because you will use them on large inputs but because they are where the ideas of invariant, cost and best-and-worst case become concrete. The next lesson is the second half, the O(n log n) sorts that the world actually runs. First, the question this lesson answers: what do the simple ways of putting n things in order cost, and how much does that depend on the order the things start in?</p>
 <h2>The problem, stated precisely</h2>
 <div class="stmt"><p><span class="kind">Sorting.</span> Given an array of <code>n</code> values that can be compared, rearrange it so that <code>a[0] ≤ a[1] ≤ … ≤ a[n−1]</code>. The result must contain exactly the values that were there, no more and no fewer.</p>
 <p><span class="kind">Cost.</span> We count <em>comparisons</em> (how many times two values are compared) and <em>moves</em> (how many times a value is written into a cell). A swap is three moves.</p>
@@ -453,85 +434,60 @@ public class Main {
 <h2>Selection sort</h2>
 <p>The method you would use on a hand of cards if you were being careful: find the smallest value and put it first; then find the smallest of the rest and put it second; and so on. After <code>i</code> rounds, the first <code>i</code> cells hold the <code>i</code> smallest values, in order, and will never move again. That sentence is the invariant.</p>`,
         { fig: 'sortlab', algo: 'selection', caption: 'Twelve values, with the comparisons and moves counted at every step. Try the four input shapes: selection sort makes exactly the same number of comparisons on all of them, and never more than n − 1 swaps.' },
-        { check: "Selection sort on 100 values makes how many comparisons?", options: ["99", "4,950", "10,000"], answer: 1, why: "99 + 98 + … + 1 = 100 × 99 / 2, on every input: it cannot notice sorted data." },
-        { play: `import java.util.Arrays;
-
+        { check: "Selection sort on 100 values makes how many comparisons?", options: ["99", "4,950", "10,000"], answer: 1, wrong: ["99 is what the first round alone makes. There are 99 rounds, and each looks at fewer values than the last, so the counts add up: 99 + 98 + … + 1.", null, "10,000 is 100 × 100, which counts every pair twice and each value against itself. The inner loop only looks to the right of i, so the total is half of that, nearly."], why: "99 + 98 + … + 1 = 100 × 99 / 2, on every input: it cannot notice sorted data." },
+        `<p>Predict the number of comparisons selection sort makes for 10, 100 and 1,000 values, and whether the input's order changes it.</p>`,
+        { predict: true, play: `import java.util.Arrays;
 public class Main {
     static int comparisons, moves;
-
     static void selectionSort(int[] a) {
         for (int i = 0; i < a.length - 1; i++) {
             int smallest = i;
-            for (int j = i + 1; j < a.length; j++) {
-                comparisons++;
-                if (a[j] < a[smallest]) smallest = j;
-            }
+            for (int j = i + 1; j < a.length; j++) { comparisons++; if (a[j] < a[smallest]) smallest = j; }
             if (smallest != i) {
-                int t = a[i]; a[i] = a[smallest]; a[smallest] = t;
-                moves += 3;
+                int t = a[i]; a[i] = a[smallest]; a[smallest] = t; moves += 3;
             }
         }
     }
-
     public static void main(String[] args) {
         int[] a = {7, 3, 9, 1, 6, 8, 2, 5, 4};
         selectionSort(a);
         System.out.println(Arrays.toString(a) + "   comparisons " + comparisons + ", moves " + moves);
         for (int n : new int[] {10, 100, 1000}) {
-            int[] b = new int[n];
-            for (int i = 0; i < n; i++) b[i] = (i * 7919) % 1000;
-            comparisons = 0; moves = 0;
-            selectionSort(b);
+            int[] b = new int[n]; for (int i = 0; i < n; i++) b[i] = (i * 7919) % 1000;
+            comparisons = 0; moves = 0; selectionSort(b);
             System.out.println("n = " + n + ": comparisons " + comparisons + ", moves " + moves);
         }
     }
-}`, caption: 'The comparisons are 45, 4,950 and 499,500: n(n−1)/2 every time, whatever the input, because the inner loop always runs to the end. The moves stay below 3n.' },
+}`, caption: 'It prints 36 comparisons for the nine values (9 × 8 / 2), then 45, 4,950 and 499,500 for n = 10, 100 and 1000: n(n−1)/2 every time, whatever the input, because the inner loop always runs to the end. The moves stay below 3n (12, 216 and 2,841). Change the data to already sorted values, <code>b[i] = i</code>: the comparisons do not change at all, and the moves fall to 0.' },
         `<div class="stmt"><p><span class="kind">Selection sort's bill.</span> Comparisons: exactly <code>n(n−1)/2</code>, O(n²), on every input. Moves: at most <code>3(n−1)</code>, O(n). Not stable (a swap can carry a value past an equal one). Its one virtue is the small number of moves, which matters when moving a value is expensive and comparing is cheap.</p></div>
 <h2>Insertion sort</h2>
 <p>The method you actually use with a hand of cards: take the next card and slide it left into the cards you already hold, which are in order, until it is in its place. After <code>i</code> rounds the first <code>i</code> cells are sorted, but unlike selection sort they are not final: a later value may be inserted among them.</p>`,
         { fig: 'sortlab', algo: 'insertion', caption: 'The same twelve values. Now change the input shape: on an already sorted input insertion sort makes one comparison per value and stops; on a reversed input every value slides all the way to the front. The algorithm adapts to its input, and selection sort did not.' },
-        { play: `import java.util.Arrays;
-
+        { predict: true, play: `import java.util.Arrays;
 public class Main {
     static int comparisons, moves;
-
     static void insertionSort(int[] a) {
         for (int i = 1; i < a.length; i++) {
             int value = a[i];
             int j = i;
             while (j > 0) {
                 comparisons++;
-                if (a[j - 1] > value) {
-                    a[j] = a[j - 1];        // shift the larger value right
-                    moves++;
-                    j--;
-                } else {
-                    break;                  // found the place
-                }
+                if (a[j - 1] <= value) break;      // found the place
+                a[j] = a[j - 1]; moves++; j--;     // shift the larger value right
             }
-            a[j] = value;
-            moves++;
+            a[j] = value; moves++;
         }
     }
-
-    static int[] shape(int n, String kind) {
-        int[] b = new int[n];
-        for (int i = 0; i < n; i++) b[i] = kind.equals("sorted") ? i : kind.equals("reversed") ? n - i : (i * 7919) % 1000;
-        return b;
-    }
-
     public static void main(String[] args) {
-        int[] a = {7, 3, 9, 1, 6, 8, 2, 5, 4};
-        insertionSort(a);
-        System.out.println(Arrays.toString(a) + "   comparisons " + comparisons + ", moves " + moves);
         for (String kind : new String[] {"sorted", "random", "reversed"}) {
-            comparisons = 0; moves = 0;
-            insertionSort(shape(1000, kind));
+            int[] b = new int[1000];
+            for (int i = 0; i < 1000; i++) b[i] = kind.equals("sorted") ? i : kind.equals("reversed") ? 1000 - i : (i * 7919) % 1000;
+            comparisons = 0; moves = 0; insertionSort(b);
             System.out.printf("n = 1000, %-9s comparisons %7d, moves %7d%n", kind + ":", comparisons, moves);
         }
     }
-}`, caption: 'Sorted input: 999 comparisons, O(n). Reversed: 499,500, the full n²/2. Random: about half of that. Insertion sort is the fastest sort there is for input that is already nearly in order, which real data often is.' },
-        { check: "Which sort is the right choice for a list that is already nearly sorted?", options: ["Selection sort", "Insertion sort: it makes about n comparisons on sorted input", "They cost the same"], answer: 1, why: "Insertion sort stops each slide at the first smaller neighbour, so nearly sorted input costs about n. Selection sort always costs n(n−1)/2." },
+}`, caption: 'It prints 999 comparisons for sorted input (one per value, O(n)), 251,100 for random input and 499,500 for reversed, the full n(n−1)/2. The moves are 999, 251,100 and 500,499. Random costs about half of the worst case. Insertion sort is the fastest simple sort for input that is already nearly in order, which real data often is.' },
+        { check: "Which sort is the right choice for a list that is already nearly sorted?", options: ["Selection sort", "Insertion sort: it makes about n comparisons on sorted input", "They cost the same"], answer: 1, wrong: ["Selection sort's inner loop always runs to the end, because the smallest value could be anywhere. It cannot notice that the data is nearly sorted, so it costs n(n−1)/2 regardless.", null, "They cost the same only in the worst case. On nearly sorted input insertion sort stops each slide after one or two comparisons, and selection sort still does the full count."], why: "Insertion sort stops each slide at the first smaller neighbour, so nearly sorted input costs about n. Selection sort always costs n(n−1)/2." },
         `<div class="stmt"><p><span class="kind">Insertion sort's bill.</span> Comparisons and moves: between <code>n − 1</code> (already sorted) and <code>n(n−1)/2</code> (reversed), about <code>n²/4</code> on random input: O(n) best case, O(n²) worst and average. Stable, because a value stops sliding as soon as it meets one that is not larger. The sort of choice for small arrays (Java's own sort switches to it below about 50 elements) and for nearly sorted ones.</p></div>
 <p>Notice the difference in <em>what the loops know</em>. Selection sort's inner loop must run to the end, because the smallest value could be anywhere. Insertion sort's inner loop can stop as soon as it finds a smaller value, because everything to its left is already sorted. The invariant is not only how you prove the sort correct; it is where the saving comes from.</p>
 <h2>What quadratic feels like</h2>
@@ -539,7 +495,7 @@ public class Main {
 <p>And bubble sort? It compares neighbours and swaps them when out of order, pass after pass. It is O(n²) like the others, makes more moves than either, and has no case where it is the best choice. It appears in the figure so that you recognise it; it is the one sort every textbook teaches and no program uses.</p>
 <h2>Sorting other things</h2>
 <p>The two sorts compare values with <code>&lt;</code> and <code>&gt;</code>. Replace those with any comparison you like and they sort anything by any rule. Strings by their <code>compareTo</code>; words by length; students by grade. When the rule has ties (many words have four letters) stability decides what happens to them, and insertion sort, being stable, keeps their original order.</p>`,
-        { play: `import java.util.Arrays;
+        { predict: true, play: `import java.util.Arrays;
 
 public class Main {
     // insertion sort by length; stable, so words of the same length keep their order
@@ -563,8 +519,8 @@ public class Main {
         Arrays.sort(names);                    // the library: strings in dictionary order, O(n log n)
         System.out.println(Arrays.toString(names));
     }
-}`, caption: 'pear, kiwi and date all have four letters and come out in the order they went in. Change > to >= in the while condition and run again: the sort is no longer stable, and the four-letter words reverse.' },
-        { check: "A sort is <em>stable</em> when…", options: ["it never crashes", "values that compare equal keep the order they had", "it uses no extra memory"], answer: 1, why: "Stability matters when sorting records by one key after another: students sorted by grade keep their alphabetical order within each grade." },
+}`, caption: 'It prints <code>[fig, pear, kiwi, date, apple, banana]</code> and then the names in dictionary order. pear, kiwi and date all have four letters and come out in the order they went in. Change > to >= in the while condition and run again: the sort is no longer stable, and the four-letter words reverse.' },
+        { check: "A sort is <em>stable</em> when…", options: ["it never crashes", "values that compare equal keep the order they had", "it uses no extra memory"], answer: 1, wrong: ["Not crashing is just correctness. Stability is a separate property, about equal values: do they keep the order they had?", null, "Memory use is a different property (sorting “in place”). A stable sort may use extra memory or not; stability is only about the order of equal values."], why: "Stability matters when sorting records by one key after another: students sorted by grade keep their alphabetical order within each grade." },
         `<details class="reveal"><summary>Puzzle: an array of n values has exactly one value out of place (it belongs k cells to the left). How many comparisons does insertion sort make? And selection sort?</summary><p>Insertion sort: about <code>n + k</code>. Every value but one stops after one comparison, and the misplaced one slides <code>k</code> cells. Selection sort: <code>n(n−1)/2</code>, as always; it has no way of noticing that the array is nearly sorted. For a million values with one out of place, that is a million comparisons against five hundred billion.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> In insertion sort, shifting with a swap at each step (three moves instead of one) or forgetting to write the value into its final cell. A <code>while</code> condition that reads <code>a[j − 1]</code> when <code>j</code> is 0. Using <code>&gt;=</code> where <code>&gt;</code> was meant, which breaks stability. In selection sort, swapping inside the inner loop instead of after it. Calling a sort O(n²) "slow": for a hundred values it is instant, and for a thousand it is fine; it is the growth that is the problem.</p>` },
         {
@@ -584,6 +540,7 @@ public class Main {
               { setup: '        int[] a = {-3, 10, -3, 0, 7, -8}; insertionSort(a);', call: 'Arrays.toString(a)', expect: '[-8, -3, -3, 0, 7, 10]', name: 'negative values' },
               { setup: '        int[] a = new int[2000]; for (int i = 0; i < a.length; i++) a[i] = (i * 7919) % 1000; insertionSort(a); boolean ok = true; for (int i = 1; i < a.length; i++) if (a[i - 1] > a[i]) ok = false;', call: 'ok + " " + a[0] + " " + a[1999]', expect: 'true 0 999', name: 'two thousand values' }
             ],
+            followup: 'Add a static counter and count the comparisons your method makes: 999 for 1,000 sorted values and 499,500 for 1,000 reversed ones. Then try a nearly sorted array with five values out of place.',
             failTip: 'If the reversed test loops or throws, the while condition reads a[j - 1] with j = 0: test j > 0 first. If values are lost, the final a[j] = value is missing or j is wrong.'
           }
         },
@@ -603,6 +560,7 @@ public class Main {
               { setup: '        String[] w = {"single"}; sortByLength(w); String[] e = {}; sortByLength(e);', call: 'Arrays.toString(w) + " " + Arrays.toString(e)', expect: '[single] []', name: 'one word, and none' },
               { setup: '        String[] w = {"", "ab", "", "a"}; sortByLength(w);', call: 'Arrays.toString(w)', expect: '[, , a, ab]', name: 'empty strings' }
             ],
+            followup: 'Make the method sort by length and, among words of the same length, alphabetically with compareTo, in a single insertion sort: change the comparison inside the while condition.',
             failTip: 'The second and third tests check stability: [c, aa, bb] means a word was carried past an equal-length one, which happens with >= or with a swap-based sort.'
           }
         },
@@ -616,13 +574,13 @@ public class Main {
               { label: '(c) Comparisons made by insertion sort on 10 values in reverse order.', answer: '45', width: '6rem', wrong: [{ match: '9', msg: 'That is the sorted case. Here every value slides all the way to the front: the value at position i makes i comparisons.' }, { match: ['90', '100'], msg: 'Position i makes i comparisons, for i from 1 to 9.' }] },
               { label: '(d) Insertion sort takes 2 seconds on 10,000 random values. About how many seconds on 20,000?', answer: '8', width: '6rem', wrong: [{ match: '4', msg: 'Doubling n doubles the work for an O(n) algorithm. This one is O(n²).' }, { match: '16', msg: 'That would be O(n³). Doubling n multiplies n² by four.' }] }
             ],
-            hints: ['(a) 9 + 8 + … + 1. (b) one comparison per value from the second on. (c) 1 + 2 + … + 9. (d) O(n²): doubling n multiplies the time by 2² = 4.'],
+            hints: ['(a) 9 + 8 + … + 1. (b) one comparison per value from the second on. (c) 1 + 2 + … + 9. (d) O(n²): doubling n multiplies the time by 2² = 4.', 'The sum 1 + 2 + … + 9 is 9 × 10 / 2. For (b), a value that is already in place stops after the first comparison.'],
             solution: `<p>(a) The inner loop runs 9, 8, …, 1 times: <b>45</b>, which is 10 × 9 / 2. (b) Each of the 9 inserted values compares once with its neighbour and stops: <b>9</b>. (c) The value at position i slides past all i values before it: 1 + 2 + … + 9 = <b>45</b>. (d) 2 × 4 = <b>8</b> seconds: double the input, four times the work.</p>`,
             followup: 'Parts (b) and (c) are the same algorithm on the same number of values, and the counts differ by a factor of five. Best and worst cases are not a technicality; they are the difference between an instant and a wait.'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
-<li>Sorting puts values in order; its cost is counted in comparisons and moves; a sort is stable if equal values keep their order.</li>
+<li>Sorting puts values in order; its cost is counted in comparisons and moves; a sort is stable if equal values keep their order. The simple sorts cost up to n(n−1)/2 comparisons, and how much less depends on the order the values start in: that answers the opening question.</li>
 <li>Selection sort: find the smallest, swap it to the front, repeat. Exactly n(n−1)/2 comparisons on every input, at most 3n moves, not stable.</li>
 <li>Insertion sort: slide each value left into the sorted prefix. From n − 1 comparisons (sorted input) to n(n−1)/2 (reversed): O(n) best, O(n²) worst, stable, and the right choice for small or nearly sorted arrays.</li>
 <li>The invariant of each sort is also the source of its cost: selection sort cannot stop early, insertion sort can.</li>
@@ -633,19 +591,17 @@ public class Main {
     /* ================================================================== */
     {
       standards: ['3B-AP-10', '3B-AP-11', '3B-AP-13', '3B-AP-15'],
-      title: 'Divide and conquer: merge sort and quicksort', summary: 'Why splitting a problem in half and recursing gives n log n; merge sort, its merge step and its guarantee; quicksort, its partition step and its gamble; the recursion tree that explains both; and which one the library actually runs.',
+      standard: 1, title: 'Divide and conquer: merge sort and quicksort', summary: 'Why splitting a problem in half and recursing gives n log n; merge sort, its merge step and its guarantee; quicksort, its partition step and its gamble; the recursion tree that explains both; and which one the library actually runs.',
       blocks: [
         `<p>The first sorting program ever written for a stored-program computer was a merge sort. John von Neumann wrote it in 1945 for the EDVAC, a machine that did not yet exist, in a notation he invented for the purpose; Donald Knuth, who later studied the manuscript, described it as the first program written for a computer of that kind. Von Neumann chose merging because it suited a machine that read data from a tape in order: two sorted tapes can be merged into one by reading each from the front and always taking the smaller, and the method never needs to jump back.</p>`,
         { photo: 'edvac', caption: 'The EDVAC as it was finally built, at the Army\'s Ballistic Research Laboratory, with an operator at its controls and a paper tape machine at the back. Von Neumann wrote his merge sort for it years before the machine was built.' },
         `<p>Fourteen years later a young Englishman named Tony Hoare was a visiting student in Moscow, working on machine translation. To translate a Russian sentence his program had to look its words up in a dictionary stored on magnetic tape, and the lookups would go much faster if the words were sorted first. He thought of a way to do it in place: pick one word, move everything smaller before it and everything larger after it, then do the same to each side. He had no computer to try it on, and no language to write it in that could call itself; when he learned Algol 60 the next year and saw that it allowed recursion, he wrote quicksort down in a few lines, and published it in 1961.</p>`,
-        `<p>These are the two sorts the world runs, and they share one idea: <em>split the array, sort the pieces, combine</em>. Merge sort splits trivially and does its work combining; quicksort does its work splitting and combines trivially. This lesson is about why that idea turns n² into n log n, and about the price each sort pays for it.</p>
+        `<p>These are the two sorts the world runs, and they share one idea: <em>split the array, sort the pieces, combine</em>. Merge sort splits trivially and does its work combining; quicksort does its work splitting and combines trivially. This lesson is about why that idea turns n² into n log n, and about the price each sort pays for it. So how can halving a problem turn n² into n log n, and what does each sort give up to get there?</p>
 <h2>Merging two sorted runs</h2>
 <p>Everything in merge sort rests on one step. Given two sorted runs side by side in an array, <code>a[lo..mid−1]</code> and <code>a[mid..hi−1]</code>, produce one sorted run <code>a[lo..hi−1]</code>. Keep a finger on the front of each run; copy the smaller of the two values and advance that finger; when one run is used up, copy the rest of the other. Every value is copied exactly once, so the merge costs <code>hi − lo</code> moves and at most <code>hi − lo − 1</code> comparisons, whatever the values are. It needs a second array to copy into: you cannot merge in place without losing the invariant.</p>`,
-        { play: `import java.util.Arrays;
-
+        { predict: true, play: `import java.util.Arrays;
 public class Main {
     static int comparisons;
-
     // merge the sorted runs a[lo..mid-1] and a[mid..hi-1], using aux as scratch space
     static void merge(int[] a, int lo, int mid, int hi, int[] aux) {
         int i = lo, j = mid, k = lo;
@@ -658,7 +614,6 @@ public class Main {
         while (j < hi) aux[k++] = a[j++];
         for (k = lo; k < hi; k++) a[k] = aux[k];
     }
-
     public static void main(String[] args) {
         int[] a = {3, 9, 27, 38, 43, 82, 1, 5, 10, 12, 14, 56};
         merge(a, 0, 6, 12, new int[a.length]);
@@ -668,15 +623,13 @@ public class Main {
         merge(b, 0, 6, 12, new int[b.length]);
         System.out.println(Arrays.toString(b) + "   comparisons: " + comparisons);
     }
-}`, caption: 'Twelve values merged with 11 comparisons, one fewer than the number of values; when the left run is entirely smaller, 6 comparisons empty it and the rest are copied without looking. The ++ inside the brackets reads the index and then advances it: aux[k++] = a[i++] copies a value and moves both fingers in one line.' },
-        { check: "Merging two sorted runs of total length m costs at most how many comparisons?", options: ["m − 1", "m log m", "m²"], answer: 0, why: "Each comparison copies one value, and after one run is used up the rest is copied without comparing." },
+}`, caption: 'It prints the twelve values in order after 11 comparisons, one fewer than the number of values, and then, for the second array where the whole left run is smaller, only 6: those 6 comparisons empty the left run, and the right run is copied without looking. The ++ inside the brackets reads the index and then advances it: aux[k++] = a[i++] copies a value and moves both fingers in one line.' },
+        { check: "Merging two sorted runs of total length m costs at most how many comparisons?", options: ["m − 1", "m log m", "m²"], answer: 0, wrong: [null, "m log m is the cost of a whole merge sort, with all its levels. A single merge walks each run once from the front, so it makes at most one comparison per value copied.", "m² would mean comparing every value of one run with every value of the other. Because both runs are already sorted, only the two front values ever need comparing."], why: "Each comparison copies one value, and after one run is used up the rest is copied without comparing." },
         `<h2>Merge sort</h2>
 <p>If merging two sorted halves is cheap, sort each half first. How? By the same method: split it in two, sort the quarters, merge. A run of one value is already sorted, so the splitting stops there. That is the whole algorithm, and it is naturally written as a method that calls itself.</p>`,
-        { play: `import java.util.Arrays;
-
+        { predict: true, play: `import java.util.Arrays;
 public class Main {
     static int comparisons;
-
     static void merge(int[] a, int lo, int mid, int hi, int[] aux) {
         int i = lo, j = mid, k = lo;
         while (i < mid && j < hi) { comparisons++; if (a[i] <= a[j]) aux[k++] = a[i++]; else aux[k++] = a[j++]; }
@@ -684,36 +637,26 @@ public class Main {
         while (j < hi) aux[k++] = a[j++];
         for (k = lo; k < hi; k++) a[k] = aux[k];
     }
-
-    // sort a[lo..hi-1]
-    static void sort(int[] a, int lo, int hi, int[] aux) {
+    static void sort(int[] a, int lo, int hi, int[] aux) {     // sorts a[lo..hi-1]
         if (hi - lo < 2) return;                     // 0 or 1 values: already sorted
         int mid = (lo + hi) >>> 1;
         sort(a, lo, mid, aux);
         sort(a, mid, hi, aux);
         merge(a, lo, mid, hi, aux);
     }
-
     static void mergeSort(int[] a) { sort(a, 0, a.length, new int[a.length]); }
-
     public static void main(String[] args) {
         int[] a = {38, 27, 43, 3, 9, 82, 10, 1, 56, 14, 71, 5, 29, 66, 48, 12};
         mergeSort(a);
         System.out.println(Arrays.toString(a) + "   comparisons: " + comparisons);
-        for (int n : new int[] {1000, 2000, 4000, 8000}) {
-            int[] b = new int[n];
-            for (int i = 0; i < n; i++) b[i] = (i * 7919) % 10007;
-            comparisons = 0;
-            mergeSort(b);
-            System.out.printf("n = %5d: %6d comparisons, %.2f per value%n", n, comparisons, (double) comparisons / n);
-        }
     }
-}`, caption: 'Sixteen values in 49 comparisons (n log₂ n is 64; the quadratic sorts need up to 120). Doubling n does not quadruple the count: it a little more than doubles it, and the comparisons per value grow by exactly one each time, which is what log₂ n does.' },
+}`, caption: 'It prints the sixteen values in order after 49 comparisons: below n log₂ n, which is 64, and far below the 120 that a quadratic sort can need. The method calls itself twice and then merges: the base case is a run of fewer than two values.' },
+        `<p>Now time the growth. Put this loop in <code>main</code> instead (<code>for (int n : new int[] {1000, 2000, 4000, 8000})</code>, filling <code>b[i] = (i * 7919) % 10007</code> and printing <code>comparisons / n</code>). You will see 8,792, 19,585, 43,148 and 94,297 comparisons, which is 8.79, 9.79, 10.79 and 11.79 per value. Doubling <code>n</code> does not quadruple the count: it a little more than doubles it, and the comparisons per value grow by exactly one each time, which is what <code>log₂ n</code> does.</p>`,
         `<div class="stmt"><p><span class="kind">Merge sort.</span> Split the array in half, sort each half recursively, merge. A run of fewer than two values is the base case.</p>
 <p><span class="kind">Cost.</span> Every level of the recursion merges a total of <code>n</code> values, and there are <code>⌈log₂ n⌉</code> levels, so the work is <code>n log n</code> comparisons at most, on every input: there is no bad case. It uses <code>n</code> extra cells of memory, and it is stable if the merge takes from the left on ties.</p></div>
 <p>The figure runs merge sort from the bottom up, which is how von Neumann's tapes did it: runs of 1 merge into runs of 2, then 4, then 8. Step through one merge, then let it play. The top-down recursion above does the same merges in a different order.</p>`,
         { fig: 'mergeviz', caption: 'Sixteen values. The top row is the runs being merged (the two highlighted blocks), the bottom row the merged output being built left to right. Each round halves the number of runs; four rounds for sixteen values, because 2⁴ = 16.' },
-        { check: "Why is merge sort O(n log n)?", options: ["Because merging is O(log n)", "Each level of the recursion merges n values in total, and there are log n levels", "Because it uses a second array"], answer: 1, why: "Halving gives log n levels; linear work at each level gives n per level. Total n log n, on every input." },
+        { check: "Why is merge sort O(n log n)?", options: ["Because merging is O(log n)", "Each level of the recursion merges n values in total, and there are log n levels", "Because it uses a second array"], answer: 1, wrong: ["A merge looks at every value of its two runs, so it is O(n), not O(log n). The log n is the number of levels, not the cost of a merge.", null, "The second array costs memory, not time, and it does not give the sort its n log n. The count comes from log n levels with n values merged at each."], why: "Halving gives log n levels; linear work at each level gives n per level. Total n log n, on every input." },
         `<h2>Why n log n: the recursion tree</h2>
 <p>Draw the calls as a tree. At the top, one call on <code>n</code> values; below it two calls on <code>n/2</code> each; below those four on <code>n/4</code>, and so on down to <code>n</code> calls on one value each. The merging done at any one level adds up to <code>n</code> moves, because the runs at that level between them contain every value once. The number of levels is how many times you can halve <code>n</code> before reaching 1, which is <code>log₂ n</code>: 10 levels for a thousand, 20 for a million. Total: <code>n</code> per level × <code>log n</code> levels.</p>
 <p>This is the argument to remember. It applies to any algorithm that splits a problem into halves and does linear work to split or to join: the splitting gives the <code>log</code>, the linear work at each level gives the <code>n</code>. Compare it with lesson 2's binary search, which also halves but does only constant work at each level, and so costs <code>log n</code> with no <code>n</code> in front.</p>
@@ -721,82 +664,61 @@ public class Main {
 <p>Hoare's idea turns merge sort inside out. Instead of splitting in the middle and working to combine, choose a <em>pivot</em> value and rearrange the array so that everything less than the pivot is to its left and everything greater is to its right. The pivot is now in its final position. Then sort the left part and the right part recursively, and there is nothing to combine: the two parts are already in the right place relative to each other.</p>
 <p>The rearranging step is called <em>partition</em>. The version below, due to Nico Lomuto, is the simplest to write and to prove: take the last value as the pivot, and walk a finger <code>j</code> along the array, keeping everything before a second finger <code>i</code> less than the pivot. Whenever <code>a[j]</code> is smaller than the pivot, swap it into position <code>i</code> and advance <code>i</code>. At the end, swap the pivot into position <code>i</code>.</p>`,
         { fig: 'partition', caption: 'Lomuto partition with the last value as pivot. The invariant at every step: cells before i are less than the pivot, cells from i to j − 1 are greater or equal, cells from j on are not yet examined. Watch the invariant hold at every step, then Shuffle and watch it again.' },
-        { play: `import java.util.Arrays;
-
+        { predict: true, play: `import java.util.Arrays;
 public class Main {
     static int comparisons;
-
     static void swap(int[] a, int i, int j) { int t = a[i]; a[i] = a[j]; a[j] = t; }
-
-    // rearrange a[lo..hi] round the pivot a[hi]; return the pivot's final index
-    static int partition(int[] a, int lo, int hi) {
-        int pivot = a[hi];
-        int i = lo;
-        for (int j = lo; j < hi; j++) {
-            comparisons++;
-            if (a[j] < pivot) { swap(a, i, j); i++; }
-        }
+    static int partition(int[] a, int lo, int hi) {   // rearrange a[lo..hi] round the pivot a[hi]
+        int pivot = a[hi], i = lo;
+        for (int j = lo; j < hi; j++) { comparisons++; if (a[j] < pivot) { swap(a, i, j); i++; } }
         swap(a, i, hi);
-        return i;
+        return i;                                     // the pivot's final index
     }
-
-    // sort a[lo..hi] (inclusive on both ends this time, as Hoare wrote it)
-    static void sort(int[] a, int lo, int hi) {
+    static void sort(int[] a, int lo, int hi) {       // sorts a[lo..hi], inclusive at both ends
         if (lo >= hi) return;
         int p = partition(a, lo, hi);
         sort(a, lo, p - 1);
         sort(a, p + 1, hi);
     }
-
-    static void quickSort(int[] a) { sort(a, 0, a.length - 1); }
-
     public static void main(String[] args) {
         int[] a = {29, 10, 14, 37, 13, 7, 41, 22, 18, 25};
         int p = partition(a, 0, a.length - 1);
         System.out.println("pivot 25 lands at " + p + ": " + Arrays.toString(a));
         int[] b = {38, 27, 43, 3, 9, 82, 10, 1, 56, 14, 71, 5, 29, 66, 48, 12};
-        comparisons = 0;
-        quickSort(b);
+        sort(b, 0, b.length - 1);
         System.out.println(Arrays.toString(b) + "   comparisons: " + comparisons);
     }
-}`, caption: 'After one partition, 25 is at index 6 with the six smaller values left of it and the three larger ones right of it: 25 will never move again. The full sort of the same sixteen values that merge sort did in 49 comparisons here takes 47: about the same comparing, but no copying into a second array, which is why in practice quicksort is usually the faster of the two.' },
+}`, caption: 'It prints <code>pivot 25 lands at 6: [10, 14, 13, 7, 22, 18, 25, 29, 37, 41]</code>: 25 has the six smaller values left of it and the three larger ones right of it, and it will never move again. Then it sorts the sixteen values that merge sort sorted in 49 comparisons. The count printed is 56, which includes the 9 comparisons of the first partition; the full sort alone takes 47: about the same comparing, but no copying into a second array, which is why in practice quicksort is usually the faster of the two.' },
         `<div class="stmt"><p><span class="kind">Quicksort.</span> Partition round a pivot; the pivot is then in its final place; sort the two sides recursively. A part of fewer than two values is the base case.</p>
 <p><span class="kind">Cost.</span> Partition costs <code>n − 1</code> comparisons. If the pivot lands near the middle every time, the recursion tree has <code>log n</code> levels and the sort costs about <code>1.39 n log₂ n</code> comparisons on average. If the pivot is always the smallest or largest value, one side is empty, the tree has <code>n</code> levels, and the cost is <code>n²/2</code>: quadratic. In place, not stable.</p></div>
 <h2>The gamble, and how to hedge it</h2>
-<p>When does the last value make the worst pivot? When the array is already sorted. Then every partition peels off one value, and sorting a sorted array, the easiest possible input, takes <code>n²/2</code> comparisons. Insertion sort does it in <code>n</code>. This is not a theoretical worry: sorted and nearly sorted inputs are the most common inputs there are.</p>`,
-        { play: `public class Main {
+<p>When does the last value make the worst pivot? When the array is already sorted. Then every partition peels off one value, and sorting a sorted array, the easiest possible input, takes <code>n²/2</code> comparisons. Insertion sort does it in <code>n</code>. This is not a theoretical worry: sorted and nearly sorted inputs are the most common inputs there are. Predict how the cost of 200 sorted values compares with 200 shuffled ones, for each of two choices of pivot.</p>`,
+        { predict: true, play: `public class Main {
     static int comparisons;
     static void swap(int[] a, int i, int j) { int t = a[i]; a[i] = a[j]; a[j] = t; }
-
     static int partition(int[] a, int lo, int hi) {
         int pivot = a[hi], i = lo;
         for (int j = lo; j < hi; j++) { comparisons++; if (a[j] < pivot) { swap(a, i, j); i++; } }
-        swap(a, i, hi);
-        return i;
+        swap(a, i, hi); return i;
     }
-
     static void sort(int[] a, int lo, int hi, boolean middlePivot) {
         if (lo >= hi) return;
-        if (middlePivot) swap(a, (lo + hi) >>> 1, hi);   // move the middle value to the end, where partition expects the pivot
+        if (middlePivot) swap(a, (lo + hi) >>> 1, hi);   // move the middle value to the end, where the pivot goes
         int p = partition(a, lo, hi);
         sort(a, lo, p - 1, middlePivot);
         sort(a, p + 1, hi, middlePivot);
     }
-
     public static void main(String[] args) {
-        int n = 200;
         for (boolean middle : new boolean[] {false, true}) {
-            int[] sorted = new int[n], shuffled = new int[n];
+            int n = 200; int[] sorted = new int[n], shuffled = new int[n];
             for (int i = 0; i < n; i++) { sorted[i] = i; shuffled[i] = (i * 7919) % 1009; }
-            comparisons = 0; sort(shuffled, 0, n - 1, middle);
-            System.out.print((middle ? "middle pivot" : "last pivot  ") + "   shuffled input: " + comparisons + " comparisons");
+            comparisons = 0; sort(shuffled, 0, n - 1, middle); int c = comparisons;
             comparisons = 0; sort(sorted, 0, n - 1, middle);
-            System.out.println("   sorted input: " + comparisons);
+            System.out.println((middle ? "middle pivot" : "last pivot  ") + "   shuffled input: " + c + "   sorted input: " + comparisons);
         }
-        System.out.println("n log2 n is about " + Math.round(n * Math.log(n) / Math.log(2)) + "; n^2 / 2 is " + n * n / 2);
     }
-}`, caption: 'With the last value as pivot, sorted input costs n²/2 comparisons: two hundred values take 19,900, thirteen times the shuffled case, and the recursion goes two hundred calls deep. Taking the middle value as pivot makes sorted input the best case instead. Real implementations choose the pivot at random, or as the median of three samples, so that no fixed input shape can be the bad one.' },
-        { check: "Quicksort with the last value as pivot is given an already sorted array. What happens?", options: ["Its best case: O(n log n)", "Its worst case: every partition peels off one value, O(n²)", "It stops early"], answer: 1, why: "The pivot is the largest, so one side is empty each time and the recursion goes n deep: n²/2 comparisons for the easiest possible input." },
+}`, caption: 'It prints, for the last value as pivot, 1540 comparisons on shuffled input and 19,900 on sorted input; for the middle pivot, 1859 and 1153. For comparison, n log₂ n is about 1,529 and n²/2 is 20,000. With the last value as pivot, sorted input costs n²/2 comparisons: two hundred values take 19,900, thirteen times the shuffled case, and the recursion goes two hundred calls deep. Taking the middle value as pivot makes sorted input the best case instead. Real implementations choose the pivot at random, or as the median of three samples, so that no fixed input shape can be the bad one.' },
+        { check: "Quicksort with the last value as pivot is given an already sorted array. What happens?", options: ["Its best case: O(n log n)", "Its worst case: every partition peels off one value, O(n²)", "It stops early"], answer: 1, wrong: ["n log n is quicksort’s case when the pivots land near the middle. With the last value as pivot, sorted input makes the pivot the largest every time, which is the opposite.", null, "Quicksort has no test for “already sorted” (insertion sort has one, by its nature). It partitions anyway, and each pass peels off a single value."], why: "The pivot is the largest, so one side is empty each time and the recursion goes n deep: n²/2 comparisons for the easiest possible input." },
         `<p>Three fixes are in common use. <em>Random pivot</em>: swap a randomly chosen cell to the end before partitioning; no input is bad in advance, and the quadratic case becomes an event of vanishing probability. <em>Median of three</em>: look at the first, middle and last values and use the middle one; cheap and good on sorted and reverse-sorted input. <em>Introsort</em>: keep a count of the recursion depth and, if it exceeds about <code>2 log₂ n</code>, finish that part with heapsort (a later lesson), which guarantees <code>n log n</code>. C++'s <code>std::sort</code> is an introsort.</p>
 <h2>Which one, and which does the library run?</h2>
 <table class="growth-table"><thead><tr><th></th><th>Merge sort</th><th>Quicksort</th></tr></thead><tbody>
@@ -807,7 +729,7 @@ public class Main {
 <tr><td>Works on linked lists and tapes</td><td>yes</td><td>no (needs random access)</td></tr>
 </tbody></table>
 <p>Java's <code>Arrays.sort</code> makes the same choice twice over. For arrays of primitives (<code>int[]</code>, <code>double[]</code>) it uses a quicksort with two pivots, because stability is meaningless for plain numbers and in-place speed wins. For arrays of objects and for <code>Collections.sort</code> it uses TimSort, a merge sort that first looks for runs already in order, because sorting records by one key must not scramble their order by another. When you call the library you are calling one of this lesson's two algorithms, chosen for exactly the reasons in the table.</p>`,
-        { play: `import java.util.Arrays;
+        { predict: true, play: `import java.util.Arrays;
 
 public class Main {
     public static void main(String[] args) {
@@ -819,7 +741,7 @@ public class Main {
         Arrays.sort(words);                              // TimSort, a merge sort
         System.out.println(Arrays.toString(words));
     }
-}`, caption: 'The same method name, two different algorithms, chosen by the type of the array. The documentation of Arrays.sort for Object[] promises that the sort is stable; the one for int[] promises nothing of the kind, because it does not need to.' },
+}`, caption: 'It prints the numbers in order, then the words in dictionary order. The same method name, two different algorithms, chosen by the type of the array. The documentation of Arrays.sort for Object[] promises that the sort is stable; the one for int[] promises nothing of the kind, because it does not need to.' },
         `<details class="reveal"><summary>Puzzle: merge sort on 8 values makes how many merges, and how many levels? Quicksort on 8 values whose pivots always land exactly in the middle: how many comparisons in total?</summary><p>Merge sort: 7 merges (4 of size 2, 2 of size 4, 1 of size 8) over 3 levels, since 2³ = 8. Quicksort with the best pivots: 7 at the top level (the pivot against the other 7), leaving parts of 3 and 4; the 3 costs 2 and leaves two parts of 1; the 4 costs 3 and leaves parts of 1 and 2; the 2 costs 1. That is 7 + 2 + 3 + 1 = 13 comparisons. Merge sort on 8 values makes between 12 and 17, so a lucky quicksort and merge sort compare about equally often. Quicksort usually wins on the clock for other reasons: it works in place, with no second array to copy into, and its inner loop is very short. And it needs help not to be unlucky.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> A merge that uses <code>&lt;</code> instead of <code>&lt;=</code>, which still sorts but is not stable. Forgetting to copy the leftovers of the run that was not used up. A merge sort whose base case is <code>hi − lo &lt; 1</code> instead of <code>&lt; 2</code>, which recurses forever on a run of one. Allocating a new <code>aux</code> array inside every call (correct, but it turns an n log n sort into one that spends most of its time allocating). A quicksort that recurses on <code>lo..p</code> instead of <code>lo..p − 1</code>, which never shrinks when the pivot is the largest value. Choosing the first or last value as pivot in production code.</p>` },
         {
@@ -839,6 +761,7 @@ public class Main {
               { setup: '        int[] a = {4, 4}; merge(a, 0, 1, 2, new int[2]); int[] b = {5}; merge(b, 0, 1, 1, new int[1]);', call: 'Arrays.toString(a) + " " + Arrays.toString(b)', expect: '[4, 4] [5]', name: 'tiny runs, and an empty right run' },
               { setup: '        int[] a = {10, 20, 30, 10, 20, 30}; int[] aux = new int[6]; merge(a, 0, 3, 6, aux);', call: 'Arrays.toString(a)', expect: '[10, 10, 20, 20, 30, 30]', name: 'ties' }
             ],
+            followup: 'Change your merge to use < instead of <= and merge {10, 20, 30} with {10, 20, 30} again, but this time tag each value with its run so you can see which 10 came first. What goes wrong with the order of equal values?',
             failTip: 'If the result has repeated or missing values, the copy-back loop or a leftover loop is wrong. If the sort of a run of one fails, the loops must cope with an empty right run (j == hi from the start).'
           }
         },
@@ -859,6 +782,7 @@ public class Main {
               { setup: '        int[] a = {-3, 10, -3, 0, 7, -8, 2147483647, -2147483648}; mergeSort(a);', call: 'Arrays.toString(a)', expect: '[-2147483648, -8, -3, -3, 0, 7, 10, 2147483647]', name: 'negatives and extremes' },
               { setup: '        int[] a = new int[10000]; for (int i = 0; i < a.length; i++) a[i] = (i * 7919) % 10007; mergeSort(a); boolean ok = true; for (int i = 1; i < a.length; i++) if (a[i - 1] > a[i]) ok = false;', call: 'ok + " " + a[0] + " " + a[9999]', expect: 'true 0 10006', name: 'ten thousand values' }
             ],
+            followup: 'Add a static counter of comparisons to your merge, sort 1,024 values in several different orders, and compare each count with the largest possible, 9,217 (see the next exercise).',
             failTip: 'If the checker times out, the recursion is not shrinking (base case or mid wrong) or the sort is quadratic. If values go missing, check the merge’s leftover loops and copy-back.'
           }
         },
@@ -880,6 +804,7 @@ public class Main {
               { setup: '        int[] a = {0, 0, 9, 3, 8, 5, 0, 0}; int p = partition(a, 2, 5);', call: 'p + " " + Arrays.toString(a)', expect: '3 [0, 0, 3, 5, 8, 9, 0, 0]', name: 'a slice in the middle' },
               { setup: '        int[] a = {42}; int p = partition(a, 0, 0);', call: 'p + " " + Arrays.toString(a)', expect: '0 [42]', name: 'one value' }
             ],
+            followup: 'Use your partition to write quickSort(int[] a), then count its comparisons on 1,000 sorted values (about 500,000) and on 1,000 shuffled ones (about 10,000). Then swap a random cell into the pivot position before partitioning and run the sorted case again.',
             failTip: 'The checker compares the exact arrangement, which Lomuto’s method fixes completely: loop j from lo to hi − 1, swap on strictly less than, swap the pivot in last. If the equal-values test returns 3, you used <= in the comparison.'
           }
         },
@@ -893,32 +818,32 @@ public class Main {
               { label: '(c) Quicksort with the last value as pivot, on 100 values already in increasing order: total comparisons?', answer: '4950', width: '6rem', wrong: [{ match: '99', msg: 'That is the first partition alone. The pivot is the largest value, so the left part has 99 values and the whole thing happens again.' }, { match: ['10000', '5000'], msg: 'Partitions of 100, 99, …, 2 values cost 99 + 98 + … + 1.' }] },
               { label: '(d) Quicksort on 1,000,000 values with a random pivot takes 1 second. Merge sort on the same machine takes about 1.4 seconds. About how long would a quadratic sort take, in hours, if a comparison costs the same? (Use n²/2 against 1.39 n log₂ n, round to the nearest hour.)', answer: '5', width: '6rem', wrong: [{ match: ['18000', '17986', '17985'], msg: 'That is the ratio in seconds; the question asks for hours.' }, { match: '4', msg: 'n²/2 = 5 × 10¹¹; 1.39 n log₂ n ≈ 2.77 × 10⁷; the ratio is about 18,000 seconds.' }] }
             ],
-            hints: ['(a) 2¹⁰ = 1024. (b) 10 levels × 1024 = 10,240, minus one per merge; a merge sort of n values makes n − 1 merges. (c) 99 + 98 + … + 1 = 99 × 100 / 2. (d) Divide n²/2 by 1.39 n log₂ n, then by 3600.'],
+            hints: ['(a) 2¹⁰ = 1024. (b) 10 levels × 1024 = 10,240, minus one per merge; a merge sort of n values makes n − 1 merges. (c) 99 + 98 + … + 1 = 99 × 100 / 2. (d) Divide n²/2 by 1.39 n log₂ n, then by 3600.', 'For (d): n²/2 is 5 × 10¹¹, and 1.39 n log₂ n is about 2.8 × 10⁷. The ratio of the two is the factor by which the quadratic sort is slower than quicksort’s one second.'],
             solution: `<p>(a) <b>10</b>: 1024 = 2¹⁰. (b) <b>9217</b>: 10 × 1024 = 10,240 comparisons if every merge used all of them; each of the 1023 merges saves at least one, so 10,240 − 1023. (c) <b>4950</b>: 99 + 98 + … + 1. (d) <b>5</b> hours: 5 × 10¹¹ / (1.39 × 10⁶ × 20) ≈ 18,000 seconds.</p>`,
             followup: 'Part (d) is the whole reason this lesson exists: on a million values, the difference between n² and n log n is the difference between a second and an afternoon.'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
-<li>Divide and conquer: split, solve the parts recursively, combine. Halving gives log n levels; linear work per level gives n log n.</li>
+<li>Divide and conquer: split, solve the parts recursively, combine. Halving gives log n levels; linear work per level gives n log n. That is how halving turns n² into n log n.</li>
 <li>Merge sort: split in the middle, merge sorted halves. n log n on every input, stable, needs n extra cells, works on tapes and linked lists.</li>
 <li>Quicksort: partition round a pivot, recurse on both sides. n log n on average with a smaller constant, in place, not stable, n² if the pivots are bad; random or median-of-three pivots make bad pivots unlikely.</li>
 <li>Lomuto partition keeps the invariant "less than pivot | greater or equal | unseen" and costs n − 1 comparisons.</li>
-<li>Java's <code>Arrays.sort</code> is a quicksort for primitives and a merge sort (TimSort) for objects, for exactly the reasons in the table.</li>
+<li>Java's <code>Arrays.sort</code> is a quicksort for primitives and a merge sort (TimSort) for objects, for exactly the reasons in the table. What each sort gives up: merge sort pays in memory, quicksort in a bad worst case.</li>
 </ul></div>`
       ]
     },
     /* ================================================================== */
     {
       standards: ['3A-DA-10', '3B-AP-12'],
-      title: 'Linked lists', summary: 'A structure made of nodes that point to each other; what it makes cheap (changing the front, splicing) and expensive (reaching an index); writing one in Java with two classes; reversing it in place; and why ArrayList still wins most of the time.',
+      standard: 1, title: 'Linked lists', summary: 'A structure made of nodes that point to each other; what it makes cheap (changing the front, splicing) and expensive (reaching an index); writing one in Java with two classes; reversing it in place; and why ArrayList still wins most of the time.',
       blocks: [
         `<p>In 1956 three researchers, Allen Newell, Herbert Simon and Cliff Shaw, were building a program they called the Logic Theorist, to run on JOHNNIAC, a computer at the RAND Corporation in California, which could prove theorems from Russell and Whitehead's <em>Principia Mathematica</em>. Its data, logical expressions, were not of fixed size: a proof grew and branched as the program worked, and no array laid out in advance could hold it. So in the language they designed for it, IPL, every piece of data was a <em>cell</em> holding a value and the address of the next cell. A list was a chain of cells, and growing it meant making a new cell and changing one address. John McCarthy saw IPL, found it clumsy, and made the idea elegant in Lisp two years later; the linked list has been one of the two basic ways to hold a sequence ever since.</p>`,
         { photo: 'johnniac', caption: 'JOHNNIAC, the computer at RAND on which the Logic Theorist ran, now in the Computer History Museum in California. The cabinets are packed with rows of valves (vacuum tubes); its operators sat at the console in front.' },
-        `<p>The other way is the array. The two are opposites, and this lesson is the comparison. An array is one block of memory with its values side by side: reaching cell <code>i</code> is arithmetic, but making room at the front means shifting everything. A linked list is many small blocks joined by addresses: making room anywhere means changing two addresses, but reaching cell <code>i</code> means walking there, because there is no arithmetic that finds it.</p>
+        `<p>The other way is the array. The two are opposites, and this lesson is the comparison. An array is one block of memory with its values side by side: reaching cell <code>i</code> is arithmetic, but making room at the front means shifting everything. A linked list is many small blocks joined by addresses: making room anywhere means changing two addresses, but reaching cell <code>i</code> means walking there, because there is no arithmetic that finds it. So which of the two should you reach for, and when does the answer change?</p>
 <h2>A node and a chain of them</h2>
-<p>In Java a node is a small class with two fields, the value and a reference to the next node. The last node's <code>next</code> is <code>null</code>. The list itself is just a reference to the first node, called the <em>head</em>; an empty list is a <code>null</code> head.</p>`,
+<p>In Java a node is a small class with two fields, the value and a reference to the next node. The last node's <code>next</code> is <code>null</code>. The list itself is just a reference to the first node, called the <em>head</em>; an empty list is a <code>null</code> head. Predict the order of the list that the code after the figure builds, with four values added at the front.</p>`,
         { fig: 'linkedlist', caption: 'Each box is a node: a value and the address of the next node. Try Get index 3 and count the hops; then Add first and see that nothing is walked; then Insert at index 2 and watch two arrows change while no value moves.' },
-        { play: `class Node {
+        { predict: true, play: `class Node {
     int value;
     Node next;
     Node(int value, Node next) { this.value = value; this.next = next; }
@@ -940,14 +865,14 @@ public class Main {
         for (Node cur = head; cur != null; cur = cur.next) count++;
         System.out.println("length " + count + ", first " + head.value + ", second " + head.next.value);
     }
-}`, caption: 'Four addFirst operations build 12 -> 7 -> 3 -> 9; each is O(1) because nothing is walked. The for loop that follows next until null is the one idiom of this lesson: there is no index, only "the current node" and "the next one".' },
-        { check: "In a singly linked list with only a head reference, adding at the front costs…", options: ["O(1): a new node whose next is the old head", "O(n): walk to the end", "O(log n)"], answer: 0, why: "Make a node, point it at the old head, point head at it. Nothing is walked and nothing shifts." },
+}`, caption: 'It prints <code>12 -> 7 -> 3 -> 9 -> null</code> and then <code>length 4, first 12, second 7</code>. Each new node goes in front of the old head, so the last one added, 12, ends up first. Four addFirst operations build 12 -> 7 -> 3 -> 9; each is O(1) because nothing is walked. Change the order of the four lines and the list changes order. The for loop that follows next until null is the one idiom of this lesson: there is no index, only "the current node" and "the next one".' },
+        { check: "In a singly linked list with only a head reference, adding at the front costs…", options: ["O(1): a new node whose next is the old head", "O(n): walk to the end", "O(log n)"], answer: 0, wrong: [null, "Walking to the end is what adding at the back costs when there is no tail reference. Adding at the front touches only head, and nothing is walked.", "Nothing in a list halves a range, so no log n appears. The front is reached directly through head: one new node and one assignment."], why: "Make a node, point it at the old head, point head at it. Nothing is walked and nothing shifts." },
         `<div class="stmt"><p><span class="kind">Singly linked list.</span> Nodes each holding a value and a reference <code>next</code>; a <code>head</code> reference to the first; <code>null</code> marks the end. Optionally a <code>size</code> count and a <code>tail</code> reference to the last node.</p>
 <p><span class="kind">Cheap, O(1).</span> Add or remove at the front. Add at the back, if a tail reference is kept. Insert or remove <em>after a node you are already holding</em>.</p>
 <p><span class="kind">Expensive, O(n).</span> Reach index <code>i</code> (walk <code>i</code> hops). Find a value. Remove a value by searching for it. Anything that says "the i-th".</p></div>
 <h2>The list as a class</h2>
-<p>Nobody passes bare nodes around. The list is wrapped in a class that owns the head and the size, so that the user calls <code>list.addFirst(5)</code> and never sees a <code>Node</code>. The lesson's version below is an <code>IntList</code>; the exercises ask you to finish it.</p>`,
-        { play: `class Node {
+<p>Nobody passes bare nodes around. The list is wrapped in a class that owns the head and the size, so that the user calls <code>list.addFirst(5)</code> and never sees a <code>Node</code>. The lesson's version below is an <code>IntList</code>; the exercises ask you to finish it. It is a whole class with a <code>main</code>, so it is longer than the other examples. Read it first, then predict what <code>main</code> prints.</p>`,
+        { predict: true, long: true, play: `class Node {
     int value;
     Node next;
     Node(int value, Node next) { this.value = value; this.next = next; }
@@ -1007,78 +932,60 @@ public class Main {
             System.out.println("caught: " + e.getMessage());
         }
     }
-}`, caption: 'toString walks the list once, so printing is O(n), like printing an array. get(2) walks two hops. The exception message copies the one the Java library uses for ArrayList, so that code written against either behaves the same.' },
+}`, caption: 'It prints <code>[12, 7, 3, 9]  size 4</code>, then <code>get(2) = 3</code>, then <code>removed 12, now [7, 3, 9]</code>, then the exception message for index 10 of a list of three. addLast and get are walks; addFirst and removeFirst are not. toString walks the list once, so printing is O(n), like printing an array. get(2) walks two hops. The exception message copies the one the Java library uses for ArrayList, so that code written against either behaves the same.' },
         `<h2>Inserting and removing in the middle</h2>
 <p>Here is the operation that makes linked lists worth having. To insert after a node <code>p</code>: make the new node with <code>next = p.next</code>, then set <code>p.next</code> to the new node. Two assignments, in that order, and no value moves. To remove the node after <code>p</code>: <code>p.next = p.next.next</code>. One assignment. In an array the same operations shift every value to the right of the point, O(n).</p>
 <p>The catch is in the words "a node you are already holding". If you have to find <code>p</code> by walking from the head, the walk is O(n) and the saving is gone. The list wins when the program is already at the right place: an iterator in the middle of a pass, a queue whose ends are both known, a scheduler moving the current task to the back. It loses whenever the program says "the i-th".</p>`,
-        { play: `class Node {
-    int value;
-    Node next;
-    Node(int value, Node next) { this.value = value; this.next = next; }
-}
-
+        { predict: true, play: `class Node { int value; Node next; Node(int value, Node next) { this.value = value; this.next = next; } }
 public class Main {
     static String show(Node head) {
         StringBuilder sb = new StringBuilder();
         for (Node cur = head; cur != null; cur = cur.next) sb.append(cur.value).append(cur.next != null ? " -> " : "");
         return sb.toString();
     }
-
     public static void main(String[] args) {
         Node head = new Node(1, new Node(2, new Node(3, new Node(4, null))));
         System.out.println(show(head));
-
         Node p = head.next;                       // holding the node with 2
         p.next = new Node(99, p.next);            // insert after it: two arrows change, nothing moves
         System.out.println(show(head) + "      after inserting 99 after 2");
-
         p.next = p.next.next;                     // remove the node after p: one arrow changes
         System.out.println(show(head) + "      after removing the node after 2");
-
         // remove the node holding 3: we must hold the node BEFORE it, so walk until cur.next.value == 3
         Node cur = head;
         while (cur.next != null && cur.next.value != 3) cur = cur.next;
         if (cur.next != null) cur.next = cur.next.next;
         System.out.println(show(head) + "      after removing 3");
     }
-}`, caption: 'The insert and the first removal are O(1) because p was already in hand. The removal of 3 is O(n): the walk has to stop one node early, at the node whose next holds 3, because a singly linked node cannot see backwards. That "one node early" is the source of most linked-list bugs.' },
-        { check: "To remove the node holding 3 from a singly linked list, which node must you be holding?", options: ["The node holding 3", "The node before it, whose next must change", "The head"], answer: 1, why: "A singly linked node cannot see backwards. Only the previous node's next can be redirected past the one being removed." },
+}`, caption: 'It prints <code>1 -> 2 -> 3 -> 4</code>, then the list with 99 after 2, then back to 1 -> 2 -> 3 -> 4, then 1 -> 2 -> 4. The insert and the first removal are O(1) because p was already in hand. The removal of 3 is O(n): the walk has to stop one node early, at the node whose next holds 3, because a singly linked node cannot see backwards. That "one node early" is the source of most linked-list bugs.' },
+        { check: "To remove the node holding 3 from a singly linked list, which node must you be holding?", options: ["The node holding 3", "The node before it, whose next must change", "The head"], answer: 1, wrong: ["Holding the node itself is no use: a singly linked node cannot see who points at it, so it cannot redirect the arrow that reaches it.", null, "The head is the right node only when the value to remove is the first one. Otherwise you must walk to the node just before the target."], why: "A singly linked node cannot see backwards. Only the previous node's next can be redirected past the one being removed." },
         `<h2>Reversing a list in place</h2>
-<p>The classic exercise, asked in interviews for sixty years because it tests whether you can hold three references in your head at once. Walk the list; at each node, point its <code>next</code> backwards at the previous node. You need to remember the next node before you overwrite the arrow to it.</p>`,
-        { play: `class Node {
-    int value;
-    Node next;
-    Node(int value, Node next) { this.value = value; this.next = next; }
-}
-
+<p>The classic exercise, asked in interviews for sixty years because it tests whether you can hold three references in your head at once. Walk the list; at each node, point its <code>next</code> backwards at the previous node. You need to remember the next node before you overwrite the arrow to it. Predict what the list <code>1 -> 2 -> 3 -> 4 -> 5</code> looks like afterwards, and what happens to the empty list.</p>`,
+        { predict: true, play: `class Node { int value; Node next; Node(int value, Node next) { this.value = value; this.next = next; } }
 public class Main {
     static Node reverse(Node head) {
         Node prev = null, cur = head;
         while (cur != null) {
             Node after = cur.next;     // remember where to go next, before we lose it
             cur.next = prev;           // turn the arrow round
-            prev = cur;                // step both references forward
-            cur = after;
+            prev = cur; cur = after;   // step both references forward
         }
         return prev;                   // the old last node is the new head
     }
-
     static String show(Node head) {
         StringBuilder sb = new StringBuilder();
         for (Node cur = head; cur != null; cur = cur.next) sb.append(cur.value).append(cur.next != null ? " -> " : "");
         return sb.toString();
     }
-
     public static void main(String[] args) {
-        Node head = null;
-        for (int v = 5; v >= 1; v--) head = new Node(v, head);
+        Node head = null; for (int v = 5; v >= 1; v--) head = new Node(v, head);
         System.out.println(show(head));
         head = reverse(head);
         System.out.println(show(head));
         System.out.println(show(reverse(null)) + "(reversing the empty list)");
         System.out.println(show(reverse(new Node(42, null))) + "   (one node)");
     }
-}`, caption: 'O(n) time and O(1) extra space: three references and no second list. Trace it by hand on 1 -> 2 -> 3 once, writing prev, cur and after at every line, before you trust it.' },
+}`, caption: 'It prints <code>1 -> 2 -> 3 -> 4 -> 5</code>, then <code>5 -> 4 -> 3 -> 2 -> 1</code>, then the two edge cases: the empty list prints nothing before its label, and a single node is its own reverse. O(n) time and O(1) extra space: three references and no second list. Trace it by hand on 1 -> 2 -> 3 once, writing prev, cur and after at every line, before you trust it.' },
         `<h2>Array or list?</h2>
 <table class="growth-table"><thead><tr><th>Operation</th><th>Array / ArrayList</th><th>Linked list</th></tr></thead><tbody>
 <tr><td>Get or set index i</td><td>O(1)</td><td>O(n)</td></tr>
@@ -1090,7 +997,7 @@ public class Main {
 </tbody></table>
 <p>The table says the two are mirror images, and in the 1960s the choice between them was a real one. On a modern machine it mostly is not. An array's values sit together in memory, so the processor's cache fetches the next ones before they are asked for; a list's nodes are scattered, and every hop is a wait for memory, which is a hundred times slower than the arithmetic the array needs. Measured, walking a linked list is several times slower than walking an array of the same length, and inserting at the front of an <code>ArrayList</code> of a few thousand values, O(n) though it is, is often faster than inserting at the front of a <code>LinkedList</code>. The author of Java's <code>LinkedList</code> has said publicly that he never uses it.</p>
 <p>So why learn it? Because the linked node is the atom that trees, hash-table chains, graphs' adjacency lists and every other structure that grows and branches are built from, in the lessons to come. The list is the simplest thing you can make from nodes and references, and everything you learn about following <code>next</code> until <code>null</code> you will use again on <code>left</code> and <code>right</code>.</p>`,
-        { play: `import java.util.LinkedList;
+        { predict: true, play: `import java.util.LinkedList;
 import java.util.ArrayList;
 
 public class Main {
@@ -1107,8 +1014,8 @@ public class Main {
         for (int i = 0; i < 5; i++) { a.add(0, i); l.addFirst(i); }   // add at the front: O(n) shifts for one, O(1) for the other
         System.out.println(a + " " + l + "  same contents, different costs");
     }
-}`, caption: 'java.util.LinkedList is doubly linked (each node also points back) with a tail reference, so both ends are O(1): it is Java’s default queue and deque when you need a list interface too. get(i) on it is still a walk.' },
-        { check: "Why is ArrayList usually faster than LinkedList even for inserts at the front?", options: ["Because Java optimises ArrayList specially", "Because its values sit together in memory and the cache fetches them ahead; each list hop is a wait for memory", "It is not: LinkedList is always faster at the front"], answer: 1, why: "The table says O(n) against O(1), but a cache-friendly shift of a few thousand values often beats one cache-missing hop. Measure before choosing LinkedList." },
+}`, caption: 'It prints <code>[Urgent, Ada, Grace, Linus]</code>, then <code>served Urgent, then Ada</code>, then <code>[Grace, Linus]  size 2</code>, and last the two lists holding 4 3 2 1 0 in the same order: adding at the front reverses the order of arrival. java.util.LinkedList is doubly linked (each node also points back) with a tail reference, so both ends are O(1): it is Java’s default queue and deque when you need a list interface too. get(i) on it is still a walk.' },
+        { check: "Why is ArrayList usually faster than LinkedList even for inserts at the front?", options: ["Because Java optimises ArrayList specially", "Because its values sit together in memory and the cache fetches them ahead; each list hop is a wait for memory", "It is not: LinkedList is always faster at the front"], answer: 1, wrong: ["Java gives ArrayList no special treatment here. The difference comes from how the values are laid out in memory, which any array-based structure enjoys.", null, "At the front LinkedList is O(1) against O(n), and for very long lists it can win. But for a few thousand values the array’s layout often beats it, so “always” is wrong; measure."], why: "The table says O(n) against O(1), but a cache-friendly shift of a few thousand values often beats one cache-missing hop. Measure before choosing LinkedList." },
         `<details class="reveal"><summary>Puzzle: a singly linked list of n nodes. What is the cost of (a) removing the last node, (b) removing the last node when a tail reference is kept, (c) checking whether the list has a cycle (some node's next points back to an earlier node)?</summary><p>(a) O(n): you must find the node before the last, and only a walk from the head can. (b) Still O(n): the tail reference finds the last node, but not the one before it, which is what must change; a <em>doubly</em> linked list fixes this. (c) O(n) with O(1) space, by Floyd's tortoise and hare: one reference hops one node at a time, another two at a time; if there is a cycle they meet, if not the hare reaches null.</p></details>`,
         { aside: `<p><b>Common mistakes in this lesson.</b> Following <code>cur.next</code> when <code>cur</code> may be <code>null</code>: a NullPointerException, usually on the empty list or at the last node. Walking to the node you want to remove instead of the node before it. Overwriting <code>cur.next</code> before saving it, in reverse. Forgetting to update <code>size</code>. Treating the empty list as a special case everywhere instead of writing the code so that <code>head == null</code> just works (the <code>addFirst</code> one-liner does). Reaching for <code>LinkedList</code> because the task mentions a list: measure first.</p>` },
         {
@@ -1128,6 +1035,7 @@ public class Main {
               { name: 'get on the empty list', main: '        IntList list = new IntList();\n        try { System.out.println(list.get(0)); } catch (IndexOutOfBoundsException e) { System.out.println(e.getMessage()); }\n        list.addLast(7);\n        System.out.println(list.get(0) + " " + list);', expect: 'Index 0 out of bounds for length 0\n7 [7]' },
               { name: 'a thousand addLast calls', main: '        IntList list = new IntList();\n        for (int v = 0; v < 1000; v++) list.addLast(v);\n        System.out.println(list.size() + " " + list.get(999) + " " + list.get(500));', expect: '1000 999 500' }
             ],
+            followup: 'Add removeLast(). What do you have to walk to, and why is it harder than addLast? Then add a tail reference and see which of the two operations it helps.',
             failTip: 'A NullPointerException in addLast means the empty list was not handled before the walk. Check that size++ happens in both branches of addLast, and that get checks the range before walking.'
           }
         },
@@ -1149,6 +1057,7 @@ public class Main {
               { name: 'reverse the empty list and a single node', main: '        IntList list = new IntList();\n        list.reverse();\n        System.out.println(list + " " + list.size());\n        list.addFirst(42); list.reverse();\n        System.out.println(list + " " + list.size());', expect: '[] 0\n[42] 1' },
               { name: 'reverse twice is the identity', main: '        IntList list = new IntList();\n        for (int v : new int[] {8, 6, 7, 5, 3, 0, 9}) list.addLast(v);\n        list.reverse(); list.reverse();\n        System.out.println(list);', expect: '[8, 6, 7, 5, 3, 0, 9]' }
             ],
+            followup: 'Write insertAt(int index, int x), using the same walk as get. What does it cost at index 0, and at the last index? Which of the two does an ArrayList find cheaper?',
             failTip: 'If the list prints [5] after reverse, the arrows were turned round but head still points at the old first node: set head = prev at the end. If addLast after reverse loops forever, a node still points at itself: check the order of the four lines in the loop.'
           }
         },
@@ -1164,7 +1073,7 @@ public class Main {
               { label: '(e) Add a value at the back. List hops (no tail reference)?', answer: '999', width: '6rem', wrong: [{ match: '1000', msg: 'The walk starts at the head (index 0) and hops to index 999: 999 hops.' }, { match: '0', msg: 'That is the cost with a tail reference. Without one, the last node must be found by walking.' }] },
               { label: '(f) Remove the value at index 500 (you hold no reference into the list). Array shifts, and list hops? Give the sum of the two numbers.', answer: '998', width: '6rem', wrong: [{ match: '1000', msg: 'Array: the 499 values after index 500 shift left. List: walk to the node before index 500, 499 hops. 499 + 499.' }, { match: ['999', '1001'], msg: 'Array: values at indices 501 to 999 shift: 499. List: walk to index 499, the node before: 499 hops.' }] }
             ],
-            hints: ['Array: indexing is free; inserting or removing at index i shifts the values after i. List: reaching index i costs i hops; changing arrows is free once you are there; removing index i needs the node at i − 1.'],
+            hints: ['Array: indexing is free; inserting or removing at index i shifts the values after i. List: reaching index i costs i hops; changing arrows is free once you are there; removing index i needs the node at i − 1.', 'For (f): the array shifts the values at indices 501 to 999 left by one. The list must stand on the node at index 499, so it hops 499 times. Add the two numbers.'],
             solution: `<p>(a) <b>0</b>: arithmetic. (b) <b>700</b> hops. (c) <b>1000</b>: every value shifts right. (d) <b>0</b>. (e) <b>999</b>: from index 0 to index 999. (f) <b>998</b>: the array shifts the 499 values at indices 501–999; the list hops 499 times to reach the node at index 499, whose <code>next</code> is unlinked.</p>`,
             followup: 'Parts (a) and (d) are the two zeros, and they are on opposite sides. Every choice between an array and a list comes down to which zero the program needs more often.'
           }
@@ -1173,7 +1082,7 @@ public class Main {
 <li>A linked list is nodes holding a value and <code>next</code>; <code>head</code> points at the first; <code>null</code> ends it. Every algorithm on it is the walk <code>for (cur = head; cur != null; cur = cur.next)</code>.</li>
 <li>O(1): add or remove at the front, insert or remove after a node in hand, add at the back with a tail. O(n): anything that says "index i" or "find".</li>
 <li>To remove a node you must hold the one before it; to reverse you need three references, prev, cur and after, and must save <code>after</code> before turning the arrow.</li>
-<li>On modern hardware the array's contiguity wins most races; <code>ArrayList</code> is the default and <code>LinkedList</code> the exception, used for queues and deques.</li>
+<li>On modern hardware the array's contiguity wins most races; <code>ArrayList</code> is the default and <code>LinkedList</code> the exception, used for queues and deques. So the answer to the opening question: reach for the list only when the program works at a place it already holds, and for the array whenever it says "the i-th".</li>
 <li>The node-and-reference idea is the atom of trees, hash chains and graphs: this lesson is the first time you follow a reference until <code>null</code>, not the last.</li>
 </ul></div>`
       ]
@@ -1181,17 +1090,17 @@ public class Main {
     /* ================================================================== */
     {
       standards: ['3B-AP-12'],
-      title: 'Stacks and queues', summary: 'Two structures defined by what they refuse to do: the stack, where the last thing in is the first out, and the queue, where the first in is the first out; both in an array, the queue as a ring; what each is for; and the library classes that implement them.',
+      standard: 1, title: 'Stacks and queues', summary: 'Two structures defined by what they refuse to do: the stack, where the last thing in is the first out, and the queue, where the first in is the first out; both in an array, the queue as a ring; what each is for; and the library classes that implement them.',
       blocks: [
         `<p>In 1955 two mathematicians in Munich, Friedrich Bauer and Klaus Samelson, were designing a machine that could work out an algebraic formula typed in the ordinary way, with brackets and with multiplication done before addition. The difficulty is that when the machine reads <code>3 + 4 ×</code> it cannot yet do the plus: it has to put the plus aside, wait for the multiplication, and come back. Their answer was a store they called the <em>Keller</em>, the cellar: things go in at the top, and whatever went in last comes out first. The plus goes into the cellar, the times goes in on top of it, the times comes out and is done, then the plus. They patented the idea in 1957. We call the cellar a stack, and every compiler, every calculator and every running program has one.</p>`,
         { photo: 'sushi-plates-stack', caption: 'A stack you can see, at a conveyor-belt sushi restaurant in Taiwan. Each empty plate goes on top, and the only plate you can take off is the last one put on: the cellar that Bauer and Samelson patented, made of plates.' },
-        `<p>A stack is the first structure in this course that is defined not by how it is stored but by what it <em>refuses</em> to do. You may only add at the top and only remove from the top. Its twin, the queue, refuses differently: add at the back, remove from the front. Those refusals are the point. A structure that can do less is easier to reason about, and can be made faster, because it only has to be good at a few things.</p>
+        `<p>A stack is the first structure in this course that is defined not by how it is stored but by what it <em>refuses</em> to do. You may only add at the top and only remove from the top. Its twin, the queue, refuses differently: add at the back, remove from the front. Those refusals are the point. A structure that can do less is easier to reason about, and can be made faster, because it only has to be good at a few things. So what can you do, and what can you compute, with a structure that allows so little?</p>
 <h2>The stack</h2>
 <div class="stmt"><p><span class="kind">Stack.</span> A collection with four operations: <code>push(x)</code> adds <code>x</code> at the top; <code>pop()</code> removes and returns the top item; <code>peek()</code> returns it without removing it; <code>isEmpty()</code>. The last item pushed is the first popped: <em>LIFO</em>, last in, first out.</p>
 <p><span class="kind">Cost.</span> Every operation is O(1). That is the contract; an implementation that cannot keep it is not a stack worth having.</p></div>
-<p>An array and one integer are enough. The integer, <code>top</code>, is the number of items, which is also the index the next push writes to. Push writes and increments; pop decrements and reads. Nothing is ever shifted. When the array fills, double it, exactly as the growing array of lesson 1 did, and the cost stays O(1) on average.</p>`,
+<p>An array and one integer are enough. The integer, <code>top</code>, is the number of items, which is also the index the next push writes to. Push writes and increments; pop decrements and reads. Nothing is ever shifted. When the array fills, double it, exactly as the growing array of lesson 1 did, and the cost stays O(1) on average. The class below is a whole program, so it runs longer than the other examples. Predict the order in which the six values come back out.</p>`,
         { fig: 'stackqueue', kind: 'stack', caption: 'Eight cells and a top index. Push a few values, pop some, push again: the cells below top are the stack, the cells above it are garbage that nobody reads. Fill it to see what a growing stack would do.' },
-        { play: `import java.util.Arrays;
+        { predict: true, long: true, play: `import java.util.Arrays;
 
 class ArrayStack {
     private int[] cells = new int[4];
@@ -1228,8 +1137,8 @@ public class Main {
         System.out.println();
         try { s.pop(); } catch (IllegalStateException e) { System.out.println("then: " + e.getMessage()); }
     }
-}`, caption: 'The values come out in reverse order: that is the whole behaviour of a stack. Arrays.copyOf makes the bigger array and copies the old one in. Pop does not clear the cell; it just moves top, and the next push overwrites it.' },
-        { check: "push 1, push 2, push 3, pop, push 4, pop. What was popped, in order?", options: ["1 then 2", "3 then 4", "3 then 2"], answer: 1, why: "Last in, first out: after pushing 1 2 3, pop gives 3; after pushing 4, pop gives 4." },
+}`, caption: 'It prints <code>size 6, top 60</code>, then <code>popped: 60 50 40 30 20 10</code>, then the message from popping the empty stack. The values come out in reverse order: that is the whole behaviour of a stack. Arrays.copyOf makes the bigger array and copies the old one in. Pop does not clear the cell; it just moves top, and the next push overwrites it.' },
+        { check: "push 1, push 2, push 3, pop, push 4, pop. What was popped, in order?", options: ["1 then 2", "3 then 4", "3 then 2"], answer: 1, wrong: ["“1 then 2” is what a queue would give: the oldest first. A stack gives back the newest, so the first pop is 3.", null, "3 is right for the first pop, but 4 was pushed before the second pop, so 4 sits on top of 2 and comes off first."], why: "Last in, first out: after pushing 1 2 3, pop gives 3; after pushing 4, pop gives 4." },
         `<h2>What stacks are for</h2>
 <p>Anything that nests, and anything you undo. Brackets nest: an opening bracket is pushed, and a closing bracket must match the most recent opening one, which is exactly the one on top. Undo in an editor is a stack of changes; the most recent is undone first. A web browser's Back button is a stack of pages. And the method calls of a running program nest: a method that calls another must wait for it to finish, so the calls form a stack, and the next lesson is about what happens when a method calls itself.</p>`,
         { play: `import java.util.ArrayDeque;
@@ -1255,8 +1164,8 @@ public class Main {
         for (String t : tests) System.out.println(balanced(t) + "   " + t);
     }
 }`, caption: 'The library’s stack is ArrayDeque, with push, pop, peek and isEmpty. (Java also has a class called Stack, from 1995; its own documentation tells you to use ArrayDeque instead.) The three ways to fail are the three ways brackets go wrong: a closer with nothing open, a closer of the wrong kind, and an opener never closed.' },
-        `<p>Bauer and Samelson's cellar did arithmetic, and so can yours. Write the formula with each operator <em>after</em> its two operands, which is called postfix or reverse Polish notation: <code>3 4 2 * +</code> means 3 + (4 × 2). Then no brackets are needed and one stack evaluates it: push numbers; on an operator, pop two, apply, push the result.</p>`,
-        { play: `import java.util.ArrayDeque;
+        `<p>Bauer and Samelson's cellar did arithmetic, and so can yours. Write the formula with each operator <em>after</em> its two operands, which is called postfix or reverse Polish notation: <code>3 4 2 * +</code> means 3 + (4 × 2). Then no brackets are needed and one stack evaluates it: push numbers; on an operator, pop two, apply, push the result. Predict the four answers before you run the code.</p>`,
+        { predict: true, play: `import java.util.ArrayDeque;
 
 public class Main {
     static int evalPostfix(String expr) {
@@ -1279,13 +1188,13 @@ public class Main {
         System.out.println(evalPostfix("10 2 8 * + 3 -"));     // 10 + 2 * 8 - 3
         System.out.println(evalPostfix("100 5 / 4 /"));        // 100 / 5 / 4
     }
-}`, caption: 'Four formulas, no brackets, one stack. The order of the two pops matters for − and /: the top of the stack is the right-hand operand. Turning ordinary notation into postfix is itself done with a stack (Dijkstra’s shunting-yard algorithm, 1961), which is how a compiler reads 3 + 4 * 2.' },
+}`, caption: 'It prints 11, 14, 23 and 5: 3 + 4 × 2, then (3 + 4) × 2, then 10 + 2 × 8 − 3, then 100 / 5 / 4. Four formulas, no brackets, one stack. The order of the two pops matters for − and /: the top of the stack is the right-hand operand. Turning ordinary notation into postfix is itself done with a stack (Dijkstra’s shunting-yard algorithm, 1961), which is how a compiler reads 3 + 4 * 2.' },
         `<h2>The queue</h2>
 <div class="stmt"><p><span class="kind">Queue.</span> A collection with <code>enqueue(x)</code> (add at the back), <code>dequeue()</code> (remove and return the front), <code>peek()</code> and <code>isEmpty()</code>. The first item in is the first out: <em>FIFO</em>. Java's <code>Queue</code> interface calls them <code>offer</code>, <code>poll</code> and <code>peek</code>.</p>
 <p><span class="kind">Cost.</span> O(1) for every operation. Again, the contract.</p></div>
-<p>A queue in an array is harder than a stack, and the difficulty is instructive. If the front is always cell 0, then dequeue must shift every remaining item left: O(n), which breaks the contract. The fix is to let the front move. Keep two indices, <code>head</code> for the front and <code>tail</code> for the next free cell at the back, and let both walk rightwards. When one reaches the end of the array it wraps round to cell 0, because the cells at the start have been freed by earlier dequeues. The array is used as a <em>ring</em>.</p>`,
+<p>A queue in an array is harder than a stack, and the difficulty is instructive. If the front is always cell 0, then dequeue must shift every remaining item left: O(n), which breaks the contract. The fix is to let the front move. Keep two indices, <code>head</code> for the front and <code>tail</code> for the next free cell at the back, and let both walk rightwards. When one reaches the end of the array it wraps round to cell 0, because the cells at the start have been freed by earlier dequeues. The array is used as a <em>ring</em>. The class below is another whole program; read <code>enqueue</code> and <code>dequeue</code> first, and predict what <code>main</code> prints.</p>`,
         { fig: 'stackqueue', kind: 'queue', caption: 'Enqueue five, dequeue three, enqueue five more: tail wraps round to the cells that head has left behind. The items in order are from head, going round, to tail. Nothing is ever shifted.' },
-        { play: `class RingQueue {
+        { predict: true, long: true, play: `class RingQueue {
     private int[] cells = new int[4];
     private int head = 0, tail = 0, count = 0;
 
@@ -1334,11 +1243,11 @@ public class Main {
         while (!q.isEmpty()) System.out.print(q.dequeue() + " ");
         System.out.println();
     }
-}`, caption: 'The values come out in the order they went in, through two wrap-rounds and one growth. The grow method is the subtle part: it must copy from head, going round, so that the new array holds the queue in order starting at 0.' },
-        { check: "Why does a queue in an array need a ring?", options: ["To save memory", "So that dequeue does not shift every item: head moves instead, and wraps round", "Because arrays cannot be resized"], answer: 1, why: "If the front were always cell 0, dequeue would be O(n). Letting head and tail walk and wrap keeps every operation O(1)." },
+}`, caption: 'It prints <code>[1, 2, 3]  served 1, 2</code> (Java builds the string from left to right, so the queue is printed before the two dequeues happen), then <code>[3, 4, 5]  size 3</code>, then <code>[3, 4, 5, 6, 7]  size 5</code>, and the values come out in the order they went in, <code>3 4 5 6 7</code>, through two wrap-rounds and one growth. The grow method is the subtle part: it must copy from head, going round, so that the new array holds the queue in order starting at 0.' },
+        { check: "Why does a queue in an array need a ring?", options: ["To save memory", "So that dequeue does not shift every item: head moves instead, and wraps round", "Because arrays cannot be resized"], answer: 1, wrong: ["A ring uses the same memory as any array of that size. Its point is time: it avoids the O(n) shift that a dequeue from cell 0 would need.", null, "True, an array cannot be resized, but that is solved by copying into a bigger one, as the stack does. The ring solves a different problem: a dequeue that would shift every item."], why: "If the front were always cell 0, dequeue would be O(n). Letting head and tail walk and wrap keeps every operation O(1)." },
         `<h2>What queues are for</h2>
-<p>Anything served in order of arrival: print jobs, requests to a server, messages between parts of a program, the frames of a video waiting to be shown. And one algorithm this course will meet twice: breadth-first search, which explores a graph level by level by keeping the frontier in a queue (lesson 11). The library's queue is <code>ArrayDeque</code> again, used from the other end, or <code>LinkedList</code>, which also implements <code>Queue</code>.</p>`,
-        { play: `import java.util.ArrayDeque;
+<p>Anything served in order of arrival: print jobs, requests to a server, messages between parts of a program, the frames of a video waiting to be shown. And one algorithm this course will meet twice: breadth-first search, which explores a graph level by level by keeping the frontier in a queue (lesson 11). The library's queue is <code>ArrayDeque</code> again, used from the other end, or <code>LinkedList</code>, which also implements <code>Queue</code>. Predict who is left in a circle of seven children when every third pass puts the holder out.</p>`,
+        { predict: true, play: `import java.util.ArrayDeque;
 import java.util.Queue;
 
 public class Main {
@@ -1358,8 +1267,8 @@ public class Main {
         both.addLast("b"); both.addLast("c"); both.addFirst("a");
         System.out.println(both + " " + both.pollFirst() + " " + both.pollLast() + " " + both);
     }
-}`, caption: 'A queue models a circle: moving the front to the back is one pass. ArrayDeque is a double-ended queue, a deque: addFirst/addLast and pollFirst/pollLast, all O(1), in one ring buffer. Used from one end it is a stack, from the other a queue.' },
-        { check: "Which Java class should you use for a stack?", options: ["<code>java.util.Stack</code>", "<code>ArrayDeque</code>, with push, pop and peek", "<code>ArrayList</code>"], answer: 1, why: "Stack is a 1995 class with historical slowness; its own documentation says to use ArrayDeque." },
+}`, caption: 'It prints <code>out: 3  out: 6  out: 2  out: 7  out: 5  out: 1</code>, then <code>left: 4</code>, then <code>[a, b, c] a c [b]</code>. A queue models a circle: moving the front to the back is one pass. ArrayDeque is a double-ended queue, a deque: addFirst/addLast and pollFirst/pollLast, all O(1), in one ring buffer. Used from one end it is a stack, from the other a queue.' },
+        { check: "Which Java class should you use for a stack?", options: ["<code>java.util.Stack</code>", "<code>ArrayDeque</code>, with push, pop and peek", "<code>ArrayList</code>"], answer: 1, wrong: ["The name is right, but Stack is a legacy class from 1995, built on Vector, whose methods are synchronised and slower than they need to be. Its own documentation points to ArrayDeque.", null, "An ArrayList can be used as a stack by adding and removing at the end, but it has no push, pop or peek, and nothing stops you using the middle. ArrayDeque offers exactly the stack’s operations."], why: "Stack is a 1995 class with historical slowness; its own documentation says to use ArrayDeque." },
         `<h2>Choosing</h2>
 <table class="growth-table"><thead><tr><th></th><th>Stack</th><th>Queue</th></tr></thead><tbody>
 <tr><td>Order out</td><td>reverse of order in (LIFO)</td><td>same as order in (FIFO)</td></tr>
@@ -1387,6 +1296,7 @@ public class Main {
               { name: 'empty stack throws', main: '        IntStack s = new IntStack();\n        try { s.pop(); } catch (IllegalStateException e) { System.out.println("pop: " + e.getMessage()); }\n        try { s.peek(); } catch (IllegalStateException e) { System.out.println("peek: " + e.getMessage()); }\n        s.push(1); s.pop();\n        try { s.pop(); } catch (IllegalStateException e) { System.out.println("again: " + e.getMessage()); }', expect: 'pop: empty stack\npeek: empty stack\nagain: empty stack' },
               { name: 'interleaved pushes and pops', main: '        IntStack s = new IntStack();\n        s.push(1); s.push(2); int a = s.pop(); s.push(3); s.push(4); int b = s.pop(); int c = s.pop(); s.push(5);\n        System.out.println(a + " " + b + " " + c + " " + s.pop() + " " + s.pop() + " " + s.isEmpty());', expect: '2 4 3 5 1 true' }
             ],
+            followup: 'Add a method min() that returns the smallest value on the stack in O(1) time, however many values there are. A second stack kept beside the first can help.',
             failTip: 'ArrayIndexOutOfBounds on the third push means the array did not grow. If peek returns the wrong value, it is reading cells[top] instead of cells[top − 1].'
           }
         },
@@ -1409,6 +1319,7 @@ public class Main {
               { call: 'firstError("") + " " + firstError("no brackets here")', expect: '-1 -1', name: 'nothing to check' },
               { call: 'firstError("(()")', expect: '0', name: 'two open, one closed: the first stays open' }
             ],
+            followup: 'Make the method also say which pair clashed, for example "expected ) but found ]". What does the stack have to hold to make that possible?',
             failTip: 'For "((a)" the answer is 0, not 1: the inner pair closes, the outer bracket at index 0 is the one left open. For "(()" also 0. The unclosed opener is at the bottom of the stack.'
           }
         },
@@ -1429,6 +1340,7 @@ public class Main {
               { name: 'a long run of enqueue and dequeue in step', main: '        IntQueue q = new IntQueue();\n        int sum = 0;\n        for (int i = 0; i < 500; i++) { q.enqueue(i); q.enqueue(i); sum += q.dequeue(); }\n        System.out.println(q.size() + " " + sum + " " + q.peek());', expect: '500 62250 250' },
               { name: 'empty queue throws', main: '        IntQueue q = new IntQueue();\n        try { q.dequeue(); } catch (IllegalStateException e) { System.out.println(e.getMessage()); }\n        try { q.peek(); } catch (IllegalStateException e) { System.out.println(e.getMessage()); }', expect: 'empty queue\nempty queue' }
             ],
+            followup: 'Add a method get(int i) that returns the i-th item of the queue (0 is the front) without removing anything, using the same index arithmetic as grow. What does it cost, and why is it not part of the queue contract?',
             failTip: 'If the "grows while wrapped" test prints 4 5 2 3 or similar, grow copied cells 0..n−1 instead of starting from head. If values repeat or vanish, a % is missing on head or tail.'
           }
         },
@@ -1444,7 +1356,7 @@ public class Main {
               { label: '(e) In (c), what is head, and what is the queue’s size? Give both numbers separated by a space.', answer: '2 3', width: '8rem', wrong: [{ match: '2 2', msg: 'Five enqueues and two dequeues leave three items: 30, 40, 50.' }] },
               { label: '(f) A queue is built from two stacks as in the puzzle. Enqueue 1, 2, 3, then dequeue once, then enqueue 4, then dequeue everything. What comes out, in order? (four numbers)', answer: '1 2 3 4', width: '10rem', wrong: [{ match: ['3 2 1 4', '1 4 2 3', '1 4 3 2'], msg: 'Stack B holds 3 2 1 (top 1) after the first transfer; 4 waits in A until B is empty. Out: 1, 2, 3, then 4.' }] }
             ],
-            hints: ['Draw the four cells and move head and tail with every operation; tail = (tail + 1) % 4. For (f), items move from A to B only when B is empty, and the move reverses them.'],
+            hints: ['Draw the four cells and move head and tail with every operation; tail = (tail + 1) % 4. For (f), items move from A to B only when B is empty, and the move reverses them.', 'For (c) to (e): tail moves once for every enqueue, head once for every dequeue, both modulo 4, and the size is the enqueues minus the dequeues.'],
             solution: `<p>(a) <b>3 4 2</b>. (b) <b>1</b>. (c) tail moves 0 → 1 → 2 → 3 → 0 → 1: <b>1</b>. (d) 50 was written at tail = 0: cell <b>0</b>. (e) head moved twice: <b>2</b>; size 5 − 2 = <b>3</b> (30 in cell 2, 40 in cell 3, 50 in cell 0). (f) <b>1 2 3 4</b>: the two-stack queue is still a queue; that is the point of it.</p>`,
             followup: 'If (c) to (e) felt mechanical, good: that mechanical feeling is what O(1) looks like from the inside. No shifting, no searching, just two indices and a remainder.'
           }
@@ -1454,22 +1366,22 @@ public class Main {
 <li>A queue is enqueue at the back, dequeue at the front: first in, first out. In an array it must be a ring, with head and tail that wrap with <code>%</code>, and a grow that copies in queue order.</li>
 <li>Stacks: brackets, undo, postfix arithmetic, the call stack. Queues: anything served in arrival order, and breadth-first search.</li>
 <li>In Java, <code>ArrayDeque</code> is both (push/pop from one end, offer/poll from the other), and a deque besides. <code>java.util.Stack</code> is a historical mistake.</li>
-<li>A structure that refuses to do things is easier to make fast and easier to reason about. The next lesson is about the stack you never see: the one that holds every method call.</li>
+<li>A structure that refuses to do things is easier to make fast and easier to reason about, and still lets you match brackets, evaluate a formula, undo, and serve requests in order: that answers the opening question. The next lesson is about the stack you never see: the one that holds every method call.</li>
 </ul></div>`
       ]
     },
     /* ================================================================== */
     {
       standards: ['3B-AP-13'],
-      title: 'Recursion', summary: 'A method that calls itself; the base case and the smaller problem; the call stack that makes it work and the overflow that happens without it; recursion against loops; the exponential trap in fib and the memo that fixes it; and the Tower of Hanoi.',
+      standard: 1, title: 'Recursion', summary: 'A method that calls itself; the base case and the smaller problem; the call stack that makes it work and the overflow that happens without it; recursion against loops; the exponential trap in fib and the memo that fixes it; and the Tower of Hanoi.',
       blocks: [
         `<p>In 1883 a French mathematician, Édouard Lucas, put a puzzle on sale under the name "N. Claus de Siam", an anagram of Lucas d'Amiens, his home town. Three pegs; eight discs of different sizes stacked on one peg, largest at the bottom; move the whole tower to another peg, one disc at a time, never putting a larger disc on a smaller one. The box came with a legend: in a temple in India, priests were moving a tower of sixty-four golden discs by the same rules, and when they finished, the world would end.</p>`,
         { photo: ['hanoi-1884', 'hanoi-bremen'], caption: 'Lucas\u2019s puzzle as a magazine drew it in 1884: the tower of eight discs on peg A, the discs partway through their journey, and the tower rebuilt on peg B. Beside it, a wooden copy on a stall in Bremen, Germany, caught in the middle of a game: no disc sits on a smaller one.' },
         `<p>The puzzle is hard to solve by staring at it and easy to solve by refusing to. To move eight discs, you need the largest disc moved to the target peg, and for that the seven above it must be out of the way on the spare peg. So: move seven discs to the spare peg, move the big one, move the seven discs on top of it. How do you move seven? The same way. The legend's priests, by the way, need 2⁶⁴ − 1 moves; at one a second that is about 585 billion years, so the world is safe.</p>
 <p>That way of thinking is called <em>recursion</em>: solve a problem by solving a smaller copy of it, and stop when the copy is small enough to be trivial. You met it in lesson 4, where merge sort sorted an array by sorting its halves. This lesson is about recursion itself: how to write it, how the machine runs it, when it is the right tool and when it is a trap.</p>
 <h2>A method that calls itself</h2>
-<p>The sum of an array from index <code>i</code> onwards is <code>a[i]</code> plus the sum from <code>i + 1</code> onwards. The sum from past the end is 0. That is a complete definition, and it is also a complete program.</p>`,
-        { play: `public class Main {
+<p>The sum of an array from index <code>i</code> onwards is <code>a[i]</code> plus the sum from <code>i + 1</code> onwards. The sum from past the end is 0. That is a complete definition, and it is also a complete program. Predict what the three methods below print before you run them.</p>`,
+        { predict: true, play: `public class Main {
     static int sum(int[] a, int i) {
         if (i == a.length) return 0;            // base case: nothing left
         return a[i] + sum(a, i + 1);            // one item, plus the sum of the rest
@@ -1492,8 +1404,8 @@ public class Main {
         System.out.println(factorial(5) + " " + factorial(20));
         System.out.println(isPalindrome("racecar") + " " + isPalindrome("level") + " " + isPalindrome("python") + " " + isPalindrome(""));
     }
-}`, caption: 'Three recursive methods, each with the same shape: a base case that answers directly, and a recursive case that does one step and hands the rest to a smaller call. factorial(20) is the largest that fits in a long; 21! overflows.' },
-        { check: "What are the two things every recursive method needs?", options: ["A loop and a counter", "A base case, and a recursive case that moves towards it", "Two parameters"], answer: 1, why: "Without a reachable base case the calls never stop: StackOverflowError." },
+}`, caption: 'It prints 31 (the sum of the eight numbers), then <code>120 2432902008176640000</code>, then <code>true true false true</code>: the empty string reads the same both ways. Three recursive methods, each with the same shape: a base case that answers directly, and a recursive case that does one step and hands the rest to a smaller call. factorial(20) is the largest that fits in a long; 21! overflows.' },
+        { check: "What are the two things every recursive method needs?", options: ["A loop and a counter", "A base case, and a recursive case that moves towards it", "Two parameters"], answer: 1, wrong: ["Recursion is an alternative to a loop, not an addition to it: a recursive method repeats by calling itself, with no loop and no counter needed.", null, "The number of parameters does not matter: sum has two, factorial has one. What matters is a case that stops the calls, and a call on a smaller input."], why: "Without a reachable base case the calls never stop: StackOverflowError." },
         `<div class="stmt"><p><span class="kind">Recursion.</span> A method that calls itself on a smaller input. It needs a <em>base case</em>, an input small enough to answer without a call, and a <em>recursive case</em> that makes progress towards it: every call must bring the input closer to the base case.</p>
 <p><span class="kind">The leap of faith.</span> When writing the recursive case, assume the recursive call works, and use its answer. Do not try to trace it in your head; that is the machine's job. Check only that the base case is right and that each call gets smaller.</p></div>
 <p>The figure shows what the machine does with <code>sum</code>. Each call gets a frame on the call stack (lesson 6), holding its own <code>i</code> and the place to continue when the call below it returns. Frames pile up on the way down to the base case and unwind on the way back, each adding its item to the answer it received.</p>`,
@@ -1511,8 +1423,8 @@ public class Main {
         countDown(3);
     }
 }`, expectError: true, caption: 'The site’s interpreter stops after a few hundred frames (the exact number depends on the browser); a real JVM manages about ten thousand before the same error, more if asked. Either way the fix is the same: a base case that is reached. Here, if (n == 0) return 0; at the top.' },
-        `<p>That limit matters for a design decision. A recursion that goes <code>n</code> deep, like <code>sum</code> above, is fine for an array of a hundred, already too deep for the interpreter on this site at a thousand (a real JVM copes with that), and fatal for an array of a million. A loop has no such limit. The rule of thumb: recursion is for problems whose depth is small, which means problems that <em>halve</em> rather than problems that <em>decrement</em>. Binary search and merge sort go log n deep; summing an array one element at a time goes n deep, and should be a loop.</p>`,
-        { play: `public class Main {
+        `<p>That limit matters for a design decision. A recursion that goes <code>n</code> deep, like <code>sum</code> above, is fine for an array of a hundred, already too deep for the interpreter on this site at a thousand (a real JVM copes with that), and fatal for an array of a million. A loop has no such limit. The rule of thumb: recursion is for problems whose depth is small, which means problems that <em>halve</em> rather than problems that <em>decrement</em>. Binary search and merge sort go log n deep; summing an array one element at a time goes n deep, and should be a loop. Predict where the code below finds 123456 in a sorted array whose cells hold 0, 2, 4, …, and what it returns for 7.</p>`,
+        { predict: true, play: `public class Main {
     // the binary search of lesson 2, written as it is usually thought: look in the half that can contain it
     static int search(int[] a, int target, int lo, int hi) {
         if (lo > hi) return -1;                          // empty range: not here
@@ -1530,22 +1442,19 @@ public class Main {
         System.out.println(search(sorted, 123456, 0, sorted.length - 1) + " " + search(sorted, 7, 0, sorted.length - 1));
         System.out.println(sumLoop(sorted));           // a million items: a loop, not a recursion
     }
-}`, caption: 'A million sorted values, found in about 20 recursive calls: halving means the stack never gets deep. The sum of a million values is a loop, because the recursive sum would need a million frames.' },
-        { check: "Which problem should be written recursively?", options: ["Summing a million-element array", "Binary search: it halves, so the stack stays log n deep", "Counting the characters in a string"], answer: 1, why: "Recursion that decrements goes n deep and risks the stack; recursion that halves goes log n deep and is the natural form." },
+}`, caption: 'It prints <code>61728 -1</code> (the values are twice their indexes, so 123456 is at index 61728, and 7 is odd, so it is absent) and then 999999000000, the sum of the even numbers below two million. A million sorted values, found in about 20 recursive calls: halving means the stack never gets deep. The sum of a million values is a loop, because the recursive sum would need a million frames.' },
+        { check: "Which problem should be written recursively?", options: ["Summing a million-element array", "Binary search: it halves, so the stack stays log n deep", "Counting the characters in a string"], answer: 1, wrong: ["Summing one element at a time recurses a million frames deep, and the call stack runs out long before that. A loop does the job with no depth at all.", null, "Counting characters is a walk along n things, like summing: recursing one character at a time goes n deep for no gain. A loop (or length()) does it."], why: "Recursion that decrements goes n deep and risks the stack; recursion that halves goes log n deep and is the natural form." },
         `<h2>The exponential trap</h2>
-<p>The Fibonacci numbers are defined recursively: each is the sum of the two before, starting 0, 1. Written straight from the definition, the method is three lines, correct, and catastrophically slow. The figure shows why: <code>fib(5)</code> calls <code>fib(4)</code> and <code>fib(3)</code>; <code>fib(4)</code> calls <code>fib(3)</code> again; the same small problems are solved over and over, and the number of calls roughly doubles with each increase in <code>n</code>.</p>`,
+<p>The Fibonacci numbers are defined recursively: each is the sum of the two before, starting 0, 1. Written straight from the definition, the method is three lines, correct, and catastrophically slow. The figure shows why: <code>fib(5)</code> calls <code>fib(4)</code> and <code>fib(3)</code>; <code>fib(4)</code> calls <code>fib(3)</code> again; the same small problems are solved over and over, and the number of calls roughly doubles with each increase in <code>n</code>. Before you run the code below, predict how many calls <code>fib(25)</code> makes: hundreds, thousands, or hundreds of thousands?</p>`,
         { fig: 'callstack', fn: 'fib', n: 5, caption: 'fib(5): fifteen calls for a five-line answer, and fib(2) is computed three times. Set n to 7 and play it through: 41 calls. Every +1 on n multiplies the work by about 1.6.' },
-        { play: `public class Main {
+        { predict: true, play: `public class Main {
     static long calls;
-
     static long fib(int n) {
         calls++;
         if (n < 2) return n;
         return fib(n - 1) + fib(n - 2);
     }
-
     static long[] memo = new long[91];           // memo[n] = fib(n) once known; 0 means not yet (fib(0) is 0 anyway)
-
     static long fibMemo(int n) {
         calls++;
         if (n < 2) return n;
@@ -1553,7 +1462,6 @@ public class Main {
         memo[n] = fibMemo(n - 1) + fibMemo(n - 2);
         return memo[n];
     }
-
     public static void main(String[] args) {
         for (int n : new int[] {10, 15, 20, 25}) {
             calls = 0; long v = fib(n);
@@ -1562,12 +1470,12 @@ public class Main {
         calls = 0;
         System.out.println("fibMemo(90) = " + fibMemo(90) + "   " + calls + " calls");
     }
-}`, caption: 'Five more on n, about eleven times the calls: fib(25) takes a quarter of a million. The memoised version remembers every answer and makes 179 calls for fib(90), about two per n. Same definition, same recursion; the only change is that no sub-problem is solved twice.' },
-        { check: "Plain fib(30) makes about 2.7 million calls. With a memo, about how many?", options: ["About 60", "About 30,000", "Still 2.7 million"], answer: 0, why: "Each n from 2 to 30 is computed once, with two calls each: 1 + 2 × 29 = 59. The cost drops to the number of distinct sub-problems." },
+}`, caption: 'It prints 177, 1,973, 21,891 and 242,785 calls for n = 10, 15, 20 and 25, and then <code>fibMemo(90) = 2880067194370816120</code> with 179 calls. Five more on n, about eleven times the calls: fib(25) takes a quarter of a million. The memoised version remembers every answer and makes 179 calls for fib(90), about two per n. Same definition, same recursion; the only change is that no sub-problem is solved twice.' },
+        { check: "Plain fib(30) makes about 2.7 million calls. With a memo, about how many?", options: ["About 60", "About 30,000", "Still 2.7 million"], answer: 0, wrong: [null, "The memo does far better than that: it cuts the work to one computation for each value of n, about two calls each, so about 60 calls, not thousands.", "A memo does change the work: once fib(k) is stored, asking for it again is a lookup and not a fresh pair of calls. The tree of repeated calls never grows."], why: "Each n from 2 to 30 is computed once, with two calls each: 1 + 2 × 29 = 59. The cost drops to the number of distinct sub-problems." },
         `<div class="stmt"><p><span class="kind">Memoisation.</span> If a recursion solves the same sub-problem more than once, store each answer the first time and look it up after. The cost drops from the number of calls to the number of <em>distinct</em> sub-problems. This is the first step towards dynamic programming, which a later course treats properly.</p></div>
 <h2>The Tower of Hanoi</h2>
-<p>Lucas's puzzle is the recursion that cannot be written any other way without a stack of your own. To move <code>n</code> discs from peg A to peg C using B as the spare: move <code>n − 1</code> discs from A to B (using C as the spare), move the last disc from A to C, move the <code>n − 1</code> discs from B to C (using A as the spare). The base case is zero discs: do nothing.</p>`,
-        { play: `public class Main {
+<p>Lucas's puzzle is the recursion that cannot be written any other way without a stack of your own. To move <code>n</code> discs from peg A to peg C using B as the spare: move <code>n − 1</code> discs from A to B (using C as the spare), move the last disc from A to C, move the <code>n − 1</code> discs from B to C (using A as the spare). The base case is zero discs: do nothing. Predict how many moves three discs take, and how many eight take.</p>`,
+        { predict: true, play: `public class Main {
     static long moves;
     static boolean show = true;
 
@@ -1586,7 +1494,7 @@ public class Main {
         for (int n : new int[] {8, 10, 16, 20}) { moves = 0; hanoi(n, 'A', 'C', 'B'); System.out.println(n + " discs: " + moves + " moves = 2^" + n + " - 1"); }
         System.out.println("64 discs: 18446744073709551615 moves, which a long cannot even hold");
     }
-}`, caption: 'Seven moves for three discs, printed; 2ⁿ − 1 in general, and the method makes that many moves because it has to: there is no shorter solution. Twenty discs is a million moves, which already takes the interpreter a moment; thirty would be a billion. The count obeys T(n) = 2T(n − 1) + 1, which solves to 2ⁿ − 1.' },
+}`, caption: 'It prints the seven moves for three discs, then <code>3 discs: 7 moves</code>, then 255, 1023, 65535 and 1048575 moves for 8, 10, 16 and 20 discs (the last line is typed text, not computed). Seven moves for three discs, printed; 2ⁿ − 1 in general, and the method makes that many moves because it has to: there is no shorter solution. Twenty discs is a million moves, which already takes the interpreter a moment; thirty would be a billion. The count obeys T(n) = 2T(n − 1) + 1, which solves to 2ⁿ − 1.' },
         `<h2>Recursion or a loop?</h2>
 <table class="growth-table"><thead><tr><th>Shape of the problem</th><th>Write it as</th><th>Why</th></tr></thead><tbody>
 <tr><td>Walk along n things once (sum, find, count)</td><td>a loop</td><td>recursion goes n deep for no gain</td></tr>
@@ -1614,6 +1522,7 @@ public class Main {
               { call: 'power(10, 18)', expect: '1000000000000000000', name: '10^18' },
               { call: 'power(1, 1000000)', expect: '1', name: 'a million: fine for halving, fatal for decrementing' }
             ],
+            followup: 'Use power to print 2 to the power n for n from 0 to 62 and check each against 1L << n. Then call power(2, 63) and explain the answer you get.',
             failTip: 'If the last test overflows the stack, the odd case is being used for every step (exp − 1 each time); check that the even branch halves. If 2^62 is wrong, the multiplication is happening in int: base is a long.'
           }
         },
@@ -1631,6 +1540,7 @@ public class Main {
               { name: 'other peg names', main: '        int m = hanoi(2, "left", "right", "middle");\n        System.out.println(m);', expect: 'disc 1: left -> middle\ndisc 2: left -> right\ndisc 1: middle -> right\n3' },
               { name: 'zero discs', main: '        System.out.println(hanoi(0, "A", "C", "B"));', expect: '0' }
             ],
+            followup: 'Change hanoi to count the moves without printing them, and tabulate the counts for 1 to 30 discs. How long would 40 discs take at one move a second?',
             failTip: 'For two discs the first move is disc 1 to the SPARE peg (B), not to C: the first recursive call passes via as its target. If the count is wrong, make sure both recursive results are added, plus 1.'
           }
         },
@@ -1651,6 +1561,7 @@ public class Main {
               { call: 'paths(18, 18)', expect: '2333606220', name: '18 by 18: 2.3 billion routes, needs the memo and a long' },
               { call: 'paths(19, 19)', expect: '9075135300', name: '19 by 19' }
             ],
+            followup: 'Put a rock on the grid: add a boolean[][] blocked, and return 0 for any route that steps on it. What happens to the memo’s rule that 0 means “not yet computed”?',
             failTip: 'If paths(18, 18) times out, the memo is not being read before recursing, or not being written. If the large answers are negative or wrong, the memo is an int array.'
           }
         },
@@ -1666,7 +1577,7 @@ public class Main {
               { label: '(e) hanoi(12): how many moves, and how deep, counting only the frames for n ≥ 1 (the n = 0 call returns at once)?', answer: '4095 12', width: '8rem', wrong: [{ match: '4096 12', msg: '2¹² − 1 = 4095.' }, { match: '4095 13', msg: 'Frames for n = 12 down to 1: twelve of them.' }] },
               { label: '(f) power(2, 1000) from this lesson’s exercise, by halving: about how deep? (Choose the nearest: 10, 20, 500, 1000)', answer: '20', width: '6rem', wrong: [{ match: '1000', msg: 'That is the decrementing version. Halving takes 10 even steps, each possibly preceded by an odd step: at most about 2 log₂ 1000 ≈ 20.' }, { match: '10', msg: 'Close: log₂ 1000 ≈ 10 even steps, but odd exponents add a step each; the bound is about 20.' }] }
             ],
-            hints: ['Calls count every entry; depth counts the longest chain of unfinished calls. For fib the chain is the leftmost path; the count follows calls(n) = 1 + calls(n − 1) + calls(n − 2).'],
+            hints: ['Calls count every entry; depth counts the longest chain of unfinished calls. For fib the chain is the leftmost path; the count follows calls(n) = 1 + calls(n − 1) + calls(n − 2).', 'For (d): the first call is fibMemo(40) itself; each value from 2 to 40 is computed once, and each computation makes two calls. For (e): the stack holds one frame for each disc size from 12 down to 1.'],
             solution: `<p>(a) <b>101 101</b>: indices 0 to 100, all on the stack at once at the bottom. (b) <b>177</b>. (c) <b>10</b>. (d) <b>79</b>: the first call, then two calls for each of the 39 values computed. (e) <b>4095 12</b>. (f) <b>20</b>: 1000 in binary has 10 bits, and each bit costs at most two calls.</p>`,
             followup: 'Parts (b) and (d) are the whole argument for memoisation in two numbers: 177 against 79 at n = 10, and at n = 40 it is 331 million against 79.'
           }
@@ -1676,7 +1587,7 @@ public class Main {
 <li>Each call is a frame on the call stack. Depth costs memory, and a missing or unreachable base case is a StackOverflowError.</li>
 <li>Halving problems (search, sorting) recurse log n deep and should be recursive. Walking n things recurses n deep and should be a loop.</li>
 <li>Repeated sub-problems make a recursion exponential; a memo makes it linear. fib(25): 243 thousand calls plain, 49 with a memo.</li>
-<li>Hanoi takes 2ⁿ − 1 moves and no clever idea can reduce that; branching recursions are where loops need a stack of their own.</li>
+<li>Hanoi takes 2ⁿ − 1 moves and no clever idea can reduce that; branching recursions are where loops need a stack of their own. And it answers the story's question: to move seven discs, move six, move the big one, move six again.</li>
 </ul></div>`
       ]
     }
