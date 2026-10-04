@@ -664,6 +664,35 @@ html.classroom .out-text, html.classroom .term-input, html.classroom .nano { fon
 .bit .bit-w { font-family: var(--sans); font-size: 0.75rem; color: var(--ink-3); } .bit .bit-v { font-family: var(--mono); font-size: 1.3rem; font-weight: 700; }
 .bit.on { background: var(--accent); border-color: var(--accent); } .bit.on .bit-w, .bit.on .bit-v { color: var(--accent-ink); }
 .bits-out { font-family: var(--mono); font-size: 0.95rem; margin: 0.6rem 0 0.2rem; }
+/* SC 099 figures: codes, pixels, colour, sampling, gates, adder, packets, passwords, robot */
+.codes-tbl code { font-family: var(--mono); }
+.px-fig { display: grid; grid-template-columns: auto 1fr; gap: 1.2rem; align-items: start; }
+.px-grid { display: grid; grid-template-columns: repeat(8, 2rem); gap: 2px; background: var(--rule); padding: 2px; width: max-content; }
+.px-cell { width: 2rem; height: 2rem; border: 0; padding: 0; background: var(--paper); cursor: pointer; }
+.px-cell.on { background: var(--ink); } .px-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.px-rows { font-family: var(--mono); font-size: 0.85rem; padding-top: 2px; }
+.px-row { height: calc(2rem + 2px); display: flex; align-items: center; gap: 0.2rem; } .px-row span { color: var(--ink-3); }
+.sw-fig { display: grid; grid-template-columns: 1fr 9rem; gap: 1rem; align-items: stretch; }
+.sw-chip { border: 1px solid var(--rule); border-radius: 8px; min-height: 8rem; }
+.sw-row { display: grid; grid-template-columns: 4.5rem 1fr; gap: 0.6rem; align-items: center; margin-bottom: 0.4rem; font-family: var(--sans); } .sw-row input { accent-color: var(--accent); width: 100%; }
+.gate-fig { display: grid; grid-template-columns: 1fr 12rem; gap: 1rem; align-items: center; } .gate-fig .fill { margin: 0; }
+.gate-tbl tr.hl td { background: var(--accent-soft); font-weight: 700; }
+.gate-in { cursor: pointer; } .gate-in:focus-visible rect { stroke: var(--accent); stroke-width: 3; }
+.adder { font-family: var(--sans); }
+.adder-row { display: flex; gap: 0.35rem; align-items: center; margin-bottom: 0.3rem; }
+.adder-k { min-width: 3.5rem; color: var(--ink-3); font-size: 0.85rem; } .adder-k:last-child { font-family: var(--mono); color: var(--ink-2); min-width: 4.5rem; }
+.adder .bit, .adder-c, .adder-s { box-sizing: border-box; width: 3.2rem; min-width: 3.2rem; }
+.adder-c, .adder-s { min-width: 3.2rem; text-align: center; font-family: var(--mono); font-size: 1.1rem; padding: 0.2rem 0; border-radius: 6px; }
+.adder-c.on { background: var(--accent-soft); font-weight: 700; } .adder-s { border: 1px solid var(--rule); } .adder-s.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.adder-sum { margin-top: 0.4rem; padding-top: 0.4rem; border-top: 2px solid var(--ink-2); }
+.pw-kinds { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; margin: 0.4rem 0; font-family: var(--sans); font-size: 0.92rem; } .pw-kind input { accent-color: var(--accent); }
+.pw-out { font-family: var(--sans); font-size: 1rem; margin: 0.6rem 0; }
+.rb-fig { display: grid; grid-template-columns: auto 1fr; gap: 1.2rem; align-items: start; }
+.rb-board { display: grid; grid-template-columns: repeat(5, 3rem); gap: 2px; background: var(--rule); padding: 2px; width: max-content; }
+.rb-cell { width: 3rem; height: 3rem; background: var(--paper); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; } .rb-cell.wall { background: var(--ink-3); }
+.rb-bot { color: var(--accent); } .rb-goal { color: var(--k-warn); }
+.rb-prog { margin: 0.2rem 0 0; padding-left: 1.6rem; font-family: var(--sans); font-size: 0.9rem; columns: 2; } .rb-prog li.now { font-weight: 700; color: var(--accent); }
+@media (max-width: 40rem) { .px-fig, .sw-fig, .gate-fig, .rb-fig { grid-template-columns: 1fr; } .px-grid { grid-template-columns: repeat(8, 1.8rem); } .px-cell { width: 1.8rem; height: 1.8rem; } .px-row { height: calc(1.8rem + 2px); } }
 /* nano, inside the terminal */
 .nano { display: flex; flex-direction: column; border-top: 1px solid var(--t-rule); font-size: 0.86rem; }
 .nano-top { display: flex; gap: 1rem; background: var(--t-fg); color: var(--t-bg); padding: 0.15rem 0.95rem; font-weight: 600; white-space: pre; }
@@ -1404,7 +1433,7 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
   <table class="g-table">
     <thead><tr><th>Course</th><th>Who it is for</th><th>What students do</th></tr></thead>
     <tbody>
-      <tr><td><b>SC 099 What Is a Computer?</b><br><span class="g-muted">4 lessons</span></td><td>Grades 6–12. Start here, before any coding.</td><td>The parts of a computer and what each does; the CPU's fetch-decode-execute cycle; memory against storage; bits, bytes and binary; what the operating system, a compiler and an interpreter do. No code; interactive figures and short graded exercises.</td></tr>
+      <tr><td><b>SC 099 What Is a Computer?</b><br><span class="g-muted">11 lessons</span></td><td>Grades 6–12. Start here, before any coding.</td><td>The parts of a computer and what each does; the CPU's fetch-decode-execute cycle; memory against storage; bits, bytes and binary; what the operating system, a compiler and an interpreter do; how text, pictures and sound become numbers; logic gates and an adder; networks, packets and the web; passwords, phishing and encryption; what an algorithm is. Two checkpoint lessons. Almost no code (a few lines of Python to read at the end); interactive figures and short graded exercises.</td></tr>
       <tr><td><b>SC 100 From Scratch to Python</b><br><span class="g-muted">9 lessons so far</span></td><td>Grades 5–8, after Scratch. For a class moving from blocks to text.</td><td>See every block they know beside the Python line that does the same; make the sprite a turtle; say, ask, variables, repeat and forever, if, lists and functions; build a text adventure, turtle art and word games, all with short programs that draw and talk.</td></tr>
       <tr><td><b>SC 101 Introduction to Python</b><br><span class="g-muted">13 lessons</span></td><td>Grades 8–12. No experience needed. Start here.</td><td>Write programs that decide, repeat and keep lists; find and fix bugs; run a random simulation; build a working cipher.</td></tr>
       <tr><td><b>SC 102 Introduction to Lisp</b><br><span class="g-muted">11 lessons</span></td><td>Grades 11–12, or a strong 10th grader, after Python.</td><td>Think in expressions and recursion, watch a language evaluate code step by step, and build a program that differentiates algebra.</td></tr>

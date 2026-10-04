@@ -1,0 +1,16 @@
+{
+  "id": "screen-pixels",
+  "file": "screen-pixels.jpg",
+  "title": "A phone screen under a microscope",
+  "alt": "A phone screen magnified about two hundred times: a grid of tiny glowing rectangles on black, in columns. Thin green bars alternate with squarish orange-red blocks and taller blue blocks, so each colour of light comes from its own small spot.",
+  "author": "Matthew Rollings at English Wikipedia",
+  "license": "CC BY 3.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Nexus_one_screen_microscope.jpg",
+  "credit": "Transferred from en.wikipedia to Commons by Wdwd using CommonsHelper.",
+  "description": "Photo taken with a 200x digital microscope by Matthew Rollings [1]. It shows the RGB arrangement of the pixels on Google's Nexus One AMOLED screen with PenTile matrix pixel arrangement.",
+  "date": "11 June 2010 (original upload date)",
+  "width": 640,
+  "height": 480,
+  "fetched": "2026-10-04"
+}

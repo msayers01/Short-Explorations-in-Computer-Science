@@ -127,10 +127,15 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   sandboxes, so test_course.js shell will need a Python runner for its exercises); 6 Windows cmd and PowerShell (a dialect switch over the
   same file system); 7 a first script (variables, for, if, chmod +x, #!); 8 a project (tidy a messy folder). Lesson 3 promises lesson 7
   says more about regular expressions.
-- SC 099 What Is a Computer? (`src/course_computer.js`, `lang: 'none'`, first in the catalogue): 4 lessons (the parts; the processor and
-  memory; storage, input and output; software), 8 exercises (`cs-<n>-<k>`, all answer/choice/table kinds), figures `parts` (clickable
-  diagram), `cpu` (fetch-decode-execute stepper over a 4-instruction program), `bits` (a byte of switches) and the existing `pipeline`.
-  No code runs; `test_course.js computer` grades the math-kind exercises only.
+- SC 099 What Is a Computer? (`src/course_computer.js`, `lang: 'none'`, `standard: 1`, first in the catalogue; finished October 2026): 11 lessons in
+  three units. Unit one, the machine: 1 the parts; 2 the processor and memory; 3 storage, input and output; 4 software; 5 Checkpoint one.
+  Unit two, inside the bytes: 6 everything is numbers (ASCII/Unicode, pixels and colour, sound samples, compression); 7 switches that think
+  (transistors, NOT/AND/OR/XOR, an adder); 8 computers talking (IP, DNS, packets, routers, a trip to a web page); 9 Checkpoint two. Unit three:
+  10 staying safe (passwords as counting guesses, phishing, malware, https, privacy); 11 giving instructions (algorithms, a robot, and three
+  listings of Python to READ, never run). 22 exercises (`cs-<n>-<k>`, answer/choice/table kinds only), 26 named skills. Figures `parts`, `cpu`, `bits`,
+  `pipeline` and, new, `codes`, `pixels`, `colour`, `sampling`, `gates`, `adder`, `packets`, `passwords`, `robot` (all in widgets.js, no code runs).
+  The owner's rule for this course: the most introductory one, so no coding beyond a tiny read-only taste at the end. Lessons 1-4 keep their
+  numbers (urls, exercise ids, review items); new lessons are appended. `test_course.js computer` grades the exercises; test_browser.js drives every figure.
 - **The tour** (`src/tour.js`, ARCHITECTURE §9a): the Tour button in the top bar (`.top-tools`, beside the classroom and theme buttons;
   it pulses until opened once, `shortcourses.tour.v1`) spotlights twelve real elements across `#/`, `#/python/1` and `#/lab`. Steps are
   `{route, target, title, text, place?, optional?}`; a target that moves or is renamed breaks its step silently (the card says the part is

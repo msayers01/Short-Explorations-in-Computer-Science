@@ -584,6 +584,251 @@ xs mapped kept result`;
     mount.append(row, out, el('p', { class: 'fig-note' }, 'Click a switch to flip it. Each one is worth twice the one to its right; the number is the sum of the ones that are on. Eight switches give 256 different patterns, 0 to 255.'));
   };
 
+  /* ---------- SC 099: text is numbers. Type, and see each character's code and its bytes ---------- */
+  W.codes = function (mount, b) {
+    const enc = new TextEncoder();
+    const input = el('input', { type: 'text', maxlength: '12', value: b.text || 'Hi!', 'aria-label': 'Some text, up to 12 characters', spellcheck: 'false', autocomplete: 'off' });
+    const body = el('tbody');
+    const note = el('p', { class: 'fig-note' });
+    const render = () => {
+      const chars = Array.from(input.value).slice(0, 12);
+      body.replaceChildren(...chars.map((ch) => {
+        const bytes = enc.encode(ch);
+        return el('tr', {}, el('td', {}, el('code', {}, ch === ' ' ? '(space)' : ch)), el('td', {}, String(ch.codePointAt(0))),
+          el('td', {}, el('code', {}, Array.from(bytes, (x) => x.toString(2).padStart(8, '0')).join(' '))), el('td', {}, String(bytes.length)));
+      }));
+      const n = chars.reduce((a, ch) => a + enc.encode(ch).length, 0);
+      note.textContent = chars.length ? chars.length + ' character' + (chars.length === 1 ? '' : 's') + ' take ' + n + ' byte' + (n === 1 ? '' : 's') + '.' : 'Type something.';
+    };
+    input.addEventListener('input', render); render();
+    mount.append(el('div', { class: 'fig-tools' }, el('label', {}, 'Type here: '), input),
+      el('table', { class: 'fill codes-tbl' }, el('thead', {}, el('tr', {}, ['Character', 'Its number', 'Its bytes (bits)', 'Bytes'].map((h) => el('th', {}, h)))), body), note);
+  };
+
+  /* ---------- SC 099: a picture is a grid of numbers. An 8 by 8 black-and-white picture, one byte per row ---------- */
+  W.pixels = function (mount) {
+    const PRESETS = { smiley: ['00111100', '01000010', '10100101', '10000001', '10100101', '10011001', '01000010', '00111100'], heart: ['00000000', '01100110', '11111111', '11111111', '11111111', '01111110', '00111100', '00011000'], clear: Array(8).fill('00000000') };
+    let g = PRESETS.smiley.map((r) => r.split('').map(Number));
+    const grid = el('div', { class: 'px-grid', role: 'group', 'aria-label': 'An 8 by 8 picture: click a square to flip it' });
+    const rows = el('div', { class: 'px-rows' });
+    const render = () => {
+      grid.replaceChildren(...g.flatMap((row, y) => row.map((v, x) => el('button', { type: 'button', class: 'px-cell' + (v ? ' on' : ''), 'aria-pressed': v ? 'true' : 'false', 'aria-label': 'row ' + (y + 1) + ', column ' + (x + 1) + (v ? ', black' : ', white'), onclick: () => { g[y][x] = 1 - g[y][x]; render(); } }))));
+      rows.replaceChildren(...g.map((row) => el('div', { class: 'px-row' }, el('code', {}, row.join('')), el('span', {}, ' = ' + parseInt(row.join(''), 2)))));
+    };
+    render();
+    const preset = (name) => el('button', { type: 'button', class: 'btn sm', onclick: () => { g = PRESETS[name].map((r) => r.split('').map(Number)); render(); } }, name[0].toUpperCase() + name.slice(1));
+    mount.append(el('div', { class: 'fig-tools' }, preset('smiley'), preset('heart'), preset('clear'), el('span', { class: 'fig-note' }, 'Each row is one byte: 8 bytes hold the whole picture.')), el('div', { class: 'px-fig' }, grid, rows));
+  };
+
+  /* ---------- SC 099: a colour is three numbers: red, green and blue light, one byte each ---------- */
+  W.colour = function (mount, b) {
+    const val = Object.assign({ r: 255, g: 140, b: 0 }, b.start || {});
+    const swatch = el('div', { class: 'sw-chip', role: 'img', 'aria-label': 'The colour you made' });
+    const out = el('p', { class: 'bits-out' });
+    const sliders = {};
+    const render = () => {
+      swatch.style.background = 'rgb(' + val.r + ',' + val.g + ',' + val.b + ')';
+      const hex = ['r', 'g', 'b'].map((k) => val[k].toString(16).padStart(2, '0')).join('').toUpperCase();
+      out.replaceChildren(el('code', {}, '(' + val.r + ', ' + val.g + ', ' + val.b + ')'), ' = ', el('code', {}, '#' + hex), ' = 3 bytes = 24 bits');
+    };
+    const row = (k, label) => {
+      const s = el('input', { type: 'range', min: '0', max: '255', value: String(val[k]), 'aria-label': label + ' light, 0 to 255' });
+      s.addEventListener('input', () => { val[k] = +s.value; render(); }); sliders[k] = s;
+      return el('label', { class: 'sw-row' }, el('span', {}, label), s);
+    };
+    const preset = (name, r, g, bl) => el('button', { type: 'button', class: 'btn sm', onclick: () => { val.r = r; val.g = g; val.b = bl; for (const k of ['r', 'g', 'b']) sliders[k].value = String(val[k]); render(); } }, name);
+    const rows3 = el('div', {}, row('r', 'Red'), row('g', 'Green'), row('b', 'Blue'));
+    render();
+    mount.append(el('div', { class: 'sw-fig' }, rows3, swatch),
+      out, el('div', { class: 'fig-tools' }, preset('White', 255, 255, 255), preset('Yellow', 255, 255, 0), preset('Grey', 128, 128, 128), preset('Black', 0, 0, 0)),
+      el('p', { class: 'fig-note' }, 'Each slider is one byte, 0 to 255. Red and green light together look yellow.'));
+  };
+
+  /* ---------- SC 099: sound is a list of measurements. A wave measured 4, 8, 16 or 32 times per second ---------- */
+  W.sampling = function (mount) {
+    const Wd = 640, H = 200, mid = 100, amp = 70;
+    const f = (t) => 0.75 * Math.sin(2 * Math.PI * t) + 0.25 * Math.sin(6 * Math.PI * t + 0.5);
+    const X = (t) => 20 + t * (Wd - 40), Y = (v) => mid - v * amp / 1.0;
+    const svg = sv('svg', { viewBox: '0 0 ' + Wd + ' ' + H, role: 'img', 'aria-label': 'A wave, measured at evenly spaced moments' });
+    const note = el('p', { class: 'fig-note' });
+    const sel = el('select', { 'aria-label': 'Measurements per second' }, [4, 8, 16, 32].map((n) => el('option', { value: String(n) }, n + ' per second')));
+    sel.value = '8';
+    const render = () => {
+      const n = +sel.value; svg.replaceChildren();
+      svg.append(sv('line', { x1: 20, y1: mid, x2: Wd - 20, y2: mid, stroke: 'var(--rule)' }));
+      let d = ''; for (let i = 0; i <= 200; i++) { const t = i / 200; d += (i ? 'L' : 'M') + X(t).toFixed(1) + ' ' + Y(f(t)).toFixed(1); }
+      svg.append(sv('path', { d, fill: 'none', stroke: 'var(--ink-3)', 'stroke-width': 1.5 }));
+      let st = ''; for (let i = 0; i < n; i++) { const v = f(i / n); st += (i ? 'L' : 'M') + X(i / n).toFixed(1) + ' ' + Y(v).toFixed(1) + 'L' + X((i + 1) / n).toFixed(1) + ' ' + Y(v).toFixed(1); }
+      svg.append(sv('path', { d: st, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5 }));
+      for (let i = 0; i < n; i++) svg.append(sv('circle', { cx: X(i / n), cy: Y(f(i / n)), r: 3.5, fill: 'var(--accent)' }));
+      note.textContent = 'The thin line is the sound. The thick steps are what the computer keeps: ' + n + ' numbers for this one second. More measurements per second follow the wave more closely and need more bytes. A CD takes 44,100 per second.';
+    };
+    sel.addEventListener('change', render); render();
+    mount.append(el('div', { class: 'fig-tools' }, el('label', {}, 'Measure it '), sel), svg, note);
+  };
+
+  /* ---------- SC 099: logic gates. Flip the inputs, watch the output ---------- */
+  const GATES = {
+    NOT: { n: 1, f: (a) => 1 - a, say: 'Output is 1 when the input is 0, and 0 when it is 1.' },
+    AND: { n: 2, f: (a, b) => a & b, say: 'Output is 1 only when both inputs are 1.' },
+    OR: { n: 2, f: (a, b) => a | b, say: 'Output is 1 when at least one input is 1.' },
+    XOR: { n: 2, f: (a, b) => a ^ b, say: 'Output is 1 when the inputs are different.' },
+    NAND: { n: 2, f: (a, b) => 1 - (a & b), say: 'The opposite of AND: output is 0 only when both inputs are 1.' }
+  };
+  W.gates = function (mount, b) {
+    const names = b.gates || ['NOT', 'AND', 'OR', 'XOR', 'NAND'];
+    let gate = names[0], inA = 0, inB = 0;
+    const svg = sv('svg', { viewBox: '0 0 420 150', role: 'img', 'aria-label': 'A logic gate with its inputs and output' });
+    const table = el('table', { class: 'fill gate-tbl' });
+    const say = el('p', { class: 'fig-note' });
+    const tabs = el('div', { class: 'fig-tools', role: 'group', 'aria-label': 'Choose a gate' });
+    const wire = (x1, y1, x2, y2, on) => sv('line', { x1, y1, x2, y2, stroke: on ? 'var(--accent)' : 'var(--ink-3)', 'stroke-width': on ? 4 : 2.5, 'stroke-linecap': 'round' });
+    const render = () => {
+      const G = GATES[gate]; const out = G.f(inA, inB);
+      for (const t of tabs.children) t.setAttribute('aria-pressed', t.dataset.g === gate ? 'true' : 'false');
+      svg.replaceChildren();
+      const ys = G.n === 1 ? [75] : [50, 100];
+      ys.forEach((y, i) => { const v = i ? inB : inA; svg.append(wire(70, y, 160, y, v));
+        const g = sv('g', { class: 'gate-in', tabindex: '0', role: 'button', 'aria-pressed': v ? 'true' : 'false', 'aria-label': 'Input ' + (i ? 'B' : 'A') + ' is ' + v + '. Click to flip' });
+        g.append(sv('rect', { x: 20, y: y - 18, width: 50, height: 36, rx: 6, fill: v ? 'var(--accent)' : 'var(--paper-2)', stroke: 'var(--rule)' }), txt(45, y + 5, (i ? 'B ' : 'A ') + v, { 'text-anchor': 'middle', 'font-weight': 700, fill: v ? 'var(--accent-ink)' : 'var(--ink)' }));
+        const flip = () => { if (i) inB = 1 - inB; else inA = 1 - inA; render(); };
+        g.addEventListener('click', flip); g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
+        svg.append(g); });
+      svg.append(sv('rect', { x: 160, y: 25, width: 100, height: 100, rx: 10, fill: 'var(--paper-2)', stroke: 'var(--ink-2)', 'stroke-width': 2 }), txt(210, 82, gate, { 'text-anchor': 'middle', 'font-size': 20, 'font-weight': 700 }));
+      svg.append(wire(260, 75, 330, 75, out), sv('circle', { cx: 365, cy: 75, r: 28, fill: out ? 'var(--accent)' : 'var(--paper-2)', stroke: 'var(--ink-2)', 'stroke-width': 2 }), txt(365, 82, String(out), { 'text-anchor': 'middle', 'font-size': 20, 'font-weight': 700, fill: out ? 'var(--accent-ink)' : 'var(--ink)' }));
+      const combos = G.n === 1 ? [[0], [1]] : [[0, 0], [0, 1], [1, 0], [1, 1]];
+      table.replaceChildren(el('thead', {}, el('tr', {}, (G.n === 1 ? ['A', 'Output'] : ['A', 'B', 'Output']).map((h) => el('th', {}, h)))),
+        el('tbody', {}, combos.map((c) => el('tr', { class: (c[0] === inA && (G.n === 1 || c[1] === inB)) ? 'hl' : '' }, c.map((v) => el('td', {}, String(v))), el('td', {}, String(G.f(c[0], c[1])))))));
+      say.textContent = G.say;
+    };
+    for (const n of names) tabs.append(el('button', { type: 'button', class: 'btn sm', 'data-g': n, onclick: () => { gate = n; render(); } }, n));
+    render();
+    mount.append(tabs, el('div', { class: 'gate-fig' }, svg, table), say);
+  };
+
+  /* ---------- SC 099: adding with gates. Four columns, each one a small circuit of gates ---------- */
+  W.adder = function (mount, b) {
+    const start = b.start || [5, 3];
+    let A = [0, 1, 2, 3].map((i) => (start[0] >> (3 - i)) & 1), B = [0, 1, 2, 3].map((i) => (start[1] >> (3 - i)) & 1);
+    const box = el('div', { class: 'adder' });
+    const render = () => {
+      const carry = [0, 0, 0, 0, 0], sum = [0, 0, 0, 0];   // carry[i] is the carry INTO column i (column 3 is the rightmost)
+      for (let i = 3; i >= 0; i--) { const cin = carry[i + 1]; sum[i] = A[i] ^ B[i] ^ cin; carry[i] = (A[i] & B[i]) | (cin & (A[i] ^ B[i])); }
+      const toggle = (arr, i, name) => el('button', { type: 'button', class: 'bit' + (arr[i] ? ' on' : ''), 'aria-pressed': arr[i] ? 'true' : 'false', 'aria-label': name + ' column worth ' + (8 >> i), onclick: () => { arr[i] = 1 - arr[i]; render(); } }, el('span', { class: 'bit-w' }, String(8 >> i)), el('span', { class: 'bit-v' }, String(arr[i])));
+      const num = (arr) => arr.reduce((a, v) => a * 2 + v, 0);
+      const total = carry[0] * 16 + num(sum);
+      box.replaceChildren(
+        el('div', { class: 'adder-row' }, el('span', { class: 'adder-k' }, 'carry in'), ...[0, 1, 2, 3].map((i) => el('span', { class: 'adder-c' + (carry[i + 1] ? ' on' : '') }, carry[i + 1] ? '1' : '·')), el('span', { class: 'adder-k' })),
+        el('div', { class: 'adder-row' }, el('span', { class: 'adder-k' }, 'A'), ...[0, 1, 2, 3].map((i) => toggle(A, i, 'A')), el('span', { class: 'adder-k' }, '= ' + num(A))),
+        el('div', { class: 'adder-row' }, el('span', { class: 'adder-k' }, '+ B'), ...[0, 1, 2, 3].map((i) => toggle(B, i, 'B')), el('span', { class: 'adder-k' }, '= ' + num(B))),
+        el('div', { class: 'adder-row adder-sum' }, el('span', { class: 'adder-k' }, 'sum'), ...[0, 1, 2, 3].map((i) => el('span', { class: 'adder-s' + (sum[i] ? ' on' : '') }, String(sum[i]))), el('span', { class: 'adder-k' }, '= ' + total)),
+        el('p', { class: 'fig-note' }, carry[0] ? 'The last column carried a 1 out. Four switches cannot hold it, so a real adder would need a fifth: this is overflow.' : 'Each column adds its two bits and the carry from the column on its right: the same carrying you do on paper, but with ones and twos.'));
+    };
+    render();
+    mount.append(box);
+  };
+
+  /* ---------- SC 099: a message cut into numbered packets, sent by different routes, put back in order ---------- */
+  W.packets = function (mount) {
+    const N = { H: ['You', 50, 115], A: ['Router A', 190, 45], B: ['Router B', 190, 185], D: ['Router D', 360, 45], C: ['Router C', 360, 150], S: ['Server', 585, 115] };
+    const E = [['H', 'A'], ['H', 'B'], ['A', 'C'], ['B', 'C'], ['A', 'D'], ['D', 'C'], ['C', 'S']];
+    const P = [{ n: 1, t: 'HEL', route: 'HADCS' }, { n: 2, t: 'LO ', route: 'HBCS' }, { n: 3, t: 'WOR', route: 'HACS' }, { n: 4, t: 'LD!', route: 'HBCS' }];
+    const svg = sv('svg', { viewBox: '0 0 640 230', role: 'img', 'aria-label': 'Four packets crossing a small network of routers' });
+    const note = el('p', { class: 'fig-note', 'aria-live': 'polite' });
+    const maxHops = Math.max(...P.map((p) => p.route.length - 1));
+    const render = (t) => {
+      svg.replaceChildren();
+      for (const [a, b2] of E) svg.append(sv('line', { x1: N[a][1], y1: N[a][2], x2: N[b2][1], y2: N[b2][2], stroke: 'var(--rule)', 'stroke-width': 3 }));
+      for (const k in N) { svg.append(sv('rect', { x: N[k][1] - 34, y: N[k][2] - 15, width: 68, height: 30, rx: 6, fill: 'var(--paper-2)', stroke: 'var(--ink-3)' }), txt(N[k][1], N[k][2] + 5, N[k][0], { 'text-anchor': 'middle', 'font-size': 12 })); }
+      const seen = {};
+      P.forEach((p) => { const at = p.route[Math.min(t, p.route.length - 1)]; seen[at] = (seen[at] || 0) + 1; const slot = seen[at] - 1; const [, x, y] = N[at];
+        svg.append(sv('rect', { x: x - 22, y: y + 17 + slot * 15, width: 44, height: 14, rx: 4, fill: 'var(--accent)' }), txt(x, y + 27.5 + slot * 15, p.n + ':' + p.t.replace(' ', '\u00b7'), { 'text-anchor': 'middle', 'font-size': 10, fill: 'var(--accent-ink)', 'font-family': 'var(--mono)' })); });
+      const arrived = P.filter((p) => t >= p.route.length - 1).sort((a, c) => (a.route.length - c.route.length) || (a.n - c.n));
+      note.textContent = t === 0 ? 'Your message, HELLO WORLD!, is cut into four packets. Each one carries a number and a piece of the message. All four are at your computer.'
+        : t <= maxHops ? 'Hop ' + t + '. Each router sends every packet on towards the server, and each packet may take a different road. Arrived at the server so far: ' + (arrived.length ? arrived.map((p) => '#' + p.n).join(', ') : 'none') + '.'
+          : 'The server has all four, but #1 came last because its road was longer. It puts them in order by number: ' + P.map((p) => p.t).join('') + '. The message is whole.';
+    };
+    const ctl = stepper(maxHops + 2, render, { interval: 1200 });
+    mount.append(svg, note, ctl.el);
+  };
+
+  /* ---------- SC 099: how many guesses does a password take? Choose a length and the kinds of character ---------- */
+  W.passwords = function (mount) {
+    const kinds = [['lower', 'letters a to z', 26], ['upper', 'capital letters', 26], ['digits', 'digits 0 to 9', 10], ['symbols', 'symbols such as ! ? #', 32]];
+    const on = { lower: true, upper: false, digits: false, symbols: false };
+    const len = el('input', { type: 'range', min: '4', max: '20', value: '8', 'aria-label': 'Password length' });
+    const lenOut = el('b', {});
+    const out = el('p', { class: 'pw-out', 'aria-live': 'polite' });
+    const UNITS = [[3.15576e16, 'billion years'], [3.15576e13, 'million years'], [3.15576e10, 'thousand years'], [31557600, 'year'], [86400, 'day'], [3600, 'hour'], [60, 'minute'], [1, 'second']];
+    const when = (s) => {
+      if (s < 1) return 'less than a second';
+      const u = UNITS.find((x) => s >= x[0]); const v = s / u[0];
+      return 'about ' + (v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString('en-US')) + ' ' + u[1] + (u[1].indexOf(' ') < 0 && Math.round(v * 10) !== 10 ? 's' : '');
+    };
+    const render = () => {
+      const pool = kinds.reduce((a, k) => a + (on[k[0]] ? k[2] : 0), 0);
+      lenOut.textContent = len.value + ' characters';
+      if (!pool) { out.textContent = 'Choose at least one kind of character.'; return; }
+      const combos = Math.pow(pool, +len.value);
+      const exp = Math.floor(Math.log10(combos));
+      const secs = combos / 1e10;
+      out.replaceChildren('A choice of ' + pool + ' characters, ' + len.value + ' places: about ', el('b', {}, (combos / Math.pow(10, exp)).toFixed(1) + ' × 10' + String(exp).split('').map((c) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[+c]).join('')), ' possible passwords. Trying every one at 10 billion guesses a second takes ', el('b', {}, when(secs)), '.');
+    };
+    const boxes = kinds.map((k) => { const c = el('input', { type: 'checkbox', 'aria-label': k[1] }); c.checked = on[k[0]]; c.addEventListener('change', () => { on[k[0]] = c.checked; render(); }); return el('label', { class: 'pw-kind' }, c, ' ' + k[1] + ' (' + k[2] + ')'); });
+    len.addEventListener('input', render); render();
+    mount.append(el('div', { class: 'fig-tools' }, el('label', {}, 'Length '), len, lenOut), el('div', { class: 'pw-kinds' }, boxes), out,
+      el('p', { class: 'fig-note' }, 'The attacker’s speed is an assumption: a computer built for guessing. These are random characters; a password made of a word, a name or a date falls far faster. This figure never asks for a real password.'));
+  };
+
+  /* ---------- SC 099: instructions followed exactly. Steer a robot with three commands ---------- */
+  W.robot = function (mount, b) {
+    const LEVELS = [
+      { name: 'Level 1: three steps', goal: [0, 1], walls: [], best: 3 },
+      { name: 'Level 2: turn a corner', goal: [2, 2], walls: [], best: 5 },
+      { name: 'Level 3: around the wall', goal: [3, 2], walls: [[1, 2], [1, 3], [1, 4]], best: 9 }
+    ];
+    const D = [[0, -1], [1, 0], [0, 1], [-1, 0]], ARROW = ['▲', '▶', '▼', '◀'];
+    let li = Math.min(b.level || 0, LEVELS.length - 1), prog = [], timer = null, state = null, msg = '';
+    const lvl = () => LEVELS[li];
+    const board = el('div', { class: 'rb-board', role: 'img', 'aria-label': 'A five by five grid with a robot, a star and some walls' });
+    const list = el('ol', { class: 'rb-prog', 'aria-label': 'Your commands' });
+    const say = el('p', { class: 'fig-note', 'aria-live': 'polite' });
+    const select = el('select', { 'aria-label': 'Level' }, LEVELS.map((l, i) => el('option', { value: String(i) }, l.name)));
+    select.value = String(li);
+    const fresh = () => ({ x: 0, y: 4, d: 0, at: -1 });
+    const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+    const draw = () => {
+      const st = state || fresh(), L = lvl();
+      board.replaceChildren(...Array.from({ length: 25 }, (_, i) => { const x = i % 5, y = Math.floor(i / 5);
+        const wall = L.walls.some((w) => w[0] === x && w[1] === y), goal = L.goal[0] === x && L.goal[1] === y, bot = st.x === x && st.y === y;
+        return el('div', { class: 'rb-cell' + (wall ? ' wall' : '') }, bot ? el('span', { class: 'rb-bot' }, ARROW[st.d]) : goal ? el('span', { class: 'rb-goal' }, '★') : null); }));
+      list.replaceChildren(...prog.map((c, i) => el('li', { class: i === st.at ? 'now' : '' }, c)));
+      say.textContent = msg || (prog.length ? prog.length + ' command' + (prog.length === 1 ? '' : 's') + '. Press Run.' : 'The robot starts in the bottom-left corner, facing up. Add commands, then press Run.');
+    };
+    const add = (c) => { if (timer || prog.length >= 24) return; prog.push(c); state = null; msg = ''; draw(); };
+    const step = (st, c) => {
+      const n = Object.assign({}, st, { bump: false });
+      if (c === 'Turn right') n.d = (st.d + 1) % 4; else if (c === 'Turn left') n.d = (st.d + 3) % 4;
+      else { const x = st.x + D[st.d][0], y = st.y + D[st.d][1]; if (x < 0 || y < 0 || x > 4 || y > 4 || lvl().walls.some((w) => w[0] === x && w[1] === y)) n.bump = true; else { n.x = x; n.y = y; } }
+      return n;
+    };
+    const run = () => {
+      if (timer || !prog.length) return;
+      state = fresh(); msg = ''; let i = 0; draw();
+      timer = setInterval(() => {
+        if (i >= prog.length) { stop(); const L = lvl(); const won = state.x === L.goal[0] && state.y === L.goal[1];
+          msg = won ? 'The robot reached the star with ' + prog.length + ' commands' + (prog.length <= L.best ? ': as few as possible.' : '. Can you do it in ' + L.best + '?') : 'The robot did what you wrote, and ended here. It did not reach the star. Change a command and run it again.'; state.at = -1; draw(); return; }
+        state = step(state, prog[i]); state.at = i; if (state.bump) msg = 'Bump: the robot cannot go there, so it stays where it is and carries on with the next command.'; i++; draw();
+      }, 600);
+    };
+    select.addEventListener('change', () => { stop(); li = +select.value; prog = []; state = null; msg = ''; draw(); });
+    const btn = (label, fn, cls) => el('button', { type: 'button', class: 'btn sm ' + (cls || ''), onclick: fn }, label);
+    draw();
+    mount.append(el('div', { class: 'fig-tools' }, el('label', {}, 'Level '), select),
+      el('div', { class: 'rb-fig' }, board, el('div', {}, el('div', { class: 'fig-tools' }, btn('Forward', () => add('Forward')), btn('Turn left', () => add('Turn left')), btn('Turn right', () => add('Turn right'))), list)),
+      el('div', { class: 'fig-tools' }, btn('Run', run, 'primary'), btn('Undo', () => { if (timer) return; prog.pop(); state = null; msg = ''; draw(); }), btn('Clear', () => { stop(); prog = []; state = null; msg = ''; draw(); }, 'quiet')), say);
+  };
+
   /* ---------- the directory tree of a shell lesson: click a name to see its paths; "go here" moves the marker ---------- */
   // params: tree (the same shape as a lesson's setup, keys as paths from the home directory), cwd ('~' or '~/x'), the home is /home/student
   W.fstree = function (mount, b) {

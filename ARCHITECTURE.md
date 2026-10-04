@@ -96,7 +96,7 @@ site/
     shellgrade.js        the shell course's setups (file trees) and grader → window.SHELLGRADE; node: test_course.js shell (§9f)
     course_shell.js      SC 108 The Command Line (lang 'shell': examples and exercises are terminals)
     course_ml.js         SC 109 How Machines Learn (Python; the first course written to LESSON_STANDARD.md: named skills, checkpoints; figures knn, perceptron, descent, dtree)
-    course_computer.js   SC 099 What Is a Computer? (lang 'none': no runnable code; answer/choice/table exercises; figures parts, cpu, bits)
+    course_computer.js   SC 099 What Is a Computer? (lang 'none': no runnable code; 11 lessons, 2 checkpoints; answer/choice/table exercises; figures parts, cpu, bits, codes, pixels, colour, sampling, gates, adder, packets, passwords, robot)
     guide.js             the teacher guide (one HTML string) → window.GUIDE; build.js also writes dist/teacher-guide.html
     qr.js                QR encoder → window.QR
     teach.js             assignments / submissions / grade book → window.TEACH
