@@ -570,6 +570,16 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await page.waitForFunction(() => /Play again/.test((document.querySelector('.algo-host .algo-controls .btn.primary') || {}).textContent || ''), null, { timeout: 20000 }).catch(() => { });
   const tourStats = await page.locator('.pz-stats').textContent();
   check('algorithms: a maze race reports the bet, Hanoi in 7 moves is perfect, the computer\'s tour has no crossings', /Your bet (won|came)/.test(mazeRace) && /Perfect! 7 moves/.test(hanoiMsg) && /Computer: [\d.]+ km · 0 crossings/.test(tourStats), { mazeRace, hanoiMsg, tourStats });
+  // geometry: the three hull algorithms find hulls of the same size and the bet is reported; an L-system rule with an open bracket is refused
+  await goto('#/algorithms/hull-race');
+  await page.locator('select[aria-label="Your bet"]').selectOption('graham');
+  await page.locator('.algo-host button:has-text("Finish")').click();
+  const hullRows = await page.locator('.algo-host .geo-table').first().locator('tbody tr').evaluateAll((rs) => rs.map((r) => r.children[2].textContent));
+  const hullMsg = await page.locator('.algo-status').first().textContent();
+  await goto('#/algorithms/lsystem');
+  await page.locator('.geo-edit textarea').fill('F=F+[F'); await page.locator('.algo-host button:has-text("Use these rules")').click();
+  const lsErr = await page.locator('.geo-err').textContent();
+  check('algorithms: the three hull algorithms agree and the bet is reported; an L-system rule with an open bracket is refused', hullRows.length === 3 && new Set(hullRows).size === 1 && /^\d+$/.test(hullRows[0]) && /Your bet (won|came)/.test(hullMsg) && /brackets/.test(lsErr), { hullRows, hullMsg, lsErr });
   await goto('#/real-world');
   const realLinks = await page.evaluate(() => [...document.querySelectorAll('main a[href^="#/"]')].map((a) => a.getAttribute('href')).filter((h) => /^#\/[a-z]+\/\d+/.test(h)));
   const badLinks = await page.evaluate((hs) => hs.filter((h) => { const [, c, n] = h.match(/^#\/([a-z]+)\/(\d+)/); const course = window.COURSES.find((x) => x.id === c); return !course || !course.lessons[+n - 1]; }), realLinks);
