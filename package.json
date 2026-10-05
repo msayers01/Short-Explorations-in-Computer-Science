@@ -7,7 +7,7 @@
     "build": "node build.js",
     "pretest": "node scripts/patch-jscpp.js",
     "test:browser": "node test_browser.js",
-    "test": "node test_course.js computer && node test_course.js scratch && node test_course.js python && node test_course.js lisp && node test_course.js cpp && node test_course.js math && node test_course.js modern && node test_course.js java && node test_course.js dsa && node test_course.js shell && node test_course.js ml && node test_java.js && node test_cppstep.js && node test_subst.js && node test_app.js && node test_shell.js && node test_scheme.js && node test_security.js && node test_backup.js && node test_review.js && node test_lessons.js && node test_standards.js && node test_algos.js && node test_arena.js",
+    "test": "node test_course.js computer && node test_course.js scratch && node test_course.js python && node test_course.js lisp && node test_course.js cpp && node test_course.js math && node test_course.js modern && node test_course.js java && node test_course.js dsa && node test_course.js shell && node test_course.js ml && node test_java.js && node test_cppstep.js && node test_subst.js && node test_app.js && node test_javaproject.js && node test_shell.js && node test_scheme.js && node test_security.js && node test_backup.js && node test_review.js && node test_lessons.js && node test_standards.js && node test_algos.js && node test_arena.js",
     "test:diff": "node test_diff.js"
   },
   "dependencies": {

@@ -253,25 +253,46 @@
   const askers = new Set();
   const abandonAsk = (a) => { askers.delete(a); a.resolve(''); if (window.PYRUN) window.PYRUN.cancel(); };
   document.addEventListener('routed', () => { for (const a of [...askers]) if (!a.row.isConnected) abandonAsk(a); });
-  function outputPanel() {
+  // opts.tools (the Code Lab): Copy, Wrap and Clear buttons in the title bar; opts.wrap the starting state of Wrap, opts.onWrap(on) to keep it.
+  function outputPanel(opts) {
+    opts = opts || {};
     const box = el('div', { class: 'out term', hidden: '' });
     const status = el('span', { class: 'term-status', role: 'status' });
     const bar = el('div', { class: 'term-bar' }, el('span', { class: 'term-dots', 'aria-hidden': 'true' }, el('span'), el('span'), el('span')), el('span', { class: 'term-title' }, 'Output'), status);
     const pre = el('pre', { class: 'out-text', tabindex: '0', 'aria-label': 'Program output' });
     const cursor = el('span', { class: 'term-cursor', 'aria-hidden': 'true' });
     box.append(bar, pre);
-    let t0 = 0, printed = '';
+    let t0 = 0, printed = '', running = false;
+    // what the panel shows, as text: without the "go to line" links, the input boxes and the cursor
+    const shownText = () => { const c = pre.cloneNode(true); c.querySelectorAll('button, input, .term-cursor').forEach((n) => n.remove()); return c.textContent; };
+    if (opts.tools) {
+      const flash = (b, t) => { b.textContent = t; clearTimeout(b._t); b._t = setTimeout(() => { b.textContent = b.dataset.label; }, 1600); };
+      const copyBtn = el('button', { class: 'term-tool', type: 'button', 'data-label': 'Copy', title: 'Copy the output to the clipboard', onclick: () => {
+        const text = shownText();
+        const fail = () => { const r = document.createRange(); r.selectNodeContents(pre); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); flash(copyBtn, 'Selected: press Ctrl+C'); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => flash(copyBtn, 'Copied'), fail); else fail();
+      } }, 'Copy');
+      const wrapBtn = el('button', { class: 'term-tool', type: 'button', title: 'Wrap long lines to fit the panel, or keep each line whole and scroll sideways', onclick: () => setWrap(box.classList.contains('nowrap')) }, 'Wrap');
+      const setWrap = (on) => { box.classList.toggle('nowrap', !on); wrapBtn.setAttribute('aria-pressed', String(on)); if (opts.onWrap) opts.onWrap(on); };
+      const clearBtn = el('button', { class: 'term-tool', type: 'button', title: 'Clear the output', onclick: () => {
+        // while a program runs, its text goes but the program, its cursor and an input() it waits on stay; otherwise the panel closes
+        if (running) { for (const n of [...pre.childNodes]) if (n !== cursor && !(n.classList && n.classList.contains('input-line'))) n.remove(); printed = ''; box.classList.remove('has-error'); }
+        else api.hide();
+      } }, 'Clear');
+      box.classList.toggle('nowrap', opts.wrap === false); wrapBtn.setAttribute('aria-pressed', String(opts.wrap !== false));
+      bar.append(el('span', { class: 'term-tools' }, copyBtn, wrapBtn, clearBtn));
+    }
     const put = (node) => { if (cursor.parentNode === pre) pre.insertBefore(node, cursor); else pre.appendChild(node); box.hidden = false; pre.scrollTop = pre.scrollHeight; };
     const line = (cls, s) => { put(el('span', { class: cls }, s)); put(document.createTextNode('\n')); };
     const setStatus = (cls, text) => { status.className = 'term-status' + (cls ? ' ' + cls : ''); status.textContent = text; };
     const api = {
       el: box,
-      clear() { for (const a of [...askers]) if (a.pre === pre) abandonAsk(a); pre.textContent = ''; printed = ''; box.hidden = false; box.classList.remove('has-error'); setStatus('', ''); },
+      clear() { for (const a of [...askers]) if (a.pre === pre) abandonAsk(a); pre.textContent = ''; printed = ''; running = false; box.hidden = false; box.classList.remove('has-error'); setStatus('', ''); },
       /** a run begins: the prompt line names the command, the status says running, the cursor blinks */
-      start(cmd) { api.clear(); t0 = Date.now(); if (cmd) line('cmd', cmd); pre.appendChild(cursor); setStatus('running', 'running'); },
+      start(cmd) { api.clear(); t0 = Date.now(); running = true; if (cmd) line('cmd', cmd); pre.appendChild(cursor); setStatus('running', 'running'); },
       /** a run ends: the cursor stops and the status pill says how it went */
       finish(info) {
-        info = info || {}; if (cursor.parentNode === pre) pre.removeChild(cursor);
+        info = info || {}; running = false; if (cursor.parentNode === pre) pre.removeChild(cursor);
         const secs = t0 ? ((Date.now() - t0) / 1000).toFixed(2) + ' s' : '';
         if (info.stopped) setStatus('fail', 'stopped' + (secs ? ' \u00b7 ' + secs : ''));
         else if (box.classList.contains('has-error')) setStatus('fail', 'error' + (secs ? ' \u00b7 ' + secs : ''));
@@ -281,6 +302,8 @@
       value(s) { printed += s.replace(/^;Value: /, '') + '\n'; line('val', s); },
       /** what the program printed (and, for Scheme, the values it showed) since the run began: for comparing with a prediction */
       printed() { return printed; },
+      /** the panel's text as shown (what Copy copies) */
+      text: () => shownText(),
       failed() { return box.classList.contains('has-error'); },
       error(s) { line('err', s); box.classList.add('has-error'); },
       note(s) { line('note', s); },

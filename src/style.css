@@ -1439,3 +1439,31 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .gr-chip.gr-empty { border-style: dashed; border-color: var(--rule); background: none; color: var(--ink-3); }
 .gr-key { font-family: var(--sans); font-size: 0.8rem; color: var(--ink-3); margin: 0.4rem 0 0; }
 .gr-msg { min-height: 2.8em; }
+
+/* Code Lab: error markers (a tinted line, a pin in the gutter), the go-to-line bar, program arguments, output tools, the shortcuts panel */
+.lab-editor .line.err { background: color-mix(in srgb, var(--err) 14%, transparent); box-shadow: inset 3px 0 0 var(--err); }
+.lab-editor .line.err::before { color: var(--err); font-weight: 700; opacity: 1; }
+.err-pins { position: absolute; top: 0; left: 0; width: 0; height: 0; z-index: 2; }
+.err-pin { position: absolute; left: 0.15rem; width: 1.05rem; height: 1.05rem; margin-top: 0.15em; padding: 0; border: 0; border-radius: 50%; background: var(--err); color: #fff; font: 700 0.7rem/1.05rem var(--sans); text-align: center; cursor: pointer; }
+.err-pin:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.goto-bar .goto-inp { width: 6rem; }
+.args-box[hidden] { display: none; }
+.args-box .panel-head { display: flex; align-items: center; gap: 0.6rem; }
+.args-box .panel-head .btn { margin-left: auto; }
+.args-inp { display: block; width: 100%; box-sizing: border-box; font-family: var(--mono); font-size: 0.86rem; border: 0; border-top: 1px solid var(--rule); background: var(--code-bg); color: var(--ink); padding: 0.45rem 0.8rem; }
+.args-inp:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.term-tools { display: flex; gap: 0.25rem; }
+.term-status + .term-tools { margin-left: 0.4rem; }
+.term-status:empty + .term-tools { margin-left: auto; }
+.term-tool { background: transparent; border: 1px solid var(--t-rule); border-radius: 4px; color: var(--t-dim); font: inherit; font-size: 0.72rem; padding: 0.05rem 0.45rem; cursor: pointer; user-select: none; }
+.term-tool:hover, .term-tool:focus-visible { color: var(--t-fg); border-color: var(--t-dim); }
+.term-tool[aria-pressed="true"] { color: var(--t-fg); background: #313744; }
+.out.nowrap .out-text { white-space: pre; word-break: normal; overflow-wrap: normal; overflow-x: auto; }
+.lab-keys[hidden] { display: none; }
+.keys-tbl { width: 100%; border-collapse: collapse; font-size: 0.84rem; margin: 0; }
+.keys-tbl th { text-align: left; padding: 0.7rem 0.2rem 0.25rem; font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); border-bottom: 1px solid var(--rule); }
+.keys-tbl td { text-align: left; vertical-align: top; padding: 0.3rem 0.2rem; border-bottom: 1px solid var(--rule); }
+.keys-tbl td:first-child { padding-right: 0.7rem; width: 48%; }
+.keys-tbl kbd { font-family: var(--mono); font-size: 0.78rem; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 3px; padding: 0 0.3rem; background: var(--paper-2); }
+.term-status { white-space: nowrap; }
+.out .term-bar:has(.term-tools) { flex-wrap: wrap; row-gap: 0.3rem; }

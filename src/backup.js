@@ -63,6 +63,7 @@
     if (f.asgSeen) o.asgSeen = true;
     return o;
   }
+  const labUtil = () => (typeof LABUTIL !== 'undefined' ? LABUTIL : require('./labutil.js'));   // the page has it as a global (build.js loads it first); node requires it
   function cleanLab(l) {
     if (!isObj(l)) return null;
     const out = { lang: LANGS.includes(l.lang) ? l.lang : 'python', files: {}, active: {}, fontSize: l.fontSize === undefined ? 15 : fin(l.fontSize, 11, 24) || 15, wrap: !!l.wrap, panels: {} };
@@ -74,6 +75,7 @@
       out.active[lang] = isObj(l.active) && Number.isInteger(l.active[lang]) && l.active[lang] >= 0 && l.active[lang] < files.length ? l.active[lang] : 0;
     }
     if (isObj(l.panels)) for (const k of ['tpl', 'ref']) if (k in l.panels) out.panels[k] = !!l.panels[k];
+    const args = labUtil().cleanArgs(l.args); if (Object.keys(args).length) out.args = args;   // the Arguments box of each language
     return out;
   }
 
@@ -204,6 +206,7 @@
     const out = { lang: mine.lang, files: {}, active: Object.assign({}, mine.active), fontSize: mine.fontSize, wrap: mine.wrap, panels: Object.assign({}, theirs.panels, mine.panels) };
     if (mine.fullCpp) out.fullCpp = true;
     if (mine.cppStd) out.cppStd = mine.cppStd;
+    if (mine.args || theirs.args) out.args = Object.assign({}, theirs.args, mine.args);
     for (const lang of LANGS) {
       const files = mine.files[lang].map((f) => Object.assign({}, f));
       for (const f of theirs.files[lang]) {

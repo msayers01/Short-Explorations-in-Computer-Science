@@ -349,7 +349,12 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('java source launcher', await run('java Main.java'), 'java:public class Main { }\n');
     eq('javac wrong name', await run('echo "public class Foo { }" > Main.java; javac Main.java'), 'Main.java:1: error: class Foo is public, should be declared in a file named Foo.java\n1 error\n', 1);
     eq('javac error', await run('echo "class Main { bad }" > Main.java; javac Main.java; ls Main.class'), "Main.java:1:1: error: bad\nls: cannot access 'Main.class': No such file or directory\n");
-    eq('javac missing', await run('javac Nope.java'), 'error: file not found: Nope.java\nUsage: javac <options> <source files>\n', 1);
+    eq('javac missing', await run('javac Nope.java'), 'error: file not found: Nope.java\nUsage: javac <options> <source files>\n', 2);
+    eq('javac several files: a .class for every class', await run('rm -f *.class; printf "public class Main { }\\nclass Helper { }\\n" > Main.java; printf "import java.util.*;\\npublic class Dog { }\\n" > Dog.java; javac Main.java Dog.java; ls *.class'), 'Dog.class  Helper.class  Main.class\n', 0);
+    eq('java runs the joined program, its main class named', await run('java Main'), /^java:import java\.util\.\*;\n\/\/@file Main\.java\npublic class Main \{ \}\nclass Helper \{ \}\n\n\/\/@file Dog\.java\n\npublic class Dog \{ \}\n$/);
+    eq('javac *.java: two public classes in one file', await run('printf "public class Main { }\\npublic class Cat { }\\n" > Main.java; javac *.java'), 'Main.java:2: error: class Cat is public, should be declared in a file named Cat.java\n1 error\n', 1);
+    eq('javac several files: nothing compiled if one is missing', await run('rm -f *.class; javac Dog.java Nope.java; ls *.class'), "error: file not found: Nope.java\nUsage: javac <options> <source files>\nls: cannot access '*.class': No such file or directory\n");
+    await run('rm -f Dog.java Main.class Helper.class Dog.class');
     eq('java < stdin', await run('echo "class Main { Scanner }" > Main.java; javac Main.java && java Main < in.txt'), 'java:class Main { Scanner }<"5\\n"\n');
     eq('java reads keyboard', await run('java Main'), /reads input.*\njava:class Main \{ Scanner \}<"typed\\n/);
     eq('g++', await run('echo "int main() { return 0; }" > m.cpp; g++ m.cpp -o m; ./m; ls -F m'), 'cpp:int main() { return 0; }\nm*\n', 0);

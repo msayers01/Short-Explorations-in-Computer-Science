@@ -150,6 +150,82 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await setCode('public class Main {\n    public static void main(String[] args) {\n        int x = 5\n    }\n}');
   await page.click('.lab-toolbar button:has-text("Run")'); await page.waitForTimeout(1500);
   check('Lab: a Java compile error names its line and gets a tip', /Main\.java:3: error: ';' expected/.test(await outText()) && (await page.locator('.out-text .goto').count()) === 1, await outText());
+  // ---- multi-file Java (javaproject.js): every Java tab is compiled together, errors and stack traces name the right file, and the
+  // "go to" link opens that tab; error markers in the editor; program arguments; the output panel's tools; go to line; the shortcuts panel
+  const runDone = async () => { await page.waitForFunction(() => /^(exit|error|stopped)/.test(document.querySelector('.lab-out .term-status').textContent), null, { timeout: 15000 }).catch(() => { }); };
+  const runLab = async () => { await page.click('.lab-toolbar button:has-text("Run")'); await page.waitForTimeout(100); await runDone(); };
+  const tabNamed = (n) => page.locator('.lab-tabs .tab', { hasText: n }).first();
+  const activeTab = async () => (await page.locator('.lab-tabs .tab.on').innerText()).replace(/×|close\?/g, '').trim();
+  await setCode('public class Main {\n    public static void main(String[] args) {\n        Dog d = new Dog("Rex");\n        d.bark();\n        System.out.println(args.length + " " + String.join("|", args));\n    }\n}\n');
+  await page.click('.lab-tabs .tab.add'); await page.fill('.tab-rename', 'Dog.java'); await page.press('.tab-rename', 'Enter'); await page.waitForTimeout(200);
+  const dogOk = 'public class Dog {\n    private String name;\n    Dog(String name) { this.name = name; }\n    void bark() {\n        System.out.println(name + " says woof");\n    }\n}\n';
+  await setCode(dogOk);
+  await tabNamed('Main.java').click(); await runLab();
+  check('Lab: two Java tabs run as one program', /^Rex says woof\n0 $/m.test(await outText()) && /javac Main\.java Dog\.java && java Main/.test(await page.locator('.lab-out .out-text .cmd').innerText()), await outText());
+  await tabNamed('Dog.java').click(); await runLab();
+  check('Lab: Run from a tab without main runs the main of another', /Rex says woof/.test(await outText()), await outText());
+  await setCode(dogOk.replace('System.out.println(name + " says woof");', 'int[] a = new int[1];\n        a[2] = 1;'));
+  await tabNamed('Main.java').click(); await runLab();
+  let ot = await outText();
+  check('Lab: a stack trace names the second file and its line', /at Dog\.bark\(Dog\.java:6\)\n\s*at Main\.main\(Main\.java:4\)/.test(ot) && /go to Dog\.java, line 6/.test(ot), ot);
+  check('Lab: no marker on the current tab for an error in another', (await page.locator('.lab-editor .line.err').count()) === 0);
+  await page.click('.out-text .goto'); await page.waitForTimeout(300);
+  check('Lab: the go-to link opens the right tab at the right line', (await activeTab()) === 'Dog.java' && /Ln 6,/.test(await page.locator('.sb-pos').innerText()), [await activeTab(), await page.locator('.sb-pos').innerText()]);
+  const pinTitle = await page.locator('.err-pin').first().getAttribute('title').catch(() => null);
+  check('Lab: an error marker on that line, with the message', (await page.locator('.lab-editor .line.err').count()) === 1 && (await page.locator('.lab-editor .line.err').getAttribute('data-n')) === '6' && /ArrayIndexOutOfBoundsException/.test(pinTitle || '') && /Error on line 6/.test(await page.locator('.lab-editor [id^="lab-err-desc"]').textContent()), pinTitle);
+  await page.click('.lab-editor textarea'); await page.keyboard.type(' ');
+  check('Lab: editing the file clears its marker', (await page.locator('.lab-editor .line.err').count()) === 0 && (await page.locator('.err-pin').count()) === 0);
+  await setCode(dogOk.replace('private String name;', 'private String name'));
+  await runLab(); ot = await outText();
+  check('Lab: a compile error in the second file names it, and is marked', /Dog\.java:2: error: ';' expected/.test(ot) && (await page.locator('.lab-editor .line.err').getAttribute('data-n')) === '2', ot);
+  await runLab();
+  check('Lab: the next run puts the marker back only if the error is still there', (await page.locator('.lab-editor .line.err').count()) === 1);
+  await setCode(dogOk.replace('public class Dog', 'public class Cat')); await runLab(); ot = await outText();
+  check("Lab: a public class in the wrong file gets javac's error and a tip", /Dog\.java:1: error: class Cat is public, should be declared in a file named Cat\.java/.test(ot) && /Rename the tab/.test(ot), ot);
+  await setCode(dogOk);
+  // program arguments: the box under the toolbar; main(String[] args) gets the words, quotes keep spaces
+  await tabNamed('Main.java').click();
+  await page.click('.lab-toolbar button:has-text("Arguments")'); await page.fill('#lab-args', 'one "two words"'); await runLab(); ot = await outText();
+  check('Lab: Java arguments reach main(String[] args)', /^2 one\|two words$/m.test(ot) && /java Main one 'two words'/.test(await page.locator('.lab-out .out-text .cmd').innerText()), ot);
+  // the output panel's tools: Copy, Wrap, Clear
+  await page.click('.lab-out .term-tool:has-text("Wrap")');
+  check('Lab: Wrap turns line wrapping off in the output, and is kept', (await page.locator('.lab-out.nowrap').count()) === 1 && JSON.parse(await page.evaluate(() => localStorage.getItem('shortcourses.lab.v1'))).outWrap === false);
+  await page.click('.lab-out .term-tool:has-text("Wrap")');
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => { });
+  await page.click('.lab-out .term-tool:has-text("Copy")'); await page.waitForTimeout(300);
+  const copied = await page.evaluate(() => navigator.clipboard.readText().catch(() => null));
+  const copyLabel = await page.locator('.lab-out .term-tool').first().innerText();
+  check('Lab: Copy copies the output text (or selects it)', (copyLabel === 'Copied' && /Rex says woof\n2 one\|two words/.test(copied || '')) || (/Selected/.test(copyLabel) && /Rex says woof/.test(await page.evaluate(() => String(getSelection())))), [copyLabel, copied]);
+  await page.click('.lab-out .term-tool:has-text("Clear")');
+  check('Lab: Clear empties the output panel', await page.locator('.lab-out').isHidden());
+  await page.fill('#lab-args', ''); await page.click('.args-box button[aria-label^="Close"]');
+  check('Lab: an empty Arguments box can be closed', await page.locator('.args-box').isHidden());
+  // close Dog.java so later Java runs are single files again (an empty tab closes without asking)
+  await tabNamed('Dog.java').click(); await setCode(''); await tabNamed('Dog.java').locator('.tab-x').click(); await page.waitForTimeout(200);
+  check('Lab: back to one Java tab', (await page.locator('.lab-tabs .tab:not(.add)').count()) === 1 && (await activeTab()) === 'Main.java', await page.locator('.lab-tabs').innerText());
+  // Ctrl+G go to line, and the shortcuts panel
+  await page.click('.lab-editor textarea'); await page.keyboard.press('Control+g'); await page.waitForSelector('.goto-bar:not([hidden])');
+  await page.fill('#lab-goto', '3'); await page.press('#lab-goto', 'Enter'); await page.waitForTimeout(200);
+  check('Lab: Ctrl+G goes to a line', /Ln 3,/.test(await page.locator('.sb-pos').innerText()) && (await page.locator('.goto-bar').isHidden()), await page.locator('.sb-pos').innerText());
+  await page.click('.lab-statusbar button:has-text("Shortcuts")');
+  const keysText = await page.locator('.lab-keys').innerText();
+  check('Lab: the Shortcuts panel lists the editor keys', /Ctrl\s*\+\s*G\s+go to a line/.test(keysText) && /Alt\s*\+\s*↑/.test(keysText), keysText.slice(0, 200));
+  await page.click('.lab-statusbar button:has-text("Shortcuts")');
+  // Python: sys.argv from the Arguments box, an error marker on the line Skulpt names, cleared by the next run
+  await page.click('.lang-btn:has-text("Python")'); await page.waitForSelector('.lab-editor textarea');
+  await setCode('import sys\nprint(sys.argv[1:])\nprint(len(sys.argv))');
+  await page.click('.lab-toolbar button:has-text("Arguments")'); await page.fill('#lab-args', 'a "b c"'); await runLab(); ot = await outText();
+  check('Lab: Python arguments reach sys.argv', /\['a', 'b c'\]\n3/.test(ot), ot);
+  await page.fill('#lab-args', ''); await page.click('.args-box button[aria-label^="Close"]');
+  await setCode('x = 1\nprint(y)\n'); await runLab();
+  check('Lab: a Python error marks its line', (await page.locator('.lab-editor .line.err').getAttribute('data-n').catch(() => null)) === '2' && (await page.locator('.err-pin').count()) === 1, await outText());
+  await page.evaluate(() => { const t = document.querySelector('.lab-editor textarea'); t.value = 'x = 1\nprint(x)\n'; t.dispatchEvent(new Event('input', { bubbles: true })); });
+  check('Lab: changing the code clears the marker', (await page.locator('.lab-editor .line.err').count()) === 0);
+  await setCode('x = 1\nprint(y)\n'); await runLab(); await setCode('print("fixed")'); await runLab();
+  check('Lab: a clean run leaves no marker', (await page.locator('.lab-editor .line.err').count()) === 0 && /fixed/.test(await outText()));
+  await page.click('.lang-btn:has-text("C++")'); await page.waitForSelector('.lab-editor textarea');
+  await setCode('#include <iostream>\nusing namespace std;\nint main() {\n    int x = 5\n    return 0;\n}\n'); await runLab();
+  check('Lab: a C++ error marks its line', (await page.locator('.lab-editor .line.err').count()) === 1, await outText());
   await page.click('.lang-btn:has-text("C++")'); await page.waitForSelector('.lab-editor textarea');
   await setCode('#include <iostream>\nusing namespace std;\nint main() { int a = 3; int *p = &a; cout << *p << endl; return 0; }');
   await page.click('.lab-toolbar button:has-text("Step through memory")'); await page.waitForSelector('.mem-view', { timeout: 10000 }); await page.waitForTimeout(400);
@@ -175,6 +251,10 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('terminal: input() is answered on the command line', /N\? seven\ngot seven/.test(await page.locator('.lab-term .term-scroll').innerText()));
   tt = await term('printf \'public class Main { public static void main(String[] a) { System.out.println("from java"); } }\\n\' > Main.java; javac Main.java && java Main; printf \'class B { void f() { int x = "s"; } }\\n\' > B.java; javac B.java');
   check('terminal: javac and java through the Java sandbox, errors name the file', /from java\nB\.java:1: error: incompatible types/.test(tt), tt.slice(-300));
+  tt = await term('mkdir -p jp && cd jp && printf \'public class Main {\\n  public static void main(String[] args) {\\n    System.out.println(args.length + " " + args[0]);\\n    new Dog().bark();\\n  }\\n}\\n\' > Main.java && printf \'import java.util.*;\\n\\npublic class Dog {\\n  void bark() {\\n    int[] a = new int[1];\\n    a[2] = 1;\\n  }\\n}\\n\' > Dog.java && javac *.java && ls && java Main one two; cd ~; rm -r jp');
+  check('terminal: javac *.java compiles the files together; java Main gets its arguments; the stack trace names each file (as JDK 21)', /Dog\.class\s+Dog\.java\s+Main\.class\s+Main\.java\n2 one\nException in thread "main" java\.lang\.ArrayIndexOutOfBoundsException: Index 2 out of bounds for length 1\n\s*at Dog\.bark\(Dog\.java:6\)\n\s*at Main\.main\(Main\.java:4\)/.test(tt), tt.slice(-500));
+  tt = await term('printf \'import sys\\nprint(sys.argv)\\n\' > argv.py; python argv.py x "y z"');
+  check('terminal: python file.py words gives sys.argv', /\['argv\.py', 'x', 'y z'\]/.test(tt), tt.slice(-200));
   tt = await term('printf \'#include <iostream>\\nusing namespace std;\\nint main() { cout << "from c++" << endl; }\\n\' > m.cpp; g++ m.cpp -o m && ./m; printf \'int main() { oops }\\n\' > bad.cpp; g++ bad.cpp -o bad; ls bad');
   check('terminal: g++ and ./program through the C++ sandbox; a bad program makes no file', /from c\+\+\n/.test(tt) && /Syntax error/.test(tt) && /ls: cannot access 'bad'/.test(tt), tt.slice(-400));
   tt = await term('echo "print(42)" > lab/fromterm.py; echo "int main() {}" > lab/m2.cpp; ls lab');
