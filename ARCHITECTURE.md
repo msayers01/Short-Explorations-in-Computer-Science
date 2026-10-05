@@ -689,10 +689,32 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   (-m -a --amend --allow-empty), log (--oneline -n --all -p --stat --format --decorate, paths), diff (worktree, --staged, commits, --stat,
   --name-only, `diff --cc` during a conflict), show (commit, tag, `rev:path`), branch (-d -D -m -v), switch / checkout (-b, --detach,
   `-- paths`, --ours/--theirs/-m), merge (fast-forward, --no-ff, --ff-only, three-way with diff3 "zealous" conflicts, add/add and
-  modify/delete, --abort, --continue), reset (--soft --mixed --hard, paths), tag (lightweight and -a -m), config (--global in
-  `~/.gitconfig`), reflog, ls-files, cat-file, rev-parse, gc, help. Messages, exit statuses and formats are git 2.43's, checked against the
-  real one (`node test_git.js --real`); ids are real SHA-1s of git's serialization, so with the same name, email and time a commit has the
+  modify/delete, --abort, --continue, --quit), reset (--soft --mixed --hard, paths), tag (lightweight and -a), stash (push -m -u/-a, save,
+  list, show -p -u, pop, apply, drop, clear; `stash@{n}` and `stash` as revisions), revert and cherry-pick (one commit; -x, -e/--no-edit,
+  conflicts, --continue --abort --skip --quit, "Reapply" for a revert of a revert), log --graph (with --oneline, --format, --all, -n),
+  blame (-s -e, a revision, the working tree's uncommitted lines as `00000000 Not Committed Yet`), clean (-n -f -d -x -X, pathspecs,
+  `clean.requireForce`), config (--global in `~/.gitconfig`), reflog, ls-files, cat-file, rev-parse, gc, help. Messages, exit statuses and
+  formats are git 2.43's, checked against the real one (`node test_git.js --real`, which also draws eight random histories with
+  `--graph` both ways); ids are real SHA-1s of git's serialization, so with the same name, email and time a commit (or a stash) has the
   same id as in real git. Dates come from the shell's clock (`now`), in the browser's time zone.
+  - **The editor.** Where git would start `$EDITOR`, the practice git calls the shell's `sh.hooks.nano(title, text, write)` (the terminal's
+    nano, `terminal.js`) on `.git/COMMIT_EDITMSG` (`MERGE_MSG` for a merge, `TAG_EDITMSG` for a tag) with git's template: the message so
+    far, "It looks like you may be committing a merge/cherry-pick", the "# Please enter the commit message..." lines, `# Author:` and
+    `# Date:` when git shows them (amend, cherry-pick), and the status without its hints as `#` lines (`commitTemplate`). When the student
+    leaves, the file is read back and cleaned as git's `--cleanup=strip`; empty aborts with git's words. Used by `git commit` without -m
+    (and `--amend`, the conclusion of a merge or a pick), `git merge` when it makes a merge commit (unless -m or --no-edit; an empty
+    message leaves MERGE_HEAD for `git commit`, as git), `git revert` (unless --no-edit: git opens it at a terminal), `git cherry-pick -e`,
+    `git tag -a` without -m. A hook may answer the text instead of saving through `write` (the node tests' fake editor does). Without the
+    hook (node, a shell built without it) everything behaves as before: commit says to use -m, merge and revert take their message as is.
+  - **Stash, revert, cherry-pick** share the merge's three-way code (`threeWay`, `mergeWrites`, `writeMerge`): a stash's changes merge into
+    the index as it is now ("Updated upstream" / "Stashed changes"; then the index goes back to what it was, plus the new files), a
+    cherry-pick merges the commit into HEAD with its parent as the base, a revert the parent with the commit as the base. A stash entry is
+    git's three commits (the working tree, with HEAD, the index and, with -u, the untracked files as parents); `refs/stash` names the newest
+    and `logs/refs/stash` lists them all. An interrupted pick writes `CHERRY_PICK_HEAD` / `REVERT_HEAD` and `MERGE_MSG` as git does (one
+    commit at a time, so no `.git/sequencer`); `git status`, `git commit` (the picked commit's author is kept) and `git switch` (which
+    refuses during a merge, cherry-pick or revert, as git) know about them.
+  - **log --graph** is git's `graph.c` ported state for state (padding, skip, pre-commit, commit, post-merge, collapsing; no colours), over
+    git's `--topo-order` in "graph order" (a LIFO of ready commits, so a merge's second parent is drawn first). Not with paths, -p or --stat.
   - The repository is a `.git` directory in the virtual file system (so `ls -a`, `cat .git/HEAD` and `rm -rf .git` work as in real life):
     HEAD, config, description, refs/heads/…, refs/tags/…, logs/HEAD (the last 100 moves), MERGE_HEAD, MERGE_MSG, ORIG_HEAD as text like
     git's; the objects in **one JSON file**, `.git/objects.json` (`{"v":1,"objects":{id: ["blob", text] | ["tree", [[mode, name, id]…]] |
@@ -708,11 +730,17 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
     same way, every blob must exist, no path both a file and a directory. HEAD, refs, MERGE_HEAD and ORIG_HEAD must hold commit ids; a
     broken branch ref is skipped in lists. Config lines git would refuse stop every command, as in git. Dictionaries are null-prototype, so
     `__proto__` is an ordinary file or branch name. Damage gives `fatal: .git/<file> is damaged: <why>` with the hint that `rm -rf .git`
-    starts again (test_git.js has a hostile case for each).
-  - **Not here:** remotes (clone, push, pull, fetch, remote say there is no network), stash, rebase, cherry-pick, revert, blame, bisect,
-    clean; an editor for messages (`git commit` without `-m` says to use `-m`; a merge's own message is used); naming files on `git commit`;
-    rename detection other than exact (100%) renames; a merge commit's combined diff in `git show`; submodules (a nested repository's files
-    are just files).
+    starts again (test_git.js has a hostile case for each). The stash's files are checked the same way: every line of `logs/refs/stash`
+    must be `old new who<TAB>message` (at most 100 lines, which is also the most `git stash` keeps) naming a commit of a stash's shape, and
+    `refs/stash` must name the newest; `CHERRY_PICK_HEAD` and `REVERT_HEAD`, like `MERGE_HEAD`, count only when they hold a commit's id.
+    `git gc` keeps every stash entry and an interrupted pick's commit.
+  - **Not here:** remotes (clone, push, pull, fetch, remote say there is no network), rebase, bisect; revert or cherry-pick of several
+    commits, of a merge (-m) or without committing (-n); `git stash` with paths, -p, --index, --keep-index, `stash branch`; `git clean -i`;
+    `git restore -p` and the other interactive modes; `--graph` with paths, -p or --stat; `diff --word-diff`; blame following renames
+    (a line is the commit's where the file first has its name), `-L`, `--porcelain`; naming files on `git commit`; rename detection other
+    than exact (100%) renames; a merge commit's combined diff in `git show`; submodules (a nested repository's files are just files).
+    Known small differences from git: `blame`'s "Not Committed Yet" time is the shell's clock (git's is the moment you run it), and the
+    line diff is Myers' (git's xdiff can pick a different but equally short diff when lines repeat).
 - **Not there (yet):** job control (`&`), `[[ ]]`, associative arrays in the shell (`declare -A`), here-documents and `<<<`, `select`, `ln`
   (the file system has no links), `tar`, `ssh` and anything needing a network (those names answer with a sentence saying so), a Windows
   `cmd`/PowerShell dialect (planned with the course).

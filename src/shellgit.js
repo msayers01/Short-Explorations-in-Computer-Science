@@ -1,8 +1,9 @@
 /* A practice git for the shell (shell.js): what a beginner does with version control, with git's own messages, exit statuses and formats.
 
-   init, status (-s), add, rm, mv, restore, commit (-m -a --amend), log (--oneline -n --all -p --stat --format), diff (--staged, commits,
-   --stat), show (commit, tag, commit:path), branch, switch, checkout, merge (fast-forward, three-way, conflicts written into the files),
-   reset (--soft --mixed --hard, paths), tag (lightweight and -a -m), config, reflog, ls-files, cat-file, rev-parse, gc, help.
+   init, status (-s), add, rm, mv, restore, commit (-m -a --amend), log (--oneline -n --all -p --stat --format --graph), diff (--staged,
+   commits, --stat), show (commit, tag, commit:path), branch, switch, checkout, merge (fast-forward, three-way, conflicts written into the
+   files), reset (--soft --mixed --hard, paths), tag (lightweight and -a), stash, revert, cherry-pick, blame, clean, config, reflog,
+   ls-files, cat-file, rev-parse, gc, help. Messages not given with -m are written in the terminal's nano (sh.hooks.nano), when there is one.
    clone, push, pull, fetch and remote need another computer: they say there is no network here.
 
    The repository is a .git directory in the virtual file system (so ls -a shows it and rm -rf .git removes it), laid out like a real one
@@ -337,7 +338,8 @@
     const keep = dict(), todo = [];
     const add = (id) => { if (id && has(R.objs, id) && !keep[id]) { keep[id] = 1; todo.push(id); } };
     add(headId(R, true)); for (const kind of ['heads', 'tags']) for (const r of listRefs(R, kind)) add(r.id);
-    add(readId(R, 'MERGE_HEAD')); add(readId(R, 'ORIG_HEAD'));
+    for (const f of ['MERGE_HEAD', 'ORIG_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD']) add(readId(R, f));
+    for (const l of (R.rd('logs/refs/stash') || '').split('\n')) { const m = /^[0-9a-f]{40} ([0-9a-f]{40}) /.exec(l); if (m) add(m[1]); }   // every stash entry
     for (const p in R.index) add(R.index[p].id);
     for (const p in R.conflicts) { const c = R.conflicts[p]; for (const s of [c.base, c.ours, c.theirs]) if (s) add(s.id); }
     for (const id in R.fresh) add(id);
@@ -362,6 +364,8 @@
     for (const [p, n] of R.fs.walk(base)) { if (n.t !== 'f' || out.length > 1000) continue; const name = p.slice(base.length + 1), id = refId(R, kind, name); if (id && id !== 'broken') out.push({ name, id }); }
     return out.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
   }
+  // refs/stash for log --all and the decorations: [{ id }] when it names a commit, else [] (git stash itself checks it more closely)
+  const stashRef = (R) => { const id = readId(R, 'refs/stash'); return id ? [{ name: 'stash', id }] : []; };
   /** the commit HEAD is on, or null on a branch with no commits yet */
   function headId(R, quiet) {
     if (R.head.id) return R.head.id;
@@ -438,8 +442,10 @@
   /** a name for an object, before ~ and ^: HEAD, a tag, a branch, or the start of an id (4 or more hex digits) */
   function nameToId(R, s) {
     if (s === 'HEAD' || s === '@') return headId(R);
-    if (s === 'MERGE_HEAD' || s === 'ORIG_HEAD') return readId(R, s);
+    if (/^(MERGE_HEAD|ORIG_HEAD|CHERRY_PICK_HEAD|REVERT_HEAD)$/.test(s)) return readId(R, s);
+    if (s === 'stash' || s === 'refs/stash') return readId(R, 'refs/stash');
     let m;
+    if ((m = /^(?:refs\/)?stash@\{(\d{1,9})\}$/.exec(s))) { const e = stashList(R)[+m[1]]; return e ? e.id : null; }
     if ((m = /^refs\/(heads|tags)\/(.+)$/.exec(s))) { const id = refId(R, m[1], m[2]); return id === 'broken' ? null : id; }
     for (const kind of ['tags', 'heads']) { const id = refId(R, kind, s); if (id && id !== 'broken') return id; }
     if (/^[0-9a-f]{4,40}$/.test(s)) {
@@ -580,7 +586,7 @@
   /* ---------------- status ---------------- */
   function changes(R, work) {
     work = work || scan(R);
-    const head = commitTree(R, headId(R)), idx = R.index, conf = R.conflicts;
+    const head = commitTree(R, R.statusBase !== undefined ? R.statusBase : headId(R)), idx = R.index, conf = R.conflicts;   // (git commit --amend's template compares with the commit before)
     const staged = [], unstaged = [], untracked = [], unmerged = [];
     const paths = Object.keys(Object.assign(dict(), head, idx)).filter((p) => !conf[p]).sort();
     for (const p of paths) { const h = head[p], i = idx[p]; if (!h) staged.push({ kind: 'new', path: p, id: i.id }); else if (!i) staged.push({ kind: 'deleted', path: p, id: h.id }); else if (!same(h, i)) staged.push({ kind: 'modified', path: p }); }
@@ -609,33 +615,46 @@
     const name = to && !HEX40.test(to) && (refId(R, 'tags', to) || refId(R, 'heads', to)) ? to : short(last ? last.id : R.head.id);
     return 'HEAD detached ' + (at || !last ? 'at ' : 'from ') + name;
   }
-  /** git status, long form; forCommit: the words git commit uses when there is nothing to commit */
-  function statusLong(R, out, forCommit) {
-    const c = changes(R), unborn = !headId(R), merging = !!readId(R, 'MERGE_HEAD');
+  /** a merge, cherry-pick or revert that stopped for the student: { kind, id } or null (MERGE_HEAD, CHERRY_PICK_HEAD, REVERT_HEAD hold commit ids) */
+  function inProgress(R) {
+    for (const [kind, file] of [['merge', 'MERGE_HEAD'], ['cherry-pick', 'CHERRY_PICK_HEAD'], ['revert', 'REVERT_HEAD']]) { const id = readId(R, file); if (id) return { kind, id }; }
+    return null;
+  }
+  /** git status, long form; forCommit: the words git commit uses when there is nothing to commit; noHints: as in a commit message's template */
+  function statusLong(R, out, forCommit, noHints) {
+    const c = changes(R), unborn = !headId(R), op = inProgress(R), merging = !!op && op.kind === 'merge', hint = (t) => noHints ? '' : t;
+    const fromCommit = !op || op.kind === 'revert';   // as git's "whence": during a merge or a cherry-pick there are no "to unstage" hints
+    const unstageHint = fromCommit ? hint(unborn ? '  (use "git rm --cached <file>..." to unstage)\n' : '  (use "git restore --staged <file>..." to unstage)\n') : '';
     let s = branchLine(R) + '\n';
     if (unborn) s += '\n' + (forCommit ? 'Initial commit' : 'No commits yet') + '\n\n';
-    if (merging) s += c.unmerged.length ? 'You have unmerged paths.\n  (fix conflicts and run "git commit")\n  (use "git merge --abort" to abort the merge)\n\n' : 'All conflicts fixed but you are still merging.\n  (use "git commit" to conclude merge)\n\n';
+    if (merging) s += c.unmerged.length ? 'You have unmerged paths.\n' + hint('  (fix conflicts and run "git commit")\n  (use "git merge --abort" to abort the merge)\n') + '\n' : 'All conflicts fixed but you are still merging.\n' + hint('  (use "git commit" to conclude merge)\n') + '\n';
+    else if (op) {
+      const k = op.kind;
+      s += 'You are currently ' + (k === 'revert' ? 'reverting' : 'cherry-picking') + ' commit ' + short(op.id) + '.\n' + hint((c.unmerged.length ? '  (fix conflicts and run "git ' + k + ' --continue")\n' : '  (all conflicts fixed: run "git ' + k + ' --continue")\n') +
+        '  (use "git ' + k + ' --skip" to skip this patch)\n  (use "git ' + k + ' --abort" to cancel the ' + k + ' operation)\n') + '\n';
+    }
     if (c.staged.length) {
-      s += 'Changes to be committed:\n' + (merging ? '' : unborn ? '  (use "git rm --cached <file>..." to unstage)\n' : '  (use "git restore --staged <file>..." to unstage)\n');
+      s += 'Changes to be committed:\n' + unstageHint;
       for (const e of c.staged) s += '\t' + LABEL[e.kind] + (e.kind === 'renamed' ? cq(shown(R, e.from)) + ' -> ' : '') + cq(shown(R, e.path)) + '\n';
       s += '\n';
     }
     if (c.unmerged.length) {
-      s += 'Unmerged paths:\n' + (c.unmerged.every((e) => e.code === 'UU' || e.code === 'AA') ? '  (use "git add <file>..." to mark resolution)\n' : '  (use "git add/rm <file>..." as appropriate to mark resolution)\n');
+      s += 'Unmerged paths:\n' + unstageHint + hint(c.unmerged.every((e) => e.code === 'UU' || e.code === 'AA') ? '  (use "git add <file>..." to mark resolution)\n' : '  (use "git add/rm <file>..." as appropriate to mark resolution)\n');
       for (const e of c.unmerged) s += '\t' + CONFLICT_LABEL[e.code] + cq(shown(R, e.path)) + '\n';
       s += '\n';
     }
     if (c.unstaged.length) {
-      s += 'Changes not staged for commit:\n  (use "git add' + (c.unstaged.some((e) => e.kind === 'deleted') ? '/rm' : '') + ' <file>..." to update what will be committed)\n  (use "git restore <file>..." to discard changes in working directory)\n';
+      s += 'Changes not staged for commit:\n' + hint('  (use "git add' + (c.unstaged.some((e) => e.kind === 'deleted') ? '/rm' : '') + ' <file>..." to update what will be committed)\n  (use "git restore <file>..." to discard changes in working directory)\n');
       for (const e of c.unstaged) s += '\t' + LABEL[e.kind] + cq(shown(R, e.path)) + '\n';
       s += '\n';
     }
     if (c.untracked.length) {
-      s += 'Untracked files:\n  (use "git add <file>..." to include in what will be committed)\n';
+      s += 'Untracked files:\n' + hint('  (use "git add <file>..." to include in what will be committed)\n');
       for (const e of c.untracked) s += '\t' + cq(e.dir ? shownDir(R, e.path) : shown(R, e.path)) + '\n';
       s += '\n';
     }
-    if (!c.staged.length) s += c.unstaged.length || c.unmerged.length ? 'no changes added to commit (use "git add" and/or "git commit -a")\n' : c.untracked.length ? 'nothing added to commit but untracked files present (use "git add" to track)\n' : unborn ? 'nothing to commit (create/copy files and use "git add" to track)\n' : 'nothing to commit, working tree clean\n';
+    if (!c.staged.length && !noHints && R.statusAmend) s += 'No changes\n';   // (git commit --amend that would leave nothing)
+    else if (!c.staged.length && !noHints) s += c.unstaged.length || c.unmerged.length ? 'no changes added to commit (use "git add" and/or "git commit -a")\n' : c.untracked.length ? 'nothing added to commit but untracked files present (use "git add" to track)\n' : unborn ? 'nothing to commit (create/copy files and use "git add" to track)\n' : 'nothing to commit, working tree clean\n';
     out(s);
     return c;
   }
@@ -768,7 +787,7 @@
   /** id → the names to show beside it: (HEAD -> main, tag: v1, feature), in git's order */
   function decorations(R) {
     const out = dict(), add = (id, s) => { (out[id] || (out[id] = [])).push(s); };
-    const refs = listRefs(R, 'heads').map((r) => ({ id: r.id, s: r.name, branch: r.name })).concat(listRefs(R, 'tags').map((r) => ({ id: peel(R, r.id), s: 'tag: ' + r.name })));
+    const refs = listRefs(R, 'heads').map((r) => ({ id: r.id, s: r.name, branch: r.name })).concat(stashRef(R).map((r) => ({ id: r.id, s: 'refs/stash' })), listRefs(R, 'tags').map((r) => ({ id: peel(R, r.id), s: 'tag: ' + r.name })));
     for (const r of refs.reverse()) if (r.id) add(r.id, r);
     const h = headId(R, true);
     if (h) { const list = out[h] || (out[h] = []); const k = R.head.branch ? list.findIndex((r) => r.branch === R.head.branch) : -1; const head = k >= 0 ? { s: 'HEAD -> ' + R.head.branch } : { s: 'HEAD' }; if (k >= 0) list.splice(k, 1); list.unshift(head); }
@@ -778,8 +797,8 @@
   const indent = (msg) => msg.replace(/\n+$/, '').split('\n').map((l) => '    ' + l).join('\n') + '\n';
   function format(R, id, fmt, deco) {
     const c = R.objs[id], parts = msg2(c.message);
-    const map = { H: id, h: short(id), T: c.tree, t: short(c.tree), P: c.parents.join(' '), p: c.parents.map(short).join(' '), an: c.author.name, ae: c.author.email, ad: gitDate(c.author), cn: c.committer.name, ce: c.committer.email, cd: gitDate(c.committer), s: parts.subject, b: parts.body, n: '\n', d: deco[id] || '', D: (deco[id] || '').replace(/^ \(|\)$/g, ''), '%': '%' };
-    return fmt.replace(/%(an|ae|ad|cn|ce|cd|[HhTtPpsbndD%])/g, (m, k) => map[k]);
+    const map = { H: id, h: short(id), T: c.tree, t: short(c.tree), P: c.parents.join(' '), p: c.parents.map(short).join(' '), an: c.author.name, ae: c.author.email, ad: gitDate(c.author), cn: c.committer.name, ce: c.committer.email, cd: gitDate(c.committer), s: parts.subject, b: parts.body, B: c.message, n: '\n', d: deco[id] || '', D: (deco[id] || '').replace(/^ \(|\)$/g, ''), '%': '%' };
+    return fmt.replace(/%(an|ae|ad|cn|ce|cd|[HhTtPpsbBndD%])/g, (m, k) => map[k]);
   }
   const msg2 = (m) => { const k = m.search(/\n\s*\n/); return { subject: subject(m), body: k < 0 ? '' : m.slice(k).replace(/^\s*\n/, '').replace(/\n*$/, '\n').replace(/^\n$/, '') }; };
   function showCommit(R, id, io, o, deco) {
@@ -800,6 +819,161 @@
       if (o.stat) diffstat(R, ch, io); if (o.stat && o.patch) io.out('\n');
       if (o.patch) patch(R, ch, io);
     }
+  }
+
+  /* ---------------- git log --graph: git's graph.c, ported (without the colours) ---------------- */
+  // --graph implies --topo-order: as git's sort_in_topological_order in "graph order", a commit comes after all its children, and the
+  // tips and the parents that become ready are taken last-in first-out, so a merge's second parent's line is drawn first.
+  function topo(R, list) {
+    const indeg = dict(); for (const id of list) indeg[id] = 1;
+    for (const id of list) for (const p of R.objs[id].parents) if (indeg[p]) indeg[p]++;
+    const stack = list.filter((id) => indeg[id] === 1).reverse(), out = [];
+    while (stack.length) {
+      const c = stack.pop();
+      for (const p of R.objs[c].parents) { if (!indeg[p]) continue; if (--indeg[p] === 1) stack.push(p); }
+      indeg[c] = 0; out.push(c);
+    }
+    return out;
+  }
+  const MERGE_CHARS = ['/', '|', '\\'];
+  function makeGraph(R) {
+    const PADDING = 0, SKIP = 1, PRE_COMMIT = 2, COMMIT = 3, POST_MERGE = 4, COLLAPSING = 5;
+    const g = { commit: null, parents: [], numParents: 0, width: 0, expansionRow: 0, state: PADDING, prevState: PADDING, commitIndex: 0, prevCommitIndex: 0, mergeLayout: 0, edgesAdded: 0, prevEdgesAdded: 0, columns: [], newColumns: [], mapping: [], oldMapping: [], mappingSize: 0 };
+    const setState = (s) => { g.prevState = g.state; g.state = s; };
+    const at = (a, i) => a[i] === undefined ? -1 : a[i];
+    function insert(c, idx) {
+      let i = g.newColumns.indexOf(c), mi;
+      if (i < 0) { i = g.newColumns.length; g.newColumns.push(c); }
+      if (g.numParents > 1 && idx > -1 && g.mergeLayout === -1) {
+        // the first parent of a merge: the merge line's layout depends on whether that parent is in a column to the left
+        const dist = idx - i, shift = dist > 1 ? 2 * dist - 3 : 1;
+        g.mergeLayout = dist > 0 ? 0 : 1;
+        g.edgesAdded = g.numParents + g.mergeLayout - 2;
+        mi = g.width + (g.mergeLayout - 1) * shift;
+        g.width += 2 * g.mergeLayout;
+      } else if (g.edgesAdded > 0 && i === at(g.mapping, g.width - 2)) { mi = g.width - 2; g.edgesAdded = -1; }   // the two edges join at once
+      else { mi = g.width; g.width += 2; }
+      g.mapping[mi] = i;
+    }
+    function updateColumns() {
+      g.columns = g.newColumns; g.newColumns = [];
+      g.mappingSize = 2 * (g.columns.length + g.numParents); g.mapping = Array(g.mappingSize).fill(-1);
+      g.width = 0; g.prevEdgesAdded = g.edgesAdded; g.edgesAdded = 0;
+      let seen = false;
+      for (let i = 0; i <= g.columns.length; i++) {
+        let cc; if (i === g.columns.length) { if (seen) break; cc = g.commit; } else cc = g.columns[i];
+        if (cc === g.commit) { seen = true; g.commitIndex = i; g.mergeLayout = -1; for (const p of g.parents) insert(p, i); if (g.numParents === 0) g.width += 2; }
+        else insert(cc, -1);
+      }
+      while (g.mappingSize > 1 && at(g.mapping, g.mappingSize - 1) < 0) g.mappingSize--;
+    }
+    const dashed = () => g.numParents + g.mergeLayout - 3;
+    const needsPre = () => g.numParents >= 3 && g.commitIndex < g.columns.length - 1 && g.expansionRow < dashed() * 2;
+    const correct = () => { for (let i = 0; i < g.mappingSize; i++) { const t = at(g.mapping, i); if (t >= 0 && t !== (i >> 1)) return false; } return true; };
+    function update(id) {
+      g.commit = id; g.parents = R.objs[id].parents.slice(); g.numParents = g.parents.length;
+      g.prevCommitIndex = g.commitIndex;
+      updateColumns();
+      g.expansionRow = 0;
+      g.state = g.state !== PADDING ? SKIP : needsPre() ? PRE_COMMIT : COMMIT;
+    }
+    const each = (fn) => { let seen = false; for (let i = 0; i <= g.columns.length; i++) { let cc; if (i === g.columns.length) { if (seen) break; cc = g.commit; } else cc = g.columns[i]; if (cc === g.commit) seen = true; fn(cc, i, seen); } };
+    const LINES = [
+      () => '| '.repeat(g.newColumns.length),
+      () => { setState(needsPre() ? PRE_COMMIT : COMMIT); return '...'; },
+      () => {
+        let s = '', seen = false;
+        g.columns.forEach((col, i) => {
+          if (col === g.commit) { seen = true; s += '|' + ' '.repeat(g.expansionRow); }
+          else if (seen && g.expansionRow === 0) s += g.prevState === POST_MERGE && g.prevCommitIndex < i ? '\\' : '|';
+          else s += seen ? '\\' : '|';
+          s += ' ';
+        });
+        g.expansionRow++; if (!needsPre()) setState(COMMIT);
+        return s;
+      },
+      () => {
+        let s = '';
+        each((cc, i, seen) => {
+          if (cc === g.commit) { s += '*'; if (g.numParents > 2) for (let k = 0, d = dashed(); k < d; k++) s += '-' + (k === d - 1 ? '.' : '-'); }
+          else if (seen && g.edgesAdded > 1) s += '\\';
+          else if (seen && g.edgesAdded === 1) s += g.prevState === POST_MERGE && g.prevEdgesAdded > 0 && g.prevCommitIndex < i ? '\\' : '|';
+          else if (g.prevState === COLLAPSING && at(g.oldMapping, 2 * i + 1) === i && at(g.mapping, 2 * i) < i) s += '/';
+          else s += '|';
+          s += ' ';
+        });
+        setState(g.numParents > 1 ? POST_MERGE : correct() ? PADDING : COLLAPSING);
+        return s;
+      },
+      () => {
+        let s = '', parentCol = false;
+        each((cc, i, seen) => {
+          if (cc === g.commit) {
+            let idx = g.mergeLayout;
+            for (let j = 0; j < g.numParents; j++) { s += MERGE_CHARS[idx]; if (idx === 2) { if (g.edgesAdded > 0 || j < g.numParents - 1) s += ' '; } else idx++; }
+            if (g.edgesAdded === 0) s += ' ';
+          } else if (seen) s += (g.edgesAdded > 0 ? '\\' : '|') + ' ';
+          else { s += '|'; if (g.mergeLayout !== 0 || i !== g.commitIndex - 1) s += parentCol ? '_' : ' '; }
+          if (cc === g.parents[0]) parentCol = true;
+        });
+        setState(correct() ? PADDING : COLLAPSING);
+        return s;
+      },
+      () => {
+        let s = '', usedH = false, hEdge = -1, hTarget = -1;
+        const old = g.mapping; g.mapping = g.oldMapping; g.oldMapping = old;
+        for (let i = 0; i < g.mappingSize; i++) g.mapping[i] = -1;
+        for (let i = 0; i < g.mappingSize; i++) {
+          const t = at(g.oldMapping, i); if (t < 0) continue;
+          if (t * 2 === i) g.mapping[i] = t;   // already in its place
+          else if (at(g.mapping, i - 1) < 0) {   // nothing to the left: one step left
+            g.mapping[i - 1] = t;
+            if (hEdge === -1) { hEdge = i; hTarget = t; for (let j = t * 2 + 3; j < i - 2; j += 2) g.mapping[j] = t; }
+          } else if (at(g.mapping, i - 1) !== t) {   // a line to the left that is not ours: cross it
+            g.mapping[i - 2] = t;
+            if (hEdge === -1) { hTarget = t; hEdge = i - 1; for (let j = t * 2 + 3; j < i - 2; j += 2) g.mapping[j] = t; }
+          }
+        }
+        if (at(g.mapping, g.mappingSize - 1) < 0) g.mappingSize--;
+        for (let i = 0; i < g.mappingSize; i++) {
+          const t = at(g.mapping, i);
+          if (t < 0) s += ' ';
+          else if (t * 2 === i) s += '|';
+          else if (t === hTarget && i !== hEdge - 1) { if (i !== t * 2 + 3) g.mapping[i] = -1; usedH = true; s += '_'; }
+          else { if (usedH && i < hEdge) g.mapping[i] = -1; s += '/'; }
+        }
+        if (correct()) setState(PADDING);
+        g.oldMapping = g.mapping.slice();   // the next commit's line looks at where the lines went
+        return s;
+      },
+    ];
+    const pad = (s) => s.length < g.width ? s + ' '.repeat(g.width - s.length) : s;
+    const next = () => { const shown = g.state === COMMIT; return { s: pad(LINES[g.state]()), shown }; };
+    const finished = () => g.state === PADDING;
+    return {
+      update,
+      /** the graph's lines down to the commit's own, that last one without its newline */
+      showCommit() { let out = '', shown = false; while (!shown && !finished()) { const r = next(); out += r.s; shown = r.shown; if (!shown) out += '\n'; } return out; },
+      /** the graph's next line, to go before a line of the message */
+      oneline: () => next().s,
+      /** the line between two commits (graph_show_padding) */
+      padding() {
+        if (g.state !== COMMIT) return next().s;
+        let s = ''; for (const col of g.columns) s += '|' + (col === g.commit && g.numParents > 2 ? ' '.repeat((g.numParents - 2) * 2) : ' ');
+        g.prevState = PADDING; return pad(s);
+      },
+      /** the message with the graph before each of its lines, and the rest of the graph for this commit after it */
+      showMsg(sb) {
+        let out = ''; const parts = sb.split(/(?<=\n)/);
+        parts.forEach((p, k) => { out += p; if (p.endsWith('\n') && k < parts.length - 1) out += next().s; });
+        if (!finished()) {
+          const nl = sb.endsWith('\n'); if (!nl) out += '\n';
+          for (;;) { out += next().s; if (finished()) break; out += '\n'; }
+          if (nl) out += '\n';
+        }
+        return out;
+      },
+    };
   }
 
   /* ---------------- options ---------------- */
@@ -1001,45 +1175,104 @@
     return 0;
   }
 
-  sub('commit', { use: 'git commit [-a] [-q] [--amend] [--allow-empty] -m <msg>', desc: 'Record changes to the repository',
-    run(args, io, sh) {
-      const { o, rest } = getopt(args, { m: 'm[]', message: 'm[]', a: 'all', all: 'all', q: 'quiet', quiet: 'quiet', amend: 'amend', 'no-edit': 'noedit', 'allow-empty': 'empty', 'allow-empty-message': 'emptymsg', v: 'verbose', e: 'edit', edit: 'edit', F: 'file=', file: 'file=' }, 'commit');
+  /* ---------------- messages in the editor ---------------- */
+  // When the terminal has its nano (sh.hooks.nano), git opens it on .git/<file> as real git opens $EDITOR, and reads the file back when the
+  // student leaves. → the text, or null when there is no editor here (node tests, a shell without the hook): the caller then does what it
+  // did before there was an editor (a message is needed with -m). The hook may also answer with the final text (the node tests' fake editor).
+  const hasEditor = (sh) => !!(sh.hooks && sh.hooks.nano);
+  async function editMessage(R, file, template) {
+    const sh = R.sh; if (!hasEditor(sh)) return null;
+    gitWrite(R, file, template);
+    const abs = R.gd + '/' + file;
+    const write = (t) => { try { R.fs.write(abs, String(t)); return null; } catch (e) { if (!(e instanceof FsError)) throw e; return e.message; } };
+    const res = await sh.hooks.nano(sh.tilde(abs), template, write);
+    if (typeof res === 'string') { const err = write(res); if (err) die('error: could not write .git/' + file + ': ' + err); }
+    const t = R.rd(file); return t === null ? '' : t;
+  }
+  // a status as the comment lines of a template: "# " before each line, "#" alone before an empty one or a tab
+  const commented = (t) => t.replace(/\n$/, '').split('\n').map((l) => l === '' ? '#' : l[0] === '\t' ? '#' + l : '# ' + l).join('\n') + '\n';
+  /** what git commit puts in the editor: the message so far, the merge or cherry-pick note, the instructions, who and when, the status */
+  function commitTemplate(R, msg, op, idents) {
+    let t = msg || '';
+    if (op && op.kind !== 'revert') t += '#\n# It looks like you may be committing a ' + op.kind + '.\n# If this is not correct, please run\n#\tgit update-ref -d ' + (op.kind === 'merge' ? 'MERGE_HEAD' : 'CHERRY_PICK_HEAD') + '\n# and try again.\n\n';
+    t += "\n# Please enter the commit message for your changes. Lines starting\n# with '#' will be ignored, and an empty message aborts the commit.\n";
+    if (idents.length) t += '#\n' + idents.map((l) => '# ' + l + '\n').join('');
+    let st = ''; statusLong(R, (s) => { st += s; }, true, true);
+    return t + '#\n' + commented(st);
+  }
+  const MERGE_TEMPLATE = "# Please enter a commit message to explain why this merge is necessary,\n# especially if it merges an updated upstream into a topic branch.\n#\n# Lines starting with '#' will be ignored, and an empty message aborts\n# the commit.\n";
+  const personText = (p) => p.name + ' <' + p.email + '> ' + p.ts + ' ' + p.tz;
+  /** the lines under "[main abc1234] subject" that say whose and when, when git thinks they are worth saying */
+  function identLines(c, dateShown) {
+    const out = [];
+    if (c.author.name !== c.committer.name || c.author.email !== c.committer.email) out.push('Author: ' + c.author.name + ' <' + c.author.email + '>');
+    if (dateShown) out.push('Date: ' + gitDate(c.author));
+    return out;
+  }
+  /** the summary a commit, a cherry-pick or a revert prints: [main abc1234] subject, then the stat and the mode lines (none for a merge) */
+  function commitSummary(R, id, io, parentTree, dateShown) {
+    const c = R.objs[id];
+    io.out('[' + (R.head.branch ? R.head.branch : 'detached HEAD') + (!c.parents.length ? ' (root-commit)' : '') + ' ' + short(id) + '] ' + subject(c.message) + '\n');
+    io.out(identLines(c, dateShown).map((l) => ' ' + l + '\n').join(''));
+    if (c.parents.length < 2) { const ch = pairs(R, parentTree ? flat(R, parentTree) : dict(), flat(R, c.tree)); diffstat(R, ch, io, true); if (!ch.length) io.out(' 0 files changed\n'); io.out(modeLines(ch)); }
+  }
+
+  sub('commit', { use: 'git commit [-a] [-q] [--amend] [--allow-empty] [-m <msg>]', desc: 'Record changes to the repository',
+    async run(args, io, sh) {
+      const { o, rest } = getopt(args, { m: 'm[]', message: 'm[]', a: 'all', all: 'all', q: 'quiet', quiet: 'quiet', amend: 'amend', 'no-edit': 'noedit', 'allow-empty': 'empty', 'allow-empty-message': 'emptymsg', v: 'verbose', e: 'edit', edit: 'edit', F: 'file=', file: 'file=', cleanup: 'cleanup=' }, 'commit');
+      if (o.cleanup !== undefined && !/^(strip|whitespace|verbatim|default)$/.test(o.cleanup)) die('fatal: Invalid cleanup mode ' + o.cleanup);
       const R = openRepo(sh);
       if (rest.length) die('fatal: this practice git commits what is staged: git add ' + rest.join(' ') + ', then git commit -m "message" (naming files on git commit is not available here)');
-      if (Object.keys(R.conflicts).length) die('error: Committing is not possible because you have unmerged files.\nhint: Fix them up in the work tree, and then use \'git add/rm <file>\'\nhint: as appropriate to mark resolution and make a commit.\nfatal: Exiting because of an unresolved conflict.\n' + Object.keys(R.conflicts).sort().map((p) => 'U\t' + shown(R, p)).join('\n'));
-      const head = headId(R), merge = readId(R, 'MERGE_HEAD');
-      if (o.amend && !head) die('fatal: You have nothing to amend.');
-      if (o.amend && merge) die('fatal: You are in the middle of a merge -- cannot amend.');
-      let msg, cleanup = 'whitespace';
-      if (o.file !== undefined) { try { msg = sh.fs.read(sh.fs.resolve(o.file)); } catch (e) { die("fatal: could not read log file '" + o.file + "': No such file or directory"); } cleanup = 'strip'; }
-      else if (o.m) msg = o.m.join('\n\n');
-      else if (merge) { msg = R.rd('MERGE_MSG') || 'Merge commit ' + q(short(merge)) + '\n'; cleanup = o.noedit ? 'whitespace' : 'strip'; }   // as git: --no-edit keeps the # Conflicts lines, the editor's message drops them
-      else if (o.amend) msg = R.objs[head].message;
-      else msg = null;   // (said only when there is something to commit, as git opens its editor only then)
-      const noEditor = () => die('error: there is no text editor for commit messages in this practice terminal, so give the message with -m:\n    git commit -m "Say what you changed"\nAborting commit due to empty commit message.', 1);
-      if (msg !== null) msg = cleanMessage(msg, cleanup);
       if (o.all) {
+        // -a stages every tracked file as it is now, conflicted ones too (as git: whatever is in the file, markers and all). Only in memory
+        // until the commit is made, as git's temporary index.
         const work = scan(R);
+        for (const p of Object.keys(R.conflicts)) { const w = work[p]; delete R.conflicts[p]; if (w) R.index[p] = { mode: modeOf(w.node), id: store(R, { type: 'blob', text: w.node.d }) }; }
         for (const p of Object.keys(R.index)) { const w = work[p]; if (!w) delete R.index[p]; else if (!sameAsWork(R, R.index[p], w)) R.index[p] = { mode: modeOf(w.node), id: store(R, { type: 'blob', text: w.node.d }) }; }
         R.idxDirty = true;
       }
+      if (Object.keys(R.conflicts).length) die('error: Committing is not possible because you have unmerged files.\nhint: Fix them up in the work tree, and then use \'git add/rm <file>\'\nhint: as appropriate to mark resolution and make a commit.\nfatal: Exiting because of an unresolved conflict.\n' + Object.keys(R.conflicts).sort().map((p) => 'U\t' + shown(R, p)).join('\n'));
+      const head = headId(R), op = inProgress(R), merge = op && op.kind === 'merge' ? op.id : null, pick = op && op.kind === 'cherry-pick' ? op.id : null;
+      if (o.amend && !head) die('fatal: You have nothing to amend.');
+      if (o.amend && merge) die('fatal: You are in the middle of a merge -- cannot amend.');
+      if (o.amend && pick) die('fatal: You are in the middle of a cherry-pick -- cannot amend.');
+      let msg, cleanup = 'whitespace';
+      const saved = op ? R.rd('MERGE_MSG') : null;
+      if (o.file !== undefined) { try { msg = sh.fs.read(sh.fs.resolve(o.file)); } catch (e) { die("fatal: could not read log file '" + o.file + "': No such file or directory"); } cleanup = 'strip'; }
+      else if (o.m) msg = o.m.join('\n\n');
+      else if (merge || saved !== null) { msg = saved || (merge ? 'Merge commit ' + q(short(merge)) + '\n' : ''); cleanup = o.noedit ? 'whitespace' : 'strip'; }   // as git: --no-edit keeps the # Conflicts lines, the editor's message drops them
+      else if (o.amend) msg = R.objs[head].message;
+      else msg = null;   // (said only when there is something to commit, as git opens its editor only then)
+      const editing = hasEditor(sh) && !o.noedit && (o.edit || (o.m === undefined && o.file === undefined));
+      const noEditor = () => die('error: there is no text editor for commit messages in this practice terminal, so give the message with -m:\n    git commit -m "Say what you changed"\nAborting commit due to empty commit message.', 1);
       const tree = writeTree(R, R.index), parentTree = o.amend ? (R.objs[head].parents[0] ? R.objs[R.objs[head].parents[0]].tree : null) : head ? R.objs[head].tree : null;
       if (!o.amend && !o.empty && !merge && (head ? tree === R.objs[head].tree : !Object.keys(R.index).length)) { flush(R); statusLong(R, (s) => io.out(s), true); return 1; }
-      if (msg === null) noEditor();   // nothing is written: -a staged only in memory, as git's temporary index
+      if (o.amend && !o.empty && R.objs[head].parents.length < 2 && (parentTree ? tree === parentTree : !Object.keys(R.index).length)) {
+        flush(R); io.err('You asked to amend the most recent commit, but doing so would make\nit empty. You can repeat your command with --allow-empty, or you can\nremove the commit entirely with "git reset HEAD^".\n');
+        R.statusBase = R.objs[head].parents[0] || null; R.statusAmend = true; statusLong(R, (s) => io.out(s), true); delete R.statusBase; return 1;
+      }
+      // whose: an amended commit keeps its author, a cherry-pick the picked commit's (and both say when that was)
+      const old = o.amend ? R.objs[head] : pick ? R.objs[pick] : null, me = who(R);
+      const author = old ? personText(old.author) : me;
+      if (editing) {
+        const meP = parseCommit('tree ' + ZERO + '\nauthor ' + author + '\ncommitter ' + me + '\n\n');
+        const idents = identLines(meP, !!old).map((l) => l.replace(/^(Author|Date): /, (m, k) => k + ':' + ' '.repeat(k === 'Date' ? 6 : 4)));
+        if (o.amend) R.statusBase = R.objs[head].parents[0] || null;
+        const template = commitTemplate(R, msg, op, idents); delete R.statusBase;
+        msg = cleanMessage(await editMessage(R, 'COMMIT_EDITMSG', template), 'strip');
+      } else {
+        if (msg === null) noEditor();   // nothing is written: -a staged only in memory, as git's temporary index
+        if (o.cleanup === 'strip' || o.cleanup === 'whitespace') cleanup = o.cleanup;
+        if (o.cleanup !== 'verbatim') msg = cleanMessage(msg, cleanup);
+      }
       if (msg === '' && !o.emptymsg) { io.err('Aborting commit due to empty commit message.\n'); return 1; }
-      const old = o.amend ? R.objs[head] : null, me = who(R);
-      const author = old ? old.author.name + ' <' + old.author.email + '> ' + old.author.ts + ' ' + old.author.tz : me;
       const parents = o.amend ? old.parents : (head ? [head] : []).concat(merge ? [merge] : []);
       const raw = 'tree ' + tree + '\n' + parents.map((p) => 'parent ' + p + '\n').join('') + 'author ' + author + '\ncommitter ' + me + '\n\n' + msg;
       const id = store(R, parseCommit(raw));
       flush(R);
-      setHead(R, id, (o.amend ? 'commit (amend)' : !head ? 'commit (initial)' : merge ? 'commit (merge)' : 'commit') + ': ' + subject(msg));
-      if (merge) { gitRemove(R, 'MERGE_HEAD'); gitRemove(R, 'MERGE_MSG'); }
-      if (!o.quiet) {
-        io.out('[' + (R.head.branch ? R.head.branch : 'detached HEAD') + (!parents.length ? ' (root-commit)' : '') + ' ' + short(id) + '] ' + subject(msg) + '\n');
-        if (o.amend) io.out(' Date: ' + gitDate(R.objs[id].author) + '\n');
-        if (!merge) { const ch = pairs(R, parentTree ? flat(R, parentTree) : dict(), flat(R, tree)); diffstat(R, ch, io, true); if (!ch.length) io.out(' 0 files changed\n'); io.out(modeLines(ch)); }
-      }
+      setHead(R, id, (o.amend ? 'commit (amend)' : !head ? 'commit (initial)' : merge ? 'commit (merge)' : pick ? 'commit (cherry-pick)' : 'commit') + ': ' + subject(msg));
+      for (const f of ['MERGE_HEAD', 'MERGE_MSG', 'CHERRY_PICK_HEAD', 'REVERT_HEAD']) gitRemove(R, f);
+      if (!o.quiet) commitSummary(R, id, io, parentTree, !!old);
       return 0;
     } });
   // as git's message cleanup: trailing spaces and blank lines at the ends go; runs of blank lines become one; strip also drops # comments
@@ -1058,16 +1291,40 @@
       const revs = dd >= 0 ? rest.slice(0, dd) : rest.slice(), paths = dd >= 0 ? rest.slice(dd) : [];
       const starts = [];
       for (const r of revs) { const id = resolve(R, r); if (id) starts.push(id); else if (dd < 0 && sh.fs.exists(sh.fs.resolve(r))) paths.push(r); else badRev(r); }
-      if (o.all) { const h = headId(R, true); if (h) starts.push(h); for (const k of ['heads', 'tags']) for (const r of listRefs(R, k)) { const id = peel(R, r.id); if (id) starts.push(id); } }
+      if (o.all) { for (const k of ['heads', 'stash', 'tags']) for (const r of k === 'stash' ? stashRef(R) : listRefs(R, k)) { const id = peel(R, r.id); if (id) starts.push(id); } const h = headId(R, true); if (h) starts.push(h); }   // as git: the refs in name order, then HEAD
       if (!starts.length && !o.all) { const h = headId(R); if (!h) die("fatal: your current branch '" + (R.head.branch || 'HEAD') + "' does not have any commits yet"); starts.push(h); }
       const n = o.n !== undefined ? parseInt(o.n, 10) : Infinity;
       if (isNaN(n)) die("fatal: '" + o.n + "': not an integer");
-      let list = walk(R, starts);
+      if (o.graph) {
+        if (o.reverse) die("fatal: options '--reverse' and '--graph' cannot be used together");
+        if (paths.length) die('fatal: this practice git draws --graph for the whole history only (without paths)');
+        if (o.patch || o.stat) die('fatal: this practice git draws --graph without -p or --stat');
+      }
+      let list = o.graph ? topo(R, walk(R, starts)) : walk(R, starts);
       if (paths.length) { const ss = specs(R, paths); list = list.filter((id) => { const c = R.objs[id], mine = commitTree(R, id), ps = c.parents.length ? c.parents : [null]; return ps.every((p) => pairs(R, commitTree(R, p), mine, ss).length > 0); }); }
       list = list.slice(0, Math.max(0, n));
       if (o.reverse) list.reverse();
       if (o.pretty !== undefined) { if (o.pretty === 'oneline') o.oneline = true; else if (/^(format|tformat):/.test(o.pretty)) o.format = o.pretty.replace(/^t?format:/, ''); else if (!/^(medium|short|full)$/.test(o.pretty)) die("fatal: invalid --pretty format: " + o.pretty); }
       const deco = decorations(R), show = { oneline: o.oneline, decorate: o.decorate === undefined ? io.tty : o.decorate, patch: o.patch, stat: o.stat, format: o.format };
+      if (o.graph) {
+        // as git's show_log: the graph down to the commit's line, the commit, its message with the graph before each line
+        const G = makeGraph(R), hd = io.tty ? 'hd' : undefined;
+        list.forEach((id, k) => {
+          const c = R.objs[id], d = show.decorate ? deco[id] || '' : '';
+          G.update(id);
+          if (o.oneline || o.format !== undefined) {
+            io.out(G.showCommit());
+            if (o.format !== undefined) io.out(G.showMsg(format(R, id, o.format, deco)));
+            else { io.out(short(id), hd); io.out(d + ' ' + G.showMsg(subject(c.message))); }
+            io.out('\n');
+          } else {
+            if (k > 0) io.out(G.padding() + '\n');
+            io.out(G.showCommit()); io.out('commit ' + id, hd); io.out(d + '\n' + G.oneline());
+            io.out(G.showMsg((c.parents.length > 1 ? 'Merge: ' + c.parents.map(short).join(' ') + '\n' : '') + 'Author: ' + c.author.name + ' <' + c.author.email + '>\nDate:   ' + gitDate(c.author) + '\n\n' + indent(c.message)));
+          }
+        });
+        return 0;
+      }
       list.forEach((id, k) => { if (k > 0 && !o.oneline && o.format === undefined) io.out('\n'); showCommit(R, id, io, show, deco); });
       return 0;
     } });
@@ -1241,9 +1498,11 @@
   sub('switch', { use: 'git switch [-c <new-branch>] [--detach] <branch>', desc: 'Switch branches',
     run(args, io, sh) {
       const { o, rest } = getopt(args, { c: 'create=', create: 'create=', C: 'forcecreate=', 'force-create': 'forcecreate=', d: 'detach', detach: 'detach', q: 'quiet', quiet: 'quiet' }, 'switch');
-      const R = openRepo(sh);
-      if (o.create !== undefined || o.forcecreate !== undefined) return newBranch(R, o.create !== undefined ? o.create : o.forcecreate, rest[0], io, o.quiet, o.forcecreate !== undefined);
-      if (!rest.length) die('fatal: missing branch or commit argument');
+      const R = openRepo(sh), op = inProgress(R), create = o.create !== undefined || o.forcecreate !== undefined;
+      if (!rest.length && !create) die('fatal: missing branch or commit argument');
+      // as git switch (git checkout lets you): not in the middle of a merge, cherry-pick or revert
+      if (op) die('fatal: cannot switch branch while ' + { merge: 'merging', 'cherry-pick': 'cherry-picking', revert: 'reverting' }[op.kind] + '\nConsider "git ' + op.kind + ' --quit" or "git worktree add".');
+      if (create) return newBranch(R, o.create !== undefined ? o.create : o.forcecreate, rest[0], io, o.quiet, o.forcecreate !== undefined);
       let name = rest[0];
       if (name === '-') name = previous(R);
       if (o.detach) { const id = resolve(R, name); if (!id) die('fatal: invalid reference: ' + name); return goDetached(R, id, name, io, o.quiet, false); }
@@ -1266,7 +1525,7 @@
         if (before[0] !== undefined && !src) { if (dd >= 0) badRev(before[0]); paths.unshift(before[0]); return restorePaths(R, specs(R, paths), { worktree: true, side, count }, io); }
         return restorePaths(R, specs(R, paths), { worktree: true, source: src, sourceGiven: !!src, checkout: true, side: src ? null : side, count }, io);
       }
-      if (!rest.length) return 0;
+      if (!rest.length) { if (o.detach) { const h = headId(R); if (h) return goDetached(R, h, 'HEAD', io, o.quiet, false); } return 0; }
       if (side) return restorePaths(R, specs(R, rest), { worktree: true, side, count }, io);
       let name = rest[0]; if (name === '-') name = previous(R);
       const bid = refId(R, 'heads', name);
@@ -1277,12 +1536,64 @@
       return restorePaths(R, specs(R, [name]), { worktree: true, count }, io);
     } });
 
+  /** the three-way merge of three snapshots, path by path: { result (the paths that merged), conflicts, wtext (what a conflicted path's file
+      gets: the text with markers), notes (Auto-merging, CONFLICT lines) }. la and lb name the two sides in the markers and the notes. */
+  function threeWay(R, B, O, T, la, lb) {
+    const result = dict(), conflicts = dict(), wtext = dict(), notes = [];
+    for (const p of Object.keys(Object.assign(dict(), B, O, T)).sort()) {
+      const b = B[p], x = O[p], y = T[p];
+      if (same(x, y)) { if (x) result[p] = x; continue; }
+      if (same(b, x)) { if (y) result[p] = y; continue; }
+      if (same(b, y)) { if (x) result[p] = x; continue; }
+      if (x && y) {
+        const mode = x.mode === y.mode ? x.mode : b && x.mode === b.mode ? y.mode : x.mode;
+        if (x.id === y.id) { result[p] = { mode, id: x.id }; continue; }
+        notes.push('Auto-merging ' + p);
+        const m = merge3(b ? text(R, b.id) : '', text(R, x.id), text(R, y.id), la, lb);
+        if (m.conflicts) { notes.push('CONFLICT (' + (b ? 'content' : 'add/add') + '): Merge conflict in ' + p); conflicts[p] = { base: b || null, ours: x, theirs: y }; wtext[p] = { mode, text: m.text }; }
+        else result[p] = { mode, id: store(R, { type: 'blob', text: m.text }) };
+      } else if (x) { notes.push('CONFLICT (modify/delete): ' + p + ' deleted in ' + lb + ' and modified in ' + la + '.  Version ' + la + ' of ' + p + ' left in tree.'); conflicts[p] = { base: b, ours: x, theirs: null }; }
+      else { notes.push('CONFLICT (modify/delete): ' + p + ' deleted in ' + la + ' and modified in ' + lb + '.  Version ' + lb + ' of ' + p + ' left in tree.'); conflicts[p] = { base: b, ours: null, theirs: y }; wtext[p] = { mode: y.mode, text: text(R, y.id) }; }
+    }
+    return { result, conflicts, wtext, notes };
+  }
+  /** the files a merge into O writes, and the local changes or untracked files in its way: { plan, local, untracked } */
+  function mergeWrites(R, O, m, work) {
+    const { result, conflicts, wtext } = m, plan = [], local = [], untracked = [];
+    for (const p of Object.keys(Object.assign(dict(), O, result, wtext)).sort()) {
+      const want = wtext[p] || (conflicts[p] ? O[p] : result[p]) || null, w = work[p];
+      const has_ = want && want.text !== undefined ? w && w.node.d === want.text && modeOf(w.node) === want.mode : want ? sameAsWork(R, want, w) : !w;
+      if (same(O[p], result[p]) && !wtext[p] && !conflicts[p]) continue;
+      if (conflicts[p] && O[p] && !wtext[p]) continue;
+      if (has_) continue;
+      // changed or deleted here, or an untracked file where the merge puts one
+      if (O[p] ? !sameAsWork(R, O[p], w) : w && !w.ign) { (O[p] ? local : untracked).push(p); continue; }
+      plan.push([p, want]);
+    }
+    return { plan, local, untracked };
+  }
+  // git's refusal when a merge (or a stash, cherry-pick, revert) would overwrite local work; tail: what git says after "Aborting"
+  function wayMessage(local, untracked) {
+    if (local.length) return 'error: Your local changes to the following files would be overwritten by merge:\n' + local.map((p) => '\t' + p + '\n').join('') + 'Please commit your changes or stash them before you merge.\nAborting';
+    if (untracked.length) return 'error: The following untracked working tree files would be overwritten by merge:\n' + untracked.map((p) => '\t' + p + '\n').join('') + 'Please move or remove them before you merge.\nAborting';
+    return null;
+  }
+  function inTheWay(local, untracked, tail, code) { const m = wayMessage(local, untracked); if (m) die(m + tail, code); }
+  /** write the merged files (conflicted ones with their markers), then the index: the merged paths, and the conflicts */
+  function writeMerge(R, plan, work, m) {
+    const textPlan = plan.map(([p, e]) => [p, e && e.text !== undefined ? { mode: e.mode, id: store(R, { type: 'blob', text: e.text }) } : e]);
+    flush(R);
+    applyPlan(R, textPlan, work);
+    R.index = m.result; R.conflicts = m.conflicts; R.idxDirty = true;
+  }
+
   sub('merge', { use: 'git merge [--no-ff] [--ff-only] [-m <msg>] <commit> | git merge --abort', desc: 'Join two or more development histories together',
-    run(args, io, sh) {
-      const { o, rest } = getopt(args, { 'no-ff': 'noff', ff: 'ff', 'ff-only': 'ffonly', m: 'm=', message: 'm=', abort: 'abort', continue: 'cont', 'no-edit': 'noedit', edit: 'edit', e: 'edit', q: 'quiet', quiet: 'quiet', commit: 'commit', 'no-commit': 'nocommit', squash: 'squash', stat: 'stat', 'no-stat': 'nostat', log: 'log' }, 'merge');
+    async run(args, io, sh) {
+      const { o, rest } = getopt(args, { 'no-ff': 'noff', ff: 'ff', 'ff-only': 'ffonly', m: 'm=', message: 'm=', abort: 'abort', continue: 'cont', quit: 'quit', 'no-edit': 'noedit', edit: 'edit', e: 'edit', q: 'quiet', quiet: 'quiet', commit: 'commit', 'no-commit': 'nocommit', squash: 'squash', stat: 'stat', 'no-stat': 'nostat', log: 'log' }, 'merge');
       const R = openRepo(sh), mh = readId(R, 'MERGE_HEAD');
       if (o.abort) { if (!mh) die('fatal: There is no merge to abort (MERGE_HEAD missing).'); hardReset(R, headId(R, true)); gitRemove(R, 'MERGE_HEAD'); gitRemove(R, 'MERGE_MSG'); return 0; }
       if (o.cont) { if (!mh) die('fatal: There is no merge in progress (MERGE_HEAD missing).'); return SUB.commit.run([], io, sh); }
+      if (o.quit) { gitRemove(R, 'MERGE_HEAD'); gitRemove(R, 'MERGE_MSG'); return 0; }   // forget the merge, keep the files and the index as they are
       if (o.squash || o.nocommit) die('fatal: this practice git merges and commits in one step (--squash and --no-commit are not available here)');
       if (Object.keys(R.conflicts).length) die("error: Merging is not possible because you have unmerged files.\nhint: Fix them up in the work tree, and then use 'git add/rm <file>'\nhint: as appropriate to mark resolution and make a commit.\nfatal: Exiting because of an unresolved conflict.");
       if (mh) die('fatal: You have not concluded your merge (MERGE_HEAD exists).\nPlease, commit your changes before you merge.');
@@ -1294,7 +1605,8 @@
       if (!ours) { switchTo(R, theirs, io, { merge: true }); setHead(R, theirs, 'initial pull'); return 0; }
       const kind = refId(R, 'heads', spec) && refId(R, 'heads', spec) !== 'broken' ? 'branch' : refId(R, 'tags', spec) ? 'tag' : 'commit';
       const into = R.head.branch === 'main' || R.head.branch === 'master' ? '' : ' into ' + (R.head.branch || 'HEAD');
-      const msg = o.m !== undefined ? o.m : 'Merge ' + kind + ' ' + q(spec) + into;
+      const early = kind === 'commit' && /^(.+?)(?:~[0-9]*|\^)+$/.exec(spec), earlyId = early && refId(R, 'heads', early[1]);   // side~1: "branch 'side' (early part)", as git says
+      const msg = o.m !== undefined ? o.m : earlyId && earlyId !== 'broken' ? 'Merge branch ' + q(early[1]) + ' (early part)' + into : 'Merge ' + kind + ' ' + q(spec) + into;
       const A = ancestors(R, ours);
       if (A[theirs]) { put('Already up to date.\n'); return 0; }
       const ff = ancestors(R, theirs)[ours];
@@ -1307,54 +1619,32 @@
       }
       if (o.ffonly) die('fatal: Not possible to fast-forward, aborting.');
       // the three-way merge, path by path
-      const base = mergeBase(R, ours, theirs), B = commitTree(R, base), O = commitTree(R, ours), T = commitTree(R, theirs);
-      const result = dict(), conflicts = dict(), wtext = dict(), notes = [];
-      for (const p of Object.keys(Object.assign(dict(), B, O, T)).sort()) {
-        const b = B[p], x = O[p], y = T[p];
-        if (same(x, y)) { if (x) result[p] = x; continue; }
-        if (same(b, x)) { if (y) result[p] = y; continue; }
-        if (same(b, y)) { if (x) result[p] = x; continue; }
-        if (x && y) {
-          const mode = x.mode === y.mode ? x.mode : b && x.mode === b.mode ? y.mode : x.mode;
-          if (x.id === y.id) { result[p] = { mode, id: x.id }; continue; }
-          notes.push('Auto-merging ' + p);
-          const m = merge3(b ? text(R, b.id) : '', text(R, x.id), text(R, y.id), 'HEAD', spec);
-          if (m.conflicts) { notes.push('CONFLICT (' + (b ? 'content' : 'add/add') + '): Merge conflict in ' + p); conflicts[p] = { base: b || null, ours: x, theirs: y }; wtext[p] = { mode, text: m.text }; }
-          else result[p] = { mode, id: store(R, { type: 'blob', text: m.text }) };
-        } else if (x) { notes.push('CONFLICT (modify/delete): ' + p + ' deleted in ' + spec + ' and modified in HEAD.  Version HEAD of ' + p + ' left in tree.'); conflicts[p] = { base: b, ours: x, theirs: null }; }
-        else { notes.push('CONFLICT (modify/delete): ' + p + ' deleted in HEAD and modified in ' + spec + '.  Version ' + spec + ' of ' + p + ' left in tree.'); conflicts[p] = { base: b, ours: null, theirs: y }; wtext[p] = { mode: y.mode, text: text(R, y.id) }; }
-      }
+      const base = mergeBase(R, ours, theirs), O = commitTree(R, ours);
+      const m = threeWay(R, commitTree(R, base), O, commitTree(R, theirs), 'HEAD', spec);
       // local changes in the way? (as git: only for the files the merge changes; and nothing may be staged)
-      const work = scan(R), head = O, staged = Object.keys(Object.assign(dict(), head, R.index)).filter((p) => !same(head[p], R.index[p])).sort();
-      const plan = [], local = [], untracked = [];
-      for (const p of Object.keys(Object.assign(dict(), O, result, wtext)).sort()) {
-        const want = wtext[p] || (conflicts[p] ? O[p] : result[p]) || null, w = work[p];
-        const has_ = want && want.text !== undefined ? w && w.node.d === want.text && modeOf(w.node) === want.mode : want ? sameAsWork(R, want, w) : !w;
-        if (same(O[p], result[p]) && !wtext[p] && !conflicts[p]) continue;
-        if (conflicts[p] && O[p] && !wtext[p]) continue;
-        if (has_) continue;
-        // changed or deleted here, or an untracked file where the merge puts one
-        if (O[p] ? !sameAsWork(R, O[p], w) : w && !w.ign) { (O[p] ? local : untracked).push(p); continue; }
-        plan.push([p, want]);
-      }
+      const work = scan(R), staged = Object.keys(Object.assign(dict(), O, R.index)).filter((p) => !same(O[p], R.index[p])).sort();
+      const { plan, local, untracked } = mergeWrites(R, O, m, work);
       if (staged.length) local.unshift(...staged.filter((p) => !local.includes(p)));
-      if (local.length) die('error: Your local changes to the following files would be overwritten by merge:\n' + local.map((p) => '\t' + p + '\n').join('') + 'Please commit your changes or stash them before you merge.\nAborting\nMerge with strategy ort failed.', 2);
-      if (untracked.length) die('error: The following untracked working tree files would be overwritten by merge:\n' + untracked.map((p) => '\t' + p + '\n').join('') + 'Please move or remove them before you merge.\nAborting\nMerge with strategy ort failed.', 2);
-      // write the files (conflicted ones with their markers), then the index
-      const textPlan = plan.map(([p, e]) => [p, e && e.text !== undefined ? { mode: e.mode, id: store(R, { type: 'blob', text: e.text }) } : e]);
-      if (notes.length) put(notes.join('\n') + '\n');
-      const tree = writeTree(R, result);
-      flush(R);
-      applyPlan(R, textPlan, work);
-      R.index = result; R.conflicts = conflicts; R.idxDirty = true;
+      inTheWay(local, untracked, '\nMerge with strategy ort failed.', 2);
+      if (m.notes.length) io.out(m.notes.join('\n') + '\n');   // (as git: even with -q)
+      const tree = writeTree(R, m.result);
+      writeMerge(R, plan, work, m);
       gitWrite(R, 'ORIG_HEAD', ours + '\n');
-      if (Object.keys(conflicts).length) {
+      if (Object.keys(m.conflicts).length) {
         flush(R);
-        gitWrite(R, 'MERGE_HEAD', theirs + '\n'); gitWrite(R, 'MERGE_MSG', msg + '\n\n# Conflicts:\n' + Object.keys(conflicts).sort().map((p) => '#\t' + p + '\n').join(''));
+        gitWrite(R, 'MERGE_HEAD', theirs + '\n'); gitWrite(R, 'MERGE_MSG', msg + '\n\n# Conflicts:\n' + Object.keys(m.conflicts).sort().map((p) => '#\t' + p + '\n').join(''));
         io.out('Automatic merge failed; fix conflicts and then commit the result.\n');
         return 1;
       }
-      const me = who(R), raw = 'tree ' + tree + '\nparent ' + ours + '\nparent ' + theirs + '\nauthor ' + me + '\ncommitter ' + me + '\n\n' + cleanMessage(msg, 'whitespace');
+      // the merge commit's message: in the editor (as git at a terminal) unless -m was given or --no-edit
+      let message = cleanMessage(msg, 'whitespace');
+      if (hasEditor(sh) && !o.noedit && (o.edit || o.m === undefined)) {
+        flush(R);
+        message = cleanMessage(await editMessage(R, 'MERGE_MSG', msg + '\n' + MERGE_TEMPLATE), 'strip');
+        if (message === '') { gitWrite(R, 'MERGE_HEAD', theirs + '\n'); gitWrite(R, 'MERGE_MSG', msg + '\n'); die("error: Empty commit message.\nNot committing merge; use 'git commit' to complete the merge.", 1); }
+        gitRemove(R, 'MERGE_MSG');
+      }
+      const me = who(R), raw = 'tree ' + tree + '\nparent ' + ours + '\nparent ' + theirs + '\nauthor ' + me + '\ncommitter ' + me + '\n\n' + message;
       const id = store(R, parseCommit(raw)); flush(R);
       setHead(R, id, 'merge ' + spec + ": Merge made by the 'ort' strategy.");
       put("Merge made by the 'ort' strategy.\n"); const ch = pairs(R, O, commitTree(R, id)); if (!o.quiet) { diffstat(R, ch, io); io.out(modeLines(ch)); }
@@ -1395,8 +1685,216 @@
       return 0;
     } });
 
-  sub('tag', { use: 'git tag [-l [<pattern>]] | git tag [-a -m <msg>] <name> [<commit>] | git tag -d <name>', desc: 'Create, list, delete or verify a tag object signed with GPG',
+  // ----- the stash: refs/stash names the newest entry, logs/refs/stash lists them all (oldest first), as in git. An entry is a commit
+  // "WIP on main: ..." whose tree is the working tree, with HEAD as its first parent, a commit of the index as its second and, with -u,
+  // a commit of the untracked files as its third (so the ids are real git's). Both files are checked when read, like everything in .git.
+  const STASH_MAX = 100;
+  function stashList(R) {
+    const t = R.rd('logs/refs/stash'), top = R.rd('refs/stash');
+    if (t === null && top === null) return [];
+    const out = [];
+    for (const l of (t || '').split('\n')) {
+      if (l === '') continue;
+      const m = /^([0-9a-f]{40}) ([0-9a-f]{40}) ([^\t\n]*)\t([^\n]*)$/.exec(l);
+      if (!m || out.length >= STASH_MAX) damaged('logs/refs/stash', 'a line is not "old-id new-id who<tab>message" (or there are more than ' + STASH_MAX + ')');
+      const c = has(R.objs, m[2]) ? R.objs[m[2]] : null, p = c && c.type === 'commit' ? c.parents : null;
+      const stashLike = p && (p.length === 2 || p.length === 3) && R.objs[p[1]].parents.length === 1 && R.objs[p[1]].parents[0] === p[0] && (p.length === 2 || R.objs[p[2]].parents.length === 0);
+      if (!stashLike) damaged('logs/refs/stash', 'entry ' + short(m[2]) + ' is not a stash (a commit of the working tree whose parents are HEAD, the index and the untracked files)');
+      out.push({ id: m[2], msg: m[4] });
+    }
+    out.reverse();
+    const m = top === null ? null : /^([0-9a-f]{40})\s*$/.exec(top);
+    if (!out.length || !m || m[1] !== out[0].id) damaged(top === null ? 'logs/refs/stash' : 'refs/stash', 'refs/stash should hold the id of the newest stash, the last line of .git/logs/refs/stash');
+    return out;
+  }
+  function stashWrite(R, list) {
+    if (!list.length) { gitRemove(R, 'refs/stash'); gitRemove(R, 'logs/refs/stash'); return; }
+    const me = who(R), lines = list.slice().reverse().map((e, k, a) => (k ? a[k - 1].id : ZERO) + ' ' + e.id + ' ' + me + '\t' + e.msg.replace(/[\n\t]/g, ' ').slice(0, 200));
+    gitWrite(R, 'logs/refs/stash', lines.join('\n') + '\n'); gitWrite(R, 'refs/stash', list[0].id + '\n');
+  }
+  /** stash@{n}, n, or nothing (the newest) → { n, name, id }; as git, a number past the end says how many entries there are */
+  function stashPick(R, list, arg) {
+    if (!list.length) die('No stash entries found.', 1);
+    let n = 0, name = 'refs/stash@{0}', m;
+    if (arg !== undefined) {
+      if ((m = /^stash@\{(\d{1,9})\}$/.exec(arg))) { n = +m[1]; name = arg; if (n >= list.length) die("fatal: log for 'stash' only has " + list.length + ' entries'); }
+      else if (/^\d{1,9}$/.test(arg)) { n = +arg; name = 'refs/stash@{' + n + '}'; if (n >= list.length) die("fatal: log for 'refs/stash' only has " + list.length + ' entries'); }
+      else die('error: ' + arg + ' is not a valid reference', 1);
+    }
+    return { n, name, id: list[n].id };
+  }
+  const needsMerge = (R) => { const un = Object.keys(R.conflicts).sort(); if (un.length) die(un.map((p) => p + ': needs merge').join('\n'), 1); };
+  function stashPush(R, io, o, message) {
+    const head = headId(R);
+    if (!head) die('You do not have the initial commit yet', 1);
+    needsMerge(R);
+    const H = commitTree(R, head), work = scan(R), wfiles = dict(), untracked = dict();
+    for (const p in R.index) { const w = work[p]; if (w) wfiles[p] = sameAsWork(R, R.index[p], w) ? R.index[p] : { mode: modeOf(w.node), id: store(R, { type: 'blob', text: w.node.d }) }; }
+    if (o.untracked || o.all) for (const p in work) if (!R.index[p] && (!work[p].ign || o.all)) untracked[p] = { mode: modeOf(work[p].node), id: store(R, { type: 'blob', text: work[p].node.d }) };
+    const staged = Object.keys(Object.assign(dict(), H, R.index)).some((p) => !same(H[p], R.index[p]));
+    const local = Object.keys(R.index).some((p) => !same(R.index[p], wfiles[p]));
+    if (!staged && !local && !Object.keys(untracked).length) { io.err('No local changes to save\n'); return 0; }
+    const list = stashList(R);
+    if (list.length >= STASH_MAX) die('fatal: this practice git keeps at most ' + STASH_MAX + ' stash entries: drop some first (git stash drop, or git stash clear)');
+    const on = (R.head.branch || '(no branch)') + ': ' + short(head) + ' ' + subject(R.objs[head].message), me = who(R);
+    const commit = (tree, parents, msg) => store(R, parseCommit('tree ' + tree + '\n' + parents.map((p) => 'parent ' + p + '\n').join('') + 'author ' + me + '\ncommitter ' + me + '\n\n' + msg));
+    const i = commit(writeTree(R, R.index), [head], 'index on ' + on + '\n');
+    const u = Object.keys(untracked).length ? commit(writeTree(R, untracked), [], 'untracked files on ' + on + '\n') : null;
+    const msg = message !== undefined ? 'On ' + (R.head.branch || '(no branch)') + ': ' + message : 'WIP on ' + on;
+    const w = commit(writeTree(R, wfiles), [head, i].concat(u ? [u] : []), msg);   // (as git: this message has no newline at the end)
+    flush(R);
+    stashWrite(R, [{ id: w, msg }].concat(list));
+    // then the working tree and the index go back to HEAD (and the untracked files that were saved go)
+    hardReset(R, head);
+    for (const p of Object.keys(untracked).sort()) removeWork(R, p);
+    if (!o.quiet) io.out('Saved working directory and index state ' + msg + '\n');
+    return 0;
+  }
+  /** git stash apply / pop: the stash's changes merged into the working tree and index of now ("Updated upstream" against "Stashed changes") */
+  function stashApply(R, io, sh, id, quiet) {
+    needsMerge(R);
+    const w = R.objs[id], B = commitTree(R, w.parents[0]), O = Object.assign(dict(), R.index), T = commitTree(R, id);
+    let ret = 0;
+    if (w.tree === R.objs[w.parents[0]].tree) io.out('Already up to date.\n');
+    else {
+      const m = threeWay(R, B, O, T, 'Updated upstream', 'Stashed changes'), work = scan(R), { plan, local, untracked } = mergeWrites(R, O, m, work);
+      const way = wayMessage(local, untracked);
+      if (way) { io.err(way + '\n'); ret = 1; }
+      else {
+        if (m.notes.length) io.out(m.notes.join('\n') + '\n');
+        writeMerge(R, plan, work, m);
+        if (Object.keys(m.conflicts).length) ret = 1;
+        else { const idx = Object.assign(dict(), O); for (const p in m.result) if (!O[p]) idx[p] = m.result[p]; R.index = idx; }   // as git: the index as it was, with the new files added
+        flush(R);
+      }
+    }
+    if (w.parents[2]) {
+      const U = commitTree(R, w.parents[2]), work = scan(R), clash = Object.keys(U).sort().filter((p) => work[p] || R.index[p]);
+      if (clash.length) { io.err(clash.map((p) => shown(R, p) + ' already exists, no checkout\n').join('') + 'error: could not restore untracked files from stash\n'); ret = 1; }
+      else applyPlan(R, Object.keys(U).sort().map((p) => [p, U[p]]), work);
+    }
+    if (!quiet) statusLong(R, (s) => io.out(s));
+    return ret;
+  }
+  sub('stash', { use: 'git stash [push [-u] [-m <message>]] | git stash (list | show [-p] | pop | apply | drop) [<stash>] | git stash clear', desc: 'Stash the changes in a dirty working directory away',
     run(args, io, sh) {
+      const cmd = args[0] && !args[0].startsWith('-') ? args[0] : 'push', rest = args[0] === cmd ? args.slice(1) : args;
+      if (!/^(push|save|list|show|pop|apply|drop|clear)$/.test(cmd)) {
+        if (/^(branch|create|store)$/.test(cmd)) die('fatal: git stash ' + cmd + ' is not available in this practice git');
+        die("fatal: subcommand wasn't specified; 'push' can't be assumed due to unexpected token '" + cmd + "'");
+      }
+      const R = openRepo(sh);
+      if (cmd === 'push' || cmd === 'save') {
+        const { o, rest: r } = getopt(rest, { m: 'm=', message: 'm=', u: 'untracked', 'include-untracked': 'untracked', a: 'all', all: 'all', q: 'quiet', quiet: 'quiet', p: 'patch', patch: 'patch', k: 'keep', 'keep-index': 'keep' }, 'stash');
+        if (o.patch) die('fatal: git stash -p asks about each change, and this practice git cannot: stash everything, or commit what you want to keep first');
+        if (o.keep) die('fatal: --keep-index is not available in this practice git');
+        if (cmd === 'push' && r.length) die('fatal: this practice git stashes every change: git stash push without file names (naming files is not available here)');
+        return stashPush(R, io, o, cmd === 'save' && r.length ? r.join(' ') : o.m);
+      }
+      const { o, rest: r } = getopt(rest, { q: 'quiet', quiet: 'quiet', p: 'patch', patch: 'patch', u: 'untracked', 'include-untracked': 'untracked', 'only-untracked': 'only', stat: 'stat', index: 'index' }, 'stash');
+      if (o.index) die('fatal: --index is not available in this practice git (the staged changes come back as changes in the files)');
+      const list = stashList(R);
+      if (cmd === 'list') { io.out(list.map((e, k) => 'stash@{' + k + '}: ' + e.msg + '\n').join('')); return 0; }
+      if (cmd === 'clear') { stashWrite(R, []); return 0; }
+      if (r.length > 1) die('error: Too many revisions specified:' + r.map((x) => ' ' + q(x)).join(''), 1);
+      const e = stashPick(R, list, r[0]);
+      if (cmd === 'show') {
+        // the stash against the commit it was made on; -u adds the untracked files it saved, --only-untracked shows only those
+        const w = R.objs[e.id], B = o.only ? dict() : commitTree(R, w.parents[0]), T = o.only ? dict() : commitTree(R, e.id);
+        if ((o.untracked || o.only) && w.parents[2]) Object.assign(T, commitTree(R, w.parents[2]));
+        const ch = pairs(R, B, T);
+        if (o.stat || !o.patch) diffstat(R, ch, io);
+        if (o.patch) { if (o.stat && ch.length) io.out('\n'); patch(R, ch, io); }
+        return 0;
+      }
+      if (cmd === 'drop') { stashWrite(R, list.filter((x, k) => k !== e.n)); if (!o.quiet) io.out('Dropped ' + e.name + ' (' + e.id + ')\n'); return 0; }
+      const ret = stashApply(R, io, sh, e.id, o.quiet);
+      if (cmd === 'pop') {
+        if (ret) { io.err('The stash entry is kept in case you need it again.\n'); return ret; }
+        stashWrite(R, list.filter((x, k) => k !== e.n));
+        if (!o.quiet) io.out('Dropped ' + e.name + ' (' + e.id + ')\n');
+      }
+      return ret;
+    } });
+
+  // ----- revert and cherry-pick: a commit's change (or its undoing) as a three-way merge into HEAD, then a commit
+  const PICK_OPTS = '    --quit                end revert or cherry-pick sequence\n    --continue            resume revert or cherry-pick sequence\n    --abort               cancel revert or cherry-pick sequence\n    --skip                skip current commit and continue\n    --[no-]cleanup <mode> how to strip spaces and #comments from message\n    -n, --no-commit       don\'t automatically commit\n    --commit              opposite of --no-commit\n    -e, --[no-]edit       edit the commit message\n    -s, --[no-]signoff    add a Signed-off-by trailer\n    -m, --[no-]mainline <parent-number>\n                          select mainline parent\n    --[no-]rerere-autoupdate\n                          update the index with reused conflict resolution if possible\n    --[no-]strategy <strategy>\n                          merge strategy\n    -X, --[no-]strategy-option <option>\n                          option for merge strategy\n    -S, --[no-]gpg-sign[=<key-id>]\n                          GPG sign commit\n';
+  const PICK_USAGE = {
+    revert: 'usage: git revert [--[no-]edit] [-n] [-m <parent-number>] [-s] [-S[<keyid>]] <commit>...\n   or: git revert (--continue | --skip | --abort | --quit)\n\n' + PICK_OPTS + "    --[no-]reference      use the 'reference' format to refer to commits\n\n",
+    'cherry-pick': 'usage: git cherry-pick [--edit] [-n] [-m <parent-number>] [-s] [-x] [--ff]\n                       [-S[<keyid>]] <commit>...\n   or: git cherry-pick (--continue | --skip | --abort | --quit)\n\n' + PICK_OPTS +
+      '    -x                    append commit name\n    --[no-]ff             allow fast-forward\n    --[no-]allow-empty    preserve initially empty commits\n    --[no-]allow-empty-message\n                          allow commits with empty messages\n    --[no-]keep-redundant-commits\n                          keep redundant, empty commits\n\n',
+  };
+  function pick(kind) {
+    return async function (args, io, sh) {
+      let parsed;
+      try { parsed = getopt(args, { continue: 'cont', abort: 'abort', skip: 'skip', quit: 'quit', e: 'edit', edit: 'edit', x: 'x', n: 'nocommit', 'no-commit': 'nocommit', m: 'mainline=', mainline: 'mainline=', 'allow-empty': 'empty', ff: 'ff' }, kind); }
+      catch (e) { if (e instanceof Fatal && e.code === 129) { io.err(PICK_USAGE[kind]); return 129; } throw e; }   // as git: an option it does not know gets the whole usage
+      const { o, rest } = parsed;
+      const R = openRepo(sh), revert = kind === 'revert', file = revert ? 'REVERT_HEAD' : 'CHERRY_PICK_HEAD', failed = 'fatal: ' + kind + ' failed';
+      const done = () => { for (const f of ['CHERRY_PICK_HEAD', 'REVERT_HEAD', 'MERGE_MSG']) gitRemove(R, f); };
+      if (o.cont || o.abort || o.skip || o.quit) {
+        if (o.quit) { gitRemove(R, 'CHERRY_PICK_HEAD'); gitRemove(R, 'REVERT_HEAD'); return 0; }   // forget it, keep the files and the index
+        if (o.skip && !readId(R, file)) die('error: no ' + kind + ' in progress\n' + failed);
+        if (!readId(R, 'CHERRY_PICK_HEAD') && !readId(R, 'REVERT_HEAD')) die('error: no cherry-pick or revert in progress\n' + failed);
+        if (o.abort || o.skip) { hardReset(R, headId(R, true)); done(); return 0; }
+        return SUB.commit.run(hasEditor(sh) ? [] : ['--no-edit', '--cleanup=strip'], io, sh);   // as git: the editor at a terminal, otherwise the message as it is without its # lines
+      }
+      if (!rest.length) { io.err(PICK_USAGE[kind]); return 129; }
+      if (rest.length > 1) die('fatal: this practice git takes one commit at a time: git ' + kind + ' ' + rest[0] + ', then the next');
+      if (o.nocommit) die('fatal: this practice git commits the ' + kind + ' at once (-n is not available here)');
+      const id = resolve(R, rest[0]);
+      if (!id) die("fatal: bad revision '" + rest[0] + "'");
+      const c = R.objs[id], head = headId(R);
+      if (c.parents.length > 1) die('error: commit ' + id + ' is a merge but no -m option was given.\n' + failed);
+      if (o.mainline !== undefined) die('error: mainline was specified but commit ' + id + ' is not a merge.\n' + failed);
+      if (Object.keys(R.conflicts).length) die('error: ' + (revert ? 'Reverting' : 'Cherry-picking') + " is not possible because you have unmerged files.\nhint: Fix them up in the work tree, and then use 'git add/rm <file>'\nhint: as appropriate to mark resolution and make a commit.\n" + failed);
+      if (!head) die("fatal: your current branch '" + (R.head.branch || 'HEAD') + "' does not have any commits yet");
+      const H = commitTree(R, head);
+      if (Object.keys(Object.assign(dict(), H, R.index)).some((p) => !same(H[p], R.index[p]))) die('error: your local changes would be overwritten by ' + kind + '.\nhint: commit your changes or stash them to proceed.\n' + failed);
+      // a revert merges the parent's version in, with the commit as the base; a cherry-pick the commit's, with its parent as the base
+      const parent = c.parents[0] || null, label = short(id) + ' (' + subject(c.message) + ')', subj = subject(c.message);
+      const m = threeWay(R, commitTree(R, revert ? id : parent), H, commitTree(R, revert ? parent : id), 'HEAD', revert ? 'parent of ' + label : label);
+      const work = scan(R), { plan, local, untracked } = mergeWrites(R, H, m, work);
+      inTheWay(local, untracked, '\n' + failed, 128);
+      let msg = revert ? (subj.startsWith('Revert "') && !subj.slice(8).startsWith('Revert "') ? 'Reapply "' + subj.slice(8) : 'Revert "' + subj + '"') + '\n\nThis reverts commit ' + id + '.\n'
+        : o.x ? cleanMessage(c.message, 'whitespace').replace(/\n$/, '') + '\n\n(cherry picked from commit ' + id + ')\n' : c.message;
+      if (m.notes.length) io.out(m.notes.join('\n') + '\n');
+      writeMerge(R, plan, work, m);
+      if (Object.keys(m.conflicts).length) {
+        flush(R); gitWrite(R, file, id + '\n'); gitWrite(R, 'MERGE_MSG', msg + '\n# Conflicts:\n' + Object.keys(m.conflicts).sort().map((p) => '#\t' + p + '\n').join(''));
+        io.err('error: could not ' + (revert ? 'revert' : 'apply') + ' ' + short(id) + '... ' + subj + '\nhint: After resolving the conflicts, mark them with\nhint: "git add/rm <pathspec>", then run\nhint: "git ' + kind + ' --continue".\nhint: You can instead skip this commit with "git ' + kind + ' --skip".\nhint: To abort and get back to the state before "git ' + kind + '",\nhint: run "git ' + kind + ' --abort".\n');
+        return 1;
+      }
+      const tree = writeTree(R, m.result); flush(R);
+      if (tree === R.objs[head].tree && !o.empty) {
+        if (revert) { statusLong(R, (s) => io.out(s), true); return 1; }
+        gitWrite(R, file, id + '\n'); gitWrite(R, 'MERGE_MSG', msg);
+        io.err("The previous cherry-pick is now empty, possibly due to conflict resolution.\nIf you wish to commit it anyway, use:\n\n    git commit --allow-empty\n\nOtherwise, please use 'git cherry-pick --skip'\n");
+        statusLong(R, (s) => io.out(s)); return 1;
+      }
+      const me = who(R), author = revert ? me : personText(c.author);
+      // the message in the editor: a revert's by default (as git at a terminal), a cherry-pick's with -e
+      const editing = hasEditor(sh) && (revert ? o.edit !== false : o.edit === true);
+      if (editing) {
+        if (!revert) gitWrite(R, file, id + '\n');   // as git: the template says a cherry-pick is going on
+        const idents = identLines(parseCommit('tree ' + ZERO + '\nauthor ' + author + '\ncommitter ' + me + '\n\n'), !revert).map((l) => l.replace(/^(Author|Date): /, (x, k) => k + ':' + ' '.repeat(k === 'Date' ? 6 : 4)));
+        const edited = cleanMessage(await editMessage(R, 'COMMIT_EDITMSG', commitTemplate(R, msg, revert ? null : { kind }, idents)), 'strip');
+        if (edited === '') { gitWrite(R, file, id + '\n'); gitWrite(R, 'MERGE_MSG', msg); io.err('Aborting commit due to empty commit message.\n'); return 1; }
+        msg = edited;
+      }
+      const raw = 'tree ' + tree + '\nparent ' + head + '\nauthor ' + author + '\ncommitter ' + me + '\n\n' + cleanMessage(msg, 'whitespace');
+      const nid = store(R, parseCommit(raw)); flush(R);
+      setHead(R, nid, kind + ': ' + subject(msg));
+      done();
+      commitSummary(R, nid, io, R.objs[head].tree, !(editing && revert));   // as git: a revert through the editor is an ordinary commit, which does not say the date
+      return 0;
+    };
+  }
+  sub('revert', { use: 'git revert [--no-edit] <commit> | git revert (--continue | --skip | --abort | --quit)', desc: 'Revert some existing commits', run: pick('revert') });
+  sub('cherry-pick', { use: 'git cherry-pick [--edit] [-x] <commit> | git cherry-pick (--continue | --skip | --abort | --quit)', desc: 'Apply the changes introduced by some existing commits', run: pick('cherry-pick') });
+
+  sub('tag', { use: 'git tag [-l [<pattern>]] | git tag [-a -m <msg>] <name> [<commit>] | git tag -d <name>', desc: 'Create, list, delete or verify a tag object signed with GPG',
+    async run(args, io, sh) {
       const { o, rest } = getopt(args, { l: 'list', list: 'list', d: 'delete', delete: 'delete', a: 'annotate', annotate: 'annotate', m: 'm[]', message: 'm[]', f: 'force', force: 'force', n: 'lines' }, 'tag');
       const R = openRepo(sh);
       if (o.delete) {
@@ -1416,11 +1914,121 @@
       if (!target) die(rest[1] ? 'fatal: Failed to resolve ' + q(rest[1]) + ' as a valid ref.' : "fatal: Failed to resolve 'HEAD' as a valid ref.");
       let id = target;
       if (o.annotate || o.m) {
-        if (!o.m) die('fatal: there is no text editor in this practice terminal: give the message with -m, as in git tag -a ' + name + ' -m "Version 1"');
-        const raw = 'object ' + target + '\ntype commit\ntag ' + name + '\ntagger ' + who(R) + '\n\n' + cleanMessage(o.m.join('\n\n'), 'whitespace');
+        let msg;
+        if (o.m) msg = cleanMessage(o.m.join('\n\n'), 'whitespace');
+        else if (hasEditor(sh)) { msg = cleanMessage(await editMessage(R, 'TAG_EDITMSG', '\n#\n# Write a message for tag:\n#   ' + name + "\n# Lines starting with '#' will be ignored.\n"), 'strip'); if (msg === '') die('fatal: no tag message?'); }
+        else die('fatal: there is no text editor in this practice terminal: give the message with -m, as in git tag -a ' + name + ' -m "Version 1"');
+        const raw = 'object ' + target + '\ntype commit\ntag ' + name + '\ntagger ' + who(R) + '\n\n' + msg;
         id = store(R, parseTag(raw)); flush(R);
       }
       writeRef(R, 'tags', name, id);
+      return 0;
+    } });
+
+  // ----- blame: each line of a file, with the commit that last changed it. Lines pass from a commit to a parent while the parent has them
+  // unchanged (by the same line diff as git diff); what is left stays with the commit. A root commit's lines are marked ^ (git's boundary).
+  // Renames are not followed: a line is the commit's where the file first appears under its name.
+  const isoDate = (p) => { const off = (p.tz[0] === '-' ? -1 : 1) * (+p.tz.slice(1, 3) * 60 + +p.tz.slice(3)), d = new Date((p.ts + off * 60) * 1000), two = (n) => String(n).padStart(2, '0'); return d.getUTCFullYear() + '-' + two(d.getUTCMonth() + 1) + '-' + two(d.getUTCDate()) + ' ' + two(d.getUTCHours()) + ':' + two(d.getUTCMinutes()) + ':' + two(d.getUTCSeconds()) + ' ' + p.tz; };
+  sub('blame', { use: 'git blame [-s] [-e] [<rev>] [--] <file>', desc: 'Show what revision and author last modified each line of a file',
+    run(args, io, sh) {
+      const { o, rest, dd } = getopt(args, { s: 'nometa', e: 'email', 'show-email': 'email' }, 'blame');
+      const R = openRepo(sh);
+      const revs = dd >= 0 ? rest.slice(0, dd) : rest.slice(0, -1), files = dd >= 0 ? rest.slice(dd) : rest.slice(-1);
+      if (files.length !== 1 || revs.length > 1) die('usage: git blame [<options>] [<rev-opts>] [<rev>] [--] <file>', 129);
+      const rev = revs.length ? mustResolve(R, revs[0]) : null, p = pathspec(R, files[0]).rel, start = rev || headId(R, true);
+      const blobAt = (id) => id ? commitTree(R, id)[p] : undefined;
+      let finalText, entries = [];
+      const pending = dict(), order = [], put = (id, e) => { if (!pending[id]) { pending[id] = []; order.push(id); } pending[id].push(e); };
+      if (rev) { const b = blobAt(rev); if (!b) die("fatal: no such path " + p + ' in ' + revs[0]); finalText = text(R, b.id); }
+      else {
+        const w = scan(R)[p];
+        if (!w) die(blobAt(start) || R.index[p] ? "fatal: Cannot lstat '" + files[0] + "': No such file or directory" : "fatal: no such path '" + p + "' in HEAD");
+        if (!blobAt(start) && !R.index[p]) die("fatal: no such path '" + p + "' in HEAD");
+        finalText = w.node.d;
+      }
+      const lines = splitL(finalText), owner = new Array(lines.length).fill(null);
+      // the line numbers of b's lines in a: → array (−1 where the line is not in a)
+      const lineMap = (aText, bText) => { const m = []; let i = 0, j = 0; for (const op of diffOps(splitL(aText), splitL(bText))) { if (op === '=') { m[j++] = i++; } else if (op === '-') i++; else m[j++] = -1; } return m; };
+      if (rev) lines.forEach((l, k) => put(rev, [k, k]));
+      else {
+        // the working tree as a commit of its own, whose parents are HEAD and, during a merge, MERGE_HEAD (as git's fake working tree commit)
+        let left = lines.map((l, k) => [k, k]);
+        for (const par of [start, readId(R, 'MERGE_HEAD')]) {
+          const pb = blobAt(par); if (!pb) continue;
+          const m = lineMap(text(R, pb.id), finalText), next = [];
+          for (const e of left) { if (m[e[1]] >= 0) put(par, [e[0], m[e[1]]]); else next.push(e); }
+          left = next;
+        }
+      }
+      // newest first, as git's queue by commit date; a commit is looked at again if more of its lines arrive later
+      let steps = 0;
+      while (order.length) {
+        let best = 0; for (let k = 1; k < order.length; k++) if (R.objs[order[k]].committer.ts > R.objs[order[best]].committer.ts) best = k;
+        const id = order.splice(best, 1)[0], es = pending[id]; delete pending[id];
+        if (++steps > 20000) die('fatal: this file has too much history for git blame in this practice terminal');
+        const c = R.objs[id], mine = blobAt(id);
+        let left = es;
+        const twin = c.parents.find((par) => { const pb = blobAt(par); return pb && pb.id === mine.id; });
+        if (twin) { for (const e of left) put(twin, e); left = []; }
+        for (const par of c.parents) {
+          if (!left.length) break;
+          const pb = blobAt(par); if (!pb) continue;
+          const m = lineMap(text(R, pb.id), text(R, mine.id)), next = [];
+          for (const e of left) { if (m[e[1]] >= 0) put(par, [e[0], m[e[1]]]); else next.push(e); }
+          left = next;
+        }
+        for (const e of left) owner[e[0]] = id;
+      }
+      const meM = /^(.*) <(.*)> (\d+) ([+-]\d{4})$/.exec(who(R)), wt = { name: 'Not Committed Yet', email: 'not.committed.yet', ts: +meM[3], tz: meM[4] };
+      const author = (id) => id ? R.objs[id].author : wt, label = (a) => o.email ? '<' + a.email + '>' : a.name;
+      const nameW = Math.max(0, ...owner.map((id) => label(author(id)).length)), numW = String(lines.length).length;
+      let out = '';
+      lines.forEach((l, k) => {
+        const id = owner[k], tag = !id ? '00000000' : R.objs[id].parents.length ? id.slice(0, 8) : '^' + id.slice(0, 7), a = author(id);
+        out += tag + (o.nometa ? '' : ' (' + label(a).padEnd(nameW) + ' ' + isoDate(a)) + (o.nometa ? ' ' : ' ') + String(k + 1).padStart(numW) + ') ' + l + (l.endsWith('\n') ? '' : '\n');
+      });
+      io.out(out);
+      return 0;
+    } });
+
+  // ----- clean: the untracked files go (and with -d the untracked directories); -n only says what would go
+  sub('clean', { use: 'git clean [-d] [-f | -n] [-x | -X] [-q] [--] [<pathspec>...]', desc: 'Remove untracked files from the working tree',
+    run(args, io, sh) {
+      const { o, rest } = getopt(args, { n: 'dry', 'dry-run': 'dry', f: 'force', force: 'force', d: 'dirs', x: 'x', X: 'X', q: 'quiet', quiet: 'quiet', i: 'interactive', interactive: 'interactive', e: 'exclude[]', exclude: 'exclude[]' }, 'clean');
+      const R = openRepo(sh), fs = R.fs;
+      if (o.interactive) die('fatal: git clean -i asks about each file, and this practice git cannot: see what would go with git clean -n, then git clean -f');
+      if (o.x && o.X) die('fatal: options \'-x\' and \'-X\' cannot be used together');
+      if (!o.force && !o.dry && configGet(sh, R, 'clean.requireForce') !== 'false') die('fatal: clean.requireForce defaults to true and neither -i, -n, nor -f given; refusing to clean');
+      const ss = rest.length ? specs(R, rest) : [{ arg: '.', rel: R.cwdRel, re: null }];
+      const work = scan(R), trackedDirs = dict();
+      for (const p of Object.keys(R.index).concat(Object.keys(R.conflicts))) { const parts = p.split('/'); for (let k = 1; k < parts.length; k++) trackedDirs[parts.slice(0, k).join('/')] = 1; }
+      const want = (p) => o.X ? work[p].ign : o.x || !work[p].ign;
+      // the untracked directories at their top (nothing tracked inside, and the one above has something tracked), empty ones too
+      const tops = [];
+      for (const [abs, n] of fs.walk(R.root)) {
+        if (n.t !== 'd' || abs === R.root) continue;
+        const rel = R.relOf(abs); if (rel === null || rel.split('/').includes('.git')) continue;
+        const up = rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : '';
+        if (!trackedDirs[rel] && (up === '' || trackedDirs[up])) tops.push(rel);
+      }
+      const inTop = (p) => tops.find((d) => p.startsWith(d + '/'));
+      const gone = [];
+      for (const p of Object.keys(work)) if (!R.index[p] && !R.conflicts[p] && !inTop(p) && anyMatch(ss, p) && want(p)) gone.push({ p, dir: false });
+      if (o.dirs) for (const d of tops) {
+        if (!anyMatch(ss, d) && !ss.some((s) => !s.re && (s.rel === '' || d.startsWith(s.rel + '/')))) continue;
+        const files = Object.keys(work).filter((p) => p.startsWith(d + '/')), picked = files.filter(want);
+        if (picked.length === files.length && (files.length || !o.X)) gone.push({ p: d, dir: true });
+        else for (const p of picked) gone.push({ p, dir: false });
+      }
+      gone.sort((a, b) => a.p < b.p ? -1 : a.p > b.p ? 1 : 0);
+      for (const g of gone) {
+        const name = g.dir ? shownDir(R, g.p) : shown(R, g.p);
+        if (o.dry) { io.out('Would remove ' + name + '\n'); continue; }
+        const abs = R.abs(g.p);
+        if (g.dir && (fs.cwd === abs || fs.cwd.startsWith(abs + '/'))) { io.err('warning: could not remove ' + name + ': you are in it\n'); continue; }
+        if (!o.quiet) io.out('Removing ' + name + '\n');
+        if (g.dir) fs.rmTree(abs); else fs.unlink(abs);
+      }
       return 0;
     } });
 
@@ -1527,8 +2135,13 @@
     rm: ['Removes files from the working tree and stages the removal. --cached keeps the file but stops tracking it.'],
     mv: ['Moves or renames a tracked file and stages the change (git status shows it as renamed).'],
     restore: ['git restore FILE throws away the changes to FILE since it was last staged. git restore --staged FILE unstages it (the file itself is not changed).'],
-    commit: ['Records the staged files as a new commit on the current branch. -m gives the message; -a stages every change to tracked files first; --amend replaces the last commit.', 'There is no editor for messages here: always give -m "message".'],
-    log: ['Lists the commits from the newest, with their ids, authors, dates and messages. --oneline is shorter; -n 3 shows three; --all includes every branch; -p shows each change.'],
+    commit: ['Records the staged files as a new commit on the current branch. -m gives the message; -a stages every change to tracked files first; --amend replaces the last commit.', 'Without -m, the terminal opens nano on the message, under lines starting with # that say what will be committed (they are left out): write the message at the top, save with Ctrl+S and leave with Ctrl+X. An empty message stops the commit.'],
+    log: ['Lists the commits from the newest, with their ids, authors, dates and messages. --oneline is shorter; -n 3 shows three; --all includes every branch; -p shows each change; --graph draws the branches and merges beside the commits (git log --graph --oneline --all).'],
+    stash: ['Puts your uncommitted changes aside, so the files are as in the last commit again: git stash (or git stash -m "what it is"; -u takes untracked files too). git stash list shows what is put aside, git stash show -p what it changed.', 'git stash pop brings the newest back and forgets it; git stash apply brings it back and keeps it; git stash drop forgets one. If bringing it back meets a conflict, the stash is kept until you fix the files and drop it.'],
+    revert: ['Makes a new commit that undoes the changes of an earlier one, without rewriting history: git revert HEAD undoes the last commit. The message is opened in nano (--no-edit takes it as it is).', 'On a conflict, fix the files, git add them and git revert --continue; git revert --abort gives up.'],
+    'cherry-pick': ['Copies the change of one commit (from another branch, say) onto the branch you are on, as a new commit with the same message and author: git cherry-pick feature~2. -x adds a line saying where it came from.', 'On a conflict, fix the files, git add them and git cherry-pick --continue; --skip leaves this commit out, --abort gives up.'],
+    blame: ['Shows each line of a file with the commit that last changed it, who made that commit and when. A ^ before the id marks the first commit; 00000000 marks lines changed since the last commit.'],
+    clean: ['Deletes the untracked files (the ones git status lists under "Untracked files"). git clean -n only says what it would delete; -f deletes; -d also deletes untracked directories; -x also the ignored files. Deleted files do not come back: look with -n first.'],
     diff: ['Shows what changed, line by line: + lines were added, - lines removed. git diff compares the working tree with the staging area; git diff --staged compares the staging area with the last commit; git diff A B compares two commits.'],
     show: ['Shows a commit (the last one if none is named) with its changes. git show HEAD~1:notes.txt prints a file as it was in a commit.'],
     branch: ['Lists the branches (* marks the one you are on), makes one (git branch NAME), deletes one (-d) or renames one (-m).'],
@@ -1536,20 +2149,20 @@
     checkout: ['The older command for switch and restore: git checkout BRANCH, git checkout -b NEW, git checkout -- FILE.'],
     merge: ['Brings another branch\'s commits into this one. If this branch has not moved on, it fast-forwards; otherwise git makes a merge commit.', 'When both branches changed the same lines, git writes both versions into the file between <<<<<<< ======= >>>>>>> lines: edit the file to what it should be, git add it, then git commit. git merge --abort gives up.'],
     reset: ['git reset FILE unstages a file. git reset --hard COMMIT moves the branch back to COMMIT and makes every tracked file match it: changes since are lost (git reflog still knows the old commits).'],
-    tag: ['Gives a commit a name that does not move, such as v1.0. -a -m "message" makes an annotated tag with its own message.'],
+    tag: ['Gives a commit a name that does not move, such as v1.0. -a makes an annotated tag with its own message (-m "message", or written in nano).'],
     config: ['Reads and sets options: git config --global user.name "Ada Lovelace" and git config --global user.email ada@example.com set who you are for every repository here.'],
     reflog: ['Lists where HEAD has been, newest first: a way to find a commit again after a reset.'],
     gc: ['Removes objects that nothing points to any more, to make space.'],
   };
   const NETWORK = { clone: 1, push: 1, pull: 1, fetch: 1, remote: 1, submodule: 1, 'ls-remote': 1, 'request-pull': 1, 'send-email': 1 };
-  const MISSING = { stash: 1, rebase: 1, 'cherry-pick': 1, revert: 1, bisect: 1, blame: 1, clean: 1, worktree: 1, notes: 1, describe: 1, shortlog: 1, grep: 1, am: 1, apply: 1, archive: 1, 'format-patch': 1, mergetool: 1, difftool: 1, 'sparse-checkout': 1, fsck: 1, annotate: 1, 'show-branch': 1 };
+  const MISSING = { rebase: 1, bisect: 1, worktree: 1, notes: 1, describe: 1, shortlog: 1, grep: 1, am: 1, apply: 1, archive: 1, 'format-patch': 1, mergetool: 1, difftool: 1, 'sparse-checkout': 1, fsck: 1, annotate: 1, 'show-branch': 1 };
   function usage() {
     const groups = [['start a working area', ['init', 'clone']], ['work on the current change', ['add', 'mv', 'restore', 'rm']], ['examine the history and state', ['diff', 'log', 'show', 'status']],
-      ['grow, mark and tweak your common history', ['branch', 'commit', 'merge', 'reset', 'switch', 'tag']], ['collaborate (not here: there is no network in this practice terminal)', ['fetch', 'pull', 'push']]];
+      ['grow, mark and tweak your common history', ['branch', 'commit', 'merge', 'reset', 'switch', 'tag']], ['put changes aside, undo and copy them', ['stash', 'revert', 'cherry-pick']], ['collaborate (not here: there is no network in this practice terminal)', ['fetch', 'pull', 'push']]];
     const descs = { clone: 'Clone a repository into a new directory', fetch: 'Download objects and refs from another repository', pull: 'Fetch from and integrate with another repository or a local branch', push: 'Update remote refs along with associated objects' };
     return 'usage: git [-v | --version] [-h | --help] <command> [<args>]\n\nThese are common Git commands used in various situations:\n' +
-      groups.map(([t, cs]) => '\n' + t + '\n' + cs.map((c) => '   ' + c.padEnd(10) + (SUB[c] ? SUB[c].desc : descs[c]) + '\n').join('')).join('') +
-      "\n'git help -a' lists every command of this practice git. See 'git help <command>'\nto read about a specific subcommand. Also here: config, reflog, checkout, ls-files, cat-file, rev-parse, gc.\n";
+      groups.map(([t, cs]) => '\n' + t + '\n' + cs.map((c) => '   ' + c.padEnd(Math.max(10, c.length + 1)) + (SUB[c] ? SUB[c].desc : descs[c]) + '\n').join('')).join('') +
+      "\n'git help -a' lists every command of this practice git. See 'git help <command>'\nto read about a specific subcommand. Also here: blame, clean, config, reflog, checkout, ls-files, cat-file, rev-parse, gc.\n";
   }
   // the nearest command names, for "The most similar command is"
   function lev(a, b) { const d = []; for (let i = 0; i <= a.length; i++) { d[i] = [i]; for (let j = 1; j <= b.length; j++) d[i][j] = i === 0 ? j : Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); } return d[a.length][b.length]; }
@@ -1589,7 +2202,7 @@
     desc: 'Version control: keep the history of a project as commits, work on branches and merge them. This is a practice git that works on the files here: start with git init in a project directory, then git add and git commit -m "message". git help lists its commands; git help COMMAND says more about one.',
     opts: Object.keys(SUB).filter((n) => n !== 'help').map((n) => [n, SUB[n].desc]),
     ex: ['git init', 'git status', 'git add notes.txt', 'git commit -m "First version"', 'git log --oneline', 'git diff', 'git switch -c idea', 'git merge idea'],
-    notes: 'The repository is the hidden .git directory (ls -a shows it): its objects are in .git/objects.json and the staging area in .git/index, both readable with cat. Ids are real SHA-1s, as in git. There is no network, so clone, push, pull and fetch only say so; stash, rebase, cherry-pick and revert are not here. Commit messages are given with -m (there is no editor for them). Who you are: git config --global user.name "Your Name" (otherwise commits are by Student <student@lab>). A repository has to fit in the terminal\'s space: about 256 KB of history (git gc frees what nothing uses).' });
+    notes: 'The repository is the hidden .git directory (ls -a shows it): its objects are in .git/objects.json and the staging area in .git/index, both readable with cat. Ids are real SHA-1s, as in git. There is no network, so clone, push, pull and fetch only say so; rebase and bisect are not here. Without -m, git commit (and git merge, git revert, git tag -a) opens nano on the message, as git opens its editor: write it above the # lines, Ctrl+S saves and Ctrl+X goes back to git. Who you are: git config --global user.name "Your Name" (otherwise commits are by Student <student@lab>). A repository has to fit in the terminal\'s space: about 256 KB of history (git gc frees what nothing uses).' });
 
   return { sha1, blobId, idOf, merge3, hunks, cleanMessage, SUB };
 });

@@ -387,6 +387,22 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('terminal: nano Y saves, N does not, and the Save button keeps the keyboard in nano', /kept\na\.txt  b\.txt  c\.txt  e\.txt\nby button\n$/.test(tt), tt.slice(-200));
   tt = await term('cat notes/b.txt; edit notes/b.txt; edit ask.py');
   check('terminal: nano writes the file; edit opens a copy in the Lab', /from nano\n/.test(tt) && /use nano b\.txt/.test(tt) && /opened a copy of ask\.py/.test(tt) && (await page.locator('.lab-tabs .tab.on, .lab-tabs .on').innerText()).includes('ask.py'), tt.slice(-300));
+  // git commit without -m opens nano on git's template (.git/COMMIT_EDITMSG); what is saved there, without the # lines, is the message
+  await term('mkdir gitdemo; cd gitdemo; git init -q; echo hi > a.txt; git add a.txt');
+  await page.fill('.term-inp', 'git commit'); await page.press('.term-inp', 'Enter'); await page.waitForSelector('.nano-ta');
+  const tpl = await page.locator('.nano-ta').inputValue();
+  check('terminal: git commit opens nano with git\'s template', /^\n# Please enter the commit message for your changes\./.test(tpl) && /\n#\tnew file:   a\.txt\n/.test(tpl) && /COMMIT_EDITMSG/.test(await page.locator('.nano-head').innerText()), tpl.slice(0, 300));
+  await page.evaluate(() => { const ta = document.querySelector('.nano-ta'); ta.focus(); ta.setSelectionRange(0, 0); });
+  await page.keyboard.type('First commit from nano'); await page.keyboard.press('Control+s'); await page.keyboard.press('Control+x');
+  await page.waitForFunction(() => !document.querySelector('.nano-ta') && /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 5000 });
+  tt = await term('git log --format=%s; cd ..');
+  check('terminal: the message written in nano is the commit\'s', /\[main \(root-commit\) [0-9a-f]{7}\] First commit from nano\n[^]*\nFirst commit from nano\n/.test(tt), tt.slice(-300));
+  // leaving nano without a message aborts, as git does
+  await page.fill('.term-inp', 'cd gitdemo; echo more >> a.txt; git commit -a'); await page.press('.term-inp', 'Enter'); await page.waitForSelector('.nano-ta');
+  await page.keyboard.press('Control+x');
+  await page.waitForFunction(() => !document.querySelector('.nano-ta') && /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 5000 });
+  tt = await term('git log --oneline | wc -l; cd ..');
+  check('terminal: an empty message aborts the commit', /Aborting commit due to empty commit message\.\n[^]*\b1\n/.test(tt), tt.slice(-200));
   await page.reload(); await page.waitForSelector('.lab-term:not([hidden])');
   tt = await term('cat notes/a.txt; ls -F m');
   check('terminal: files, the exec bit and the open panel survive a reload', /hello there\nm\*\n/.test(tt), tt.slice(-100));

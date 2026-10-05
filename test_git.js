@@ -17,6 +17,24 @@ function fresh() {
 }
 const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (exit !== undefined) check(name + ' exit', r.exit, exit); };
 const H = '/home/student';
+// A shell with an editor where the terminal's nano would be. Like the GIT_EDITOR of the --real runs, it copies what it is given to ~/tpl,
+// puts ~/msg (if there is one) above it, and empties the file if ~/blank exists. With ed.browser it saves through write() and answers
+// null, as terminal.js does; ed.titles has what nano was asked to edit.
+function editorHook(fs, ed) {
+  return async (title, text, write) => {
+    ed.titles.push(title); fs.write(H + '/tpl', text);
+    let t = text; if (fs.isFile(H + '/msg')) t = fs.read(H + '/msg') + t; if (fs.isFile(H + '/blank')) t = '';
+    if (ed.browser) { write(t); return null; }
+    return t;
+  };
+}
+function freshEd() {
+  const fs = SHELL.makeFS(null, { now: () => T0 }), ed = { titles: [], browser: false };
+  const sh = SHELL.makeShell({ fs, now: () => T0, nano: editorHook(fs, ed) });
+  const run = async (line) => { let out = ''; const exit = await sh.exec(line, { out: (s) => { out += s; }, err: (s) => { out += s; }, tty: false }); return { out, exit }; };
+  return { fs, sh, run, ed };
+}
+const PLEASE = "\n# Please enter the commit message for your changes. Lines starting\n# with '#' will be ignored, and an empty message aborts the commit.\n";
 
 (async () => {
   // ---- SHA-1 and object ids, against known values
@@ -80,7 +98,7 @@ const H = '/home/student';
     eq('pull', await run('git pull'), /no network/, 128);
     eq('fetch', await run('git fetch'), /no network/, 128);
     eq('remote lists nothing', await run('git remote'), '', 0);
-    eq('stash is not here', await run('git stash'), "git: 'stash' is not available in this practice git. See 'git help' for the commands that are.\n", 1);
+    eq('rebase is not here', await run('git rebase main'), "git: 'rebase' is not available in this practice git. See 'git help' for the commands that are.\n", 1);
     eq('which git', await run('which git'), '/bin/git\n', 0);
   }
 
@@ -256,7 +274,8 @@ const H = '/home/student';
     eq('commit in a conflict', await run('git commit -m x'), "error: Committing is not possible because you have unmerged files.\nhint: Fix them up in the work tree, and then use 'git add/rm <file>'\nhint: as appropriate to mark resolution and make a commit.\nfatal: Exiting because of an unresolved conflict.\nU\tf.txt\n", 128);
     eq('combined diff', await run('git diff'), 'diff --cc f.txt\nindex 22783f6,43cfdec..0000000\n--- a/f.txt\n+++ b/f.txt\n@@@ -1,4 -1,4 +1,8 @@@\n  one\n++<<<<<<< HEAD\n +MAIN\n++=======\n+ SIDE\n++>>>>>>> side\n  three\n  four\n');
     eq('merge again in a conflict', await run('git merge side'), "error: Merging is not possible because you have unmerged files.\nhint: Fix them up in the work tree, and then use 'git add/rm <file>'\nhint: as appropriate to mark resolution and make a commit.\nfatal: Exiting because of an unresolved conflict.\n", 128);
-    eq('switch in a conflict', await run('git switch feature'), 'error: you need to resolve your current index first\nf.txt: needs merge\n', 1);
+    eq('switch in a merge', await run('git switch feature'), 'fatal: cannot switch branch while merging\nConsider "git merge --quit" or "git worktree add".\n', 128);
+    eq('checkout in a conflict', await run('git checkout feature'), 'error: you need to resolve your current index first\nf.txt: needs merge\n', 1);
     eq('ls-files -s in a conflict', await run('git ls-files -s'), /^100644 61780798[0-9a-f]{32} 0\tb.txt\n100644 [0-9a-f]{40} 1\tf.txt\n100644 22783f6[0-9a-f]{33} 2\tf.txt\n100644 43cfdec[0-9a-f]{33} 3\tf.txt\n$/);
     eq('checkout --theirs', await run('git checkout --theirs f.txt; cat f.txt'), 'Updated 1 path from the index\none\nSIDE\nthree\nfour\n');
     eq('checkout -m', await run('git checkout -m f.txt; head -2 f.txt'), 'Recreated 1 merge conflict\none\n<<<<<<< ours\n');
@@ -300,6 +319,238 @@ const H = '/home/student';
     eq('empty message', await run('echo 5 > f; git commit -am ""'), 'Aborting commit due to empty commit message.\n', 1);
     eq('gc', await run('git gc; git log --format=%s | head -1'), 'four, amended\n', 0);
     eq('cat-file -p a tree', await run('git cat-file -p HEAD:'), /^100644 blob [0-9a-f]{40}\tf\n$/);
+  }
+
+  // ---- messages in the editor (the terminal's nano): commit, amend, tag -a, merge, a merge's conclusion, revert, cherry-pick -e (as real git: scenario 4)
+  {
+    const { run, fs, ed } = freshEd();
+    await run('mkdir r; cd r; git init -q; echo hi > a.txt; echo b > b.txt; git add a.txt');
+    eq('commit opens the editor; empty aborts', await run('touch ~/blank; git commit'), 'Aborting commit due to empty commit message.\n', 1);
+    check('the commit template', fs.read(H + '/tpl'), PLEASE + '#\n# On branch main\n#\n# Initial commit\n#\n# Changes to be committed:\n#\tnew file:   a.txt\n#\n# Untracked files:\n#\tb.txt\n#\n');
+    check('the editor edits .git/COMMIT_EDITMSG', ed.titles[0], '~/r/.git/COMMIT_EDITMSG');
+    check('nothing was committed', fs.isFile(H + '/r/.git/refs/heads/main'), false);
+    eq('commit with the message written in the editor', await run('rm ~/blank; echo first > ~/msg; git commit'), '[main (root-commit) ebc4454] first\n 1 file changed, 1 insertion(+)\n create mode 100644 a.txt\n', 0);
+    eq('a message of comments is empty', await run('printf "# only a comment\\n\\n" > ~/msg; echo x >> a.txt; git commit -a'), 'Aborting commit due to empty commit message.\n', 1);
+    check('the template shows what -a will commit', fs.read(H + '/tpl'), PLEASE + '#\n# On branch main\n# Changes to be committed:\n#\tmodified:   a.txt\n#\n# Untracked files:\n#\tb.txt\n#\n');
+    await run('git checkout -q a.txt; echo y > c.txt; git add c.txt; mkdir d; echo z > d/z; echo x >> a.txt; echo first > ~/msg; git commit -q');
+    eq('amend opens the message', await run('git commit --amend'), '[main 129fc54] first first\n Date: Thu Oct 1 14:00:00 2026 +0000\n 1 file changed, 1 insertion(+)\n create mode 100644 c.txt\n', 0);
+    check('the amend template', fs.read(H + '/tpl'), 'first\n' + PLEASE + '#\n# Date:      Thu Oct 1 14:00:00 2026 +0000\n#\n# On branch main\n# Changes to be committed:\n#\tnew file:   c.txt\n#\n# Changes not staged for commit:\n#\tmodified:   a.txt\n#\n# Untracked files:\n#\tb.txt\n#\td/\n#\n');
+    const n = ed.titles.length;
+    eq('-m does not open the editor', await run('git commit -q --allow-empty -m quiet'), '', 0);
+    eq('amend that would leave an empty commit', await run('git commit -q --amend --no-edit'), 'You asked to amend the most recent commit, but doing so would make\nit empty. You can repeat your command with --allow-empty, or you can\nremove the commit entirely with "git reset HEAD^".\nOn branch main\nChanges not staged for commit:\n  (use "git add <file>..." to update what will be committed)\n  (use "git restore <file>..." to discard changes in working directory)\n\tmodified:   a.txt\n\nUntracked files:\n  (use "git add <file>..." to include in what will be committed)\n\tb.txt\n\td/\n\nNo changes\n', 1);
+    check('no editor for -m or --no-edit', ed.titles.length, n);
+    eq('tag -a with an empty message', await run('rm ~/msg; touch ~/blank; git tag -a v1'), 'fatal: no tag message?\n', 128);
+    check('the tag template', fs.read(H + '/tpl'), "\n#\n# Write a message for tag:\n#   v1\n# Lines starting with '#' will be ignored.\n");
+    eq('tag -a with the editor', await run('rm ~/blank; echo "ver one" > ~/msg; git tag -a v2; git cat-file -p v2 | tail -2'), '\nver one\n', 0);
+    // a merge commit's message
+    await run('git switch -q -c side; echo s > s.txt; git add s.txt; git commit -q -m side; git switch -q main; echo m > m.txt; git add m.txt; git commit -q -m mm');
+    eq('merge: an empty message stops before the commit', await run('rm ~/msg; touch ~/blank; git merge side'), "error: Empty commit message.\nNot committing merge; use 'git commit' to complete the merge.\n", 1);
+    check('the merge template', fs.read(H + '/tpl'), "Merge branch 'side'\n# Please enter a commit message to explain why this merge is necessary,\n# especially if it merges an updated upstream into a topic branch.\n#\n# Lines starting with '#' will be ignored, and an empty message aborts\n# the commit.\n");
+    check('MERGE_MSG keeps the first message', fs.read(H + '/r/.git/MERGE_MSG'), "Merge branch 'side'\n");
+    eq('status: still merging', await run('git status -s'), ' M a.txt\nA  s.txt\n?? b.txt\n?? d/\n');
+    eq('git commit concludes it', await run('rm ~/blank; git commit'), "[main 479fade] Merge branch 'side'\n", 0);
+    check('the template of a merge being concluded', fs.read(H + '/tpl'), "Merge branch 'side'\n#\n# It looks like you may be committing a merge.\n# If this is not correct, please run\n#\tgit update-ref -d MERGE_HEAD\n# and try again.\n\n" + PLEASE + '#\n# On branch main\n# All conflicts fixed but you are still merging.\n#\n# Changes to be committed:\n#\tnew file:   s.txt\n#\n# Changes not staged for commit:\n#\tmodified:   a.txt\n#\n# Untracked files:\n#\tb.txt\n#\td/\n#\n');
+    eq('merge --no-edit takes the message', await run('git reset -q --hard HEAD~1; git merge --no-edit side >/dev/null; git log -1 --format=%s'), "Merge branch 'side'\n");
+    eq('merge with the message written', await run('echo "my merge" > ~/msg; git reset -q --hard HEAD~1; git merge side | head -1; git log -1 --format=%B'), "Merge made by the 'ort' strategy.\nmy merge\nMerge branch 'side'\n\n");
+    // the browser's way: the editor saves the file and answers nothing
+    ed.browser = true;
+    eq('an editor that saves the file', await run('echo "from nano" > ~/msg; git commit -q --allow-empty; git log -1 --format=%s'), 'from nano\n', 0);
+    ed.browser = false;
+    // revert opens its message by default (git does at a terminal); --no-edit does not
+    await run('rm ~/msg; echo r > r.txt; git add r.txt; git commit -q -m "add r"');
+    eq('revert through the editor', await run('git revert HEAD'), /^\[main [0-9a-f]{7}\] Revert "add r"\n 1 file changed, 1 deletion\(-\)\n delete mode 100644 r\.txt\n$/, 0);
+    check('the revert template', fs.read(H + '/tpl'), 'Revert "add r"\n\nThis reverts commit ' + (await run('git rev-parse HEAD~1')).out.trim() + '.\n' + PLEASE + '#\n# On branch main\n# Changes to be committed:\n#\tdeleted:    r.txt\n#\n# Untracked files:\n#\tb.txt\n#\td/\n#\n');
+    const k = ed.titles.length;
+    await run('git revert -q --no-edit HEAD');
+    eq('revert --no-edit does not open it', await run('git revert --no-edit HEAD | head -1'), /^\[main [0-9a-f]{7}\] Reapply "add r"\n$/);
+    check('no editor for revert --no-edit', ed.titles.length, k);
+    eq('an option revert does not know', await run('git revert -q HEAD 2>&1 | head -2'), 'usage: git revert [--[no-]edit] [-n] [-m <parent-number>] [-s] [-S[<keyid>]] <commit>...\n   or: git revert (--continue | --skip | --abort | --quit)\n');
+  }
+  {
+    // cherry-pick -e: the template says a cherry-pick is going on, with the author's date (scenario 5)
+    const { run, fs, ed } = freshEd();
+    await run('mkdir r; cd r; git init -q; printf "1\\n2\\n3\\n" > f; git add f; git commit -q -m base; echo 4 >> f; git commit -q -am four; git revert --no-edit HEAD >/dev/null; git switch -q -c b HEAD~2; echo x > x; git add x; git commit -q -m x; git switch -q main');
+    eq('cherry-pick -e', await run('git cherry-pick -e b'), '[main 757d0c0] x\n Date: Thu Oct 1 14:00:00 2026 +0000\n 1 file changed, 1 insertion(+)\n create mode 100644 x\n', 0);
+    check('the cherry-pick template', fs.read(H + '/tpl'), 'x\n#\n# It looks like you may be committing a cherry-pick.\n# If this is not correct, please run\n#\tgit update-ref -d CHERRY_PICK_HEAD\n# and try again.\n\n' + PLEASE + '#\n# Date:      Thu Oct 1 14:00:00 2026 +0000\n#\n# On branch main\n# You are currently cherry-picking commit 11193e0.\n#\n# Changes to be committed:\n#\tnew file:   x\n#\n');
+    eq('cherry-pick by someone else, with -e', await run('git config user.name Bob; git reset -q --hard HEAD~1; git cherry-pick --edit b'), '[main 7f7f5e4] x\n Author: Student <student@lab>\n Date: Thu Oct 1 14:00:00 2026 +0000\n 1 file changed, 1 insertion(+)\n create mode 100644 x\n', 0);
+    check('its template names the author', /\n# Author:    Student <student@lab>\n# Date:      Thu Oct 1 14:00:00 2026 \+0000\n#\n/.test(fs.read(H + '/tpl')), true);
+    eq('cherry-pick without -e does not open it', await run('git reset -q --hard HEAD~1; git cherry-pick b >/dev/null; git log --oneline -1'), '7f7f5e4 x\n');
+    check('two templates only', ed.titles.length, 2);
+  }
+
+  // ---- stash: every line's output and exit status as real git 2.43 printed them (so the ids agree too)
+  {
+    const { run } = fresh();
+    await run("mkdir r; cd r; git init -q");
+    eq("stash: git stash", await run("git stash"), "You do not have the initial commit yet\n", 1);
+    await run("printf \"1\\n2\\n3\\n\" > f; echo g > g; git add f g; git commit -q -m base");
+    eq("stash: git stash", await run("git stash"), "No local changes to save\n", 0);
+    eq("stash: git stash pop", await run("git stash pop"), "No stash entries found.\n", 1);
+    await run("git stash list");
+    await run("echo x >> f; echo n > new.txt; git add new.txt; echo u > u.txt");
+    eq("stash: git stash", await run("git stash"), "Saved working directory and index state WIP on main: 21bb4bb base\n", 0);
+    eq("stash: git stash list", await run("git stash list"), "stash@{0}: WIP on main: 21bb4bb base\n", 0);
+    eq("stash: git status -s; cat f", await run("git status -s; cat f"), "?? u.txt\n1\n2\n3\n", 0);
+    eq("stash: git log --all --oneline --format=\"%h %p %s\"", await run("git log --all --oneline --format=\"%h %p %s\""), "21bb4bb  base\n0f61e85 21bb4bb 9e4611a WIP on main: 21bb4bb base\n9e4611a 21bb4bb index on main: 21bb4bb base\n", 0);
+    eq("stash: cat .git/refs/stash; cat .git/logs/refs/stash", await run("cat .git/refs/stash; cat .git/logs/refs/stash"), "0f61e85dc49419a183fd278b177488a729d2a6bf\n0000000000000000000000000000000000000000 0f61e85dc49419a183fd278b177488a729d2a6bf Student <student@lab> 1790863200 +0000\tWIP on main: 21bb4bb base\n", 0);
+    eq("stash: git stash show", await run("git stash show"), " f       | 1 +\n new.txt | 1 +\n 2 files changed, 2 insertions(+)\n", 0);
+    eq("stash: git stash show -p", await run("git stash show -p"), "diff --git a/f b/f\nindex 01e79c3..3098bcb 100644\n--- a/f\n+++ b/f\n@@ -1,3 +1,4 @@\n 1\n 2\n 3\n+x\ndiff --git a/new.txt b/new.txt\nnew file mode 100644\nindex 0000000..8ba3a16\n--- /dev/null\n+++ b/new.txt\n@@ -0,0 +1 @@\n+n\n", 0);
+    eq("stash: echo y >> g; git stash -m \"second one\"; git stash list", await run("echo y >> g; git stash -m \"second one\"; git stash list"), "Saved working directory and index state On main: second one\nstash@{0}: On main: second one\nstash@{1}: WIP on main: 21bb4bb base\n", 0);
+    eq("stash: git stash pop", await run("git stash pop"), "On branch main\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n  (use \"git restore <file>...\" to discard changes in working directory)\n\tmodified:   g\n\nUntracked files:\n  (use \"git add <file>...\" to include in what will be committed)\n\tu.txt\n\nno changes added to commit (use \"git add\" and/or \"git commit -a\")\nDropped refs/stash@{0} (78071b97ed70a855c88b94dd04bef058260cf5a1)\n", 0);
+    eq("stash: git stash apply -q stash@{0}; git status -s; git stash list", await run("git stash apply -q stash@{0}; git status -s; git stash list"), " M f\n M g\nA  new.txt\n?? u.txt\nstash@{0}: WIP on main: 21bb4bb base\n", 0);
+    await run("git checkout -q -- f g; git rm -q --cached new.txt; rm new.txt");
+    eq("stash: git stash drop; git stash drop", await run("git stash drop; git stash drop"), "Dropped refs/stash@{0} (0f61e85dc49419a183fd278b177488a729d2a6bf)\nNo stash entries found.\n", 1);
+    eq("stash: ls .git/refs; test -e .git/logs/refs/stash; echo $?", await run("ls .git/refs; test -e .git/logs/refs/stash; echo $?"), "heads\ntags\n1\n", 0);
+    eq("stash: git stash", await run("git stash"), "No local changes to save\n", 0);
+    eq("stash: git stash -u; ls; git log --all --format=\"%h %p %s\" | tail -", await run("git stash -u; ls; git log --all --format=\"%h %p %s\" | tail -3"), "Saved working directory and index state WIP on main: 21bb4bb base\nf\ng\nb2fb71a 21bb4bb 88a7b8f beb0345 WIP on main: 21bb4bb base\n88a7b8f 21bb4bb index on main: 21bb4bb base\nbeb0345  untracked files on main: 21bb4bb base\n", 0);
+    eq("stash: git stash show; git stash show -u", await run("git stash show; git stash show -u"), " u.txt | 1 +\n 1 file changed, 1 insertion(+)\n", 0);
+    eq("stash: git stash pop", await run("git stash pop"), "Already up to date.\nOn branch main\nUntracked files:\n  (use \"git add <file>...\" to include in what will be committed)\n\tu.txt\n\nnothing added to commit but untracked files present (use \"git add\" to track)\nDropped refs/stash@{0} (b2fb71a07283ff691973853d3b26907cb728e1bd)\n", 0);
+    await run("printf \"1\\nS\\n3\\n\" > f; git stash -q; printf \"1\\nM\\n3\\n\" > f; git commit -q -am mainchange");
+    eq("stash: git stash pop", await run("git stash pop"), "Auto-merging f\nCONFLICT (content): Merge conflict in f\nOn branch main\nUnmerged paths:\n  (use \"git restore --staged <file>...\" to unstage)\n  (use \"git add <file>...\" to mark resolution)\n\tboth modified:   f\n\nUntracked files:\n  (use \"git add <file>...\" to include in what will be committed)\n\tu.txt\n\nno changes added to commit (use \"git add\" and/or \"git commit -a\")\nThe stash entry is kept in case you need it again.\n", 1);
+    eq("stash: cat f; git stash list", await run("cat f; git stash list"), "1\n<<<<<<< Updated upstream\nM\n=======\nS\n>>>>>>> Stashed changes\n3\nstash@{0}: WIP on main: 21bb4bb base\n", 0);
+    eq("stash: git stash", await run("git stash"), "f: needs merge\n", 1);
+    eq("stash: git stash apply", await run("git stash apply"), "f: needs merge\n", 1);
+    eq("stash: git stash drop stash@{3}; git stash drop 7", await run("git stash drop stash@{3}; git stash drop 7"), "fatal: log for 'stash' only has 1 entries\nfatal: log for 'refs/stash' only has 1 entries\n", 128);
+    eq("stash: git stash pop nope", await run("git stash pop nope"), "error: nope is not a valid reference\n", 1);
+    eq("stash: git stash frob", await run("git stash frob"), "fatal: subcommand wasn't specified; 'push' can't be assumed due to unexpected token 'frob'\n", 128);
+    await run("git add f; git commit -q -m resolved");
+    eq("stash: echo local >> f; printf \"1\\n2\\n\" > g; git stash -q; echo oth", await run("echo local >> f; printf \"1\\n2\\n\" > g; git stash -q; echo other > f; git stash apply"), "error: Your local changes to the following files would be overwritten by merge:\n\tf\nPlease commit your changes or stash them before you merge.\nAborting\nOn branch main\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n  (use \"git restore <file>...\" to discard changes in working directory)\n\tmodified:   f\n\nUntracked files:\n  (use \"git add <file>...\" to include in what will be committed)\n\tu.txt\n\nno changes added to commit (use \"git add\" and/or \"git commit -a\")\n", 1);
+    eq("stash: git checkout -q f; git stash show stash@{1}; git stash drop ", await run("git checkout -q f; git stash show stash@{1}; git stash drop stash@{1}"), " f | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\nDropped stash@{1} (a9c599d97da75c0178b7c56f73d87142ce7ebf4e)\n", 0);
+    eq("stash: git stash clear; git stash list; ls .git/refs", await run("git stash clear; git stash list; ls .git/refs"), "heads\ntags\n", 0);
+    eq("stash: echo q >> g; git stash -q; git log -1 --format=%s stash; git", await run("echo q >> g; git stash -q; git log -1 --format=%s stash; git log -1 --format=%s stash@{0}^2"), "WIP on main: 94ae55c resolved\nindex on main: 94ae55c resolved\n", 0);
+    eq("stash: git stash pop -q; git checkout -q --detach; git stash; git s", await run("git stash pop -q; git checkout -q --detach; git stash; git stash list"), "Saved working directory and index state WIP on (no branch): 94ae55c resolved\nstash@{0}: WIP on (no branch): 94ae55c resolved\n", 0);
+    eq("stash: git gc; git stash pop -q; git status -s", await run("git gc; git stash pop -q; git status -s"), " M g\n?? u.txt\n", 0);
+    eq("stash: git log --oneline --decorate --all -3", await run("git log --oneline --decorate --all -3"), "94ae55c (HEAD, main) resolved\n77b9f38 mainchange\n21bb4bb base\n", 0);
+  }
+  {
+    // the cap on stash entries
+    const { run } = fresh();
+    await run('mkdir r; cd r; git init -q; echo 0 > f; git add f; git commit -q -m base');
+    for (let i = 1; i <= 100; i++) await run('echo ' + i + ' > f; git stash -q');
+    eq('100 stash entries', await run('git stash list | wc -l'), /^\s*100\n$/);
+    eq('the 101st', await run('echo x > f; git stash'), /^fatal: this practice git keeps at most 100 stash entries/, 128);
+    eq('-p is not here', await run('git stash -p'), /^fatal: git stash -p asks about each change/, 128);
+  }
+
+  // ---- revert and cherry-pick (as real git printed them)
+  {
+    const { run } = fresh();
+    await run("mkdir r; cd r; git init -q");
+    await run("printf \"1\\n2\\n3\\n\" > f; echo g > g; git add f g; git commit -q -m base");
+    await run("printf \"1\\n2\\n3\\n4\\n\" > f; git commit -q -am four");
+    await run("echo h > h; git add h; git commit -q -m addh");
+    eq("pick: git revert HEAD", await run("git revert HEAD"), "[main c38d8db] Revert \"addh\"\n Date: Thu Oct 1 14:00:00 2026 +0000\n 1 file changed, 1 deletion(-)\n delete mode 100644 h\n", 0);
+    eq("pick: git log -1 --format=%B", await run("git log -1 --format=%B"), "Revert \"addh\"\n\nThis reverts commit f760340dd90b2511b9bdde4bfc66d061578b7903.\n\n", 0);
+    eq("pick: git revert --no-edit HEAD~2", await run("git revert --no-edit HEAD~2"), "[main e99b7a4] Revert \"four\"\n Date: Thu Oct 1 14:00:00 2026 +0000\n 1 file changed, 1 deletion(-)\n", 0);
+    eq("pick: git revert nope", await run("git revert nope"), "fatal: bad revision 'nope'\n", 128);
+    eq("pick: git revert 2>&1 | head -1", await run("git revert 2>&1 | head -1"), "usage: git revert [--[no-]edit] [-n] [-m <parent-number>] [-s] [-S[<keyid>]] <commit>...\n", 0);
+    eq("pick: echo dirty >> f; git revert HEAD", await run("echo dirty >> f; git revert HEAD"), "error: Your local changes to the following files would be overwritten by merge:\n\tf\nPlease commit your changes or stash them before you merge.\nAborting\nfatal: revert failed\n", 128);
+    eq("pick: git add f; git revert HEAD", await run("git add f; git revert HEAD"), "error: your local changes would be overwritten by revert.\nhint: commit your changes or stash them to proceed.\nfatal: revert failed\n", 128);
+    await run("git reset -q --hard; git switch -q -c side HEAD~3; printf \"1\\nS\\n3\\n\" > f; git commit -q -am side; git switch -q main");
+    eq("pick: git cherry-pick side", await run("git cherry-pick side"), "Auto-merging f\n[main 29e6e35] side\n Date: Thu Oct 1 14:00:00 2026 +0000\n 1 file changed, 1 insertion(+), 1 deletion(-)\n", 0);
+    eq("pick: git log -1 --format=\"%an %s\"; git reflog | head -1 | cut -d\"", await run("git log -1 --format=\"%an %s\"; git reflog | head -1 | cut -d\" \" -f2-"), "Student side\nHEAD@{0}: cherry-pick: side\n", 0);
+    await run("git switch -q -c s2 HEAD~1; printf \"1\\nX\\n3\\n4\\n\" > f; git commit -q -am xx; git switch -q main");
+    eq("pick: git cherry-pick s2", await run("git cherry-pick s2"), "Auto-merging f\nCONFLICT (content): Merge conflict in f\nerror: could not apply 5165061... xx\nhint: After resolving the conflicts, mark them with\nhint: \"git add/rm <pathspec>\", then run\nhint: \"git cherry-pick --continue\".\nhint: You can instead skip this commit with \"git cherry-pick --skip\".\nhint: To abort and get back to the state before \"git cherry-pick\",\nhint: run \"git cherry-pick --abort\".\n", 1);
+    eq("pick: cat f", await run("cat f"), "1\n<<<<<<< HEAD\nS\n=======\nX\n>>>>>>> 5165061 (xx)\n3\n4\n", 0);
+    eq("pick: git status", await run("git status"), "On branch main\nYou are currently cherry-picking commit 5165061.\n  (fix conflicts and run \"git cherry-pick --continue\")\n  (use \"git cherry-pick --skip\" to skip this patch)\n  (use \"git cherry-pick --abort\" to cancel the cherry-pick operation)\n\nUnmerged paths:\n  (use \"git add <file>...\" to mark resolution)\n\tboth modified:   f\n\nno changes added to commit (use \"git add\" and/or \"git commit -a\")\n", 0);
+    eq("pick: git switch side", await run("git switch side"), "fatal: cannot switch branch while cherry-picking\nConsider \"git cherry-pick --quit\" or \"git worktree add\".\n", 128);
+    eq("pick: git cherry-pick --continue", await run("git cherry-pick --continue"), "error: Committing is not possible because you have unmerged files.\nhint: Fix them up in the work tree, and then use 'git add/rm <file>'\nhint: as appropriate to mark resolution and make a commit.\nfatal: Exiting because of an unresolved conflict.\nU\tf\n", 128);
+    eq("pick: git revert HEAD", await run("git revert HEAD"), "error: Reverting is not possible because you have unmerged files.\nhint: Fix them up in the work tree, and then use 'git add/rm <file>'\nhint: as appropriate to mark resolution and make a commit.\nfatal: revert failed\n", 128);
+    eq("pick: git add f; git status", await run("git add f; git status"), "On branch main\nYou are currently cherry-picking commit 5165061.\n  (all conflicts fixed: run \"git cherry-pick --continue\")\n  (use \"git cherry-pick --skip\" to skip this patch)\n  (use \"git cherry-pick --abort\" to cancel the cherry-pick operation)\n\nChanges to be committed:\n\tmodified:   f\n\n", 0);
+    eq("pick: git cherry-pick --continue", await run("git cherry-pick --continue"), "[main db22755] xx\n Date: Thu Oct 1 14:00:00 2026 +0000\n 1 file changed, 5 insertions(+)\n", 0);
+    eq("pick: git revert --no-edit HEAD~1", await run("git revert --no-edit HEAD~1"), "Auto-merging f\nCONFLICT (content): Merge conflict in f\nerror: could not revert 29e6e35... side\nhint: After resolving the conflicts, mark them with\nhint: \"git add/rm <pathspec>\", then run\nhint: \"git revert --continue\".\nhint: You can instead skip this commit with \"git revert --skip\".\nhint: To abort and get back to the state before \"git revert\",\nhint: run \"git revert --abort\".\n", 1);
+    eq("pick: git status | head -5", await run("git status | head -5"), "On branch main\nYou are currently reverting commit 29e6e35.\n  (fix conflicts and run \"git revert --continue\")\n  (use \"git revert --skip\" to skip this patch)\n  (use \"git revert --abort\" to cancel the revert operation)\n", 0);
+    eq("pick: cat f", await run("cat f"), "1\n<<<<<<< HEAD\n<<<<<<< HEAD\nS\n=======\nX\n>>>>>>> 5165061 (xx)\n=======\n2\n>>>>>>> parent of 29e6e35 (side)\n3\n4\n", 0);
+    eq("pick: git revert --abort; git status -s; git log --oneline -1", await run("git revert --abort; git status -s; git log --oneline -1"), "db22755 xx\n", 0);
+    eq("pick: git cherry-pick --skip; git revert --abort; git cherry-pick ", await run("git cherry-pick --skip; git revert --abort; git cherry-pick --quit"), "error: no cherry-pick in progress\nfatal: cherry-pick failed\nerror: no cherry-pick or revert in progress\nfatal: revert failed\n", 0);
+    eq("pick: git reset -q --hard HEAD~2; git cherry-pick -x side; git log", await run("git reset -q --hard HEAD~2; git cherry-pick -x side; git log -1 --format=%B"), "Auto-merging f\n[main f3dd747] side\n Date: Thu Oct 1 14:00:00 2026 +0000\n 1 file changed, 1 insertion(+), 1 deletion(-)\nside\n\n(cherry picked from commit 614d932905062ae574e931c47eb8f2fad6e9c2d8)\n\n", 0);
+    eq("pick: git cherry-pick side", await run("git cherry-pick side"), "The previous cherry-pick is now empty, possibly due to conflict resolution.\nIf you wish to commit it anyway, use:\n\n    git commit --allow-empty\n\nOtherwise, please use 'git cherry-pick --skip'\nOn branch main\nYou are currently cherry-picking commit 614d932.\n  (all conflicts fixed: run \"git cherry-pick --continue\")\n  (use \"git cherry-pick --skip\" to skip this patch)\n  (use \"git cherry-pick --abort\" to cancel the cherry-pick operation)\n\nnothing to commit, working tree clean\n", 1);
+    await run("git cherry-pick --skip; git status -s");
+    eq("pick: git revert --no-edit HEAD; git revert --no-edit HEAD; git lo", await run("git revert --no-edit HEAD; git revert --no-edit HEAD; git log -2 --format=%s; git reflog | head -1 | cut -d\" \" -f2-"), "[main 1be3b2f] Revert \"side\"\n Date: Thu Oct 1 14:00:00 2026 +0000\n 1 file changed, 1 insertion(+), 1 deletion(-)\n[main f024a74] Reapply \"side\"\n Date: Thu Oct 1 14:00:00 2026 +0000\n 1 file changed, 1 insertion(+), 1 deletion(-)\nReapply \"side\"\nRevert \"side\"\nHEAD@{0}: revert: Reapply \"side\"\n", 0);
+    eq("pick: git switch -q -c s3 HEAD~2; echo t > t; git add t; git commi", await run("git switch -q -c s3 HEAD~2; echo t > t; git add t; git commit -qm t; git switch -q main; git merge -q --no-edit s3; git cherry-pick HEAD; git revert HEAD"), "error: commit a9522f6d4f9593f5392bb327611755cd4544fecd is a merge but no -m option was given.\nfatal: cherry-pick failed\nerror: commit a9522f6d4f9593f5392bb327611755cd4544fecd is a merge but no -m option was given.\nfatal: revert failed\n", 128);
+    eq('one commit at a time', await run('git cherry-pick HEAD~1 HEAD~2'), /^fatal: this practice git takes one commit at a time/, 128);
+  }
+
+  // ---- log --graph (as real git 2.43 draws them; test_git.js --real also draws random histories both ways)
+  {
+    const { run } = fresh();
+    await run("mkdir r; cd r; git init -q");
+    await run("echo 1 > f; git add f; git commit -q -m one; echo 2 >> f; git commit -qam two");
+    eq("graph: git log --graph --oneline", await run("git log --graph --oneline"), "* 0d2bd55 two\n* b579351 one\n", 0);
+    eq("graph: git log --graph", await run("git log --graph"), "* commit 0d2bd5539bce01d7859f834898b8f401c0a481af\n| Author: Student <student@lab>\n| Date:   Thu Oct 1 14:00:00 2026 +0000\n| \n|     two\n| \n* commit b579351cef7408d8a67f4ceed597b5ed51be41ed\n  Author: Student <student@lab>\n  Date:   Thu Oct 1 14:00:00 2026 +0000\n  \n      one\n", 0);
+    await run("git switch -q -c a; echo a > a; git add a; git commit -qm a1; echo a >> a; git commit -qam a2; git switch -q main; echo m > m; git add m; git commit -qm m1; git switch -q -c b HEAD~1; echo b > b; git add b; git commit -qm b1");
+    eq("graph: git log --graph --oneline --all", await run("git log --graph --oneline --all"), "* fb0e40b a2\n* 9f6b61c a1\n| * 61731a9 b1\n|/  \n| * b46be67 m1\n|/  \n* 0d2bd55 two\n* b579351 one\n", 0);
+    eq("graph: git switch -q main; git merge -q --no-edit a; git merge -q -", await run("git switch -q main; git merge -q --no-edit a; git merge -q --no-edit b; git log --graph --oneline"), "*   adaeb50 Merge branch 'b'\n|\\  \n| * 61731a9 b1\n* |   085b54f Merge branch 'a'\n|\\ \\  \n| * | fb0e40b a2\n| * | 9f6b61c a1\n| |/  \n* / b46be67 m1\n|/  \n* 0d2bd55 two\n* b579351 one\n", 0);
+    eq("graph: git log --graph --format=\"%h %s%n  by %an\" -4", await run("git log --graph --format=\"%h %s%n  by %an\" -4"), "*   adaeb50 Merge branch 'b'\n|\\    by Student\n| * 61731a9 b1\n| |   by Student\n* |   085b54f Merge branch 'a'\n|\\ \\    by Student\n| * | fb0e40b a2\n| | |   by Student\n", 0);
+    await run("git switch -q -c c HEAD~3; echo c > c; git add c; git commit -qm c1; git switch -q -c d main~2; echo d > d; git add d; git commit -qm d1; git switch -q main; git merge -q --no-edit c; git merge -q --no-edit d");
+    eq("graph: git log --graph --oneline --decorate", await run("git log --graph --oneline --decorate"), "*   331a743 (HEAD -> main) Merge branch 'd'\n|\\  \n| * 6831b20 (d) d1\n* |   b99f9a7 Merge branch 'c'\n|\\ \\  \n| * | aabecbb (c) c1\n* | |   adaeb50 Merge branch 'b'\n|\\ \\ \\  \n| * | | 61731a9 (b) b1\n| |/ /  \n* | |   085b54f Merge branch 'a'\n|\\ \\ \\  \n| |_|/  \n|/| |   \n| * | fb0e40b (a) a2\n| * | 9f6b61c a1\n| |/  \n* / b46be67 m1\n|/  \n* 0d2bd55 two\n* b579351 one\n", 0);
+    eq("graph: git log --graph --reverse", await run("git log --graph --reverse"), "fatal: options '--reverse' and '--graph' cannot be used together\n", 128);
+    eq("graph: git log --graph -2", await run("git log --graph -2"), "*   commit 331a74311593c0510d17d53d64af721387d6b42c\n|\\  Merge: b99f9a7 6831b20\n| | Author: Student <student@lab>\n| | Date:   Thu Oct 1 14:00:00 2026 +0000\n| | \n| |     Merge branch 'd'\n| | \n| * commit 6831b203b1a9428cb9611124a318a10fb894a99f\n| | Author: Student <student@lab>\n| | Date:   Thu Oct 1 14:00:00 2026 +0000\n| | \n| |     d1\n", 0);
+    eq("graph: git stash -q 2>/dev/null; echo z >> f; git stash -q; git log", await run("git stash -q 2>/dev/null; echo z >> f; git stash -q; git log --graph --oneline --all -4"), "*   4972377 WIP on main: 331a743 Merge branch 'd'\n|\\  \n| * 207f3b3 index on main: 331a743 Merge branch 'd'\n|/  \n*   331a743 Merge branch 'd'\n|\\  \n| * 6831b20 d1\n", 0);
+    eq('graph and -p', await run('git log --graph -p'), /^fatal: this practice git draws --graph without -p/, 128);
+  }
+
+  // ---- blame and clean (as real git printed them)
+  {
+    const { run } = fresh();
+    await run("mkdir r; cd r; git init -q");
+    await run("printf \"1\\n2\\n3\\n\" > f; echo g > g; git add f g; git commit -q -m base; git config user.name \"Ada Lovelace\"; printf \"1\\nTWO\\n3\\n4\\n\" > f; git commit -q -am two");
+    eq("blame-clean: git blame f", await run("git blame f"), "^21bb4bb (Student      2026-10-01 14:00:00 +0000 1) 1\nf3c9ffa7 (Ada Lovelace 2026-10-01 14:00:00 +0000 2) TWO\n^21bb4bb (Student      2026-10-01 14:00:00 +0000 3) 3\nf3c9ffa7 (Ada Lovelace 2026-10-01 14:00:00 +0000 4) 4\n", 0);
+    eq("blame-clean: git blame -s f", await run("git blame -s f"), "^21bb4bb 1) 1\nf3c9ffa7 2) TWO\n^21bb4bb 3) 3\nf3c9ffa7 4) 4\n", 0);
+    eq("blame-clean: git blame HEAD~1 -- f", await run("git blame HEAD~1 -- f"), "^21bb4bb (Student 2026-10-01 14:00:00 +0000 1) 1\n^21bb4bb (Student 2026-10-01 14:00:00 +0000 2) 2\n^21bb4bb (Student 2026-10-01 14:00:00 +0000 3) 3\n", 0);
+    eq("blame-clean: git blame -e g", await run("git blame -e g"), "^21bb4bb (<student@lab> 2026-10-01 14:00:00 +0000 1) g\n", 0);
+    eq("blame-clean: git blame nope; echo n > n; git blame n", await run("git blame nope; echo n > n; git blame n"), "fatal: no such path 'nope' in HEAD\nfatal: no such path 'n' in HEAD\n", 128);
+    eq("blame-clean: git blame HEAD~1 nope", await run("git blame HEAD~1 nope"), "fatal: no such path nope in HEAD~1\n", 128);
+    eq("blame-clean: git rm -q f; git blame f", await run("git rm -q f; git blame f"), "fatal: Cannot lstat 'f': No such file or directory\n", 128);
+    await run("git reset -q --hard; rm n");
+    eq("blame-clean: git switch -q -c side HEAD~1; printf \"a\\nb\\n1\\nB\\n3\\n\" > f; ", await run("git switch -q -c side HEAD~1; printf \"a\\nb\\n1\\nB\\n3\\n\" > f; git commit -qam side; git switch -q main; printf \"1\\nTWO\\n3\\n4\\nend\\n\" > f; git config user.email ada@x.org; git commit -qam main; git merge -q --no-edit side"), "Auto-merging f\nCONFLICT (content): Merge conflict in f\nAutomatic merge failed; fix conflicts and then commit the result.\n", 1);
+    eq("blame-clean: git blame f | grep -v \"Not Committed\"", await run("git blame f | grep -v \"Not Committed\""), "55f411e0 (Ada Lovelace      2026-10-01 14:00:00 +0000  1) a\n55f411e0 (Ada Lovelace      2026-10-01 14:00:00 +0000  2) b\n^21bb4bb (Student           2026-10-01 14:00:00 +0000  3) 1\nf3c9ffa7 (Ada Lovelace      2026-10-01 14:00:00 +0000  5) TWO\n55f411e0 (Ada Lovelace      2026-10-01 14:00:00 +0000  7) B\n^21bb4bb (Student           2026-10-01 14:00:00 +0000  9) 3\nf3c9ffa7 (Ada Lovelace      2026-10-01 14:00:00 +0000 10) 4\nd30645cb (Ada Lovelace      2026-10-01 14:00:00 +0000 11) end\n", 0);
+    eq("blame-clean: seq 1 12 > s; git add s; git commit -qm s; sed -i \"s/^5$/fiv", await run("seq 1 12 > s; git add s; git commit -qm s; sed -i \"s/^5$/five/\" s; git commit -qam five; printf \"x\\ny\" > nl; git add nl; git commit -qm nl; git blame s; git blame nl"), "error: Committing is not possible because you have unmerged files.\nhint: Fix them up in the work tree, and then use 'git add/rm <file>'\nhint: as appropriate to mark resolution and make a commit.\nfatal: Exiting because of an unresolved conflict.\nU\tf\na2bf4e71 (Ada Lovelace 2026-10-01 14:00:00 +0000  1) 1\na2bf4e71 (Ada Lovelace 2026-10-01 14:00:00 +0000  2) 2\na2bf4e71 (Ada Lovelace 2026-10-01 14:00:00 +0000  3) 3\na2bf4e71 (Ada Lovelace 2026-10-01 14:00:00 +0000  4) 4\na2bf4e71 (Ada Lovelace 2026-10-01 14:00:00 +0000  5) five\na2bf4e71 (Ada Lovelace 2026-10-01 14:00:00 +0000  6) 6\na2bf4e71 (Ada Lovelace 2026-10-01 14:00:00 +0000  7) 7\na2bf4e71 (Ada Lovelace 2026-10-01 14:00:00 +0000  8) 8\na2bf4e71 (Ada Lovelace 2026-10-01 14:00:00 +0000  9) 9\na2bf4e71 (Ada Lovelace 2026-10-01 14:00:00 +0000 10) 10\na2bf4e71 (Ada Lovelace 2026-10-01 14:00:00 +0000 11) 11\na2bf4e71 (Ada Lovelace 2026-10-01 14:00:00 +0000 12) 12\n52d411cf (Ada Lovelace 2026-10-01 14:00:00 +0000 1) x\n52d411cf (Ada Lovelace 2026-10-01 14:00:00 +0000 2) y\n", 0);
+    await run("mkdir -p d/e; echo x > d/e/x; echo y > y.txt; echo i > i.log; echo \"*.log\" > .gitignore; mkdir sub; echo t > sub/t; git add sub/t; mkdir -p empty/inner");
+    eq("blame-clean: git clean", await run("git clean"), "fatal: clean.requireForce defaults to true and neither -i, -n, nor -f given; refusing to clean\n", 128);
+    eq("blame-clean: git clean -n", await run("git clean -n"), "Would remove .gitignore\nWould remove y.txt\n", 0);
+    eq("blame-clean: git clean -n -d", await run("git clean -n -d"), "Would remove .gitignore\nWould remove d/\nWould remove empty/\nWould remove y.txt\n", 0);
+    eq("blame-clean: git clean -nx", await run("git clean -nx"), "Would remove .gitignore\nWould remove i.log\nWould remove y.txt\n", 0);
+    eq("blame-clean: git clean -nX", await run("git clean -nX"), "Would remove i.log\n", 0);
+    eq("blame-clean: git clean -ndX", await run("git clean -ndX"), "Would remove i.log\n", 0);
+    eq("blame-clean: git clean -f; ls", await run("git clean -f; ls"), "Removing .gitignore\nRemoving y.txt\nd\nempty\nf\ng\ni.log\nnl\ns\nsub\n", 0);
+    eq("blame-clean: git clean -fd; ls", await run("git clean -fd; ls"), "Removing d/\nRemoving empty/\nRemoving i.log\nf\ng\nnl\ns\nsub\n", 0);
+    eq("blame-clean: cd sub; echo z > z; echo zz > ../zz; git clean -n; git clean", await run("cd sub; echo z > z; echo zz > ../zz; git clean -n; git clean -n ..; git clean -fq; ls"), "Would remove z\nWould remove z\nWould remove ../zz\nt\n", 0);
+    await run("git clean -f nope");
+    eq("blame-clean: git config clean.requireForce false; git clean; git clean -q", await run("git config clean.requireForce false; git clean; git clean -q; ls"), "t\n", 0);
+    eq("blame-clean: mkdir -p build/o; echo o > build/o/x.o; echo \"build/\" > .git", await run("mkdir -p build/o; echo o > build/o/x.o; echo \"build/\" > .gitignore; git add .gitignore; git commit -qm ign; git clean -nd; git clean -ndx"), "Would remove build/\n", 0);
+    eq('blame shows lines changed since the commit', await run('cd ..; echo more >> nl; git blame nl | tail -2'), '52d411cf (Ada Lovelace      2026-10-01 14:00:00 +0000 1) x\n00000000 (Not Committed Yet 2026-10-01 14:00:00 +0000 2) ymore\n');
+  }
+
+  // ---- hostile stash and pick data: a planted or edited file gives "damaged", never an exception
+  {
+    const setup = async () => { const t = fresh(); await t.run('mkdir r; cd r; git init -q; echo a > a.txt; git add a.txt; git commit -q -m one; echo b >> a.txt; git stash -q; echo c >> a.txt; git stash -q'); return t; };
+    const hostileStash = async (name, file, content, want) => {
+      const { run, fs } = await setup();
+      fs.write(H + '/r/.git/' + file, typeof content === 'function' ? content(fs.read(H + '/r/.git/' + file), fs) : content);
+      const r = await run('git stash list; git stash pop; git stash show; git log --oneline --all | wc -l');
+      check('hostile stash ' + name, r.out, want);
+      check('hostile stash ' + name + ': no internal error', /internal error/.test(r.out), false);
+    };
+    const dmg = (re) => new RegExp('^(?:' + re.source + '[^\\n]*\\n(?:hint: [^\\n]*\\n)?){3}\\s*\\d+\\n$');
+    await hostileStash('a log line that is not one', 'logs/refs/stash', 'nonsense\n', dmg(/fatal: \.git\/logs\/refs\/stash is damaged: a line is not/));
+    await hostileStash('a log entry that is not a stash', 'logs/refs/stash', (t, fs) => t.replace(/ ([0-9a-f]{40}) /, ' ' + fs.read(H + '/r/.git/refs/heads/main').trim() + ' '), dmg(/fatal: \.git\/logs\/refs\/stash is damaged: entry [0-9a-f]{7} is not a stash/));
+    await hostileStash('a log entry naming a missing commit', 'logs/refs/stash', (t) => t.replace(/ ([0-9a-f]{40}) /, ' ' + 'e'.repeat(40) + ' '), dmg(/fatal: \.git\/logs\/refs\/stash is damaged: entry eeeeeee is not a stash/));
+    await hostileStash('refs/stash not the newest', 'refs/stash', 'f'.repeat(40) + '\n', dmg(/fatal: \.git\/refs\/stash is damaged: refs\/stash should hold/));
+    await hostileStash('__proto__ in the log', 'logs/refs/stash', '__proto__\n', dmg(/fatal: \.git\/logs\/refs\/stash is damaged/));
+    await hostileStash('a message with a tab and markup', 'logs/refs/stash', (t) => t.replace(/\tWIP/g, '\t<b>x</b>\tWIP'), /^stash@\{0\}: <b>x<\/b>\tWIP on main: [0-9a-f]{7} one\n/);
+    {
+      // 101 lines planted: refused, not followed
+      const { run, fs } = await setup(); const l = fs.read(H + '/r/.git/logs/refs/stash').split('\n')[0];
+      fs.write(H + '/r/.git/logs/refs/stash', (l + '\n').repeat(101));
+      eq('hostile stash: too many entries', await run('git stash list'), /^fatal: \.git\/logs\/refs\/stash is damaged: a line is not .*more than 100/, 128);
+    }
+    {
+      // CHERRY_PICK_HEAD and REVERT_HEAD must hold a commit's id; anything else is ignored, as with MERGE_HEAD
+      const { run, fs } = await setup();
+      fs.write(H + '/r/.git/CHERRY_PICK_HEAD', GIT.blobId('a\n') + '\n'); fs.write(H + '/r/.git/REVERT_HEAD', '../../etc\n');
+      eq('hostile pick heads are ignored', await run('git status; git cherry-pick --continue'), 'On branch main\nnothing to commit, working tree clean\nerror: no cherry-pick or revert in progress\nfatal: cherry-pick failed\n', 128);
+    }
   }
 
   // ---- the caps: a repository that grows too big says so and changes nothing
@@ -392,16 +643,17 @@ const H = '/home/student';
   // ---- random damage to every .git file, then commands: never an internal error (an exception the shell had to catch)
   {
     let seed = 7; const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; }, pick = (a) => a[Math.floor(rnd() * a.length)];
-    const CMDS = ['git status', 'git log --oneline --all', 'git diff', 'git add -A', 'git commit -qam x', 'git branch', 'git switch -q b', 'git merge b', 'git reset --hard HEAD~1', 'git show', 'git reflog', 'git ls-files -s', 'git gc', 'git checkout HEAD~1', 'git restore .', 'git merge --abort'];
-    const FILES = ['objects.json', 'index', 'HEAD', 'refs/heads/main', 'refs/heads/b', 'config', 'logs/HEAD', 'MERGE_HEAD', 'ORIG_HEAD'];
+    const CMDS = ['git status', 'git log --oneline --all', 'git diff', 'git add -A', 'git commit -qam x', 'git branch', 'git switch -q b', 'git merge b', 'git reset --hard HEAD~1', 'git show', 'git reflog', 'git ls-files -s', 'git gc', 'git checkout HEAD~1', 'git restore .', 'git merge --abort',
+      'git stash list', 'git stash', 'git stash pop', 'git stash show -p stash@{1}', 'git stash drop', 'git log --graph --oneline --all', 'git log --graph --all', 'git blame a.txt', 'git clean -nd', 'git revert --no-edit HEAD', 'git cherry-pick b', 'git cherry-pick --continue', 'git revert --abort'];
+    const FILES = ['objects.json', 'index', 'HEAD', 'refs/heads/main', 'refs/heads/b', 'config', 'logs/HEAD', 'MERGE_HEAD', 'ORIG_HEAD', 'refs/stash', 'logs/refs/stash', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'MERGE_MSG'];
     let internal = 0;
-    for (let round = 0; round < 60; round++) {
+    for (let round = 0; round < 80; round++) {
       const { run, fs } = fresh();
-      await run('mkdir r; cd r; git init -q; echo a > a.txt; echo b > b.txt; git add .; git commit -qm one; git branch b; echo c >> a.txt; git commit -qam two; git switch -q b; echo d >> a.txt; git commit -qam three; git switch -q main; git merge b >/dev/null');
+      await run('mkdir r; cd r; git init -q; echo a > a.txt; echo b > b.txt; git add .; git commit -qm one; git branch b; echo c >> a.txt; git commit -qam two; git switch -q b; echo d >> a.txt; git commit -qam three; git switch -q main; echo s >> b.txt; git stash -q; echo t > u.txt; git stash -q -u; git cherry-pick b~1 >/dev/null; git merge b >/dev/null');
       for (let k = 0; k < 2; k++) {
         const f = H + '/r/.git/' + pick(FILES); let t = fs.isFile(f) ? fs.read(f) : ''; const i = Math.floor(rnd() * t.length), m = Math.floor(rnd() * 4);
         t = m === 0 ? t.slice(0, i) + t.slice(i + 3) : m === 1 ? t.slice(0, i) + pick(['"', '}', ']', '__proto__', '..', '/', '0', 'null', '[]', '\n']) + t.slice(i) : m === 2 ? t.replace(/[0-9a-f]{40}/, (h) => h.slice(0, 39) + (h[39] === '0' ? '1' : '0')) : t.replace(/"[^"]*"/, pick(['"__proto__"', '"../x"', '".git"', '"a.txt/x"']));
-        fs.write(f, t);
+        fs.mkdir(f.slice(0, f.lastIndexOf('/')), true); fs.write(f, t);
       }
       for (let k = 0; k < 5; k++) if (/internal error/.test((await run(pick(CMDS))).out)) internal++;
     }
@@ -424,20 +676,193 @@ const SCENARIOS = [
     'git switch -q main', 'printf "1\\nM\\n3\\n4\\n5\\n6\\n7\\n8\\n9\\n" > n.txt', 'echo e > del.txt', 'git commit -q -am main', 'git merge side', 'git status', 'git diff', 'git diff --stat', 'git ls-files -s', 'git add n.txt del.txt', 'git commit --no-edit', 'git log --oneline'],
   ['git init -q', 'mkdir -p src/lib build', 'echo "print(1)" > src/main.py', 'echo x > src/lib/u.py', 'printf "build/\\n*.log\\n" > .gitignore', 'echo l > a.log', 'git status -sb', 'git add .', 'git commit -q -m init', 'git mv src/lib/u.py src/u.py', 'git commit -m up',
     'git branch -v', 'git tag -a v1 -m one', 'git log --oneline --decorate', 'git reset --hard HEAD~1', 'git reflog'],
+  // the editor: commit, amend, tag -a, merge and its conclusion (a GIT_EDITOR that copies ~/msg above the template; ~/blank empties it)
+  { editor: true, lines: ["git init -q",
+    "echo hi > a.txt; echo b > b.txt; git add a.txt",
+    "touch ~/blank; git commit; cat ~/tpl",
+    "rm ~/blank; echo first > ~/msg; git commit",
+    "printf \"# only a comment\\n\\n\" > ~/msg; echo x >> a.txt; git commit -a; cat ~/tpl",
+    "git checkout -q a.txt; echo y > c.txt; git add c.txt; mkdir d; echo z > d/z; echo x >> a.txt",
+    "echo first > ~/msg; git commit -q",
+    "git commit --amend; cat ~/tpl",
+    "git commit -q --allow-empty -m quiet",
+    "git commit -q --amend --no-edit; git log -1 --format=%s",
+    "rm ~/msg; touch ~/blank; git tag -a v1; cat ~/tpl",
+    "rm ~/blank; echo \"ver one\" > ~/msg; git tag -a v2; git cat-file -p v2 | tail -2",
+    "git switch -q -c side; echo s > s.txt; git add s.txt; git commit -q -m side; git switch -q main; echo m > m.txt; git add m.txt; git commit -q -m mm",
+    "rm ~/msg; touch ~/blank; git merge side; cat ~/tpl; cat .git/MERGE_MSG",
+    "git status -s",
+    "rm ~/blank; git commit; cat ~/tpl",
+    "git reset -q --hard HEAD~1; git merge --no-edit side >/dev/null; git log -1 --format=%s",
+    "echo \"my merge\" > ~/msg; git reset -q --hard HEAD~1; git merge side | head -1; git log -1 --format=%B",
+    "echo \"from nano\" > ~/msg; git commit -q --allow-empty; git log -1 --format=%s",
+    "rm ~/msg; git revert -e HEAD; cat ~/tpl",
+    "git revert -q --no-edit HEAD"] },
+  { editor: true, lines: ["git init -q",
+    "printf \"1\\n2\\n3\\n\" > f; git add f; git commit -q -m base",
+    "echo 4 >> f; git commit -q -am four",
+    "git revert --no-edit HEAD",
+    "git revert --no-edit HEAD~1",
+    "git revert --abort",
+    "git switch -q -c b HEAD~2; echo x > x; git add x; git commit -q -m x; git switch -q main",
+    "git cherry-pick -e b; cat ~/tpl",
+    "git config user.name Bob; git cherry-pick b",
+    "git reset -q --hard HEAD~1; git cherry-pick --edit b; cat ~/tpl"] },
+  // revert and cherry-pick
+  ["git init -q",
+    "printf \"1\\n2\\n3\\n\" > f; echo g > g; git add f g; git commit -q -m base",
+    "printf \"1\\n2\\n3\\n4\\n\" > f; git commit -q -am four",
+    "echo h > h; git add h; git commit -q -m addh",
+    "git revert HEAD",
+    "git log -1 --format=%B",
+    "git revert --no-edit HEAD~2",
+    "git revert nope",
+    "git revert 2>&1 | head -1",
+    "echo dirty >> f; git revert HEAD",
+    "git add f; git revert HEAD",
+    "git reset -q --hard; git switch -q -c side HEAD~3; printf \"1\\nS\\n3\\n\" > f; git commit -q -am side; git switch -q main",
+    "git cherry-pick side",
+    "git log -1 --format=\"%an %s\"; git reflog | head -1 | cut -d\" \" -f2-",
+    "git switch -q -c s2 HEAD~1; printf \"1\\nX\\n3\\n4\\n\" > f; git commit -q -am xx; git switch -q main",
+    "git cherry-pick s2",
+    "cat f",
+    "git status",
+    "git switch side",
+    "git cherry-pick --continue",
+    "git revert HEAD",
+    "git add f; git status",
+    "git cherry-pick --continue",
+    "git revert --no-edit HEAD~1",
+    "git status | head -5",
+    "cat f",
+    "git revert --abort; git status -s; git log --oneline -1",
+    "git cherry-pick --skip; git revert --abort; git cherry-pick --quit",
+    "git reset -q --hard HEAD~2; git cherry-pick -x side; git log -1 --format=%B",
+    "git cherry-pick side",
+    "git cherry-pick --skip; git status -s",
+    "git revert --no-edit HEAD; git revert --no-edit HEAD; git log -2 --format=%s; git reflog | head -1 | cut -d\" \" -f2-",
+    "git switch -q -c s3 HEAD~2; echo t > t; git add t; git commit -qm t; git switch -q main; git merge -q --no-edit s3; git cherry-pick HEAD; git revert HEAD"],
+  // stash
+  ["git init -q",
+    "git stash",
+    "printf \"1\\n2\\n3\\n\" > f; echo g > g; git add f g; git commit -q -m base",
+    "git stash",
+    "git stash pop",
+    "git stash list",
+    "echo x >> f; echo n > new.txt; git add new.txt; echo u > u.txt",
+    "git stash",
+    "git stash list",
+    "git status -s; cat f",
+    "git log --all --oneline --format=\"%h %p %s\"",
+    "cat .git/refs/stash; cat .git/logs/refs/stash",
+    "git stash show",
+    "git stash show -p",
+    "echo y >> g; git stash -m \"second one\"; git stash list",
+    "git stash pop",
+    "git stash apply -q stash@{0}; git status -s; git stash list",
+    "git checkout -q -- f g; git rm -q --cached new.txt; rm new.txt",
+    "git stash drop; git stash drop",
+    "ls .git/refs; test -e .git/logs/refs/stash; echo $?",
+    "git stash",
+    "git stash -u; ls; git log --all --format=\"%h %p %s\" | tail -3",
+    "git stash show; git stash show -u",
+    "git stash pop",
+    "printf \"1\\nS\\n3\\n\" > f; git stash -q; printf \"1\\nM\\n3\\n\" > f; git commit -q -am mainchange",
+    "git stash pop",
+    "cat f; git stash list",
+    "git stash",
+    "git stash apply",
+    "git stash drop stash@{3}; git stash drop 7",
+    "git stash pop nope",
+    "git stash frob",
+    "git add f; git commit -q -m resolved",
+    "echo local >> f; printf \"1\\n2\\n\" > g; git stash -q; echo other > f; git stash apply",
+    "git checkout -q f; git stash show stash@{1}; git stash drop stash@{1}",
+    "git stash clear; git stash list; ls .git/refs",
+    "echo q >> g; git stash -q; git log -1 --format=%s stash; git log -1 --format=%s stash@{0}^2",
+    "git stash pop -q; git checkout -q --detach; git stash; git stash list",
+    "git gc; git stash pop -q; git status -s",
+    "git log --oneline --decorate --all -3"],
+  // log --graph
+  ["git init -q",
+    "echo 1 > f; git add f; git commit -q -m one; echo 2 >> f; git commit -qam two",
+    "git log --graph --oneline",
+    "git log --graph",
+    "git switch -q -c a; echo a > a; git add a; git commit -qm a1; echo a >> a; git commit -qam a2; git switch -q main; echo m > m; git add m; git commit -qm m1; git switch -q -c b HEAD~1; echo b > b; git add b; git commit -qm b1",
+    "git log --graph --oneline --all",
+    "git switch -q main; git merge -q --no-edit a; git merge -q --no-edit b; git log --graph --oneline",
+    "git log --graph --format=\"%h %s%n  by %an\" -4",
+    "git switch -q -c c HEAD~3; echo c > c; git add c; git commit -qm c1; git switch -q -c d main~2; echo d > d; git add d; git commit -qm d1; git switch -q main; git merge -q --no-edit c; git merge -q --no-edit d",
+    "git log --graph --oneline --decorate",
+    "git log --graph --reverse",
+    "git log --graph -2",
+    "git stash -q 2>/dev/null; echo z >> f; git stash -q; git log --graph --oneline --all -4"],
+  // blame and clean
+  ["git init -q",
+    "printf \"1\\n2\\n3\\n\" > f; echo g > g; git add f g; git commit -q -m base; git config user.name \"Ada Lovelace\"; printf \"1\\nTWO\\n3\\n4\\n\" > f; git commit -q -am two",
+    "git blame f",
+    "git blame -s f",
+    "git blame HEAD~1 -- f",
+    "git blame -e g",
+    "git blame nope; echo n > n; git blame n",
+    "git blame HEAD~1 nope",
+    "git rm -q f; git blame f",
+    "git reset -q --hard; rm n",
+    "git switch -q -c side HEAD~1; printf \"a\\nb\\n1\\nB\\n3\\n\" > f; git commit -qam side; git switch -q main; printf \"1\\nTWO\\n3\\n4\\nend\\n\" > f; git config user.email ada@x.org; git commit -qam main; git merge -q --no-edit side",
+    "git blame f | grep -v \"Not Committed\"",
+    "seq 1 12 > s; git add s; git commit -qm s; sed -i \"s/^5$/five/\" s; git commit -qam five; printf \"x\\ny\" > nl; git add nl; git commit -qm nl; git blame s; git blame nl",
+    "mkdir -p d/e; echo x > d/e/x; echo y > y.txt; echo i > i.log; echo \"*.log\" > .gitignore; mkdir sub; echo t > sub/t; git add sub/t; mkdir -p empty/inner",
+    "git clean",
+    "git clean -n",
+    "git clean -n -d",
+    "git clean -nx",
+    "git clean -nX",
+    "git clean -ndX",
+    "git clean -f; ls",
+    "git clean -fd; ls",
+    "cd sub; echo z > z; echo zz > ../zz; git clean -n; git clean -n ..; git clean -fq; ls",
+    "git clean -f nope",
+    "git config clean.requireForce false; git clean; git clean -q; ls",
+    "mkdir -p build/o; echo o > build/o/x.o; echo \"build/\" > .gitignore; git add .gitignore; git commit -qm ign; git clean -nd; git clean -ndx"],
 ];
+// random histories of branches, commits and merges, drawn by log --graph both ways
+function graphScenario(n) {
+  let seed = n * 2654435761 >>> 0;
+  const rnd = () => { seed = (seed + 0x6D2B79F5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const pick = (a) => a[Math.floor(rnd() * a.length)], L = ['git init -q', 'echo 0 > f0; git add f0; git commit -qm c0'], br = ['main'];
+  let c = 1, cur = 'main';
+  for (let k = 0; k < 30; k++) {
+    const r = rnd();
+    if (r < 0.2 && br.length < 6) { const b = 'b' + br.length; L.push('git switch -q -c ' + b + (rnd() < 0.5 ? ' HEAD~' + Math.floor(rnd() * 2) : '')); br.push(b); cur = b; }
+    else if (r < 0.4) { cur = pick(br); L.push('git switch -q ' + cur); }
+    else if (r < 0.6 && br.length > 1) L.push('git merge -q --no-edit' + (rnd() < 0.5 ? ' --no-ff ' : ' ') + pick(br.filter((b) => b !== cur)) + ' >/dev/null 2>&1; true');
+    else { L.push('echo ' + c + ' > f' + c + '; git add f' + c + '; git commit -qm c' + c); c++; }
+  }
+  return L.concat(['git log --graph --oneline --all', 'git log --graph --all --format=%s', 'git log --graph -5 --oneline', 'git log --graph --all']);
+}
+for (let n = 1; n <= 8; n++) SCENARIOS.push(graphScenario(n));
+
 async function realGit() {
   const cp = require('child_process'), os = require('os'), nodefs = require('fs'), path = require('path');
   if (cp.spawnSync('git', ['--version']).status !== 0) { console.log('real git: skipped (no git on the PATH)'); return; }
   console.log('real git: ' + cp.spawnSync('git', ['--version'], { encoding: 'utf8' }).stdout.trim());
-  for (const [k, lines] of SCENARIOS.entries()) {
+  for (const [k, sc] of SCENARIOS.entries()) {
+    const lines = Array.isArray(sc) ? sc : sc.lines, editor = !Array.isArray(sc) && sc.editor;
     const dir = nodefs.mkdtempSync(path.join(os.tmpdir(), 'pgit-')), home = path.join(dir, 'home'), repo = path.join(dir, 'r');
     nodefs.mkdirSync(home); nodefs.mkdirSync(repo);
-    const env = { PATH: process.env.PATH, HOME: home, TZ: 'UTC', LC_ALL: 'C', GIT_CONFIG_NOSYSTEM: '1', GIT_AUTHOR_DATE: '2026-10-01T14:00:00+0000', GIT_COMMITTER_DATE: '2026-10-01T14:00:00+0000' };
+    // the editor both gits get: what editorHook does for the practice shell
+    nodefs.writeFileSync(path.join(home, 'ed.sh'), 'cp "$1" "$HOME/tpl"\nif [ -f "$HOME/msg" ]; then cat "$HOME/msg" "$1" > "$1.new"; mv "$1.new" "$1"; fi\nif [ -f "$HOME/blank" ]; then : > "$1"; fi\n');
+    const env = { PATH: process.env.PATH, HOME: home, TZ: 'UTC', LC_ALL: 'C', GIT_CONFIG_NOSYSTEM: '1', GIT_AUTHOR_DATE: '2026-10-01T14:00:00+0000', GIT_COMMITTER_DATE: '2026-10-01T14:00:00+0000',
+      GIT_EDITOR: 'sh ' + path.join(home, 'ed.sh'), GIT_MERGE_AUTOEDIT: editor ? 'yes' : 'no' };
     cp.spawnSync('bash', ['-c', 'git config --global init.defaultBranch main; git config --global user.name Student; git config --global user.email student@lab'], { env });
-    const script = lines.map((l, i) => 'echo "@@@' + i + '"; ' + l + ' 2>&1; echo "@@@exit $?"').join('\n');
-    const realOut = cp.spawnSync('bash', ['-c', script], { cwd: repo, env, encoding: 'utf8' }).stdout.split(repo).join('/home/student/r');
+    const script = lines.map((l, i) => 'echo "@@@' + i + '"; { ' + l + '\n} 2>&1; echo "@@@exit $?"').join('\n');
+    const realOut = cp.spawnSync('bash', ['-c', script], { cwd: repo, env, encoding: 'utf8' }).stdout.split(repo).join('/home/student/r').split(home).join('/home/student');
     const real = realOut.split(/@@@\d+\n/).slice(1);
-    const { run } = fresh(); await run('git config --global user.name Student; git config --global user.email student@lab; mkdir r; cd r');
+    const fs = SHELL.makeFS(null, { now: () => T0 }), hooks = { fs, now: () => T0 };
+    if (editor) hooks.nano = editorHook(fs, { titles: [] });
+    const sh = SHELL.makeShell(hooks);
+    const run = async (line) => { let out = ''; const exit = await sh.exec(line, { out: (s) => { out += s; }, err: (s) => { out += s; }, tty: false }); return { out, exit }; };
+    await run('git config --global user.name Student; git config --global user.email student@lab; mkdir r; cd r');
     for (let i = 0; i < lines.length; i++) {
       const r = await run(lines[i]), ours = r.out + '@@@exit ' + r.exit + '\n';
       check('real git, scenario ' + (k + 1) + ', ' + lines[i], ours, real[i]);

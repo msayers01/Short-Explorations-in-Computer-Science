@@ -151,10 +151,15 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   output, `setup lessonN` through the shell's `setup` hook, terminal tasks in teacher assignments.
 - **The practice git** (`src/shellgit.js`, ARCHITECTURE §9f, October 2026): `git` in the shell, added with `SHELL.register` (the old
   "needs the internet" stub no longer names git). init/status/add/rm/mv/restore/commit/log/diff/show/branch/switch/checkout/merge (with
-  conflicts)/reset/tag/config/reflog and a few plumbing commands, with git 2.43's messages; real SHA-1 ids (same as real git's for the same
-  name, email and time). The repository is `.git` in the virtual file system with all objects in `.git/objects.json` (so a history must fit
-  in one 256 KB file) and the index as JSON; everything read from .git is checked (hostile cases in `test_git.js`). No remotes, stash,
-  rebase, or editor (`-m` always). Compare with the real git with `node test_git.js --real` after changing it.
+  conflicts)/reset/tag/stash/revert/cherry-pick/blame/clean/config/reflog, `log --graph` (git's graph.c ported, topo order) and a few
+  plumbing commands, with git 2.43's messages; real SHA-1 ids (same as real git's for the same name, email and time, stash commits too).
+  The repository is `.git` in the virtual file system with all objects in `.git/objects.json` (so a history must fit in one 256 KB file)
+  and the index as JSON; everything read from .git is checked, `refs/stash` and `logs/refs/stash` included (hostile cases in
+  `test_git.js`). Messages not given with -m (commit, amend, a merge commit, revert, `cherry-pick -e`, `tag -a`) open the terminal's nano
+  through `sh.hooks.nano` with git's template; without the hook (node tests) it says to use -m as before. No remotes, rebase, bisect,
+  multi-commit picks, interactive modes. Compare with the real git with `node test_git.js --real` after changing it (its scenarios include
+  editor runs through a scripted GIT_EDITOR and eight random histories drawn with `--graph`); `git switch` now refuses during a merge,
+  cherry-pick or revert, as git does (`git checkout` still says "resolve your current index first").
 - SC 108 The Command Line (`src/course_shell.js`, grades 7-12): lessons 1-4 (where am I: prompt, tree, paths, cd; making and moving things:
   mkdir, touch, echo >, cp, mv, rm, wildcards; looking inside files: cat, head, tail, wc, grep, find, diff, file; pipes and redirection:
   > >> < | 2> /dev/null $?, sort, uniq -c, cut, tr, McIlroy's word-count pipeline), 8 exercises (`sh-<n>-<k>`; kind `shell` graded by
