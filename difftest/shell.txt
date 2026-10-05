@@ -361,6 +361,32 @@ sed '1d' grades.csv
 ===
 sed 's/a/[&]/' fruit.txt
 ===
+sed 's/a/A/; s/e/E/g' fruit.txt
+===
+sed -e 's/a/A/' -e 's/n/N/2' fruit.txt
+===
+sed -n '/an/p; /^1/=' fruit.txt
+===
+sed '/apple/,/Banana/d' fruit.txt
+===
+sed -n '2,$p' nums.txt; sed -n '$p' nums.txt fruit.txt
+===
+sed '3q' fruit.txt; sed -n '/^[0-9]/!p' fruit.txt
+===
+sed 's/\(.\)\(.\)/\2\1/; s/a/\&/g' fruit.txt
+===
+sed -E 's/(an)+/<&>/g; s/[0-9]+$/#/' fruit.txt
+===
+sed 's/,/;/gp' grades.csv; sed -n 's/9/nine/p' grades.csv
+===
+sed 's/a/b' fruit.txt; echo "st $?"; sed 'k' fruit.txt; echo "st $?"; sed 's/a/b/z' fruit.txt; echo "st $?"
+===
+sed -i 's/cat/dog/; 2d' words.txt; cat words.txt
+===
+sed '2,1d' fruit.txt; sed -n '/a/,2p' nums.txt fruit.txt
+===
+sed 'y/abn/ABN/' fruit.txt; sed 'y/ab/x/' fruit.txt; echo "st $?"; sed 'y/a/' fruit.txt; echo "st $?"
+===
 echo "a b c" | xargs -n 1 echo
 ===
 echo a.txt | xargs touch; ls a.txt

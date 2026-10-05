@@ -1646,28 +1646,107 @@
       if (o.f.s) { const inS2 = new Set(s2), sq = s2.length ? (ch) => inS2.has(ch) : pick; let r = ''; for (const ch of out) if (!(sq(ch) && r.endsWith(ch))) r += ch; out = r; }
       io.out(out); return 0;
     } });
-  def('sed', { cat: 'text', use: "sed [-i] 's/old/new/[g]' [file...]", desc: 'Replace text on every line: s/old/new/ changes the first match on each line, s/old/new/g every match. old is a regular expression.',
-    opts: [['-i', 'change the file itself instead of printing the result'], ['-n with p', 'print only some lines: sed -n 2p (line 2), sed -n 2,4p (lines 2 to 4)']],
-    ex: ["sed 's/colour/color/g' essay.txt", "sed -i 's/TODO/DONE/' notes.txt", 'sed -n 1,3p long.txt'],
+  // sed: a script of commands separated by ; or newlines (or given by several -e), each with an optional address (N, $, /re/, a range of two,
+  // ! for "not") and one of  s/old/new/[g i p N]  p  d  q  =  , run on each line in turn as GNU sed does (-n: print only what p prints)
+  function sedParse(text, E) {
+    const cmds = []; let i = 0, n = 0;
+    const err = (msg) => { throw new Error('-e expression #1, char ' + Math.max(1, i) + ': ' + msg); };
+    const ws = () => { while (i < text.length && (text[i] === ' ' || text[i] === '\t')) i++; };
+    const delimited = (d) => { let out = ''; for (; i < text.length; i++) { const c = text[i]; if (c === '\\' && i + 1 < text.length) { out += text[i + 1] === d && d !== '\\' ? d : c + text[i + 1]; i++; continue; } if (c === d) { i++; return out; } if (c === '\n') break; out += c; } return null; };
+    const regex = (src, flags) => { try { return new RegExp(posixRegex(src, E), flags); } catch (e) { err('invalid regular expression: ' + e.message); } };
+    const addr = () => {
+      if (/\d/.test(text[i] || '')) { let v = ''; while (/\d/.test(text[i] || '')) v += text[i++]; return { n: +v }; }
+      if (text[i] === '$') { i++; return { last: true }; }
+      if (text[i] === '/' || text[i] === '\\') { const d = text[i] === '\\' ? text[++i] : '/'; i++; const r = delimited(d); if (r == null) err('unterminated address regex'); return { re: regex(r, '') }; }
+      return null;
+    };
+    while (i < text.length) {
+      while (i < text.length && /[\s;]/.test(text[i])) i++;
+      if (i >= text.length) break;
+      if (++n > 1000) err('too many commands for this practice sed');
+      const c = { a1: addr(), a2: null, not: false, on: false };
+      if (c.a1 && text[i] === ',') { i++; c.a2 = addr(); if (!c.a2) err('unexpected `,\''); }
+      ws(); if (text[i] === '!') { c.not = true; i++; ws(); }
+      const k = text[i++];
+      if (k === undefined) err('missing command');
+      c.k = k;
+      if (k === 's') {
+        const d = text[i++]; if (!d || d === '\n' || d === '\\') err("unterminated `s' command");
+        const pat = delimited(d), rep = pat == null ? null : delimited(d); if (pat == null || rep == null) err("unterminated `s' command");
+        let fl = ''; while (i < text.length && /[gGiIpP0-9]/.test(text[i])) fl += text[i++];
+        if (i < text.length && !/[\s;}]/.test(text[i])) { i++; err("unknown option to `s'"); }   // GNU counts the character it stopped at
+        const nth = +(fl.match(/\d+/) || [1])[0];
+        c.re = regex(pat, 'g' + (/[iI]/.test(fl) ? 'i' : '')); c.all = /g/i.test(fl); c.nth = nth; c.print = /p/i.test(fl);
+        // the replacement: \1..\9 a group, & the whole match, \& a real &, \n a newline, \\ a backslash
+        c.rep = []; for (let j = 0; j < rep.length; j++) { const ch = rep[j]; if (ch === '\\' && j + 1 < rep.length) { const nx = rep[++j]; c.rep.push(/\d/.test(nx) ? { g: +nx } : nx === 'n' ? '\n' : nx === 't' ? '\t' : nx); } else if (ch === '&') c.rep.push({ g: 0 }); else c.rep.push(ch); }
+      } else if (k === 'y') {   // y/abc/xyz/: each character of the first list becomes the one at its place in the second
+        const d = text[i++]; const from = d && d !== '\n' ? delimited(d) : null, to = from == null ? null : delimited(d); if (from == null || to == null) err("unterminated `y' command");
+        const fa = [...from.replace(/\\(.)/g, (m, x) => (x === 'n' ? '\n' : x))], ta = [...to.replace(/\\(.)/g, (m, x) => (x === 'n' ? '\n' : x))];
+        if (fa.length !== ta.length) err("strings for `y' command are different lengths");
+        c.map = new Map(fa.map((ch, j) => [ch, ta[j]]));
+      } else if (!'pdq='.includes(k)) { i--; err('unknown command: `' + k + "'"); }
+      ws(); if (i < text.length && !/[;\n]/.test(text[i])) err('extra characters after command');
+      cmds.push(c);
+    }
+    return cmds;
+  }
+  function sedMatch(c, line, n, last) {
+    const at = (a) => a.n !== undefined ? n === a.n : a.last ? last : (a.re.lastIndex = 0, a.re.test(line));
+    let m;
+    if (!c.a1) m = true;
+    else if (!c.a2) m = at(c.a1);
+    else if (!c.on) { m = at(c.a1); if (m) c.on = !(c.a2.n !== undefined ? c.a2.n <= n : c.a2.last ? last : false); }   // a range starts; a second number already passed ends it at once
+    else { m = true; if (c.a2.n !== undefined ? n >= c.a2.n : c.a2.last ? last : (c.a2.re.lastIndex = 0, c.a2.re.test(line))) c.on = false; }
+    return c.not ? !m : m;
+  }
+  function sedSub(c, line) {   // replace() passes the match, its groups, then offset, string and maybe the named groups
+    let count = 0, did = false;
+    const out = line.replace(c.re, (...m) => { const groups = m.slice(0, m.length - (m[m.length - 1] && typeof m[m.length - 1] === 'object' ? 3 : 2)); count++; if (count < c.nth || (!c.all && count > c.nth)) return m[0]; did = true; return c.rep.map((p) => typeof p === 'string' ? p : (groups[p.g] === undefined ? '' : groups[p.g])).join(''); });
+    return [out, did];
+  }
+  def('sed', { cat: 'text', use: "sed [-n] [-i] [-E] 'script' [file...]", desc: 'Edit text line by line. The script is one or more commands, separated by ; or given by several -e: s/old/new/ replaces the first match of old on each line (g every match, i ignoring case, p print the line too); y/abc/xyz/ changes each a to x, b to y, c to z; p prints, d deletes, q quits, = prints the line number. A command can start with an address: a line number, $ (the last line), /pattern/, or a range like 2,4 or /start/,/end/; ! means the lines it does not match.',
+    opts: [['-i', 'change the file itself instead of printing the result'], ['-n', 'print only the lines a p prints: sed -n 2p (line 2), sed -n 2,4p, sed -n /error/p'], ['-e SCRIPT', 'add a command (several -e run one after another)'], ['-E', 'extended regular expressions: + ? | ( ) without backslashes']],
+    ex: ["sed 's/colour/color/g' essay.txt", "sed -i 's/TODO/DONE/' notes.txt", 'sed -n 1,3p long.txt', "sed '/^#/d; s/  */ /g' config.txt", "sed -n '/BEGIN/,/END/p' log.txt"],
     async run(args, io, sh) {
-      const o = getopts(args, 'inEe:', io, 'sed'); if (!o) return 1;
-      const script = o.f.e !== undefined ? o.f.e : o.args.shift();
-      if (script === undefined) { io.err('Usage: sed [-i] [-n] SCRIPT [FILE]...\n'); return 1; }
-      let fn;
-      // s/old/new/flags, split by hand on the delimiter (a backslash protects the next character)
-      const sm = (() => { if (script[0] !== 's' || script.length < 2) return null; const d = script[1], parts = ['']; for (let i = 2; i < script.length; i++) { const c = script[i]; if (c === '\\' && i + 1 < script.length) { parts[parts.length - 1] += c + script[++i]; continue; } if (c === d) { parts.push(''); continue; } parts[parts.length - 1] += c; } return parts.length === 3 && /^[gi]*$/.test(parts[2]) ? [script, d, parts[0], parts[1], parts[2]] : null; })();
-      const pm = script.match(/^(\d+)(?:,(\d+|\$))?p$/);
-      const dm = script.match(/^(\d+)(?:,(\d+|\$))?d$/);
-      if (sm) { let re; try { re = new RegExp(posixRegex(sm[2], !!o.f.E), sm[4].includes('g') ? 'g' + (sm[4].includes('i') ? 'i' : '') : (sm[4].includes('i') ? 'i' : '')); } catch (e) { io.err('sed: -e expression #1, char 0: ' + e.message + '\n'); return 1; } const rep = sm[3].replace(/\\(\d)/g, '$$$1').replace(/&/g, '$$&').replace(/\\&/g, '&'); fn = (l, i, n) => [l.replace(re, rep), true]; }
-      else if (pm || dm) { const m = pm || dm; const a = +m[1], b = m[2] === undefined ? a : m[2] === '$' ? Infinity : +m[2]; fn = pm ? (l, i) => [l, i >= a && i <= b] : (l, i) => [l, !(i >= a && i <= b)]; if (pm && !o.f.n) fn = (l, i) => [l, true, i >= a && i <= b]; }
-      else if (script[0] === 's') { io.err("sed: -e expression #1, char " + script.length + ": unterminated `s' command\n"); return 1; }
-      else { io.err('sed: -e expression #1, char 1: unknown command: ' + q(script[0] || '') + ' (only s/old/new/, Np and Nd are available here)\n'); return 1; }
-      let exit = 0;
-      for (const f of await inputs(o.args, io, sh, 'sed')) {
-        if (!f) { exit = 2; continue; }
+      const fl = dict(), scripts = [], rest = [];
+      for (let k = 0; k < args.length; k++) {
+        const a = args[k];
+        if (a === '--') { rest.push(...args.slice(k + 1)); break; }
+        if (a === '-e' || a === '--expression') { if (k + 1 >= args.length) { io.err("sed: option requires an argument -- 'e'\n"); return 1; } scripts.push(args[++k]); continue; }
+        if (a.startsWith('--expression=')) { scripts.push(a.slice(13)); continue; }
+        if (a === '--quiet' || a === '--silent') { fl.n = true; continue; }
+        if (a === '--in-place' || a.startsWith('--in-place=')) { fl.i = true; continue; }
+        if (a === '--regexp-extended') { fl.E = true; continue; }
+        if (/^-[^-]/.test(a)) { let ok = true; for (let j = 1; j < a.length; j++) { const ch = a[j]; if (ch === 'n' || ch === 'E' || ch === 'r' || ch === 's') fl[ch === 'r' ? 'E' : ch] = true; else if (ch === 'i') { fl.i = true; break; } else if (ch === 'e') { const v = j + 1 < a.length ? a.slice(j + 1) : args[++k]; if (v === undefined) { io.err("sed: option requires an argument -- 'e'\n"); return 1; } scripts.push(v); break; } else { io.err("sed: invalid option -- '" + ch + "'\nUsage: sed [OPTION]... {script-only-if-no-other-script} [input-file]...\n"); ok = false; break; } } if (!ok) return 1; continue; }
+        rest.push(a);
+      }
+      if (!scripts.length) { if (!rest.length) { io.err('Usage: sed [OPTION]... {script-only-if-no-other-script} [input-file]...\n'); return 1; } scripts.push(rest.shift()); }
+      let cmds; try { cmds = sedParse(scripts.join('\n'), !!fl.E); } catch (e) { io.err('sed: ' + e.message + '\n'); return 1; }
+      const files = await inputs(rest, io, sh, 'sed');
+      let exit = files.some((f) => !f) ? 2 : 0, quit = false;
+      // one stream over all the files (line numbers and $ run across them), except with -i, where each file is edited on its own
+      const groups = fl.i ? files.filter(Boolean).map((f) => [f]) : [files.filter(Boolean)];
+      for (const g of groups) {
+        if (quit) break;
+        for (const c of cmds) c.on = false;
+        const all = []; for (const f of g) for (const l of lines(f.text)) all.push(l);
         let out = '';
-        lines(f.text).forEach((l, i) => { const r = fn(l, i + 1); if (r[1]) out += r[0] + '\n'; if (r[2]) out += r[0] + '\n'; });
-        if (o.f.i && f.name !== '-') sh.fs.write(sh.fs.resolve(f.name), out); else io.out(out);
+        for (let n = 1; n <= all.length && !quit; n++) {
+          let line = all[n - 1], del = false; const last = n === all.length;
+          if ((sh.steps += cmds.length) > LIMITS.steps * 50) { io.err('sed: stopped: the script ran too long\n'); return 1; }
+          for (const c of cmds) {
+            if (!sedMatch(c, line, n, last)) continue;
+            if (c.k === 's') { const r = sedSub(c, line); line = r[0]; if (r[1] && c.print) out += line + '\n'; }
+            else if (c.k === 'y') line = [...line].map((ch) => (c.map.has(ch) ? c.map.get(ch) : ch)).join('');
+            else if (c.k === 'p') out += line + '\n';
+            else if (c.k === '=') out += n + '\n';
+            else if (c.k === 'd') { del = true; break; }
+            else if (c.k === 'q') { quit = true; break; }
+          }
+          if (!del && !fl.n) out += line + '\n';
+          if (out.length > LIMITS.out) { io.err('sed: the output is too long\n'); return 1; }
+        }
+        if (fl.i && g[0].name !== '-') sh.fs.write(sh.fs.resolve(g[0].name), out); else io.out(out);
       }
       return exit;
     } });

@@ -222,7 +222,7 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('sed -i', await run('sed -i "s/one/ONE/" w.txt; cat w.txt'), 'ONE two\nthree\n');
     eq('sed -n p', await run('seq 5 | sed -n 2,3p'), '2\n3\n');
     eq('sed d', await run('seq 3 | sed 2d'), '1\n3\n');
-    eq('sed unknown', await run('seq 3 | sed y/a/b/'), /unknown command: 'y'/, 1);
+    eq('sed unknown', await run('seq 3 | sed k'), /unknown command: `k'/, 1);
     eq('rev', await run('echo abc | rev'), 'cba\n');
     eq('tac', await run('seq 3 | tac'), '3\n2\n1\n');
     eq('nl', await run('printf "a\\n\\nb\\n" | nl'), '     1\ta\n       \n     2\tb\n');
