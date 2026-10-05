@@ -1552,3 +1552,26 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .showcase-tab { font: .9rem var(--mono); padding: .3rem .7rem; border: 1px solid var(--rule); border-radius: 4px 4px 0 0; background: var(--paper-2); color: var(--ink); cursor: pointer; }
 .showcase-tab.on { background: var(--paper); border-bottom-color: var(--paper); font-weight: 500; }
 .showcase-code { max-height: 32rem; overflow: auto; margin: 0 0 .75rem; }
+
+/* The Code Lab as an IDE: a deep navy editor with a soft blue glow, in light and dark mode alike (the terminal below it was always dark).
+   The tokens are redefined on the three IDE parts, so everything inside them (tabs, line numbers, highlighting, autocomplete, the status bar)
+   follows. Lesson playgrounds keep the page's own theme. Syntax colours follow VS Code's Dark+; text contrast is at least 4.5:1 on the navy. */
+.lab-tabs, .lab-editor, .lab-statusbar {
+  --paper: #0f1f36; --paper-2: #12294a; --code-bg: #0b1727; --ink: #d6e2f5; --ink-2: #a9bddb; --ink-3: #7f97ba; --rule: #1f3a63; --rule-2: #182f52;
+  --accent: #4da3ff; --accent-ink: #04111f; --accent-soft: rgba(77, 163, 255, 0.14); --err: #ff8a80; --ok: #6fdc8c; --warn: #e8c46a;
+  --hl-k: #c586c0; --hl-s: #ce9178; --hl-c: #7fae6a; --hl-n: #b5cea8; --hl-b: #4ec9b0; --hl-p: #dcdcaa;
+  color: var(--ink);
+}
+.lab-editor { background: radial-gradient(120% 70% at 50% 0%, #14305a 0%, #0d1c33 45%, #0b1727 100%); border-color: #1f3a63; box-shadow: 0 0 0 1px rgba(77, 163, 255, 0.12), 0 0 28px rgba(60, 130, 255, 0.16); transition: box-shadow 0.2s, border-color 0.2s; }
+.lab-editor:focus-within { border-color: #4da3ff; box-shadow: 0 0 0 1px rgba(77, 163, 255, 0.55), 0 0 34px rgba(60, 130, 255, 0.32); }
+.lab-editor textarea { caret-color: #7cc0ff; }
+.lab-editor textarea::selection { background: rgba(77, 163, 255, 0.38); }
+.lab-editor .line.cur { background: rgba(77, 163, 255, 0.12); box-shadow: inset 2px 0 0 #4da3ff; }
+.lab-editor .line.cur::before { color: #cfe3ff; opacity: 1; }
+.lab-tabs { border-bottom-color: #1f3a63; padding: 0 0.3rem; background: #0a1424; border: 1px solid #1f3a63; border-bottom: 0; }
+.lab-tabs .tab { color: var(--ink-2); }
+.lab-tabs .tab.on { background: #0d1c33; color: #fff; border-color: #1f3a63; border-top: 2px solid #4da3ff; }
+.lab-tabs .tab:not(.on):hover { color: #fff; background: rgba(77, 163, 255, 0.1); }
+.lab-statusbar { background: #0a1424; border-color: #1f3a63; color: var(--ink-2); box-shadow: 0 0 20px rgba(60, 130, 255, 0.08); }
+.lab .out, .lab .term { --t-bg: #0a1424; --t-bar: #10223b; --t-rule: #1f3a63; --t-prompt: #4da3ff; box-shadow: 0 0 24px rgba(60, 130, 255, 0.14); border-color: #1f3a63; }
+@media (prefers-reduced-motion: reduce) { .lab-editor { transition: none; } }
