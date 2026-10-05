@@ -196,5 +196,11 @@ check('broken storage does not throw', Object.keys(BACKUP.collect(broken, { teac
   check('at most 60 arena bots are restored', many.length === 60);
   check('a file whose arena part is junk adds nothing', ['nope', [], 5].every((junk) => { const o = J({ app: 'short-explorations-backup', v: 1, saved: 'x', data: { progress: { done: { 'py-1-1': 1 } }, arena: junk === 'nope' ? { bots: 'nope' } : junk } }); return !('arena' in BACKUP.parse(o).data); }));
 }
+// ---- the Code Lab's file history (shortcourses.labhistory.v1) and its side-by-side setting stay on the device (ARCHITECTURE §7)
+{ const s = store({ 'shortcourses.lab.v1': J(Object.assign({}, lab, { split: true })), 'shortcourses.labhistory.v1': J({ v: 1, files: { python: { 'main.py': [{ t: 1, why: 'run', code: 'old' }] } } }) });
+  const f = BACKUP.collect(s, {});
+  check('the file history is not in a backup', !J(f).includes('labhistory') && !J(f).includes('"old"') && !('split' in f.data.lab), Object.keys(f.data));
+  const t = store(); BACKUP.apply(t, BACKUP.parse(J({ app: 'short-explorations-backup', v: 1, saved: 'x', data: { lab, labhistory: { v: 1, files: { python: { 'main.py': [{ t: 1, code: 'x' }] } } } } })).data, 'replace');
+  check('a backup cannot write a file history', t.getItem('shortcourses.labhistory.v1') === null); }
 if (bad) { console.log(bad + ' problems'); process.exit(1); }
 console.log('backup OK');
