@@ -154,6 +154,7 @@ Hash routes; a `?query` after the path is split off first.
 | `#/courses` | every course in groups (`COURSE_GROUPS` in app.js; a course in no group is listed under "More courses"), with a search box |
 | `#/algorithms`, `#/algorithms/<demo-id>` | Algorithms in motion: the index of demos, or one demo (§9g) |
 | `#/arena`, `#/arena/tournament`, `#/arena?bot=` / `?replay=` | Bot Arena: write a bot that plays Tron; the teacher's tournament; a shared bot or replay (§9j) |
+| `#/showcase`, `#/showcase/<id>` | Student Showcase: projects from `showcase/`, only once there is one (§9l) |
 | `#/real-world`, `#/real-world/<topic-id>` | where the ideas of the courses are used, scrolled to a topic (§9g) |
 | `#/standards`, `#/standards/<code>` | the CSTA and Minnesota standards with the lessons that address them, scrolled to one standard (§9k) |
 | `#/<course>` | course page (audience, outcomes, "Your skills" once started (§9i), lesson list with progress) |
@@ -943,6 +944,25 @@ Students write a bot (Python, Java, C++ or Scheme) that plays Tron against built
 - **Not built:** a worker pool for tournaments (student bots of one language share one worker in restart mode, so matches run one at a time; built-in matches take milliseconds).
 - Tests: `test_arena.js` (rules, determinism, hostile replays, every starter and solution on the real runtimes, timeouts, forfeits, zip checked with Python's unzipper, a 132-match
   tournament) and the Arena section of `test_browser.js`. The Flood Fill solutions in all four languages choose identical moves on every board of a game (tested).
+
+## 9l. Student Showcase (`scripts/showcase.js`, `showcase/`, `src/showcase.js`, `test_showcase.js`)
+
+Student projects shown on `#/showcase` (a gallery) and `#/showcase/<id>` (one project: file tabs, the highlighted code, Run, and "Open a copy in the
+Code Lab"). There is no upload: the owner puts a student's folder under `showcase/<slug>/` with a `project.json` (showcase/README.md has the fields),
+`scripts/showcase.js` checks it, `build.js` puts the result in `window.BUILD.showcase` and the page reads it. Like everything else the site
+publishes, a project is rebuilt into `dist/index.html`, so adding one is a commit.
+
+- **Consent and names are build rules, not conventions.** A folder without `"consent": true` fails the build; `name` must be one word unless `nameOk`
+  (first name or nickname only); `consentNote` is for the owner's records and never reaches the page. The page shows the display name, grade band,
+  language, date, title and note: nothing else about the student.
+- **What a folder may add to the page** is capped (20 files, 60 KB each, 200 KB a project, 200 projects) and filtered by extension (source text and
+  .txt/.md); control characters are stripped and line endings normalised. Everything is drawn as text (`el()` children, `highlight()` which escapes).
+- **Running** uses `runCell` as a lesson's example does (Python, Java, C++, Scheme; Java files joined by `JPROJ.join`), so the same sandboxes and limits apply.
+  C has no runner outside the Code Lab, so a C project offers only "Open a copy in the Code Lab". `LAB.openCode` copies the main file only.
+- **No project, no page.** `SHOWCASE.count()` is zero until a folder exists: the top bar has no Showcase link, the home page has no link and
+  `#/showcase` falls through to the usual not-found. The tour's top-bar step does not mention Showcase: add it there when the first project is published.
+- Not done: images or screenshots for projects that draw (turtle runs in the page as in a lesson), a search or filter by language, projects in backups
+  (they are the owner's content, not a visitor's), and a check that a project actually runs in the build (the author has to).
 
 ## 9h. Pictures in lessons (`img/`, `scripts/fetch-image.js`, `app.js: photoBlock`)
 
