@@ -230,7 +230,7 @@ if False:
 print("outside again")`, caption: 'Now change the four spaces before "still inside it" to zero and run. Which line moved out of the block?' },
         `<p>Look at the shape of the program rather than its words. The indented lines form a visible column under their colon. That column <em>is</em> the block. Moving a line left by four spaces takes it out of the block, which changes what the program does even though no word changed. Nothing you did in Lesson 1 depended on spacing; from here on, it always will.</p>
 <h2>Three ways indentation goes wrong</h2>
-<p>Each of these is a <code>SyntaxError</code>, caught at the reading stage. Run each block, read the message, and then fix it.</p>
+<p>Each of these is a <code>SyntaxError</code>, caught at the reading stage (a Python installed on your own computer calls them <code>IndentationError</code>, a kind of SyntaxError). Run each block, read the message, and then fix it.</p>
 <p><b>A stray indent.</b> A line that is indented but is not under a colon. Python does not know which block it could belong to.</p>`,
         { play: `print("start")
     print("why am I indented?")`, caption: 'Delete the four spaces on line 2 and run again.', expectError: true },
@@ -312,7 +312,7 @@ Total: 2.0</code></pre>
       title: 'Making decisions', summary: 'True and False, comparisons, if, elif and else, combining conditions with and, or and not, and the order in which Python checks them.',
       blocks: [
         `<p>Every time you press a button in a game, the program asks questions. Is the player touching the ground? Is there a wall to the left? Has the timer run out? A fast game asks thousands of such questions every second, and what happens next depends on each answer. Those yes-or-no questions, and the choices that follow them, are this lesson. So how do you ask a yes-or-no question in Python, and how does a program choose what to do with the answer?</p>`,
-        { photo: 'minetest', caption: "Minetest, a free game of blocks much like Minecraft. Can the player walk forward, or is a tree in the way? Is the block underfoot solid, or water? Every step in a game like this is decided by questions like these." },
+        { photo: 'minetest', caption: "Minetest (now called Luanti), a free game of blocks much like Minecraft. Can the player walk forward, or is a tree in the way? Is the block underfoot solid, or water? Every step in a game like this is decided by questions like these." },
         `
 <p>So far every program ran the same lines every time. Real programs <em>branch</em>: they do one thing in one situation and something else in another. A thermostat turns the heat on or off, a game checks whether you have won, a website checks whether your password is right. Each of these asks a question with a yes-or-no answer and then chooses what to do. This lesson is about both halves: asking the question, and choosing.</p>
 <h2>Questions: True and False</h2>
@@ -1135,7 +1135,7 @@ print(value)        # unchanged`, caption: 'Prints 20, then 10. To keep the doub
 def tick():
     count = count + 1    # assigning makes count local in tick...
 
-tick()`, expectError: true, caption: 'UnboundLocalError: local variable \'count\' referenced before assignment. Because tick assigns to count, count is local in tick, and the right-hand side tries to read the local count before it has a value.' },
+tick()`, expectError: true, caption: 'UnboundLocalError: local variable \'count\' referenced before assignment (newer versions of Python word it "cannot access local variable \'count\' where it is not associated with a value"). Because tick assigns to count, count is local in tick, and the right-hand side tries to read the local count before it has a value.' },
         { skill: 'parameters-scope', check: "A function assigns <code>total = 0</code> inside its block. The program also has a global <code>total</code>. What does the assignment do?", options: ["Changes the global total", "Makes a new local total that lives only in this call", "Causes an error"], answer: 1, why: "A name assigned anywhere inside a function is local to that function. The global is untouched; pass values in and return results instead.", wrong: ["This believes an assignment inside a function reaches out to the global of the same name. It does not: the assignment makes a new local name, and the global keeps its value.", null, "This believes two variables with one name must clash. They do not: the local and the global live in different places, and no error happens (the error in the example came from reading a local before giving it a value)."] },
         `<p>The cure is not a trick but a habit: pass what a function needs in as parameters, and hand what it produces back with <code>return</code>. Here that means <code>def tick(count): return count + 1</code>, called as <code>count = tick(count)</code>. A function that only talks to the outside world through its parameters and its return value can be understood, tested and reused on its own. That one habit is most of what makes large programs manageable.</p>
 <h2>Defaults and several results</h2>
@@ -1475,7 +1475,7 @@ print(len(ojibwe))`, caption: 'It prints bear, then 4, then water (noun), then 5
 print("fig" in prices, "mango" in prices)
 print(prices.get("apple", 0))
 print(prices.get("mango", 0))     # not there: the fallback, 0
-print(prices["mango"])            # not there: an error`, expectError: true, caption: 'True False, then 0.5 and 0, and then the last line raises KeyError: mango. Delete it and the program runs cleanly.' },
+print(prices["mango"])            # not there: an error`, expectError: true, caption: 'True False, then 0.5 and 0, and then the last line raises a <code>KeyError</code> naming mango. Delete it and the program runs cleanly.' },
         { skill: 'dict-get', check: "Which expression looks up <code>\"pear\"</code> safely, giving 0 if it is missing?", options: ["<code>d[\"pear\"] or 0</code>", "<code>d.get(\"pear\", 0)</code>", "<code>d[\"pear\", 0]</code>"], answer: 1, why: "<code>get</code> returns the value if the key is there and the fallback if not, without an error. <code>d[\"pear\"]</code> raises KeyError first.", wrong: ["This believes <code>or 0</code> can rescue a missing key. The square brackets raise KeyError before <code>or</code> is ever reached; <code>or</code> only helps with a value that is there but false.", null, "This believes a lookup can take a fallback inside square brackets. Square brackets take one key; <code>d[\"pear\", 0]</code> looks for the key <code>(\"pear\", 0)</code>, a tuple, and raises KeyError."] },
         `<p>Use square brackets when a missing key would be a bug, so that the error tells you about it (Lesson 9). Use <code>get</code> when a missing key is a normal situation, such as a word you have not counted yet. One more trap: <code>in</code> checks the <em>keys</em> only. <code>"bear" in ojibwe</code> is <code>False</code>, because "bear" is a value, not a key.</p>
 <h2>Looping over a dictionary</h2>
@@ -1614,7 +1614,7 @@ random.shuffle(deck)               # changes deck itself
 print(deck)`, caption: 'Run it several times: different values each time, but always the same shape. Like append in Lesson 6, shuffle changes the list and gives back None, so write random.shuffle(deck), never deck = random.shuffle(deck).' },
         { skill: 'random-module', check: "Which values can <code>random.randint(1, 6)</code> give?", options: ["1 to 5, like range", "1 to 6, including both ends", "0 to 6"], answer: 1, why: "Unlike range, randint includes both ends: a dice roll is exactly <code>randint(1, 6)</code>.", wrong: ["Mixes randint up with <code>range(1, 6)</code>, which stops before 6. randint is the odd one out: it includes its last number.", null, "Counts from 0 as lists do. randint starts exactly where you tell it: <code>randint(1, 6)</code> never gives 0."] },
         `<h2>Numbers that only look random</h2>
-<p>A computer follows instructions exactly, so it cannot really produce chance. What <code>random</code> produces are <em>pseudorandom</em> numbers: a long sequence computed by a fixed rule from a starting value called the <em>seed</em>, designed so that no pattern shows. When the numbers must be truly unpredictable, as for the secret keys that protect web traffic, they need a physical source of chance: the internet company Cloudflare films a wall of lava lamps and mixes the pictures into its random numbers. Normally Python picks the seed from the clock, so every run is different. You can choose it yourself.</p>`,
+<p>A computer follows instructions exactly, so it cannot really produce chance. What <code>random</code> produces are <em>pseudorandom</em> numbers: a long sequence computed by a fixed rule from a starting value called the <em>seed</em>, designed so that no pattern shows. When the numbers must be truly unpredictable, as for the secret keys that protect web traffic, they need a physical source of chance: the internet company Cloudflare films a wall of lava lamps and mixes the pictures into its random numbers. Normally Python picks the seed from the operating system's own supply of randomness (or, failing that, the clock), so every run is different. You can choose it yourself.</p>`,
         { photo: 'lava-lamps', caption: "The wall of lava lamps at Cloudflare. The blobs of wax never move the same way twice." },
         `<div class="stmt"><p><span class="kind">Rule (seeds).</span> <code>random.seed(<i>s</i>)</code> sets the seed. After the same seed, the random functions give exactly the same sequence of results.</p></div>
 <details class="reveal"><summary>Guess first: the example below sets seed 7, prints three numbers, sets seed 7 again and prints three more. Will the two lines match? And a line after seed 8?</summary><p>The two seed-7 lines match exactly: the seed decides the whole sequence. Seed 8 starts a different sequence, so its line is almost surely different (three numbers from 1 to 100 match by luck about once in a million tries). The numbers you see depend on Python's rule for turning seeds into numbers, and the site's Python may not print the same ones as your own computer's.</p></details>`,
@@ -1626,7 +1626,7 @@ random.seed(7)
 print(random.randint(1, 100), random.randint(1, 100), random.randint(1, 100))
 random.seed(8)
 print(random.randint(1, 100), random.randint(1, 100), random.randint(1, 100))`, caption: 'The same seed replays the same numbers; a different seed gives different ones. Games use this to share a level ("try seed 4471"), and scientists so that others can repeat their results exactly.' },
-        { skill: 'random-module', check: "Two runs of a program both start with <code>random.seed(42)</code>. What do their random numbers look like?", options: ["Different each run, as random numbers should be", "Exactly the same sequence in both runs", "The same only for the first number"], answer: 1, why: "The numbers are pseudorandom: the seed decides the whole sequence. The same seed replays it exactly, which is useful for debugging and sharing.", wrong: ["Believes the computer produces real chance. It only follows a fixed rule from the seed, so the same seed always gives the same numbers; the clock usually chooses a different seed each run, which is why runs look different.", null, "Thinks the seed only affects the start. It decides the entire sequence, every number after the first as well."] },
+        { skill: 'random-module', check: "Two runs of a program both start with <code>random.seed(42)</code>. What do their random numbers look like?", options: ["Different each run, as random numbers should be", "Exactly the same sequence in both runs", "The same only for the first number"], answer: 1, why: "The numbers are pseudorandom: the seed decides the whole sequence. The same seed replays it exactly, which is useful for debugging and sharing.", wrong: ["Believes the computer produces real chance. It only follows a fixed rule from the seed, so the same seed always gives the same numbers; the operating system usually supplies a different seed each run, which is why runs look different.", null, "Thinks the seed only affects the start. It decides the entire sequence, every number after the first as well."] },
         `<p>Seeds are also a debugging tool (Lesson 9): a bug that appears only with certain random numbers is maddening, but fix the seed and the bug happens the same way every time, so you can reproduce it, shrink it and fix it.</p>
 <h2>Counting what comes up</h2>
 <p>A loop and <code>randint</code> make a dice machine; Lesson 11's counting pattern tallies the faces. A fair die shows each face with probability 1/6, so in 600 rolls each should appear about 100 times, but not exactly.</p>
@@ -1638,7 +1638,9 @@ for rolls in [60, 600, 6000]:
     for i in range(rolls):
         face = random.randint(1, 6)
         counts[face] = counts.get(face, 0) + 1
-    fractions = [round(counts.get(face, 0) / rolls, 3) for face in range(1, 7)]
+    fractions = []
+    for face in range(1, 7):
+        fractions.append(round(counts.get(face, 0) / rolls, 3))
     print(rolls, "rolls:", fractions)`, caption: 'Every fraction should be about 0.167. With 60 rolls some are far off; with 6000 all are close. Run it again and compare.' },
         { skill: 'simulation', check: "To estimate the probability of rolling a double six, a program repeats the experiment 10,000 times. What does it compute at the end?", options: ["The number of double sixes", "The number of double sixes divided by 10,000", "10,000 divided by the number of double sixes"], answer: 1, why: "Monte Carlo: repeat the experiment, count the successes, divide by the number of trials. The estimate settles as the trials grow.", wrong: ["Forgets that a probability is a fraction of the trials. A count of, say, 280 depends on how many trials were run; 280 out of 10,000 is the same as 0.028 whatever the number of trials.", null, "Turns the fraction upside down. That gives about 36 (trials per success), not the chance of success."] },
         `<p>That the fractions settle down as the number of trials grows is called the <em>law of large numbers</em>. But they settle slowly. The typical error of an estimate from <i>n</i> trials shrinks in proportion to 1/√<i>n</i>, so to make an estimate ten times more precise you need a <em>hundred</em> times as many trials. Keep that in mind whenever a simulation gives you a number: it is an estimate with a wobble, not an exact answer.</p>
@@ -1647,8 +1649,10 @@ for rolls in [60, 600, 6000]:
         { play: `import random
 
 def shared_birthday(people):
-    birthdays = [random.randint(1, 365) for i in range(people)]
-    return len(set(birthdays)) < people      # fewer distinct days than people means a repeat
+    birthdays = []
+    for i in range(people):
+        birthdays.append(random.randint(1, 365))
+    return len(set(birthdays)) < people      # set keeps each day once: fewer days than people means a repeat
 
 trials = 2000
 for people in [10, 23, 40, 60]:
@@ -1974,7 +1978,7 @@ print(bubble_sort([7, 3, 9, 1, 6, 8, 2, 5, 4]))`, caption: 'The swap line exchan
         { play: `import random
 def merge(a, b, counter):
     result = []
-    i = j = 0
+    i, j = 0, 0
     while i < len(a) and j < len(b):
         counter[0] += 1                  # one comparison
         if a[i] <= b[j]:
@@ -1991,11 +1995,13 @@ def merge_sort(xs, counter):
     mid = len(xs) // 2
     return merge(merge_sort(xs[:mid], counter), merge_sort(xs[mid:], counter), counter)
 counter = [0]
-xs = [random.randint(1, 10000) for i in range(1000)]
+xs = []
+for i in range(1000):
+    xs.append(random.randint(1, 10000))
 ys = merge_sort(xs, counter)
 print("sorted correctly:", ys == sorted(xs))
 print("merge sort comparisons:", counter[0])
-print("bubble sort would make:", 1000 * 999 // 2)`, caption: 'About 8,700 comparisons against 499,500 (the exact count depends on the random list). The counter is a one-item list so that every call can add to the same count: changing counter[0] changes the one list they all share, as in Lesson 6.' },
+print("bubble sort would make:", 1000 * 999 // 2)`, long: true, caption: 'About 8,700 comparisons against 499,500 (the exact count depends on the random list). The counter is a one-item list so that every call can add to the same count: changing counter[0] changes the one list they all share, as in Lesson 6.' },
         { skill: 'sorting', check: "Bubble sort on 1,000 items takes about 1 second. Roughly how long on 10,000 items?", options: ["About 10 seconds", "About 100 seconds", "About 1,000 seconds"], answer: 1, why: "Bubble sort is O(n²): ten times the items means a hundred times the comparisons. Merge sort, at n log n, would take about 13 times as long.", wrong: ["Assumes work grows in step with the number of items. Bubble sort compares pairs, about n × n / 2 of them, so ten times the items is a hundred times the work.", null, "Cubes the growth. The comparisons grow with the square of n, so ten times the items gives 10 × 10 = 100 times the work, not 1,000."] },
         `<details class="reveal"><summary>Why does merge sort need only about <i>n</i> log<sub>2</sub> <i>n</i> comparisons?</summary><p>Picture the splitting as layers. The top layer is the whole list; the next has two halves; the next, four quarters; and so on down to single items, which takes about log<sub>2</sub> <i>n</i> layers, the number of halvings. At each layer, merging all the pieces makes at most one comparison per item, so at most <i>n</i> per layer. That is about <i>n</i> × log<sub>2</sub> <i>n</i> in all: for a million items, about 20 million comparisons instead of 500 billion.</p></details>
 <p>Python's built-in <code>sorted()</code> uses <em>Timsort</em>, written by Tim Peters for Python in 2002, which is a refined merge sort that also takes advantage of any stretches of the list that are already in order. The lesson is not "never write bubble sort"; it is that the <em>choice of algorithm</em> can matter far more than the speed of the computer. A fast machine running an O(<i>n</i>²) sort loses to a slow machine running an O(<i>n</i> log <i>n</i>) one, once the list is big enough.</p>
@@ -2109,7 +2115,7 @@ print(is_sorted([1, 3, 3, 8]), is_sorted([3, 1, 2]))`, caption: 'Prints 3 (the 1
             solution: 'def histogram(xs):\n    counts = {}\n    for x in xs:\n        counts[x] = counts.get(x, 0) + 1\n    return sorted(counts.items())\n\nprint(histogram([3, 1, 3, 2, 1, 3]))',
             hints: ['Count with the pattern from the dictionaries lesson: counts[x] = counts.get(x, 0) + 1 inside the loop over xs.', 'counts.items() gives the (key, value) pairs, and sorted(...) puts them in order, by the key first. Return that list.'],
             tests: [{ call: 'histogram([3, 1, 3, 2, 1, 3])', expect: '[(1, 2), (2, 1), (3, 3)]' }, { call: 'histogram([])', expect: '[]' }, { call: 'histogram([5])', expect: '[(5, 1)]' }, { call: 'histogram([2, 2, 2, 2])', expect: '[(2, 4)]' }, { call: 'histogram(["b", "a", "b"])', expect: "[('a', 1), ('b', 2)]" }],
-            failTip: 'If the pairs come out in a different order, sort them: a dictionary does not promise any order. If you get a KeyError, use get for the first time a value is seen.',
+            failTip: 'If the pairs come out in a different order, sort them: a dictionary keeps the order in which its keys were first added, which is not the sorted order the exercise asks for. If you get a KeyError, use get for the first time a value is seen.',
             followup: 'Use histogram on 600 numbers from random.randint(1, 6) and print each pair. How far from 100 does each count wander?'
           }
         },

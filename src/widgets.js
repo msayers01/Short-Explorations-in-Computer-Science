@@ -516,7 +516,7 @@ xs mapped kept result`;
     const P = {
       input: ['Input devices', 'Keyboard, mouse, touchscreen, microphone, camera. They turn what you do into signals the computer can read. Nothing goes in any other way.'],
       cpu: ['CPU (processor)', 'The central processing unit carries out instructions, one after another, billions of times a second: arithmetic, comparisons, moving data. It does nothing on its own; it only follows the program it is given.'],
-      ram: ['Memory (RAM)', 'The working memory. The programs that are running and the data they are using sit here, where the CPU can reach them in a few billionths of a second. It is emptied when the power goes off.'],
+      ram: ['Memory (RAM)', 'The working memory. The programs that are running and the data they are using sit here, where the CPU can reach them in about a hundred billionths of a second. It is emptied when the power goes off.'],
       storage: ['Storage (SSD or hard drive)', 'The long-term memory: files, programs and the operating system, kept when the power is off. Slower than RAM but far larger, and it does not forget.'],
       output: ['Output devices', 'Screen, speakers, printer, the lights on a keyboard. They turn the computer\'s results into something a person can see or hear.'],
       net: ['Network', 'The connection to other computers: Wi-Fi, Ethernet, mobile data. To a computer, the internet is input and output that happens to come from far away.']

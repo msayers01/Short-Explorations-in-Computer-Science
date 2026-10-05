@@ -14,7 +14,7 @@ window.COURSES.push({
     'Write conditions, loops and functions in C++ syntax',
     'Explain what a pointer is, and use one to let a function change the caller\u2019s variables',
     'Use arrays and character strings safely',
-    'Implement selection sort, binary search, a Monte Carlo simulation and the Sieve of Eratosthenes'
+    'Implement insertion sort, binary search, a Monte Carlo simulation and the Sieve of Eratosthenes, and read selection sort with its invariant'
   ],
   howItWorks: `<h3>How to use these pages</h3><p>Each lesson has runnable code. Press <b>Run</b> and read the output; change something and run again. Exercises are checked by running your program on hidden inputs, so read the expected output carefully. Your work is saved in this browser.</p><p>The course has <b>thirteen lessons in three stretches</b>. Lessons 1 to 4 (hello, decisions, loops, functions) end with <b>Checkpoint one</b>; lessons 6 to 9 (pointers, arrays, strings, bugs) end with <b>Checkpoint two</b>; the last three (random numbers, searching and sorting, the sieve project) put everything to work. A checkpoint teaches nothing new: it mixes questions on the lessons before it, because telling apart ideas that look alike (<code>=</code> and <code>==</code>, a value and its address, <code>'a'</code> and <code>"a"</code>) is a skill of its own. The course names 28 small skills; every question and exercise practises one, and the Review page brings the questions back after a day, three days and so on, so what you learn lasts.</p><p>Each lesson stands on its own as an <b>Hour of Code</b> activity: read, run, predict, and finish the two exercises in about 45–60 minutes. A lesson likely to take longer is marked in the list below and at the top of the lesson.</p><p><b>The interpreter here is deliberately small.</b> It has no <code>std::string</code>, <code>vector</code>, classes or references (<code>int&amp;</code>). Programs that stick to the features taught in these lessons will compile unchanged with g++ or clang.</p>`,
   // The named skills of the course (LESSON_STANDARD.md §4): every quick check and exercise names the skill it practises. The skills map on
@@ -948,7 +948,7 @@ int main() {
     int* p;              // declared, never given an address
     cout << *p << endl;  // follow it: to where?
     return 0;
-}`, expectError: true, caption: 'This site refuses: "you cannot dereference an uninitialized pointer". A real program may print garbage, crash, or silently change some other variable. Always give a pointer an address when you declare it.' },
+}`, expectError: true, caption: 'This site refuses: "you cannot dereference an unitialized pointer" (spelled that way by the interpreter itself). A real program may print garbage, crash, or silently change some other variable. Always give a pointer an address when you declare it.' },
         { check: "What does following an uninitialised pointer do on a real computer?", options: ["Gives 0", "Anything: garbage, a crash, or a silent change elsewhere", "A compile error"], skill: 'pointer-safety', answer: 1, wrong: ["Nothing sets a new pointer to 0 for you, just as a new int is not set to 0. It holds whatever bits were left in that memory, so following it goes to a random place.", null, "The line is perfectly legal, so the compiler accepts it. The trouble appears only when the program runs, which is what makes it dangerous."], why: "The pointer holds whatever bits were in memory. This site refuses; a real program may do anything." },
         `<p>Real C++ has a special value, <code>nullptr</code>, meaning "points nowhere", which you can store in a pointer and test for; following it is undefined behaviour, and usually crashes the program. (This site's interpreter does not know <code>nullptr</code>.) The types must also match: <code>double* q = &amp;x;</code> with an <code>int x</code> is rejected, because a pointer's type says what kind of value is found at the address.</p>
 <h2>Passing an address to a function</h2>
@@ -1015,7 +1015,7 @@ int main() {
     return 0;
 }`, caption: 'Prints 1 2: nothing changed. swapTheArrows swaps its own copies of the addresses, which changes where its a and b point, but not x or y. Add the stars to each line (int temp = *a; *a = *b; *b = temp;) and it works.' },
         { check: "To let a function change the caller's int x, what do you pass?", options: ["<code>x</code>", "<code>&amp;x</code>, and the function assigns through <code>*</code>", "<code>*x</code>"], skill: 'pointer-params', answer: 1, wrong: ["Passing x passes a copy of the number, and the function can change only that copy. To reach x itself it needs x\u2019s address.", null, "x is an int, not a pointer, so there is nothing for * to follow. The star goes inside the function; the caller supplies the address, &x."], why: "A copy of an address still points to the original. Inside, *a is the caller's x." },
-        `<p>The call must supply addresses. <code>swap(x, y)</code>, without the ampersands, passes two <code>int</code>s to a function whose parameters are <code>int*</code>, and the compiler rejects it (on this site: "no method swap … accepts int,int"). That is a helpful error: the types caught the mistake before anything ran.</p>
+        `<p>The call must supply addresses. <code>swap(x, y)</code>, without the ampersands, passes two <code>int</code>s to a function whose parameters are <code>int*</code>, and the compiler on this site rejects it ("no method swap … accepts int,int"). That is a helpful error: the types caught the mistake before anything ran. (A desktop compiler with <code>using namespace std</code> may instead quietly pick the standard library's own <code>swap</code>, which takes references, SC 105's subject, and does swap them: the same name, a different function.)</p>
 <h2>More than one result</h2>
 <p>The same idea lets a function give back several answers. The caller passes the addresses of the variables that should receive them, and the function fills them in. This is how C and C++ return two or more values from one call.</p>`,
         { play: `#include <iostream>
@@ -1395,7 +1395,7 @@ int main() {
         { check: "How many chars does <code>char w[] = \"cat\";</code> occupy?", options: ["3", "4: the three letters and the terminator '\\0'", "5"], skill: 'c-string-terminator', answer: 1, why: "A C string ends with the null character. Leave room for it in every array you build.", wrong: ["Three counts only the letters. The string also holds the terminator '\\0', so the array needs a fourth cell, and an array of exactly 3 would have no room for it.",null,"Five has no basis: the array holds the letters and one terminator, nothing more. Count the letters, then add one."] },
         `<details class="reveal"><summary>Predict: how many <code>char</code>s does <code>char s[] = "Ojibwe";</code> occupy, and what is <code>s[6]</code>?</summary><p>Seven: six letters and the terminator, and <code>s[6]</code> is the terminator, <code>'\\0'</code>. The length of the text, 6, is always one less than the size of the array that holds it.</p></details>`,
 `<h2>Reading and building strings</h2>
-<p><code>cin &gt;&gt; word</code> reads one word, up to the first space, into a <code>char</code> array and adds the terminator for you. The array must be big enough for the longest possible word <em>plus one</em>. A longer word spills past the end of the array: this is the <em>buffer overflow</em> from Lesson 7, and reading text is the classic way it happens.</p>
+<p><code>cin &gt;&gt; word</code> reads one word, up to the first space, into a <code>char</code> array and adds the terminator for you. The array must be big enough for the longest possible word <em>plus one</em>. A longer word spills past the end of the array: this is the <em>buffer overflow</em> from Lesson 7, and reading text is the classic way it happens. (C++20 changed <code>cin</code> so that it stops at the array's size and cuts the word short instead; the teaching compiler here, like older C++ and most textbooks, does not.)</p>
 <p>When you build a string yourself, you must put the terminator on yourself. Here is a word reversed, and its vowels counted.</p>`,
         { play: `#include <iostream>
 using namespace std;
@@ -1578,7 +1578,7 @@ int main() {
     return 0;
 }`, expectError: true, caption: 'This site reports the overflow. A real compiler accepts the line, perhaps with a warning, and the result is a meaningless number. A type is a promise about a range of values; the bug is a value that breaks the promise.' },
         { photo: 'ariane-501-fragment', caption: 'Wreckage recovered after the Ariane 501 launch: a scorched part of the structure that held the satellites the rocket was carrying.' },
-        { check: "An int holds 2,147,483,647 and 1 is added, in a real program. What happens?", options: ["An error message", "Silent overflow: a meaningless number, perhaps −2,147,483,648", "It becomes a long"], skill: 'silent-overflow', answer: 1, why: "Overflow compiles and runs. Ariane 5 was lost to one. Use a wider type for big values.", wrong: ["That is what this site does, but a real C++ program says nothing: overflow is silent. A program that never complains can still be wrong.",null,"An int stays an int. Adding 1 does not change its type or give it more room; the value just wraps round. To hold bigger numbers you must declare a long or long long yourself."] },
+        { check: "An int holds 2,147,483,647 and 1 is added, in a real program. What happens?", options: ["An error message", "Silent overflow: a meaningless number, perhaps −2,147,483,648", "It becomes a long"], skill: 'silent-overflow', answer: 1, why: "Overflow compiles and runs. Ariane 5 was lost to one. Use a wider type for big values.", wrong: ["That is what this site does, but a real C++ program says nothing: overflow is silent. A program that never complains can still be wrong.",null,"An int stays an int. Adding 1 does not change its type or give it more room; the value just wraps round. To hold bigger numbers you must declare a long long yourself (a long is no bigger than an int on some systems)."] },
         `<h2>Debugging is an experiment</h2>
 <p>When a program runs and gives the wrong answer, staring at the code and changing things at random rarely works. What works is the method of a scientist: form a guess about where the fault is, design an experiment that could prove the guess wrong, and run it.</p>
 <div class="stmt"><p><span class="kind">The debugging loop.</span> 1. <em>Reproduce</em> the bug: find an input that makes it happen every time. 2. <em>Shrink</em> the input until it is as small as possible while still failing, small enough to work out the right answer by hand. 3. <em>Hypothesise</em>: say exactly where you think the program first goes wrong. 4. <em>Test</em> the hypothesis by printing the values at that point. 5. <em>Fix</em> the fault, then run all your earlier tests again, to make sure the fix broke nothing else.</p></div>
@@ -1610,7 +1610,7 @@ int main() {
 using namespace std;
 
 int passed = 0, failed = 0;
-void check(bool ok, const char* what) {
+void check(bool ok, const char* what) {   // const char*: a read-only pointer to the text
     if (ok) { passed++; }
     else { failed++; cout << "FAILED: " << what << endl; }
 }
@@ -1719,9 +1719,9 @@ int main() {
         {
           ex: {
             id: 'cp-13-1', kind: 'choice', skill: 'c-string-terminator', title: 'Which line is the bug?',
-            prompt: `<p>A program declares <code>char name[8];</code> and reads into it with <code>cin &gt;&gt; name;</code>. The person types <code>strawberry</code>, which has ten letters. What goes wrong?</p>`,
+            prompt: `<p>A program declares <code>char name[8];</code> and reads into it with <code>cin &gt;&gt; name;</code>. The person types <code>strawberry</code>, which has ten letters. What goes wrong, on this site or with a compiler set to C++17 or earlier?</p>`,
             options: [
-              { text: 'Nothing: <code>cin</code> keeps only the first 8 characters.', why: 'Reading into a char array does not check its size. The program is trusted to have made room.' },
+              { text: 'Nothing: <code>cin</code> keeps only the first 8 characters.', why: 'Reading into a char array does not check its size here. The program is trusted to have made room. (From C++20 on, cin does stop at the array\'s size: seven letters and the terminator.)' },
               { text: 'The characters and the terminator are written past the end of the array: undefined behaviour, and the program may carry on as if nothing happened.', ok: true },
               { text: 'The program does not compile, because the array is too small.', why: 'The compiler cannot know what the person will type, so it has nothing to complain about. The mistake only exists while the program runs.' },
               { text: 'The word is stored in full, because a char array grows to fit.', why: 'An array has the size it was declared with and never changes: that is why it needs room for the longest word plus the terminator.' }
