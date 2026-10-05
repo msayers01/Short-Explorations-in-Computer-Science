@@ -6,10 +6,10 @@
 
    Everything that comes back from a sandbox is untrusted data: it is checked, and shown only as text.
 
-   window.PYRUN.run(code, {stdin, execLimit, turtle:{mount,width,height}, onOutput, onInput}) → Promise<{out, err}>
+   window.PYRUN.run(code, {stdin, execLimit, turtle:{mount,width,height}, onOutput, onInput, args, argv0}) → Promise<{out, err}>
    window.PYRUN.trace(code, {…, onStep}) → {done, next(), finish(), stop()}        window.PYRUN.cancel()
    window.CPPRUN.run(code, {stdin, onOutput, onInput, maxMs}) → Promise<{out, err}>    window.CPPRUN.trace(code, stdin) → Promise<{trace, err}>
-   window.JAVARUN.run(code, {stdin, onOutput, onInput, maxMs}) → Promise<{out, err}>     (the site's own Java interpreter, src/java.js; onInput without stdin: typed input)
+   window.JAVARUN.run(code, {stdin, onOutput, onInput, maxMs, args, mainClass}) → Promise<{out, err}>     (the site's own Java interpreter, src/java.js; onInput without stdin: typed input)
    window.CLANGRUN.run(code, {stdin, std, onOutput, onNote}) → Promise<{out, err, exit, notes}>   (real C++; see below: downloaded on demand)
    window.CLANGRUN.runMany(code, [stdin…]) → Promise<{err, parts:[{out, all, err, exit}]}>        compile once, run once for each input
    window.CPPRUN.check(code), window.JAVARUN.check(code), window.CLANGRUN.compile(code, {std}) → Promise<{err}>   compile only (the terminal's g++ and javac) */
@@ -209,12 +209,14 @@
     cancel: () => clang.cancel()
   };
 
+  // program arguments (the Lab's Arguments box, or the words after  python app.py  /  java Main  in the terminal): plain strings, a bounded number
+  const argList = (a) => (Array.isArray(a) ? a.slice(0, 1000).map(String) : []);
   const pyJob = (t, code, opts) => {
     opts = opts || {};
     const execLimit = opts.execLimit || 6000;
     // A drawing takes as long as its animation, which the browser also slows down while the canvas is off screen: give it more time (Stop is always there).
     const turtle = !!opts.turtle;
-    return { t, totalMs: turtle ? 90000 : execLimit + 1500, idleMs: turtle ? 90000 : 8000, opts, payload: { code: String(code), stdin: opts.stdin == null ? null : String(opts.stdin), execLimit, turtle: opts.turtle ? { width: opts.turtle.width, height: opts.turtle.height } : undefined } };
+    return { t, totalMs: turtle ? 90000 : execLimit + 1500, idleMs: turtle ? 90000 : 8000, opts, payload: { code: String(code), stdin: opts.stdin == null ? null : String(opts.stdin), args: argList(opts.args), argv0: typeof opts.argv0 === 'string' ? opts.argv0 : 'main.py', execLimit, turtle: opts.turtle ? { width: opts.turtle.width, height: opts.turtle.height } : undefined } };
   };
   window.PYRUN = {
     run: (code, opts) => py.run(pyJob('run', code, opts)),
@@ -230,12 +232,12 @@
   // on the screen is not printed twice. onInput(prompt) resolves with the line, or null for the end of the input (Ctrl+D). test_typed.js.
   function typedRunner(engine) {
     let gen = 0, wait = null;
-    async function run(code, opts, ms) {
+    async function run(code, opts, ms, extra) {
       const mine = gen, lines = [], times = [], t0 = Date.now(), seed = (Math.random() * 2147483647) | 0;
       let out = '';
       const onOutput = (s) => { out += s; if (opts.onOutput) opts.onOutput(s); };
       for (;;) {
-        const r = await engine.run({ t: 'run', totalMs: ms + 3000, idleMs: ms + 3000, opts: { onOutput }, payload: { code: String(code), stdin: '', maxTimeout: ms, typed: { lines, times, t0, seed, skip: out.length } } });
+        const r = await engine.run({ t: 'run', totalMs: ms + 3000, idleMs: ms + 3000, opts: { onOutput }, payload: Object.assign({ code: String(code), stdin: '', maxTimeout: ms, typed: { lines, times, t0, seed, skip: out.length } }, extra) });
         if (mine !== gen) return { out, err: 'Stopped.', exit: 130 };
         if (!r.needInput) return { out, err: r.err, exit: r.exit };
         if (lines.length >= 5000) return { out, err: 'The program asked for more lines of input than it is allowed here.', exit: 1 };
@@ -252,8 +254,9 @@
     // opts.maxMs: the program's time limit (the Bot Arena gives a bot a few hundred milliseconds a move); the page waits 3 seconds longer before it ends the worker itself
     run: (code, opts) => {
       opts = opts || {}; const ms = opts.maxMs || 5000;
-      if (opts.stdin == null && typeof opts.onInput === 'function') return javaTyped.run(code, opts, ms);
-      return java.run({ t: 'run', totalMs: ms + 3000, idleMs: ms + 3000, opts, payload: { code: String(code), stdin: opts.stdin == null ? '' : String(opts.stdin), maxTimeout: ms } });
+      const extra = { args: argList(opts.args), mainClass: typeof opts.mainClass === 'string' ? opts.mainClass : undefined };
+      if (opts.stdin == null && typeof opts.onInput === 'function') return javaTyped.run(code, opts, ms, extra);
+      return java.run({ t: 'run', totalMs: ms + 3000, idleMs: ms + 3000, opts, payload: Object.assign({ code: String(code), stdin: opts.stdin == null ? '' : String(opts.stdin), maxTimeout: ms }, extra) });
     },
     check: (code) => java.run({ t: 'run', totalMs: 8000, idleMs: 8000, opts: {}, payload: { code: String(code), stdin: '', maxTimeout: 5000, checkOnly: true } }),
     cancel: () => { javaTyped.cancel(); java.cancel(); }

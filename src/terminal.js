@@ -162,10 +162,16 @@
     const R = () => A().Runners;
     async function run(lang, src, p) {
       const onOutput = (s) => p.onOutput(String(s));
-      if (lang === 'python') { const r = await window.PYRUN.run(src, { stdin: p.stdin == null ? null : p.stdin, execLimit: 15000, onOutput, onInput: p.onInput ? (q) => p.onInput(q) : undefined }); return { err: r.err, exit: r.err ? (/^Stopped/.test(r.err) ? 130 : 1) : 0 }; }
+      const args = Array.isArray(p.args) ? p.args.map(String) : [];   // the words after the program's name: sys.argv[1:], main(String[] args)
+      if (lang === 'python') { const r = await window.PYRUN.run(src, { stdin: p.stdin == null ? null : p.stdin, execLimit: 15000, args, argv0: typeof p.name === 'string' ? p.name : 'main.py', onOutput, onInput: p.onInput ? (q) => p.onInput(q) : undefined }); return { err: r.err, exit: r.err ? (/^Stopped/.test(r.err) ? 130 : 1) : 0 }; }
       // Java and the teaching C++ read typed input a line at a time as they ask (runner.js); a pipe or a file (< in.txt) is given all at once
       const onInput = p.stdin == null && p.onInput ? (q) => p.onInput(q) : undefined;
-      if (lang === 'java') { const r = await R().java.run(src, { stdin: onInput ? null : (p.stdin == null ? '' : p.stdin), onOutput, onInput }); return { err: r.err, exit: r.err ? (r.exit === 130 ? 130 : 1) : (r.exit || 0) }; }
+      if (lang === 'java') {
+        // a .class from javac holds the joined program of every file compiled with it (javaproject.js), and  java Name  runs Name's main
+        const proj = window.JPROJ ? window.JPROJ.fromJoined(src) : null, cls = typeof p.name === 'string' && !/\.java$/.test(p.name) ? p.name.split('/').pop().replace(/\.class$/, '') : undefined;
+        const r = await R().java.run(src, { stdin: onInput ? null : (p.stdin == null ? '' : p.stdin), onOutput, onInput, args, mainClass: cls });
+        return { err: proj ? window.JPROJ.mapError(proj, r.err) : r.err, exit: r.err ? (r.exit === 130 ? 130 : 1) : (r.exit || 0) };
+      }
       if (lang === 'scheme') { const r = await R().scheme.run(src, { onOutput }); return { err: r.error ? ';' + String(r.error).replace(/^;/, '') : null, exit: r.error ? 1 : 0 }; }
       if (lang === 'cpp') {
         if (p.std) { const r = await R().cppFull.run(src, { stdin: p.stdin == null ? '' : p.stdin, std: p.std, onOutput, onNote: (s) => write(s + '\n', 'note'), host: box }); return { err: r.err, exit: r.err ? 1 : (r.exit || 0) }; }

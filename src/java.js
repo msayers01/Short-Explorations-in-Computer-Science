@@ -1171,7 +1171,7 @@
   /* ======================================================================================================================== checker */
   // Resolves every name, gives every expression its static type, picks overloads, inserts the conversions Java applies (widening,
   // boxing), and reports the errors javac reports, with javac's words where that helps a student look them up.
-  function Checker(unit) {
+  function Checker(unit, entry) {   // entry: the class whose main runs (java Name in the terminal); otherwise the first class with one
     const classes = Object.create(null);   // user classes by name
     const err = (line, msg) => { throw new CompileError(line, msg); };
     const classOf = (name) => classes[name] || NATIVE[name] || null;
@@ -1902,7 +1902,9 @@
     declare(); checkBodies();
     // the entry point
     let mainClass = null, main = null;
-    for (const d of unit.classes) { const c = classes[d.name]; const m = (c.methods.main || []).find(m => m.static && m.params.length === 1 && m.params[0].k === 'array' && isString(m.params[0].e)); if (m) { mainClass = c; main = m; break; } }
+    const isMain = (m) => m.static && m.params.length === 1 && m.params[0].k === 'array' && isString(m.params[0].e);
+    if (entry && unit.classes.some(d => d.name === entry)) { const c = classes[entry], m = (c.methods.main || []).find(isMain); if (!m) return { noMain: entry }; mainClass = c; main = m; }
+    else for (const d of unit.classes) { const c = classes[d.name]; const m = (c.methods.main || []).find(isMain); if (m) { mainClass = c; main = m; break; } }
     if (!main) { const first = unit.classes[0]; if (!first) err(1, 'no class found: a Java program is a class, for example\n  public class Main {\n      public static void main(String[] args) { ... }\n  }'); const named = (classes[first.name].methods.main || [])[0]; err(named ? named.line : first.line, named ? 'main must be declared as  public static void main(String[] args)' : "can't find main(String[]) method in class: " + first.name + '\n  (every Java program starts in  public static void main(String[] args))'); }
     if (main.ret.k !== 'void') err(main.line, 'main must be declared as  public static void main(String[] args)  (it returns nothing)');
     return { classes, mainClass, main, isSubclass, classOf, assignable, fileName: (unit.classes.find(c => c.mods.public) || unit.classes[0]).name + '.java' };
@@ -2206,7 +2208,7 @@
       throw new Error('cannot execute ' + s.k);
     }
     return {
-      main() { ensureInit(chk.mainClass); invoke(null, chk.main, [new JArr(T.String, [])]); }
+      main(args) { ensureInit(chk.mainClass); invoke(null, chk.main, [new JArr(T.String, (args || []).map(String))]); }   // args: the words after  java Name
     };
   }
 
@@ -2216,12 +2218,13 @@
     opts = opts || {};
     const R = new Runtime({ stdin, more: opts.more, write: opts.write, maxSteps: opts.maxSteps, maxMs: opts.maxMs === undefined ? 5000 : opts.maxMs, maxOut: opts.maxOut, random: opts.random, clock: opts.clock });
     let chk;
-    try { chk = Checker(parse(String(code))); }
+    try { chk = Checker(parse(String(code)), typeof opts.mainClass === 'string' ? opts.mainClass : null); }
     catch (e) { if (e instanceof CompileError) return { out: '', err: fileNameGuess(code) + ':' + e.line + ': error: ' + e.message, compile: true, line: e.line }; throw e; }
     if (opts.checkOnly) return { out: '', err: null, exit: 0 };   // javac in the practice terminal: the checks above, nothing run
+    if (chk.noMain) return { out: '', err: 'Error: Main method not found in class ' + chk.noMain + ', please define the main method as:\n   public static void main(String[] args)\nor a JavaFX application class must extend javafx.application.Application', exit: 1 };
     R.fileName = chk.fileName; R.classes = chk.classes;
     const I = Interp(R, chk);
-    try { I.main(); return { out: R.out, err: null, exit: 0 }; }
+    try { I.main(Array.isArray(opts.args) ? opts.args : []); return { out: R.out, err: null, exit: 0 }; }
     catch (e) {
       if (e instanceof JavaThrow) return { out: R.out, err: 'Exception in thread "main" ' + traceText(R, e.obj), exit: 1 };
       if (e instanceof SystemExit) return { out: R.out, err: null, exit: e.code };

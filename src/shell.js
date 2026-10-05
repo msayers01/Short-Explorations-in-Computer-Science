@@ -1505,24 +1505,27 @@
       if (n.t === 'd') { io.err(this.name + ": can't open file " + q(abs) + ': [Errno 21] Is a directory\n'); return 2; }
       return sh.runProgram({ lang: 'python', src: n.d }, args[0], args.slice(1), io);
     } });
-  def('javac', { cat: 'run', use: 'javac File.java', desc: 'Compile a Java program: checks it and writes File.class, which java runs. The file must be named after its public class.',
-    ex: ['javac Main.java', 'javac Main.java && java Main'],
+  def('javac', { cat: 'run', use: 'javac File.java...', desc: 'Compile a Java program: checks it and writes a .class file for each class, which java runs. Several files are compiled together (javac *.java), so one can use the classes of another. A public class must be in a file of its own name.',
+    ex: ['javac Main.java', 'javac Main.java && java Main', 'javac *.java && java Main'],
     async run(args, io, sh) {
       const files = args.filter((a) => !a.startsWith('-'));
       if (!files.length) { io.err('error: no source files\n'); return 2; }
-      let errors = 0;
+      const srcs = [];
       for (const f of files) {
-        if (!f.endsWith('.java')) { io.err("error: Class names, '" + f + "', are only accepted if annotation processing is explicitly requested\n"); errors++; continue; }
+        if (!f.endsWith('.java')) { io.err("error: Class names, '" + f + "', are only accepted if annotation processing is explicitly requested\n"); return 2; }
         const abs = sh.fs.resolve(f), n = sh.fs.stat(abs);
-        if (!n || n.t !== 'f') { io.err('error: file not found: ' + f + '\nUsage: javac <options> <source files>\n'); errors++; continue; }
-        const base = f.split('/').pop().slice(0, -5), pub = (n.d.match(/public\s+class\s+([A-Za-z_$][\w$]*)/) || [])[1];
-        if (pub && pub !== base) { io.err(f + ':1: error: class ' + pub + ' is public, should be declared in a file named ' + pub + '.java\n1 error\n'); errors++; continue; }
-        const r = opts_compile(sh, 'java', n.d, { name: f }); const res = await r;
-        if (res && res.err) { io.err(res.err.replace(/^\S+\.java:/gm, f + ':').replace(/\n?$/, '\n')); errors++; continue; }   // javac names the file as typed
-        const cname = className(n.d) || base;
-        sh.fs.write(sh.fs.resolve(cname + '.class', abs.slice(0, abs.lastIndexOf('/')) || '/'), CLASS_BYTES, false, { lang: 'java', src: n.d });
+        if (!n || n.t !== 'f') { io.err('error: file not found: ' + f + '\nUsage: javac <options> <source files>\n'); return 2; }   // as javac: nothing is compiled
+        srcs.push({ name: f, code: n.d, dir: abs.slice(0, abs.lastIndexOf('/')) || '/' });
       }
-      return errors ? 1 : 0;
+      // The files become one program (javaproject.js: imports hoisted, a marker line before each file, so lines map back); one file is compiled as it is.
+      const proj = JPROJ().join(srcs, { rule: 'always' }), one = srcs.length === 1;
+      if (proj.error) { io.err(proj.error + '\n1 error\n'); return 1; }
+      const src = one ? srcs[0].code : proj.src;
+      const res = await opts_compile(sh, 'java', src, { name: files[0], files: srcs.map((x) => x.name) });
+      if (res && res.err) { io.err((one ? res.err.replace(/^\S+\.java:/gm, files[0] + ':') : JPROJ().mapError(proj, res.err)).replace(/\n?$/, '\n')); return 1; }   // javac names the file as typed
+      const classes = proj.classes.length ? proj.classes : [{ name: className(src) || files[0].split('/').pop().slice(0, -5), file: 0 }];
+      for (const c of classes) sh.fs.write(sh.fs.resolve(c.name + '.class', srcs[c.file].dir), CLASS_BYTES, false, { lang: 'java', src });   // every class gets its .class, as javac writes them
+      return 0;
     } });
   def('java', { cat: 'run', use: 'java Name [arguments]', desc: 'Run a compiled Java program: Name.class, made by javac Name.java. java Name.java compiles and runs in one step.',
     ex: ['javac Main.java', 'java Main', 'java Main < input.txt'],
@@ -1556,6 +1559,7 @@
     async run(args, io, sh) { if (io.ask && !io.stdin && sh.hooks.repl) return sh.hooks.repl('java', io, sh); io.err('jshell: the interactive Java shell needs the keyboard\n'); return 1; } });
   def('scheme mit-scheme racket', { cat: 'run', use: 'scheme [file.scm]', desc: 'Run a Scheme program; with no file, start the interactive Scheme shell (1 ]=>; (exit) or Ctrl+D leaves).', ex: ['scheme fact.scm'],
     async run(args, io, sh) { if (!args.length && io.ask && !io.stdin && sh.hooks.repl) return sh.hooks.repl('scheme', io, sh); if (!args.length) { io.err(this.name + ': the interactive Scheme shell needs the keyboard. Give it a file: scheme fact.scm\n'); return 2; } const n = sh.fs.stat(sh.fs.resolve(args[0])); if (!n || n.t !== 'f') { io.err(this.name + ': ' + args[0] + ': No such file or directory\n'); return 2; } return sh.runProgram({ lang: 'scheme', src: n.d }, args[0], args.slice(1), io); } });
+  const JPROJ = () => (typeof globalThis.JPROJ !== 'undefined' ? globalThis.JPROJ : require('./javaproject.js'));   // the page has it as a global; node requires it
   const opts_compile = (sh, lang, src, o) => sh.hooks.compile ? sh.hooks.compile(lang, src, o) : Promise.resolve({ err: null });
 
   // ----- editors

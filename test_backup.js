@@ -135,6 +135,20 @@ check('broken storage does not throw', Object.keys(BACKUP.collect(broken, { teac
   }
 }
 
+// ---- the Lab's program arguments: kept through a backup, hostile values dropped
+{
+  const labA = Object.assign({}, lab, { args: { python: 'one "two words"', java: 'x' } });
+  const sa = store(); BACKUP.apply(sa, BACKUP.parse(J({ app: 'short-explorations-backup', v: 1, saved: new Date().toISOString(), data: { lab: labA } })).data, 'replace');
+  check('lab: arguments survive a backup', J(sa.dump('shortcourses.lab.v1').args) === J({ python: 'one "two words"', java: 'x' }), sa.dump('shortcourses.lab.v1'));
+  for (const evil of ['str', 5, null, ['a'], { python: 7 }, { cpp: 'x', scheme: 'y' }, JSON.parse('{"__proto__": {"python": "p"}}')]) {
+    const se = store(); BACKUP.apply(se, BACKUP.parse(J({ app: 'short-explorations-backup', v: 1, saved: new Date().toISOString(), data: { lab: Object.assign({}, lab, { args: evil }) } })).data, 'replace');
+    check('lab: arguments ' + J(evil) + ' are dropped', !('args' in se.dump('shortcourses.lab.v1')), se.dump('shortcourses.lab.v1'));
+  }
+  const sl = store(); BACKUP.apply(sl, BACKUP.parse(J({ app: 'short-explorations-backup', v: 1, saved: new Date().toISOString(), data: { lab: Object.assign({}, lab, { args: { java: 'a\nb\u0000' + 'z'.repeat(5000) } }) } })).data, 'replace');
+  const ja = sl.dump('shortcourses.lab.v1').args.java;
+  check('lab: arguments are one line, at most 1000 characters', ja.length === 1000 && !/[\n\u0000]/.test(ja), ja.slice(0, 20));
+}
+
 // ---- the review schedule (review.js): round trip, merge by the copy answered last, and hostile items
 {
   const fileOf = (data) => J({ app: 'short-explorations-backup', v: 1, saved: new Date().toISOString(), data });

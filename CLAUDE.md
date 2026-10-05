@@ -68,6 +68,11 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - Exercises: whole programs with `{stdin, expect}`; methods with `{call, expect}` (the student writes only the `static` method; `prelude`
   for imports); whole classes with `ex.classes: true` and `{main, expect}`. Ids are `jv-<n>-<k>`.
 
+- Multi-file Java (ARCHITECTURE §9): the Lab's Run and the terminal's `javac A.java B.java` join files through `src/javaproject.js` (markers `//@file X.java`,
+  imports hoisted, errors and stack traces mapped back per file, javac's public-class rule; the Lab skips tabs that redeclare a class and exercise files).
+  The Lab also has error markers (`LabEditor.setMarks`), program arguments (`S.args`, Python/Java; `labutil.js`), output Copy/Wrap/Clear, Ctrl+G and a
+  Shortcuts panel: keep `KEYS_HTML` in step with the editor's keydown handler.
+
 ## Two C++ engines (ARCHITECTURE §9d)
 
 - **Teaching**: JSCPP, in the bundle, offline, the only one the memory stepper understands (SC 103).

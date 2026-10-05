@@ -2,7 +2,7 @@
    iframe; see runner.js), never into the page, so a program can reach nothing but this interpreter, and a program that does not finish is
    stopped by the page ending the worker.
 
-   Messages from the page: {t:'run', id, code, stdin, maxTimeout, checkOnly, typed}   (checkOnly: compile as javac would, run nothing)
+   Messages from the page: {t:'run', id, code, stdin, maxTimeout, checkOnly, typed, args, mainClass}   (checkOnly: compile as javac would, run nothing)
    Messages to the page:   {t:'ready'} {t:'out', id, text} {t:'done', id, err, exit, needInput}
 
    typed: {lines, times, t0, seed, skip}, a program whose input is typed as it asks (runner.js). A worker cannot wait for the page here, so a run
@@ -24,6 +24,7 @@
     const opts = { maxMs: msg.maxTimeout || 5000, checkOnly: msg.checkOnly === true, write: (s) => { buf += s; if (buf.length >= 4096) flush(); } };
     if (msg.typed && typeof msg.typed === 'object') typedInput(msg.typed, opts);
     let r;
+    opts.args = Array.isArray(msg.args) ? msg.args.slice(0, 1000).map(String) : []; opts.mainClass = typeof msg.mainClass === 'string' ? msg.mainClass : undefined;   // main(String[] args), and the class  java Name  names
     try { r = JAVA.run(String(msg.code), stdin, opts); }
     catch (e) { r = { err: 'Internal error in the Java interpreter: ' + (e && e.message ? e.message : String(e)), exit: 1 }; }
     flush(); busy = false;

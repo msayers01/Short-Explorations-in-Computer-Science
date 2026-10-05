@@ -315,6 +315,28 @@ button and every Scheme playground not marked `expectError` a "Show the substitu
   made inside another call, e.g. `(define add5 (make-adder 5))`) also substitutes the values it remembers
   from its defining environment, and the note says so. → items (defines and
   per-expression step lists with `<mark class="redex|new">`).
+- **Multi-file Java** (`src/javaproject.js`, `JPROJ`, pure, tested by `test_javaproject.js`): Run in Java joins every Java tab (the current one first,
+  so its `main` runs if it has one) into one source text for the interpreter: leading `import` lines hoisted and de-duplicated, `package` lines
+  dropped, a marker line `//@file Name.java` before each file. `mapError` turns `X.java:N:` and `(X.java:N)` of the joined text back into each
+  file's own line (compile errors name the file as given, stack frames its base name, as javac/java do); `where` finds the first place an error
+  names, for the go-to link (which opens that tab) and the editor marker. The Lab leaves out non-`.java` and empty tabs, exercise/assignment
+  files (they run alone, as they are graded), and (`dedupe`) a tab that declares a class an earlier one has, because tabs are often separate
+  programs each with its own `Main`; the public-class rule (`class Dog is public, should be declared in a file named Dog.java`) applies when two
+  or more files are joined (`rule: 'multi'`), so a lone `from-course.java` keeps working. The terminal's `javac A.java B.java` / `javac *.java`
+  uses `rule: 'always'`, writes a `.class` per top-level class whose `bin.src` is the joined text (markers included, so `JPROJ.fromJoined` maps
+  a later run), and `java Name` passes `mainClass` to `java.js` (`Error: Main method not found in class X` when it has none). One file is
+  compiled as it is. The interpreter does not know static imports.
+- **Error markers**: `LabEditor.setMarks([{line, msg}])` tints the line (`.line.err`), puts a button pin in the gutter (title and aria-label carry
+  the message; the highlighted copy under the textarea cannot take the pointer) and describes the textarea for screen readers. `lab.js` keeps one
+  `errMark` (file, line, the file's code when marked): set by `showError` (Run, step-through, memory stepper) and by an exercise check's
+  whole-program error; dropped by any change to that file (editor or terminal) and at the next run. Lines come from `labutil.js: errorLine`
+  (Python "line N", C++ `main.cpp:N`), and for Java from `JPROJ.where`. Scheme errors have no line.
+- **Program arguments** (`S.args`, per language, Python and Java only; sanitized by `labutil.js: cleanArgs` in `load()` and in backups): the
+  Arguments box is split like a shell would (`splitArgs`: quotes, backslashes, at most 100 words) and reaches `sys.argv` (Skulpt's `sysargv`,
+  always set because Skulpt keeps the previous run's) and `main(String[] args)` (`opts.args` in `java.js`). The terminal passes the words after
+  the program's name. JSCPP calls `main` with no parameters, so C++ has none. The output panel's title bar (opt-in `outputPanel({tools})`) has
+  Copy, Wrap (kept as `S.outWrap`) and Clear; Ctrl+G opens a go-to-line bar; the Shortcuts button under the editor lists every key (`KEYS_HTML`,
+  kept in step with the keydown handlers).
 - Bars above the editor: exercise bar (file has `ex`), assignment bar (file has `asg`), teacher panel.
 - `teach.js` is mounted with a `ctx` object: `{ el, S, save, editor, armConfirm, isTouch, grade,
   renderVerdict, status, renderToolbar, openAssignmentFile, openReviewFile }` and returns

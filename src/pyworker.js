@@ -4,7 +4,7 @@
    runaway program is stopped by the page ending the worker. sandbox.js has already removed Skulpt's modules that reach the page.
 
    Messages from the page (all carry the id of the run they belong to):
-     {t:'run', id, code, stdin, execLimit, turtle}   run a program; stdin is a string, or null to ask the page for each input()
+     {t:'run', id, code, stdin, execLimit, turtle, args, argv0}   run a program; stdin is a string, or null to ask the page for each input(); sys.argv is [argv0, ...args]
      {t:'trace', id, ...}                            the same, paused before every line (the page answers each pause)
      {t:'input', id, value}   the answer to an input request       {t:'next'}  run the next line       {t:'fast'}  run to the end
    Messages to the page: {t:'ready'} {t:'out', id, text} {t:'input', id, prompt} {t:'step', id, line, depth, vars}
@@ -46,7 +46,8 @@
       flush();
       return new Promise((resolve) => { run.waitInput = resolve; post({ t: 'input', id, prompt: String(prompt == null ? '' : prompt) }); });
     };
-    const cfg = { output, read, __future__: Sk.python3, execLimit: msg.execLimit || 6000, yieldLimit: 100, inputfun, inputfunTakesPrompt: true, retainglobals: false, debugging: trace };
+    const cfg = { output, read, __future__: Sk.python3, execLimit: msg.execLimit || 6000, yieldLimit: 100, inputfun, inputfunTakesPrompt: true, retainglobals: false, debugging: trace,
+      sysargv: [typeof msg.argv0 === 'string' ? msg.argv0 : 'main.py'].concat(Array.isArray(msg.args) ? msg.args.slice(0, 1000).map(String) : []) };   // sys.argv: always set, since Skulpt keeps the last run's otherwise
     if (trace) cfg.breakpoints = () => true;
     Sk.configure(cfg);
     if (msg.turtle) Sk.TurtleGraphics = { target: 'turtle', width: msg.turtle.width, height: msg.turtle.height };
