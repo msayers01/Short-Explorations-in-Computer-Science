@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+43/68Q1zhzEPwveHSsKBAXMlc85oLjx/SFvhV0qNJw=' 'sha256-7QQf/iBzPL5BSI0/dJPN/LRFgdv18zb440K+iBZ/WsU=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+43/68Q1zhzEPwveHSsKBAXMlc85oLjx/SFvhV0qNJw=' 'sha256-+n3t5H/XdOCDSIAQOFZJU0H0a0WblLkIqmuuH1IcXlw=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -30468,7 +30468,8 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
     let rs = null;   // { q, at, draft, failed }
     const rsShow = () => { ps1.textContent = (rs.failed ? '(failed reverse-i-search)`' : '(reverse-i-search)`') + rs.q + "': "; };
     const rsFind = (from) => { const h = sh.history; for (let i = Math.min(from, h.length - 1); i >= 0; i--) if (rs.q && h[i].includes(rs.q)) { rs.at = i; rs.failed = false; inp.value = h[i]; return; } rs.failed = !!rs.q; };
-    const rsEnd = (keep) => { if (!rs) return; if (!keep) inp.value = rs.draft; rs = null; setPrompt(); requestAnimationFrame(() => { inp.selectionStart = inp.selectionEnd = inp.value.length; }); };
+    // the caret goes to the end now, not on the next frame: a late move would land in the middle of whatever is typed or pasted next
+    const rsEnd = (keep) => { if (!rs) return; if (!keep) inp.value = rs.draft; rs = null; setPrompt(); inp.selectionStart = inp.selectionEnd = inp.value.length; };
     let killed = '';   // Ctrl+K and Ctrl+W keep what they cut, Ctrl+Y puts it back, as readline does
     const cut = (a, b) => { killed = inp.value.slice(a, b); inp.value = inp.value.slice(0, a) + inp.value.slice(b); inp.selectionStart = inp.selectionEnd = a; };
     inp.addEventListener('keydown', (e) => {

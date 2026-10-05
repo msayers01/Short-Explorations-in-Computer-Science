@@ -111,7 +111,8 @@
     let rs = null;   // { q, at, draft, failed }
     const rsShow = () => { ps1.textContent = (rs.failed ? '(failed reverse-i-search)`' : '(reverse-i-search)`') + rs.q + "': "; };
     const rsFind = (from) => { const h = sh.history; for (let i = Math.min(from, h.length - 1); i >= 0; i--) if (rs.q && h[i].includes(rs.q)) { rs.at = i; rs.failed = false; inp.value = h[i]; return; } rs.failed = !!rs.q; };
-    const rsEnd = (keep) => { if (!rs) return; if (!keep) inp.value = rs.draft; rs = null; setPrompt(); requestAnimationFrame(() => { inp.selectionStart = inp.selectionEnd = inp.value.length; }); };
+    // the caret goes to the end now, not on the next frame: a late move would land in the middle of whatever is typed or pasted next
+    const rsEnd = (keep) => { if (!rs) return; if (!keep) inp.value = rs.draft; rs = null; setPrompt(); inp.selectionStart = inp.selectionEnd = inp.value.length; };
     let killed = '';   // Ctrl+K and Ctrl+W keep what they cut, Ctrl+Y puts it back, as readline does
     const cut = (a, b) => { killed = inp.value.slice(a, b); inp.value = inp.value.slice(0, a) + inp.value.slice(b); inp.selectionStart = inp.selectionEnd = a; };
     inp.addEventListener('keydown', (e) => {

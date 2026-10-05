@@ -574,6 +574,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await goto('#/algorithms/hull-race');
   await page.locator('select[aria-label="Your bet"]').selectOption('graham');
   await page.locator('.algo-host button:has-text("Finish")').click();
+  await page.waitForFunction(() => { const t = document.querySelector('.algo-host .geo-table'); return t && [...t.querySelectorAll('tbody tr')].every((r) => /^\d+$/.test(r.children[2].textContent)); }, null, { timeout: 15000 }).catch(() => { });   // the table is redrawn once a frame
   const hullRows = await page.locator('.algo-host .geo-table').first().locator('tbody tr').evaluateAll((rs) => rs.map((r) => r.children[2].textContent));
   const hullMsg = await page.locator('.algo-status').first().textContent();
   await goto('#/algorithms/lsystem');
