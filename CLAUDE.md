@@ -210,8 +210,8 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   boids, Langton's ant, the sandpile, slime mould; a convex hull race, the Mandelbrot set, L-systems, Voronoi; a Sudoku solver race, n queens, an MST race;
   Reversi against MCTS, a genetic algorithm, Huffman coding). The owner reports that students loved
   the sorting race: races with a bet first (sorting, maze), things to play against the computer (Hanoi, the tour) and long-running
-  simulations (Life, raindrops) are what to add more of. Redraw counters once a frame (`onceAFrame` in algo_puzzles.js), never per step. `#/real-world` (`src/applied.js`) has 30 topics,
-  147 examples tagged by field, and links to the lessons. The tour's top-bar step describes these pages: update it when they change.
+  simulations (Life, raindrops) are what to add more of. Redraw counters once a frame (`onceAFrame` in algo_puzzles.js), never per step. `#/real-world` (`src/applied.js`) has 31 topics in five themes
+  (`APPLIED.GROUPS`: add a new topic to one), 152 examples tagged by field, and links to the lessons (one row per course). The tour's top-bar step describes these pages: update it when they change.
 - **Pictures** (ARCHITECTURE §9h): `{ photo: 'id' | ['a','b'], caption }` in a lesson; `img/<id>.jpg` + `img/<id>.json` made only by
   `node scripts/fetch-image.js` (Wikimedia Commons; public domain, CC0, CC BY, CC BY-SA only; `--search` first). Look at each picture
   before writing its alt text. Served from `dist/img/` (content-hashed, lazy); credits on About. Wikimedia rate-limits this machine: one

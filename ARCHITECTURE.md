@@ -921,7 +921,11 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
 - **Where it is used** (`#/real-world`): `APPLIED.TOPICS`, each `{ id, title, idea, uses: [{ f: field, t: text }], jobs, learn: [href],
   teach }`, rendered with a filter by field (software engineering, cybersecurity, engineering & science, data & AI, games & graphics, web &
   mobile), a search box, contents, and a by-course index for teachers. Lesson links are labelled from `window.COURSES` at page time and a
-  link to a missing lesson is left out; `test_browser.js` checks every link resolves. Every example names a real system or event: check it
+  link to a missing lesson is left out; `test_browser.js` checks every link resolves. The topics are shown in themes (`APPLIED.GROUPS`:
+  writing programs, data structures and algorithms, inside the machine, the mathematics of computing, bigger ideas), each topic in exactly
+  one, which `test_app.js` checks along with unique ids, known fields and real lesson links: a new topic must be added to a group. A topic's
+  lessons are shown one row per course; each field has a colour (`--f-<field>` in the page's CSS, with dark-mode values) on its tags and
+  filter chips. 31 topics, 152 examples (October 2026; "Learning from examples" links SC 109). Every example names a real system or event: check it
   before adding one, and keep the two that describe this site true when the site changes.
 
 ## 9k. Standards alignment (`standards.js`, `scripts/standards-map.js`, `test_standards.js`)

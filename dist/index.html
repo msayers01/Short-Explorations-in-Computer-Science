@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-XLIz/upeNjvuJXMf+oDbLz5aPJVxgr8yv64c4MO1MmY=' 'sha256-vpb7eB3lO9gVrGzYOwmh2nS8k/ifZhaNckDimeDrVdk=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-XLIz/upeNjvuJXMf+oDbLz5aPJVxgr8yv64c4MO1MmY=' 'sha256-/jNxnfSokinN1ddvavEaW6dAdRe/Vh7q/ObYltnPi94=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -51627,6 +51627,7 @@ public class Main {
 /* Where it is used: the #/real-world page, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
    For each main idea the courses teach, where it matters in practice: examples tagged by field, jobs that use it daily, the lessons
    that teach it, and an optional note for teachers. Readers: students (grades 8-12) and staff who may never have programmed.
+   - GROUPS: the themes the page shows the topics in, in order: [{ id, title, blurb, topics: [topic ids] }]; each topic in exactly one.
    - TOPICS: [{ id, title, idea, uses: [{ f, t }], jobs: [...], learn: ['<courseId>/<lesson>'], teach? }]
      f is a key of FIELDS; learn entries become links '#/<courseId>/<lesson>' labelled from window.COURSES at page time (a link to a
      course or lesson that is not loaded is left out). test: every learn entry must name a real lesson that teaches the idea.
@@ -51641,6 +51642,20 @@ public class Main {
     { key: 'data', label: 'Data & AI' },
     { key: 'games', label: 'Games & graphics' },
     { key: 'web', label: 'Web & mobile' }
+  ];
+
+  // The topics are shown in these themes, in this order; every topic is in exactly one (test_app.js checks).
+  const GROUPS = [
+    { id: 'basics', title: 'Writing programs', blurb: 'The building blocks every language has, and the habits that make programs work.',
+      topics: ['values-and-types', 'conditions-and-logic', 'loops', 'functions', 'lists-and-arrays', 'strings-and-text', 'classes-and-objects', 'errors-and-exceptions', 'testing-and-debugging'] },
+    { id: 'dsa', title: 'Data structures and algorithms', blurb: 'Ways to organise data, and ways to work on it quickly.',
+      topics: ['big-o', 'searching-and-sorting', 'hashing', 'stacks-and-queues', 'linked-structures', 'recursion', 'trees', 'graphs'] },
+    { id: 'machine', title: 'Inside the machine', blurb: 'What the computer underneath is really doing, and how you talk to it directly.',
+      topics: ['binary-and-bits', 'cpu-and-memory', 'pointers-and-memory-safety', 'command-line'] },
+    { id: 'math', title: 'The mathematics of computing', blurb: 'Counting, proof, chance and the limits of what programs can do.',
+      topics: ['randomness', 'sets-and-counting', 'proof', 'number-theory-and-crypto', 'state-machines-and-regex', 'computability', 'p-vs-np'] },
+    { id: 'big', title: 'Bigger ideas', blurb: 'Programs that work on other programs, and programs that learn from examples.',
+      topics: ['functions-as-values', 'code-as-data', 'machine-learning'] }
   ];
 
   const TOPICS = [
@@ -51923,7 +51938,7 @@ public class Main {
         { f: 'data', t: 'Data pipelines are tested too: checks that a column has no missing values, or that totals add up, catch bad data before it reaches a report.' }
       ],
       jobs: ['Quality assurance engineer', 'Software developer in test', 'Security researcher', 'Every developer'],
-      learn: ['python/8', 'python/9', 'cpp/9', 'cpp/12', 'dsa/2'],
+      learn: ['python/8', 'python/9', 'cpp/9', 'cpp/12', 'dsa/2', 'ml/3'],
       teach: 'Activity: give pairs a function with one hidden bug (the courses\' debugging lessons have some). One student writes tests, the other predicts which test will catch it.'
     },
     {
@@ -52060,6 +52075,20 @@ public class Main {
       jobs: ['DevOps engineer', 'System administrator', 'Security operations analyst', 'Research software engineer'],
       learn: ['shell/1', 'shell/2', 'shell/3', 'shell/4', 'shell/6', 'shell/7', 'shell/8', 'shell/10', 'computer/4'],
       teach: 'Hook: rename 300 photos by hand, or with one line in the terminal? Time the first ten by hand, then show the command.'
+    },
+    {
+      id: 'machine-learning', title: 'Learning from examples',
+      idea: 'Instead of writing the rules by hand, a program finds them in examples: the nearest neighbours of a new case, a line that separates two kinds, a tree of questions. It must then be tested on examples it has never seen.',
+      uses: [
+        { f: 'data', t: 'Email spam filters learn from mail that people have marked as spam or not. In 2002 Paul Graham\'s essay "A Plan for Spam" described a filter that scores each message by how often its words had appeared in spam and in ordinary mail, and filters built on that idea spread quickly.' },
+        { f: 'web', t: 'Shops and streaming services recommend things by finding customers or items that are close to each other in their data: the nearest-neighbour idea, with distances between people\'s choices instead of between fruit.' },
+        { f: 'data', t: 'From 2008 Google Flu Trends estimated flu from what people searched for. In early 2013 it estimated more than twice the doctor visits for flu-like illness that the US Centers for Disease Control and Prevention reported: a model that had fitted its past data too closely.' },
+        { f: 'eng', t: 'Banks and doctors often prefer decision trees to other models because a person can read the questions a tree asks and check that they make sense.' },
+        { f: 'sec', t: 'Some security tools learn what normal activity on a network or an account looks like, and raise an alarm for anything far from it, such as a login at an unusual hour from an unusual place.' }
+      ],
+      jobs: ['Machine learning engineer', 'Data scientist', 'Fraud analyst', 'Research scientist'],
+      learn: ['ml/1', 'ml/2', 'ml/3', 'ml/5', 'ml/6', 'ml/7'],
+      teach: 'Hook: open SC 109 lesson 2 on the projector and drag the new fruit around the nearest-neighbour figure. Before each move, the class predicts which kind the computer will call it. Then ask: who chose the examples it learned from, and what would it get wrong if they were chosen badly?'
     }
   ];
 
@@ -52089,26 +52118,50 @@ public class Main {
 .aw-chip { font-family: var(--sans); font-size: 0.88rem; padding: 0.3rem 0.75rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper); color: var(--ink-2); cursor: pointer; line-height: 1.2; }
 .aw-chip:hover { color: var(--ink); border-color: var(--ink-2); }
 .aw-chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.aw-chip[data-key]:not([data-key=""])::before, .aw-tag::before { content: ''; display: inline-block; width: 0.55em; height: 0.55em; border-radius: 2px; margin-right: 0.45em; vertical-align: 0.05em; background: var(--fc); }
+.aw-chip[aria-pressed="true"]::before { background: currentColor; }
+.aw { --f-swe: #1a4fa3; --f-sec: #b42318; --f-eng: #1f6e4a; --f-data: #6b3fa0; --f-games: #9a5300; --f-web: #0e6b77; }
+:root[data-theme="dark"] .aw { --f-swe: #8fb3ee; --f-sec: #ff8a7e; --f-eng: #6fcf97; --f-data: #c4a3f0; --f-games: #e8a640; --f-web: #5cc9d6; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .aw { --f-swe: #8fb3ee; --f-sec: #ff8a7e; --f-eng: #6fcf97; --f-data: #c4a3f0; --f-games: #e8a640; --f-web: #5cc9d6; } }
+.aw [data-f="swe"] { --fc: var(--f-swe); } .aw [data-f="sec"] { --fc: var(--f-sec); } .aw [data-f="eng"] { --fc: var(--f-eng); }
+.aw [data-f="data"] { --fc: var(--f-data); } .aw [data-f="games"] { --fc: var(--f-games); } .aw [data-f="web"] { --fc: var(--f-web); }
+.aw-stats { font-family: var(--sans); font-size: 0.95rem; color: var(--ink-3); margin: 0.6rem 0 0; }
 .aw-status { margin: 0.7rem 0 0; font-size: 0.9rem; color: var(--ink-3); }
 .aw-toc { margin: 1.5rem 0 0; font-family: var(--sans); font-size: 0.95rem; }
 .aw-toc h2 { font-family: var(--sans); font-size: 0.95rem; font-weight: 600; margin: 0 0 0.5rem; }
-.aw-toc ol { columns: 2 16rem; column-gap: 2rem; margin: 0; padding-left: 1.4rem; }
-.aw-toc li { margin-bottom: 0.25rem; break-inside: avoid; }
+.aw-toc-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 1.2rem 2rem; }
+.aw-toc-group h3 { font-family: var(--sans); font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); margin: 0 0 0.35rem; }
+.aw-toc ul { list-style: none; margin: 0; padding: 0; }
+.aw-toc li { margin-bottom: 0.3rem; }
+.aw-toc li a { text-decoration: none; }
+.aw-toc li a:hover { text-decoration: underline; }
+.aw-n { color: var(--ink-3); font-size: 0.85rem; margin-left: 0.3rem; }
+.aw-group { margin-top: 4rem; border-top: 2px solid var(--ink); padding-top: 1.1rem; scroll-margin-top: 1rem; }
+.aw-group-h { font-size: 2rem; font-weight: 400; margin: 0; }
+.aw-group-blurb { font-size: 1.1rem; margin: 0.3rem 0 0; color: var(--ink-2); }
+.aw-group .aw-topic:first-of-type { margin-top: 1.6rem; }
 .aw-topic { margin-top: 2.5rem; border-top: 1px solid var(--rule); padding-top: 1.4rem; scroll-margin-top: 1rem; }
-.aw-topic h2 { font-size: 1.6rem; margin-bottom: 0.4rem; }
+.aw-topic h2 { font-size: 1.55rem; margin-bottom: 0.4rem; }
 .aw-topic h2:focus { outline: none; }
 .aw-idea { color: var(--ink-2); font-size: 1.08rem; margin: 0 0 1rem; }
 .aw-topic h3 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); margin: 1.1rem 0 0.5rem; }
 .aw-uses { list-style: none; margin: 0; padding: 0; }
 .aw-uses li { display: grid; grid-template-columns: 11rem 1fr; gap: 1rem; padding: 0.45rem 0; border-top: 1px solid var(--rule-2); }
 .aw-uses li:first-child { border-top: 0; }
-.aw-tag { font-family: var(--sans); font-size: 0.82rem; font-weight: 600; color: var(--accent); padding-top: 0.2rem; }
-.aw-jobs { font-family: var(--sans); font-size: 0.95rem; margin: 0; color: var(--ink-2); }
-.aw-learn { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem 0.6rem; font-family: var(--sans); font-size: 0.93rem; }
-.aw-learn a { display: inline-block; padding: 0.2rem 0.55rem; border: 1px solid var(--rule); border-radius: 3px; text-decoration: none; color: var(--link); background: var(--paper-2); }
-.aw-learn a:hover { border-color: var(--link); }
-.aw-learn b { font-weight: 600; color: var(--ink-2); }
-.aw-teach { margin-top: 1rem; font-family: var(--sans); font-size: 0.95rem; }
+.aw-tag { font-family: var(--sans); font-size: 0.82rem; font-weight: 600; color: var(--ink-2); padding-top: 0.2rem; }
+.aw-jobs { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.35rem; font-family: var(--sans); font-size: 0.9rem; }
+.aw-jobs li { padding: 0.15rem 0.6rem; border-radius: 999px; background: var(--paper-2); border: 1px solid var(--rule-2); color: var(--ink-2); }
+.aw-learn { list-style: none; margin: 0; padding: 0; font-family: var(--sans); font-size: 0.93rem; }
+.aw-learn > li { display: grid; grid-template-columns: 11rem 1fr; gap: 1rem; padding: 0.3rem 0; }
+.aw-course { color: var(--ink-2); padding-top: 0.15rem; }
+.aw-course b { font-weight: 600; color: var(--ink); }
+.aw-lessons { display: flex; flex-wrap: wrap; gap: 0.35rem 0.5rem; }
+.aw-lessons a { display: inline-block; padding: 0.15rem 0.55rem; border: 1px solid var(--rule); border-radius: 3px; text-decoration: none; color: var(--link); background: var(--paper-2); }
+.aw-lessons a:hover { border-color: var(--link); }
+.aw-lessons span { color: var(--ink-3); margin-right: 0.3rem; }
+.aw-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.5rem 1rem; margin-top: 1rem; }
+.aw-top { font-family: var(--sans); font-size: 0.88rem; color: var(--ink-3); }
+.aw-teach { font-family: var(--sans); font-size: 0.95rem; flex: 1 1 20rem; }
 .aw-teach summary { cursor: pointer; font-weight: 600; color: var(--ink-2); }
 .aw-teach p { margin: 0.5rem 0 0; padding: 0.6rem 0.8rem; border-left: 3px solid var(--rule); background: var(--paper-2); color: var(--ink-2); }
 .aw-empty { font-family: var(--sans); color: var(--ink-2); margin-top: 2rem; }
@@ -52116,22 +52169,33 @@ public class Main {
 .aw-bycourse h2 { font-size: 1.5rem; margin-bottom: 0.5rem; }
 .aw-bycourse details { border-top: 1px solid var(--rule-2); padding: 0.5rem 0; font-family: var(--sans); font-size: 0.95rem; }
 .aw-bycourse summary { cursor: pointer; font-weight: 600; }
+.aw-bycourse summary .aw-n { font-weight: 400; }
 .aw-bycourse ul { margin: 0.5rem 0 0.3rem; padding-left: 1.3rem; }
 .aw-bycourse li { margin-bottom: 0.2rem; color: var(--ink-2); }
 @media (max-width: 40rem) {
   .aw { padding: 1.5rem 1rem 3rem; }
   .aw h1 { font-size: 1.9rem; }
-  .aw-uses li { grid-template-columns: 1fr; gap: 0.1rem; }
+  .aw-uses li, .aw-learn > li { grid-template-columns: 1fr; gap: 0.15rem; }
+  .aw-group-h { font-size: 1.6rem; }
+  .aw-toc-groups { grid-template-columns: 1fr; }
 }`;
   function injectCSS() {
     if (document.getElementById('applied-css')) return;
     const s = document.createElement('style'); s.id = 'applied-css'; s.textContent = CSS; document.head.appendChild(s);
   }
 
+  // the lessons that teach a topic, one row per course in the order they are first named: "SC 108 Command line" then lesson buttons
+  function learnRows(links) {
+    const by = new Map();
+    for (const l of links) { if (!by.has(l.course)) by.set(l.course, []); by.get(l.course).push(l); }
+    return el('ul', { class: 'aw-learn' }, [...by.values()].map((ls) => el('li', {},
+      el('span', { class: 'aw-course' }, el('b', {}, ls[0].code), ' ' + ls[0].short),
+      el('span', { class: 'aw-lessons' }, ls.map((l) => el('a', { href: l.href, title: ls[0].code + ' ' + ls[0].short + ', lesson ' + l.lesson + ': ' + l.title }, el('span', {}, String(l.lesson)), l.title))))));
+  }
   function topicSection(tp) {
     const usesList = el('ul', { class: 'aw-uses' });
     const rows = tp.uses.map((u) => {
-      const li = el('li', {}, el('span', { class: 'aw-tag' }, fieldLabel(u.f)), el('span', {}, u.t));
+      const li = el('li', {}, el('span', { class: 'aw-tag', 'data-f': u.f }, fieldLabel(u.f)), el('span', {}, u.t));
       li.dataset.field = u.f; li.dataset.text = norm(fieldLabel(u.f) + ' ' + u.t); usesList.append(li); return li;
     });
     const links = tp.learn.map(courseLink).filter(Boolean);
@@ -52139,10 +52203,11 @@ public class Main {
       el('h2', { id: tp.id + '-h', tabindex: '-1' }, tp.title),
       el('p', { class: 'aw-idea' }, tp.idea),
       el('h3', {}, 'Where it is used'), usesList,
-      el('h3', {}, 'Jobs that use it every day'), el('p', { class: 'aw-jobs' }, tp.jobs.join(' · ')),
-      links.length ? [el('h3', {}, 'Learn it in'),
-        el('ul', { class: 'aw-learn' }, links.map((l) => el('li', {}, el('a', { href: l.href }, el('b', {}, l.code), ' ' + l.short + ', lesson ' + l.lesson + ': ' + l.title))))] : null,
-      tp.teach ? el('details', { class: 'aw-teach' }, el('summary', {}, 'For teachers'), el('p', {}, tp.teach)) : null);
+      el('h3', {}, 'Jobs that use it every day'), el('ul', { class: 'aw-jobs' }, tp.jobs.map((j) => el('li', {}, j))),
+      links.length ? [el('h3', {}, 'Learn it in'), learnRows(links)] : null,
+      el('div', { class: 'aw-foot' },
+        tp.teach ? el('details', { class: 'aw-teach' }, el('summary', {}, 'For teachers'), el('p', {}, tp.teach)) : el('span', {}),
+        el('a', { class: 'aw-top', href: '#/real-world', onclick: (e) => jump(e, 'aw-topics', '#/real-world') }, '↑ All topics')));
     const base = norm([tp.title, tp.idea, tp.jobs.join(' '), tp.teach || '', links.map((l) => l.code + ' ' + l.short + ' ' + l.title).join(' ')].join(' '));
     return { tp, sec, rows, base };
   }
@@ -52162,43 +52227,57 @@ public class Main {
       el('p', { class: 'aw-idea' }, 'Teaching a particular lesson? Find the topics on this page that it leads to.'),
       order.map((c) => {
         const lessons = [...map.get(c).values()].sort((a, b) => a.l.lesson - b.l.lesson);
-        return el('details', {}, el('summary', {}, c.code + ' ' + c.title),
+        const n = new Set(lessons.flatMap((x) => x.topics)).size;
+        return el('details', {}, el('summary', {}, c.code + ' ' + c.title, el('span', { class: 'aw-n' }, n + (n === 1 ? ' topic' : ' topics'))),
           el('ul', {}, lessons.map((x) => el('li', {}, el('a', { href: x.l.href }, 'Lesson ' + x.l.lesson + ': ' + x.l.title), ' → ',
             x.topics.map((tp, k) => [k ? ', ' : null, el('a', { href: '#/real-world/' + tp.id, onclick: (e) => jump(e, tp.id) }, tp.title)])))));
       }));
   }
 
   // Move to a topic without rebuilding the page (so the filters stay as they are), and keep the address shareable.
-  function jump(e, id) {
+  function jump(e, id, hash) {
     if (e.button || e.ctrlKey || e.metaKey || e.shiftKey) return;   // let the browser open a new tab
     const t = document.getElementById(id); if (!t) return;
     e.preventDefault();
     if (t.hidden) return;
-    try { history.replaceState(null, '', '#/real-world/' + id); } catch (err) { /* a file:// copy may refuse; the scroll still works */ }
+    try { history.replaceState(null, '', hash || '#/real-world/' + id); } catch (err) { /* a file:// copy may refuse; the scroll still works */ }
     t.scrollIntoView();
-    const h = document.getElementById(id + '-h'); if (h && h.focus) h.focus({ preventScroll: true });
+    const h = document.getElementById(id + '-h') || t; if (h && h.focus) h.focus({ preventScroll: true });
   }
 
   function page(sub) {
     injectCSS();
     const main = el('main', { class: 'aw' });
     const state = { field: '', q: '' };
-    const items = TOPICS.map(topicSection);
+    const byId = new Map(TOPICS.map((tp) => [tp.id, tp]));
+    const groups = GROUPS.map((g) => ({ g, items: g.topics.filter((id) => byId.has(id)).map((id) => topicSection(byId.get(id))) }));
+    const items = groups.flatMap((x) => x.items);
+    const nExamples = items.reduce((n, it) => n + it.rows.length, 0);
+    const nLessons = new Set(items.flatMap((it) => it.tp.learn.filter((r) => courseLink(r)))).size;
 
     const input = el('input', { type: 'search', id: 'aw-q', autocomplete: 'off', spellcheck: 'false', placeholder: 'e.g. passwords, games, sorting' });
     const status = el('p', { class: 'aw-status', role: 'status', 'aria-live': 'polite' });
     const chips = [{ key: '', label: 'All fields' }].concat(FIELDS).map((f) => {
-      const b = el('button', { type: 'button', class: 'aw-chip', 'aria-pressed': f.key === state.field ? 'true' : 'false', onclick: () => { state.field = f.key; apply(); } }, f.label);
+      const b = el('button', { type: 'button', class: 'aw-chip', 'data-f': f.key, 'aria-pressed': f.key === state.field ? 'true' : 'false', onclick: () => { state.field = f.key; apply(); } }, f.label);
       b.dataset.key = f.key; return b;
     });
-    const tocItems = items.map((it) => el('li', {}, el('a', { href: '#/real-world/' + it.tp.id, onclick: (e) => jump(e, it.tp.id) }, it.tp.title)));
+    const tocLink = new Map();
+    const tocGroups = groups.map((x) => {
+      const lis = x.items.map((it) => { const n = el('span', { class: 'aw-n' }); const li = el('li', {}, el('a', { href: '#/real-world/' + it.tp.id, onclick: (e) => jump(e, it.tp.id) }, it.tp.title), n); tocLink.set(it, { li, n }); return li; });
+      const box = el('div', { class: 'aw-toc-group' }, el('h3', {}, x.g.title), el('ul', {}, lis));
+      return { x, box };
+    });
+    const groupSecs = groups.map((x) => el('div', { class: 'aw-group', id: 'aw-g-' + x.g.id, role: 'group', 'aria-labelledby': 'aw-g-' + x.g.id + '-h' },
+      el('h2', { class: 'aw-group-h', id: 'aw-g-' + x.g.id + '-h' }, x.g.title),
+      el('p', { class: 'aw-group-blurb' }, x.g.blurb),
+      x.items.map((it) => it.sec)));
     const empty = el('p', { class: 'aw-empty', hidden: 'hidden' }, 'Nothing matches. Try a shorter word, or choose All fields.');
 
     function apply() {
       const words = norm(state.q).split(/\s+/).filter(Boolean);
       let shown = 0, shownUses = 0;
       for (const b of chips) b.setAttribute('aria-pressed', b.dataset.key === state.field ? 'true' : 'false');
-      items.forEach((it, i) => {
+      for (const it of items) {
         // a word matches if it is in the topic's own text or in one of its examples; the field filter hides the other examples
         let visibleUses = 0;
         const topicHit = (w) => it.base.includes(w);
@@ -52211,14 +52290,16 @@ public class Main {
           visibleUses = 0;
           for (const li of it.rows) { const ok = !state.field || li.dataset.field === state.field; li.hidden = !ok; if (ok) visibleUses++; }
         }
-        const show = visibleUses > 0;
-        it.sec.hidden = !show; tocItems[i].hidden = !show;
+        const show = visibleUses > 0, t = tocLink.get(it);
+        it.sec.hidden = !show; t.li.hidden = !show;
+        t.n.textContent = state.field || words.length ? visibleUses + '' : '';
         if (show) { shown++; shownUses += visibleUses; }
-      });
+      }
+      groups.forEach((x, i) => { const any = x.items.some((it) => !it.sec.hidden); groupSecs[i].hidden = !any; tocGroups[i].box.hidden = !any; });
       empty.hidden = shown > 0;
       const what = state.field ? ' in ' + fieldLabel(state.field) : '';
       status.textContent = shown === items.length && !state.field && !words.length
-        ? items.length + ' topics.'
+        ? 'All ' + items.length + ' topics.'
         : 'Showing ' + shown + ' of ' + items.length + ' topics' + what + ' (' + shownUses + ' example' + (shownUses === 1 ? '' : 's') + ').';
     }
     input.addEventListener('input', () => { state.q = input.value; apply(); });
@@ -52226,25 +52307,25 @@ public class Main {
     main.append(
       el('header', {},
         el('h1', {}, 'Where it is used'),
-        el('p', { class: 'tagline' }, 'What the ideas in these courses are for: in software, security, engineering, data, games and the web.'),
+        el('p', { class: 'tagline' }, 'What the ideas in these courses are for, in the real world: in software, security, engineering, data, games and the web.'),
         el('div', { class: 'prose aw-intro' },
-          el('p', {}, 'Each topic below is one idea the courses teach. Under it are real places where that idea does real work, the jobs that use it every day, and links to the lessons where you can learn it.'),
-          el('p', {}, 'For students: this is the answer to "when will I ever use this?" Pick a field you care about and see which lessons lead there. For staff: every example is a real system or event you can look up, and each topic has a short note with a hook or a discussion question for class.'))),
+          el('p', {}, 'Each topic is one idea the courses teach. Under it are real systems and events where that idea does the work, the jobs that use it every day, and the lessons where you can learn it. For students, it is the answer to "when will I ever use this?": pick a field you care about and see which lessons lead there. For staff, every example can be looked up, and each topic has a note with a hook or a question for class.')),
+        el('p', { class: 'aw-stats' }, items.length + ' topics · ' + nExamples + ' examples · ' + nLessons + ' lessons linked')),
       el('div', { class: 'aw-tools' },
         el('div', { class: 'aw-search' }, el('label', { for: 'aw-q' }, 'Search'), input),
         el('fieldset', { class: 'aw-chips' }, el('legend', {}, 'Show examples from'), chips),
         status),
-      el('nav', { class: 'aw-toc', 'aria-label': 'Topics' }, el('h2', {}, 'Topics'), el('ol', {}, tocItems)),
+      el('nav', { class: 'aw-toc', id: 'aw-topics', tabindex: '-1', 'aria-label': 'Topics' }, el('div', { class: 'aw-toc-groups' }, tocGroups.map((t) => t.box))),
       empty,
-      ...items.map((it) => it.sec),   // the DOM's append does not flatten an array (el() does)
+      ...groupSecs,
       byCourse());
     apply();
     return main;
   }
 
-  const APPLIED = { page, TOPICS, FIELDS };
+  const APPLIED = { page, TOPICS, FIELDS, GROUPS };
   if (typeof window !== 'undefined') window.APPLIED = APPLIED;
-  if (typeof module !== 'undefined') module.exports = { TOPICS, FIELDS };
+  if (typeof module !== 'undefined') module.exports = { TOPICS, FIELDS, GROUPS };
 })();
 
 ;
