@@ -289,7 +289,7 @@ dx`, expectError: true, caption: 'Unbound variable: dx. Outside the body of dist
         { play: `(define (square x) (* x x))
 (square 3 4)`, expectError: true, caption: 'square was defined with one parameter and called with two arguments, and the message says exactly that. The substitution rule needs one argument for each parameter, no more and no fewer. Delete the 4.' },
         `<p>The second message comes from a slip in the header of a definition.</p>`,
-        { play: `(define square x (* x x))`, expectError: true, caption: 'Unbound variable: x. Without the parentheses around square x, this is Lesson 1\u2019s define, which names a value, and it tries to evaluate x to find that value. Put parentheses around square x.' },
+        { play: `(define square x (* x x))`, expectError: true, caption: 'Ill-formed special form: (define square x (* x x)). Without the parentheses around square x, this is Lesson 1\u2019s define, which names one value, and here two things follow the name. Put parentheses around square x.' },
         `<h2>Before the exercises</h2>
 <p>Both exercises ask you to define procedures. A reliable method has three steps. First write the <em>header</em>, the name and parameters, from the way the procedure will be called. Then write the body as the formula in prefix notation, using the parameters, never particular numbers. Then check one call by substitution, by hand, before you press Run. Here is a worked example: the average of two numbers, then the average of their squares.</p>`,
         { play: `(define (square x) (* x x))

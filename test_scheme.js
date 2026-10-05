@@ -31,6 +31,10 @@ check('(number->string 255 16)', '"ff"');
 errs('(substring "hello" 3 1)', /not in the correct range/);
 errs('(if)', /Ill-formed special form/);
 errs('(set!)', /Ill-formed special form/);
+errs('(define square x (* x x))', /Ill-formed special form: \(define square x/);   // one name, one value
+errs('(define x 5) (cond (> x 0) x)', /Ill-formed special form: \(cond/);          // a clause that is not a list, even after one that would succeed
+check('(define x -5) (cond (> x 0 x))', '-5');
+check('(define y) (cond (#f 1) (else 2))', '2');
 errs('(define (f a . r) r) (f)', /at least 1 argument\./);
 errs('(-)', /at least 1 argument\./);
 check('(/ 1234567890123 10)', '123456789012.3');

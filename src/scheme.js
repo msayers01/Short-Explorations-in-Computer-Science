@@ -191,6 +191,7 @@
                 }
                 if (!(target instanceof Sym)) throw new SchemeError('Variable required in this context: ' + write(target));
                 if (!(x.cdr.cdr instanceof Pair)) { env.define(target, UNSPEC); val = sym(target.name); break step; }
+                if (x.cdr.cdr.cdr !== NIL) throw ill(x);   // (define square x (* x x)): one name, one value, as MIT Scheme insists
                 stack.push({ k: F.DEF, target, env }); x = x.cdr.cdr.car; continue main;
               }
               case S.set:
@@ -202,7 +203,9 @@
                 if (b.cdr !== NIL) stack.push({ k: F.SEQ, rest: b.cdr, env });
                 x = b.car; continue main;
               }
-              case S.cond: stack.push({ k: F.COND, c: x.cdr, x, env, fresh: true }); val = undefined; break step;
+              case S.cond:   // every clause must be a list, checked before any runs: (cond (> x 0) x) is ill-formed, not "0"
+                for (let c = x.cdr; c !== NIL; c = c.cdr) if (!(c instanceof Pair) || !(c.car instanceof Pair)) throw ill(x);
+                stack.push({ k: F.COND, c: x.cdr, x, env, fresh: true }); val = undefined; break step;
               case S.case:   // (case key ((d1 d2 ...) body...) ... (else body...)): the key is compared with eqv?
                 if (!(x.cdr instanceof Pair)) throw ill(x);
                 stack.push({ k: F.CASE, x, env }); x = x.cdr.car; continue main;
