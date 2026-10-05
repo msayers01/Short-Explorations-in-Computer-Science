@@ -38,7 +38,7 @@
       uses: [
         { f: 'eng', t: 'Every processor is built from logic gates, tiny circuits that compute AND, OR and NOT on electrical signals. A modern chip has billions of them.' },
         { f: 'sec', t: 'Firewall rules are conditions checked in order: in many firewalls (Linux iptables, for example) the first rule that matches a packet decides whether it is let through or dropped, so the order of the rules matters.' },
-        { f: 'sec', t: 'Many access-control bugs are logic bugs: an or where an and was meant, or a missing not, lets the wrong person in. "Broken access control" is first on the 2021 OWASP Top 10 list of web application risks.' },
+        { f: 'sec', t: 'Many access-control bugs are logic bugs: an or where an and was meant, or a missing not, lets the wrong person in. "Broken access control" is first on the OWASP Top 10 list of web application risks, in 2021 and again in 2025.' },
         { f: 'data', t: 'Database queries pick rows with Boolean conditions, such as WHERE age >= 13 AND country = \'CA\'.' },
         { f: 'web', t: 'Search boxes in libraries and many websites let you combine words with AND, OR and NOT.' }
       ],
@@ -81,7 +81,7 @@
         { f: 'games', t: 'An image is an array of pixels: a 1920 × 1080 screen has 2,073,600 of them, each stored as numbers for red, green and blue.' },
         { f: 'data', t: 'Machine learning works on large arrays of numbers (often called tensors). Libraries such as NumPy and PyTorch are built around fast operations on whole arrays.' },
         { f: 'eng', t: 'Measurements are stored as arrays: CD audio is 44,100 samples a second for each ear, and a sensor log is one reading after another.' },
-        { f: 'sec', t: 'Reading or writing past the end of an array is a classic C and C++ security hole: the 1988 Morris worm and the 2014 Heartbleed bug both came from it.' }
+        { f: 'sec', t: 'Reading or writing past the end of an array is a classic C and C++ security hole: the 1988 Morris worm spread partly by overflowing an array in a network service, and the 2014 Heartbleed bug read past the end of one.' }
       ],
       jobs: ['Graphics programmer', 'Machine-learning engineer', 'Signal-processing engineer', 'C/C++ developer'],
       learn: ['scratch/6', 'python/6', 'cpp/7', 'modern/2', 'dsa/1'],
@@ -98,7 +98,7 @@
         { f: 'data', t: 'Log files, a server\'s diary of what it did, are lines of text that engineers split and search to find out what went wrong.' }
       ],
       jobs: ['Web developer', 'Security analyst', 'Bioinformatician', 'Localization engineer'],
-      learn: ['scratch/11', 'python/7', 'computer/6', 'cpp/8', 'modern/1', 'java/2'],
+      learn: ['scratch/11', 'python/7', 'computer/6', 'cpp/8', 'modern/1', 'java/2', 'java/7'],
       teach: 'Discussion: a form asks for your name. What should a program do if someone types a name with an apostrophe (O\'Brien), an accent (José), or a piece of code?'
     },
     {
@@ -198,7 +198,7 @@
         { f: 'games', t: 'Characters in games find their way around a level with A* search on a grid or a "navigation mesh".' }
       ],
       jobs: ['Network engineer', 'Penetration tester', 'Backend developer', 'Game AI programmer'],
-      learn: ['math/6', 'dsa/7'],
+      learn: ['math/6', 'dsa/13'],
       teach: 'Activity: draw the classroom friendships (or the school\'s hallways) as a graph. Find the shortest path between two points by breadth-first search, one ring at a time.'
     },
     {
@@ -213,7 +213,7 @@
         { f: 'data', t: 'Decision trees, and "forests" of many of them, are among the most widely used machine-learning models for tables of data.' }
       ],
       jobs: ['Database engineer', 'Compiler engineer', 'Web developer', 'Machine-learning engineer'],
-      learn: ['shell/1', 'math/6', 'lisp/8', 'lisp/13'],
+      learn: ['shell/1', 'math/6', 'dsa/11', 'lisp/8', 'lisp/13'],
       teach: 'Hook: open a computer\'s file browser and follow a path such as /home/student/projects down from the root. Every folder has exactly one parent. Why can a folder not be inside itself?'
     },
     {
