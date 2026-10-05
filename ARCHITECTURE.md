@@ -590,11 +590,35 @@ in the tests) wraps method-writing exercises in a class with a `main`.
 A command line for learning the Unix shell, in the Code Lab (the **Terminal** button; a course on it is planned). Design notes:
 
 - **It is a shell, not an emulator.** `shell.js` has its own tokenizer and parser (words with `' " \` quoting, `$VAR ${VAR} $? $# $@ $1` and the `${…}` forms (default `:-` `:=` `:+`, length, slices with negative offsets, `#` `##` `%` `%%` pattern removal, `/` `//` `/#` `/%` substitution, `^` `,` case; others are "bad substitution"),
-  `$(…)`, `$((…))`, `{a,b}` and `{1..5}`, `~`, `* ? […]`, `> >> < 2> 2>&1 | ; && || !`, `if/elif/else/fi`, `for/in/do/done`, `while`, `until`,
+  `$(…)`, `$((…))` (with `?:`, `a[i]` and `$(…)` inside), `{a,b}` and `{1..5}`, `~`, `* ? […]`, `> >> < 2> 2>&1 | ; && || !`, `if/elif/else/fi`,
+  `for/in/do/done`, `for ((;;))`, `while`, `until`, `case/esac` (with `|`, `;;`, `;&`, `;;&`), `(( ))`, `break`/`continue [n]`, `time [-p]`,
   `{ }` and `( )`), an executor that runs pipelines stage by stage (each stage's output buffered into the next: nothing runs concurrently),
-  and about seventy commands written here with GNU's wording for their errors (`ls: cannot access 'x': No such file or directory`,
+  and about ninety commands (130 names) written here with GNU's wording for their errors (`ls: cannot access 'x': No such file or directory`,
   `bash: x: command not found`, exit 127, and so on). `help` lists them, `man NAME` prints a page from the same table (`COMMANDS`).
   No `eval`, no `new Function`; the module has no DOM and runs in node (`test_shell.js`).
+- **Read a line at a time.** `parser(src, { aliases }).next()` returns the commands up to the next newline, and `exec`/`runScript` run each
+  before reading the next, as bash does: an alias defined on one line works from the next one, and a syntax error further down a script
+  stops it there (the lines before it have run). An expansion error (`$((1/0))`, a bad `${…}`, a bad array subscript on assignment, a
+  function nested too deep) drops the rest of its line only. `parse(src)` still reads everything at once.
+- **Functions** (`name() { …; }`, `function name { …; }`, any compound command as the body, redirections on it) are kept in `sh.funcs`
+  (a null-prototype dictionary) and found before builtins and commands (`command name` skips them). They run in the same shell with their own
+  `$1…`, `$#`, `$@` (`$0` stays); `local` saves what a name held and puts it back on return (dynamic scope, as in bash); `return [n]`
+  (also ends a `source`d script). Nesting stops at `FUNCNEST` or `LIMITS.funcDepth` (500) with bash's message, `f: maximum function nesting
+  level exceeded (500)`; the step limit still bounds the work. `type f` and `declare -f` print the body in bash's own layout (`printFunc`:
+  four spaces a level, `;` after each command inside `if`/`for`/`while`, `elif` as `else` + `if`), from the words as typed (tokens keep `raw`).
+- **Arrays** (indexed only): `sh.arrays[name] = { v: sparse JS array, n, bytes }`; a name is a variable or an array, not both (`$a` is
+  `${a[0]}`, `a[1]=x` turns a variable into an array). `a=(…)`, `a+=(…)`, `a[i]=x`, `${a[i]}` (i is arithmetic, negative counts from the end),
+  `${a[@]}`/`"${a[@]}"`/`${a[*]}`, `${#a[@]}`, `${#a[i]}`, `${!a[@]}`, `${a[@]:from:len}`, `unset 'a[i]'`, `declare -a`/`-p`, `local -a`,
+  `read -a`. Capped at `LIMITS.array` (10 000) values and 4 × `LIMITS.vars` characters each: past that the line stops with a message.
+  Assignments are no longer split or globbed (`x=*`, `x=$(ls)` keep their text, as in bash); `local`/`declare`/`export` arguments neither.
+- **Aliases** (`alias`, `unalias [-a]`, `type`): expanded when a line is parsed, at the start of a command, not again inside their own text,
+  a text ending in a space making the next word a candidate too; capped at 100 aliases of 1000 characters and 10 000 tokens of expansion
+  per line. As in bash they work at the prompt (`io.tty`) and in a script only after `shopt -s expand_aliases`, so the grader and the
+  differential tests (`tty: false`) see none. They are **not saved**: they last as long as the shell object (a reset of the terminal, or a
+  reload, forgets them); saving them would mean a field in `terminal.js`'s saved copy, sanitized on load.
+- **History expansion** (`!!`, `!n`, `!-n`, `!prefix`, `!?text?`, `!$`, `!^`, `!*`, `:n`, `^old^new`) only for a line typed at the terminal
+  (`io.tty`), never in scripts: the expanded line is echoed and kept; a failed one says `event not found` and is neither run nor kept. As in
+  bash nothing happens in `'…'`, before a space, `=` or `(`, or in `[!…]`, `${!…}`, `$!`. Modifiers (`:s/a/b/`, `:h`) are refused.
 - **The file system** is a tree in memory (`makeFS`): `/home/student` (the home, `~`), `/tmp`, and a read-only system (`/bin` with a stub
   per command, `/etc/passwd`, `/etc/hostname`, `/etc/motd`, `/dev/null`). Caps (`LIMITS`): 500 files, 2 MB in all, 256 KB a file, 32 levels,
   100-character names; names may not contain `/` or control characters. Children live in null-prototype dictionaries, so `__proto__` is
@@ -648,8 +672,20 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   `test_course.js shell` runs it through a fresh shell and the empty history must fail. Progress saves the history as the exercise's
   "code". `answer`-kind exercises work in a shell lesson too (mathgrade). The `fstree` figure draws a setup's tree with paths.
   `setup NAME` in the Code Lab's terminal writes a lesson's tree into the home directory (`terminal.js: mount`).
-- **Not there (yet):** job control (`&`), functions, `case`, `[[ ]]`, arrays, `${x:-default}`, here-documents, `awk`, `tar`, `ssh` and
-  anything needing a network (those names answer with a sentence saying so), a Windows `cmd`/PowerShell dialect (planned with the course).
+- **More commands** (October 2026): `basename`, `dirname`, `realpath` (walks the path as the real one does), `du [-s -h -a -c]` (sizes as an
+  ext4 disk gives them: whole 4 KB blocks, a directory one block), `expr` (GNU's grammar and exit statuses, BigInt numbers), `yes` (into a
+  pipe it stops by itself after 1 MB; elsewhere the output cap stops it), `fold`, `paste`, `comm` (with the unsorted-input warnings),
+  `column -t` (util-linux is not on the test machine, so not differential-tested), `sha256sum`/`md5sum` (plain JavaScript, checked against
+  node's crypto in `test_shell.js`), `time` (a keyword: `real` is measured, `user` shown as the same, `sys` as 0). **awk** (`awkLex`,
+  `awkParse`, `awkRun`): patterns, ranges, BEGIN/END, print/printf (C formats, ties rounded to even), `> file`, all the control statements,
+  fields and NF assignment, associative arrays with SUBSEP, strnum comparisons, the string and maths builtins; output follows mawk, the awk
+  `test_diff.js` runs. Refused with "… not available in this practice awk": functions of your own, `getline`, `print | cmd`, `system()`.
+  Its own caps: `LIMITS.awk` (1 000 000) steps, strings of 4 × `LIMITS.vars`, 100 000 array elements, the usual output cap. Known
+  differences from mawk: `substr` with a start below 1 or not whole follows POSIX (mawk differs), `printf` with too few arguments prints
+  empty values (mawk stops), `rand()` is another sequence.
+- **Not there (yet):** job control (`&`), `[[ ]]`, associative arrays in the shell (`declare -A`), here-documents and `<<<`, `select`, `ln`
+  (the file system has no links), `tar`, `ssh` and anything needing a network (those names answer with a sentence saying so), a Windows
+  `cmd`/PowerShell dialect (planned with the course).
 
 ## 9g. Algorithms in motion and Where it is used (`algos.js`, `algo_*.js`, `applied.js`)
 

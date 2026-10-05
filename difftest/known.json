@@ -14,8 +14,6 @@
     "wc < fruit.txt": "wc reading standard input: GNU sizes the columns from the file it can see behind the redirection; ours always uses width 7, as GNU does for a pipe.",
     "echo one two | read a b; echo \"[$a]\"": "Each part of a pipeline runs in the same shell here, so read in a pipeline sets the variable (bash runs it in a subshell).",
     "[[ -f fruit.txt ]] && echo yes": "[[ ]] is not supported: the course teaches [ ].",
-    "f() { echo hi; }; f": "Shell functions are not supported; the parser says so.",
-    "case x in x) echo yes;; esac": "case is not supported; the parser says so.",
     "find notes -name \"*.txt\"": "find lists entries in the file system's own order, which differs between machines; ours lists them sorted.",
     "find notes -maxdepth 1": "find lists entries in the file system's own order, which differs between machines; ours lists them sorted.",
     "find . -name \"*.txt\" -exec echo {} \\;": "find -exec is not supported (use a pipe to xargs).",
