@@ -45,6 +45,14 @@ async function session(lang, lines) {
   r = await session('scheme', ['(define (sq x) (* x x))', '(sq 12)', '(display "hi")', '(car (quote ()))', '(+ 1', '2)', '(exit)']);
   check('scheme: definitions stay, values are shown MIT-style, errors do not end the session, open parentheses continue', /1 \]=> \(define \(sq x\) \(\* x x\)\)\n;Value: sq\n1 \]=> \(sq 12\)\n;Value: 144\n1 \]=> \(display "hi"\)\nhi\n;Unspecified return value\n1 \]=> \(car \(quote \(\)\)\)\n;[^\n]+\n1 \]=> \(\+ 1\n2\)\n;Value: 3\n1 \]=> \(exit\)\n;Moriturus te saluto\./.test(r.screen) && r.exit === 0, r.screen);
 
+  // jshell, with the site's Java interpreter as the runner
+  const JAVA = require('./src/java.js');
+  const jsession = async (lines) => { let screen = '', i = 0; const o = { out: (s) => { screen += s; }, err: (s) => { screen += s; }, ask: (p) => { const v = i < lines.length ? lines[i++] : null; screen += p + (v == null ? '^D' : v) + '\n'; return Promise.resolve(v); }, run: (code, p) => { const r = JAVA.run(code, '', { write: p.onOutput }); return Promise.resolve(r); }, cancelled: () => false }; const exit = await REPL.java(o); return { screen: screen.slice(screen.indexOf('jshell> ')), exit }; };
+  r = await jsession(['int x = 5;', 'x * 2', 'String s = "hi"', 's.length()', 'int twice(int n) {', '  return 2 * n;', '}', 'twice(x)', 'System.out.println("printed " + x);', 'x = 9', 'twice(x)', '/exit']);
+  check('jshell: variables, expressions as $n, methods that see the variables, printing once', r.screen === 'jshell> int x = 5;\nx ==> 5\njshell> x * 2\n$2 ==> 10\njshell> String s = "hi"\ns ==> "hi"\njshell> s.length()\n$4 ==> 2\njshell> int twice(int n) {\n   ...>   return 2 * n;\n   ...> }\n|  created method twice(int)\njshell> twice(x)\n$6 ==> 10\njshell> System.out.println("printed " + x);\nprinted 5\njshell> x = 9\n$8 ==> 9\njshell> twice(x)\n$9 ==> 18\njshell> /exit\n|  Goodbye\n', r.screen);
+  r = await jsession(['y + 1', '10 / 0', 'int[] a = {3, 1, 2};', 'Arrays.sort(a);', 'a', 'class Dog { String name = "Rex"; }', 'new Dog().name', 'List<Integer> xs = new ArrayList<>();', 'xs.add(4);', 'xs', '/vars', null]);
+  check('jshell: errors are reported and dropped, arrays and classes and lists work, /vars lists', /jshell> y \+ 1\n\|  Error:\n\|  cannot find symbol\n\|    symbol:   variable y\n/.test(r.screen) && /jshell> 10 \/ 0\n\|  Exception java.lang.ArithmeticException: \/ by zero\n/.test(r.screen) && /a ==> int\[3\] \{ 3, 1, 2 \}\n/.test(r.screen) && /jshell> a\n\$\d+ ==> int\[3\] \{ 1, 2, 3 \}\n/.test(r.screen) && /\|  created class Dog\n/.test(r.screen) && /\$\d+ ==> "Rex"\n/.test(r.screen) && /jshell> xs\n\$\d+ ==> \[4\]\n/.test(r.screen) && /\|    int\[\] a\n\|    List<Integer> xs\n/.test(r.screen), r.screen);
+
   console.log((fails ? 'FAILED ' : 'ok ') + passes + ' passed, ' + fails + ' failed (repl)');
   process.exit(fails ? 1 : 0);
 })();

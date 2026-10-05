@@ -240,6 +240,12 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await page.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 15000 });
   tt = await page.locator('.lab-term .term-scroll').innerText();
   check('terminal: python with no file is an interactive shell that keeps its names', />>> x \* 7\n42\n/.test(tt) && />>> twice\("ab"\)\n'abab'\n/.test(tt) && (await termStatus()) === 'exit 0', tt.slice(-300));
+  await page.fill('.term-inp', 'jshell'); await page.press('.term-inp', 'Enter'); await ps1Is('jshell> ');
+  for (const line of ['int x = 20;', 'x + 22']) { await page.fill('.term-inp', line); await page.press('.term-inp', 'Enter'); await ps1Is('jshell> '); }
+  await page.fill('.term-inp', '/exit'); await page.press('.term-inp', 'Enter');
+  await page.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 15000 });
+  tt = await page.locator('.lab-term .term-scroll').innerText();
+  check('terminal: jshell shows each value as Java\'s jshell does', /x ==> 20\n/.test(tt) && /\$2 ==> 42\n/.test(tt) && /Goodbye/.test(tt), tt.slice(-300));
   await page.click('.lab-term .term-size');
   check('terminal: Taller makes the panel taller', await page.evaluate(() => document.querySelector('.lab-term').classList.contains('term-big') && document.querySelector('.lab-term .term-scroll').getBoundingClientRect().height > 300));
   await page.click('.lab-term .term-size');

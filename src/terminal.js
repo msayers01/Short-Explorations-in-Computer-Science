@@ -24,7 +24,7 @@
     let fs = o.fs;
     const stopAll = () => { for (const k of ['PYRUN', 'JAVARUN', 'CPPRUN', 'CLANGRUN']) if (window[k]) window[k].cancel(); };   // a lesson's terminal has no Lab to ask
     const repl = (lang, io2, sh2) => (window.REPL && window.REPL[lang] ? window.REPL[lang]({ ask: io2.ask, out: io2.out, err: io2.err, Scheme: window.Scheme, cancelled: () => sh2.cancelled,
-      run: (code, p) => window.PYRUN.run(code, { execLimit: 15000, onOutput: p.onOutput, onInput: p.onInput }) }) : Promise.resolve(127));
+      run: (code, p) => lang === 'java' ? window.JAVARUN.run(code, { stdin: '', onOutput: p.onOutput }) : window.PYRUN.run(code, { execLimit: 15000, onOutput: p.onOutput, onInput: p.onInput }) }) : Promise.resolve(127));
     const hooks = Object.assign({ fs, run, compile, nano, typedInput, repl, cancel: () => { if (o.stop) o.stop(); else stopAll(); } }, o.hooks || {});
     let sh = SHELL.makeShell(hooks);
     if (Array.isArray(o.history)) sh.history = o.history.filter((s) => typeof s === 'string' && s.length < 2000).slice(-SHELL.LIMITS.history);

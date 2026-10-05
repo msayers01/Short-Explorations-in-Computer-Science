@@ -1552,6 +1552,8 @@
       sh.fs.chmod(sh.fs.resolve(out), true);
       return 0;
     } });
+  def('jshell', { cat: 'run', use: 'jshell', desc: 'Java\'s interactive shell: type a declaration, a statement or an expression and see its value at once (x ==> 5, $2 ==> 10). /help lists its commands; /exit or Ctrl+D leaves.', ex: ['jshell'],
+    async run(args, io, sh) { if (io.ask && !io.stdin && sh.hooks.repl) return sh.hooks.repl('java', io, sh); io.err('jshell: the interactive Java shell needs the keyboard\n'); return 1; } });
   def('scheme mit-scheme racket', { cat: 'run', use: 'scheme [file.scm]', desc: 'Run a Scheme program; with no file, start the interactive Scheme shell (1 ]=>; (exit) or Ctrl+D leaves).', ex: ['scheme fact.scm'],
     async run(args, io, sh) { if (!args.length && io.ask && !io.stdin && sh.hooks.repl) return sh.hooks.repl('scheme', io, sh); if (!args.length) { io.err(this.name + ': the interactive Scheme shell needs the keyboard. Give it a file: scheme fact.scm\n'); return 2; } const n = sh.fs.stat(sh.fs.resolve(args[0])); if (!n || n.t !== 'f') { io.err(this.name + ': ' + args[0] + ': No such file or directory\n'); return 2; } return sh.runProgram({ lang: 'scheme', src: n.d }, args[0], args.slice(1), io); } });
   const opts_compile = (sh, lang, src, o) => sh.hooks.compile ? sh.hooks.compile(lang, src, o) : Promise.resolve({ err: null });

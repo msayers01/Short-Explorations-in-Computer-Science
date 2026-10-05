@@ -570,7 +570,10 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
 - **Interactive shells** (`src/repl.js`, `test_repl.js`): `python` and `scheme` with no file and the keyboard as input start a REPL on the
   command line. Scheme keeps one evaluator. Python replays: each entry runs after the accepted ones (seeded `random`, their `input()` answers
   given again, their output skipped); an entry is tried as `__repl_v = (entry)` first, since Skulpt has no `eval`, and printed with `repr`;
-  an entry that errors is dropped. Errors are shown as Python's REPL shows them (`File "<stdin>", line n`).
+  an entry that errors is dropped. Errors are shown as Python's REPL shows them (`File "<stdin>", line n`). `jshell` does the same for Java:
+  the kept snippets are rebuilt into one class `JShell` each time (top-level variables become static fields so methods see them, methods become
+  static, classes stay top-level classes, imports go first); an expression is tried as `var __vN = (expr)` and shown as `$N ==> value`
+  (strings quoted, arrays as `int[3] { 1, 2, 3 }`), a statement otherwise. /list /vars /methods /reset /help /exit. No Scanner input in jshell.
 - **Line editing** (`terminal.js`): Ctrl+R reverse-i-search (again for older, Enter runs, Esc keeps, Ctrl+G cancels), Ctrl+A/E/K/W/U/Y as in
   readline, and a Taller button.
 - **Limits that stop runaway lines.** 20 000 simple commands per line typed (`while true; do :; done` ends with a message), 2 MB of output
