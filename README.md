@@ -66,6 +66,7 @@ add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is w
     src/javastep.js        Java step-through, drawn in the page (the run is recorded by src/java.js)
     src/java.js            the Java interpreter: lexer, parser, javac-style checker, library, interpreter
     src/javaworker.js      the Java sandbox (a Web Worker); src/javautil.js wraps method exercises for grading
+    src/outdiff.js         what differs between the expected and the printed output (an exercise's verdict)
     src/clangworker.js     the Full C++ worker (real Clang, downloaded on demand); src/cppfull.js grades its exercises
     src/qr.js              QR code encoder for sharing links
     vendor/jscpp.min.js    the JSCPP C++ interpreter, bundled for the browser (see below)
