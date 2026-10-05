@@ -232,7 +232,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('Lab: Ctrl+G goes to a line', /Ln 3,/.test(await page.locator('.sb-pos').innerText()) && (await page.locator('.goto-bar').isHidden()), await page.locator('.sb-pos').innerText());
   await page.click('.lab-statusbar button:has-text("Shortcuts")');
   const keysText = await page.locator('.lab-keys').innerText();
-  check('Lab: the Shortcuts panel lists the editor keys', /Ctrl\s*\+\s*G\s+go to a line/.test(keysText) && /Alt\s*\+\s*↑/.test(keysText), keysText.slice(0, 200));
+  check('Lab: the Shortcuts panel lists the editor keys', /Ctrl\s*\+\s*G\s+go to a line/.test(keysText) && /Alt\s*\+\s*↑/.test(keysText) && /Ctrl\s*\+\s*Shift\s*\+\s*F\s+find \(and replace\) in all files/.test(keysText), keysText.slice(0, 200));
   await page.click('.lab-statusbar button:has-text("Shortcuts")');
   // Python: sys.argv from the Arguments box, an error marker on the line Skulpt names, cleared by the next run
   await page.click('.lang-btn:has-text("Python")'); await page.waitForSelector('.lab-editor textarea');
@@ -286,6 +286,82 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await page.click('.lang-btn:has-text("Scheme")'); await page.waitForSelector('.repl-inp');
   await page.fill('.repl-inp', '(* 6 7)'); await page.press('.repl-inp', 'Enter');
   check('Lab: Scheme REPL', /;Value: 42/.test(await page.locator('.repl-log').innerText()));
+
+  // ---- file history, find in all files, side by side (lab.js; the logic is src/labhistory.js, tested by test_labhistory.js)
+  await page.click('.lang-btn:has-text("Python")'); await page.waitForSelector('.lab-editor textarea');
+  const hist = () => page.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.labhistory.v1') || 'null'));
+  const pyName = await activeTab();
+  await setCode('print("version one")\n'); await runLab();
+  let hv = ((await hist()) || { files: {} }).files.python || {};
+  check('history: a run keeps a version of the file', (hv[pyName] || []).some((v) => v.why === 'run' && v.code === 'print("version one")\n'), hv[pyName]);
+  await setCode('print("version two")\nprint("<b>not html</b>")\n');
+  await page.click('.lab-statusbar button:has-text("History")'); await page.waitForSelector('.lab-hist:not([hidden]) .hist-item');
+  check('history: the panel lists the versions with what made them', /run/.test(await page.locator('.lab-hist .hist-item').first().innerText()) && /differs from line 1/.test(await page.locator('.lab-hist').innerText()), await page.locator('.lab-hist').innerText());
+  await page.locator('.lab-hist .hist-item', { hasText: 'run' }).first().click();
+  check('history: a version shows a line diff against the text now, as text', (await page.locator('.lab-hist .dl.d-del').count()) === 1 && (await page.locator('.lab-hist .dl.d-add').count()) === 2 && /version one/.test(await page.locator('.lab-hist .d-del').innerText()) && (await page.locator('.lab-hist .diff b').count()) === 0 && (await page.locator('.lab-hist .diff').innerText()).includes('<b>not html</b>'), await page.locator('.lab-hist .diff').innerText());
+  await page.click('.lab-hist button:has-text("Restore this version")'); await page.waitForTimeout(100);
+  check('history: Restore brings the version back', (await page.locator('.lab-editor textarea').inputValue()) === 'print("version one")\n');
+  hv = (await hist()).files.python[pyName];
+  check('history: Restore kept the text it replaced first', hv.some((v) => v.why === 'restore' && /version two/.test(v.code)), hv.map((v) => v.why));
+  await page.click('.lab-editor textarea'); await page.keyboard.press('Control+z');
+  check('history: Ctrl+Z undoes a Restore', /version two/.test(await page.locator('.lab-editor textarea').inputValue()));
+  await page.click('.lab-hist button:has-text("Compare files")');
+  check('history: Compare files with one tab asks for a second', /second tab/.test(await page.locator('.lab-hist').innerText()));
+  // find in all files: two files share a name; the results are grouped and open the tab at the line
+  await page.click('.lab-tabs .tab.add'); await page.fill('.tab-rename', 'helper.py'); await page.press('.tab-rename', 'Enter'); await page.waitForTimeout(200);
+  await setCode('def total(xs):\n    return sum(xs)\n\nprint(total([1, 2]))\n'); await page.waitForTimeout(500);
+  check('history: Compare files shows a diff of two tabs', (await page.locator('.lab-hist .diff .dl').count()) > 2 && /only in helper\.py/.test(await page.locator('.lab-hist').innerText()), await page.locator('.lab-hist').innerText());
+  await tabNamed(pyName).click(); await setCode('import helper\nx = 1\nprint(total)\n');
+  await page.click('.lab-editor textarea'); await page.keyboard.press('Control+Shift+F'); await page.waitForSelector('.lab-search:not([hidden])');
+  check('find in all files: Ctrl+Shift+F opens the panel, and closes History', (await page.locator('.lab-hist').isHidden()) && (await page.evaluate(() => document.activeElement.id)) === 'lab-search');
+  await page.fill('#lab-search', 'total'); await page.waitForTimeout(400);
+  const sres = await page.locator('.lab-search').innerText();
+  check('find in all files: results grouped by file, with lines and the match marked', (await page.locator('.search-file').count()) === 2 && /3 matches in 2 files/.test(sres) && (await page.locator('.search-hit mark').count()) === 3, sres);
+  await page.locator('.search-file', { hasText: 'helper.py' }).locator('.search-hit').nth(1).click(); await page.waitForTimeout(150);
+  check('find in all files: a result opens its tab at its line', (await activeTab()) === 'helper.py' && /Ln 4,/.test(await page.locator('.sb-pos').innerText()), [await activeTab(), await page.locator('.sb-pos').innerText()]);
+  await page.check('.search-opts input >> nth=1'); await page.fill('#lab-search', 'x'); await page.waitForTimeout(400);
+  check('find in all files: whole word', /^1 match in 1 file$/m.test(await page.locator('.lab-search').innerText()), await page.locator('.lab-search').innerText());
+  await page.uncheck('.search-opts input >> nth=1');
+  await page.fill('#lab-search', 'total'); await page.fill('.search-repl .find-inp', 'grand_total'); await page.waitForTimeout(400);
+  await page.click('.search-repl button'); check('find in all files: Replace all asks first', /Replace 3 in 2 files\?/.test(await page.locator('.search-repl button').innerText()), await page.locator('.search-repl button').innerText());
+  await page.click('.search-repl button'); await page.waitForTimeout(150);
+  const both = await page.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.lab.v1')).files.python.map((f) => f.code).join('\n'));
+  check('find in all files: Replace all changed both files', (both.match(/grand_total/g) || []).length === 3 && !/\btotal\b/.test(both), both);
+  await tabNamed(pyName).click();
+  await page.click('.lab-statusbar button:has-text("History")'); await page.waitForSelector('.lab-hist:not([hidden]) .hist-item');
+  await page.locator('.lab-hist .hist-item', { hasText: 'before replace all' }).first().click();
+  await page.click('.lab-hist button:has-text("Restore this version")'); await page.waitForTimeout(100);
+  check('find in all files: History undoes Replace all in one file', (await page.locator('.lab-editor textarea').inputValue()) === 'import helper\nx = 1\nprint(total)\n' && /grand_total/.test(await page.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.lab.v1')).files.python.find((f) => f.name === 'helper.py').code)), await page.locator('.lab-editor textarea').inputValue());
+  await page.click('.lab-statusbar button:has-text("History")');
+  // side by side: two columns while the main column is wide, under each other otherwise, and kept
+  await page.setViewportSize({ width: 1400, height: 900 }); await page.waitForTimeout(100);
+  await page.click('.lab-statusbar button:has-text("Side by side")'); await page.waitForTimeout(200); await runLab();
+  const box = async (sel) => page.locator(sel).first().boundingBox();
+  let eb = await box('.lab-editor'), ob = await box('.lab-out');
+  check('side by side: the output is beside the editor', eb && ob && ob.x > eb.x + eb.width - 1 && ob.y < eb.y + eb.height && JSON.parse(await page.evaluate(() => localStorage.getItem('shortcourses.lab.v1'))).split === true, [eb, ob]);
+  await page.click('.lab-toolbar button:has-text("Terminal")'); await page.waitForSelector('.lab-term:not([hidden])');
+  const tb = await box('.lab-term');
+  check('side by side: the terminal is in the right column too', tb && tb.x > eb.x + eb.width - 1, tb);
+  await page.click('.lab-toolbar button:has-text("Terminal")');
+  const keep = await page.locator('.lab-editor textarea').inputValue();
+  await setCode('x = 1\ny = x + 1'); await page.click('.lab-toolbar button:has-text("Step through")'); await page.waitForSelector('.trace-vars table', { timeout: 8000 });
+  const trb = await box('.trace-box');
+  check('side by side: the step-through works, in the right column', trb && trb.x > eb.x + eb.width - 1 && (await page.locator('.trace-vars table').count()) === 1 && (await page.locator('.lab-editor .line.trace').count()) === 1, trb);
+  await page.click('.trace-box button:has-text("Stop")'); await page.waitForTimeout(200);
+  await setCode('import turtle\nt = turtle.Turtle()\nt.forward(50)\nturtle.done()\nprint("drawn")'); await runLab();
+  const tub = await box('.turtle-box');
+  check('side by side: the turtle canvas draws in the right column', tub && tub.x > eb.x + eb.width - 1 && (await page.frameLocator('#lab-turtle iframe').locator('canvas').count()) > 0 && /drawn/.test(await outText()), [tub, await outText()]);
+  await page.click('.turtle-box button:has-text("×")'); await setCode(keep);
+  await page.setViewportSize({ width: 800, height: 900 }); await page.waitForTimeout(200);
+  eb = await box('.lab-editor'); ob = await box('.lab-out');
+  check('side by side: a narrow window puts the output back under the editor', ob.y >= eb.y + eb.height - 1, [eb, ob]);
+  await page.setViewportSize({ width: 1400, height: 900 }); await page.waitForTimeout(200);
+  await page.click('.lab-statusbar button:has-text("Side by side")'); await page.waitForTimeout(200);
+  eb = await box('.lab-editor'); ob = await box('.lab-out');
+  check('side by side: off again, the output is under the editor', ob.y >= eb.y + eb.height - 1 && (await page.locator('.lab-work.split').count()) === 0, [eb, ob]);
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await tabNamed('helper.py').click(); await page.locator('.lab-tabs .tab.on .tab-x').click(); await page.locator('.lab-tabs .tab.on .tab-x').click(); await page.waitForTimeout(100);
+  check('history: closing a file drops its history', !((await hist()).files.python || {})['helper.py'] && (await page.locator('.lab-tabs .tab:not(.add)').count()) === 1, Object.keys((await hist()).files.python || {}));
 
   // ---- the terminal (src/terminal.js in front of src/shell.js): commands, the ~/lab mirror, programs through the sandboxes, persistence
   await page.click('.lang-btn:has-text("Python")'); await page.waitForSelector('.lab-editor textarea');

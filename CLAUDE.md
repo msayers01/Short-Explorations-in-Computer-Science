@@ -76,6 +76,9 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   imports hoisted, errors and stack traces mapped back per file, javac's public-class rule; the Lab skips tabs that redeclare a class and exercise files).
   The Lab also has error markers (`LabEditor.setMarks`), program arguments (`S.args`, Python/Java; `labutil.js`), output Copy/Wrap/Clear, Ctrl+G and a
   Shortcuts panel: keep `KEYS_HTML` in step with the editor's keydown handler.
+- Lab file history, find in all files, side by side (ARCHITECTURE §9, October 2026): `src/labhistory.js` (pure: versions with caps, line diff,
+  search/replace; `test_labhistory.js`), key `shortcourses.labhistory.v1`, deliberately not in backups. Anything new in lab.js that replaces a file's
+  text should call `snapshot(lang, file, why)` first; renaming or deleting a file must go through `histRename`/`histDrop`.
 
 ## Two C++ engines (ARCHITECTURE §9d)
 

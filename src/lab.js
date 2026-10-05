@@ -295,11 +295,11 @@ Random r = new Random();  r.nextInt(6) + 1</code></pre>
   const kbd = (s) => s.split(' + ').map((x) => '<kbd>' + x + '</kbd>').join(' + ');
   const KEYS_HTML = '<table class="keys-tbl"><tbody>' + [
     ['Editor'], [kbd('Ctrl + Enter'), 'run the program'], [kbd('Ctrl + Z'), 'undo'], [kbd('Ctrl + Y') + ' or ' + kbd('Ctrl + Shift + Z'), 'redo'],
-    [kbd('Ctrl + F'), 'find'], [kbd('Ctrl + H'), 'find and replace'], [kbd('Ctrl + G'), 'go to a line'], [kbd('Ctrl + /'), 'comment or uncomment the lines'],
+    [kbd('Ctrl + F'), 'find'], [kbd('Ctrl + H'), 'find and replace'], [kbd('Ctrl + Shift + F'), 'find (and replace) in all files'], [kbd('Ctrl + G'), 'go to a line'], [kbd('Ctrl + /'), 'comment or uncomment the lines'],
     [kbd('Ctrl + D'), 'duplicate the line'], [kbd('Alt + ↑') + ' ' + kbd('Alt + ↓'), 'move the line up or down'], [kbd('Ctrl + S'), 'download the file'],
     [kbd('Tab') + ' / ' + kbd('Shift + Tab'), 'indent / outdent (every selected line)'], [kbd('Enter'), 'new line, indented to match'],
     [kbd('↑') + ' ' + kbd('↓') + ' then ' + kbd('Tab') + ' or ' + kbd('Enter'), 'choose a completion; ' + kbd('Esc') + ' closes the list'],
-    ['Find and go to'], [kbd('Enter') + ' / ' + kbd('Shift + Enter'), 'next / previous match'], [kbd('Esc'), 'close the bar'],
+    ['Find and go to'], [kbd('Enter') + ' / ' + kbd('Shift + Enter'), 'next / previous match'], [kbd('Esc'), 'close the bar'], [kbd('Enter') + ' in Find in all files', 'open the first match'],
     ['Terminal'], [kbd('Tab'), 'complete a name'], [kbd('↑') + ' ' + kbd('↓'), 'earlier commands'], [kbd('Ctrl + C'), 'stop the program'], [kbd('Ctrl + L'), 'clear the screen'], [kbd('Ctrl + U'), 'clear the line'],
     ['Step through'], [kbd('Enter') + ' or ' + kbd('N'), 'next line (Python), next step (Scheme)'], [kbd('N') + ' or ' + kbd('→') + ', ' + kbd('B') + ' or ' + kbd('←'), 'forward and back (C++ memory)']
   ].map((r) => r.length === 1 ? '<tr><th colspan="2">' + r[0] + '</th></tr>' : '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join('') + '</tbody></table><p class="ref-note">On a Mac, Cmd works wherever Ctrl is shown for the editor.</p>';
@@ -336,12 +336,25 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     if (!STANDARDS.some(s => s[0] === S.cppStd)) S.cppStd = STANDARDS[1][0];
     S.args = window.LABUTIL ? window.LABUTIL.cleanArgs(S.args) : {};   // the Arguments box of each language: strings only (labutil.js)
     S.outWrap = S.outWrap !== false;
+    S.split = S.split === true;   // side by side (a display choice of this device: backup.js leaves it out)
     return S;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
   // S.lang is checked with hasLang when it is set (it can come from a link), and checked again here, where files are written through it
   const filesOf = (l) => (l !== '__proto__' && Object.prototype.hasOwnProperty.call(S.files, l) ? S.files[l] : S.files.python);
   const curFile = () => { const fs = filesOf(S.lang); return fs[Math.max(0, Math.min(fs.length - 1, Number(S.active[S.lang]) | 0))]; };   // the index is a number, whatever was saved
+
+  /* ---------------- file history (src/labhistory.js: the versions, the diff, the caps) ----------------
+     Its own key, not part of the Lab state: up to 400 KB of old versions should not be rewritten on every keystroke with the files.
+     Read once, through LABHIST.clean (storage is untrusted). Not in backups: see ARCHITECTURE §7. */
+  let HIST = null;
+  const LH = () => window.LABHIST;
+  function histStore() { if (!HIST) { let raw = null; try { raw = JSON.parse(localStorage.getItem(LH().KEY) || 'null'); } catch (e) { raw = null; } HIST = LH().clean(raw); } return HIST; }
+  function histSave() { try { localStorage.setItem(LH().KEY, JSON.stringify(HIST)); } catch (e) { } }   // a full storage keeps the files: history is the extra
+  /** keep a version of file f of language l (why: a key of LABHIST.WHY); false when there was nothing new to keep */
+  function snapshot(l, f, why) { if (!LH() || !f || !hasLang(l)) return false; const ok = LH().add(histStore(), l, f.name, f.code, why); if (ok) histSave(); return ok; }
+  function histRename(l, from, to) { if (!LH() || from === to) return; LH().rename(histStore(), l, from, to); histSave(); }
+  function histDrop(l, name) { if (!LH()) return; LH().drop(histStore(), l, name); histSave(); }
 
   /* ---------------- share links ---------------- */
   const b64e = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -523,6 +536,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       }
       if (mod && !e.altKey && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
       if (mod && !e.altKey && !e.shiftKey && (e.key === 'y' || e.key === 'Y')) { e.preventDefault(); redo(); return; }
+      if (mod && e.shiftKey && !e.altKey && (e.key === 'f' || e.key === 'F')) { e.preventDefault(); if (opts.onFindAll) opts.onFindAll(); return; }   // before Ctrl+F: Shift makes it "F"
       if (mod && (e.key === 'f' || e.key === 'F' || e.key === 'h' || e.key === 'H')) { e.preventDefault(); if (opts.onFind) opts.onFind(e.key.toLowerCase() === 'h'); return; }
       if (mod && e.key === 'Enter') { e.preventDefault(); if (opts.onRun) opts.onRun(); return; }
       if (mod && e.key === '/') { e.preventDefault(); toggleComment(); return; }
@@ -639,7 +653,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     let jsTrace = null, jsIdx = 0, jsToken = 0;   // the Java step-through (src/javastep.js draws it)
 
     // ----- editor
-    const editor = LabEditor({ lang: S.lang, onChange: (v) => { curFile().code = v; save(); if (errMark && errMark.file === curFile()) setErrMark(null); if (!findBar.hidden && findInp.value) computeMatches(); if (memTrace) endMem('The program changed, so the memory view was closed. Press Step through memory to start again.'); if (jsTrace) endJStep('The program changed, so the step-through was closed. Press Step through to start again.'); }, onRun: () => run(), onSave: () => download(), onCursor: () => renderStatusBar(), onFind: (withReplace) => openFind(withReplace), onGoto: () => openGoto(), onEscape: () => { if (!findBar.hidden) closeFind(); if (!gotoBar.hidden) closeGoto(); } });
+    const editor = LabEditor({ lang: S.lang, onChange: (v) => { histEdit(S.lang, curFile()); curFile().code = v; save(); if (errMark && errMark.file === curFile()) setErrMark(null); if (!findBar.hidden && findInp.value) computeMatches(); if (!searchBox.hidden) schedSearch(); if (!histBox.hidden) schedHist(); if (memTrace) endMem('The program changed, so the memory view was closed. Press Step through memory to start again.'); if (jsTrace) endJStep('The program changed, so the step-through was closed. Press Step through to start again.'); }, onRun: () => run(), onSave: () => download(), onCursor: () => renderStatusBar(), onFind: (withReplace) => openFind(withReplace), onGoto: () => openGoto(), onFindAll: () => openSearch(), onEscape: () => { if (!findBar.hidden) closeFind(); if (!gotoBar.hidden) closeGoto(); } });
     editor.value = curFile().code;
     editor.el.style.setProperty('--lab-font', S.fontSize + 'px');
 
@@ -672,6 +686,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
         tabs.append(b);
       });
       tabs.append(el('button', { class: 'tab add', title: 'New file', 'aria-label': 'New file', onclick: newFile }, '+ New'));
+      renderHist();   // the History panel follows the current file (every change of tab, language or name comes through here)
     }
     // A small inline form used for both "new file" and "rename": [name input] [OK] [Cancel]
     function nameForm(initial, onDone, anchor) {
@@ -694,7 +709,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     }
     function rename(i) {
       i = Number(i) | 0; const f = filesOf(S.lang)[i]; if (!f || !tabs.children[i]) return;
-      nameForm(f.name, (name) => { const n = cleanName(name, S.lang); if (n != null && n !== f.name) { f.name = uniqueName(S.lang, n); save(); } renderTabs(); renderStatusBar(); }, tabs.children[i]);
+      nameForm(f.name, (name) => { const n = cleanName(name, S.lang); if (n != null && n !== f.name) { const was = f.name; f.name = uniqueName(S.lang, n); save(); histRename(S.lang, was, f.name); } renderTabs(); renderStatusBar(); }, tabs.children[i]);
     }
     // status bar under the editor: file name, cursor position, rename, wrap, touch helpers
     const posLabel = el('span', { class: 'sb-pos' });
@@ -703,13 +718,16 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const indentBtn = el('button', { class: 'btn quiet tiny touch-only', title: 'Indent', onclick: () => { editor.focus(); editor.indentLines(true); } }, '⇥ Indent');
     const outdentBtn = el('button', { class: 'btn quiet tiny touch-only', title: 'Outdent', onclick: () => { editor.focus(); editor.indentLines(false); } }, '⇤ Outdent');
     const keysBtn = el('button', { class: 'btn quiet tiny', title: 'The keyboard shortcuts of the editor', 'aria-expanded': 'false', onclick: () => togglePanel('keys') }, 'Shortcuts');
-    const statusBar = el('div', { class: 'lab-statusbar' }, posLabel, el('span', { class: 'spacer' }), indentBtn, outdentBtn, renameBtn, wrapBtn, keysBtn);
+    const histBtn = el('button', { class: 'btn quiet tiny', title: 'Earlier versions of this file: what changed, and Restore', 'aria-expanded': 'false', onclick: () => togglePanel('hist') }, 'History');
+    const searchBtn = el('button', { class: 'btn quiet tiny', title: 'Find (and replace) in all files (Ctrl+Shift+F)', 'aria-expanded': 'false', onclick: () => { if (searchBox.hidden) openSearch(); else togglePanel('search', false); } }, 'Search files');
+    const splitBtn = el('button', { class: 'btn quiet tiny split-btn', title: 'Put the output, the input box and the terminal beside the editor instead of under it (on a wide screen)', 'aria-pressed': 'false', onclick: () => { S.split = !S.split; save(); applySplit(); } }, 'Side by side');
+    const statusBar = el('div', { class: 'lab-statusbar' }, posLabel, el('span', { class: 'spacer' }), indentBtn, outdentBtn, renameBtn, wrapBtn, histBtn, searchBtn, splitBtn, keysBtn);
     function renderStatusBar() { const p = editor.pos(); posLabel.textContent = curFile().name + '  ·  Ln ' + p.line + ', Col ' + p.col + (p.selected ? '  ·  ' + p.selected + ' selected' : ''); }
     function applyWrap() { editor.el.classList.toggle('wrap', !!S.wrap); wrapBtn.textContent = 'Wrap: ' + (S.wrap ? 'on' : 'off'); editor.render(); }
     function closeFile(i, btn) {
       const f = S.files[S.lang][i];
       if (f.code.trim() && !btn.dataset.armed) { btn.dataset.armed = '1'; btn.classList.add('armed'); btn.lastChild.textContent = 'close?'; setTimeout(() => { delete btn.dataset.armed; btn.classList.remove('armed'); if (btn.lastChild) btn.lastChild.textContent = '×'; }, 3000); return; }
-      S.files[S.lang].splice(i, 1); if (S.active[S.lang] >= S.files[S.lang].length) S.active[S.lang] = S.files[S.lang].length - 1; else if (i < S.active[S.lang]) S.active[S.lang]--;
+      S.files[S.lang].splice(i, 1); histDrop(S.lang, f.name); if (S.active[S.lang] >= S.files[S.lang].length) S.active[S.lang] = S.files[S.lang].length - 1; else if (i < S.active[S.lang]) S.active[S.lang]--;
       if (tracer) tracer.stop(); endMem();
       save(); editor.value = curFile().code; applyErrMark(); renderTabs(); renderStatusBar(); engineChanged(); renderExBar(); renderAsgBar();
     }
@@ -746,7 +764,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       el, S, save, editor, armConfirm, isTouch, grade: (ex, code, host) => A().grade(ex, code, host), renderVerdict: (v, r, ex, n) => A().renderVerdict(v, r, ex, n),
       status: (t) => { status.textContent = t; setTimeout(() => { if (status.textContent === t) status.textContent = ''; }, 6000); },
       renderToolbar: () => renderToolbar(),
-      setCode: (v) => { editor.value = v; curFile().code = v; save(); },   // the editor's setter does not report a change, so save here
+      setCode: (v) => { snapshot(S.lang, curFile(), 'reset'); editor.value = v; curFile().code = v; save(); renderHist(); },   // the editor's setter does not report a change, so save here
       openAssignmentFile: (a) => { const l = a.lang; if (!hasLang(l)) return; let idx = S.files[l].findIndex(f => f.asg === a.id); if (idx < 0) { S.files[l].push({ name: uniqueName(l, (a.title || 'assignment').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + LANG_INFO[l].ext), code: a.starter || '', asg: a.id }); idx = S.files[l].length - 1; } S.active[l] = idx; save(); if (l !== S.lang) switchLang(l); else activate(idx); },
       openReviewFile: (l, name, code) => { if (!hasLang(l)) l = S.lang; S.files[l].push({ name: uniqueName(l, name.replace(/[^a-z0-9_-]+/gi, '_') + LANG_INFO[l].ext), code }); S.active[l] = S.files[l].length - 1; save(); if (l !== S.lang) switchLang(l); else activate(S.active[l]); }
     };
@@ -798,7 +816,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const caseChk = el('input', { type: 'checkbox', id: 'lab-case' });
     const findBar = el('div', { class: 'find-bar', hidden: '' },
       findInp, el('button', { class: 'btn quiet', title: 'Previous (Shift+Enter)', onclick: () => findStep(-1) }, '↑'), el('button', { class: 'btn quiet', title: 'Next (Enter)', onclick: () => findStep(1) }, '↓'), findCount,
-      el('label', { class: 'find-opt' }, caseChk, ' match case'),
+      el('label', { class: 'find-opt' }, caseChk, ' match case'), el('button', { class: 'btn quiet', title: 'Look in every file (Ctrl+Shift+F)', onclick: () => openSearch() }, 'In all files'),
       el('span', { class: 'find-break' }),
       replInp, el('button', { class: 'btn quiet', onclick: () => replaceOne() }, 'Replace'), el('button', { class: 'btn quiet', onclick: () => replaceAll() }, 'Replace all'),
       el('button', { class: 'btn quiet find-close', title: 'Close (Esc)', onclick: closeFind }, '×'));
@@ -811,7 +829,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     }
     function findStep(d) { if (!matches.length) { computeMatches(); if (!matches.length) return; } const caret = editor.ta.selectionStart; if (mi < 0) { mi = d > 0 ? matches.findIndex(m => m.s >= caret) : matches.length - 1; if (mi < 0) mi = 0; } else mi = (mi + d + matches.length) % matches.length; const m = matches[mi]; editor.setFind(matches, mi); editor.select(m.s, m.e); findCount.textContent = (mi + 1) + ' of ' + matches.length; }
     function replaceOne() { if (mi < 0 || !matches.length) { findStep(1); return; } const m = matches[mi]; editor.replaceRange(m.s, m.e, replInp.value); computeMatches(); if (matches.length) findStep(1); }
-    function replaceAll() { if (!findInp.value) return; const q = findInp.value, flags = caseChk.checked ? 'g' : 'gi'; const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&'), flags); const n = (editor.value.match(re) || []).length; if (!n) return; editor.replaceRange(0, editor.value.length, editor.value.replace(re, () => replInp.value)); findCount.textContent = n + ' replaced'; matches = []; mi = -1; editor.setFind([], -1); }
+    function replaceAll() { if (!findInp.value) return; const q = findInp.value, flags = caseChk.checked ? 'g' : 'gi'; const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&'), flags); const n = (editor.value.match(re) || []).length; if (!n) return; snapshot(S.lang, curFile(), 'replace'); editor.replaceRange(0, editor.value.length, editor.value.replace(re, () => replInp.value)); findCount.textContent = n + ' replaced'; matches = []; mi = -1; editor.setFind([], -1); }
     findInp.addEventListener('input', computeMatches); caseChk.addEventListener('change', computeMatches);
     findInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); findStep(e.shiftKey ? -1 : 1); } if (e.key === 'Escape') closeFind(); });
     replInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); replaceOne(); } if (e.key === 'Escape') closeFind(); });
@@ -842,17 +860,145 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     // The keyboard shortcuts the editor really has (the keydown handlers of LabEditor, the find and go-to bars, the terminal, the step-throughs)
     const keysBox = el('div', { class: 'lab-panel lab-keys', hidden: '' }, el('div', { class: 'panel-head' }, el('b', {}, 'Keyboard shortcuts'), el('button', { class: 'btn quiet', 'aria-label': 'Close', onclick: () => togglePanel('keys') }, '×')),
       el('div', { class: 'prose', html: KEYS_HTML }));
-    const PANELS = { tpl: tplBox, ref: refBox, keys: keysBox };
-    function togglePanel(which, force) { const box = PANELS[which]; const show = force != null ? force : box.hidden; box.hidden = !show; if (show) for (const k in PANELS) if (k !== which) { PANELS[k].hidden = true; if (k !== 'keys') S.panels[k] = false; } if (which !== 'keys') S.panels[which] = show; save(); keysBtn.setAttribute('aria-expanded', String(!keysBox.hidden)); if (show && window.innerWidth < 900 && box.scrollIntoView) box.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    // ----- file history (History, under the editor): the current file's earlier versions, a diff of one against the text now, Restore.
+    // Versions are kept on Run, after IDLE_MS without typing, at the first change of a file in this visit, and before anything replaces
+    // the text (Restore, Replace all, Reset to starter, the terminal). Everything shown is text: el() and text nodes only.
+    const IDLE_MS = 30000;
+    let idleT = 0, idleFile = null, idleLang = null;
+    const touched = new WeakSet();   // files changed in this visit: the first change keeps the text as it was opened
+    function histEdit(l, f) {
+      if (!touched.has(f)) { touched.add(f); snapshot(l, f, 'opened'); }
+      if (idleFile && idleFile !== f) histFlush();   // typing moved to another file: keep the one left behind now
+      clearTimeout(idleT); idleFile = f; idleLang = l;
+      idleT = setTimeout(histFlush, IDLE_MS);
+    }
+    function histFlush() { clearTimeout(idleT); const f = idleFile, l = idleLang; idleFile = null; if (f && hasLang(l) && S.files[l].includes(f) && snapshot(l, f, 'edit')) renderHist(); }
+    function histKept(l, f, why) { if (idleFile === f) { clearTimeout(idleT); idleFile = null; } if (snapshot(l, f, why)) renderHist(); }
+    const histBox = el('div', { class: 'lab-panel lab-hist', hidden: '' });
+    let hT = 0; const schedHist = () => { clearTimeout(hT); hT = setTimeout(renderHist, 400); };   // while typing, the list's "differs from line" follows
+    let histSel = null, histMode = 'list';   // the version whose diff is shown; 'list' or 'compare' (two tabs side by side)
+    const ago = (t, now) => { const s = Math.round((now - t) / 1000); if (s < 45) return 'just now'; if (s < 3600) return Math.round(s / 60) + ' min ago'; const d = new Date(t); return new Date(now).toDateString() === d.toDateString() ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); };
+    const nLines = (code) => { const n = code.split('\n').length - (code.endsWith('\n') ? 1 : 0); return n + (n === 1 ? ' line' : ' lines'); };
+    /** a line diff from text a to text b, drawn as text: removed lines red with −, added green with +, long unchanged runs folded */
+    function diffView(a, b) {
+      const ops = LH().hunks(LH().diff(a, b), 3), st = LH().stats(ops);
+      const rows = ops.map((o) => o.k === '…' ? el('div', { class: 'dl d-skip' }, '⋯ ' + o.skip + ' unchanged line' + (o.skip === 1 ? '' : 's'))
+        : el('div', { class: 'dl ' + (o.k === '+' ? 'd-add' : o.k === '-' ? 'd-del' : 'd-same') }, el('span', { class: 'dn' }, o.a ? String(o.a) : ''), el('span', { class: 'dn' }, o.b ? String(o.b) : ''), el('span', { class: 'dm', 'aria-hidden': 'true' }, o.k === ' ' ? ' ' : o.k === '-' ? '−' : '+'),
+          el('span', { class: 'dt' }, el('span', { class: 'sr-only' }, o.k === '+' ? 'added: ' : o.k === '-' ? 'removed: ' : ''), o.text, o.noEol ? el('span', { class: 'd-noeol' }, ' (no newline at the end)') : null)));
+      return { st, el: el('div', { class: 'diff', role: 'group', 'aria-label': 'Differences' }, rows.length ? rows : el('div', { class: 'dl d-skip' }, '(both are empty)')) };
+    }
+    function renderHist() {
+      if (histBox.hidden || !LH()) return;
+      const f = curFile(), l = S.lang, vs = LH().list(histStore(), l, f.name), now = Date.now();
+      if (histSel && !vs.includes(histSel)) histSel = null;
+      histBox.textContent = '';
+      const modeBtn = el('button', { class: 'btn quiet tiny', onclick: () => { histMode = histMode === 'compare' ? 'list' : 'compare'; renderHist(); } }, histMode === 'compare' ? 'Versions' : 'Compare files');
+      histBox.append(el('div', { class: 'panel-head' }, el('b', {}, histMode === 'compare' ? 'Compare two files' : 'History of ' + f.name), el('span', { class: 'spacer' }), modeBtn, el('button', { class: 'btn quiet', 'aria-label': 'Close', onclick: () => togglePanel('hist', false) }, '×')));
+      if (histMode === 'compare') return renderCompare();
+      if (!vs.length) { histBox.append(el('p', { class: 'panel-note' }, 'No earlier versions of this file yet. One is kept each time you run it, after half a minute without typing, and before Restore, Replace all, Reset to starter or the terminal changes it.')); return; }
+      histBox.append(el('p', { class: 'panel-note' }, 'Newest first. Choose one to see how it differs from the text now; Restore puts it back (the text now is kept as a version first). Up to ' + LH().PER_FILE + ' versions a file are kept on this device.'));
+      histBox.append(el('ol', { class: 'hist-list' }, vs.map((v) => {
+        const fc = LH().firstChange(v.code, f.code);
+        return el('li', {}, el('button', { class: 'hist-item' + (v === histSel ? ' on' : ''), 'aria-pressed': String(v === histSel), onclick: () => { const i = vs.indexOf(v); histSel = v === histSel ? null : v; renderHist(); const b = histBox.querySelectorAll('.hist-item')[i]; if (b) b.focus(); } },   // the list is drawn again: the focus stays on the item
+          el('span', { class: 'hist-time', title: new Date(v.t).toLocaleString() }, ago(v.t, now)), el('span', { class: 'hist-why' }, LH().WHY[v.why] || v.why),
+          el('span', { class: 'hist-meta' }, nLines(v.code) + ' · ' + (fc ? 'differs from line ' + fc : 'same as now'))));
+      })));
+      if (!histSel) return;
+      const v = histSel, d = diffView(v.code, f.code);
+      const restore = el('button', { class: 'btn primary tiny', disabled: v.code === f.code ? '' : null, onclick: () => restoreVersion(v) }, 'Restore this version');
+      histBox.append(el('div', { class: 'hist-diff-head' }, el('span', {}, d.st.added || d.st.removed ? 'Since this version: ' + d.st.added + ' line' + (d.st.added === 1 ? '' : 's') + ' added, ' + d.st.removed + ' removed' : 'The same as the text now'), restore),
+        el('p', { class: 'panel-note' }, '− only in that version   + only in the text now'), d.el);
+    }
+    function restoreVersion(v) {
+      const f = curFile(); if (v.code === f.code) return;
+      snapshot(S.lang, f, 'restore');
+      editor.replaceRange(0, editor.value.length, v.code);   // through the editor: Ctrl+Z takes it back, and the usual change handling runs
+      if (idleFile === f) { clearTimeout(idleT); idleFile = null; }   // the restored text is a version already
+      histSel = null; renderHist(); status.textContent = 'restored the version from ' + ago(v.t, Date.now()); setTimeout(() => { if (status.textContent.startsWith('restored')) status.textContent = ''; }, 4000);
+    }
+    // Compare files: any two tabs of the language, with the same diff (the first is "before", the second "after")
+    let cmpA = null, cmpB = null;
+    function renderCompare() {
+      const fs = S.files[S.lang];
+      if (!fs.includes(cmpA)) cmpA = curFile(); if (!fs.includes(cmpB) || cmpB === cmpA) cmpB = fs.find((x) => x !== cmpA) || cmpA;
+      const pick = (cur, set, label) => { const s = el('select', { class: 'teach-select', 'aria-label': label, onchange: () => { set(fs[+s.value]); renderHist(); } }, fs.map((x, i) => el('option', { value: String(i) }, x.name))); s.value = String(fs.indexOf(cur)); return s; };
+      histBox.append(el('div', { class: 'cmp-pick' }, pick(cmpA, (x) => { cmpA = x; }, 'First file'), el('span', {}, 'against'), pick(cmpB, (x) => { cmpB = x; }, 'Second file')));
+      if (fs.length < 2) { histBox.append(el('p', { class: 'panel-note' }, 'Make a second tab (+ New) to compare two files.')); return; }
+      const d = diffView(cmpA.code, cmpB.code);
+      histBox.append(el('p', { class: 'panel-note' }, (d.st.added || d.st.removed ? d.st.removed + ' line' + (d.st.removed === 1 ? '' : 's') + ' only in ' + cmpA.name + ' (−), ' + d.st.added + ' only in ' + cmpB.name + ' (+)' : 'The two files are the same.')), d.el);
+    }
+
+    // ----- find in all files (Ctrl+Shift+F, or Search files under the editor): every tab of this language, or of all of them
+    const sInp = el('input', { class: 'find-inp', id: 'lab-search', type: 'search', placeholder: 'Find in all files', 'aria-label': 'Find in all files', autocomplete: 'off', spellcheck: 'false' });
+    const sRep = el('input', { class: 'find-inp', placeholder: 'Replace with', 'aria-label': 'Replace in all files with', autocomplete: 'off', spellcheck: 'false' });
+    const sCase = el('input', { type: 'checkbox' }), sWord = el('input', { type: 'checkbox' }), sAll = el('input', { type: 'checkbox' });
+    const sCount = el('p', { class: 'panel-note', role: 'status' }), sResults = el('div', { class: 'search-results' });
+    const sReplBtn = el('button', { class: 'btn quiet tiny', onclick: (e) => replaceAcross(e.currentTarget) }, 'Replace all');
+    const searchBox = el('div', { class: 'lab-panel lab-search', hidden: '' },
+      el('div', { class: 'panel-head' }, el('b', {}, 'Find in all files'), el('button', { class: 'btn quiet', 'aria-label': 'Close', onclick: () => togglePanel('search', false) }, '×')),
+      el('div', { class: 'search-form' }, sInp, el('div', { class: 'search-opts' }, el('label', { class: 'find-opt' }, sCase, ' match case'), el('label', { class: 'find-opt' }, sWord, ' whole word'), el('label', { class: 'find-opt' }, sAll, ' all languages')),
+        el('div', { class: 'search-repl' }, sRep, sReplBtn)), sCount, sResults);
+    const sOpts = () => ({ matchCase: sCase.checked, word: sWord.checked });
+    const searchList = () => { const out = []; for (const l of sAll.checked ? Object.keys(LANG_INFO) : [S.lang]) for (const f of S.files[l]) out.push({ l, f, code: f.code }); return out; };
+    let sT = 0;
+    const schedSearch = () => { clearTimeout(sT); sT = setTimeout(runSearch, 250); };
+    function runSearch() {
+      clearTimeout(sT); sResults.textContent = ''; const q = sInp.value;
+      if (!q || searchBox.hidden) { sCount.textContent = ''; return; }
+      const list = searchList(), groups = LH().search(list, q, sOpts());
+      let total = 0;
+      for (const g of groups) {
+        const { l, f } = list[g.i]; total += g.matches.length;
+        sResults.append(el('div', { class: 'search-file' }, el('div', { class: 'search-fname' }, (sAll.checked ? LANG_INFO[l].label + ' · ' : '') + f.name, el('span', { class: 'find-count' }, ' ' + g.matches.length)),
+          g.matches.map((m) => { const c0 = m.col - 1, c1 = c0 + (m.e - m.s), lead = m.text.slice(0, c0);
+            return el('button', { class: 'search-hit', title: f.name + ', line ' + m.line, onclick: () => openMatch(l, f, m) }, el('span', { class: 'search-ln' }, String(m.line)),
+              el('span', { class: 'search-text' }, (lead.length > 40 ? '…' + lead.slice(-40) : lead).replace(/^\s+/, ''), el('mark', {}, m.text.slice(c0, c1)), m.text.slice(c1, c1 + 80))); })));
+      }
+      sCount.textContent = total ? (total >= LH().MAX_HITS ? 'the first ' + total : total) + ' match' + (total === 1 ? '' : 'es') + ' in ' + groups.length + ' file' + (groups.length === 1 ? '' : 's') : 'no matches';
+    }
+    function openSearch() {
+      if (!LH()) return;
+      const sel = editor.value.slice(editor.ta.selectionStart, editor.ta.selectionEnd);
+      if (sel && !sel.includes('\n')) sInp.value = sel; else if (!findBar.hidden && findInp.value) sInp.value = findInp.value;
+      togglePanel('search', true); runSearch(); sInp.focus(); sInp.select();
+    }
+    // A result opens its tab (and language) with the match selected; the text may have changed since the search, so it is looked for again
+    function openMatch(l, f, m) {
+      const i = S.files[l].indexOf(f); if (i < 0) { runSearch(); return; }
+      if (l !== S.lang) { S.active[l] = i; save(); switchLang(l); } else if (i !== S.active[S.lang]) activate(i);
+      const same = f.code.slice(m.s, m.e), q = sInp.value;
+      if (sCase.checked ? same === q : same.toLowerCase() === q.toLowerCase()) editor.select(m.s, m.e); else { editor.goToLine(m.line); runSearch(); }
+    }
+    // Replace all, across files: armed (a second click confirms, with the count); each file changed is kept in its History first
+    function replaceAcross(btn) {
+      const q = sInp.value; if (!q) return;
+      const plan = () => searchList().map((x) => Object.assign(x, LH().replaceIn(x.code, q, sRep.value, sOpts()))).filter((x) => x.n);
+      const p = plan(); if (!p.length) { sCount.textContent = 'no matches'; return; }
+      const n = p.reduce((a, x) => a + x.n, 0);
+      armConfirm(btn, 'Replace ' + n + ' in ' + p.length + ' file' + (p.length === 1 ? '' : 's') + '? Click again', () => {
+        let files = 0, count = 0;
+        for (const x of plan()) {   // again, in case a file changed while the button was armed
+          snapshot(x.l, x.f, 'replace'); files++; count += x.n;
+          if (x.l === S.lang && x.f === curFile()) editor.replaceRange(0, editor.value.length, x.code); else { x.f.code = x.code; if (errMark && errMark.file === x.f) errMark = null; }
+        }
+        save(); applyErrMark(); runSearch(); renderHist();
+        sCount.textContent = 'replaced ' + count + ' in ' + files + ' file' + (files === 1 ? '' : 's') + ' (History has each file as it was)';
+      });
+    }
+    sInp.addEventListener('input', schedSearch); sRep.addEventListener('keydown', (e) => { if (e.key === 'Escape') togglePanel('search', false); });
+    for (const c of [sCase, sWord, sAll]) c.addEventListener('change', runSearch);
+    sInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); runSearch(); const first = sResults.querySelector('.search-hit'); if (first) first.click(); } else if (e.key === 'Escape') { e.preventDefault(); togglePanel('search', false); editor.focus(); } });
+    const PANELS = { tpl: tplBox, ref: refBox, keys: keysBox, hist: histBox, search: searchBox };
+    function togglePanel(which, force) { const box = PANELS[which]; const show = force != null ? force : box.hidden; box.hidden = !show; if (show) for (const k in PANELS) if (k !== which) { PANELS[k].hidden = true; if (k !== 'keys') S.panels[k] = false; } if (which !== 'keys') S.panels[which] = show; save(); for (const [b, k] of [[keysBtn, 'keys'], [histBtn, 'hist'], [searchBtn, 'search']]) b.setAttribute('aria-expanded', String(!PANELS[k].hidden)); if (which === 'hist' && show) { histSel = null; histMode = 'list'; renderHist(); } if (show && window.innerWidth < 900 && box.scrollIntoView) box.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     if (S.panels.ref) refBox.hidden = false;
 
     // ----- output, stdin, turtle, trace, REPL
     const out = outputPanel({ tools: true, wrap: S.outWrap, onWrap: (on) => { S.outWrap = on; save(); } }); out.el.classList.add('lab-out');
     // ----- the terminal (src/terminal.js in front of src/shell.js). ~/lab in it mirrors the files here, both ways.
-    function removeLabFile(l, f) { const i = S.files[l].indexOf(f); if (i < 0) return; S.files[l].splice(i, 1); if (!S.files[l].length) S.files[l].push({ name: LANG_INFO[l].first, code: '' }); if (S.active[l] >= S.files[l].length) S.active[l] = S.files[l].length - 1; else if (i < S.active[l]) S.active[l]--; save(); }
+    function removeLabFile(l, f) { const i = S.files[l].indexOf(f); if (i < 0) return; S.files[l].splice(i, 1); histDrop(l, f.name); if (!S.files[l].length) S.files[l].push({ name: LANG_INFO[l].first, code: '' }); if (S.active[l] >= S.files[l].length) S.active[l] = S.files[l].length - 1; else if (i < S.active[l]) S.active[l]--; save(); }
     const term = window.TERMINAL && window.SHELL ? window.TERMINAL.mount({
       el, armConfirm, isTouch, Runners, isFull, cppStd: () => S.cppStd, stop,
-      labFiles: () => { const all = []; for (const l in LANG_INFO) for (const f of S.files[l]) all.push({ lang: l, name: f.name, code: f.code, set: (c) => { f.code = c; save(); }, remove: () => removeLabFile(l, f) }); return all; },
+      labFiles: () => { const all = []; for (const l in LANG_INFO) for (const f of S.files[l]) all.push({ lang: l, name: f.name, code: f.code, set: (c) => { if (c !== f.code) snapshot(l, f, 'terminal'); f.code = c; save(); }, remove: () => removeLabFile(l, f) }); return all; },
       addLabFile: (l, name, code) => { if (!hasLang(l)) return; S.files[l].push({ name: uniqueName(l, name), code }); save(); },
       labChanged: () => { if (editor.value !== curFile().code) editor.value = curFile().code; applyErrMark(); renderTabs(); renderStatusBar(); renderExBar(); renderAsgBar(); },
       openInEditor: (l, name, text, copy) => { if (!hasLang(l)) return; let idx = copy ? -1 : S.files[l].findIndex(f => f.name === name); if (idx < 0) { S.files[l].push({ name: uniqueName(l, name), code: text }); idx = S.files[l].length - 1; } S.active[l] = idx; save(); if (l !== S.lang) switchLang(l); else activate(idx); },
@@ -952,7 +1098,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     async function run() {
       if (running) return; if (tracer) tracer.stop(); endMem();
       const lang = S.lang, code = editor.value, proj = lang === 'java' ? javaProject() : null, args = argWords();
-      setErrMark(null);
+      setErrMark(null); histKept(lang, curFile(), 'run');
       out.start(commandLine(lang, proj, args));
       let exit = 0, stopped = false;
       const typed = typedOk(lang, code) && (stdinBox.hidden || !stdinTa.value.trim());
@@ -1261,6 +1407,8 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       el('div', { class: 'prose', html: `<ul>
 <li><b>Shortcuts</b> under the editor lists every key. <b>Ctrl/Cmd + Enter</b> runs the program, <b>Ctrl/Cmd + G</b> goes to a line. <b>Ctrl/Cmd + Z</b> and <b>Ctrl/Cmd + Y</b> undo and redo. <b>Ctrl/Cmd + F</b> finds, <b>Ctrl/Cmd + H</b> finds and replaces, <b>Ctrl/Cmd + /</b> comments or uncomments the selected lines.</li>
 <li><b>Tab</b> indents (four spaces; two in Scheme) and <b>Shift + Tab</b> outdents; with several lines selected it indents them all. Enter after a colon or brace indents the next line for you. <b>Alt + ↑/↓</b> moves the current line, <b>Ctrl/Cmd + D</b> duplicates it, <b>Ctrl/Cmd + S</b> downloads the file.</li>
+<li><b>History</b> (under the editor) keeps earlier versions of each file on this device: one each time you run it, one after half a minute without typing, and one before anything replaces the text (Restore, Replace all, Reset to starter, the terminal). Choose a version to see what changed since (removed lines red, added green), and <b>Restore</b> to put it back; the text you had is kept as a version first, and <b>Ctrl/Cmd + Z</b> also undoes it. <b>Compare files</b> there shows the differences between two tabs. A file keeps its history when renamed and loses it when closed.</li>
+<li><b>Search files</b> (or <b>Ctrl/Cmd + Shift + F</b>) finds text in every tab of this language, or of all of them, with <b>match case</b> and <b>whole word</b>; click a result to open that tab at that line. <b>Replace all</b> there changes every file at once after a second click to confirm, and keeps each file's text in its History first. <b>Side by side</b> puts the output, the input box and the terminal beside the editor when the window is wide enough.</li>
 <li>Brackets and quotes close themselves; type the closing one to skip over it. The matching bracket is highlighted when the cursor is next to one.</li>
 <li>Start typing a name and a list of completions appears: <b>↑ ↓</b> to choose, <b>Tab</b> or <b>Enter</b> to accept, <b>Esc</b> to dismiss.</li>
 <li><b>+ New</b> makes a file and asks for its name; <b>Rename</b> is under the editor (double-clicking a tab also works). <b>Save</b> downloads the file; <b>Open</b> loads files from your device; <b>Share link</b> copies a link that carries the program inside it. Errors that mention a line number have a "go to line" link, and the line is marked in the editor (a red pin in the margin; point at it for the message) until you change the file or run again. The output panel's title bar has <b>Copy</b>, <b>Wrap</b> (long lines wrapped or kept whole) and <b>Clear</b>.</li>
@@ -1276,9 +1424,25 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
 <li><b>Terminal</b> opens a command line under the output: a practice Unix shell with its own files (saved on this device). Your Code Lab files appear in its <code>lab</code> folder, so <code>python lab/main.py</code> runs the file in the editor; <code>nano</code> edits a file there, <code>edit file.py</code> opens it in the editor above. Type <code>help</code> for the list of commands; <b>Tab</b> completes names, <b>↑ ↓</b> recall commands, <b>Ctrl+R</b> searches them, <b>Ctrl+A</b> / <b>Ctrl+E</b> / <b>Ctrl+K</b> / <b>Ctrl+W</b> edit the line as in bash, <b>Ctrl+C</b> stops a program. It runs scripts with functions, <code>case</code>, arrays and aliases, and tools such as <code>awk</code>. <code>python</code>, <code>scheme</code> or <code>jshell</code> with no file start an interactive shell (<code>&gt;&gt;&gt;</code>, <code>1 ]=&gt;</code>, <code>jshell&gt;</code>) where each line is run at once.</li>
 <li>On a phone or tablet, the <b>Indent</b> and <b>Outdent</b> buttons under the editor stand in for the Tab key, and <b>Wrap</b> keeps long lines on screen.</li></ul>` }));
     const editorArea = el('div', { class: 'lab-editor-area' }, tabs, findBar, gotoBar, editor.el, statusBar);
-    const side = el('div', { class: 'lab-side' }, tplBox, refBox, keysBox);
-    const body = el('div', { class: 'lab-body' }, el('div', { class: 'lab-main' }, teach ? teach.panel : null, asgHost, exBar, toolbar, editorArea, exVerdict, argsBox, stdinBox, out.el, term ? term.el : null, traceBox, memBox, jsBox, substBox, turtleBox, replBox), side);
-    renderTabs(); renderToolbar(); applyWrap(); renderStatusBar(); renderExBar(); renderAsgBar(); engineChanged(); renderArgs();
+    const side = el('div', { class: 'lab-side' }, tplBox, refBox, keysBox, histBox, searchBox);
+    // Side by side: the editor on the left, what the program prints and reads on the right. Two columns of the same elements (.lab-work and
+    // .lab-outcol are plain blocks otherwise), only while the Lab's main column is wide enough: a side panel or a narrow window turns it off.
+    const outCol = el('div', { class: 'lab-outcol' }, exVerdict, argsBox, stdinBox, out.el, term ? term.el : null, traceBox, memBox, jsBox, substBox, turtleBox, replBox);
+    const work = el('div', { class: 'lab-work' }, editorArea, outCol);
+    const labMain = el('div', { class: 'lab-main' }, teach ? teach.panel : null, asgHost, exBar, toolbar, work);
+    const SPLIT_MIN = 860;   // px of the main column: two columns of about 420 px, the narrowest that still shows an 80-character line at the smallest font
+    function applySplit() {
+      const wide = labMain.clientWidth >= SPLIT_MIN || (!labMain.isConnected && window.innerWidth >= SPLIT_MIN + 80), on = !!S.split && wide;
+      work.classList.toggle('split', on); splitBtn.setAttribute('aria-pressed', String(!!S.split)); splitBtn.classList.toggle('on', !!S.split);
+      splitBtn.title = S.split && !wide ? 'Side by side is on, but the window (or the space beside a side panel) is too narrow for it: the panels stay under the editor' : 'Put the output, the input box and the terminal beside the editor instead of under it (on a wide screen)';
+    }
+    if (window.ResizeObserver) new ResizeObserver(() => applySplit()).observe(labMain); else window.addEventListener('resize', applySplit);
+    // Ctrl+Shift+F anywhere on the Lab page (the editor's own handler takes it first there); on the document, because a panel that is drawn
+    // again drops the focus to the body. It removes itself once the page is gone.
+    const onKey = (e) => { if (!main.isConnected) { document.removeEventListener('keydown', onKey); return; } if (!e.defaultPrevented && (e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && (e.key === 'f' || e.key === 'F')) { e.preventDefault(); openSearch(); } };
+    document.addEventListener('keydown', onKey);
+    const body = el('div', { class: 'lab-body' }, labMain, side);
+    renderTabs(); renderToolbar(); applyWrap(); renderStatusBar(); renderExBar(); renderAsgBar(); engineChanged(); renderArgs(); applySplit();
     if (term && S.panels.term) { term.show(false); termBtn.classList.add('on'); }
     if (pendingStep) {
       const ps = pendingStep; pendingStep = null;
@@ -1287,7 +1451,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       if (ps.mode === 'subst' && S.lang === 'scheme') setTimeout(startSubst, 0);
     }
     if (teach && (kind === 'assign' || kind === 'review' || /(^|&)b=/.test(query || ''))) setTimeout(() => teach.handleQuery(kind, query), 0);
-    main.append(head, help, body, el('footer', { class: 'foot' }, el('span', {}, (window.SITE || {}).footer || ''), el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Delete all Code Lab files on this device (and the terminal\'s)? Click again to confirm', () => { try { localStorage.removeItem(KEY); if (window.TERMINAL) localStorage.removeItem(window.TERMINAL.KEY); } catch (err) { } S = null; location.reload(); }) }, 'Reset the Code Lab')));
+    main.append(head, help, body, el('footer', { class: 'foot' }, el('span', {}, (window.SITE || {}).footer || ''), el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Delete all Code Lab files on this device (and the terminal\'s)? Click again to confirm', () => { try { localStorage.removeItem(KEY); if (LH()) localStorage.removeItem(LH().KEY); if (window.TERMINAL) localStorage.removeItem(window.TERMINAL.KEY); } catch (err) { } S = null; location.reload(); }) }, 'Reset the Code Lab')));
     setTimeout(() => editor.render(), 0);
     return main;
   }

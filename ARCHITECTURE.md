@@ -93,6 +93,7 @@ site/
     mathgrade.js         grader for non-code exercise kinds → window.MATHGRADE (shared with tests)
     app.js               router, pages, course editor, runners, grader, progress, widgets glue
     lab.js               Code Lab page → window.LAB
+    labhistory.js        the Code Lab's file history, line diff and find in all files (pure) → window.LABHIST; node: test_labhistory.js (§9)
     shell.js             the practice shell and its file system → window.SHELL (also required by node tests and backup.js) (§9f)
     shellgit.js          the practice git, registered into the shell with SHELL.register → window.SHELLGIT; node: test_git.js (§9f)
     terminal.js          the terminals in front of shell.js: the Code Lab panel, lesson examples and shell exercises → window.TERMINAL (§9f)
@@ -235,6 +236,7 @@ lesson 7 has `ma-13-1/2`, and lessons 8–13 have `ma-7-*` … `ma-12-*`.
 | `shortcourses.progress.v1` | app.js `Progress` | `{ done: {exId: timestamp}, code: {exId: savedCode or JSON answers}, pass: {exId: the code/answers that passed} }`; `markDone(id, code)` fills `pass` (for records without `pass`, the portfolio falls back to `code`, then to a Lab copy). A math exercise's answers are saved as `JSON.stringify` of one entry per input; a choice exercise therefore saves `[[indices]]` |
 | `shortcourses.theme` | app.js | `'light'` / `'dark'` |
 | `shortcourses.lab.v1` | lab.js | `{ lang, files: {python:[…], cpp:[…], java:[…], scheme:[…]}, active: {lang: idx}, fontSize, wrap, panels }`; a file is `{ name, code, ex?: {id, course, lesson}, asg?: assignmentId, asgSeen?, lastCheck? }` |
+| `shortcourses.labhistory.v1` | lab.js via `labhistory.js` | `{ v: 1, files: { lang: { fileName: [{ t, why, code }] oldest first } } }`; `why` is a key of `LABHIST.WHY` (run, edit, opened, restore, replace, reset, terminal). Caps: 30 versions a file, 400 000 characters of code in all (the oldest version anywhere goes first), 100 000 a version, 400 files; a text is stored once per file. Read through `LABHIST.clean` (null-prototype maps, names and languages checked). **Not in backups**: it is a cache of earlier versions of files whose current text is in the file already, it would add up to 400 KB to every backup, and merging two histories has no clear rule; "Reset the Code Lab" clears it |
 | `shortcourses.portfolio.v1` | portfolio.js | `{ name, note, unfinished, tasks, lab: ["<lang>/<file name>", …] }` (name starts as teach's `studentName` if set) |
 | `shortcourses.classroom.v1` | classroom.js | `{ on, scale: index into [1.1, 1.25, 1.4, 1.6, 1.8], spot }` |
 | `shortcourses.review.v1` | review.js | `{ v: 1, items: { id: { box 0-4, due, n, miss, last } } }`; id = `<course id>:<FNV-1a hash of the question and options, base 36>`; in the backup file (merge: the copy answered last wins) |
@@ -340,6 +342,25 @@ button and every Scheme playground not marked `expectError` a "Show the substitu
   the program's name. JSCPP calls `main` with no parameters, so C++ has none. The output panel's title bar (opt-in `outputPanel({tools})`) has
   Copy, Wrap (kept as `S.outWrap`) and Clear; Ctrl+G opens a go-to-line bar; the Shortcuts button under the editor lists every key (`KEYS_HTML`,
   kept in step with the keydown handlers).
+- **File history** (the **History** button under the editor; `src/labhistory.js`, pure, `test_labhistory.js`): versions of each file under
+  their own key (§7), keyed by language and file name: `rename` moves them with the file (the Lab's Rename), closing a tab or `rm` in the
+  terminal's `~/lab` drops them (a terminal `mv` is a remove and an add, so it loses the history). Lab.js `snapshot(l, f, why)` is called on Run,
+  after 30 s without typing (`histEdit`/`histFlush`; typing in another file keeps the first at once), at a file's first change in a visit
+  (`opened`: the text as it was), and before Restore, Replace all (one file or all), the teacher tools' Reset to starter / Put the starter
+  in the editor (`ctx.setCode`) and a terminal write-back. Templates, Open and share links make new tabs, so they replace nothing. The panel
+  lists the versions newest first and draws `LABHIST.diff` (an LCS line diff after trimming the common start and end; a middle larger than
+  4 million line pairs is shown as all removed then all added; lines compare with their newline, so a missing final newline is a change and
+  says so) folded by `hunks` to three lines of context, as text nodes. Restore goes through `editor.replaceRange`, so Ctrl+Z undoes it and the
+  usual change handling runs. **Compare files** in the same panel diffs any two tabs of the language.
+- **Find in all files** (Ctrl+Shift+F in the editor or anywhere on the page, the **Search files** button, or **In all files** in the find bar):
+  `LABHIST.search` over every tab of the language or of all (match case, whole word: no word character beside an end that is one; at most
+  1000 matches); a result opens its tab (switching language if needed) with the match selected, or at its line if the text has changed
+  since. Replace all is armed (`armConfirm`, with the count), keeps each changed file's text in its history first, and goes through the
+  editor for the current file (undoable) and straight into the others.
+- **Side by side** (`S.split`, a display choice of this device: `backup.js: cleanLab` leaves it out): `.lab-work` holds the editor area and
+  `.lab-outcol` (verdict, arguments, input, output, terminal, step-throughs, turtle, REPL); `.split` makes them two grid columns. `applySplit`
+  (a `ResizeObserver` on the main column) adds it only while that column is at least 860 px wide, so a narrow window or an open side panel
+  puts the panels back under the editor without changing the setting.
 - Bars above the editor: exercise bar (file has `ex`), assignment bar (file has `asg`), teacher panel.
 - `teach.js` is mounted with a `ctx` object: `{ el, S, save, editor, armConfirm, isTouch, grade,
   renderVerdict, status, renderToolbar, openAssignmentFile, openReviewFile }` and returns
