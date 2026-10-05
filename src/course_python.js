@@ -312,7 +312,7 @@ Total: 2.0</code></pre>
       title: 'Making decisions', summary: 'True and False, comparisons, if, elif and else, combining conditions with and, or and not, and the order in which Python checks them.',
       blocks: [
         `<p>Every time you press a button in a game, the program asks questions. Is the player touching the ground? Is there a wall to the left? Has the timer run out? A fast game asks thousands of such questions every second, and what happens next depends on each answer. Those yes-or-no questions, and the choices that follow them, are this lesson. So how do you ask a yes-or-no question in Python, and how does a program choose what to do with the answer?</p>`,
-        { photo: 'minetest', caption: "Minetest, a free game of blocks much like Minecraft. Can the player walk forward, or is a tree in the way? Is the block underfoot solid, or water? Every step in a game like this is decided by questions like these." },
+        { photo: 'minetest', caption: "Minetest (now called Luanti), a free game of blocks much like Minecraft. Can the player walk forward, or is a tree in the way? Is the block underfoot solid, or water? Every step in a game like this is decided by questions like these." },
         `
 <p>So far every program ran the same lines every time. Real programs <em>branch</em>: they do one thing in one situation and something else in another. A thermostat turns the heat on or off, a game checks whether you have won, a website checks whether your password is right. Each of these asks a question with a yes-or-no answer and then chooses what to do. This lesson is about both halves: asking the question, and choosing.</p>
 <h2>Questions: True and False</h2>
@@ -1475,7 +1475,7 @@ print(len(ojibwe))`, caption: 'It prints bear, then 4, then water (noun), then 5
 print("fig" in prices, "mango" in prices)
 print(prices.get("apple", 0))
 print(prices.get("mango", 0))     # not there: the fallback, 0
-print(prices["mango"])            # not there: an error`, expectError: true, caption: 'True False, then 0.5 and 0, and then the last line raises KeyError: mango. Delete it and the program runs cleanly.' },
+print(prices["mango"])            # not there: an error`, expectError: true, caption: 'True False, then 0.5 and 0, and then the last line raises a <code>KeyError</code> naming mango. Delete it and the program runs cleanly.' },
         { skill: 'dict-get', check: "Which expression looks up <code>\"pear\"</code> safely, giving 0 if it is missing?", options: ["<code>d[\"pear\"] or 0</code>", "<code>d.get(\"pear\", 0)</code>", "<code>d[\"pear\", 0]</code>"], answer: 1, why: "<code>get</code> returns the value if the key is there and the fallback if not, without an error. <code>d[\"pear\"]</code> raises KeyError first.", wrong: ["This believes <code>or 0</code> can rescue a missing key. The square brackets raise KeyError before <code>or</code> is ever reached; <code>or</code> only helps with a value that is there but false.", null, "This believes a lookup can take a fallback inside square brackets. Square brackets take one key; <code>d[\"pear\", 0]</code> looks for the key <code>(\"pear\", 0)</code>, a tuple, and raises KeyError."] },
         `<p>Use square brackets when a missing key would be a bug, so that the error tells you about it (Lesson 9). Use <code>get</code> when a missing key is a normal situation, such as a word you have not counted yet. One more trap: <code>in</code> checks the <em>keys</em> only. <code>"bear" in ojibwe</code> is <code>False</code>, because "bear" is a value, not a key.</p>
 <h2>Looping over a dictionary</h2>
@@ -2115,7 +2115,7 @@ print(is_sorted([1, 3, 3, 8]), is_sorted([3, 1, 2]))`, caption: 'Prints 3 (the 1
             solution: 'def histogram(xs):\n    counts = {}\n    for x in xs:\n        counts[x] = counts.get(x, 0) + 1\n    return sorted(counts.items())\n\nprint(histogram([3, 1, 3, 2, 1, 3]))',
             hints: ['Count with the pattern from the dictionaries lesson: counts[x] = counts.get(x, 0) + 1 inside the loop over xs.', 'counts.items() gives the (key, value) pairs, and sorted(...) puts them in order, by the key first. Return that list.'],
             tests: [{ call: 'histogram([3, 1, 3, 2, 1, 3])', expect: '[(1, 2), (2, 1), (3, 3)]' }, { call: 'histogram([])', expect: '[]' }, { call: 'histogram([5])', expect: '[(5, 1)]' }, { call: 'histogram([2, 2, 2, 2])', expect: '[(2, 4)]' }, { call: 'histogram(["b", "a", "b"])', expect: "[('a', 1), ('b', 2)]" }],
-            failTip: 'If the pairs come out in a different order, sort them: a dictionary does not promise any order. If you get a KeyError, use get for the first time a value is seen.',
+            failTip: 'If the pairs come out in a different order, sort them: a dictionary keeps the order in which its keys were first added, which is not the sorted order the exercise asks for. If you get a KeyError, use get for the first time a value is seen.',
             followup: 'Use histogram on 600 numbers from random.randint(1, 6) and print each pair. How far from 100 does each count wander?'
           }
         },
