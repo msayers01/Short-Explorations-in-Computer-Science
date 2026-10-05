@@ -1,4 +1,5 @@
-# Differential cases for the practice shell (test_diff.js). The files below exist in the home directory for every case;
+# Differential cases for the practice shell (test_diff.js). awk cases keep to what mawk (this sandbox) and gawk (CI) agree on: their error
+# messages, 1e20's formatting and the grammar of an unparenthesized ?: after print differ, so those are checked in test_shell.js instead. The files below exist in the home directory for every case;
 # each case is one or more command lines, separated by a line of ===. Lines starting with # are comments.
 @file fruit.txt
 banana
@@ -360,6 +361,32 @@ sed -n '2,3p' fruit.txt
 sed '1d' grades.csv
 ===
 sed 's/a/[&]/' fruit.txt
+===
+sed 's/a/A/; s/e/E/g' fruit.txt
+===
+sed -e 's/a/A/' -e 's/n/N/2' fruit.txt
+===
+sed -n '/an/p; /^1/=' fruit.txt
+===
+sed '/apple/,/Banana/d' fruit.txt
+===
+sed -n '2,$p' nums.txt; sed -n '$p' nums.txt fruit.txt
+===
+sed '3q' fruit.txt; sed -n '/^[0-9]/!p' fruit.txt
+===
+sed 's/\(.\)\(.\)/\2\1/; s/a/\&/g' fruit.txt
+===
+sed -E 's/(an)+/<&>/g; s/[0-9]+$/#/' fruit.txt
+===
+sed 's/,/;/gp' grades.csv; sed -n 's/9/nine/p' grades.csv
+===
+sed 's/a/b' fruit.txt; echo "st $?"; sed 'k' fruit.txt; echo "st $?"; sed 's/a/b/z' fruit.txt; echo "st $?"
+===
+sed -i 's/cat/dog/; 2d' words.txt; cat words.txt
+===
+sed '2,1d' fruit.txt; sed -n '/a/,2p' nums.txt fruit.txt
+===
+sed 'y/abn/ABN/' fruit.txt; sed 'y/ab/x/' fruit.txt; echo "st $?"; sed 'y/a/' fruit.txt; echo "st $?"
 ===
 echo "a b c" | xargs -n 1 echo
 ===
@@ -852,3 +879,406 @@ f=photo.JPG; echo ${f%.*}.png ${f##*.} ${f,,}
 s="two  words"; echo "${s// /_}" "${s/ /_}" ${s%% *} ${s##* }
 ===
 n=12345; echo ${n:1:3} ${n#1} ${n%5} ${n/3/x} ${#n}
+===
+# functions: arguments, local, return, recursion, nesting, printing
+f() { echo "in f: $1 $# $@"; }; f a b; f; echo $?
+===
+greet() { local name=$1; echo "Hello, $name"; }; name=Bob; greet Ada; echo $name
+===
+f() { local x; echo "[$x]"; x=inner; }; x=outer; f; echo $x
+===
+f() { local s=$1; echo "$s"; }; f "a  b"
+===
+fact() { if [ $1 -le 1 ]; then echo 1; else echo $(( $1 * $(fact $(( $1 - 1 ))) )); fi; }; fact 6
+===
+fib() { local n=$1; if (( n < 2 )); then echo $n; return; fi; local a=$(fib $((n-1))) b=$(fib $((n-2))); echo $((a+b)); }; fib 10
+===
+is_even() { return $(( $1 % 2 )); }; is_even 4 && echo even; is_even 3 || echo odd
+===
+f() { return 300; }; f; echo $?
+===
+f() { return abc; echo no; }; f; echo $?
+===
+return; echo $?
+===
+local x=1; echo $?
+===
+FUNCNEST=20; g() { g; }; g; echo same line
+echo next $?
+===
+function k { echo kw "$@"; }; k 1 2; function k2() { echo two; }; k2
+===
+f() { shift; echo $1; }; f a b c; echo "[$1]"
+===
+f() { for a in "$@"; do echo "[$a]"; done; }; f "one two" three
+===
+count() { echo $#; }; count "$@"; set -- x y; count "$@"
+===
+f() { echo func; }; unset -f f; f
+===
+f() { echo func; }; unset f; f
+===
+ls() { echo "my ls"; }; ls; command ls notes
+===
+f() { echo func; }; command f; echo $?
+===
+lf() { echo one; echo two; } > lf.txt; lf; cat lf.txt
+===
+f() { echo hi; ls -l | wc -l && echo ok || echo no; x=1; }; declare -f f
+===
+g() { if [ "$1" = a ]; then echo A; elif true; then echo B; else echo C; fi; for x in 1 2; do echo $x; done; while false; do :; done; }; type g
+===
+h() { case $1 in a|b) echo ab;; *) echo other ;; esac; local y=2 z; return 3; }; declare -f h
+===
+k() { (cd /; pwd) > /dev/null 2>&1; { echo g; }; echo "$@" >> out; }; declare -f k
+===
+m() ( echo sub ); declare -f m; m
+===
+n() { for i; do echo $i; done; until false; do break; done; cat < fruit.txt; ! true; echo $((1+2)) 2>/dev/null; }; declare -f n
+===
+f() { :; }; g() { :; }; declare -F; type -t f; type f nope; echo $?
+===
+declare -f nope; echo "df $?"; declare -F nope; echo "dF $?"; unset -f nope; echo "uf $?"
+===
+type cd if case time
+===
+# break and continue
+for i in 1 2 3 4 5; do [ $i = 2 ] && continue; [ $i = 4 ] && break; echo $i; done
+===
+for i in 1 2; do for j in a b; do continue 2; echo no; done; echo no2; done; echo "c $i $j"
+===
+for i in 1 2; do for j in a b; do break 2; done; done; echo "$i $j"
+===
+break; echo "b $?"
+===
+i=0; until [ $i -ge 3 ]; do i=$((i+1)); [ $i = 2 ] && continue; echo $i; done
+===
+# case
+case abc in a*) echo A;& b*) echo B;; c*) echo C;; esac
+===
+case abc in a*) echo A;;& *c) echo C;; esac
+===
+case "x y" in "x y") echo quoted;; esac
+===
+p='a*'; case abc in $p) echo pat;; esac; case 'a*' in "$p") echo lit;; esac; case abc in "$p") echo no;; *) echo star;; esac
+===
+case z in [a-c]) echo no;; ?) echo q;; esac; case x in (x) echo paren;; esac
+===
+for f in fruit.txt notes grades.csv nope; do case $f in *.txt) echo "$f: text";; *.csv|*.tsv) echo "$f: table";; *) if [ -d $f ]; then echo "$f: dir"; else echo "$f: ?"; fi;; esac; done
+===
+case x in
+  x)
+    echo multi
+    ;;
+  *) echo no
+esac
+===
+case x in x) ;; esac; echo $?; case nomatch in a) echo a;; esac; echo $?; case x in x) false;; esac; echo $?
+===
+case x in x) echo y
+===
+# (( )), for (( )), arithmetic with $( ) and ?:
+for ((i=0; i<3; i++)); do echo -n $i; done; echo
+===
+i=0; while (( i < 3 )); do (( i++ )); done; echo $i
+===
+(( 1/0 )); echo "a $?"; (( 0 )); echo "z $?"; (( 2 )); echo $?
+===
+echo $(( 5 > 3 ? 10 : 20 )) $(( $(echo 3) + `echo 4` + $((1+1)) ))
+===
+# assignments are not split or globbed
+x=*; echo "$x"; y=$(printf 'a\nb'); echo "$y"
+===
+x=~; echo $x; y=~/notes; echo $y
+===
+# indexed arrays
+a=(x y z); echo ${a[0]} ${a[2]} ${a[5]} ${#a[@]} ${!a[@]} ${a[-1]} ${a}; a[7]=w; echo ${!a[@]}; a+=(v u); echo ${!a[@]}; echo "${a[*]}"
+===
+a=(x y z); echo ${a[-9]}; echo "neg $?"
+===
+a=(x y); a[-9]=q; echo "negw $?"
+echo next
+===
+a=(x y z); declare -p a; b='q"r$'; declare -p b; declare -p nope; echo $?
+===
+a=("one two" three); for x in "${a[@]}"; do echo "[$x]"; done; for x in ${a[@]}; do echo "<$x>"; done; for x in "${a[*]}"; do echo "{$x}"; done
+===
+a=(); echo ${#a[@]}; for x in "${a[@]}"; do echo never; done; echo "[${a[@]}]"; declare -p a
+===
+a=(1 2 3 4 5); echo ${a[@]:1:2} ${a[@]:3} ${a[@]: -2}
+===
+i=1; a=(p q r); echo ${a[i]} ${a[$i]} ${a[i+1]} ${#a[1]}
+===
+a=(p q r); a[$((1+1))]=R; i=0; a[i]=P; echo "${a[@]}"
+===
+x=(1 2 3); unset 'x[1]'; declare -p x; echo ${#x[@]}; unset x; echo ${#x[@]}
+===
+y=abc; y+=def; echo $y; n=(1); n+=(2 3); echo "${n[@]}"; s=str; s+=(more); declare -p s
+===
+s=str; s[2]=z; declare -p s; echo $s
+===
+a=(*.txt); echo ${#a[@]} "${a[0]}"
+===
+a=(1 2 3); echo $((a[0] + a[1] + a[2])); a[1]+=5; echo ${a[1]}; (( a[2] *= 3 )); echo ${a[@]}
+===
+words=($(cat words.txt)); echo ${#words[@]} ${words[3]}
+===
+declare -a e2; declare -p e2; declare -a l=(1 2); declare -p l
+===
+f() { local -a arr=(1 2 3); echo ${#arr[@]}; }; f; echo ${#arr[@]}
+===
+read -a arr < words.txt; echo "${arr[1]} ${#arr[@]}"
+===
+a=(b c a); for i in "${!a[@]}"; do echo "$i=${a[i]}"; done
+===
+x=5; declare -p x; export x; declare -p x
+===
+# aliases: a script needs shopt -s expand_aliases, and an alias works from the next line
+shopt -s expand_aliases
+alias ll='ls -d'
+type ll; type -t ll
+ll notes
+alias x=echo; x same line
+x next line
+alias 'a b=c'
+alias q
+unalias q; echo $?
+alias
+unalias -a; alias; echo "al $?"
+===
+shopt -s expand_aliases
+alias e="echo 'it'\''s'"; alias e
+e
+===
+alias ll='ls -d'
+ll notes
+===
+shopt -s expand_aliases
+alias l='ls ' n='notes'
+l n
+alias ls='ls -1'
+ls notes
+alias g='grep -c' w=words.txt
+g the w
+===
+shopt -s expand_aliases
+alias two='echo one; echo two'
+two
+alias p='echo piped |'
+p cat
+===
+shopt -s expand_aliases
+alias a1=a2 a2=a1
+a1
+===
+shopt foo; echo $?; shopt expand_aliases; echo $?
+===
+# new commands
+expr; echo "st $?"
+===
+expr 1 +; echo "st $?"
+===
+expr 1 + a; echo "st $?"
+===
+expr 4 / 0; echo "st $?"
+===
+expr 1 2; echo "st $?"
+===
+expr 3 \* 4 ; expr 0 + 0; echo "st $?"; expr abc : 'a\(.*\)'; expr abc : 'x'; echo "st $?"; expr length hello; expr 2 \< 10; expr b \< a; echo $?; expr "" ; echo $?; expr substr hello 2 3; expr index hello l
+===
+expr \( 1 + 2 \) \* 3; expr 1 = 1; expr a != b; expr 0 \| 5; expr 3 \& 0; expr -5 % 3; expr 10 / 3; expr 99999999999999999999 + 1; echo $?
+===
+expr '(' 1; echo $?
+===
+expr report.txt : '\(.*\)\.txt'; expr abc : 'a.'; expr 10 \> 9; expr abc \> abd; expr 00; echo $?
+===
+basename /a/b/c.txt .txt; basename /a/b/; basename /; basename; echo "st $?"
+===
+basename a b c; echo "st $?"
+===
+basename -a x/y z/w; basename -s .c a.c b.c; basename .txt .txt
+===
+dirname /a/b/c; dirname a; dirname a/; dirname /; dirname //x; dirname; echo "st $?"
+===
+dirname a/b c/d
+===
+realpath notes/../fruit.txt | sed 's|.*/home/|/home/|'; realpath nope/x; echo "st $?"; realpath -e nope; echo "st $?"
+===
+realpath fruit.txt/x; echo $?
+===
+du -s notes; du -sh notes; du notes; du nope; echo "st $?"
+===
+seq 2000 > big; mkdir d; mv big d; du -sh d; du -s d; du -ah d
+===
+printf 'abc' | md5sum; printf 'abc' | sha256sum; md5sum fruit.txt nope; echo "st $?"; sha256sum fruit.txt words.txt
+===
+yes | head -2; yes ab c | head -2
+===
+yes | head -c 10000 | wc -c
+===
+comm notes/a.txt notes/b.md
+===
+sort fruit.txt > s1; printf 'apple\ncherry\nzebra\n' > s2; comm s1 s2; echo "st $?"; comm -12 s1 s2; comm -3 s1 s2; comm -23 s1 s2
+===
+printf 'b\na\nc\n' > u.txt; printf 'a\nc\nd\n' > t.txt; comm u.txt t.txt; echo "st $?"
+===
+comm fruit.txt; echo "st $?"
+===
+printf 'abcdefghij klm nop\tq\n' | fold -w 5; printf 'hello world foo bar\n' | fold -s -w 8; printf 'abc' | fold -w 2; echo
+===
+fold -w 3 words.txt; fold -w 0 words.txt; echo $?
+===
+fold -s -w 10 words.txt; fold -w10 fruit.txt | head -3
+===
+paste fruit.txt nums.txt; paste -d , fruit.txt nums.txt grades.csv; paste -s nums.txt; paste -s -d ':,' nums.txt
+===
+printf '1\n2\n3\n' | paste - -; paste fruit.txt nope; echo "st $?"
+===
+seq 6 | paste -s -d+ ; seq 4 | paste - - -
+===
+paste -d '\t,' fruit.txt nums.txt grades.csv | head -3
+===
+time -p true 2>&1 | wc -l
+===
+# awk (the real one here is mawk)
+awk '{ print $1 }' grades.csv
+===
+awk -F , '{ print $1 }' grades.csv
+===
+awk -F , '$2 > 85 { print $1 }' grades.csv
+===
+awk -F , 'NR > 1 { total += $2 } END { print total / (NR - 1), NR }' grades.csv
+===
+awk 'NR % 2 == 0' fruit.txt
+===
+awk '{ n[$1]++ } END { for (w in n) print w, n[w] }' fruit.txt | sort
+===
+awk '{ print NF, $NF }' words.txt
+===
+awk 'BEGIN { x = 1; y = "2"; print x + y, x y, x "" y, 1/4, 2^10, 7 % 3, -7 % 3 }'
+===
+awk 'BEGIN { printf "%5.2f|%-5d|%05d|%x|%o|%e|%g|%s|%c|%%\n", 3.14159, 42, 42, 255, 8, 1234.5, 0.0001, "hi", 65 }'
+===
+awk 'BEGIN { printf "%.3g %g %g %g %G\n", 3.14159, 1e10, 123456, 1234567, 0.00001234 }'
+===
+awk 'BEGIN { s = "hello world"; print length(s), substr(s, 1, 5), substr(s, 7), index(s, "o"), toupper(s), tolower("ABC") }'
+===
+awk 'BEGIN { n = split("a:b:c", parts, ":"); print n, parts[1], parts[3]; n = split("  x  y ", w); print n, w[1] w[2] }'
+===
+awk '{ gsub(/a/, "A"); print }' fruit.txt
+===
+awk '{ sub(/an/, "[&]"); print }' fruit.txt
+===
+awk 'BEGIN { s = "aaa"; n = gsub(/a*/, "-", s); print n, s; t = "abc"; gsub(/x*/, "-", t); print t }'
+===
+awk 'BEGIN { if (match("foobar", /ob+/)) print RSTART, RLENGTH; else print "no" }'
+===
+awk '/an/ { print NR": "$0 }' fruit.txt
+===
+awk '!/an/' fruit.txt
+===
+awk '$1 ~ /^[0-9]+$/ && $1 > 9' fruit.txt
+===
+awk '$1 == "apple", $1 == "Banana"' fruit.txt
+===
+awk 'BEGIN { for (i = 1; i <= 5; i++) { if (i == 2) continue; if (i == 4) break; print i } }'
+===
+awk 'BEGIN { i = 0; while (i < 3) print i++; do { print "do", i } while (i++ < 4) }'
+===
+awk 'BEGIN { x = 5; x += 2; x *= 3; x -= 1; x /= 4; x %= 3; x ^= 2; print x; print x++ + ++x, x-- , --x }'
+===
+awk 'BEGIN { a["x"] = 1; delete a["x"]; print length(a); a[1]; print (1 in a), (2 in a); delete a; print length(a) }'
+===
+awk 'BEGIN { a[1,2] = "p"; for (k in a) { split(k, q, SUBSEP); print q[1], q[2] } ; if ((1,2) in a) print "yes" }'
+===
+awk '{ $2 = "X"; print; print NF }' words.txt
+===
+awk '{ NF = 2; print }' words.txt
+===
+awk 'BEGIN { OFS = "-" } { $1 = $1; print }' words.txt
+===
+awk -v n=3 'BEGIN { print n * 2 }'
+===
+awk '{ print FILENAME, FNR, NR }' notes/a.txt notes/b.md
+===
+awk 'END { print NR, $0 }' fruit.txt
+===
+awk 'NR == 2 { exit 3 } { print }' fruit.txt; echo $?
+===
+awk 'BEGIN { exit 1 } END { print "end" }'; echo $?
+===
+awk '{ print > "out.txt" } END { print "done" }' fruit.txt; cat out.txt | head -2
+===
+awk 'BEGIN { print (1 > 2 ? "a" : "b"); print 7 > "out.txt" }'; cat out.txt
+===
+awk 'BEGIN { print (1 > 2) ? "a" : "b" }'
+===
+awk '{ s = s $0 "," } END { print s }' nums.txt
+===
+awk 'BEGIN { print 1 == 1.0, "a" < "b", "10" < "9", 10 < 9 }'
+===
+awk '{ print ($1 < $2) }' words.txt; echo '10 9' | awk '{ print ($1 < $2) }'
+===
+awk 'BEGIN { print int(3.9), int(-3.9), sqrt(16), exp(0), log(1), sin(0), cos(0), atan2(0, 1) }'
+===
+awk 'BEGIN { print 0.1 + 0.2, 1e6, 123456789, 3/2, 100/3 }'
+===
+awk 'BEGIN { CONVFMT = "%.2f"; x = 3.14159; y = x ""; print y; OFMT = "%.1f"; print x }'
+===
+awk 'BEGIN { printf("%d-%d\n", 1, 2) }'
+===
+awk '{ printf "%-10s|%5s|\n", $1, NR }' fruit.txt | head -3
+===
+echo "a,b;c" | awk -F '[,;]' '{ print $3, NF }'
+===
+printf 'a\tb c\n' | awk -F '\t' '{ print $2 }'
+===
+awk 'BEGIN { x; print length(x), x + 0, (x == 0), (x == "") }'
+===
+awk '{ print length }' fruit.txt | head -2
+===
+awk '{ print $1 }' nope 2>/dev/null; echo $?
+===
+awk '{ print $1 ' fruit.txt 2>/dev/null || echo failed
+===
+awk 'BEGIN { print index("abc", ""), length("") }'
+===
+awk 'BEGIN { RS = "" } { print NR ": " $1 }' words.txt
+===
+awk '{ $0 = "x y"; print $2 }' words.txt
+===
+awk 'BEGIN { a = "3x"; print a + 1, -a, !a, !"" }'
+===
+awk 'BEGIN { print 10 % 3 * 2, 2 ^ 3 ^ 2, -2 ^ 2 }'
+===
+awk 'BEGIN { print "a" > "/dev/stderr" }' 2>&1
+===
+awk '{ print $(NF - 1) }' words.txt
+===
+awk '{ for (i = NF; i > 0; i--) printf "%s%s", $i, (i > 1 ? " " : "\n") }' words.txt
+===
+awk -v 'msg=hi\tthere' 'BEGIN { print msg }'
+===
+awk 'BEGIN { printf "%5.1f%%\n", 45.678 }'
+===
+awk 'BEGIN { printf "%.0f %.0f %.0f %.2f\n", 2.5, 3.5, 0.5, 0.125 }'
+===
+awk 'BEGIN { printf "%+d % d %+.2e %i|%5.3d|%-+5d|%x\n", 5, 5, 12345, 42, 7, 3, -1 }'
+===
+awk 'BEGIN { printf "%10.3s|\n", "abcdef" }'
+===
+echo 65 | awk '{ printf "%c\n", $1 }'
+===
+printf 'a b\n\nc d\ne\n\n\nf\n' | awk 'BEGIN { RS = "" } { print NR ": " $0 "|" NF }'
+===
+printf 'a b\n' | awk '{ $5 = "e"; print; print NF }'
+===
+awk 'BEGIN { print 1; exit; print 2 } END { print "end" }'
+===
+printf '3\n1\n2\n' | awk '{ s += $1 } END { print s, s / NR }'
+===
+awk 'BEGIN { x = "abc"; print x ~ "b", x ~ /^a/, "b" ~ x }'
+===
+awk -F, -f prog.awk grades.csv 2>/dev/null || echo failed; printf 'NR > 1 { print $2 }\n' > prog.awk; awk -F, -f prog.awk grades.csv
+===
+ls -d; ls -d -F

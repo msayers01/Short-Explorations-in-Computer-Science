@@ -37,7 +37,7 @@ window.GUIDE = (function () {
   <h2>1. How the site works</h2>
   <p>The site is one web page. It runs entirely inside the browser: nothing is installed, nobody signs in, and nothing about a student is sent anywhere. Three things follow from that.</p>
   <ul class="g-list">
-    <li><b>It works wherever a browser works.</b> A school laptop, a Chromebook, a phone, a computer that lost its internet after the page loaded, even a copy on a USB stick. (One exception: <em>Modern C++</em> and the <em>Full C++</em> choice in the Code Lab download a real compiler once, about 28 MB, and need the site opened from a web address.)</li>
+    <li><b>It works wherever a browser works.</b> A school laptop, a Chromebook, a phone, a computer that lost its internet after the page loaded, even a copy on a USB stick. (One exception: <em>Modern C++</em> and the <em>Full C++</em> choice in the Code Lab download a real compiler once, about 29 MB, and need the site opened from a web address.)</li>
     <li><b>Work is saved on the device, not in an account.</b> A student who uses the same computer sees their progress next time. A student who switches computers starts fresh there, unless they take their work along (section 9).</li>
     <li><b>Work moves between people as links.</b> Your assignment is a link. A student's submission is a link. Share them the way your class already shares things.</li>
   </ul>
@@ -59,9 +59,9 @@ window.GUIDE = (function () {
       <tr><td><b>SC 103 Introduction to C++</b><br><span class="g-muted">13 lessons</span></td><td>Grades 10–12, after Python or with some experience.</td><td>Meet types, pointers and arrays; see what happens under the hood; finish with a prime-number sieve.</td></tr>
       <tr><td><b>SC 104 The Mathematics of Computing</b><br><span class="g-muted">16 lessons</span></td><td>Grades 10–12, or a strong 9th grader, after Python. Algebra only.</td><td>Logic, sets, proof, number theory, graphs, machines with finite memory, what no program can compute, and how codes work. Most of its exercises are written answers, not programs.</td></tr>
       <tr><td><b>SC 105 Modern C++</b><br><span class="g-muted">10 lessons</span></td><td>Grades 11–12, after SC 103.</td><td>Strings, vectors, classes, algorithms and maps with a real compiler. Needs the one-time download and a web address.</td></tr>
-      <tr><td><b>SC 106 Introduction to Java</b><br><span class="g-muted">15 lessons</span></td><td>Grades 10–12, after Python or with some experience. The language of AP Computer Science A.</td><td>Read the compiler’s messages, declare typed variables, make decisions, read input, write loops and methods, use arrays, Strings and ArrayLists, and write classes. Checked with the real compiler’s own error messages, in the browser.</td></tr>
-      <tr><td><b>SC 107 Data Structures and Algorithms</b><br><span class="g-muted">15 lessons</span></td><td>Grades 11–12, after Java or C++. The second course of every computer science degree.</td><td>Count the cost of code and name its order of growth; arrays and growing arrays; binary search; selection, insertion, merge sort and quicksort; linked lists, stacks and queues; recursion. Every structure as a figure to step through, code to write and a count to predict.</td></tr>
-      <tr><td><b>SC 108 The Command Line</b><br><span class="g-muted">4 lessons so far</span></td><td>Grades 7–12. No experience needed; pairs with any course.</td><td>The Unix shell in a practice terminal: where am I, paths and cd; making, copying, moving and removing files, wildcards; reading, counting and searching files with cat, wc, grep and find; pipes and redirection. Later lessons: running programs, Windows, scripts.</td></tr>
+      <tr><td><b>SC 106 Introduction to Java</b><br><span class="g-muted">15 lessons</span></td><td>Grades 10–12, after Python or with some experience. The language of AP Computer Science A.</td><td>Read the compiler’s messages, declare typed variables, make decisions, read input, write loops and methods, use arrays, Strings and ArrayLists, write classes, then inheritance and interfaces, exceptions, HashMap and HashSet, and a crafting-table project. Three checkpoint lessons. Checked with the real compiler’s own error messages, in the browser.</td></tr>
+      <tr><td><b>SC 107 Data Structures and Algorithms</b><br><span class="g-muted">15 lessons</span></td><td>Grades 11–12, after Java (SC 106). The second course of every computer science degree.</td><td>Count the cost of code and name its order of growth; arrays and growing arrays; binary search; selection, insertion, merge sort and quicksort; linked lists, stacks and queues; recursion; hash tables; binary search trees; heaps and priority queues; graphs, breadth-first and depth-first search and Dijkstra’s shortest routes; a word-counting project. Three checkpoint lessons. Every structure as a figure to step through, code to write and a count to predict, all in Java.</td></tr>
+      <tr><td><b>SC 108 The Command Line</b><br><span class="g-muted">5 lessons so far</span></td><td>Grades 7–12. No experience needed; pairs with any course.</td><td>The Unix shell in a practice terminal: where am I, paths and cd; making, copying, moving and removing files, wildcards; reading, counting and searching files with cat, wc, grep and find; pipes and redirection; then a checkpoint lesson. Later lessons: running programs, Windows, scripts.</td></tr>
       <tr><td><b>SC 109 How Machines Learn</b><br><span class="g-muted">8 lessons so far</span></td><td>Grades 9–12, after SC 101 up to Dictionaries (lesson 11).</td><td>Build the models behind machine learning in Python, small enough to read every line: a spam filter that learns from labelled messages, k nearest neighbours, the honest test (training and test sets, accuracy, the confusion table, overfitting), the perceptron, gradient descent, and decision trees built by information gain. The first course written to the lesson standard: named skills, and a checkpoint lesson of mixed questions after every three lessons.</td></tr>
     </tbody>
   </table>
@@ -69,7 +69,7 @@ window.GUIDE = (function () {
   <p><b>Suggested paths.</b> A one-semester elective: Python, then the mathematics course. A two-year sequence adds C++, Java and Lisp. A single Hour of Code event: Python lesson 1 alone.</p>
   <p><b>Lesson length.</b> Programming lessons take 45–60 minutes. Mathematics lessons take 60–90, because proofs are read slowly. Any lesson likely to run past an hour is marked "Longer than an hour" in its course list, with an estimate; split it over two periods.</p>
   <p><b>Finding a course.</b> The <em>Courses</em> button in the top bar lists every course in three groups (start here, programming languages, computer science), with a search box: type a language, a topic or a grade.</p>
-  <p><b>Two pages to use alongside any course.</b> <em>Algorithms</em> (top bar) shows searching, sorting, path-finding, mazes and game search moving one step at a time: project one while you explain it, or let students change the input and count the steps. <em>Real world</em> takes each idea the courses teach and says where it is used in software, cybersecurity, engineering and science, which jobs use it, and which lesson teaches it. It answers "when will we ever use this?", and it is a good opener for a lesson.</p>
+  <p><b>Pages to use alongside any course.</b> <em>Algorithms</em> (top bar) shows searching, sorting, path-finding, mazes and game search moving one step at a time: project one while you explain it, or let students change the input and count the steps. <em>Real world</em> takes each idea the courses teach and says where it is used in software, cybersecurity, engineering and science, which jobs use it, and which lesson teaches it. It answers "when will we ever use this?", and it is a good opener for a lesson. <em>Arena</em> is a contest: students write a bot in Python, Java, C++ or Scheme that plays the game Tron against other bots.</p>
 </section>
 
 <section id="g-3">
@@ -86,7 +86,7 @@ window.GUIDE = (function () {
     <dt>Common mistakes</dt><dd>A box near the end listing the errors students make in this lesson. Read it before class: it is the list of things you will be asked about.</dd>
     <dt>Trace the loop</dt><dd>In some lessons, before the writing exercises: a program with numbered lines and a table to fill in, the values of the variables each time a line has run. The line a box asks about lights up. Reading and tracing code is the skill that best predicts being able to write it, and tracing by hand is how programmers check a loop.</dd>
     <dt>Put it in order</dt><dd>A Parsons problem: the lines of a program, shuffled, to put in order (and, in Python, indent). A few blocks may not belong. Students click or press Enter to add a block and use the arrow buttons to move it; nothing needs dragging. Where the exercise has tests, the built program is run, so any order that works is accepted. Research finds the same learning as writing the code in less time, which makes it a good ramp for students who freeze at an empty editor.</dd>
-    <dt>Exercises</dt><dd>Two graded tasks. <em>Check answer</em> runs tests and says which passed. <em>Hint</em> gives hints one at a time. <em>Solution</em> shows a worked answer after two attempts. A green checkmark marks completion.</dd>
+    <dt>Exercises</dt><dd>Two graded tasks. <em>Check answer</em> runs tests and says which passed. <em>Hint</em> gives hints one at a time. <em>Solution</em> shows a worked answer; before two attempts it asks the student to confirm first. A green checkmark marks completion.</dd>
     <dt>In this lesson</dt><dd>A recap box. It doubles as an exit ticket: ask students to say one line of it back in their own words.</dd>
   </dl>
 </section>
@@ -128,12 +128,14 @@ window.GUIDE = (function () {
   <p>The Code Lab (top bar, or the card on the home page) is where students write their own programs in Python, C++, Java or Scheme. It has files with names, an editor with completion and search, and tools the lesson boxes do not have.</p>
   <dl class="g-parts">
     <dt>Files</dt><dd>Each language keeps its own files as tabs. <em>+ New</em> makes one; <em>Rename</em> is under the editor. Files are saved on the device automatically.</dd>
-    <dt>Run and Stop</dt><dd><em>Run</em> (or Ctrl+Enter) runs the current file. Programs that ask for input show a box. <em>Stop</em> ends a stuck program; one that runs too long stops itself after a few seconds.</dd>
+    <dt>Run and Stop</dt><dd><em>Run</em> (or Ctrl+Enter) runs the current file. A program that reads input asks for each line in the output panel as it runs; for Java and C++, <em>Input</em> opens a box to give it all the input at once instead. <em>Arguments</em> (Python and Java) gives a program words to start with, as on a command line. <em>Stop</em> ends a stuck program; one that runs too long stops itself. In Java, Run compiles all the Java tabs together, so a program can be split into <code>Main.java</code>, <code>Dog.java</code> and so on.</dd>
+    <dt>Error markers</dt><dd>An error that names a line has a "go to line" link, and the line gets a red pin in the editor's margin until the file changes or runs again.</dd>
     <dt>Step through (Python)</dt><dd>Runs the program one line at a time, showing every variable. The most useful tool for a student who cannot see why a loop does what it does.</dd>
+    <dt>Step through (Java)</dt><dd>Runs the program one statement at a time and shows the call stack (each method call with its variables), the static fields and the objects and arrays they refer to, numbered so students can see when two variables share one object. Students can step backwards too. A program that reads with a <code>Scanner</code> takes its input from the Input box.</dd>
     <dt>Step through memory (C++)</dt><dd>Runs the program one line at a time and draws its memory: every variable with its address and value, arrays cell by cell, and which variable a pointer points at. Students can step backwards too. Every C++ example has a button that opens it here.</dd>
     <dt>Turtle (Python), REPL and Substitution (Scheme)</dt><dd>A program that begins with <code>import turtle</code> gets a drawing canvas. For Scheme, the REPL lets students try one expression at a time, and <em>Substitution</em> shows an expression being rewritten step by step.</dd>
     <dt>Templates and Reference</dt><dd>Small starting programs, and a one-page cheat sheet for the current language.</dd>
-    <dt>Terminal</dt><dd>A practice command line under the output: a Unix-style shell with its own files, saved on the device. Students can make folders, move files, use pipes and wildcards, write a shell script, and run their programs the way a developer does (<code>python hello.py</code>, <code>javac Main.java &amp;&amp; java Main</code>, <code>g++ main.cpp -o main &amp;&amp; ./main</code>). Their Code Lab files appear in its <code>lab</code> folder. Nothing leaves the browser: there is no network and no real computer behind it. <code>help</code> lists the commands.</dd>
+    <dt>Terminal</dt><dd>A practice command line under the output: a Unix-style shell with its own files, saved on the device. Students can make folders, move files, use pipes and wildcards, write a shell script, and run their programs the way a developer does (<code>python hello.py</code>, <code>javac Main.java &amp;&amp; java Main</code>, <code>g++ main.cpp -o main &amp;&amp; ./main</code>). Their Code Lab files appear in its <code>lab</code> folder. Scripts can use functions, <code>case</code>, arrays and aliases, and tools such as <code>awk</code>; a practice <code>git</code> keeps versions of the files. <code>python</code>, <code>scheme</code> or <code>jshell</code> typed alone starts an interactive shell where each line runs at once. Nothing leaves the browser: there is no network and no real computer behind it. <code>help</code> lists the commands.</dd>
     <dt>Share, Open, Save</dt><dd><em>Share link</em> copies a link that carries the program. <em>Save</em> downloads the file; <em>Open</em> loads one.</dd>
     <dt>From a lesson</dt><dd>Every exercise has <em>Open in Code Lab</em>. A file opened that way keeps a <em>Check against the exercise</em> button, and passing there counts in the course.</dd>
   </dl>
@@ -186,7 +188,7 @@ window.GUIDE = (function () {
   <h2>10. When something goes wrong</h2>
   <dl class="g-faq">
     <dt>"My progress disappeared."</dt><dd>Progress is saved per device and per browser. The student is on a different computer or browser, or in a private window, or someone pressed Reset. There is no server to recover from. Have students save their work to a file (section 9) before changing computers.</dd>
-    <dt>"It stops with a red message."</dt><dd>That is an error message, and it names the line. In the Code Lab every message has a plain explanation under it and a "go to line" link. Python lesson 2 and Java lesson 1 teach how to read them.</dd>
+    <dt>"It stops with a red message."</dt><dd>That is an error message, and it usually names the line. In the Code Lab common messages have a plain explanation under them, and a message that names a line has a "go to line" link. Python lesson 2 and Java lesson 1 teach how to read them.</dd>
     <dt>"Time limit exceeded."</dt><dd>The program ran too long, almost always a loop that never ends. Look at the loop's condition.</dd>
     <dt>"The answer is right but the checker says no."</dt><dd>The output differs in a small way: a missing space, a full stop, a capital, or <code>5</code> where <code>5.0</code> was expected. Compare expected and actual character by character.</dd>
     <dt>"Save does nothing."</dt><dd>Some managed browsers block downloads. Use Share link instead.</dd>
@@ -204,9 +206,12 @@ window.GUIDE = (function () {
       <h3>Addresses</h3>
       <table class="g-table g-compact"><tbody>
         <tr><td><code>#/</code></td><td>home</td></tr>
-        <tr><td><code>#/python</code> <code>#/lisp</code> <code>#/cpp</code> <code>#/math</code> <code>#/modern</code> <code>#/java</code></td><td>a course</td></tr>
+        <tr><td><code>#/computer</code> <code>#/scratch</code> <code>#/python</code> <code>#/lisp</code> <code>#/cpp</code> <code>#/math</code> <code>#/modern</code> <code>#/java</code> <code>#/dsa</code> <code>#/shell</code> <code>#/ml</code></td><td>a course</td></tr>
         <tr><td><code>#/python/3</code></td><td>lesson 3 of Python</td></tr>
+        <tr><td><code>#/courses</code></td><td>every course, by group</td></tr>
         <tr><td><code>#/lab</code></td><td>the Code Lab</td></tr>
+        <tr><td><code>#/algorithms</code></td><td>the algorithm demonstrations</td></tr>
+        <tr><td><code>#/today</code></td><td>today's review</td></tr>
         <tr><td><code>#/portfolio</code></td><td>the student's portfolio</td></tr>
         <tr><td><code>#/guide</code></td><td>this guide</td></tr>
         <tr><td><code>#/ojibwe</code></td><td>the Ojibwe words on the site and their sources</td></tr>
@@ -217,6 +222,7 @@ window.GUIDE = (function () {
       <h3>Code Lab keys</h3>
       <table class="g-table g-compact"><tbody>
         <tr><td>Ctrl/Cmd + Enter</td><td>run</td></tr>
+        <tr><td>Ctrl/Cmd + G</td><td>go to a line</td></tr>
         <tr><td>Ctrl/Cmd + Z, Y</td><td>undo, redo</td></tr>
         <tr><td>Ctrl/Cmd + F, H</td><td>find, replace</td></tr>
         <tr><td>Ctrl/Cmd + /</td><td>comment lines</td></tr>

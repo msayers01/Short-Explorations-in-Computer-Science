@@ -22,16 +22,21 @@
     const { el } = window.__h;
     const SHELL = window.SHELL;
     let fs = o.fs;
-    const hooks = Object.assign({ fs, run, compile, nano, cancel: () => { if (o.stop) o.stop(); } }, o.hooks || {});
+    const stopAll = () => { for (const k of ['PYRUN', 'JAVARUN', 'CPPRUN', 'CLANGRUN']) if (window[k]) window[k].cancel(); };   // a lesson's terminal has no Lab to ask
+    const repl = (lang, io2, sh2) => (window.REPL && window.REPL[lang] ? window.REPL[lang]({ ask: io2.ask, out: io2.out, err: io2.err, Scheme: window.Scheme, cancelled: () => sh2.cancelled,
+      run: (code, p) => lang === 'java' ? window.JAVARUN.run(code, { stdin: '', onOutput: p.onOutput }) : window.PYRUN.run(code, { execLimit: 15000, onOutput: p.onOutput, onInput: p.onInput }) }) : Promise.resolve(127));
+    const hooks = Object.assign({ fs, run, compile, nano, typedInput, repl, cancel: () => { if (o.stop) o.stop(); else stopAll(); } }, o.hooks || {});
     let sh = SHELL.makeShell(hooks);
     if (Array.isArray(o.history)) sh.history = o.history.filter((s) => typeof s === 'string' && s.length < 2000).slice(-SHELL.LIMITS.history);
-    const save = () => { if (!o.persist) return; try { localStorage.setItem(o.persist, JSON.stringify({ v: 1, fs: fs.toJSON(), history: sh.history })); } catch (e) { /* storage full or off: the session still works */ } };
+    if (o.aliases) sh.aliases = SHELL.cleanAliases(o.aliases);   // a saved session's aliases come back (they are checked: a saved copy is untrusted)
+    const save = () => { if (!o.persist) return; try { localStorage.setItem(o.persist, JSON.stringify({ v: 1, fs: fs.toJSON(), history: sh.history, aliases: Object.assign({}, sh.aliases) })); } catch (e) { /* storage full or off: the session still works */ } };
 
     const box = el('div', { class: 'out term lab-term', hidden: '' });
     const status = el('span', { class: 'term-status', role: 'status' });
     const resetBtn = o.onReset ? el('button', { class: 'linklike term-reset', title: o.resetTitle || 'Start again from the files this terminal began with', onclick: (e) => o.armConfirm(e.currentTarget, 'Reset the files? Click again to confirm', () => api.reset()) }, 'Reset files') : null;
     const closeBtn = o.onClose ? el('button', { class: 'linklike term-close', title: 'Close the terminal', onclick: () => o.onClose() }, '×') : null;
-    const bar = el('div', { class: 'term-bar' }, el('span', { class: 'term-dots', 'aria-hidden': 'true' }, el('span'), el('span'), el('span')), el('span', { class: 'term-title' }, o.title || 'Terminal'), status, resetBtn, closeBtn);
+    const sizeBtn = el('button', { class: 'linklike term-size', type: 'button', title: 'Make the terminal taller', 'aria-pressed': 'false', onclick: () => { const big = box.classList.toggle('term-big'); sizeBtn.setAttribute('aria-pressed', String(big)); sizeBtn.title = big ? 'Make the terminal shorter' : 'Make the terminal taller'; sizeBtn.textContent = big ? 'Shorter' : 'Taller'; pre.scrollTop = pre.scrollHeight; inp.focus(); } }, 'Taller');
+    const bar = el('div', { class: 'term-bar' }, el('span', { class: 'term-title' }, o.title || 'Terminal'), el('span', { class: 'term-spacer' }), status, resetBtn, sizeBtn, closeBtn);
     const pre = el('pre', { class: 'out-text term-scroll', 'aria-live': 'polite', 'aria-label': 'Terminal output' });
     const ps1 = el('span', { class: 'term-ps1' });
     const inp = el('input', { class: 'term-inp', type: 'text', 'aria-label': 'Command line', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', placeholder: 'type a command, for example: help' });
@@ -53,7 +58,7 @@
 
     // program input: a prompt from input()/Scanner reuses the command line
     let asking = null;   // { resolve, prompt }
-    const ask = (prompt) => new Promise((resolve) => { flush(); asking = { resolve, prompt: prompt || '' }; ps1.textContent = asking.prompt; inp.placeholder = 'the program is waiting for input'; inp.focus(); });
+    const ask = (prompt) => new Promise((resolve) => { flush(); asking = { resolve, prompt: prompt || '' }; ps1.textContent = asking.prompt; inp.placeholder = 'the program is waiting for input (Ctrl+D: end of input)'; inp.focus(); });
 
     // ----- running a line
     let running = false;
@@ -101,7 +106,34 @@
     inp.addEventListener('input', () => { if (!ac.hidden) { const head = inp.value.slice(0, inp.selectionStart); const word = head.slice(acStart); const keep = acItems.filter((it) => it.value.startsWith(word)); if (!keep.length || word.length < 1) acClose(); else { acItems = keep; acSel = -1; ac.replaceChildren(...acItems.map((it, i) => el('li', { role: 'option', 'aria-selected': 'false', class: /\/$/.test(it.label) ? 't-dir' : '', onmousedown: (e) => e.preventDefault(), onclick: () => acAccept(i) }, it.label))); } } });
     inp.addEventListener('blur', () => setTimeout(acClose, 150));
     let hIdx = -1, hDraft = '';
+    // Ctrl+R: bash's reverse-i-search. The prompt shows what is being searched for, the line shows the newest command that contains it;
+    // Ctrl+R again looks further back, Enter runs the match, Esc or an arrow keeps it for editing, Ctrl+G or Ctrl+C gives the old line back.
+    let rs = null;   // { q, at, draft, failed }
+    const rsShow = () => { ps1.textContent = (rs.failed ? '(failed reverse-i-search)`' : '(reverse-i-search)`') + rs.q + "': "; };
+    const rsFind = (from) => { const h = sh.history; for (let i = Math.min(from, h.length - 1); i >= 0; i--) if (rs.q && h[i].includes(rs.q)) { rs.at = i; rs.failed = false; inp.value = h[i]; return; } rs.failed = !!rs.q; };
+    const rsEnd = (keep) => { if (!rs) return; if (!keep) inp.value = rs.draft; rs = null; setPrompt(); requestAnimationFrame(() => { inp.selectionStart = inp.selectionEnd = inp.value.length; }); };
+    let killed = '';   // Ctrl+K and Ctrl+W keep what they cut, Ctrl+Y puts it back, as readline does
+    const cut = (a, b) => { killed = inp.value.slice(a, b); inp.value = inp.value.slice(0, a) + inp.value.slice(b); inp.selectionStart = inp.selectionEnd = a; };
     inp.addEventListener('keydown', (e) => {
+      if (rs) {
+        const k = e.key;
+        if (e.ctrlKey && (k === 'r' || k === 'R')) { e.preventDefault(); rsFind(rs.at - 1); rsShow(); return; }
+        if ((e.ctrlKey && (k === 'g' || k === 'G' || k === 'c' || k === 'C'))) { e.preventDefault(); rsEnd(false); return; }
+        if (k === 'Enter') { e.preventDefault(); rsEnd(true); hIdx = -1; onEnter(); return; }
+        if (k === 'Escape' || k === 'ArrowLeft' || k === 'ArrowRight' || k === 'ArrowUp' || k === 'ArrowDown' || k === 'Tab' || k === 'Home' || k === 'End') { e.preventDefault(); rsEnd(true); return; }
+        if (k === 'Backspace') { e.preventDefault(); rs.q = rs.q.slice(0, -1); if (rs.q) rsFind(sh.history.length - 1); else { rs.failed = false; inp.value = rs.draft; } rsShow(); return; }
+        if (k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); rs.q += k; rsFind(rs.failed ? rs.at : (rs.at < sh.history.length ? rs.at : sh.history.length - 1)); rsShow(); return; }
+        return;
+      }
+      if (e.ctrlKey && !e.altKey && (e.key === 'r' || e.key === 'R') && !running) { e.preventDefault(); acClose(); rs = { q: '', at: sh.history.length, draft: inp.value, failed: false }; rsShow(); return; }
+      if (e.ctrlKey && !e.altKey && !e.shiftKey) {
+        const k = e.key.toLowerCase(), s = inp.selectionStart, v = inp.value;
+        if (k === 'a') { e.preventDefault(); inp.selectionStart = inp.selectionEnd = 0; return; }
+        if (k === 'e') { e.preventDefault(); inp.selectionStart = inp.selectionEnd = v.length; return; }
+        if (k === 'k') { e.preventDefault(); cut(s, v.length); return; }
+        if (k === 'w') { e.preventDefault(); let a = s; while (a > 0 && v[a - 1] === ' ') a--; while (a > 0 && v[a - 1] !== ' ') a--; cut(a, s); return; }
+        if (k === 'y') { e.preventDefault(); if (killed) { inp.value = v.slice(0, s) + killed + v.slice(inp.selectionEnd); inp.selectionStart = inp.selectionEnd = s + killed.length; } return; }
+      }
       // the completion list first: its arrows, Enter, Tab and Esc are not the history's or the command line's
       if (!ac.hidden && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Escape' || ((e.key === 'Enter' || e.key === 'Tab') && acSel >= 0))) {
         e.preventDefault();
@@ -122,23 +154,35 @@
       }
       if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); if (!running) complete(); return; }
       if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) { if (!running && inp.selectionStart !== inp.selectionEnd) return; e.preventDefault(); if (running) { sh.cancel(); if (asking) { const a = asking; asking = null; a.resolve(''); } } else { line(sh.prompt() + inp.value + '^C', 'cmd'); inp.value = ''; } return; }
+      if (e.ctrlKey && (e.key === 'd' || e.key === 'D') && asking && !inp.value) { e.preventDefault(); const a = asking; asking = null; inp.placeholder = ''; line(a.prompt + '^D', 'note'); ps1.textContent = ''; a.resolve(null); return; }   // end of input
       if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); io.clear(); return; }
-      if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); inp.value = ''; return; }
+      if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); cut(0, inp.selectionStart); return; }
     });
 
     // ----- hooks for the shell: programs through the site's sandboxes
     const R = () => A().Runners;
     async function run(lang, src, p) {
       const onOutput = (s) => p.onOutput(String(s));
-      if (lang === 'python') { const r = await window.PYRUN.run(src, { stdin: p.stdin == null ? null : p.stdin, execLimit: 15000, onOutput, onInput: p.onInput ? (q) => p.onInput(q) : undefined }); return { err: r.err, exit: r.err ? (/^Stopped/.test(r.err) ? 130 : 1) : 0 }; }
-      if (lang === 'java') { const r = await R().java.run(src, { stdin: p.stdin == null ? '' : p.stdin, onOutput }); return { err: r.err, exit: r.err ? 1 : (r.exit || 0) }; }
+      const args = Array.isArray(p.args) ? p.args.map(String) : [];   // the words after the program's name: sys.argv[1:], main(String[] args)
+      if (lang === 'python') { const r = await window.PYRUN.run(src, { stdin: p.stdin == null ? null : p.stdin, execLimit: 15000, args, argv0: typeof p.name === 'string' ? p.name : 'main.py', onOutput, onInput: p.onInput ? (q) => p.onInput(q) : undefined }); return { err: r.err, exit: r.err ? (/^Stopped/.test(r.err) ? 130 : 1) : 0 }; }
+      // Java and the teaching C++ read typed input a line at a time as they ask (runner.js); a pipe or a file (< in.txt) is given all at once
+      const onInput = p.stdin == null && p.onInput ? (q) => p.onInput(q) : undefined;
+      if (lang === 'java') {
+        // a .class from javac holds the joined program of every file compiled with it (javaproject.js), and  java Name  runs Name's main
+        const proj = window.JPROJ ? window.JPROJ.fromJoined(src) : null, cls = typeof p.name === 'string' && !/\.java$/.test(p.name) ? p.name.split('/').pop().replace(/\.class$/, '') : undefined;
+        const r = await R().java.run(src, { stdin: onInput ? null : (p.stdin == null ? '' : p.stdin), onOutput, onInput, args, mainClass: cls });
+        return { err: proj ? window.JPROJ.mapError(proj, r.err) : r.err, exit: r.err ? (r.exit === 130 ? 130 : 1) : (r.exit || 0) };
+      }
       if (lang === 'scheme') { const r = await R().scheme.run(src, { onOutput }); return { err: r.error ? ';' + String(r.error).replace(/^;/, '') : null, exit: r.error ? 1 : 0 }; }
       if (lang === 'cpp') {
         if (p.std) { const r = await R().cppFull.run(src, { stdin: p.stdin == null ? '' : p.stdin, std: p.std, onOutput, onNote: (s) => write(s + '\n', 'note'), host: box }); return { err: r.err, exit: r.err ? 1 : (r.exit || 0) }; }
-        const r = await R().cpp.run(src, { stdin: p.stdin == null ? '' : p.stdin, onOutput }); return { err: r.err, exit: r.err ? 1 : 0 };
+        const typed = onInput && typedInput('cpp', src, null);
+        const r = await R().cpp.run(src, { stdin: typed ? null : (p.stdin == null ? '' : p.stdin), onOutput, onInput: typed ? onInput : undefined }); return { err: r.err, exit: r.err ? (r.exit === 130 ? 130 : 1) : 0 };
       }
       return { err: lang + ': no way to run this here', exit: 126 };
     }
+    // which programs take their input a line at a time as they ask; the shell collects the others' input before they start
+    function typedInput(lang, src, std) { return lang === 'java' || (lang === 'cpp' && !std && !/\b(scanf|getchar)\b/.test(src)); }
     const stdOf = (s) => { const m = String(s || '').match(/(11|14|17|20|23)$/); return m ? 'gnu++' + m[1] : 'gnu++20'; };
     async function compile(lang, src, p) {
       if (lang === 'java') { const r = await window.JAVARUN.check(src); return { err: r.err }; }
@@ -216,7 +260,7 @@
       /** run a line as if it had been typed → Promise<exit> */
       exec: (text) => runLine(text),
       /** start again: a new file system (from onReset), the history kept */
-      reset() { const next = o.onReset ? o.onReset() : fs; if (!next) return; fs = next; hooks.fs = fs; const hist = sh.history; sh = SHELL.makeShell(hooks); sh.history = hist; io.clear(); setStatus('', ''); setPrompt(); if (o.afterReset) o.afterReset(api); save(); }
+      reset() { const next = o.onReset ? o.onReset() : fs; if (!next) return; fs = next; hooks.fs = fs; const hist = sh.history, als = sh.aliases; sh = SHELL.makeShell(hooks); sh.history = hist; sh.aliases = als; io.clear(); setStatus('', ''); setPrompt(); if (o.afterReset) o.afterReset(api); save(); }
     };
     setPrompt();
     return api;
@@ -263,7 +307,7 @@
     // setup NAME: the files of a lesson, into the home directory (src/shellgrade.js finds the lesson)
     const setup = (name, sh) => { const SG = window.SHELLGRADE; if (!SG) return null; const tree = SG.setupFor(name); if (!tree) return null; SG.populate(sh.fs, tree); sh.fs.cwd = SHELL.HOME; return 'the files for ' + name + ' are in your home directory now (you are there: ls to see them)'; };
     const panel = makePanel({
-      fs: SHELL.makeFS(saved && saved.fs), history: saved && saved.history, persist: KEY, armConfirm: ctx.armConfirm, isFull: ctx.isFull, cppStd: ctx.cppStd, stop: ctx.stop,
+      fs: SHELL.makeFS(saved && saved.fs), history: saved && saved.history, aliases: saved && saved.aliases, persist: KEY, armConfirm: ctx.armConfirm, isFull: ctx.isFull, cppStd: ctx.cppStd, stop: ctx.stop,
       hooks: { edit, setup }, before: syncIn, after: syncOut, onClose: ctx.onClose,
       onReset: () => { try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ } mirrored = new Set(); return SHELL.makeFS(null); },
       resetTitle: 'Forget every file and folder made in this terminal (the Code Lab files stay)',

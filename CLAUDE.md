@@ -15,7 +15,9 @@ not written down there.
     npm test               # all node tests (pretest applies the JSCPP patches); about 2 minutes
     node test_course.js python|lisp|cpp|math|modern|java|ml   # one course; "modern" compiles with the real compiler, about 1.5 minutes
     node test_java.js      # the Java interpreter against what javac/java print (a few seconds)
+    node test_typed.js     # typed input (Scanner, cin answered as the program asks), in the real worker sources (a few seconds)
     node test_shell.js     # the practice shell: file system, parser, every command, limits, hostile saved copies (a second)
+    node test_git.js       # the practice git (--real also runs its scenarios through the real git and compares)
     node test_lessons.js   # the lesson linter (part of npm test); --update records new exercise ids in lint/exercise-ids.txt
     npm run test:diff      # java.js against a real JDK 21, shell.js against bash (about 35 s; SEED=n COUNT=n searches further)
     npm run test:browser   # needs a built dist and Chromium (playwright-core); serves dist over a local http server; about 1.5 minutes
@@ -64,8 +66,16 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   `java.util.Formatter`. Exception messages follow JDK 21's wording. `test_java.js` expectations were produced by a real JDK: keep it so.
 - After changing `java.js` or `shell.js`, run `npm run test:diff` and a few extra seeds (`SEED=2 COUNT=40 node test_diff.js java`). A new
   difference is a bug to fix; only a deliberate one goes in `difftest/known.json`, with its reason.
+- **Step-through** (ARCHITECTURE §9e): `JAVA.trace` records every statement (frames with locals by name, statics, numbered heap objects) in the worker;
+  `src/javastep.js` replays it in the Lab (Back/Next/slider, N/Enter/B/Backspace). Hooks are `R.tr` checks in `exec` and the loops, and symbol-keyed scope info
+  set by the checker's `stmt()`; `test_javatrace.js` traces every Java example and must print what a plain run prints.
 - Exercises: whole programs with `{stdin, expect}`; methods with `{call, expect}` (the student writes only the `static` method; `prelude`
   for imports); whole classes with `ex.classes: true` and `{main, expect}`. Ids are `jv-<n>-<k>`.
+
+- Multi-file Java (ARCHITECTURE §9): the Lab's Run and the terminal's `javac A.java B.java` join files through `src/javaproject.js` (markers `//@file X.java`,
+  imports hoisted, errors and stack traces mapped back per file, javac's public-class rule; the Lab skips tabs that redeclare a class and exercise files).
+  The Lab also has error markers (`LabEditor.setMarks`), program arguments (`S.args`, Python/Java; `labutil.js`), output Copy/Wrap/Clear, Ctrl+G and a
+  Shortcuts panel: keep `KEYS_HTML` in step with the editor's keydown handler.
 
 ## Two C++ engines (ARCHITECTURE §9d)
 
@@ -77,14 +87,15 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   `src/lockdown.js` (strips network/worker APIs from the interpreter workers).
 - Hard-won facts: compile is 1-4 s, run is native speed; a program is compiled once and run once per input (`runMany`); **a crashed compile
   used to run the previous program** (fixed: output files are emptied, clang `error:` lines count as failure); program memory capped at
-  256 MB, compiler at 1 GB; node's `execute` differs from the browser's, so test memory behaviour in the browser.
+  256 MB, compiler at 1 GB; compiling gets 60 s and the program its own 10 s + 2 s per input from the worker's `phase` message (a `<format>`
+  compile took over 12 s in this sandbox, which used to count against the program's limit); node's `execute` differs from the browser's, so test memory behaviour in the browser.
 
 ## Current state (October 2026)
 
 - Merged: everything below through PR #35 (`main` = `aea174b`), except SC 109, which is on the working branch. PRs #21-#26: the practice terminal, SC 108 lessons 1-4, the one-inline-script
   build, SC 099, Scratch lessons 8-9, the tour. PR #27 was a bug sweep (four reviews: shell against bash, Java against javac/java 21, the
   app and Scheme, course text): see its commit messages. Bugs it found but left: Scheme character literals. (Java switch expressions and `yield` were added in October 2026, with javac's errors for a missing `default`, `yield` outside a switch expression, `break`/`return` out of one, and unreachable statements: `difftest/java/probe-sw*.java`, `probe-e*.java`, `probe-u*.java`. Pattern matching in `case` is still not covered.) (Java `%1$s` / `%<s`
-  and `new TreeSet<>(comparator)` / `new TreeMap<>(comparator)` were fixed in October 2026: `difftest/java/probe-tc.java`.) (Shell `${s/a/b}`, `${f%.txt}`, `${p##*/}`, `${s^^}` and negative slices were added in October 2026 and are checked against bash in `difftest/shell.txt`; `${x@Q}`-style transforms and arrays still report "bad substitution".)
+  and `new TreeSet<>(comparator)` / `new TreeMap<>(comparator)` were fixed in October 2026: `difftest/java/probe-tc.java`.) (Shell `${s/a/b}`, `${f%.txt}`, `${p##*/}`, `${s^^}` and negative slices were added in October 2026 and are checked against bash in `difftest/shell.txt`; `${x@Q}`-style transforms still report "bad substitution". Shell functions, `local`/`return`, `case`, indexed arrays, `(( ))`, `for ((;;))`, `break`/`continue`, aliases, history expansion at the prompt, `time`, and `awk`, `expr`, `basename`, `dirname`, `realpath`, `du`, `yes`, `fold`, `paste`, `comm`, `column -t`, `sha256sum`/`md5sum` were added in October 2026, also checked against bash and mawk there (ARCHITECTURE §9f says what is still missing: `[[ ]]`, `declare -A`, here-documents, `ln`, awk functions and `getline`; aliases are per session, not saved).)
 - SC 105 Modern C++ has 8 lessons (string, vector, references, struct, class, algorithms/lambdas, map/set, gradebook project), 15 exercises.
 - SC 107 Data Structures and Algorithms (Java, `src/course_dsa.js`, finished October 2026): 12 lessons (cost and arrays; searching; simple sorts; merge sort and
   quicksort; linked lists; stacks and queues; recursion; hash tables; binary search trees; heaps and priority queues; graphs; a project, the busiest words),
@@ -131,13 +142,19 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   treatment as SC 102: stories end on a question, predictions, `wrong` reasons, followups). Lesson 9 (random numbers) has no `predict: true`, only "Guess first"
   reveals about properties, because its output varies. Examples were trimmed to 25 lines rather than marked `long`. Not done: course-level skills and
   checkpoints (they would renumber lessons). Structs, classes, references and `std::` containers are deliberately left to SC 105.
-- **The practice terminal** (ARCHITECTURE §9f): `src/shell.js` (a real shell: parser, pipelines, redirections, variables, loops, ~70 commands,
+- **The practice terminal** (ARCHITECTURE §9f): `src/shell.js` (a real shell: parser, pipelines, redirections, variables, loops, functions, case, arrays, aliases, history expansion, ~90 commands including a subset of awk,
   virtual file system with caps, saved under `shortcourses.shell.v1`, in backups) and `src/terminal.js` (the Terminal panel in the Code Lab:
   history, Tab completion, nano, `edit`, the `~/lab` mirror). `g++`/`javac` compile through check-only modes of the sandboxes; `./prog`,
   `java`, `python`, `scheme` run through the usual runners. Planned next: SC 108 The Command Line (grades 7-12, 8 lessons: paths and `cd`;
   making and moving things; looking inside files; pipes and redirection; running your programs; Windows cmd and PowerShell as a dialect
   switch over the same file system; a first script; a tidy-a-messy-folder project), terminal exercises graded on file-system state plus
   output, `setup lessonN` through the shell's `setup` hook, terminal tasks in teacher assignments.
+- **The practice git** (`src/shellgit.js`, ARCHITECTURE §9f, October 2026): `git` in the shell, added with `SHELL.register` (the old
+  "needs the internet" stub no longer names git). init/status/add/rm/mv/restore/commit/log/diff/show/branch/switch/checkout/merge (with
+  conflicts)/reset/tag/config/reflog and a few plumbing commands, with git 2.43's messages; real SHA-1 ids (same as real git's for the same
+  name, email and time). The repository is `.git` in the virtual file system with all objects in `.git/objects.json` (so a history must fit
+  in one 256 KB file) and the index as JSON; everything read from .git is checked (hostile cases in `test_git.js`). No remotes, stash,
+  rebase, or editor (`-m` always). Compare with the real git with `node test_git.js --real` after changing it.
 - SC 108 The Command Line (`src/course_shell.js`, grades 7-12): lessons 1-4 (where am I: prompt, tree, paths, cd; making and moving things:
   mkdir, touch, echo >, cp, mv, rm, wildcards; looking inside files: cat, head, tail, wc, grep, find, diff, file; pipes and redirection:
   > >> < | 2> /dev/null $?, sort, uniq -c, cut, tr, McIlroy's word-count pipeline), 8 exercises (`sh-<n>-<k>`; kind `shell` graded by
@@ -177,7 +194,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - The DOM's own `append`/`replaceChildren` used to print `null`/`false` and arrays as text: `src/domsafe.js` (first in the script) now makes them skip those and flatten arrays (the stray "null" in the Life demo, the bits and knn figures and the shell lesson's tree came from this). Still prefer `el()`.
 - Ideas not started: C in the Code Lab (same compiler); lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
-  beside the single-page design and needs a policy change); splitting CI (about 4 minutes now); a Java step-through debugger like the C++ memory stepper.
+  beside the single-page design and needs a policy change); splitting CI (about 4 minutes now).
 - Not verified: Full C++ on low-end devices (needs about 84 MB plus the program), and on the production URL since the security-review merge.
 
 - **Bot Arena** (ARCHITECTURE §9j, `src/tron.js`, `arena*.js`, `test_arena.js`): Tron bots in Python/Java/C++/Scheme at `#/arena` and `#/arena/tournament` (PR #40, merged).

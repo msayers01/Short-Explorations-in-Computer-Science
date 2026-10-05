@@ -12,7 +12,9 @@
    methods and constructors are checked, as are catches that cannot happen).
 
    Exposed as window.JAVA (browser) or module.exports (node):
-     JAVA.run(code, stdin, { maxSteps, maxMs, write(text), more() }) → { out, err, exit }   err is the compile error or the uncaught exception text
+     JAVA.run(code, stdin, { maxSteps, maxMs, write(text), more(), random(), clock() }) → { out, err, exit, needInput? }   err is the compile error or the uncaught exception text
+       more() gives the next text once stdin is used up ('' ends the input); throwing JAVA.NEED_INPUT from it ends the run with needInput: true
+     JAVA.trace(code, stdin, { maxSteps, maxMs }) → { steps, output, error, ... }   the run recorded statement by statement, for the step-through
    (src/javautil.js wraps a method-writing exercise in a class with a main, for the checker.) */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -569,14 +571,21 @@
     R.out = ''; R.outLen = 0; R.write = opts.write || null; R.maxOut = opts.maxOut || 2e6;
     R.steps = 0; R.maxSteps = opts.maxSteps || Infinity; R.deadline = opts.maxMs ? Date.now() + opts.maxMs : Infinity;
     R.stdin = typeof opts.stdin === 'string' ? opts.stdin : ''; R.stdinPos = 0; R.more = opts.more || null;
+    // System.in is one stream shared by every Scanner on it, handed out a line at a time as a console does: a method that makes a new Scanner each
+    // time it is called reads the next line, not the first one again. After the given text, more() is asked (Bot Arena turns, typed input).
+    R.sysin = () => { if (R.stdinPos < R.stdin.length) { const i = R.stdin.indexOf('\n', R.stdinPos), e = i < 0 ? R.stdin.length : i + 1, t = R.stdin.slice(R.stdinPos, e); R.stdinPos = e; return t; } return R.more ? R.more() : ''; };
+    R.rand = opts.random || Math.random;   // Math.random, shuffle and an unseeded Random: a run that is replayed (typed input) is given the same sequence each time
+    R.clock = opts.clock || null;          // and the same clock: milliseconds, as Date.now
     R.classes = null;   // filled by the checker: name → ClassInfo (user and library)
     R.frames = [];      // the Java call stack, for stack traces: {cls, name, line}
     R.exitCode = null;
+    R.tr = null;        // the step-through recorder (JAVA.trace), called before each statement; null when not tracing
     R.print = (s) => { R.outLen += s.length; if (R.outLen > R.maxOut) { R.out += s.slice(0, Math.max(0, s.length - (R.outLen - R.maxOut))); throw new TooMuchOutput(); } if (R.write) R.write(s); else R.out += s; };
     R.tick = () => { if ((++R.steps & 1023) === 0) { if (R.steps > R.maxSteps || Date.now() > R.deadline) throw new TimeLimit(); } };
   }
   class TooMuchOutput extends Error { }
   class TimeLimit extends Error { }
+  const NEED_INPUT = { needInput: true };   // thrown by an opts.more() that has no line yet; no Java catch or finally sees it
   class SystemExit extends Error { constructor(code) { super('exit'); this.code = code; } }
 
   const LIB_PKG = { String: 'java.lang', Object: 'java.lang', Integer: 'java.lang', Long: 'java.lang', Double: 'java.lang', Float: 'java.lang', Character: 'java.lang', Boolean: 'java.lang', Short: 'java.lang', Byte: 'java.lang', Number: 'java.lang', Math: 'java.lang', System: 'java.lang', StringBuilder: 'java.lang', Comparable: 'java.lang', CharSequence: 'java.lang', Iterable: 'java.lang', PrintStream: 'java.io', InputStream: 'java.io',
@@ -962,7 +971,7 @@
     'min(int,int)': ['int', (o, a) => Math.min(a[0], a[1])], 'min(long,long)': ['long', (o, a) => (a[0] < a[1] ? a[0] : a[1])], 'min(double,double)': ['double', (o, a) => Math.min(a[0], a[1])], 'min(float,float)': ['float', (o, a) => Math.min(a[0], a[1])],
     'pow(double,double)': ['double', (o, a) => Math.pow(a[0], a[1])], 'sqrt(double)': ['double', (o, a) => Math.sqrt(a[0])], 'cbrt(double)': ['double', (o, a) => Math.cbrt(a[0])], 'sinh(double)': ['double', (o, a) => Math.sinh(a[0])], 'cosh(double)': ['double', (o, a) => Math.cosh(a[0])], 'tanh(double)': ['double', (o, a) => Math.tanh(a[0])], 'log1p(double)': ['double', (o, a) => Math.log1p(a[0])], 'expm1(double)': ['double', (o, a) => Math.expm1(a[0])], 'hypot(double,double)': ['double', (o, a) => Math.hypot(a[0], a[1])],
     'floor(double)': ['double', (o, a) => Math.floor(a[0])], 'ceil(double)': ['double', (o, a) => Math.ceil(a[0])], 'round(double)': ['long', (o, a) => roundJ(a[0])], 'round(float)': ['int', (o, a) => d2i(Math.round(a[0]))], 'rint(double)': ['double', (o, a) => { const f = Math.floor(a[0]), d = a[0] - f, r = d < 0.5 ? f : d > 0.5 ? f + 1 : (f % 2 === 0 ? f : f + 1); return r === 0 && (a[0] < 0 || Object.is(a[0], -0)) ? -0 : r; }],   // a negative that rounds to zero is -0.0
-    'random()': ['double', () => Math.random()], 'sin(double)': ['double', (o, a) => Math.sin(a[0])], 'cos(double)': ['double', (o, a) => Math.cos(a[0])], 'tan(double)': ['double', (o, a) => Math.tan(a[0])], 'asin(double)': ['double', (o, a) => Math.asin(a[0])], 'acos(double)': ['double', (o, a) => Math.acos(a[0])], 'atan(double)': ['double', (o, a) => Math.atan(a[0])], 'atan2(double,double)': ['double', (o, a) => Math.atan2(a[0], a[1])],
+    'random()': ['double', (o, a, R) => R.rand()], 'sin(double)': ['double', (o, a) => Math.sin(a[0])], 'cos(double)': ['double', (o, a) => Math.cos(a[0])], 'tan(double)': ['double', (o, a) => Math.tan(a[0])], 'asin(double)': ['double', (o, a) => Math.asin(a[0])], 'acos(double)': ['double', (o, a) => Math.acos(a[0])], 'atan(double)': ['double', (o, a) => Math.atan(a[0])], 'atan2(double,double)': ['double', (o, a) => Math.atan2(a[0], a[1])],
     'exp(double)': ['double', (o, a) => Math.exp(a[0])], 'log(double)': ['double', (o, a) => Math.log(a[0])], 'log10(double)': ['double', (o, a) => Math.log10(a[0])], 'signum(double)': ['double', (o, a) => Math.sign(a[0])], 'toRadians(double)': ['double', (o, a) => a[0] / 180 * Math.PI], 'toDegrees(double)': ['double', (o, a) => a[0] * 180 / Math.PI],
     'floorDiv(int,int)': ['int', (o, a, R) => { if (a[1] === 0) throwJ(R, 'ArithmeticException', '/ by zero'); return Math.floor(a[0] / a[1]) | 0; }], 'floorMod(int,int)': ['int', (o, a, R) => { if (a[1] === 0) throwJ(R, 'ArithmeticException', '/ by zero'); return (((a[0] % a[1]) + a[1]) % a[1]) | 0; }],
     'floorDiv(long,long)': ['long', (o, a, R) => { if (a[1] === 0n) throwJ(R, 'ArithmeticException', '/ by zero'); let q = a[0] / a[1]; if ((a[0] % a[1] !== 0n) && ((a[0] < 0n) !== (a[1] < 0n))) q -= 1n; return q; }], 'floorMod(long,long)': ['long', (o, a, R) => { if (a[1] === 0n) throwJ(R, 'ArithmeticException', '/ by zero'); return ((a[0] % a[1]) + a[1]) % a[1]; }],
@@ -1125,7 +1134,7 @@
     'sort(List<T>)': ['void', (o, a, R) => { nn(R, a[0]); a[0].a = sortJ(R, a[0].a); }], 'sort(List<T>,Comparator<T>)': ['void', (o, a, R) => { nn(R, a[0]); a[0].a = sortJ(R, a[0].a, a[1]); }],
     'reverseOrder()': ['Comparator<T>', () => new JCmp(null, true)], 'reverseOrder(Comparator<T>)': ['Comparator<T>', (o, a) => new JCmp(a[0], true)],
     'max(Collection<T>,Comparator<T>)': ['T', (o, a, R) => { const it = collItems(R, a[0]); if (!it.length) throwJ(R, 'NoSuchElementException', null); const f = cmpWith(R, a[1]); return it.reduce((m, x) => (f(x, m) > 0 ? x : m)); }], 'min(Collection<T>,Comparator<T>)': ['T', (o, a, R) => { const it = collItems(R, a[0]); if (!it.length) throwJ(R, 'NoSuchElementException', null); const f = cmpWith(R, a[1]); return it.reduce((m, x) => (f(x, m) < 0 ? x : m)); }], 'reverse(List<T>)': ['void', (o, a, R) => { nn(R, a[0]).a.reverse(); }],
-    'shuffle(List<T>)': ['void', (o, a, R) => { const l = nn(R, a[0]).a; for (let i = l.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [l[i], l[j]] = [l[j], l[i]]; } }], 'shuffle(List<T>,Random)': ['void', (o, a, R) => { const l = nn(R, a[0]).a; for (let i = l.length; i > 1; i--) { const j = a[1].nextIntBound(i, R); [l[i - 1], l[j]] = [l[j], l[i - 1]]; } }],
+    'shuffle(List<T>)': ['void', (o, a, R) => { const l = nn(R, a[0]).a; for (let i = l.length - 1; i > 0; i--) { const j = Math.floor(R.rand() * (i + 1)); [l[i], l[j]] = [l[j], l[i]]; } }], 'shuffle(List<T>,Random)': ['void', (o, a, R) => { const l = nn(R, a[0]).a; for (let i = l.length; i > 1; i--) { const j = a[1].nextIntBound(i, R); [l[i - 1], l[j]] = [l[j], l[i - 1]]; } }],
     'max(Collection<T>)': ['T', (o, a, R) => { const it = collItems(R, a[0]); if (!it.length) throwJ(R, 'NoSuchElementException', null); return it.reduce((m, x) => (jcmp(x, m, R) > 0 ? x : m)); }], 'min(Collection<T>)': ['T', (o, a, R) => { const it = collItems(R, a[0]); if (!it.length) throwJ(R, 'NoSuchElementException', null); return it.reduce((m, x) => (jcmp(x, m, R) < 0 ? x : m)); }],
     'swap(List<T>,int,int)': ['void', (o, a, R) => { const l = nn(R, a[0]).a; lidx(R, l, a[1]); lidx(R, l, a[2]); [l[a[1]], l[a[2]]] = [l[a[2]], l[a[1]]]; }], 'frequency(Collection<T>,Object)': ['int', (o, a, R) => collItems(R, a[0]).filter(x => jeq(x, a[1], R)).length],
     'nCopies(int,T)': ['List<T>', (o, a, R) => { if (a[0] < 0) throwJ(R, 'IllegalArgumentException', 'List length = ' + a[0]); const l = new JList(new Array(a[0]).fill(a[1])); l.immutable = true; return l; }], 'unmodifiableList(List<T>)': ['List<T>', (o, a, R) => { const l = new JList(nn(R, a[0]).a); l.immutable = true; return l; }], 'emptyList()': ['List<T>', () => { const l = new JList(); l.immutable = true; return l; }]
@@ -1135,17 +1144,17 @@
     { 'println()': ['void', (ps, a, R) => R.print('\n')], 'printf(String,Object...)': ['PrintStream', (ps, a, R) => { R.print(jformat(nn(R, a[0]), a[1].a, R)); return ps; }], 'format(String,Object...)': ['PrintStream', (ps, a, R) => { R.print(jformat(nn(R, a[0]), a[1].a, R)); return ps; }], 'flush()': ['void', () => { }], 'write(int)': ['void', (ps, a, R) => R.print(String.fromCharCode(a[0] & 255))] }) });
   def('InputStream', { noNew: true, methods: {} });
   def('System', { noNew: true, fields: { out: ['PrintStream', SYSOUT], err: ['PrintStream', SYSERR], in: ['InputStream', SYSIN] }, statics: {
-    'currentTimeMillis()': ['long', () => BigInt(Date.now())], 'nanoTime()': ['long', () => BigInt(Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) * 1e6))], 'exit(int)': ['void', (o, a) => { throw new SystemExit(a[0]); }], 'lineSeparator()': ['String', () => '\n'],
+    'currentTimeMillis()': ['long', (o, a, R) => BigInt(Math.floor(R.clock ? R.clock() : Date.now()))], 'nanoTime()': ['long', (o, a, R) => BigInt(Math.round((R.clock ? R.clock() : typeof performance !== 'undefined' ? performance.now() : Date.now()) * 1e6))], 'exit(int)': ['void', (o, a) => { throw new SystemExit(a[0]); }], 'lineSeparator()': ['String', () => '\n'],
     'arraycopy(Object,int,Object,int,int)': ['void', (o, a, R) => { const [src, sp, dst, dp, n] = a; nn(R, src); nn(R, dst); if (!(src instanceof JArr) || !(dst instanceof JArr)) throwJ(R, 'ArrayStoreException', 'arraycopy: ' + (src instanceof JArr ? 'destination' : 'source') + ' type ' + qualified(runtimeClassName(src instanceof JArr ? dst : src)) + ' is not an array'); if (sp < 0 || dp < 0 || n < 0 || sp + n > src.a.length || dp + n > dst.a.length) throwJ(R, 'ArrayIndexOutOfBoundsException', 'arraycopy: last ' + (sp + n > src.a.length ? 'source' : 'destination') + ' index ' + (sp + n > src.a.length ? sp + n : dp + n) + ' out of bounds for length ' + (sp + n > src.a.length ? src.a.length : dst.a.length)); const tmp = src.a.slice(sp, sp + n); for (let i = 0; i < n; i++) dst.a[dp + i] = tmp[i]; }],
     'getProperty(String)': ['String', (o, a) => ({ 'line.separator': '\n', 'java.version': '21', 'user.name': 'student', 'os.name': 'Browser' }[a[0]] || null)], 'identityHashCode(Object)': ['int', (o, a) => (a[0] && a[0].id ? idHash(a[0].id) | 0 : 0)]
   } });
-  def('Scanner', { ctors: { 'InputStream': (o, a, R) => { if (a[0] !== SYSIN) throwJ(R, 'IllegalArgumentException', 'only System.in can be scanned here'); return new JScanner(R.stdin, R.more); }, 'String': (o, a, R) => new JScanner(nn(R, a[0])) }, methods: {
+  def('Scanner', { ctors: { 'InputStream': (o, a, R) => { if (a[0] !== SYSIN) throwJ(R, 'IllegalArgumentException', 'only System.in can be scanned here'); return new JScanner('', R.sysin); }, 'String': (o, a, R) => new JScanner(nn(R, a[0])) }, methods: {
     'nextInt()': ['int', (s, a, R) => s.typed(R, INT_RE, toInt)], 'nextLong()': ['long', (s, a, R) => s.typed(R, INT_RE, toLong)], 'nextDouble()': ['double', (s, a, R) => s.typed(R, DBL_RE, toDbl)], 'nextFloat()': ['float', (s, a, R) => Math.fround(s.typed(R, DBL_RE, toDbl))],
     'nextBoolean()': ['boolean', (s, a, R) => s.typed(R, BOOL_RE, (t) => t.toLowerCase() === 'true')], 'next()': ['String', (s, a, R) => s.next(R)], 'nextLine()': ['String', (s, a, R) => s.nextLine(R)],
     'hasNext()': ['boolean', (s) => !!s.peekToken()], 'hasNextInt()': ['boolean', (s) => s.hasTyped(INT_RE, toInt)], 'hasNextLong()': ['boolean', (s) => s.hasTyped(INT_RE, toLong)], 'hasNextDouble()': ['boolean', (s) => s.hasTyped(DBL_RE, toDbl)], 'hasNextBoolean()': ['boolean', (s) => s.hasTyped(BOOL_RE, () => true)], 'hasNextLine()': ['boolean', (s) => s.hasLine()],
     'close()': ['void', (s) => { s.closed = true; }], 'nextShort()': ['short', (s, a, R) => s.typed(R, INT_RE, (t) => { const v = toInt(t); return v === null || v < -32768 || v > 32767 ? null : v; })], 'nextByte()': ['byte', (s, a, R) => s.typed(R, INT_RE, (t) => { const v = toInt(t); return v === null || v < -128 || v > 127 ? null : v; })]
   } });
-  def('Random', { ctors: { '': () => new JRandom(), 'long': (o, a) => new JRandom(a[0]) }, methods: {
+  def('Random', { ctors: { '': (o, a, R) => new JRandom(R.rand === Math.random ? undefined : BigInt(Math.floor(R.rand() * 2 ** 48))), 'long': (o, a) => new JRandom(a[0]) }, methods: {
     'nextInt()': ['int', (r) => r.nextInt()], 'nextInt(int)': ['int', (r, a, R) => r.nextIntBound(a[0], R)], 'nextInt(int,int)': ['int', (r, a, R) => r.nextIntRange(a[0], a[1], R)], 'nextDouble()': ['double', (r) => r.nextDouble()], 'nextBoolean()': ['boolean', (r) => r.nextBoolean()],
     'nextLong()': ['long', (r) => r.nextLong()], 'nextFloat()': ['float', (r) => r.nextFloat()], 'nextGaussian()': ['double', (r) => r.nextGaussian()], 'setSeed(long)': ['void', (r, a) => { r.seed = (a[0] ^ MULT) & MASK48; r.haveNextGaussian = false; }]
   } });
@@ -1164,7 +1173,7 @@
   /* ======================================================================================================================== checker */
   // Resolves every name, gives every expression its static type, picks overloads, inserts the conversions Java applies (widening,
   // boxing), and reports the errors javac reports, with javac's words where that helps a student look them up.
-  function Checker(unit) {
+  function Checker(unit, entry) {   // entry: the class whose main runs (java Name in the terminal); otherwise the first class with one
     const classes = Object.create(null);   // user classes by name
     const err = (line, msg) => { throw new CompileError(line, msg); };
     const classOf = (name) => classes[name] || NATIVE[name] || null;
@@ -1583,6 +1592,7 @@
       }
     }
     function stmt(s, ctx) {
+      s[SC] = ctx.scope; s[NS] = ctx.nslots.n;   // for the step-through: the names in scope here (symbols, so the walkers over the tree do not see them)
       switch (s.k) {
         case 'Block': { s.endLine = lastLine(s); if (s.label) ctx.loops.push({ kind: 'label', label: s.label }); try { withScope(ctx, () => { stmts(s.body, ctx); }); } finally { if (s.label) ctx.loops.pop(); } return; }
         case 'Empty': return;
@@ -1601,7 +1611,7 @@
         case 'If': s.cond = cond(s.cond, ctx); withScope(ctx, () => stmt(s.then, ctx)); if (s.els) withScope(ctx, () => stmt(s.els, ctx)); return;
         case 'While': s.cond = cond(s.cond, ctx); loopBody(s, ctx); return;
         case 'DoWhile': loopBody(s, ctx); s.cond = cond(s.cond, ctx); return;
-        case 'For': withScope(ctx, () => { for (const i of s.init) stmt(i, ctx); if (s.cond) s.cond = cond(s.cond, ctx); for (const u of s.update) expr(u, ctx); loopBody(s, ctx); }); return;
+        case 'For': withScope(ctx, () => { for (const i of s.init) stmt(i, ctx); s[ISC] = ctx.scope; s[INS] = ctx.nslots.n; if (s.cond) s.cond = cond(s.cond, ctx); for (const u of s.update) expr(u, ctx); loopBody(s, ctx); }); return;
         case 'ForEach': {
           const it = expr(s.iter, ctx); let elem;
           if (it.k === 'array') elem = it.e;
@@ -1612,7 +1622,7 @@
             let vt = s.varType;
             if (vt.k === 'var') vt = elem; else { vt = resolveType(vt, s.line); if (!assignable(elem, vt, false)) err(s.line, 'incompatible types: ' + typeStr(elem) + ' cannot be converted to ' + typeStr(vt)); }
             s.varType = vt; s.elemType = elem; s.coerce = !same(elem, vt) && (elem.k === 'prim' || vt.k === 'prim');
-            s.slot = declareLocal(ctx, s.name, vt, s.line).slot;
+            s.slot = declareLocal(ctx, s.name, vt, s.line).slot; s[ISC] = ctx.scope; s[INS] = ctx.nslots.n;
             loopBody(s, ctx);
           });
           return;
@@ -1895,7 +1905,9 @@
     declare(); checkBodies();
     // the entry point
     let mainClass = null, main = null;
-    for (const d of unit.classes) { const c = classes[d.name]; const m = (c.methods.main || []).find(m => m.static && m.params.length === 1 && m.params[0].k === 'array' && isString(m.params[0].e)); if (m) { mainClass = c; main = m; break; } }
+    const isMain = (m) => m.static && m.params.length === 1 && m.params[0].k === 'array' && isString(m.params[0].e);
+    if (entry && unit.classes.some(d => d.name === entry)) { const c = classes[entry], m = (c.methods.main || []).find(isMain); if (!m) return { noMain: entry }; mainClass = c; main = m; }
+    else for (const d of unit.classes) { const c = classes[d.name]; const m = (c.methods.main || []).find(isMain); if (m) { mainClass = c; main = m; break; } }
     if (!main) { const first = unit.classes[0]; if (!first) err(1, 'no class found: a Java program is a class, for example\n  public class Main {\n      public static void main(String[] args) { ... }\n  }'); const named = (classes[first.name].methods.main || [])[0]; err(named ? named.line : first.line, named ? 'main must be declared as  public static void main(String[] args)' : "can't find main(String[]) method in class: " + first.name + '\n  (every Java program starts in  public static void main(String[] args))'); }
     if (main.ret.k !== 'void') err(main.line, 'main must be declared as  public static void main(String[] args)  (it returns nothing)');
     return { classes, mainClass, main, isSubclass, classOf, assignable, fileName: (unit.classes.find(c => c.mods.public) || unit.classes[0]).name + '.java' };
@@ -2146,20 +2158,20 @@
     // 0: go on, 1: leave the loop, or a signal to pass up
     const loopSignal = (r, s) => { if (!r) return 0; if (r.k === 'break') return (!r.label || r.label === s.label) ? 1 : r; if (r.k === 'continue') return (!r.label || r.label === s.label) ? 0 : r; return r; };
     function exec(s, F) {
-      F.line = s.line;
+      F.line = s.line; if (R.tr !== null) R.tr(s, F, false);
       switch (s.k) {
         case 'Block': for (const x of s.body) { const r = exec(x, F); if (r) { if (r.k === 'break' && r.label && r.label === s.label) return undefined; return r; } } return undefined;
         case 'Empty': return undefined;
         case 'LocalDecl': for (const v of s.vars) F.locals[v.slot] = v.init ? evalInit(v.init, F) : defaultValue(v.type); return undefined;
         case 'ExprStmt': ev(s.e, F); return undefined;
         case 'If': return ev(s.cond, F) ? exec(s.then, F) : s.els ? exec(s.els, F) : undefined;
-        case 'While': while (ev(s.cond, F)) { R.tick(); const r = loopSignal(exec(s.body, F), s); if (r === 1) break; if (r) return r; F.line = s.line; } return undefined;
+        case 'While': while (ev(s.cond, F)) { R.tick(); const r = loopSignal(exec(s.body, F), s); if (r === 1) break; if (r) return r; F.line = s.line; if (R.tr !== null) R.tr(s, F, false); } return undefined;
         case 'DoWhile': for (;;) { R.tick(); const r = loopSignal(exec(s.body, F), s); if (r === 1) break; if (r) return r; F.line = s.line; if (!ev(s.cond, F)) break; } return undefined;
-        case 'For': for (const i of s.init) exec(i, F); for (; !s.cond || ev(s.cond, F); ) { R.tick(); const r = loopSignal(exec(s.body, F), s); if (r === 1) break; if (r) return r; F.line = s.line; for (const u of s.update) ev(u, F); } return undefined;
+        case 'For': for (const i of s.init) exec(i, F); for (; !s.cond || ev(s.cond, F); ) { R.tick(); const r = loopSignal(exec(s.body, F), s); if (r === 1) break; if (r) return r; F.line = s.line; for (const u of s.update) ev(u, F); if (R.tr !== null) R.tr(s, F, true); } return undefined;
         case 'ForEach': {
           const it = ev(s.iter, F);
           if (it === null || it === undefined) npe(R, 'Cannot ' + (s.iterType.k === 'array' ? 'read the array length' : 'invoke "' + s.iterType.n + '.iterator()"') + ' because ' + describe(s.iter) + ' is null');
-          const put = (v) => { F.locals[s.slot] = s.coerce ? convert(v, s.elemType, s.varType) : v; };
+          const put = (v) => { F.locals[s.slot] = s.coerce ? convert(v, s.elemType, s.varType) : v; if (R.tr !== null) R.tr(s, F, true); };
           if (it instanceof JArr) { for (let i = 0; i < it.a.length; i++) { R.tick(); put(it.a[i]); const r = loopSignal(exec(s.body, F), s); if (r === 1) break; if (r) return r; } }
           else if (it instanceof JList) { const a = it.a; const len0 = a.length; for (let i = 0; i !== a.length; i++) { if (a.length !== len0) throwJ(R, 'ConcurrentModificationException', null); R.tick(); put(a[i]); const r = loopSignal(exec(s.body, F), s); if (r === 1) break; if (r) return r; } }
           else if (it instanceof JSet) { const items = it.ordered ? it.ordered.slice() : it.m.entries(R).map(e => e.key); const size0 = it.m.size; for (const x of items) { if (it.m.size !== size0) throwJ(R, 'ConcurrentModificationException', null); R.tick(); put(x); const r = loopSignal(exec(s.body, F), s); if (r === 1) break; if (r) return r; } }
@@ -2189,7 +2201,7 @@
             if (!jt && e instanceof RangeError) { try { throwJ(R, 'StackOverflowError', null); } catch (e2) { jt = e2; } }
             if (!jt) throw e;
             const c = s.catches.find(c => c.types.some(t => isInstance(jt.obj, t)));
-            if (!c) pending = jt; else { F.locals[c.slot] = jt.obj; try { result = exec(c.body, F); } catch (e3) { pending = e3; } }
+            if (!c) pending = jt; else { F.locals[c.slot] = jt.obj; try { result = exec(c.body, F); } catch (e3) { if (!(e3 instanceof JavaThrow)) throw e3; pending = e3; } }
           }
           if (s.fin) { const r = exec(s.fin, F); if (r) return r; }
           if (pending) throw pending;
@@ -2199,30 +2211,145 @@
       throw new Error('cannot execute ' + s.k);
     }
     return {
-      main() { ensureInit(chk.mainClass); invoke(null, chk.main, [new JArr(T.String, [])]); }
+      main(args) { ensureInit(chk.mainClass); invoke(null, chk.main, [new JArr(T.String, (args || []).map(String))]); }   // args: the words after  java Name
     };
+  }
+
+  /* ============================================================================================================== the step-through recorder */
+  // The interpreter cannot pause (it is a tree walker deep in the JavaScript stack), so JAVA.trace runs the program once and records, before each
+  // statement, where it is and what every frame holds; the page replays the record (src/javastep.js), so stepping goes backwards as well.
+  // Names of locals come from the checker: each statement keeps the scope it was checked in and how many slots had been handed out by then
+  // (slots are handed out in order, so a variable is visible at a statement when it is in that scope chain with a smaller slot). Symbols, not
+  // properties: the checker's walkers over the tree go through every enumerable key.
+  const SC = Symbol('scope'), NS = Symbol('slots'), ISC = Symbol('loop scope'), INS = Symbol('loop slots'), VIS = Symbol('visible'), IVIS = Symbol('visible in loop');
+  class TraceFull extends Error { }
+  const MAX_CELLS = 40, MAX_OBJS = 60, MAX_FRAMES = 24, MAX_STR = 60;
+  const escJ = (s, q) => s.replace(/[\\\n\t\r\0-\x1f\x7f]/g, (c) => ({ '\\': '\\\\', '\n': '\\n', '\t': '\\t', '\r': '\\r' })[c] || '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')).split(q).join('\\' + q);
+  const strText = (s) => '"' + escJ(s.length > MAX_STR ? s.slice(0, MAX_STR) : s, '"') + (s.length > MAX_STR ? '…' : '') + '"';
+  const charText = (c) => "'" + escJ(String.fromCharCode(c), "'") + "'";
+  const heapy = (v) => v instanceof JObj || v instanceof JArr || v instanceof JList || v instanceof JMap || v instanceof JSet || v instanceof JSB;
+  const simpleKey = (k) => k === null || typeof k !== 'object' || k instanceof JBox;
+  function Tracer(maxSteps) {
+    const steps = [], ids = new WeakMap(), last = new WeakMap(), cur = new WeakMap();
+    let R = null, nextId = 0, busy = false, statics = [];
+    const api = { steps, truncated: false, finished: false };
+    const idOf = (o) => { let n = ids.get(o); if (!n) { n = ++nextId; ids.set(o, n); } return n; };
+    // a value as Java prints it, or the number of the object it refers to (queued, so the objects reachable from the frames are drawn too)
+    function val(v, t, queue) {
+      if (t && t.k === 'prim') switch (t.n) { case 'char': return charText(v); case 'double': return fmtDouble(v); case 'float': return fmtFloat(v); default: return String(v); }
+      if (v === null || v === undefined) return 'null';
+      switch (typeof v) { case 'string': return strText(v); case 'number': case 'bigint': case 'boolean': return String(v); }
+      if (v instanceof JBox) return v.kind === 'C' ? charText(v.v) : v.kind === 'F' ? fmtFloat(v.v) : fmtDouble(v.v);
+      if (heapy(v)) { queue.push(v); return idOf(v); }
+      if (v instanceof JEntry) { const k = val(v.key, null, queue), x = val(v.value, null, queue); return (typeof k === 'number' ? '#' + k : k) + '=' + (typeof x === 'number' ? '#' + x : x); }
+      return runtimeClassName(v);
+    }
+    // the entries of a map in iteration order, without running the program's own code (a TreeMap of the program's objects would call compareTo)
+    const entriesOf = (m) => { if (m.cache) return m.cache; if (!m.sorted || (!m.cmpFn && [...m.buckets.values()].every(b => b.every(e => simpleKey(e.key))))) return m.entries(R); const all = []; for (const b of m.buckets.values()) all.push(...b); return all.sort((x, y) => x.seq - y.seq); };
+    const cells = (a, t, queue) => { const n = Math.min(a.length, MAX_CELLS), c = []; for (let i = 0; i < n; i++) c.push(val(a[i], t, queue)); return c; };
+    function obj(o, queue) {
+      if (o instanceof JArr) return { k: 'array', cls: typeStr(subst0(o.et)) + '[]', len: o.a.length, cells: cells(o.a, o.et, queue) };
+      if (o instanceof JList) return { k: 'list', cls: o.kind || 'ArrayList', len: o.a.length, cells: cells(o.a, null, queue) };
+      if (o instanceof JSet) { const items = o.ordered || entriesOf(o.m).map(e => e.key); return { k: 'set', cls: runtimeClassName(o), len: items.length, cells: cells(items, null, queue) }; }
+      if (o instanceof JMap) { const es = entriesOf(o); return { k: 'map', cls: runtimeClassName(o), len: es.length, entries: es.slice(0, MAX_CELLS).map(e => [val(e.key, null, queue), val(e.value, null, queue)]) }; }
+      if (o instanceof JSB) return { k: 'sb', cls: 'StringBuilder', len: o.s.length, text: strText(o.s) };
+      const chain = []; for (let c = o.cls; c && !c.lib; c = R.classOf(c.ext)) chain.unshift(c);
+      const fields = []; for (const c of chain) for (const fn in c.fields) { const f = c.fields[fn]; if (!f.static) fields.push([fn, val(o.f[f.key], f.type, queue)]); }
+      if (isThrowable(o.cls)) fields.push(['message', val(o.f.message, null, queue)]);
+      return { k: 'obj', cls: o.cls.name, fields };
+    }
+    function visible(s, inner) {
+      const key = inner ? IVIS : VIS; if (s[key]) return s[key];
+      let sc = inner ? s[ISC] : s[SC]; const ns = inner ? s[INS] : s[NS], list = [];
+      for (; sc; sc = sc.parent) for (const v of sc.vars.values()) if (v.slot < ns) list.push({ name: v.name, slot: v.slot, type: v.type, ts: typeStr(subst0(v.type)), param: !sc.parent });   // the outermost scope holds the parameters
+      list.sort((a, b) => a.slot - b.slot); return (s[key] = list);
+    }
+    // a frame below the top cannot change its locals until it is on top again, so its snapshot is made once and shared by the steps that follow
+    function frame(F, top) {
+      let c = cur.get(F); if (!c) { c = { st: null, inner: false, snap: null, roots: null }; cur.set(F, c); }
+      if (!top && c.snap) return c;
+      const roots = [], vars = [];
+      if (F.self) vars.push(['this', F.self.cls ? F.self.cls.name : 'Object', val(F.self, null, roots), 0]);
+      if (!c.st && F.name === '<init>') { const k = ((R.classes[F.cls] || {}).ctors || []).find(k => k.explicit && k.body && k.nslots === F.locals.length); if (k) c.st = k.body; }   // still in super(...) or this(...): its parameters
+      if (c.st) for (const v of visible(c.st, c.inner)) { const x = F.locals[v.slot]; if (x !== undefined) vars.push([v.name, v.ts, val(x, v.type, roots), v.param ? 1 : 0]); }
+      const r = { snap: { cls: F.cls, name: F.name, line: F.line, vars }, roots };
+      if (!top) { c.snap = r.snap; c.roots = roots; } else c.snap = null;
+      return r;
+    }
+    function record(frames, extra) {
+      busy = true;
+      try {
+        const queue = [], out = [], skip = Math.max(0, frames.length - MAX_FRAMES);
+        frames.forEach((F, i) => { if (i > 0 && i <= skip) return; const f = frame(F, i === frames.length - 1); out.push(f.snap); for (const o of f.roots) queue.push(o); });
+        const st = []; for (const [c, fn, f] of statics) if (c.initialized) st.push([c.name + '.' + fn, typeStr(subst0(f.type)), val(c.staticValues[fn], f.type, queue)]);
+        const heap = [], seen = new Set();
+        for (let i = 0; i < queue.length && heap.length < MAX_OBJS; i++) {
+          const o = queue[i]; if (seen.has(o)) continue; seen.add(o);
+          const rec = obj(o, queue); rec.id = idOf(o);
+          const json = JSON.stringify(rec), old = last.get(o);   // an object that did not change is the same record (the message to the page shares it too)
+          if (old && old.json === json) heap.push(old.rec); else { last.set(o, { json, rec }); heap.push(rec); }
+        }
+        const step = Object.assign({ line: frames.length ? frames[frames.length - 1].line : 0, frames: out, statics: st, heap, outLen: R.outLen }, extra);
+        if (skip) step.skipped = skip;
+        if (queue.some(o => !seen.has(o))) step.more = true;
+        steps.push(step);
+      } finally { busy = false; }
+    }
+    function onStatement(s, F, inner) {
+      if (busy || s.k === 'Block' || s.k === 'Empty') return;
+      const c = cur.get(F);
+      if (!inner && c && c.st && c.st.k === 'For' && c.st.init.includes(s)) return;   // a for loop's own declaration belongs to its first step
+      cur.set(F, { st: s, inner, snap: null, roots: null }); F.line = s.line;   // a loop's header again (for-each sets its variable before the body sets the line)
+      if (!inner && c && c.st && c.st.k === 'If' && (c.st.then === s || c.st.els === s) && s.line === c.st.line) return;   // if (n <= 1) return 1; is one step
+      if (steps.length >= maxSteps) { api.truncated = true; throw new TraceFull(); }
+      record(R.frames, null);
+    }
+    api.attach = (r) => {
+      R = r; R.tr = onStatement;
+      for (const name in R.classes) { const c = R.classes[name]; if (!c.lib) for (const fn in c.fields) if (c.fields[fn].static) statics.push([c, fn, c.fields[fn]]); }
+    };
+    api.end = (e) => {
+      R.tr = null;
+      if (e instanceof TraceFull) return;
+      if (e instanceof JavaThrow) { const fr = e.obj.trace || []; record(fr, { error: true }); return; }   // the frames as they were when it was thrown
+      if (!e || e instanceof SystemExit) { api.finished = true; record([], { done: true }); }
+    };
+    return api;
+  }
+  /** JAVA.trace(code, stdin, {maxSteps, maxMs}) → {steps, output, error, errorLine, truncated, finished, compile}: the whole run, recorded (see Tracer) */
+  function trace(code, stdin, opts) {
+    opts = opts || {};
+    const tr = Tracer(opts.maxSteps || 2000);
+    const r = run(code, stdin, { maxMs: opts.maxMs === undefined ? 5000 : opts.maxMs, tracer: tr });
+    const m = r.err && (r.err.match(/\.java:(\d+)\)/) || r.err.match(/\.java:(\d+): error/));
+    const lastStep = tr.steps[tr.steps.length - 1];
+    return { steps: tr.steps, output: r.out, error: r.err || null, errorLine: m ? +m[1] : r.err && lastStep ? lastStep.line : 0, truncated: tr.truncated, finished: tr.finished, compile: !!r.compile, exit: r.exit || 0 };
   }
 
   /* ======================================================================================================================== API */
   const fileNameGuess = (code) => { const m = String(code).match(/\bpublic\s+(?:final\s+|abstract\s+)*class\s+([A-Za-z_$][\w$]*)/) || String(code).match(/\bclass\s+([A-Za-z_$][\w$]*)/); return (m ? m[1] : 'Main') + '.java'; };
   function run(code, stdin, opts) {
     opts = opts || {};
-    const R = new Runtime({ stdin, more: opts.more, write: opts.write, maxSteps: opts.maxSteps, maxMs: opts.maxMs === undefined ? 5000 : opts.maxMs, maxOut: opts.maxOut });
+    const R = new Runtime({ stdin, more: opts.more, write: opts.write, maxSteps: opts.maxSteps, maxMs: opts.maxMs === undefined ? 5000 : opts.maxMs, maxOut: opts.maxOut, random: opts.random, clock: opts.clock });
     let chk;
-    try { chk = Checker(parse(String(code))); }
+    try { chk = Checker(parse(String(code)), typeof opts.mainClass === 'string' ? opts.mainClass : null); }
     catch (e) { if (e instanceof CompileError) return { out: '', err: fileNameGuess(code) + ':' + e.line + ': error: ' + e.message, compile: true, line: e.line }; throw e; }
     if (opts.checkOnly) return { out: '', err: null, exit: 0 };   // javac in the practice terminal: the checks above, nothing run
+    if (chk.noMain) return { out: '', err: 'Error: Main method not found in class ' + chk.noMain + ', please define the main method as:\n   public static void main(String[] args)\nor a JavaFX application class must extend javafx.application.Application', exit: 1 };
     R.fileName = chk.fileName; R.classes = chk.classes;
     const I = Interp(R, chk);
-    try { I.main(); return { out: R.out, err: null, exit: 0 }; }
+    if (opts.tracer) opts.tracer.attach(R);
+    try { I.main(Array.isArray(opts.args) ? opts.args : []); if (opts.tracer) opts.tracer.end(null); return { out: R.out, err: null, exit: 0 }; }
     catch (e) {
+      if (opts.tracer) { opts.tracer.end(e); if (e instanceof TraceFull) return { out: R.out, err: null, exit: 0 }; }
       if (e instanceof JavaThrow) return { out: R.out, err: 'Exception in thread "main" ' + traceText(R, e.obj), exit: 1 };
       if (e instanceof SystemExit) return { out: R.out, err: null, exit: e.code };
       if (e instanceof TimeLimit) return { out: R.out, err: 'Time limit exceeded: the program ran for too long. Is there a loop that never ends?', exit: 1 };
       if (e instanceof TooMuchOutput) return { out: R.out, err: 'The program printed more than it was allowed to and was stopped.', exit: 1 };
+      if (e === NEED_INPUT) return { out: R.out, err: null, exit: 0, needInput: true };   // more() threw it: the run ends here and is replayed with the next line (javaworker.js)
       if (e instanceof RangeError) return { out: R.out, err: 'Exception in thread "main" java.lang.StackOverflowError', exit: 1 };
       return { out: R.out, err: 'Internal error in the Java interpreter: ' + (e && e.message || e), exit: 1 };
     }
   }
-  return { run, parse, fmtDouble, strHash, jformat, CompileError, _internal: { lex, Checker, NATIVE } };
+  return { run, trace, NEED_INPUT, parse, fmtDouble, strHash, jformat, CompileError, _internal: { lex, Checker, NATIVE } };
 });

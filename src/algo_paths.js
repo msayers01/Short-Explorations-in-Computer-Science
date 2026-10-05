@@ -1009,7 +1009,7 @@
 <li><b>A*</b> takes the cell with the smallest <i>g</i> + <i>h</i>, where <i>g</i> is the cost so far and <i>h</i> is an estimate of the cost still to go. Here <i>h</i> is the Manhattan distance (rows apart plus columns apart) or, with diagonal moves, the octile distance (diagonal steps of cost √2, then straight ones). Neither ever overestimates, because every step costs at least 1 and mud only adds; an estimate like that is called <em>admissible</em>, and with it A* still returns a cheapest path. It explores fewer cells than Dijkstra because it leans toward the goal; with <i>h</i> = 0 it <em>is</em> Dijkstra.</li>
 <li><b>Greedy best-first search</b> uses the estimate alone. In open country it heads straight for the goal and explores very little, but a wall in the way can lure it into a pocket, and mud does not slow it down: its path is often not the cheapest.</li>
 </ul>
-<p>A diagonal move costs √2 ≈ 1.41 times the cost of the cell it enters, and may not squeeze between two walls that touch at a corner.</p>
+<p>A diagonal move costs √2 ≈ 1.41 times the cost of the cell it enters, and may not cut a corner: both cells beside the diagonal must be open.</p>
 <h2>What they cost</h2>
 <p>With <i>V</i> cells and <i>E</i> moves between them (at most 4<i>V</i>, or 8<i>V</i> with diagonals), BFS and DFS take time proportional to <i>V</i> + <i>E</i>: each cell enters and leaves the frontier a bounded number of times. Dijkstra and A* with a binary heap take time proportional to (<i>V</i> + <i>E</i>) log <i>V</i>, the log for the heap. A* has the same worst case as Dijkstra; how much it saves depends on how good the estimate is. The <b>Compare all</b> button runs the five on the same grid.</p>
 <h2>Where they are used</h2>
@@ -1019,7 +1019,7 @@
 <li>A* was published in 1968 by Peter Hart, Nils Nilsson and Bertram Raphael at the Stanford Research Institute, for the Shakey robot. It is still the standard way characters in video games find their way across a map.</li>
 <li>Map and satnav route planners build on Dijkstra and A*, adding preprocessing (such as contraction hierarchies) so that a route across a continent's road network takes milliseconds.</li>
 </ul>`,
-    taught: [{ href: '#/math/6', text: 'SC 104, Graphs and paths (BFS and its proof)' }, { href: '#/dsa/7', text: 'SC 107, Stacks and queues' }]
+    taught: [{ href: '#/math/6', text: 'SC 104, Graphs and paths (BFS and its proof)' }, { href: '#/dsa/7', text: 'SC 107, Stacks and queues' }, { href: '#/dsa/13', text: 'SC 107, Graphs' }]
   });
 
   A.register({
@@ -1057,9 +1057,9 @@
 <h2>Things to try</h2>
 <ul>
 <li><b>Bet first.</b> Choose a winner before you press Play, then see whether you were right. Then try the same solvers on a new maze: the winner often changes, because DFS and the wall follower can be lucky or very unlucky.</li>
-<li><b>BFS is never fastest here, but it is never fooled.</b> It explores every cell nearer than the goal, ring by ring, so it nearly always comes last; but with <em>Add loops</em> on, its path is always the shortest one there is.</li>
+<li><b>BFS is never fastest here, but it is never fooled.</b> It explores every cell nearer than the goal, ring by ring, so it never wins and, once loops are added, nearly always comes last (in a perfect maze the wall follower, which walks many corridors twice, is usually slower still); but with <em>Add loops</em> on, its path is always the shortest one there is.</li>
 <li><b>Add loops.</b> A perfect maze has exactly one path, so every solver finds the same one. With loops there are many paths: watch DFS bring back a long winding one, and dead-end filling get stuck, because a loop has no dead end to fill.</li>
-<li><b>Change the maze.</b> Sidewinder and binary-style mazes have a long open top corridor that suits A*; the recursive backtracker's long twisting corridors make A*'s sense of direction almost useless.</li>
+<li><b>Change the maze.</b> On Prim's mazes, full of short dead ends, A* usually wins; on the recursive backtracker's long twisting corridors its sense of direction helps much less, and DFS usually wins. Sidewinder's long top corridor sends the wall follower on a very long walk.</li>
 </ul>`,
     taught: [{ href: '#/dsa/7', text: 'SC 107, Stacks and queues' }, { href: '#/math/6', text: 'SC 104, Graphs and paths' }]
   });
@@ -1069,8 +1069,8 @@
     blurb: 'Run BFS and DFS on a small graph and watch the queue, the stack or the call stack beside it, with a sentence for every step, the visit order on each vertex, and the search tree they leave behind. Dijkstra too.',
     mount: mountGraph,
     about: `<h2>The same loop with a different container</h2>
-<p>Both searches start at one vertex and keep a container of vertices still to deal with. <b>Breadth-first search</b> uses a <em>queue</em>: first in, first out. It labels the start 0, its neighbours 1, their new neighbours 2, and so on, so it visits the graph in layers and each label is the distance from the start (SC 104, lesson 5, proves it). <b>Depth-first search</b> uses a <em>stack</em>: last in, first out. It goes as deep as it can along one path and only backs up when it is stuck.</p>
-<p>Depth-first search is shown two ways. The <b>stack</b> version pushes every unvisited neighbour, so a vertex can be on the stack more than once; a copy popped after the vertex has been visited is thrown away (struck through). The <b>recursive</b> version calls itself for each unvisited neighbour, and the program's own <em>call stack</em> (SC 107, lesson 7) holds the vertices on the current path. Because the stack version pushes neighbours in reverse order, both visit the vertices in the same order and build the same tree.</p>
+<p>Both searches start at one vertex and keep a container of vertices still to deal with. <b>Breadth-first search</b> uses a <em>queue</em>: first in, first out. It labels the start 0, its neighbours 1, their new neighbours 2, and so on, so it visits the graph in layers and each label is the distance from the start (SC 104, lesson 6, proves it). <b>Depth-first search</b> uses a <em>stack</em>: last in, first out. It goes as deep as it can along one path and only backs up when it is stuck.</p>
+<p>Depth-first search is shown two ways. The <b>stack</b> version pushes every unvisited neighbour, so a vertex can be on the stack more than once; a copy popped after the vertex has been visited is thrown away (struck through). The <b>recursive</b> version calls itself for each unvisited neighbour, and the program's own <em>call stack</em> (SC 107, lesson 8) holds the vertices on the current path. Because the stack version pushes neighbours in reverse order, both visit the vertices in the same order and build the same tree.</p>
 <p>Each search leaves a <em>tree</em> behind (the thick edges): every visited vertex except the start remembers the edge it was reached by. The breadth-first tree contains a shortest path from the start to every vertex. The depth-first tree tends to be long and thin.</p>
 <h2>Dijkstra: when edges have weights</h2>
 <p>On the weighted graphs, "shortest" means smallest total weight, and BFS's count of edges is the wrong measure: on the towns graph, BFS reaches E from A in two roads costing 15, while the cheapest route uses four roads and costs 9. <b>Dijkstra's algorithm</b> replaces the queue with a <em>priority queue</em> ordered by the distance found so far. The smallest entry is final when it comes out, as long as no weight is negative; an entry for a vertex that has already come out is out of date and is thrown away. Dashed edges are the best routes found so far, which may still change.</p>
@@ -1081,7 +1081,7 @@
 <li>DFS: finding the connected pieces of a graph, detecting cycles, putting tasks in an order that respects their dependencies (topological sorting), and generating mazes (the recursive backtracker is a randomized DFS).</li>
 <li>Dijkstra: route planning, and network routing (OSPF and IS-IS run it on every router).</li>
 </ul>`,
-    taught: [{ href: '#/math/6', text: 'SC 104, Graphs and paths' }, { href: '#/dsa/7', text: 'SC 107, Stacks and queues' }, { href: '#/dsa/8', text: 'SC 107, Recursion' }]
+    taught: [{ href: '#/math/6', text: 'SC 104, Graphs and paths' }, { href: '#/dsa/7', text: 'SC 107, Stacks and queues' }, { href: '#/dsa/8', text: 'SC 107, Recursion' }, { href: '#/dsa/13', text: 'SC 107, Graphs' }]
   });
 
   // ================================================================== tests (node test_algos.js)

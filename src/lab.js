@@ -212,7 +212,7 @@ finally { ... }
 throw new IllegalArgumentException("must be positive");
 Math.sqrt(x)  Math.pow(a, b)  Math.abs(x)  Math.max(a, b)  Math.round(x)  Math.random()
 Random r = new Random();  r.nextInt(6) + 1</code></pre>
-<p class="ref-note">This Java runs in your browser, in an interpreter written for this site. It checks programs the way <code>javac</code> does (the same error messages) and covers the language an introductory course uses: classes, inheritance, interfaces, arrays, strings, <code>ArrayList</code>, <code>HashMap</code>, <code>HashSet</code>, <code>Scanner</code>, <code>Random</code>, exceptions. Not available: generics in your own classes, lambdas, nested classes, enums, files and threads. A program is stopped after about 5 seconds, and recursion deeper than about a thousand calls stops with a <code>StackOverflowError</code>.</p>`,
+<p class="ref-note">This Java runs in your browser, in an interpreter written for this site. It checks programs the way <code>javac</code> does (the same error messages) and covers the language an introductory course uses: classes, inheritance, interfaces, arrays, strings, <code>ArrayList</code>, <code>HashMap</code>, <code>HashSet</code>, <code>Scanner</code>, <code>Random</code>, exceptions. Not available: generics in your own classes, lambdas, nested classes, enums, files and threads. A program is stopped after about 5 seconds, and recursion deeper than about a thousand calls stops with a <code>StackOverflowError</code>. <b>Step through</b> shows a program one statement at a time (the first 2000 statements).</p>`,
     scheme: `<h3>Scheme quick reference</h3>
 <h4>Expressions</h4>
 <pre><code>(+ 1 2)   (* 3 4)   (- 10 3)   (/ 1 3)   (quotient 7 2)   (remainder 7 2)
@@ -276,7 +276,9 @@ Random r = new Random();  r.nextInt(6) + 1</code></pre>
       [/not a statement/, 'This line is an expression on its own, not an instruction. A method call needs parentheses (println(x), not println), and a value alone does nothing.'],
       [/illegal start of expression/, 'Java could not start reading an expression here. Common causes: a stray keyword such as public inside a method, or a missing ) or } just before.'],
       [/unclosed string literal/, 'A string is missing its closing quote on this line.'],
-      [/can't find main/, 'Every Java program starts in  public static void main(String[] args) . Add that method to your class.']
+      [/can't find main/, 'Every Java program starts in  public static void main(String[] args) . Add that method to your class.'],
+      [/is public, should be declared in a file named/, 'In Java a public class lives in a file of the same name. Rename the tab (double-click it) to the name in the message, or take the word public off the class.'],
+      [/duplicate class/, 'Two files declare a class with the same name. Run compiles all the Java tabs together, so each class may be declared only once: rename one, or close the tab you do not need.']
     ],
     scheme: [
       [/Unbound variable/, 'A name was used that has no definition. Check the spelling, or define it first with (define ...).'],
@@ -287,6 +289,20 @@ Random r = new Random();  r.nextInt(6) + 1</code></pre>
       [/unexpected|Unbalanced|end of input|EOF/, 'The parentheses do not balance. Count them, or use the highlighted matching bracket in the editor.']
     ]
   };
+
+  // The Shortcuts panel: every key the editor and the Lab's panels handle (LabEditor's keydown handler, the find and go-to bars, the terminal,
+  // the step-throughs). Keep it in step with those handlers.
+  const kbd = (s) => s.split(' + ').map((x) => '<kbd>' + x + '</kbd>').join(' + ');
+  const KEYS_HTML = '<table class="keys-tbl"><tbody>' + [
+    ['Editor'], [kbd('Ctrl + Enter'), 'run the program'], [kbd('Ctrl + Z'), 'undo'], [kbd('Ctrl + Y') + ' or ' + kbd('Ctrl + Shift + Z'), 'redo'],
+    [kbd('Ctrl + F'), 'find'], [kbd('Ctrl + H'), 'find and replace'], [kbd('Ctrl + G'), 'go to a line'], [kbd('Ctrl + /'), 'comment or uncomment the lines'],
+    [kbd('Ctrl + D'), 'duplicate the line'], [kbd('Alt + ↑') + ' ' + kbd('Alt + ↓'), 'move the line up or down'], [kbd('Ctrl + S'), 'download the file'],
+    [kbd('Tab') + ' / ' + kbd('Shift + Tab'), 'indent / outdent (every selected line)'], [kbd('Enter'), 'new line, indented to match'],
+    [kbd('↑') + ' ' + kbd('↓') + ' then ' + kbd('Tab') + ' or ' + kbd('Enter'), 'choose a completion; ' + kbd('Esc') + ' closes the list'],
+    ['Find and go to'], [kbd('Enter') + ' / ' + kbd('Shift + Enter'), 'next / previous match'], [kbd('Esc'), 'close the bar'],
+    ['Terminal'], [kbd('Tab'), 'complete a name'], [kbd('↑') + ' ' + kbd('↓'), 'earlier commands'], [kbd('Ctrl + C'), 'stop the program'], [kbd('Ctrl + L'), 'clear the screen'], [kbd('Ctrl + U'), 'clear the line'],
+    ['Step through'], [kbd('Enter') + ' or ' + kbd('N'), 'next line (Python), next step (Scheme)'], [kbd('N') + ' or ' + kbd('→') + ', ' + kbd('B') + ' or ' + kbd('←'), 'forward and back (C++ memory)']
+  ].map((r) => r.length === 1 ? '<tr><th colspan="2">' + r[0] + '</th></tr>' : '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join('') + '</tbody></table><p class="ref-note">On a Mac, Cmd works wherever Ctrl is shown for the editor.</p>';
 
   // The same quick reference for the Full C++ engine: the note at the end changes, and the library is no longer limited.
   REFERENCE.cppfull = REFERENCE.cpp.replace(/<p class="ref-note">[\s\S]*<\/p>$/, `<h4>With Full C++ you can also use</h4>
@@ -318,10 +334,14 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     if (!S.panels) S.panels = {};
     S.fullCpp = S.fullCpp === true;
     if (!STANDARDS.some(s => s[0] === S.cppStd)) S.cppStd = STANDARDS[1][0];
+    S.args = window.LABUTIL ? window.LABUTIL.cleanArgs(S.args) : {};   // the Arguments box of each language: strings only (labutil.js)
+    S.outWrap = S.outWrap !== false;
     return S;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
-  const curFile = () => S.files[S.lang][S.active[S.lang]];
+  // S.lang is checked with hasLang when it is set (it can come from a link), and checked again here, where files are written through it
+  const filesOf = (l) => (l !== '__proto__' && Object.prototype.hasOwnProperty.call(S.files, l) ? S.files[l] : S.files.python);
+  const curFile = () => { const fs = filesOf(S.lang); return fs[Math.max(0, Math.min(fs.length - 1, Number(S.active[S.lang]) | 0))]; };   // the index is a number, whatever was saved
 
   /* ---------------- share links ---------------- */
   const b64e = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -338,6 +358,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
   }
 
   /* ---------------- the editor ---------------- */
+  LabEditor.n = 0;
   function LabEditor(opts) {
     const { el, highlight, toLines, LANGS } = A();
     let lang = opts.lang, L = LANGS[lang];
@@ -346,7 +367,11 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const ta = el('textarea', { spellcheck: 'false', autocapitalize: 'off', autocomplete: 'off', autocorrect: 'off', 'aria-label': 'Code editor' });
     const popup = el('div', { class: 'ac', hidden: '' });
     wrap.append(pre, ta, popup);
-    let findRanges = [], findCur = -1, traceLine = 0, wordCache = null;
+    let findRanges = [], findCur = -1, traceLine = 0, wordCache = null, errMarks = [];
+    // error marks (setMarks): the line tinted, a pin in the gutter carrying the message (a button: it takes the pointer and the focus, which the
+    // highlighted copy under the textarea cannot), and the message given to screen readers as the textarea's description
+    const pins = el('div', { class: 'err-pins' }), errDesc = el('span', { class: 'sr-only', id: 'lab-err-desc-' + (++LabEditor.n) });
+    wrap.append(pins, errDesc);
 
     // -- rendering with marks (current line, matching brackets, find matches, trace line)
     const render = () => {
@@ -359,6 +384,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       const caretLine = ta.value.slice(0, ta.selectionStart).split('\n').length;
       if (document.activeElement === ta && lines[caretLine - 1]) lines[caretLine - 1].classList.add('cur');
       if (traceLine && lines[traceLine - 1]) lines[traceLine - 1].classList.add('trace');
+      for (const m of errMarks) if (lines[m.line - 1]) lines[m.line - 1].classList.add('err');
       const marks = [];
       const bm = matchBracket();
       if (bm) marks.push({ s: bm[0], e: bm[0] + 1, cls: 'bm' }, { s: bm[1], e: bm[1] + 1, cls: 'bm' });
@@ -366,7 +392,18 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       if (marks.length) markRanges(code, marks.sort((a, b) => a.s - b.s));
       pre.style.minHeight = '';
       wordCache = null;
+      placePins();
     };
+    function placePins() {
+      if (!errMarks.length && !pins.firstChild) return;
+      pins.textContent = '';
+      const lines = pre.querySelector('code').children, top0 = wrap.getBoundingClientRect().top + wrap.clientTop, h = wrap.clientHeight;
+      for (const m of errMarks) {
+        const ln = lines[m.line - 1]; if (!ln) continue;
+        const y = ln.getBoundingClientRect().top - top0; if (y < -4 || y > h - 8) continue;   // scrolled out of view
+        pins.append(el('button', { class: 'err-pin', type: 'button', style: 'top:' + Math.round(y) + 'px', title: m.msg, 'aria-label': 'Error on line ' + m.line + ': ' + m.msg, onclick: () => { api.goToLine(m.line); } }, '!'));
+      }
+    }
     function markRanges(code, marks) {
       // Walk the text nodes of each line div in document order, splitting at mark boundaries.
       let off = 0, mi = 0;
@@ -470,7 +507,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       if (e.inputType === 'historyUndo') { e.preventDefault(); undo(); }
       else if (e.inputType === 'historyRedo') { e.preventDefault(); redo(); }
     });
-    ta.addEventListener('scroll', () => { pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; if (!popup.hidden) acClose(); });
+    ta.addEventListener('scroll', () => { pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; if (!popup.hidden) acClose(); placePins(); });
     ta.addEventListener('click', () => { render(); acClose(); });
     ta.addEventListener('keyup', (e) => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) render(); if (opts.onCursor) opts.onCursor(); });
     ta.addEventListener('select', () => { render(); if (opts.onCursor) opts.onCursor(); });
@@ -489,6 +526,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       if (mod && (e.key === 'f' || e.key === 'F' || e.key === 'h' || e.key === 'H')) { e.preventDefault(); if (opts.onFind) opts.onFind(e.key.toLowerCase() === 'h'); return; }
       if (mod && e.key === 'Enter') { e.preventDefault(); if (opts.onRun) opts.onRun(); return; }
       if (mod && e.key === '/') { e.preventDefault(); toggleComment(); return; }
+      if (mod && !e.altKey && !e.shiftKey && (e.key === 'g' || e.key === 'G')) { e.preventDefault(); if (opts.onGoto) opts.onGoto(); return; }
       if (mod && (e.key === 's' || e.key === 'S')) { e.preventDefault(); if (opts.onSave) opts.onSave(); return; }
       if (mod && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); duplicateLine(); return; }
       if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); moveLines(e.key === 'ArrowUp' ? -1 : 1); return; }
@@ -557,7 +595,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       edit(ls, le, out, ls, ls + out.length);
     }
     requestAnimationFrame(render);
-    return {
+    const api = {
       el: wrap, ta,
       get value() { return ta.value; },
       set value(v) { ta.value = v; ta.selectionStart = ta.selectionEnd = 0; hist.length = 0; hist.push({ v, s: 0, e: 0 }); hi = 0; lastKind = null; render(); },
@@ -569,8 +607,17 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       pos() { const before = ta.value.slice(0, ta.selectionStart); return { line: before.split('\n').length, col: before.length - before.lastIndexOf('\n'), selected: ta.selectionEnd - ta.selectionStart }; },
       indentLines: (add) => indentBlock(add),
       goToLine(n) { const lines = ta.value.split('\n'); n = Math.max(1, Math.min(n, lines.length)); let s = 0; for (let i = 0; i < n - 1; i++) s += lines[i].length + 1; this.select(s, s + lines[n - 1].length); },
-      replaceRange: (s, t, text) => edit(s, t, text, s + text.length)
+      replaceRange: (s, t, text) => edit(s, t, text, s + text.length),
+      /** marks: [{line, msg}] (error lines from the last run); [] clears them */
+      setMarks(marks) {
+        errMarks = (marks || []).filter((m) => m && m.line >= 1).map((m) => ({ line: Math.floor(m.line), msg: String(m.msg || 'error') }));
+        errDesc.textContent = errMarks.map((m) => 'Error on line ' + m.line + ': ' + m.msg).join('. ');
+        if (errMarks.length) ta.setAttribute('aria-describedby', errDesc.id); else ta.removeAttribute('aria-describedby');
+        render();
+      },
+      marks: () => errMarks.map((m) => Object.assign({}, m))
     };
+    return api;
     function scrollToLine(n) {
       const lh = parseFloat(getComputedStyle(ta).lineHeight) || 21; const y = (n - 1) * lh;
       if (y < ta.scrollTop + lh || y > ta.scrollTop + ta.clientHeight - 2 * lh) ta.scrollTop = Math.max(0, y - ta.clientHeight / 2);
@@ -589,9 +636,10 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const main = el('main', { class: 'lab' });
     const status = el('span', { class: 'lab-status' });
     let running = false, tracer = null, memTrace = null, memIdx = 0, memToken = 0;
+    let jsTrace = null, jsIdx = 0, jsToken = 0;   // the Java step-through (src/javastep.js draws it)
 
     // ----- editor
-    const editor = LabEditor({ lang: S.lang, onChange: (v) => { curFile().code = v; save(); if (!findBar.hidden && findInp.value) computeMatches(); if (memTrace) endMem('The program changed, so the memory view was closed. Press Step through memory to start again.'); }, onRun: () => run(), onSave: () => download(), onCursor: () => renderStatusBar(), onFind: (withReplace) => openFind(withReplace), onEscape: () => { if (!findBar.hidden) closeFind(); } });
+    const editor = LabEditor({ lang: S.lang, onChange: (v) => { curFile().code = v; save(); if (errMark && errMark.file === curFile()) setErrMark(null); if (!findBar.hidden && findInp.value) computeMatches(); if (memTrace) endMem('The program changed, so the memory view was closed. Press Step through memory to start again.'); if (jsTrace) endJStep('The program changed, so the step-through was closed. Press Step through to start again.'); }, onRun: () => run(), onSave: () => download(), onCursor: () => renderStatusBar(), onFind: (withReplace) => openFind(withReplace), onGoto: () => openGoto(), onEscape: () => { if (!findBar.hidden) closeFind(); if (!gotoBar.hidden) closeGoto(); } });
     editor.value = curFile().code;
     editor.el.style.setProperty('--lab-font', S.fontSize + 'px');
 
@@ -607,7 +655,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       for (const k in langBtns) langBtns[k].classList.toggle('on', k === l);
       document.documentElement.setAttribute('data-course', LANG_INFO[l].accent);
       editor.setLang(l); editor.value = curFile().code;
-      renderTabs(); renderToolbar(); renderStatusBar(); renderExBar(); renderAsgBar(); out.hide(); replBox.hidden = l !== 'scheme'; turtleBox.hidden = true; traceBox.hidden = true; stdinBox.hidden = true; substBox.hidden = true; endMem();
+      renderTabs(); renderToolbar(); renderStatusBar(); renderExBar(); renderAsgBar(); out.hide(); replBox.hidden = l !== 'scheme'; turtleBox.hidden = true; traceBox.hidden = true; stdinBox.hidden = true; substBox.hidden = true; endMem(); setErrMark(null); renderArgs();
       refBody.innerHTML = REFERENCE[l === 'cpp' && isFull() ? 'cppfull' : l]; renderTemplates(); repl.reset(); engineChanged();
     }
 
@@ -638,14 +686,14 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       return form;
     }
     function cleanName(n, l) { n = (n || '').trim().replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_'); if (!n) return null; if (!/\.\w+$/.test(n)) n += LANG_INFO[l].ext; return n; }
-    function activate(i) { if (tracer) tracer.stop(); endMem(); S.active[S.lang] = i; save(); editor.value = curFile().code; renderTabs(); renderStatusBar(); engineChanged(); renderExBar(); renderAsgBar(); if (!isTouch()) editor.focus(); }
+    function activate(i) { if (tracer) tracer.stop(); endMem(); S.active[S.lang] = i; save(); editor.value = curFile().code; applyErrMark(); renderTabs(); renderStatusBar(); engineChanged(); renderExBar(); renderAsgBar(); if (!isTouch()) editor.focus(); }
     const isTouch = () => window.matchMedia && matchMedia('(hover: none)').matches;
     function newFile() {
       const l = S.lang; const addBtn = tabs.lastElementChild;
       nameForm(uniqueName(l, 'untitled' + LANG_INFO[l].ext), (name) => { const n = cleanName(name, l); if (n == null) { renderTabs(); return; } S.files[l].push({ name: uniqueName(l, n), code: '' }); activate(S.files[l].length - 1); }, addBtn);
     }
     function rename(i) {
-      const f = S.files[S.lang][i]; if (!tabs.children[i]) return;
+      i = Number(i) | 0; const f = filesOf(S.lang)[i]; if (!f || !tabs.children[i]) return;
       nameForm(f.name, (name) => { const n = cleanName(name, S.lang); if (n != null && n !== f.name) { f.name = uniqueName(S.lang, n); save(); } renderTabs(); renderStatusBar(); }, tabs.children[i]);
     }
     // status bar under the editor: file name, cursor position, rename, wrap, touch helpers
@@ -654,8 +702,8 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const renameBtn = el('button', { class: 'btn quiet tiny', title: 'Rename this file', onclick: () => rename(S.active[S.lang]) }, 'Rename');
     const indentBtn = el('button', { class: 'btn quiet tiny touch-only', title: 'Indent', onclick: () => { editor.focus(); editor.indentLines(true); } }, '⇥ Indent');
     const outdentBtn = el('button', { class: 'btn quiet tiny touch-only', title: 'Outdent', onclick: () => { editor.focus(); editor.indentLines(false); } }, '⇤ Outdent');
-    const clearOutBtn = el('button', { class: 'btn quiet tiny', title: 'Clear the output panel', onclick: () => out.hide() }, 'Clear output');
-    const statusBar = el('div', { class: 'lab-statusbar' }, posLabel, el('span', { class: 'spacer' }), indentBtn, outdentBtn, renameBtn, wrapBtn, clearOutBtn);
+    const keysBtn = el('button', { class: 'btn quiet tiny', title: 'The keyboard shortcuts of the editor', 'aria-expanded': 'false', onclick: () => togglePanel('keys') }, 'Shortcuts');
+    const statusBar = el('div', { class: 'lab-statusbar' }, posLabel, el('span', { class: 'spacer' }), indentBtn, outdentBtn, renameBtn, wrapBtn, keysBtn);
     function renderStatusBar() { const p = editor.pos(); posLabel.textContent = curFile().name + '  ·  Ln ' + p.line + ', Col ' + p.col + (p.selected ? '  ·  ' + p.selected + ' selected' : ''); }
     function applyWrap() { editor.el.classList.toggle('wrap', !!S.wrap); wrapBtn.textContent = 'Wrap: ' + (S.wrap ? 'on' : 'off'); editor.render(); }
     function closeFile(i, btn) {
@@ -663,7 +711,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       if (f.code.trim() && !btn.dataset.armed) { btn.dataset.armed = '1'; btn.classList.add('armed'); btn.lastChild.textContent = 'close?'; setTimeout(() => { delete btn.dataset.armed; btn.classList.remove('armed'); if (btn.lastChild) btn.lastChild.textContent = '×'; }, 3000); return; }
       S.files[S.lang].splice(i, 1); if (S.active[S.lang] >= S.files[S.lang].length) S.active[S.lang] = S.files[S.lang].length - 1; else if (i < S.active[S.lang]) S.active[S.lang]--;
       if (tracer) tracer.stop(); endMem();
-      save(); editor.value = curFile().code; renderTabs(); renderStatusBar(); engineChanged(); renderExBar(); renderAsgBar();
+      save(); editor.value = curFile().code; applyErrMark(); renderTabs(); renderStatusBar(); engineChanged(); renderExBar(); renderAsgBar();
     }
 
     // ----- exercise bar (a file opened from a course exercise can be checked here)
@@ -680,6 +728,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
         try {
           const r = await A().grade(ex, editor.value, exVerdict);
           A().renderVerdict(exVerdict, r, ex, exAttempts);
+          setErrMark(!r.passed && r.error ? errorLoc(S.lang === 'cpp' && isFull() ? 'cppfull' : S.lang, r.error, null) : null, r.error);
           if (r.passed) { A().Progress.markDone(ex.id, editor.value); A().Progress.setCode(ex.id, editor.value); document.dispatchEvent(new CustomEvent('progress-changed')); }
         } catch (e) { exVerdict.textContent = 'The checker stopped with an error: ' + (e && e.message ? e.message : String(e)); }
         finally { check.disabled = false; check.textContent = 'Check against the exercise'; }
@@ -689,7 +738,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
         el('div', { class: 'ex-bar-text' }, el('span', { class: 'ex-label' }, 'Exercise'), ' ', el('b', {}, ex.title), el('span', { class: 'ex-bar-where' }, ' · ' + course.code + ', Lesson ' + (lessonIdx + 1) + ': ' + lesson.title + (A().Progress.isDone(ex.id) ? ' · completed ✓' : ''))),
         el('div', { class: 'toolbar' }, check, el('a', { class: 'btn quiet', href: '#/' + course.id + '/' + (lessonIdx + 1) + '/' + ex.id }, 'Open the lesson'), el('button', { class: 'btn quiet', onclick: () => { prompt.hidden = !prompt.hidden; } }, 'Show the task')),
         prompt);
-      if (ex.sampleStdin && (S.lang === 'cpp' || S.lang === 'java')) { stdinBox.hidden = false; if (!stdinTa.value) stdinTa.value = ex.sampleStdin; }
+      if (ex.sampleStdin && (S.lang === 'cpp' || S.lang === 'java')) { showStdin(S.lang); if (!stdinTa.value) stdinTa.value = ex.sampleStdin; }
     }
     // ----- teacher / assignment tools (src/teach.js)
     const asgHost = el('div');
@@ -710,6 +759,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const stepBtn = el('button', { class: 'btn', title: 'Run one line at a time and watch the variables', onclick: () => startTrace() }, 'Step through');
     const substBtn = el('button', { class: 'btn', title: 'Show the substitution model: the expression rewritten one step at a time', onclick: () => startSubst() }, 'Substitution');
     const memBtn = el('button', { class: 'btn', title: 'Run one line at a time and watch every variable, address and pointer in memory', onclick: () => startMem() }, 'Step through memory');
+    const jstepBtn = el('button', { class: 'btn', title: 'Run one statement at a time and watch the call stack, the variables and the objects; you can step backwards too', onclick: () => startJStep() }, 'Step through');
     const shareBtn = el('button', { class: 'btn quiet', onclick: share }, 'Share link');
     const openBtn = el('button', { class: 'btn quiet', onclick: () => fileInput.click() }, 'Open');
     const saveBtn = el('button', { class: 'btn quiet', title: 'Download this file', onclick: download }, 'Save');
@@ -717,6 +767,8 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const refBtn = el('button', { class: 'btn quiet', onclick: () => togglePanel('ref') }, 'Reference');
     const termBtn = el('button', { class: 'btn quiet', title: 'A command line: practise Unix commands on your own files, and run your programs from it', onclick: () => toggleTerm() }, 'Terminal');
     const findBtn = el('button', { class: 'btn quiet', title: 'Find and replace (Ctrl+F / Ctrl+H)', onclick: () => openFind(false) }, 'Find');
+    const inputBtn = el('button', { class: 'btn quiet', title: 'A box for the text the program reads (stdin), given all at once', onclick: () => { if (stdinBox.hidden) { showStdin(S.lang); stdinTa.focus(); } else stdinBox.hidden = true; } }, 'Input');
+    const argsBtn = el('button', { class: 'btn quiet', title: 'Words to hand the program when it starts, as after its name on a command line: sys.argv in Python, args in main in Java', 'aria-expanded': 'false', onclick: () => { argsOpen = !argsOpen; renderArgs(); if (argsOpen) argsInp.focus(); } }, 'Arguments');
     const fontDown = el('button', { class: 'btn quiet font-btn', title: 'Smaller text', onclick: () => setFont(-1) }, 'A−');
     const fontUp = el('button', { class: 'btn quiet font-btn', title: 'Larger text', onclick: () => setFont(1) }, 'A+');
     // C++ has two engines: the teaching one (JSCPP; step-through memory, always available, works offline) and Full C++ (Clang; the whole language and library,
@@ -736,7 +788,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       endMem(); renderToolbar();
     }
     const fileInput = el('input', { type: 'file', accept: '.py,.cpp,.cc,.cxx,.h,.java,.scm,.ss,.rkt,.txt', hidden: '', onchange: openFiles });
-    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'python' ? stepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, findBtn, tplBtn, refBtn, window.TERMINAL ? termBtn : null, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
+    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'python' ? stepBtn : null, S.lang === 'java' && window.JAVASTEP ? jstepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, S.lang === 'cpp' || S.lang === 'java' ? inputBtn : null, hasArgs() ? argsBtn : null, findBtn, tplBtn, refBtn, window.TERMINAL ? termBtn : null, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
     function setFont(d) { S.fontSize = Math.min(24, Math.max(11, S.fontSize + d)); save(); editor.el.style.setProperty('--lab-font', S.fontSize + 'px'); editor.render(); }
 
     // ----- find / replace bar
@@ -765,6 +817,15 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     replInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); replaceOne(); } if (e.key === 'Escape') closeFind(); });
     function openFind(withReplace) { findBar.hidden = false; findBar.classList.toggle('with-replace', !!withReplace); const sel = editor.value.slice(editor.ta.selectionStart, editor.ta.selectionEnd); if (sel && !sel.includes('\n')) findInp.value = sel; computeMatches(); findInp.focus(); findInp.select(); }
     function closeFind() { findBar.hidden = true; editor.setFind([], -1); editor.focus(); }
+    // ----- go to line (Ctrl+G)
+    const gotoInp = el('input', { class: 'find-inp goto-inp', id: 'lab-goto', inputmode: 'numeric', autocomplete: 'off', 'aria-label': 'Line number' });
+    const gotoNote = el('span', { class: 'find-count' });
+    const gotoBar = el('div', { class: 'find-bar goto-bar', hidden: '' }, el('label', { class: 'find-opt', for: 'lab-goto' }, 'Go to line'), gotoInp, gotoNote,
+      el('button', { class: 'btn quiet', onclick: () => goGoto() }, 'Go'), el('button', { class: 'btn quiet find-close', title: 'Close (Esc)', onclick: () => closeGoto() }, '×'));
+    gotoInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); goGoto(); } else if (e.key === 'Escape') { e.preventDefault(); closeGoto(); } else if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G')) e.preventDefault(); });
+    function openGoto() { if (!findBar.hidden) closeFind(); gotoBar.hidden = false; gotoNote.textContent = 'of ' + editor.value.split('\n').length; gotoInp.value = String(editor.pos().line); gotoInp.focus(); gotoInp.select(); }
+    function goGoto() { const n = parseInt(gotoInp.value, 10); if (!(n >= 1)) { gotoNote.textContent = 'type a line number'; return; } gotoBar.hidden = true; editor.goToLine(n); }
+    function closeGoto() { gotoBar.hidden = true; editor.focus(); }
 
     // ----- side panels: templates, reference
     const tplBox = el('div', { class: 'lab-panel', hidden: '' });
@@ -778,24 +839,52 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
         el('div', { class: 'tpl-list' }, TEMPLATES[S.lang].map(t => el('button', { class: 'tpl', onclick: () => { const l = S.lang; S.files[l].push({ name: uniqueName(l, t.name.toLowerCase().replace(/[^a-z0-9]+/g, '_') + LANG_INFO[l].ext), code: t.code }); activate(S.files[l].length - 1); togglePanel('tpl', false); } }, t.name))));
     }
     renderTemplates();
-    function togglePanel(which, force) { const box = which === 'tpl' ? tplBox : refBox, other = which === 'tpl' ? refBox : tplBox; const show = force != null ? force : box.hidden; box.hidden = !show; if (show) other.hidden = true; S.panels[which] = show; save(); if (show && window.innerWidth < 900 && box.scrollIntoView) box.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    // The keyboard shortcuts the editor really has (the keydown handlers of LabEditor, the find and go-to bars, the terminal, the step-throughs)
+    const keysBox = el('div', { class: 'lab-panel lab-keys', hidden: '' }, el('div', { class: 'panel-head' }, el('b', {}, 'Keyboard shortcuts'), el('button', { class: 'btn quiet', 'aria-label': 'Close', onclick: () => togglePanel('keys') }, '×')),
+      el('div', { class: 'prose', html: KEYS_HTML }));
+    const PANELS = { tpl: tplBox, ref: refBox, keys: keysBox };
+    function togglePanel(which, force) { const box = PANELS[which]; const show = force != null ? force : box.hidden; box.hidden = !show; if (show) for (const k in PANELS) if (k !== which) { PANELS[k].hidden = true; if (k !== 'keys') S.panels[k] = false; } if (which !== 'keys') S.panels[which] = show; save(); keysBtn.setAttribute('aria-expanded', String(!keysBox.hidden)); if (show && window.innerWidth < 900 && box.scrollIntoView) box.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     if (S.panels.ref) refBox.hidden = false;
 
     // ----- output, stdin, turtle, trace, REPL
-    const out = outputPanel(); out.el.classList.add('lab-out');
+    const out = outputPanel({ tools: true, wrap: S.outWrap, onWrap: (on) => { S.outWrap = on; save(); } }); out.el.classList.add('lab-out');
     // ----- the terminal (src/terminal.js in front of src/shell.js). ~/lab in it mirrors the files here, both ways.
     function removeLabFile(l, f) { const i = S.files[l].indexOf(f); if (i < 0) return; S.files[l].splice(i, 1); if (!S.files[l].length) S.files[l].push({ name: LANG_INFO[l].first, code: '' }); if (S.active[l] >= S.files[l].length) S.active[l] = S.files[l].length - 1; else if (i < S.active[l]) S.active[l]--; save(); }
     const term = window.TERMINAL && window.SHELL ? window.TERMINAL.mount({
       el, armConfirm, isTouch, Runners, isFull, cppStd: () => S.cppStd, stop,
       labFiles: () => { const all = []; for (const l in LANG_INFO) for (const f of S.files[l]) all.push({ lang: l, name: f.name, code: f.code, set: (c) => { f.code = c; save(); }, remove: () => removeLabFile(l, f) }); return all; },
       addLabFile: (l, name, code) => { if (!hasLang(l)) return; S.files[l].push({ name: uniqueName(l, name), code }); save(); },
-      labChanged: () => { if (editor.value !== curFile().code) editor.value = curFile().code; renderTabs(); renderStatusBar(); renderExBar(); renderAsgBar(); },
+      labChanged: () => { if (editor.value !== curFile().code) editor.value = curFile().code; applyErrMark(); renderTabs(); renderStatusBar(); renderExBar(); renderAsgBar(); },
       openInEditor: (l, name, text, copy) => { if (!hasLang(l)) return; let idx = copy ? -1 : S.files[l].findIndex(f => f.name === name); if (idx < 0) { S.files[l].push({ name: uniqueName(l, name), code: text }); idx = S.files[l].length - 1; } S.active[l] = idx; save(); if (l !== S.lang) switchLang(l); else activate(idx); },
       onClose: () => toggleTerm(false)
     }) : null;
     function toggleTerm(force) { if (!term) return; const show = force != null ? force : term.el.hidden; if (show) term.show(!isTouch()); else term.hide(); termBtn.classList.toggle('on', show); S.panels.term = show; save(); if (show && term.el.scrollIntoView) term.el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
     const stdinTa = el('textarea', { class: 'stdin-ta', rows: 3, placeholder: 'Type each value the program will read, one per line, before pressing Run.', 'aria-label': 'Program input' });
-    const stdinBox = el('div', { class: 'stdin-box', hidden: '' }, el('div', { class: 'panel-head' }, el('b', {}, 'Program input'), el('span', { class: 'panel-note' }, 'This program reads input with cin. C++ programs read all of it at once, so give it here.')), stdinTa);
+    const stdinNote = el('span', { class: 'panel-note' });
+    const stdinBox = el('div', { class: 'stdin-box', hidden: '' }, el('div', { class: 'panel-head' }, el('b', {}, 'Program input'), stdinNote, el('button', { class: 'btn quiet', title: 'Hide the input box', 'aria-label': 'Hide the input box', onclick: () => { stdinBox.hidden = true; } }, '×')), stdinTa);
+    // Java and the teaching C++ ask for each line in the output panel as the program reads it (typed input, runner.js); text in this box is given
+    // instead, all at once, like a file piped in. Full C++ (and scanf or getchar in the teaching C++) read all of their input before they start,
+    // so for them the box is the only way in.
+    const typedOk = (lang, code) => lang === 'java' || (lang === 'cpp' && !isFull() && !/\b(scanf|getchar)\b/.test(code));
+    const showStdin = (lang) => { stdinNote.textContent = typedOk(lang, editor.value) ? 'Optional: text here is given to the program all at once, as if piped from a file. Leave it empty to type each line as the program asks.' : 'This program reads its input before it starts, so type it here, one value per line.'; stdinBox.hidden = false; };
+    // Program arguments (Python and Java): the words after the program's name, as  python main.py one two  or  java Main one two  would give.
+    // The teaching C++ engine (JSCPP) calls main with no arguments at all, so C++ has none.
+    const hasArgs = () => (window.LABUTIL ? window.LABUTIL.ARG_LANGS : []).includes(S.lang);
+    let argsOpen = false;
+    const argsInp = el('input', { class: 'args-inp', type: 'text', id: 'lab-args', spellcheck: 'false', autocomplete: 'off', autocapitalize: 'off', maxlength: 1000, placeholder: 'for example:  one "two words" 3' });
+    const argsNote = el('span', { class: 'panel-note' });
+    const argsBox = el('div', { class: 'stdin-box args-box', hidden: '' }, el('div', { class: 'panel-head' }, el('label', { for: 'lab-args' }, el('b', {}, 'Program arguments')), argsNote,
+      el('button', { class: 'btn quiet', 'aria-label': 'Close the arguments box', onclick: () => { argsOpen = false; renderArgs(); } }, '×')), argsInp);
+    argsInp.addEventListener('input', () => { S.args[S.lang] = argsInp.value.replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, 1000); save(); });
+    argsInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); run(); } });
+    function renderArgs() {
+      const on = hasArgs() && (argsOpen || !!(S.args[S.lang] || '').trim());   // shown while it holds words, so a run never takes them by surprise
+      argsBox.hidden = !on; argsBtn.classList.toggle('on', on); argsBtn.setAttribute('aria-expanded', String(on));
+      if (argsInp.value !== (S.args[S.lang] || '')) argsInp.value = S.args[S.lang] || '';
+      argsNote.textContent = S.lang === 'java' ? 'Given to main(String[] args), split at spaces; quote a word that has spaces in it.' : 'Given to the program as sys.argv[1:], split at spaces; quote a word that has spaces in it.';
+    }
+    const argWords = () => (hasArgs() && window.LABUTIL ? window.LABUTIL.splitArgs(S.args[S.lang] || '') : []);
+    const shellWord = (w) => (/^[\w@%+=:,./-]+$/.test(w) ? w : "'" + w.replace(/'/g, "'\\''") + "'");
     const turtleMount = el('div', { id: 'lab-turtle', class: 'turtle-mount' });
     const turtleBox = el('div', { class: 'turtle-box', hidden: '' }, el('div', { class: 'panel-head' }, el('b', {}, 'Turtle canvas'), el('button', { class: 'btn quiet', onclick: () => { turtleBox.hidden = true; } }, '×')), turtleMount);
     const traceVars = el('div', { class: 'trace-vars' });
@@ -810,25 +899,72 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const replBox = el('div', { class: 'repl-box', hidden: S.lang !== 'scheme' ? '' : null }, el('div', { class: 'panel-head' }, el('b', {}, 'REPL'), el('span', { class: 'panel-note' }, 'Type an expression and press Enter. Run the file first to load its definitions. ↑ ↓ recall earlier lines.')), repl.el);
 
     // ----- running
-    function setRunning(on) { running = on; runBtn.disabled = on; stopBtn.hidden = !on || S.lang === 'scheme'; stepBtn.disabled = on; memBtn.disabled = on; status.textContent = on ? 'running…' : ''; }
+    function setRunning(on) { running = on; runBtn.disabled = on; stopBtn.hidden = !on || S.lang === 'scheme'; stepBtn.disabled = on; memBtn.disabled = on; jstepBtn.disabled = on; status.textContent = on ? 'running…' : ''; }
     function explain(lang, err) { const tip = tipFor(lang, err); for (const [re, msg] of EXPLAIN[lang] || []) if (re.test(err)) return msg; return tip; }
-    function showError(lang, err) {
+    // proj: the Java project the error came from (javaproject.js), whose messages name the right file; otherwise the error is the current file's
+    function showError(lang, err, proj) {
       out.error(err);
-      const m = err.match(/line (\d+)/i) || err.match(/main\.cpp:(\d+):\d+/) || err.match(/\.java:(\d+)/);
-      if (m) { const pre = out.el.querySelector('.out-text'); pre.append(el('button', { class: 'linklike goto', onclick: () => editor.goToLine(+m[1]) }, '→ go to line ' + m[1]), '\n'); }
+      const loc = errorLoc(lang, err, proj);
+      if (loc) {
+        const pre = out.el.querySelector('.out-text'), other = loc.file !== curFile();
+        pre.append(el('button', { class: 'linklike goto', onclick: () => openAt(loc) }, '→ go to ' + (other ? loc.file.name + ', ' : '') + 'line ' + loc.line), '\n');
+        setErrMark(loc, err);
+      }
       const ex = explain(lang, err); if (ex) out.note('↳ ' + ex);
+    }
+    // Where an error is: { file (a Lab file of this language), line }. Java errors name their file (Dog.java:6, at Dog.bark(Dog.java:6));
+    // the other languages have one file, and say "line 3" or main.cpp:3 (labutil.js).
+    function errorLoc(lang, err, proj) {
+      if (lang === 'java') {
+        const w = window.JPROJ ? window.JPROJ.where(err) : null; if (!w) return null;
+        const file = proj ? S.files.java.find((f) => f.name === w.file) : curFile();
+        return file ? { file, line: w.line } : null;
+      }
+      const n = window.LABUTIL ? window.LABUTIL.errorLine(lang, err) : 0;
+      return n ? { file: curFile(), line: n } : null;
+    }
+    function openAt(loc) { const i = S.files[S.lang].indexOf(loc.file); if (i < 0) return; if (i !== S.active[S.lang]) activate(i); editor.goToLine(loc.line); }
+    // The error marker in the editor: one line of one file, kept while that file is unchanged (any edit, from the editor or the terminal, drops it)
+    let errMark = null;
+    function setErrMark(loc, err) {
+      errMark = loc ? { file: loc.file, line: loc.line, code: loc.file.code, msg: String(err || '').split('\n')[0].replace(/^[^\s:]+:\d+:(\d+:)? ?/, '').slice(0, 300) || 'error' } : null;
+      applyErrMark();
+    }
+    function applyErrMark() {
+      if (errMark && (errMark.file.code !== errMark.code || !S.files[S.lang].includes(errMark.file))) errMark = null;
+      editor.setMarks(errMark && errMark.file === curFile() ? [{ line: errMark.line, msg: errMark.msg }] : []);
+    }
+    // Java: Run compiles every Java tab together (javac *.java), so Main.java can use Dog.java. The current tab goes first, so its main runs if it
+    // has one. Left out: tabs that are not .java files or are empty, exercise and assignment files (they are checked alone), and a tab declaring a
+    // class an earlier one declares (tabs are often separate programs, each with its own Main). An exercise or assignment file runs alone.
+    function javaProject() {
+      const cur = curFile(); if (!window.JPROJ || cur.ex || cur.asg) return null;
+      const others = S.files.java.filter((f) => f !== cur && !f.ex && !f.asg);
+      const p = window.JPROJ.join([cur].concat(others).map((f) => ({ name: f.name, code: f.code })), { dedupe: true, rule: 'multi' });
+      return p.files.length && p.files[0].name === cur.name ? p : null;   // the current tab itself left out (empty, or not .java): run it alone, as before
+    }
+    function commandLine(lang, proj, args) {
+      const tail = args.length ? ' ' + args.map(shellWord).join(' ') : '';
+      if (lang === 'python') return 'python ' + shellWord(curFile().name) + tail;
+      if (lang === 'java' && proj) return 'javac ' + proj.files.map((f) => shellWord(f.name)).join(' ') + ' && java ' + (proj.main || 'Main') + tail;
+      return ((window.__app.COMMANDS || {})[lang === 'cpp' && isFull() ? 'cppfull' : lang] || '') + tail;
     }
     async function run() {
       if (running) return; if (tracer) tracer.stop(); endMem();
-      const lang = S.lang, code = editor.value; out.start((window.__app.COMMANDS || {})[lang === 'cpp' && isFull() ? 'cppfull' : lang] || '');
+      const lang = S.lang, code = editor.value, proj = lang === 'java' ? javaProject() : null, args = argWords();
+      setErrMark(null);
+      out.start(commandLine(lang, proj, args));
       let exit = 0, stopped = false;
-      const reads = lang === 'cpp' ? /\bcin\b/.test(code) : lang === 'java' ? /\bScanner\b/.test(code) : false;
-      if (reads) { stdinBox.hidden = false; if (!stdinTa.value.trim() && !stdinTa.dataset.warned) { stdinTa.dataset.warned = '1'; out.note('This program reads input with ' + (lang === 'java' ? 'a Scanner' : 'cin') + '. Type the values in the Program input box, one per line, then Run again.'); stdinTa.focus(); out.finish({ stopped: true }); return; } }
+      const typed = typedOk(lang, code) && (stdinBox.hidden || !stdinTa.value.trim());
+      const reads = lang === 'cpp' && !typed && /\b(cin|getline|scanf|getchar)\b/.test(code);
+      if (proj && proj.files.length > 1) for (const sk of proj.skipped) if (sk.clash) out.note('(' + sk.name + ' was left out: ' + sk.why + ')');
+      if (proj && proj.error) { showError('java', proj.error, proj); out.finish({ exit: 1 }); return; }
+      if (reads) { showStdin(lang); if (!stdinTa.value.trim() && !stdinTa.dataset.warned) { stdinTa.dataset.warned = '1'; out.note('This program reads its input before it starts. Type the values in the Program input box, one per line, then Run again.'); stdinTa.focus(); out.finish({ stopped: true }); return; } }
       setRunning(true);
       try {
         if (lang === 'python') {
           const usesTurtle = usesTurtleIn(code);
-          const r = await window.PYRUN.run(code, { execLimit: 15000, onOutput: (s) => out.write(s), onInput: (p) => out.ask(p), turtle: usesTurtle ? turtleOptions() : undefined });
+          const r = await window.PYRUN.run(code, { execLimit: 15000, args, argv0: curFile().name, onOutput: (s) => out.write(s), onInput: (p) => out.ask(p), turtle: usesTurtle ? turtleOptions() : undefined });
           if (r.err) showError('python', r.err); else if (!r.out && !usesTurtle) out.note('(the program finished without printing anything)');
           stopped = /stopped|cancel/i.test(r.err || '') && !r.out;
         } else if (lang === 'scheme') {
@@ -844,11 +980,15 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
           if (r.exit) out.note('(the program ended with status ' + r.exit + ')');
           exit = r.exit || 0;
         } else if (lang === 'cpp') {
-          const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: stdinTa.value });
-          if (r.err) showError('cpp', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
+          const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: typed ? null : stdinTa.value, onInput: (p) => out.ask(p) });
+          stopped = r.err === 'Stopped.';
+          if (stopped) out.note('(stopped)'); else if (r.err) showError('cpp', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
         } else if (lang === 'java') {
-          const r = await Runners.java.run(code, { onOutput: (s) => out.write(s), stdin: stdinTa.value });
-          if (r.err) showError('java', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
+          const r = await Runners.java.run(proj ? proj.src : code, { onOutput: (s) => out.write(s), stdin: typed ? null : stdinTa.value, onInput: (p) => out.ask(p), args });
+          stopped = r.err === 'Stopped.';
+          const err = proj ? window.JPROJ.mapError(proj, r.err) : r.err;   // lines of the joined text back to each file's own
+          if (stopped) out.note('(stopped)'); else if (err) showError('java', err, proj); else if (!r.out) out.note('(the program finished without printing anything)');
+          exit = r.exit || 0;
         }
       } catch (e) { out.error(String(e && e.message || e)); }
       out.finish({ exit, stopped });
@@ -907,7 +1047,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     async function startMem() {
       if (running || !window.CPPSTEP || !window.CPPRUN) return; if (tracer) tracer.stop();
       const code = editor.value;
-      if (/\bcin\b/.test(code)) { stdinBox.hidden = false; if (!stdinTa.value.trim()) { out.clear(); out.note('This program reads input with cin. Type the values in the Program input box, one per line, then press Step through memory again.'); stdinTa.focus(); return; } }
+      if (/\bcin\b/.test(code)) { showStdin('cpp'); if (!stdinTa.value.trim()) { out.clear(); out.note('This program reads input with cin. Type the values in the Program input box, one per line, then press Step through memory again.'); stdinTa.focus(); return; } }
       const token = ++memToken;
       out.clear(); memBox.hidden = false; memView.innerHTML = ''; memMsg.textContent = 'running the program…'; setRunning(true);
       let r; try { r = await window.CPPRUN.trace(code, stdinTa.value, { maxSteps: 1500 }); } finally { setRunning(false); }
@@ -937,8 +1077,81 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       } else if (!shown) out.hide();
     }
     function endMem(msg) {
+      if (!jsKeep) endJStep();   // everything that closes the memory view (another file, another language, Run) closes the Java step-through too
       if (!memTrace && memBox.hidden) return;
       memToken++; memTrace = null; memBox.hidden = true; memView.innerHTML = ''; editor.setTrace(0);
+      if (msg) status.textContent = msg, setTimeout(() => { if (status.textContent === msg) status.textContent = ''; }, 6000);
+    }
+
+    // ----- Java step-through (JAVA.trace records the whole run in the sandbox, so stepping can go backwards too)
+    const jsView = el('div', { class: 'mem-view' });
+    const jsMsg = el('span', { class: 'panel-note' });
+    const jsSlider = el('input', { type: 'range', min: '0', max: '0', value: '0', class: 'mem-slider', 'aria-label': 'Step' });
+    const jsBack = el('button', { class: 'btn', title: 'Back one step (B or Backspace)', onclick: () => jsShow(jsIdx - 1) }, '\u25C0 Back');
+    const jsNext = el('button', { class: 'btn primary', title: 'Next step (N or Enter)', onclick: () => jsShow(jsIdx + 1) }, 'Next \u25B6');
+    const jsEnd = el('button', { class: 'btn', onclick: () => jsTrace && jsShow(jsTrace.steps.length - 1) }, 'Run to end');
+    const jsRestart = el('button', { class: 'btn quiet', onclick: () => jsShow(0) }, 'Restart');
+    const jsClose = el('button', { class: 'btn quiet', onclick: () => endJStep() }, 'Close');
+    const jsBox = el('div', { class: 'jstep-box', hidden: '', tabindex: '0' },
+      el('div', { class: 'panel-head' }, el('b', {}, 'Step through'), jsMsg),
+      el('div', { class: 'toolbar' }, jsBack, jsNext, jsSlider, jsEnd, jsRestart, jsClose),
+      el('p', { class: 'panel-note mem-help' }, 'Each method call gets its own frame on the call stack, with its variables. Objects and arrays live on their own, numbered; a variable that holds one shows \u2192 and its number, so two variables with the same number refer to the same object. Changed values are highlighted. Keys: N or Enter next, B or Backspace back.'),
+      jsView);
+    jsSlider.addEventListener('input', () => jsShow(+jsSlider.value));
+    jsBox.addEventListener('keydown', (e) => {
+      if (!jsTrace || e.target === jsSlider) return;
+      if (e.key === 'Enter' && e.target.closest && e.target.closest('button')) return;   // Enter on a button presses it
+      if (e.key === 'Enter' || e.key === 'n' || e.key === 'N' || e.key === 'ArrowRight') { e.preventDefault(); jsShow(jsIdx + 1); }
+      else if (e.key === 'b' || e.key === 'B' || e.key === 'Backspace' || e.key === 'ArrowLeft') { e.preventDefault(); jsShow(jsIdx - 1); }
+    });
+    // A program that reads with a Scanner takes the Program input box's text, as Run does (the run is recorded in one go, so it cannot stop to ask)
+    // A program in several Java tabs is stepped as Run runs it: joined (javaproject.js), with every recorded line mapped back to its file, and
+    // the editor follows the program into the tab it is in (jsKeep: that switch must not close the step-through, as switching by hand does).
+    let jsProj = null, jsKeep = false;
+    function jsMapTrace(t) {
+      if (!jsProj || !t) return t;
+      const seen = new Set(), map = (o) => { if (!o || seen.has(o)) return; seen.add(o); const m = window.JPROJ.mapLine(jsProj, o.line); if (m) { o.line = m.line; o.file = m.name; } };
+      for (const s of t.steps) { map(s); for (const f of s.frames || []) map(f); }
+      if (t.error) t.error = window.JPROJ.mapError(jsProj, t.error);
+      return t;
+    }
+    async function startJStep() {
+      if (running || !window.JAVASTEP || !window.JAVARUN) return; if (tracer) tracer.stop(); endMem();
+      const proj = javaProject(); jsProj = proj && proj.files.length > 1 && !proj.error ? proj : null;
+      const code = jsProj ? jsProj.src : editor.value;
+      if (/\bScanner\b/.test(code)) { showStdin('java'); if (!stdinTa.value.trim()) { out.clear(); out.note('This program reads input with a Scanner. Type the values in the Program input box, one per line, then press Step through again.'); stdinTa.focus(); return; } }
+      const token = ++jsToken;
+      out.clear(); jsBox.hidden = false; jsView.textContent = ''; jsMsg.textContent = 'running the program\u2026'; setRunning(true);
+      let r; try { r = await window.JAVARUN.trace(code, stdinTa.value, { maxSteps: 2000 }); } finally { setRunning(false); }
+      if (token !== jsToken) return;   // closed, or the program changed, while it ran
+      jsTrace = jsMapTrace(window.JAVASTEP.clean(r.result)) || { steps: [], output: '', error: (jsProj ? window.JPROJ.mapError(jsProj, r.err) : r.err) || 'The program could not be run.' };
+      if (!jsTrace.steps.length) { jsView.textContent = ''; jsMsg.textContent = 'the program could not start'; jsSlider.max = '0'; if (jsTrace.error || r.err) showError('java', jsTrace.error || r.err, jsProj); editor.setTrace(0); return; }
+      jsSlider.max = String(jsTrace.steps.length - 1);
+      jsShow(0);
+      if (!isTouch()) jsBox.focus();
+    }
+    function jsShow(i) {
+      if (!jsTrace) return;
+      const n = jsTrace.steps.length; i = Math.max(0, Math.min(n - 1, i)); jsIdx = i;
+      const st = jsTrace.steps[i];
+      window.JAVASTEP.render(jsView, jsTrace, i);
+      jsSlider.value = String(i);
+      jsBack.disabled = i === 0; jsRestart.disabled = i === 0; jsNext.disabled = i === n - 1; jsEnd.disabled = i === n - 1;
+      jsMsg.textContent = window.JAVASTEP.describe(jsTrace, i);
+      if (st.file && st.file !== curFile().name) { const k = S.files.java.findIndex((f) => f.name === st.file); if (k >= 0) { jsKeep = true; try { activate(k); } finally { jsKeep = false; } } }
+      editor.setTrace(st.done ? 0 : st.line);
+      out.clear();
+      const shown = jsTrace.output.slice(0, st.outLen);
+      if (shown) out.write(shown);
+      if (i === n - 1) {
+        if (jsTrace.error) showError('java', jsTrace.error, jsProj);
+        else if (jsTrace.truncated) out.note('Stepping stops after ' + n + ' steps. Press Run to run the whole program.');
+        else if (!shown) out.note('(nothing printed)');
+      } else if (!shown) out.hide();
+    }
+    function endJStep(msg) {
+      if (!jsTrace && jsBox.hidden) return;
+      jsToken++; jsTrace = null; jsBox.hidden = true; jsView.textContent = ''; editor.setTrace(0);
       if (msg) status.textContent = msg, setTimeout(() => { if (status.textContent === msg) status.textContent = ''; }, 6000);
     }
 
@@ -1046,27 +1259,31 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       el('div', { class: 'lab-head-right' }, el('a', { class: 'lab-guide-link', href: '#/guide' }, 'Guide for teachers'), teach ? teach.teacherSwitch : null, langBar));
     const help = el('details', { class: 'lab-help' }, el('summary', {}, 'Keyboard shortcuts and tips'),
       el('div', { class: 'prose', html: `<ul>
-<li><b>Ctrl/Cmd + Enter</b> runs the program. <b>Ctrl/Cmd + Z</b> and <b>Ctrl/Cmd + Y</b> undo and redo. <b>Ctrl/Cmd + F</b> finds, <b>Ctrl/Cmd + H</b> finds and replaces, <b>Ctrl/Cmd + /</b> comments or uncomments the selected lines.</li>
+<li><b>Shortcuts</b> under the editor lists every key. <b>Ctrl/Cmd + Enter</b> runs the program, <b>Ctrl/Cmd + G</b> goes to a line. <b>Ctrl/Cmd + Z</b> and <b>Ctrl/Cmd + Y</b> undo and redo. <b>Ctrl/Cmd + F</b> finds, <b>Ctrl/Cmd + H</b> finds and replaces, <b>Ctrl/Cmd + /</b> comments or uncomments the selected lines.</li>
 <li><b>Tab</b> indents (four spaces; two in Scheme) and <b>Shift + Tab</b> outdents; with several lines selected it indents them all. Enter after a colon or brace indents the next line for you. <b>Alt + ↑/↓</b> moves the current line, <b>Ctrl/Cmd + D</b> duplicates it, <b>Ctrl/Cmd + S</b> downloads the file.</li>
 <li>Brackets and quotes close themselves; type the closing one to skip over it. The matching bracket is highlighted when the cursor is next to one.</li>
 <li>Start typing a name and a list of completions appears: <b>↑ ↓</b> to choose, <b>Tab</b> or <b>Enter</b> to accept, <b>Esc</b> to dismiss.</li>
-<li><b>+ New</b> makes a file and asks for its name; <b>Rename</b> is under the editor (double-clicking a tab also works). <b>Save</b> downloads the file; <b>Open</b> loads files from your device; <b>Share link</b> copies a link that carries the program inside it. Errors that mention a line number have a "go to line" link.</li>
+<li><b>+ New</b> makes a file and asks for its name; <b>Rename</b> is under the editor (double-clicking a tab also works). <b>Save</b> downloads the file; <b>Open</b> loads files from your device; <b>Share link</b> copies a link that carries the program inside it. Errors that mention a line number have a "go to line" link, and the line is marked in the editor (a red pin in the margin; point at it for the message) until you change the file or run again. The output panel's title bar has <b>Copy</b>, <b>Wrap</b> (long lines wrapped or kept whole) and <b>Clear</b>.</li>
+<li>Java: <b>Step through</b> runs the program one statement at a time and shows the call stack (each method call with its variables), the static fields and the objects and arrays they refer to, numbered so you can see when two variables share one object. You can step backwards as well as forwards. A program that reads with a <code>Scanner</code> takes its input from the Program input box.</li>
+<li>Java: <b>Run</b> compiles every Java tab together, as <code>javac *.java</code> would, so a program can be split into <code>Main.java</code>, <code>Dog.java</code> and so on; the tab you are in goes first, so its <code>main</code> runs if it has one. As in Java, a <code>public</code> class must be in a file of its own name. Tabs that declare a class another tab already has (separate programs, each with its own <code>Main</code>) are left out, and so are exercise files, which run alone.</li>
+<li><b>Arguments</b> (Python and Java) gives the program words to start with, as on a command line: <code>sys.argv[1:]</code> in Python, <code>args</code> in <code>main</code>. In the Terminal, <code>python app.py one two</code> and <code>java Main one two</code> do the same. The teaching C++ engine has no <code>argc</code>/<code>argv</code>.</li>
 <li>Python: <b>Step through</b> runs one line at a time and shows the variables. <code>import turtle</code> opens a drawing canvas. <b>Stop</b> ends a program that is stuck in a loop.</li>
 <li>Scheme: Run loads the file's definitions, then use the REPL below the output to try expressions one at a time. <b>Substitution</b> shows the substitution model from SICP: each expression is rewritten one step at a time, exactly the way the Lisp course draws it.</li>
 <li><b>Teacher tools</b> (the switch at the top) let a teacher write an assignment with tests and share it as a link or QR code; students <b>Check</b> their work against the visible tests and <b>Submit</b>, which makes a link carrying their program. The teacher opens submission links in her own Code Lab, where hidden tests run and a grade book collects the results. Nothing is sent to any server.</li>
 <li>Every code example and exercise in the courses has an <b>Open in Code Lab</b> button. A file opened from an exercise keeps its link to it: a bar above the editor lets you check your program against the exercise's tests, and passing counts as completing it in the course.</li>
 <li>C++: <b>Step through memory</b> runs the program one line at a time and shows every variable in memory: its type, its address and its value, with arrays drawn cell by cell and pointers showing what they point at. You can step backwards as well as forwards.</li>
-<li>C++: programs that read with <code>cin</code> take their input from the Program input box. C++ and Scheme programs stop themselves after a few seconds if they run too long.</li>
-<li><b>Terminal</b> opens a command line under the output: a practice Unix shell with its own files (saved on this device). Your Code Lab files appear in its <code>lab</code> folder, so <code>python lab/main.py</code> runs the file in the editor; <code>nano</code> edits a file there, <code>edit file.py</code> opens it in the editor above. Type <code>help</code> for the list of commands; <b>Tab</b> completes names, <b>↑ ↓</b> recall commands, <b>Ctrl+C</b> stops a program.</li>
+<li>Input: a Python <code>input()</code>, a Java <code>Scanner</code> or a C++ <code>cin</code> asks for each line in the output panel as the program reads it; <b>Ctrl+D</b> on an empty line ends the input. <b>Input</b> (Java and C++) opens a box whose text is given to the program all at once instead, like a file. Full C++ reads all of its input before it starts, so it uses the box. C++, Java and Scheme programs stop themselves after a few seconds if they run too long.</li>
+<li><b>Terminal</b> opens a command line under the output: a practice Unix shell with its own files (saved on this device). Your Code Lab files appear in its <code>lab</code> folder, so <code>python lab/main.py</code> runs the file in the editor; <code>nano</code> edits a file there, <code>edit file.py</code> opens it in the editor above. Type <code>help</code> for the list of commands; <b>Tab</b> completes names, <b>↑ ↓</b> recall commands, <b>Ctrl+R</b> searches them, <b>Ctrl+A</b> / <b>Ctrl+E</b> / <b>Ctrl+K</b> / <b>Ctrl+W</b> edit the line as in bash, <b>Ctrl+C</b> stops a program. It runs scripts with functions, <code>case</code>, arrays and aliases, and tools such as <code>awk</code>. <code>python</code>, <code>scheme</code> or <code>jshell</code> with no file start an interactive shell (<code>&gt;&gt;&gt;</code>, <code>1 ]=&gt;</code>, <code>jshell&gt;</code>) where each line is run at once.</li>
 <li>On a phone or tablet, the <b>Indent</b> and <b>Outdent</b> buttons under the editor stand in for the Tab key, and <b>Wrap</b> keeps long lines on screen.</li></ul>` }));
-    const editorArea = el('div', { class: 'lab-editor-area' }, tabs, findBar, editor.el, statusBar);
-    const side = el('div', { class: 'lab-side' }, tplBox, refBox);
-    const body = el('div', { class: 'lab-body' }, el('div', { class: 'lab-main' }, teach ? teach.panel : null, asgHost, exBar, toolbar, editorArea, exVerdict, stdinBox, out.el, term ? term.el : null, traceBox, memBox, substBox, turtleBox, replBox), side);
-    renderTabs(); renderToolbar(); applyWrap(); renderStatusBar(); renderExBar(); renderAsgBar(); engineChanged();
+    const editorArea = el('div', { class: 'lab-editor-area' }, tabs, findBar, gotoBar, editor.el, statusBar);
+    const side = el('div', { class: 'lab-side' }, tplBox, refBox, keysBox);
+    const body = el('div', { class: 'lab-body' }, el('div', { class: 'lab-main' }, teach ? teach.panel : null, asgHost, exBar, toolbar, editorArea, exVerdict, argsBox, stdinBox, out.el, term ? term.el : null, traceBox, memBox, jsBox, substBox, turtleBox, replBox), side);
+    renderTabs(); renderToolbar(); applyWrap(); renderStatusBar(); renderExBar(); renderAsgBar(); engineChanged(); renderArgs();
     if (term && S.panels.term) { term.show(false); termBtn.classList.add('on'); }
     if (pendingStep) {
       const ps = pendingStep; pendingStep = null;
-      if (ps.mode === 'mem' && S.lang === 'cpp') { if (ps.stdin != null) { stdinTa.value = ps.stdin; stdinBox.hidden = false; } setTimeout(startMem, 0); }
+      if (ps.mode === 'mem' && S.lang === 'cpp') { if (ps.stdin != null) { stdinTa.value = ps.stdin; showStdin('cpp'); } setTimeout(startMem, 0); }
+      if (ps.mode === 'mem' && S.lang === 'java') { if (ps.stdin != null) { stdinTa.value = ps.stdin; showStdin('java'); } setTimeout(startJStep, 0); }
       if (ps.mode === 'subst' && S.lang === 'scheme') setTimeout(startSubst, 0);
     }
     if (teach && (kind === 'assign' || kind === 'review' || /(^|&)b=/.test(query || ''))) setTimeout(() => teach.handleQuery(kind, query), 0);
@@ -1077,7 +1294,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
 
   let pendingStep = null;   // set by openCode({step: true} or {subst: true}); consumed by page()
   /** Called from the courses: put code into the Lab as a new file and go there.
-      o.step opens the C++ memory stepper; o.subst opens the Scheme substitution panel. */
+      o.step opens the C++ memory stepper (or the Java step-through); o.subst opens the Scheme substitution panel. */
   function openCode(o) {
     load();
     pendingStep = o.step ? { mode: 'mem', stdin: o.stdin } : (o.subst ? { mode: 'subst' } : null);

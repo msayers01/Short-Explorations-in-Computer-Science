@@ -44,6 +44,8 @@ add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is w
     src/lab.js             the Code Lab (#/lab): files, editor, Python tracer and turtle, Scheme REPL,
                            templates, quick reference, share links, open and save, the Terminal panel
     src/shell.js           the practice shell: a Unix-style command line with its own file system (no eval, no DOM)
+    src/repl.js            python and scheme with no file in the terminal: the interactive shells (Python's replays its entries)
+    src/shellgit.js        the practice git in that shell: init, add, commit, log, diff, branch, switch, merge... (.git kept in its file system)
     src/terminal.js        the terminals in front of it: the Code Lab panel (history, Tab completion, nano, the ~/lab mirror)
                            and the lesson terminals of the shell course (examples and graded exercises)
     src/shellgrade.js      the shell course's file setups and its grader (file-system state and command output)
@@ -61,6 +63,7 @@ add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is w
     src/scheme.js          Scheme interpreter (MIT Scheme / SICP dialect)
     src/subst.js           substitution-model stepper for Scheme
     src/cppstep.js         C++ memory stepper (frames, addresses, arrays and pointers)
+    src/javastep.js        Java step-through, drawn in the page (the run is recorded by src/java.js)
     src/java.js            the Java interpreter: lexer, parser, javac-style checker, library, interpreter
     src/javaworker.js      the Java sandbox (a Web Worker); src/javautil.js wraps method exercises for grading
     src/clangworker.js     the Full C++ worker (real Clang, downloaded on demand); src/cppfull.js grades its exercises
@@ -74,11 +77,14 @@ add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is w
     build.js               inlines everything into dist/index.html and writes dist/teacher-guide.html
     test_course.js         checks every exercise and example of a course
     test_cppstep.js        checks the C++ memory stepper
+    test_javatrace.js      checks the Java step-through recorder
     test_java.js           checks the Java interpreter against what javac and java print
+    test_typed.js          typed input: Java Scanner and C++ cin answered a line at a time, in the real workers
     test_subst.js          checks the substitution stepper
     test_security.js       checks the Python sandbox and the size limit on links
     test_backup.js         checks saving and restoring work to a file, including hostile files
     test_shell.js          checks the practice shell: file system, parser, every command, limits, hostile saved copies
+    test_git.js            checks the practice git: a whole workflow, every command, merges and conflicts, the caps, hostile .git data
     test_browser.js        browser tests (npm run test:browser): sandboxes, Stop, the Code Lab and the Content Security Policy
     dist/                  the built site
 
@@ -105,8 +111,10 @@ The patched JSCPP is already bundled in `vendor/jscpp.min.js`; the patch also ha
     npm test          # all of the below
     node test_course.js python      # or lisp, cpp, math, modern (real compiler: about a minute)
     node test_cppstep.js
+    node test_javatrace.js
     node test_subst.js
     node test_shell.js
+    node test_git.js                # --real also compares with the real git, when there is one
 
 Each course test prints one line per exercise: the reference solution must pass and the
 starter code must fail. It also runs every playground and reports errors.

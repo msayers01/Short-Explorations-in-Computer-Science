@@ -829,7 +829,7 @@ xs mapped kept result`;
       el('div', { class: 'fig-tools' }, btn('Run', run, 'primary'), btn('Undo', () => { if (timer) return; prog.pop(); state = null; msg = ''; draw(); }), btn('Clear', () => { stop(); prog = []; state = null; msg = ''; draw(); }, 'quiet')), say);
   };
 
-  /* ---------- 31. a hash table with chaining: insert and search words, see the hash, the collisions, the load factor and the doubling (DSA lesson 8) ---------- */
+  /* ---------- 31. a hash table with chaining: insert and search words, see the hash, the collisions, the load factor and the doubling (DSA lesson 9) ---------- */
   W.hashtable = function (mount, b) {
     const LIMIT = 0.75, START = 8, MAXKEYS = 12;           // 12 keys fill 16 buckets exactly to the limit: the demo stops there
     const WORDS = ['cat', 'dog', 'bee', 'owl', 'fox', 'ant', 'eel', 'hen', 'yak', 'gnu', 'emu', 'ram'];
@@ -946,7 +946,7 @@ xs mapped kept result`;
       el('p', { class: 'ht-key' }, el('span', { class: 'ht-node ht-new' }, 'new'), ' just placed   ', el('span', { class: 'ht-node ht-moved' }, 'moved'), ' in a different bucket after doubling   ', el('span', { class: 'ht-node ht-now' }, 'compared'), ' during a search'));
   };
 
-  /* ---------- 31. a binary search tree: insert and search one comparison at a time, an in-order walk, and the height beside it (DSA lesson 9) ---------- */
+  /* ---------- 31. a binary search tree: insert and search one comparison at a time, an in-order walk, and the height beside it (DSA lesson 11) ---------- */
   W.bst = function (mount, b) {
     const MAXN = 15, DX = 36, DY = 46, PAD = 26, R = 15;
     let keys = (b.keys || []).filter((k, i, a) => Number.isInteger(k) && a.indexOf(k) === i).slice(0, MAXN);   // in the order they were inserted
@@ -1062,7 +1062,7 @@ xs mapped kept result`;
     ctl.el.setAttribute('aria-label', 'step through the operation');
   };
 
-  /* ---------- 31. a binary min-heap as a tree and as an array: insert (sift up), remove the minimum (sift down) (DSA lesson 10) ---------- */
+  /* ---------- 31. a binary min-heap as a tree and as an array: insert (sift up), remove the minimum (sift down) (DSA lesson 12) ---------- */
   W.heap = function (mount, b) {
     const CAP = 15, VW = 560, CW = 36, CX0 = (VW - CAP * CW) / 2, TREE_Y = 30, LEVEL_H = 50, ARR_Y = 232;
     const presets = [
@@ -2015,7 +2015,7 @@ xs mapped kept result`;
     mount.append(el('div', { class: 'fig-scroll' }, svg), log, ctl.el, el('div', { class: 'fig-tools' }, shuffle));
   };
 
-  /* ---------- 28. a linked list: nodes with a value and a next arrow, operations with hops counted (DSA lesson 5) ---------- */
+  /* ---------- 28. a linked list: nodes with a value and a next arrow, operations with hops counted (DSA lesson 6) ---------- */
   W.linkedlist = function (mount, b) {
     let list = (b.items || [12, 7, 3, 9]).slice();
     const maxN = 8, bw = 68, gap = 28, x0 = 54;
@@ -2057,7 +2057,7 @@ xs mapped kept result`;
     mount.append(el('div', { class: 'fig-scroll' }, svg), el('div', { class: 'fig-tools' }, el('span', {}, 'index'), idx, el('span', {}, 'value'), val, get, insertAt, addFirst, addLast, removeFirst), log, ctl.el);
   };
 
-  /* ---------- 29. a stack or a ring-buffer queue in an array of 8 cells, one operation at a time (DSA lesson 6) ---------- */
+  /* ---------- 29. a stack or a ring-buffer queue in an array of 8 cells, one operation at a time (DSA lesson 7) ---------- */
   W.stackqueue = function (mount, b) {
     const kind = b.kind === 'queue' ? 'queue' : 'stack', cap = 8, cw = 44, x0 = 40;
     let cells = new Array(cap).fill(null), top = 0, head = 0, tail = 0, count = 0, nextVal = 1, hot = -1;
@@ -2096,7 +2096,7 @@ xs mapped kept result`;
     render(kind === 'stack' ? 'An array of ' + cap + ' cells and an index, top: the number of items, and the cell the next push writes to.' : 'An array of ' + cap + ' cells and two indices. head is the front; tail is where the next item goes. Both move right and wrap round: a ring.');
   };
 
-  /* ---------- 30. the call stack of a recursive function, frame by frame (DSA lesson 7) ---------- */
+  /* ---------- 30. the call stack of a recursive function, frame by frame (DSA lesson 8) ---------- */
   W.callstack = function (mount, b) {
     const fn = b.fn === 'fact' ? 'fact' : b.fn === 'sum' ? 'sum' : 'fib';
     const maxN = fn === 'fib' ? 7 : 8;
@@ -2148,7 +2148,7 @@ xs mapped kept result`;
     restart();
   };
 
-  /* ---------- 20. splitting double vowel spelling into letters (math lesson 7) ---------- */
+  /* ---------- 20. splitting double vowel spelling into letters (math lesson 8) ---------- */
   W.letters = function (mount, b) {
     const CHARS = "abcdeghijkmnopstwyz'";             // the characters the system writes with (c only in ch)
     const TWO = ['aa', 'ii', 'oo', 'ch', 'sh', 'zh'];   // the letters written with two characters

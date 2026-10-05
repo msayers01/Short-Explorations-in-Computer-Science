@@ -13,6 +13,8 @@ function fresh(hooks) {
   const run = async (line, io) => { let out = ''; const exit = await sh.exec(line, Object.assign({ out: (s) => { out += s; }, err: (s) => { out += s; }, tty: true, ask: async (p) => { asks.push(p); return asks.length > 20 ? '' : 'typed'; } }, io || {})); return { out, exit }; };
   return { fs, sh, run, asks };
 }
+// a line not typed at the terminal: no history expansion (bash would expand the ! in "#!/bin/bash" or ${s!x} at its prompt too)
+const NOHIST = { tty: false };
 const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (exit !== undefined) check(name + ' exit', r.exit, exit); };
 
 (async () => {
@@ -41,6 +43,14 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     check('only home and tmp are saved', saved.root.c.map((e) => e[0]).join(','), 'home,tmp');
     const fs2 = SHELL.makeFS(saved, { now: () => T0 });
     check('round trip', fs2.read('/home/student/g/f.txt'), 'hi there'); check('round trip cwd', fs2.cwd, '/home/student/g'); check('system rebuilt', fs2.isFile('/bin/ls'), true);
+    // saved aliases (terminal.js keeps them with the history; backups carry them): only what the alias builtin would accept comes back
+    {
+      const al = SHELL.cleanAliases(JSON.parse('{"ll":"ls -l","__proto__":"x","bad name":"x","a/b":"x","q\\"":"x","long":"' + 'x'.repeat(1001) + '","n":5,"ok":"echo hi"}'));
+      check('saved aliases are checked: good ones kept, bad names, long texts and non-strings dropped, no prototype', Object.keys(al).sort().join(',') === '__proto__,ll,ok' && Object.getPrototypeOf(al) === null && al.ll === 'ls -l', true);
+      const many = {}; for (let i = 0; i < 500; i++) many['a' + i] = 'echo ' + i;
+      check('saved aliases are capped', Object.keys(SHELL.cleanAliases(many)).length, SHELL.LIMITS.aliases);
+      check('saved aliases: not an object gives none', Object.keys(SHELL.cleanAliases('ls')).length === 0 && Object.keys(SHELL.cleanAliases([1])).length === 0 && Object.keys(SHELL.cleanAliases(null)).length === 0, true);
+    }
     // hostile saved copies
     const h = SHELL.makeFS({ v: 1, cwd: '/etc', root: { t: 'd', c: [['home', { t: 'd', c: [['student', { t: 'd', c: [['__proto__', { t: 'f', d: 'p' }], ['constructor', { t: 'd', c: [] }], ['a/b', { t: 'f', d: 'y' }], ['..', { t: 'd', c: [] }], ['', { t: 'f', d: '' }], ['ctl\u0001', { t: 'f', d: '' }], ['big', { t: 'f', d: 'x'.repeat(SHELL.LIMITS.fileBytes + 1) }], ['ok', { t: 'f', d: 'z', x: 'yes', bin: { lang: 'c++', src: 'int main(){}', std: 'bad std' } }], ['ok2', { t: 'f', d: '', bin: { lang: 'cpp', src: 's', std: 'gnu++20' } }], ['n', { t: 'f', d: 42 }], ['weird', { t: 'x' }]] }]] }], ['bin', { t: 'd', c: [['ls', { t: 'f', d: 'evil', x: true }]] }], ['etc', { t: 'd', c: [['passwd', { t: 'f', d: 'hacked' }]] }]] } }, { now: () => T0 });
     check('hostile: names kept only when valid', h.list('/home/student').join(','), 'constructor,ok,ok2,__proto__');
@@ -212,7 +222,7 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('sed -i', await run('sed -i "s/one/ONE/" w.txt; cat w.txt'), 'ONE two\nthree\n');
     eq('sed -n p', await run('seq 5 | sed -n 2,3p'), '2\n3\n');
     eq('sed d', await run('seq 3 | sed 2d'), '1\n3\n');
-    eq('sed unknown', await run('seq 3 | sed y/a/b/'), /unknown command: 'y'/, 1);
+    eq('sed unknown', await run('seq 3 | sed k'), /unknown command: `k'/, 1);
     eq('rev', await run('echo abc | rev'), 'cba\n');
     eq('tac', await run('seq 3 | tac'), '3\n2\n1\n');
     eq('nl', await run('printf "a\\n\\nb\\n" | nl'), '     1\ta\n       \n     2\tb\n');
@@ -253,9 +263,9 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('which type', await run('which ls cd; echo $?; type cd ls'), '/bin/ls\n1\ncd is a shell builtin\nls is /bin/ls\n');
     eq('man', await run('man ls | head -2'), /^LS\(1\) +User Commands\n\n$/);
     eq('man missing', await run('man frob'), 'No manual entry for frob\n', 16);
-    eq('help', await run('help | grep -c .'), /^\d\d\n$/);
+    eq('help', await run('help | grep -c .'), /^\d{2,3}\n$/);
     eq('sudo', await run('sudo ls'), 'student is not in the sudoers file.  This incident will be reported.\n', 1);
-    eq('git', await run('git status'), /no network/, 1);
+    eq('curl', await run('curl example.com'), /no network/, 1);
     eq('vi', await run('vi s.sh'), /use nano s\.sh/, 127);
     eq('exit at prompt', await run('true; exit'), '(this terminal stays open: close its panel to leave)\n', 0);
   }
@@ -309,7 +319,7 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('__proto__ as a file name', await run('mkdir __proto__; echo x > __proto__/constructor; cat __proto__/constructor; ls -d __proto__; rm -r __proto__'), 'x\n__proto__\n');
     eq('loop limit', await run('while true; do :; done'), /stopped: more than \d+ commands/, 1);
     eq('loop limit in script', await run('printf "while true; do\\n  :\\ndone\\n" > inf.sh; bash inf.sh'), /stopped: more than/, 1);
-    eq('output limit', await run('yes 2>/dev/null; x=a; while true; do x="$x$x$x$x"; echo $x; done > big.txt'), /stopped: the command produced more output/, 1);
+    eq('output limit', await run('x=a; while true; do x="$x$x$x$x"; echo $x; done > big.txt'), /stopped: the command produced more output/, 1);
     eq('big file limit', await run('ls -l big.txt | cut -c 1-1'), '-\n');
     eq('too many files', await run('mkdir many; cd many; for i in $(seq 600); do touch f$i; done; cd ..; ls many | wc -l'), /No space|Too many files/, undefined);
     check('file count capped', (await run('ls many | wc -l')).out <= SHELL.LIMITS.files + '\n', true);
@@ -338,18 +348,23 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     const { sh, run, asks } = fresh({ nano: async (p, text) => text + 'edited\n', edit: (abs) => 'opened ' + abs, setup: (n) => n === 'lesson2' ? 'made files' : null });
     eq('python', await run('echo "print(1)" > h.py; python h.py; python3 h.py a b'), 'python:print(1)\npython:print(1) a,b\n', 0);
     eq('python missing', await run('python nope.py'), "python: can't open file '/home/student/nope.py': [Errno 2] No such file or directory\n", 2);
-    eq('python no args', await run('python'), /interactive Python shell is not available/, 2);
+    eq('python no args', await run('python'), /interactive Python shell needs the keyboard/, 2);
     eq('python < file', await run('echo 5 > in.txt; python h.py < in.txt'), 'python:print(1)<"5\\n"\n');
     eq('python | pipe', await run('echo 7 | python h.py'), 'python:print(1)<"7\\n"\n');
     eq('python > file', await run('python h.py > out.txt; cat out.txt'), 'python:print(1)\n');
     eq('python error status', await run('echo boom > b.py; python b.py; echo $?'), 'python:boom\nError: boom\n1\n');
-    eq('python shebang', await run('printf "#!/usr/bin/env python3\\nprint(2)\\n" > r.py; chmod +x r.py; ./r.py'), 'python:#!/usr/bin/env python3\nprint(2)\n');
+    eq('python shebang', await run('printf "#!/usr/bin/env python3\\nprint(2)\\n" > r.py; chmod +x r.py; ./r.py', NOHIST), 'python:#!/usr/bin/env python3\nprint(2)\n');
     eq('javac + java', await run('echo "public class Main { }" > Main.java; javac Main.java; ls Main.class; java Main'), 'Main.class\njava:public class Main { }\n', 0);
     eq('java without class', await run('rm Main.class; java Main'), 'Error: Could not find or load main class Main\nCaused by: java.lang.ClassNotFoundException: Main\n(there is a Main.java: compile it first with javac Main.java)\n', 1);
     eq('java source launcher', await run('java Main.java'), 'java:public class Main { }\n');
     eq('javac wrong name', await run('echo "public class Foo { }" > Main.java; javac Main.java'), 'Main.java:1: error: class Foo is public, should be declared in a file named Foo.java\n1 error\n', 1);
     eq('javac error', await run('echo "class Main { bad }" > Main.java; javac Main.java; ls Main.class'), "Main.java:1:1: error: bad\nls: cannot access 'Main.class': No such file or directory\n");
-    eq('javac missing', await run('javac Nope.java'), 'error: file not found: Nope.java\nUsage: javac <options> <source files>\n', 1);
+    eq('javac missing', await run('javac Nope.java'), 'error: file not found: Nope.java\nUsage: javac <options> <source files>\n', 2);
+    eq('javac several files: a .class for every class', await run('rm -f *.class; printf "public class Main { }\\nclass Helper { }\\n" > Main.java; printf "import java.util.*;\\npublic class Dog { }\\n" > Dog.java; javac Main.java Dog.java; ls *.class'), 'Dog.class  Helper.class  Main.class\n', 0);
+    eq('java runs the joined program, its main class named', await run('java Main'), /^java:import java\.util\.\*;\n\/\/@file Main\.java\npublic class Main \{ \}\nclass Helper \{ \}\n\n\/\/@file Dog\.java\n\npublic class Dog \{ \}\n$/);
+    eq('javac *.java: two public classes in one file', await run('printf "public class Main { }\\npublic class Cat { }\\n" > Main.java; javac *.java'), 'Main.java:2: error: class Cat is public, should be declared in a file named Cat.java\n1 error\n', 1);
+    eq('javac several files: nothing compiled if one is missing', await run('rm -f *.class; javac Dog.java Nope.java; ls *.class'), "error: file not found: Nope.java\nUsage: javac <options> <source files>\nls: cannot access '*.class': No such file or directory\n");
+    await run('rm -f Dog.java Main.class Helper.class Dog.class');
     eq('java < stdin', await run('echo "class Main { Scanner }" > Main.java; javac Main.java && java Main < in.txt'), 'java:class Main { Scanner }<"5\\n"\n');
     eq('java reads keyboard', await run('java Main'), /reads input.*\njava:class Main \{ Scanner \}<"typed\\n/);
     eq('g++', await run('echo "int main() { return 0; }" > m.cpp; g++ m.cpp -o m; ./m; ls -F m'), 'cpp:int main() { return 0; }\nm*\n', 0);
@@ -430,10 +445,10 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('${#x} ${x:1:3}', await run('s=hello; echo ${#s} ${s:1:3} ${s:2}'), '5 ell llo\n', 0);
     eq('${x:-d}', await run('n=x; e=; echo ${n:-d} ${nope:-d} ${e:-d} ${e-d2}. "${n:+set}" ${z:=zz} $z'), 'x d d . set zz zz\n', 0);
     eq('${1:-d} in a script', await run('bash -c \'echo ${1:-none} ${2:-none}\' _ a'), 'a none\n', 0);
-    eq('bad substitution', await run('echo ${s!x}'), 'bash: ${s!x}: bad substitution\n', 1);
+    eq('bad substitution', await run('echo ${s!x}', NOHIST), 'bash: ${s!x}: bad substitution\n', 1);
     // ${x#pat} ${x%pat} ${x/pat/new} ${x^} (bash agrees on all of these: difftest/shell.txt)
     eq('${f%.txt} ${p##*/} ${p%/*}', await run('f=a.txt; p=/x/y/z.c; echo ${f%.txt} ${p##*/} ${p%/*} ${p#/x} ${p%%/*}.'), 'a z.c /x/y /y/z.c .\n', 0);
-    eq('${s/a/b} ${s//a/b}', await run('s=banana; echo ${s/a/b} ${s//a/b} ${s//[an]/_} ${s/#ba/} ${s/%na/!}'), 'bbnana bbnbnb b_____ nana bana!\n', 0);
+    eq('${s/a/b} ${s//a/b}', await run('s=banana; echo ${s/a/b} ${s//a/b} ${s//[an]/_} ${s/#ba/} ${s/%na/!}', NOHIST), 'bbnana bbnbnb b_____ nana bana!\n', 0);
     eq('${s^^} ${s,} ${s: -3}', await run('s=Hello; echo ${s^^} ${s,} ${s: -3} ${s:1:-1}'), 'HELLO hello llo ell\n', 0);
     eq('a ${...} inside a pattern', await run('d=txt; f=a.txt; echo ${f%.${d}}x ${f%.$d} "${f/$d/md}"'), 'ax a a.md\n', 0);
     eq('a pattern * also matches a slash', await run('p=a/b/c; echo ${p#*/} ${p##*/} ${p%/*} ${p%%/*} ${p//\\//-}'), 'b/c c a/b a a-b-c\n', 0);
@@ -560,6 +575,197 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     const h = SHELL.makeFS({ v: 1, cwd: '/home/student', root: { t: 'd', c: [['home', { t: 'd', c: [['student', many]] }]] } }, { now: () => T0 });
     check('hostile: a saved copy cannot hold a huge tree of directories', h.list('/home/student').length <= SHELL.LIMITS.dirs, true);
     check('these limits are quick', Date.now() - t0 < 5000, true);
+  }
+
+  // ---- functions (each expectation is what bash 5.2 prints; difftest/shell.txt checks many of them against bash itself)
+  {
+    const { sh, run } = fresh();
+    eq('function', await run('f() { echo "in f: $1 $# $@"; }; f a b; f; echo $?'), 'in f: a 2 a b\nin f:  0 \n0\n', 0);
+    eq('function keyword', await run('function k { echo kw "$@"; }; k 1 2; function k2() { echo two; }; k2'), 'kw 1 2\ntwo\n', 0);
+    eq('functions last for the session', await run('k 3'), 'kw 3\n', 0);
+    eq('$0 stays at the prompt', await run('f0() { echo $0; }; f0'), 'bash\n', 0);
+    eq('$0 stays in a script', await run('printf \'g() { echo "$0 $1"; }\\ng x\\n\' > fs.sh; bash fs.sh', NOHIST), 'fs.sh x\n', 0);
+    eq('a function from a script stays', await run('g y'), 'bash y\n', 0);
+    eq('local', await run('greet() { local name=$1; echo "Hello, $name"; }; name=Bob; greet Ada; echo $name'), 'Hello, Ada\nBob\n', 0);
+    eq('local without a value', await run('f() { local x; echo "[$x]"; x=inner; }; x=outer; f; echo $x'), '[]\nouter\n', 0);
+    eq('local keeps words together', await run('f() { local s=$1; echo "$s"; }; f "a  b"'), 'a  b\n', 0);
+    eq('local outside a function', await run('local x=1'), 'bash: local: can only be used in a function\n', 1);
+    eq('recursion', await run('fact() { if [ $1 -le 1 ]; then echo 1; else echo $(( $1 * $(fact $(( $1 - 1 ))) )); fi; }; fact 6'), '720\n', 0);
+    eq('recursion with locals', await run('fib() { local n=$1; if (( n < 2 )); then echo $n; return; fi; local a=$(fib $((n-1))) b=$(fib $((n-2))); echo $((a+b)); }; fib 12'), '144\n', 0);
+    eq('return status', await run('is_even() { return $(( $1 % 2 )); }; is_even 4 && echo even; is_even 3 || echo odd; f() { return 300; }; f; echo $?'), 'even\nodd\n44\n', 0);
+    eq('return a word', await run('f() { return abc; echo no; }; f; echo $?'), 'bash: return: abc: numeric argument required\n2\n', 0);
+    eq('return outside', await run('return'), "bash: return: can only `return' from a function or sourced script\n", 2);
+    eq('return ends a sourced script', await run('printf "echo a\\nreturn 5\\necho b\\n" > r.sh; source r.sh; echo $?'), 'a\n5\n', 0);
+    eq('no end to recursion', await run('f() { f; }; f; echo same line'), 'bash: f: maximum function nesting level exceeded (' + SHELL.LIMITS.funcDepth + ')\n', 1);
+    eq('the shell still works after', await run('echo fine'), 'fine\n', 0);
+    eq('FUNCNEST', await run('FUNCNEST=5; g() { g; }; g; echo same line\necho next line; unset FUNCNEST'), 'bash: g: maximum function nesting level exceeded (5)\nnext line\n', 0);
+    eq('a loop in a function hits the step limit', await run('w() { while true; do :; done; }; w'), /stopped: more than \d+ commands/, 1);
+    eq('type of a function', await run('h() { if [ "$1" = a ]; then echo A; elif true; then echo B; fi; for x in 1 2; do echo $x; done; }; type h'), 'h is a function\nh () \n{ \n    if [ "$1" = a ]; then\n        echo A;\n    else\n        if true; then\n            echo B;\n        fi;\n    fi;\n    for x in 1 2;\n    do\n        echo $x;\n    done\n}\n', 0);
+    eq('declare -f', await run('c() { case $1 in a|b) echo ab;; *) echo other ;; esac; local y=2 z; return 3; }; declare -f c'), 'c () \n{ \n    case $1 in \n        a | b)\n            echo ab\n        ;;\n        *)\n            echo other\n        ;;\n    esac;\n    local y=2 z;\n    return 3\n}\n', 0);
+    eq('declare -f a subshell body', await run('m() ( echo sub ); declare -f m; m'), 'm () \n{ \n    ( echo sub )\n}\nsub\n', 0);
+    eq('declare -F', await run('unset -f f0 g greet fact fib is_even h c m w k k2; declare -F'), 'declare -f f\n', 0);
+    eq('unset -f', await run('unset -f f; f'), 'bash: f: command not found\n', 127);
+    eq('a function hides a command; command does not', await run('ls() { echo "my ls"; }; ls; command ls -d /tmp; unset -f ls'), 'my ls\n/tmp\n', 0);
+    eq('type -t', await run('t() { :; }; alias al=ls; type -t t cd ls if al nope; echo $?'), 'function\nbuiltin\nfile\nkeyword\nalias\n1\n', 0);
+    eq('redirection of a function', await run('lf() { echo one; echo two; } > lf.txt; lf; cat lf.txt'), 'one\ntwo\n', 0);
+    eq('function syntax error', await run('f() echo x'), "bash: syntax error near unexpected token `echo'\n", 2);
+    eq('break and continue', await run('for i in 1 2 3 4 5; do [ $i = 2 ] && continue; [ $i = 4 ] && break; echo $i; done; for i in 1 2; do for j in a b; do continue 2; done; done; echo "$i $j"'), '1\n3\n2 a\n', 0);
+    eq('break outside a loop', await run('break; echo $?'), "bash: break: only meaningful in a `for', `while', or `until' loop\n0\n", 0);
+    check('functions are kept by name in a dictionary', Object.getPrototypeOf(sh.funcs), null);
+  }
+  // ---- case, (( )), for (( ))
+  {
+    const { run } = fresh();
+    await run("printf 'banana\\napple\\n' > fruit.txt; mkdir notes");
+    eq('case', await run('for f in fruit.txt notes a.csv nope; do case $f in *.txt) echo "$f: text";; *.csv|*.tsv) echo "$f: table";; *) if [ -d $f ]; then echo "$f: dir"; else echo "$f: ?"; fi;; esac; done'), 'fruit.txt: text\nnotes: dir\na.csv: table\nnope: ?\n', 0);
+    eq('case ;& and ;;&', await run('case abc in a*) echo A;& b*) echo B;; c*) echo C;; esac; case abc in a*) echo A;;& *c) echo C;; esac'), 'A\nB\nA\nC\n', 0);
+    eq('case quoting', await run('p="a*"; case abc in $p) echo pat;; esac; case "a*" in "$p") echo lit;; esac; case abc in "$p") echo no;; *) echo star;; esac'), 'pat\nlit\nstar\n', 0);
+    eq('case classes and ?', await run('case z in [a-c]) echo no;; ?) echo one;; esac; case x in (x) echo paren;; esac'), 'one\nparen\n', 0);
+    eq('case over lines', await run('case x in\n  x)\n    echo multi\n    ;;\n  *) echo no\nesac'), 'multi\n', 0);
+    eq('case status', await run('case x in x) false;; esac; echo $?; case y in x) echo x;; esac; echo $?'), '1\n0\n', 0);
+    eq('case unfinished', await run('case x in x) echo y'), 'bash: syntax error: unexpected end of file\n', 2);
+    eq(';; outside case', await run('echo a;; b'), "bash: syntax error near unexpected token `;;'\n", 2);
+    eq('(( )) and for (( ))', await run('for ((i=0; i<3; i++)); do echo -n $i; done; echo; i=0; while (( i < 3 )); do (( i++ )); done; echo $i; (( 0 )); echo $?'), '012\n3\n1\n', 0);
+    eq('(( )) error', await run('(( 1/0 )); echo "a $?"'), 'bash: ((: 1/0 : division by 0 (error token is "0 ")\na 1\n', 0);
+    eq('?: and $(...) in arithmetic', await run('echo $(( 5 > 3 ? 10 : 20 )) $(( $(echo 3) + `echo 4` + $((1+1)) ))'), '10 9\n', 0);
+  }
+  // ---- arrays
+  {
+    const { sh, run } = fresh();
+    await run("printf 'the cat sat\\n' > words.txt; touch a.txt b.txt");
+    eq('array basics', await run('a=(x y z); echo ${a[0]} ${a[2]} "[${a[5]}]" ${#a[@]} ${!a[@]} ${a[-1]} $a; a[7]=w; echo ${!a[@]}; a+=(v u); echo ${!a[@]}; echo "${a[*]}"'), 'x z [] 3 0 1 2 z x\n0 1 2 7\n0 1 2 7 8 9\nx y z w v u\n', 0);
+    eq('"${a[@]}" keeps the words', await run('a=("one two" three); for x in "${a[@]}"; do echo "[$x]"; done; for x in ${a[@]}; do echo "<$x>"; done; for x in "${a[*]}"; do echo "{$x}"; done'), '[one two]\n[three]\n<one>\n<two>\n<three>\n{one two three}\n', 0);
+    eq('an empty array', await run('e=(); echo ${#e[@]}; for x in "${e[@]}"; do echo never; done; echo "[${e[@]}]"; declare -p e'), '0\n[]\ndeclare -a e=()\n', 0);
+    eq('slices', await run('n=(1 2 3 4 5); echo ${n[@]:1:2} ${n[@]:3} ${n[@]: -2}'), '2 3 4 5 4 5\n', 0);
+    eq('arithmetic indices', await run('i=1; a=(p q r); echo ${a[i]} ${a[$i]} ${a[i+1]} ${#a[1]}; a[$((1+1))]=R; a[i]=Q; echo "${a[@]}"; echo $((a[0] == a[0])); b=(5 6); (( b[0] += 2 )); echo $(( b[0] + b[1] ))'), 'q q r 1\np Q R\n1\n13\n', 0);
+    eq('unset an element', await run('x=(1 2 3); unset "x[1]"; declare -p x; echo ${#x[@]}; unset x; echo ${#x[@]}'), 'declare -a x=([0]="1" [2]="3")\n2\n0\n', 0);
+    eq('+= on strings and arrays', await run('y=abc; y+=def; echo $y; n=(1); n+=(2 3); echo "${n[@]}"; s=str; s+=(more); s[3]=z; declare -p s'), 'abcdef\n1 2 3\ndeclare -a s=([0]="str" [1]="more" [3]="z")\n', 0);
+    eq('wildcards and $(...) fill an array', await run('f=(*.txt); echo ${#f[@]} "${f[0]}"; w=($(cat words.txt)); echo ${#w[@]} ${w[2]}'), '3 a.txt\n3 sat\n', 0);
+    eq('declare -a, declare -p', await run('declare -a d; declare -p d; declare -a l=(1 2); declare -p l; v=\'q"r$\'; declare -p v nope; echo $?'), 'declare -a d\ndeclare -a l=([0]="1" [1]="2")\ndeclare -- v="q\\"r\\$"\nbash: declare: nope: not found\n1\n', 0);
+    eq('local arrays', await run('f() { local -a arr=(1 2 3); echo ${#arr[@]}; }; f; echo ${#arr[@]}'), '3\n0\n', 0);
+    eq('read -a', await run('read -a r < words.txt; echo "${r[1]} ${#r[@]}"'), 'cat 3\n', 0);
+    eq('indices loop', await run('a=(b c a); for i in "${!a[@]}"; do echo "$i=${a[i]}"; done'), '0=b\n1=c\n2=a\n', 0);
+    eq('bad subscripts', await run('a=(x y); echo "[${a[-9]}]"; a[-9]=q; echo not reached'), 'bash: a: bad array subscript\n[]\nbash: a[-9]: bad array subscript\n', 1);
+    eq('declare -A is refused', await run('declare -A m'), 'bash: declare: -A: associative arrays are not available in this practice shell\n', 2);
+    eq('an array has a cap on values', await run('big=($(seq 10000)); echo ${#big[@]}; big+=(one more)'), '10000\nbash: stopped: an array here holds at most ' + SHELL.LIMITS.array + ' values and ' + SHELL.LIMITS.vars * 4 + ' characters.\n', 1);
+    eq('and on characters', await run('s=aaaaaaaaaa; for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do s=$s$s; done; h=($s $s $s $s $s)'), /stopped: an array here holds at most/, 1);
+    check('arrays are kept in a dictionary', Object.getPrototypeOf(sh.arrays), null);
+    eq('__proto__ as an array name', await run('__proto__=(1 2); echo ${#__proto__[@]} ${__proto__[1]}'), '2 2\n', 0);
+  }
+  // ---- aliases (at the terminal; not saved: they last as long as the shell)
+  {
+    const { sh, run } = fresh();
+    await run('mkdir notes; touch notes/a.txt');
+    eq('alias', await run("alias ll='ls -d'"), '', 0);
+    eq('alias used', await run('ll notes'), 'notes\n', 0);
+    eq('an alias works from the next line', await run('alias x=echo; x same line\nx next line'), 'bash: x: command not found\nnext line\n', 0);
+    eq('alias listing', await run("alias q=\"echo 'it'\\''s'\"; alias; alias q"), "alias ll='ls -d'\nalias q='echo '\\''it'\\''\\'\\'''\\''s'\\'''\nalias x='echo'\nalias q='echo '\\''it'\\''\\'\\'''\\''s'\\'''\n", 0);
+    eq('alias of a command of the same name', await run("alias ls='ls -F'\nls"), 'notes/\n', 0);
+    eq('an alias ending in a space', await run("alias l='ls ' n=notes\nl n"), 'a.txt\n', 0);
+    eq('aliases naming each other', await run('alias a1=a2 a2=a1\na1'), 'bash: a1: command not found\n', 127);
+    eq('an alias with ; and |', await run("alias two='echo one; echo two' p='echo piped |'\ntwo; p cat"), 'one\ntwo\npiped\n', 0);
+    eq('alias errors', await run("alias 'a b=c'; alias nope; unalias nope; echo $?"), "bash: alias: `a b': invalid alias name\nbash: alias: nope: not found\nbash: unalias: nope: not found\n1\n", 0);
+    eq('type of an alias', await run('type ll'), "ll is aliased to `ls -d'\n", 0);
+    eq('no aliases for a script', await run('echo "ll notes" > al.sh; bash al.sh'), 'al.sh: line 1: ll: command not found\n', 127);
+    eq('shopt -s expand_aliases in a script', await run('printf "shopt -s expand_aliases\\nalias say=echo\\nsay hi\\n" > al2.sh; bash al2.sh; shopt expand_aliases', NOHIST), 'hi\nexpand_aliases \toff\n', 1);
+    eq('no aliases for the grader', await run('ll notes', NOHIST), 'bash: ll: command not found\n', 127);
+    eq('unalias -a', await run('unalias -a; alias; ll\nll'), './\nbash: ll: command not found\n', 127);
+    eq('__proto__ as an alias', await run("alias __proto__='echo p'\n__proto__"), 'p\n', 0);
+    let r = ''; for (let i = 0; i < SHELL.LIMITS.aliases; i++) r += 'al' + i + '=x '; await run('alias ' + r);
+    eq('the number of aliases is capped', await run('alias one=more'), /keeps at most 100 aliases/, 1);
+    eq('so is their length', await run("unalias -a; alias long='" + 'x'.repeat(1001) + "'"), /too long/, 1);
+    eq('a runaway alias expansion stops', await run("alias b0='echo x; echo x; echo x' b1='b0; b0; b0' b2='b1; b1; b1' b3='b2; b2; b2' b4='b3; b3; b3' b5='b4; b4; b4' b6='b5; b5; b5' b7='b6; b6; b6' b8='b7; b7; b7'"), '', 0);
+    eq('...with a message', await run('b8'), /alias expansion is too long/, 2);
+    check('aliases are kept in a dictionary', Object.getPrototypeOf(sh.aliases), null);
+    check('a new shell has no aliases', Object.keys(SHELL.makeShell({ fs: SHELL.makeFS(null, { now: () => T0 }) }).aliases).length, 0);
+  }
+  // ---- history expansion (only for lines typed at the terminal)
+  {
+    const { sh, run } = fresh();
+    eq('!!', await run('echo one two three'), 'one two three\n', 0);
+    eq('!! repeats', await run('!!'), 'echo one two three\none two three\n', 0);
+    eq('!$', await run('echo !$'), 'echo three\nthree\n', 0);
+    eq('!n and !-n', await run('!1 x; !-2'), 'echo one two three x; echo one two three\none two three x\none two three\n', 0);
+    eq('!prefix', await run('!ec'), 'echo one two three x; echo one two three\none two three x\none two three\n', 0);
+    const before = sh.history.length;
+    eq('event not found', await run('false; !zz'), 'bash: !zz: event not found\n');
+    check('a failed expansion is not kept', sh.history.length, before);
+    eq('$? unchanged by it', await run('echo $?'), '0\n', 0);
+    eq('^old^new', await run('^$?^zero'), 'echo zero\nzero\n', 0);
+    eq('^old^new not found', await run('^nope^x'), 'bash: :s^nope^x: substitution failed\n');
+    await run('echo a b c'); eq('!* and !^', await run('echo !^ !*'), 'echo a a b c\na a b c\n', 0);
+    eq('no expansion here', await run("echo '!!' \"hi!\" a!=b x! ! true"), '!! hi! a!=b x! ! true\n', 0);
+    eq('nor in [!...] ${!...} $!', await run('a=(q); echo [!z] ${!a[@]}'), '[!z] 0\n', 0);
+    eq('\\! is a plain !', await run('echo \\!!'), '!!\n', 0);
+    eq('modifiers are refused', await run('!!:s/a/b/'), /history modifiers/);
+    eq('not for the grader', await run('echo !!', NOHIST), '!!\n', 0);
+    check('the expanded line is kept', sh.history[sh.history.length - 1], 'echo !!');
+  }
+  // ---- the new commands
+  {
+    const { run } = fresh();
+    await run("printf 'banana\\napple\\ncherry\\n' > fruit.txt; printf 'name,score\\nAda,90\\nBob,85\\n' > grades.csv; printf '3\\n10\\n2\\n' > nums.txt; mkdir -p d/e; echo hi > d/e/f; seq 2000 > d/big");
+    eq('basename', await run('basename /a/b/c.txt .txt; basename /a/b/; basename /; basename -a x/y z/w; basename -s .c a.c b.c; basename .txt .txt'), 'c\nb\n/\ny\nw\na\nb\n.txt\n', 0);
+    eq('basename errors', await run('basename; basename a b c'), "basename: missing operand\nTry 'basename --help' for more information.\nbasename: extra operand 'c'\nTry 'basename --help' for more information.\n", 1);
+    eq('dirname', await run('dirname /a/b/c a a/ / //x'), '/a/b\n.\n.\n/\n/\n', 0);
+    eq('realpath', await run('realpath d/e/../big fruit.txt; realpath d/nope/../x; realpath -e nope; realpath -m nope/../y; realpath fruit.txt/x'), '/home/student/d/big\n/home/student/fruit.txt\nrealpath: d/nope/../x: No such file or directory\nrealpath: nope: No such file or directory\n/home/student/y\nrealpath: fruit.txt/x: Not a directory\n', 1);
+    eq('du', await run('du d; du -s d; du -sh d; du -ah d; du nope'), '8\td/e\n24\td\n24\td\n24K\td\n12K\td/big\n4.0K\td/e/f\n8.0K\td/e\n24K\td\n' + "du: cannot access 'nope': No such file or directory\n", 1);
+    eq('expr', await run('expr 2 + 3; expr 7 \\* 6; expr \\( 1 + 2 \\) \\* 3; expr 10 / 3; expr -5 % 3; expr 99999999999999999999 + 1; expr length hello; expr substr hello 2 3; expr index hello l; expr report.txt : \'\\(.*\\)\\.txt\'; expr abc : "a."; expr 2 \\< 10; expr b \\< a; expr 0 \\| 5; expr 3 \\& 0'), '5\n42\n9\n3\n-2\n100000000000000000000\n5\nell\n3\nreport\n2\n1\n0\n5\n0\n', 1);
+    eq('expr errors', await run('expr; expr 1 +; expr 1 + a; expr 4 / 0; expr 1 2; expr \\( 1; echo $?'), "expr: missing operand\nTry 'expr --help' for more information.\nexpr: syntax error: missing argument after '+'\nexpr: non-integer argument\nexpr: division by zero\nexpr: syntax error: unexpected argument '2'\nexpr: syntax error: expecting ')' after '1'\n2\n", 0);
+    eq('expr status', await run('expr 0; echo $?; expr ""; echo $?'), '0\n1\n\n1\n', 0);
+    eq('time', await run('time true'), /^\nreal\t0m0\.\d{3}s\nuser\t0m0\.\d{3}s\nsys\t0m0\.000s\n$/, 0);
+    eq('time -p and a pipeline', await run('time -p seq 3 | wc -l'), /^3\nreal \d+\.\d\d\nuser \d+\.\d\d\nsys 0\.00\n$/, 0);
+    eq('time is a keyword', await run('type time'), 'time is a shell keyword\n', 0);
+    eq('yes into a pipe', await run('yes | head -2; yes ab c | head -1'), 'y\ny\nab c\n', 0);
+    eq('yes to the terminal stops', await run('yes'), /stopped: the command produced more output/, 1);
+    eq('fold', await run("printf 'abcdefghij klm nop\\tq\\n' | fold -w 5; printf 'hello world foo bar\\n' | fold -s -w 8; printf 'abc' | fold -w 2; echo"), 'abcde\nfghij\n klm \nnop\n\t\nq\nhello \nworld \nfoo bar\nab\nc\n', 0);
+    eq('fold -w 0', await run('fold -w 0 fruit.txt'), "fold: invalid number of columns: '0': Numerical result out of range\n", 1);
+    eq('paste', await run("paste fruit.txt nums.txt; paste -d , fruit.txt nums.txt; paste -s -d ':,' nums.txt; printf '1\\n2\\n3\\n' | paste - -"), 'banana\t3\napple\t10\ncherry\t2\nbanana,3\napple,10\ncherry,2\n3:10,2\n1\t2\n3\t\n', 0);
+    eq('paste missing', await run('paste fruit.txt nope'), 'paste: nope: No such file or directory\n', 1);
+    eq('comm', await run("sort fruit.txt > s1; printf 'apple\\ncherry\\nzebra\\n' > s2; comm s1 s2; comm -12 s1 s2"), '\t\tapple\nbanana\n\t\tcherry\n\tzebra\napple\ncherry\n', 0);
+    eq('comm unsorted', await run("comm fruit.txt s2"), '\tapple\nbanana\ncomm: file 1 is not in sorted order\napple\n\t\tcherry\n\tzebra\ncomm: input is not in sorted order\n', 1);
+    eq('column -t', await run('column -t -s , grades.csv; printf "a bb c\\nddd e f\\n" | column -t'), 'name  score\nAda   90\nBob   85\na    bb  c\nddd  e   f\n', 0);
+    eq('column without -t', await run('column fruit.txt'), 'column: only column -t (a table) is available in this practice shell\n', 1);
+    const crypto = require('crypto');
+    eq('sha256sum and md5sum', await run("printf 'abc' | sha256sum; md5sum fruit.txt nope"), crypto.createHash('sha256').update('abc').digest('hex') + '  -\n' + crypto.createHash('md5').update('banana\napple\ncherry\n').digest('hex') + '  fruit.txt\nmd5sum: nope: No such file or directory\n', 1);
+    let ok = true;
+    for (const t of ['', 'x'.repeat(55), 'y'.repeat(56), 'z'.repeat(64), 'héllo €𝄞\n'.repeat(30)]) { const f = fresh(); f.fs.write('/home/student/t', t); const r = await f.run('sha256sum t; md5sum t'); if (r.out !== crypto.createHash('sha256').update(t).digest('hex') + '  t\n' + crypto.createHash('md5').update(t).digest('hex') + '  t\n') ok = false; }
+    check('checksums agree with node at block edges and in UTF-8', ok, true);
+    eq('ln is still not here', await run('ln -s a b'), 'bash: ln: command not found\n', 127);
+  }
+  // ---- awk
+  {
+    const { run } = fresh();
+    await run("printf 'name,score\\nAda,90\\nBob,85\\nCy,90\\n' > grades.csv; printf 'the cat sat on the mat\\nthe dog\\n' > words.txt; printf 'banana\\napple\\ncherry\\napple\\n' > fruit.txt");
+    eq('awk fields', await run("awk -F , '$2 > 85 { print $1 }' grades.csv; awk '{ print NF, $NF, $(NF-1) }' words.txt"), 'name\nAda\nCy\n6 mat the\n2 dog the\n', 0);
+    eq('awk END and sums', await run("awk -F , 'NR > 1 { total += $2 } END { print total / (NR - 1), NR }' grades.csv"), '88.3333 4\n', 0);
+    eq('awk arrays', await run("awk '{ n[$1]++ } END { for (w in n) print w, n[w] }' fruit.txt | sort"), 'apple 2\nbanana 1\ncherry 1\n', 0);
+    eq('awk printf', await run("awk 'BEGIN { printf \"%5.2f|%-5d|%05d|%x|%o|%e|%g|%s|%c|%%\\n\", 3.14159, 42, 42, 255, 8, 1234.5, 0.0001, \"hi\", 65 }'"), ' 3.14|42   |00042|ff|10|1.234500e+03|0.0001|hi|A|%\n', 0);
+    eq('awk strings', await run("awk 'BEGIN { s = \"hello world\"; print length(s), substr(s, 1, 5), index(s, \"o\"), toupper(s); n = split(\"a:b:c\", p, \":\"); print n, p[3] }'"), '11 hello 5 HELLO WORLD\n3 c\n', 0);
+    eq('awk sub and gsub', await run("awk '{ gsub(/a/, \"A\"); sub(/n/, \"[&]\"); print }' fruit.txt | head -2; awk 'BEGIN { s = \"aaa\"; print gsub(/a*/, \"-\", s), s }'"), 'bA[n]AnA\nApple\n1 -\n', 0);
+    eq('awk patterns', await run("awk '/an/ { print NR\": \"$0 }' fruit.txt; awk '!/an/' fruit.txt; awk 'NR == 2, NR == 3' fruit.txt"), '1: banana\napple\ncherry\napple\napple\ncherry\n', 0);
+    eq('awk control flow', await run("awk 'BEGIN { for (i = 1; i <= 5; i++) { if (i == 2) continue; if (i == 4) break; print i }; while (j < 2) print \"w\" j++; do k++; while (k < 3); print k }'"), '1\n3\nw0\nw1\n3\n', 0);
+    eq('awk fields assigned', await run("awk '{ $2 = \"X\"; print; NF = 2; print }' words.txt; awk 'BEGIN { OFS = \"-\" } { $1 = $1; print }' words.txt"), 'the X sat on the mat\nthe X\nthe X\nthe X\nthe-cat-sat-on-the-mat\nthe-dog\n', 0);
+    eq('awk comparisons', await run("awk 'BEGIN { print 1 == 1.0, \"a\" < \"b\", \"10\" < \"9\", 10 < 9; x; print length(x), x + 0, (x == 0), (x == \"\") }'; echo '10 9' | awk '{ print ($1 < $2) }'"), '1 1 1 0\n0 0 1 1\n0\n', 0);
+    eq('awk numbers', await run("awk 'BEGIN { print 0.1 + 0.2, 1e6, 3/2, 100/3, 2^10, -7 % 3, int(-3.9) }'"), '0.3 1000000 1.5 33.3333 1024 -1 -3\n', 0);
+    eq('awk -v and assignments', await run("awk -v n=3 'BEGIN { print n * 2 }'; awk '{ print v, $1 }' v=1 fruit.txt | head -1"), '6\n1 banana\n', 0);
+    eq('awk exit', await run("awk 'NR == 2 { exit 3 } { print }' fruit.txt; echo $?; awk 'BEGIN { exit 1 } END { print \"end\" }'; echo $?"), 'banana\n3\nend\n1\n', 0);
+    eq('awk > file', await run("awk '{ print > \"out.txt\" } END { print \"done\" }' fruit.txt; wc -l < out.txt"), 'done\n4\n', 0);
+    eq('awk syntax error', await run("awk '{ print $1 ' fruit.txt"), 'awk: line 2: missing } near end of file\n', 2);
+    eq('awk at or near', await run("awk 'BEGIN { x = = 1 }'"), 'awk: line 1: syntax error at or near =\n', 2);
+    eq('awk missing file', await run("awk '{ print }' nope"), 'awk: cannot open "nope" (No such file or directory)\n', 2);
+    eq('awk division by zero', await run("awk 'BEGIN { print 1 / 0 }'"), 'awk: division by zero\n', 2);
+    eq('awk refuses functions', await run("awk 'function f(x) { return x } { print f($1) }' fruit.txt"), 'awk: line 1: functions of your own are not available in this practice awk\n', 2);
+    eq('awk refuses getline', await run("awk 'BEGIN { getline line }'"), 'awk: line 1: getline is not available in this practice awk\n', 2);
+    eq('awk refuses pipes and system', await run("awk 'BEGIN { print \"x\" | \"sort\" }'; awk 'BEGIN { system(\"ls\") }'"), 'awk: line 1: print | "command" is not available in this practice awk\nawk: line 1: system() is not available in this practice awk\n', 2);
+    eq('awk endless loop', await run("awk 'BEGIN { while (1) x++ }'"), 'awk: stopped: the program ran more than ' + SHELL.LIMITS.awk + ' steps. Is there a loop that never ends?\n', 2);
+    eq('awk endless string', await run("awk 'BEGIN { x = \"a\"; while (1) x = x x }'"), /awk: stopped: a string grew past \d+ characters/, 2);
+    eq('awk endless array', await run("awk 'BEGIN { for (i = 0; ; i++) a[i] = i }'"), /awk: stopped: the arrays hold more than \d+ elements/, 2);
+    eq('awk endless output', await run("awk 'BEGIN { for (;;) print \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\" }'"), /stopped: the command produced more output/, 1);
+    eq('awk a huge width', await run("awk 'BEGIN { printf \"%999999999d\", 1 }'"), /more than this practice awk allows/, 2);
+    eq('awk __proto__ keys', await run("awk 'BEGIN { a[\"__proto__\"] = 1; __proto__ = 2; print length(a), __proto__, (\"constructor\" in a) }'"), '1 2 0\n', 0);
+    eq('awk reads the pipe', await run("printf 'x y\\n' | awk '{ print $2 }'"), 'y\n', 0);
+    eq('awk usage', await run('awk'), "usage: awk [-F value] [-v var=value] [--] 'program text' [file ...]\n", 2);
   }
 
   // ---- saving and reloading a session's work

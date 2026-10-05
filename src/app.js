@@ -251,27 +251,49 @@
   const COMMANDS = { python: 'python main.py', scheme: 'scheme main.scm', cpp: 'g++ main.cpp -o main && ./main', cppfull: 'clang++ -std=c++20 main.cpp -o main && ./main', java: 'javac Main.java && java Main' };
   // A program waiting at input() is ended when its output panel is cleared or leaves the page; otherwise it would hold the engine's queue forever.
   const askers = new Set();
-  const abandonAsk = (a) => { askers.delete(a); a.resolve(''); if (window.PYRUN) window.PYRUN.cancel(); };
+  const abandonAsk = (a) => { askers.delete(a); a.resolve(null); for (const k of ['PYRUN', 'JAVARUN', 'CPPRUN']) if (window[k]) window[k].cancel(); };
   document.addEventListener('routed', () => { for (const a of [...askers]) if (!a.row.isConnected) abandonAsk(a); });
-  function outputPanel() {
+  // opts.tools (the Code Lab): Copy, Wrap and Clear buttons in the title bar; opts.wrap the starting state of Wrap, opts.onWrap(on) to keep it.
+  function outputPanel(opts) {
+    opts = opts || {};
     const box = el('div', { class: 'out term', hidden: '' });
     const status = el('span', { class: 'term-status', role: 'status' });
-    const bar = el('div', { class: 'term-bar' }, el('span', { class: 'term-dots', 'aria-hidden': 'true' }, el('span'), el('span'), el('span')), el('span', { class: 'term-title' }, 'Output'), status);
+    const bar = el('div', { class: 'term-bar' }, el('span', { class: 'term-title' }, 'Output'), status);
     const pre = el('pre', { class: 'out-text', tabindex: '0', 'aria-label': 'Program output' });
     const cursor = el('span', { class: 'term-cursor', 'aria-hidden': 'true' });
     box.append(bar, pre);
-    let t0 = 0, printed = '';
+    let t0 = 0, printed = '', running = false;
+    // what the panel shows, as text: without the "go to line" links, the input boxes and the cursor
+    const shownText = () => { const c = pre.cloneNode(true); c.querySelectorAll('button, input, .term-cursor').forEach((n) => n.remove()); return c.textContent; };
+    if (opts.tools) {
+      const flash = (b, t) => { b.textContent = t; clearTimeout(b._t); b._t = setTimeout(() => { b.textContent = b.dataset.label; }, 1600); };
+      const copyBtn = el('button', { class: 'term-tool', type: 'button', 'data-label': 'Copy', title: 'Copy the output to the clipboard', onclick: () => {
+        const text = shownText();
+        const fail = () => { const r = document.createRange(); r.selectNodeContents(pre); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); flash(copyBtn, 'Selected: press Ctrl+C'); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => flash(copyBtn, 'Copied'), fail); else fail();
+      } }, 'Copy');
+      const wrapBtn = el('button', { class: 'term-tool', type: 'button', title: 'Wrap long lines to fit the panel, or keep each line whole and scroll sideways', onclick: () => setWrap(box.classList.contains('nowrap')) }, 'Wrap');
+      const setWrap = (on) => { box.classList.toggle('nowrap', !on); wrapBtn.setAttribute('aria-pressed', String(on)); if (opts.onWrap) opts.onWrap(on); };
+      const clearBtn = el('button', { class: 'term-tool', type: 'button', title: 'Clear the output', onclick: () => {
+        // while a program runs, its text goes but the program, its cursor and an input() it waits on stay; otherwise the panel closes
+        if (running) { for (const n of [...pre.childNodes]) if (n !== cursor && !(n.classList && n.classList.contains('input-line'))) n.remove(); printed = ''; box.classList.remove('has-error'); }
+        else api.hide();
+      } }, 'Clear');
+      box.classList.toggle('nowrap', opts.wrap === false); wrapBtn.setAttribute('aria-pressed', String(opts.wrap !== false));
+      bar.append(el('span', { class: 'term-tools' }, copyBtn, wrapBtn, clearBtn));
+    }
     const put = (node) => { if (cursor.parentNode === pre) pre.insertBefore(node, cursor); else pre.appendChild(node); box.hidden = false; pre.scrollTop = pre.scrollHeight; };
     const line = (cls, s) => { put(el('span', { class: cls }, s)); put(document.createTextNode('\n')); };
     const setStatus = (cls, text) => { status.className = 'term-status' + (cls ? ' ' + cls : ''); status.textContent = text; };
     const api = {
       el: box,
-      clear() { for (const a of [...askers]) if (a.pre === pre) abandonAsk(a); pre.textContent = ''; printed = ''; box.hidden = false; box.classList.remove('has-error'); setStatus('', ''); },
+      clear() { for (const a of [...askers]) if (a.pre === pre) abandonAsk(a); pre.textContent = ''; printed = ''; running = false; box.hidden = false; box.classList.remove('has-error'); setStatus('', ''); },
       /** a run begins: the prompt line names the command, the status says running, the cursor blinks */
-      start(cmd) { api.clear(); t0 = Date.now(); if (cmd) line('cmd', cmd); pre.appendChild(cursor); setStatus('running', 'running'); },
+      start(cmd) { api.clear(); t0 = Date.now(); running = true; if (cmd) line('cmd', cmd); pre.appendChild(cursor); setStatus('running', 'running'); },
       /** a run ends: the cursor stops and the status pill says how it went */
       finish(info) {
-        info = info || {}; if (cursor.parentNode === pre) pre.removeChild(cursor);
+        info = info || {}; running = false; if (cursor.parentNode === pre) pre.removeChild(cursor);
+        for (const a of [...askers]) if (a.pre === pre) { askers.delete(a); a.row.replaceWith(el('span', {}, a.prompt, '\n')); a.resolve(null); }   // stopped while it waited for a line
         const secs = t0 ? ((Date.now() - t0) / 1000).toFixed(2) + ' s' : '';
         if (info.stopped) setStatus('fail', 'stopped' + (secs ? ' \u00b7 ' + secs : ''));
         else if (box.classList.contains('has-error')) setStatus('fail', 'error' + (secs ? ' \u00b7 ' + secs : ''));
@@ -281,18 +303,24 @@
       value(s) { printed += s.replace(/^;Value: /, '') + '\n'; line('val', s); },
       /** what the program printed (and, for Scheme, the values it showed) since the run began: for comparing with a prediction */
       printed() { return printed; },
+      /** the panel's text as shown (what Copy copies) */
+      text: () => shownText(),
       failed() { return box.classList.contains('has-error'); },
       error(s) { line('err', s); box.classList.add('has-error'); },
       note(s) { line('note', s); },
       hide() { box.hidden = true; if (cursor.parentNode === pre) pre.removeChild(cursor); },
-      /** inline input() prompt; returns a promise resolved with the typed line */
+      /** inline input() prompt; returns a promise resolved with the typed line, or null for the end of the input (Ctrl+D) */
       ask(prompt) {
         return new Promise((resolve) => {
           const inp = el('input', { class: 'inline-input', type: 'text', 'aria-label': 'Program input', autocomplete: 'off', spellcheck: 'false' });
           const row = el('span', { class: 'input-line' }, prompt || '', inp);
           put(row); inp.focus();
-          const a = { row, pre, resolve }; askers.add(a);
-          inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { askers.delete(a); const v = inp.value; row.replaceWith(el('span', {}, prompt || '', el('span', { class: 'typed' }, v), '\n')); resolve(v); } });
+          const a = { row, pre, resolve, prompt: prompt || '' }; askers.add(a);
+          // Enter gives the line; Ctrl+D on an empty line is the end of the input, as in a terminal (a Java or C++ program reading until there is no more)
+          inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { askers.delete(a); const v = inp.value; row.replaceWith(el('span', {}, prompt || '', el('span', { class: 'typed' }, v), '\n')); resolve(v); }
+            else if (e.ctrlKey && (e.key === 'd' || e.key === 'D') && !inp.value) { e.preventDefault(); askers.delete(a); row.replaceWith(el('span', {}, prompt || '', el('span', { class: 'note' }, '^D'), '\n')); resolve(null); }
+          });
         });
       }
     };
@@ -316,7 +344,7 @@
       if (r.err) out.error(r.err);
       else if (!r.out && !turtle) out.note('(the program finished without printing anything)');
     } else if (lang === 'scheme') {
-      const r = await Runners.scheme.run(code, { onOutput: (s) => out.write(s) });
+      const r = await Runners.scheme.run(code, { onOutput: (s) => out.write(s), stepLimit: 2e7 });   // the Lab's REPL limit, so an example behaves as it does there
       for (const res of r.results) {
         if (res.form instanceof Scheme.Pair && res.form.car === Scheme.sym('define')) out.value(';Value: ' + res.text);
         else if (res.text !== '') out.value(';Value: ' + res.text);
@@ -330,11 +358,11 @@
       if (r.exit) out.note('(the program ended with status ' + r.exit + ')');
       return r.exit || 0;
     } else if (lang === 'cpp') {
-      const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: opts.stdin });
+      const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: opts.stdin, onInput: /\b(scanf|getchar)\b/.test(code) ? undefined : (p) => out.ask(p) });   // no stdin given: typed as the program asks
       if (r.err) out.error(r.err);
       else if (!r.out) out.note('(the program finished without printing anything)');
     } else if (lang === 'java') {
-      const r = await Runners.java.run(code, { onOutput: (s) => out.write(s), stdin: opts.stdin });
+      const r = await Runners.java.run(code, { onOutput: (s) => out.write(s), stdin: opts.stdin, onInput: (p) => out.ask(p) });
       if (r.err) { out.error(r.err); const tip = tipFor('java', r.err); if (tip) out.note('↳ ' + tip); }
       else if (!r.out) out.note('(the program finished without printing anything)');
     }
@@ -813,7 +841,7 @@
     const resetBtn = el('button', { class: 'btn quiet', onclick: () => { editor.value = b.code; out.hide(); } }, 'Reset');
     const labBtn = window.LAB ? el('button', { class: 'btn quiet lab-open', title: 'Copy this code into the Code Lab', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, runtime: b.runtime }) }, 'Open in Code Lab') : null;
     const substBtn = window.LAB && window.SUBST && (b.lang === 'lisp' || b.lang === 'scheme') && !b.expectError ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and watch each expression being rewritten, one step of the substitution model at a time', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, subst: true }) }, 'Show the substitution') : null;
-    const memBtn = window.LAB && window.CPPSTEP && b.lang === 'cpp' && b.runtime !== 'full' ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and run it one line at a time, watching every variable, address and pointer', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, step: true, stdin: b.stdin }) }, 'Step through memory') : null;
+    const memBtn = window.LAB && window.CPPSTEP && b.lang === 'cpp' && b.runtime !== 'full' ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and run it one line at a time, watching every variable, address and pointer', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, step: true, stdin: b.stdin }) }, 'Step through memory') : window.LAB && window.JAVASTEP && b.lang === 'java' ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and run it one statement at a time, watching the call stack, the variables and the objects', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, step: true, stdin: b.stdin }) }, 'Step through') : null;
     box.append(editor.el, ...(guess ? [guess.el] : []), el('div', { class: 'toolbar' }, runBtn, resetBtn, b.stdin != null ? el('span', { class: 'stdin-note' }, 'input provided: ', el('code', {}, JSON.stringify(b.stdin))) : null, el('span', { class: 'spacer' }), memBtn, substBtn, labBtn), ...[turtleMount, out.el, guess && guess.result, guess && cap].filter(Boolean));   // append() prints a null as text
     return box;
   }
@@ -1155,7 +1183,7 @@
           el('a', { class: 'cat-code', href: '#/lab' }, 'LAB'),
           el('div', { class: 'cat-body' },
             el('a', { class: 'cat-title', href: '#/lab' }, 'Code Lab: a sandbox for your own programs'),
-            el('p', { class: 'cat-desc' }, 'A full editor for Python, C++, Java and Scheme that runs entirely in your browser: nothing to install, nothing to sign up for. Files, templates, a quick reference, a step-through tracer for Python, a turtle canvas, and a Scheme REPL.'),
+            el('p', { class: 'cat-desc' }, 'A full editor for Python, C++, Java and Scheme that runs entirely in your browser: nothing to install, nothing to sign up for. Files and multi-file Java projects, templates, a quick reference, step-through debuggers for Python, Java and C++ (with memory), a turtle canvas, a Scheme REPL, and a terminal with a practice shell, git, and interactive Python, Scheme and Java.'),
             el('p', { class: 'cat-meta' }, 'Your files are saved on this device. Share a program with a link.'))))
       ),
       window.PORTFOLIO ? el('section', { class: 'section' },

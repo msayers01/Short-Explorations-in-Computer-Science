@@ -150,10 +150,139 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await setCode('public class Main {\n    public static void main(String[] args) {\n        int x = 5\n    }\n}');
   await page.click('.lab-toolbar button:has-text("Run")'); await page.waitForTimeout(1500);
   check('Lab: a Java compile error names its line and gets a tip', /Main\.java:3: error: ';' expected/.test(await outText()) && (await page.locator('.out-text .goto').count()) === 1, await outText());
+  // typed input (runner.js typedRunner): a Scanner or cin asks in the output panel as it reads, a line at a time; Ctrl+D ends the input
+  const answer = async (v) => { await page.waitForSelector('.lab-out .inline-input', { timeout: 15000 }); await page.fill('.lab-out .inline-input', v); await page.press('.lab-out .inline-input', 'Enter'); };
+  const finished = () => page.waitForFunction(() => /^(exit|error|stopped)/.test(document.querySelector('.lab-out .term-status').textContent), null, { timeout: 15000 }).catch(() => { });
+  await setCode('import java.util.Scanner;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        System.out.print("Name? ");\n        String name = in.nextLine();\n        System.out.print("Age? ");\n        int age = in.nextInt();\n        System.out.println(name + " will be " + (age + 1));\n    }\n}');
+  await page.click('.lab-toolbar button:has-text("Run")');
+  await answer('Ada'); await answer('36'); await finished();
+  check('Lab: a Java Scanner asks for each line in the output panel', /Name\? Ada\nAge\? 36\nAda will be 37/.test(await outText()) && /^exit 0/.test(await outStatus()) && (await page.locator('.stdin-box:not(.args-box)').isHidden()), await outText());
+  await setCode('import java.util.Scanner;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        int n = 0;\n        while (in.hasNext()) { in.next(); n++; }\n        System.out.println(n + " words");\n    }\n}');
+  await page.click('.lab-toolbar button:has-text("Run")');
+  await answer('one two'); await page.waitForSelector('.lab-out .inline-input'); await page.press('.lab-out .inline-input', 'Control+d'); await finished();
+  check('Lab: Ctrl+D ends a Java program\'s input', /2 words/.test(await outText()) && /\^D/.test(await outText()), await outText());
+  await page.click('.lab-toolbar button:has-text("Run")'); await page.waitForSelector('.lab-out .inline-input'); await page.click('.lab-toolbar button:has-text("Stop")'); await finished();
+  check('Lab: Stop while a Java program waits for input ends it, and leaves no input box', /^stopped/.test(await outStatus()) && (await page.locator('.lab-out .inline-input').count()) === 0, [await outStatus(), await outText()]);
+  await page.click('.lab-toolbar button:has-text("Input")'); await page.fill('.stdin-ta', 'a b c\n');
+  await page.click('.lab-toolbar button:has-text("Run")'); await finished();
+  check('Lab: the Input box gives a Java program its input all at once', /3 words/.test(await outText()) && (await page.locator('.lab-out .inline-input').count()) === 0, await outText());
+  await page.fill('.stdin-ta', ''); await page.click('.stdin-box:not(.args-box) button[aria-label="Hide the input box"]');
+  // ---- multi-file Java (javaproject.js): every Java tab is compiled together, errors and stack traces name the right file, and the
+  // "go to" link opens that tab; error markers in the editor; program arguments; the output panel's tools; go to line; the shortcuts panel
+  const runDone = async () => { await page.waitForFunction(() => /^(exit|error|stopped)/.test(document.querySelector('.lab-out .term-status').textContent), null, { timeout: 15000 }).catch(() => { }); };
+  const runLab = async () => { await page.click('.lab-toolbar button:has-text("Run")'); await page.waitForTimeout(100); await runDone(); };
+  const tabNamed = (n) => page.locator('.lab-tabs .tab', { hasText: n }).first();
+  const activeTab = async () => (await page.locator('.lab-tabs .tab.on').innerText()).replace(/×|close\?/g, '').trim();
+  await setCode('public class Main {\n    public static void main(String[] args) {\n        Dog d = new Dog("Rex");\n        d.bark();\n        System.out.println(args.length + " " + String.join("|", args));\n    }\n}\n');
+  await page.click('.lab-tabs .tab.add'); await page.fill('.tab-rename', 'Dog.java'); await page.press('.tab-rename', 'Enter'); await page.waitForTimeout(200);
+  const dogOk = 'public class Dog {\n    private String name;\n    Dog(String name) { this.name = name; }\n    void bark() {\n        System.out.println(name + " says woof");\n    }\n}\n';
+  await setCode(dogOk);
+  await tabNamed('Main.java').click(); await runLab();
+  check('Lab: two Java tabs run as one program', /^Rex says woof\n0 $/m.test(await outText()) && /javac Main\.java Dog\.java && java Main/.test(await page.locator('.lab-out .out-text .cmd').innerText()), await outText());
+  await tabNamed('Dog.java').click(); await runLab();
+  check('Lab: Run from a tab without main runs the main of another', /Rex says woof/.test(await outText()), await outText());
+  await setCode(dogOk.replace('System.out.println(name + " says woof");', 'int[] a = new int[1];\n        a[2] = 1;'));
+  await tabNamed('Main.java').click(); await runLab();
+  let ot = await outText();
+  check('Lab: a stack trace names the second file and its line', /at Dog\.bark\(Dog\.java:6\)\n\s*at Main\.main\(Main\.java:4\)/.test(ot) && /go to Dog\.java, line 6/.test(ot), ot);
+  check('Lab: no marker on the current tab for an error in another', (await page.locator('.lab-editor .line.err').count()) === 0);
+  await page.click('.out-text .goto'); await page.waitForTimeout(300);
+  check('Lab: the go-to link opens the right tab at the right line', (await activeTab()) === 'Dog.java' && /Ln 6,/.test(await page.locator('.sb-pos').innerText()), [await activeTab(), await page.locator('.sb-pos').innerText()]);
+  const pinTitle = await page.locator('.err-pin').first().getAttribute('title').catch(() => null);
+  check('Lab: an error marker on that line, with the message', (await page.locator('.lab-editor .line.err').count()) === 1 && (await page.locator('.lab-editor .line.err').getAttribute('data-n')) === '6' && /ArrayIndexOutOfBoundsException/.test(pinTitle || '') && /Error on line 6/.test(await page.locator('.lab-editor [id^="lab-err-desc"]').textContent()), pinTitle);
+  await page.click('.lab-editor textarea'); await page.keyboard.type(' ');
+  check('Lab: editing the file clears its marker', (await page.locator('.lab-editor .line.err').count()) === 0 && (await page.locator('.err-pin').count()) === 0);
+  await setCode(dogOk.replace('private String name;', 'private String name'));
+  await runLab(); ot = await outText();
+  check('Lab: a compile error in the second file names it, and is marked', /Dog\.java:2: error: ';' expected/.test(ot) && (await page.locator('.lab-editor .line.err').getAttribute('data-n')) === '2', ot);
+  await runLab();
+  check('Lab: the next run puts the marker back only if the error is still there', (await page.locator('.lab-editor .line.err').count()) === 1);
+  await setCode(dogOk.replace('public class Dog', 'public class Cat')); await runLab(); ot = await outText();
+  check("Lab: a public class in the wrong file gets javac's error and a tip", /Dog\.java:1: error: class Cat is public, should be declared in a file named Cat\.java/.test(ot) && /Rename the tab/.test(ot), ot);
+  await setCode(dogOk);
+  // program arguments: the box under the toolbar; main(String[] args) gets the words, quotes keep spaces
+  await tabNamed('Main.java').click();
+  await page.click('.lab-toolbar button:has-text("Arguments")'); await page.fill('#lab-args', 'one "two words"'); await runLab(); ot = await outText();
+  check('Lab: Java arguments reach main(String[] args)', /^2 one\|two words$/m.test(ot) && /java Main one 'two words'/.test(await page.locator('.lab-out .out-text .cmd').innerText()), ot);
+  // the output panel's tools: Copy, Wrap, Clear
+  await page.click('.lab-out .term-tool:has-text("Wrap")');
+  check('Lab: Wrap turns line wrapping off in the output, and is kept', (await page.locator('.lab-out.nowrap').count()) === 1 && JSON.parse(await page.evaluate(() => localStorage.getItem('shortcourses.lab.v1'))).outWrap === false);
+  await page.click('.lab-out .term-tool:has-text("Wrap")');
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => { });
+  await page.click('.lab-out .term-tool:has-text("Copy")'); await page.waitForTimeout(300);
+  const copied = await page.evaluate(() => navigator.clipboard.readText().catch(() => null));
+  const copyLabel = await page.locator('.lab-out .term-tool').first().innerText();
+  check('Lab: Copy copies the output text (or selects it)', (copyLabel === 'Copied' && /Rex says woof\n2 one\|two words/.test(copied || '')) || (/Selected/.test(copyLabel) && /Rex says woof/.test(await page.evaluate(() => String(getSelection())))), [copyLabel, copied]);
+  await page.click('.lab-out .term-tool:has-text("Clear")');
+  check('Lab: Clear empties the output panel', await page.locator('.lab-out').isHidden());
+  await page.fill('#lab-args', ''); await page.click('.args-box button[aria-label^="Close"]');
+  check('Lab: an empty Arguments box can be closed', await page.locator('.args-box').isHidden());
+  // the step-through follows a program of several tabs into the file each step is in
+  await tabNamed('Main.java').click();
+  await page.click('.lab-toolbar button:has-text("Step through")'); await page.waitForSelector('.jstep', { timeout: 10000 });
+  let jn = ''; for (let k = 0; k < 12 && !/Dog\.java/.test(jn); k++) { await page.keyboard.press('n'); await page.waitForTimeout(60); jn = await page.locator('.jstep-box .panel-head .panel-note').innerText(); }
+  check('Lab: Java step-through of two tabs steps into Dog.java, opens that tab and names its own line', /Dog\.java, line [345]\b/.test(jn) && (await activeTab()) === 'Dog.java' && !(await page.locator('.jstep-box').isHidden()), [jn, await activeTab()]);
+  await page.click('.jstep-box button:has-text("Close")');
+  // close Dog.java so later Java runs are single files again (an empty tab closes without asking)
+  await tabNamed('Dog.java').click(); await setCode(''); await tabNamed('Dog.java').locator('.tab-x').click(); await page.waitForTimeout(200);
+  check('Lab: back to one Java tab', (await page.locator('.lab-tabs .tab:not(.add)').count()) === 1 && (await activeTab()) === 'Main.java', await page.locator('.lab-tabs').innerText());
+  // Ctrl+G go to line, and the shortcuts panel
+  await page.click('.lab-editor textarea'); await page.keyboard.press('Control+g'); await page.waitForSelector('.goto-bar:not([hidden])');
+  await page.fill('#lab-goto', '3'); await page.press('#lab-goto', 'Enter'); await page.waitForTimeout(200);
+  check('Lab: Ctrl+G goes to a line', /Ln 3,/.test(await page.locator('.sb-pos').innerText()) && (await page.locator('.goto-bar').isHidden()), await page.locator('.sb-pos').innerText());
+  await page.click('.lab-statusbar button:has-text("Shortcuts")');
+  const keysText = await page.locator('.lab-keys').innerText();
+  check('Lab: the Shortcuts panel lists the editor keys', /Ctrl\s*\+\s*G\s+go to a line/.test(keysText) && /Alt\s*\+\s*↑/.test(keysText), keysText.slice(0, 200));
+  await page.click('.lab-statusbar button:has-text("Shortcuts")');
+  // Python: sys.argv from the Arguments box, an error marker on the line Skulpt names, cleared by the next run
+  await page.click('.lang-btn:has-text("Python")'); await page.waitForSelector('.lab-editor textarea');
+  await setCode('import sys\nprint(sys.argv[1:])\nprint(len(sys.argv))');
+  await page.click('.lab-toolbar button:has-text("Arguments")'); await page.fill('#lab-args', 'a "b c"'); await runLab(); ot = await outText();
+  check('Lab: Python arguments reach sys.argv', /\['a', 'b c'\]\n3/.test(ot), ot);
+  await page.fill('#lab-args', ''); await page.click('.args-box button[aria-label^="Close"]');
+  await setCode('x = 1\nprint(y)\n'); await runLab();
+  check('Lab: a Python error marks its line', (await page.locator('.lab-editor .line.err').getAttribute('data-n').catch(() => null)) === '2' && (await page.locator('.err-pin').count()) === 1, await outText());
+  await page.evaluate(() => { const t = document.querySelector('.lab-editor textarea'); t.value = 'x = 1\nprint(x)\n'; t.dispatchEvent(new Event('input', { bubbles: true })); });
+  check('Lab: changing the code clears the marker', (await page.locator('.lab-editor .line.err').count()) === 0);
+  await setCode('x = 1\nprint(y)\n'); await runLab(); await setCode('print("fixed")'); await runLab();
+  check('Lab: a clean run leaves no marker', (await page.locator('.lab-editor .line.err').count()) === 0 && /fixed/.test(await outText()));
+  await page.click('.lang-btn:has-text("C++")'); await page.waitForSelector('.lab-editor textarea');
+  await setCode('#include <iostream>\nusing namespace std;\nint main() {\n    int x = 5\n    return 0;\n}\n'); await runLab();
+  check('Lab: a C++ error marks its line', (await page.locator('.lab-editor .line.err').count()) === 1, await outText());
+  // the Java step-through (JAVA.trace in the worker, src/javastep.js in the page): steps forwards and back, frames, shared objects, text only
+  await page.click('.lang-btn:has-text("Java")'); await page.waitForSelector('.lab-editor textarea');
+  await setCode('import java.util.*;\npublic class Main {\n    static int sq(int n) {\n        return n * n;\n    }\n    public static void main(String[] args) {\n        int[] a = {1, 2};\n        int[] b = a;\n        ArrayList<String> list = new ArrayList<>();\n        list.add("<b>x</b>");\n        int s = sq(3);\n        System.out.println(s);\n    }\n}');
+  await page.click('.lab-toolbar button:has-text("Step through")'); await page.waitForSelector('.jstep', { timeout: 10000 });
+  const jsNote = () => page.locator('.jstep-box .panel-head .panel-note').innerText();
+  check('Lab: Java step-through starts at the first statement, its line highlighted', /^step 1 of \d+: about to run line 7$/.test(await jsNote()) && (await page.locator('.lab-editor .line.trace').getAttribute('data-n')) === '7', await jsNote() + ' / ' + await page.locator('.lab-editor .line.trace').count());
+  await page.keyboard.press('n'); await page.keyboard.press('n'); await page.keyboard.press('Enter'); await page.keyboard.press('n');
+  check('Lab: Java step-through: keys step, two variables show the same array', /about to run line 11/.test(await jsNote()) && (await page.locator('.jstep .mem-frame.active tr:has(code:text-is("a")) .mem-arrow').innerText()) === (await page.locator('.jstep .mem-frame.active tr:has(code:text-is("b")) .mem-arrow').innerText()), await jsNote());
+  check('Lab: Java step-through: the array is drawn cell by cell and program text stays text', (await page.locator('.jstep-obj:has-text("int[2]") .mem-cell').count()) === 2 && (await page.locator('.jstep b').count()) === 0 && (await page.locator('.jstep').innerText()).includes('"<b>x</b>"'));
+  await page.keyboard.press('n');
+  check('Lab: Java step-through: a call is a new frame with its parameter', (await page.locator('.jstep .mem-frame').count()) === 2 && /Main\.sq\(\)/.test(await page.locator('.jstep .mem-frame.active .mem-frame-name').innerText()) && (await page.locator('.jstep .mem-frame.active tr:has(code:text-is("n")) .mem-val').innerText()) === '3');
+  await page.keyboard.press('Backspace');
+  check('Lab: Java step-through: Backspace steps back', /about to run line 11/.test(await jsNote()) && (await page.locator('.jstep .mem-frame').count()) === 1, await jsNote());
+  await page.click('.jstep-box button:has-text("Run to end")'); await page.waitForTimeout(200);
+  const jsOut = () => page.locator('.lab-out .out-text').innerText();   // (the replayed output has no command line in front)
+  check('Lab: Java step-through: run to end shows the finish and the output', /the program has finished/.test(await jsNote()) && /^9$/m.test(await jsOut()), await jsNote() + ' / ' + await jsOut());
+  await page.click('.jstep-box button:has-text("Restart")');
+  check('Lab: Java step-through: restart goes back to step 1', /^step 1 of/.test(await jsNote()));
+  await setCode('import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        int n = in.nextInt();\n        int[] a = new int[2];\n        a[n] = 1;\n    }\n}');
+  check('Lab: editing the program closes the Java step-through', await page.locator('.jstep-box').isHidden());
+  await page.click('.lab-toolbar button:has-text("Step through")'); await page.waitForTimeout(200);
+  check('Lab: Java step-through of a Scanner program asks for the input first', await page.locator('.stdin-box:not(.args-box)').isVisible() && /Program input box/.test(await page.locator('.lab-out').innerText()) && await page.locator('.jstep-box').isHidden());
+  await page.fill('.stdin-ta', '5'); await page.click('.lab-toolbar button:has-text("Step through")'); await page.waitForSelector('.jstep', { timeout: 10000 });
+  await page.click('.jstep-box button:has-text("Run to end")'); await page.waitForTimeout(200);
+  check('Lab: Java step-through reads the Program input box and ends with the exception', /line 7 threw an exception/.test(await jsNote()) && /ArrayIndexOutOfBoundsException: Index 5 out of bounds for length 2/.test(await jsOut()) && (await page.locator('.jstep .mem-frame.jstep-threw tr:has(code:text-is("n")) .mem-val').innerText()) === '5', await jsNote() + ' / ' + await jsOut());
+  await page.fill('.stdin-ta', '');
   await page.click('.lang-btn:has-text("C++")'); await page.waitForSelector('.lab-editor textarea');
   await setCode('#include <iostream>\nusing namespace std;\nint main() { int a = 3; int *p = &a; cout << *p << endl; return 0; }');
   await page.click('.lab-toolbar button:has-text("Step through memory")'); await page.waitForSelector('.mem-view', { timeout: 10000 }); await page.waitForTimeout(400);
   check('Lab: memory stepper shows the program', /step 1 of/.test(await page.locator('.mem-box .panel-head .panel-note').innerText()));
+  await setCode('#include <iostream>\nusing namespace std;\nint main() {\n  int a, b;\n  cout << "a? ";\n  cin >> a;\n  cout << "b? ";\n  cin >> b;\n  cout << a * b << endl;\n  return 0;\n}');
+  await page.click('.lab-toolbar button:has-text("Run")');
+  await answer('6'); await answer('7'); await finished();
+  check('Lab: the teaching C++ asks for cin input in the output panel', /a\? 6\nb\? 7\n42/.test(await outText()) && /^exit 0/.test(await outStatus()), await outText());
   await page.click('.lang-btn:has-text("Scheme")'); await page.waitForSelector('.repl-inp');
   await page.fill('.repl-inp', '(* 6 7)'); await page.press('.repl-inp', 'Enter');
   check('Lab: Scheme REPL', /;Value: 42/.test(await page.locator('.repl-log').innerText()));
@@ -166,6 +295,8 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   const termStatus = () => page.locator('.lab-term .term-status').innerText();
   let tt = await term('mkdir notes; echo "hello there" > notes/a.txt; cat notes/a.txt | tr a-z A-Z; ls nope');
   check('terminal: commands, pipes and error text', /HELLO THERE\nls: cannot access 'nope': No such file or directory/.test(tt) && (await termStatus()) === 'exit 2', tt.slice(-200));
+  tt = await term('cd notes; git init -q; git add a.txt; git commit -q -m first; git log --oneline; cd ~');
+  check('terminal: git (shellgit.js) commits in the practice file system', /[0-9a-f]{7} \(HEAD -> main\) first\n/.test(tt) && (await termStatus()) === 'exit 0', tt.slice(-200));
   tt = await term('python lab/main.py');
   check('terminal: runs the Lab file through the Python sandbox', /python lab\/main\.py\nfrom the lab\n/.test(tt), tt.slice(-200));
   await page.fill('.term-inp', 'printf \'x = input("N? ")\\nprint("got", x)\\n\' > ask.py; python ask.py'); await page.press('.term-inp', 'Enter');
@@ -175,6 +306,18 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('terminal: input() is answered on the command line', /N\? seven\ngot seven/.test(await page.locator('.lab-term .term-scroll').innerText()));
   tt = await term('printf \'public class Main { public static void main(String[] a) { System.out.println("from java"); } }\\n\' > Main.java; javac Main.java && java Main; printf \'class B { void f() { int x = "s"; } }\\n\' > B.java; javac B.java');
   check('terminal: javac and java through the Java sandbox, errors name the file', /from java\nB\.java:1: error: incompatible types/.test(tt), tt.slice(-300));
+  await page.fill('.term-inp', 'printf \'import java.util.*;\\npublic class Ask { public static void main(String[] a) { Scanner s = new Scanner(System.in); System.out.print("N? "); int n = s.nextInt(); System.out.println("twice " + 2 * n); } }\\n\' > Ask.java; java Ask.java'); await page.press('.term-inp', 'Enter');
+  await page.waitForFunction(() => /waiting for input/.test(document.querySelector('.lab-term .term-inp').placeholder), null, { timeout: 15000 });
+  check('terminal: a Java prompt is shown before the program waits', /N\? $/.test(await page.locator('.lab-term .term-scroll').innerText()), (await page.locator('.lab-term .term-scroll').innerText()).slice(-100));
+  await page.fill('.term-inp', '21'); await page.press('.term-inp', 'Enter');
+  await page.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 15000 });
+  check('terminal: a Java Scanner reads what is typed as it asks', /N\? 21\ntwice 42\n/.test(await page.locator('.lab-term .term-scroll').innerText()) && (await termStatus()) === 'exit 0', (await page.locator('.lab-term .term-scroll').innerText()).slice(-200));
+  tt = await term('echo 5 | java Ask.java');
+  check('terminal: a pipe still gives a Java program its input', /N\? twice 10\n/.test(tt), tt.slice(-200));
+  tt = await term('mkdir -p jp && cd jp && printf \'public class Main {\\n  public static void main(String[] args) {\\n    System.out.println(args.length + " " + args[0]);\\n    new Dog().bark();\\n  }\\n}\\n\' > Main.java && printf \'import java.util.*;\\n\\npublic class Dog {\\n  void bark() {\\n    int[] a = new int[1];\\n    a[2] = 1;\\n  }\\n}\\n\' > Dog.java && javac *.java && ls && java Main one two; cd ~; rm -r jp');
+  check('terminal: javac *.java compiles the files together; java Main gets its arguments; the stack trace names each file (as JDK 21)', /Dog\.class\s+Dog\.java\s+Main\.class\s+Main\.java\n2 one\nException in thread "main" java\.lang\.ArrayIndexOutOfBoundsException: Index 2 out of bounds for length 1\n\s*at Dog\.bark\(Dog\.java:6\)\n\s*at Main\.main\(Main\.java:4\)/.test(tt), tt.slice(-500));
+  tt = await term('printf \'import sys\\nprint(sys.argv)\\n\' > argv.py; python argv.py x "y z"');
+  check('terminal: python file.py words gives sys.argv', /\['argv\.py', 'x', 'y z'\]/.test(tt), tt.slice(-200));
   tt = await term('printf \'#include <iostream>\\nusing namespace std;\\nint main() { cout << "from c++" << endl; }\\n\' > m.cpp; g++ m.cpp -o m && ./m; printf \'int main() { oops }\\n\' > bad.cpp; g++ bad.cpp -o bad; ls bad');
   check('terminal: g++ and ./program through the C++ sandbox; a bad program makes no file', /from c\+\+\n/.test(tt) && /Syntax error/.test(tt) && /ls: cannot access 'bad'/.test(tt), tt.slice(-400));
   tt = await term('echo "print(42)" > lab/fromterm.py; echo "int main() {}" > lab/m2.cpp; ls lab');
@@ -192,6 +335,34 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('terminal: a listed fit can be chosen with the keyboard', (await page.locator('.term-inp').inputValue()) === 'cd notes/' && (await page.locator('.term-ac').isHidden()), await page.locator('.term-inp').inputValue());
   await page.fill('.term-inp', 'ec'); await page.keyboard.press('Tab');
   check('terminal: Tab completes a command', (await page.locator('.term-inp').inputValue()) === 'echo ');
+  // readline keys: Ctrl+R searches the history backwards (again for older), Enter runs the match; Ctrl+A/E/K/W/Y edit the line
+  await page.fill('.term-inp', ''); await page.keyboard.press('Control+r'); await page.keyboard.type('tr a');
+  check('terminal: Ctrl+R finds the newest command containing the text', /reverse-i-search\)`tr a'/.test(await page.locator('.lab-term .term-ps1').textContent()) && /tr a-z A-Z/.test(await page.locator('.term-inp').inputValue()), [await page.locator('.lab-term .term-ps1').textContent(), await page.locator('.term-inp').inputValue()]);
+  await page.keyboard.press('Control+g');
+  check('terminal: Ctrl+G leaves the search with the line as it was', (await page.locator('.term-inp').inputValue()) === '' && /\$ $/.test(await page.locator('.lab-term .term-ps1').textContent()));
+  await page.keyboard.press('Control+r'); await page.keyboard.type('xyzzy-not-there');
+  check('terminal: a search with no match says so', /failed reverse-i-search/.test(await page.locator('.lab-term .term-ps1').textContent()));
+  await page.keyboard.press('Escape');
+  await page.fill('.term-inp', 'echo one two three'); await page.keyboard.press('Control+w'); await page.keyboard.press('Control+a'); await page.keyboard.press('Control+k'); await page.keyboard.press('Control+y');
+  check('terminal: Ctrl+W cuts a word, Ctrl+A goes to the start, Ctrl+K cuts to the end and Ctrl+Y puts it back', (await page.locator('.term-inp').inputValue()) === 'echo one two ', await page.locator('.term-inp').inputValue());
+  // python with no file: the interactive shell (src/repl.js), answered on the command line; entries are replayed, so names carry over
+  const ps1Is = (t) => page.waitForFunction((t) => document.querySelector('.lab-term .term-ps1').textContent === t, t, { timeout: 15000 });
+  await page.fill('.term-inp', 'python'); await page.press('.term-inp', 'Enter'); await ps1Is('>>> ');
+  for (const line of ['x = 6', 'x * 7', 'def twice(s):', '    return s + s', '']) { await page.fill('.term-inp', line); await page.press('.term-inp', 'Enter'); await page.waitForFunction(() => /^(>>>|\.\.\.) $/.test(document.querySelector('.lab-term .term-ps1').textContent), null, { timeout: 15000 }); }
+  await page.fill('.term-inp', 'twice("ab")'); await page.press('.term-inp', 'Enter'); await ps1Is('>>> ');
+  await page.keyboard.press('Control+d');
+  await page.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 15000 });
+  tt = await page.locator('.lab-term .term-scroll').innerText();
+  check('terminal: python with no file is an interactive shell that keeps its names', />>> x \* 7\n42\n/.test(tt) && />>> twice\("ab"\)\n'abab'\n/.test(tt) && (await termStatus()) === 'exit 0', tt.slice(-300));
+  await page.fill('.term-inp', 'jshell'); await page.press('.term-inp', 'Enter'); await ps1Is('jshell> ');
+  for (const line of ['int x = 20;', 'x + 22']) { await page.fill('.term-inp', line); await page.press('.term-inp', 'Enter'); await ps1Is('jshell> '); }
+  await page.fill('.term-inp', '/exit'); await page.press('.term-inp', 'Enter');
+  await page.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 15000 });
+  tt = await page.locator('.lab-term .term-scroll').innerText();
+  check('terminal: jshell shows each value as Java\'s jshell does', /x ==> 20\n/.test(tt) && /\$2 ==> 42\n/.test(tt) && /Goodbye/.test(tt), tt.slice(-300));
+  await page.click('.lab-term .term-size');
+  check('terminal: Taller makes the panel taller', await page.evaluate(() => document.querySelector('.lab-term').classList.contains('term-big') && document.querySelector('.lab-term .term-scroll').getBoundingClientRect().height > 300));
+  await page.click('.lab-term .term-size');
   await page.fill('.term-inp', '');
   tt = await term('while true; do :; done');
   check('terminal: a loop that never ends is stopped', /stopped: more than 20000 commands/.test(tt) && (await termStatus()) === 'exit 1', tt.slice(-200));
@@ -398,6 +569,9 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('C++ lesson example runs', (await page.locator('.play .out-text').first().innerText()).length > 0);
   await goto('#/java/1'); await page.click('.play button:has-text("Run")'); await page.waitForTimeout(2500);
   check('Java lesson example runs', /Hello, world!/.test(await page.locator('.play .out-text').first().innerText()), await page.locator('.play .out-text').first().innerText());
+  await page.click('.play button.mem-open:has-text("Step through") >> nth=0'); await page.waitForSelector('.jstep', { timeout: 10000 });
+  check('a Java lesson example opens in the Lab\'s step-through', /^#\/lab/.test(await page.evaluate(() => location.hash)) && /^step 1 of/.test(await page.locator('.jstep-box .panel-head .panel-note').innerText()));
+  await goto('#/java/1');
   // graded exercises go through the same sandboxes: every starter fails, every solution passes
   for (const course of ['scratch', 'python', 'cpp', 'java', 'dsa']) {
     const res = await page.evaluate(async (id) => {

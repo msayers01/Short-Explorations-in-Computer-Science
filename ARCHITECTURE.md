@@ -55,6 +55,7 @@ site/
                          node_modules) + scripts (in order) → dist/index.html
   test_course.js         node harness: solutions pass, starters fail, playgrounds run (per course)
   test_cppstep.js        node tests for the C++ memory stepper, including stepping every C++ course program
+  test_javatrace.js      node tests for the Java step-through recorder, including tracing every Java course program
   test_subst.js          node tests for the substitution stepper: every Lisp playground steps without error and ends at the interpreter's value
   test_diff.js           differential tests: src/java.js against javac/java 21, src/shell.js against bash (§11); difftest/ holds the probe
                          programs, the program generator (javagen.js), the shell cases (shell.txt) and the accepted differences (known.json)
@@ -77,6 +78,7 @@ site/
     course_modern.js     SC 105 (runtime: 'full') ─┘
     style.css            design tokens, layout, course accents, every component's styles
     cppstep.js           C++ memory stepper → window.CPPSTEP { trace, render, describe } (uses JSCPP's debugger)
+    javastep.js          Java step-through, the page side → window.JAVASTEP { clean, render, describe } (the trace is JAVA.trace in the worker)
     clangworker.js       the Full C++ worker (Clang for WebAssembly); cppfull.js builds the programs that grade a Full C++ exercise
     backup.js            save my work to a file / restore it (home page, "Your work") → window.BACKUP { collect, parse, apply, panel }
     runner.js            the page's side of the program sandboxes → window.PYRUN, window.CPPRUN (run, trace, cancel; queue, watchdog, limits)
@@ -92,6 +94,7 @@ site/
     app.js               router, pages, course editor, runners, grader, progress, widgets glue
     lab.js               Code Lab page → window.LAB
     shell.js             the practice shell and its file system → window.SHELL (also required by node tests and backup.js) (§9f)
+    shellgit.js          the practice git, registered into the shell with SHELL.register → window.SHELLGIT; node: test_git.js (§9f)
     terminal.js          the terminals in front of shell.js: the Code Lab panel, lesson examples and shell exercises → window.TERMINAL (§9f)
     shellgrade.js        the shell course's setups (file trees) and grader → window.SHELLGRADE; node: test_course.js shell (§9f)
     course_shell.js      SC 108 The Command Line (lang 'shell': examples and exercises are terminals)
@@ -283,8 +286,18 @@ button and every Scheme playground not marked `expectError` a "Show the substitu
   holds only `pyboot.js`, and the interpreter arrives by `postMessage` and is run with `eval` (the CSP allows script by hash, and
   `'unsafe-eval'` for Skulpt). If a browser cannot make a worker, the same interpreter goes in a hidden sandboxed iframe.
   **`killableWhile/killableFor` must stay off — they hang.** The tracer runs with `debugging: true` and `Sk.debug` suspensions
-  (`$loc` at module level, `$tmps` inside functions) inside the sandbox and sends each pause as a `step` message. C++ takes stdin
-  from the Program input box.
+  (`$loc` at module level, `$tmps` inside functions) inside the sandbox and sends each pause as a `step` message.
+  **Typed input for Java and the teaching C++** (`runner.js: typedRunner`, `typedInput` in `javaworker.js` and `cppworker.js`, `test_typed.js`):
+  with no stdin and an `onInput`, a program that wants a line nobody has typed yet ends its run (`needInput`); the page asks in the output
+  panel (or the terminal's command line), and runs it again from the start with every line so far. A worker cannot wait for the page without
+  shared memory, which a copy opened from a file does not have, so replay works everywhere. The replay prints what the last run printed
+  because it gets the same random numbers (Java: a seeded `Math.random`, `shuffle` and unseeded `Random`; JSCPP's `rand` starts the same each
+  run) and a clock that jumps to each line's arrival time when the line is read (`currentTimeMillis`/`nanoTime`; C++ `time()`), so
+  `srand(time(0))` keeps its secret number. Output already shown is skipped by the worker (`skip`). A Java `catch`/`finally` never sees the
+  stop (`java.js: NEED_INPUT`). JSCPP's cin waits as a console does: `>>` until there is a word, `getline`/`get` until there is anything.
+  Ctrl+D (null) is end of input. The Program input box (the Lab's **Input** button) gives stdin all at once instead; Full C++ and
+  `scanf`/`getchar` read only from it. In `java.js`, System.in is one stream shared by every `Scanner` on it, handed out a line at a time, so a
+  method that makes a new Scanner per call reads the next line, as on a console.
   Scheme: `makeRepl()` keeps one evaluator; `loadProgram` runs the file into it; each REPL entry resets the step budget.
   The evaluator (scheme.js) keeps its own stack of continuation frames on the heap, so non-tail recursion is limited
   by `MAX_STACK` (200 000 frames, then "maximum recursion depth exceeded"), not by the JS call stack; `do`, named-let
@@ -305,6 +318,28 @@ button and every Scheme playground not marked `expectError` a "Show the substitu
   made inside another call, e.g. `(define add5 (make-adder 5))`) also substitutes the values it remembers
   from its defining environment, and the note says so. → items (defines and
   per-expression step lists with `<mark class="redex|new">`).
+- **Multi-file Java** (`src/javaproject.js`, `JPROJ`, pure, tested by `test_javaproject.js`): Run in Java joins every Java tab (the current one first,
+  so its `main` runs if it has one) into one source text for the interpreter: leading `import` lines hoisted and de-duplicated, `package` lines
+  dropped, a marker line `//@file Name.java` before each file. `mapError` turns `X.java:N:` and `(X.java:N)` of the joined text back into each
+  file's own line (compile errors name the file as given, stack frames its base name, as javac/java do); `where` finds the first place an error
+  names, for the go-to link (which opens that tab) and the editor marker. The Lab leaves out non-`.java` and empty tabs, exercise/assignment
+  files (they run alone, as they are graded), and (`dedupe`) a tab that declares a class an earlier one has, because tabs are often separate
+  programs each with its own `Main`; the public-class rule (`class Dog is public, should be declared in a file named Dog.java`) applies when two
+  or more files are joined (`rule: 'multi'`), so a lone `from-course.java` keeps working. The terminal's `javac A.java B.java` / `javac *.java`
+  uses `rule: 'always'`, writes a `.class` per top-level class whose `bin.src` is the joined text (markers included, so `JPROJ.fromJoined` maps
+  a later run), and `java Name` passes `mainClass` to `java.js` (`Error: Main method not found in class X` when it has none). One file is
+  compiled as it is. The interpreter does not know static imports.
+- **Error markers**: `LabEditor.setMarks([{line, msg}])` tints the line (`.line.err`), puts a button pin in the gutter (title and aria-label carry
+  the message; the highlighted copy under the textarea cannot take the pointer) and describes the textarea for screen readers. `lab.js` keeps one
+  `errMark` (file, line, the file's code when marked): set by `showError` (Run, step-through, memory stepper) and by an exercise check's
+  whole-program error; dropped by any change to that file (editor or terminal) and at the next run. Lines come from `labutil.js: errorLine`
+  (Python "line N", C++ `main.cpp:N`), and for Java from `JPROJ.where`. Scheme errors have no line.
+- **Program arguments** (`S.args`, per language, Python and Java only; sanitized by `labutil.js: cleanArgs` in `load()` and in backups): the
+  Arguments box is split like a shell would (`splitArgs`: quotes, backslashes, at most 100 words) and reaches `sys.argv` (Skulpt's `sysargv`,
+  always set because Skulpt keeps the previous run's) and `main(String[] args)` (`opts.args` in `java.js`). The terminal passes the words after
+  the program's name. JSCPP calls `main` with no parameters, so C++ has none. The output panel's title bar (opt-in `outputPanel({tools})`) has
+  Copy, Wrap (kept as `S.outWrap`) and Clear; Ctrl+G opens a go-to-line bar; the Shortcuts button under the editor lists every key (`KEYS_HTML`,
+  kept in step with the keydown handlers).
 - Bars above the editor: exercise bar (file has `ex`), assignment bar (file has `asg`), teacher panel.
 - `teach.js` is mounted with a `ctx` object: `{ el, S, save, editor, armConfirm, isTouch, grade,
   renderVerdict, status, renderToolbar, openAssignmentFile, openReviewFile }` and returns
@@ -528,6 +563,25 @@ in the tests) wraps method-writing exercises in a class with a `main`.
 - **Testing.** `node test_java.js` checks the interpreter against outputs of real javac/java; `node test_course.js java` grades the course;
   the browser test runs Java in the worker, checks the lockdown and the Lab. `node test_diff.js java` (§11) runs every lesson example and
   exercise of SC 106 and SC 107, the probe programs and generated programs on both the interpreter and a real JDK 21 and compares them.
+- **Step-through** (the Lab's "Step through" for Java, and a "Step through" button on every Java lesson example). The interpreter cannot pause,
+  so `JAVA.trace(code, stdin, {maxSteps, maxMs})` runs the program once in the worker (`{t:'trace'}` → `{t:'result', trace}`, `JAVARUN.trace`)
+  and records, before each statement (and at a loop's header each time round), `{ line, frames: [{cls, name, line, vars: [[name, type, value,
+  param]]}], statics, heap: [{id, k: obj|array|list|set|map|sb, cls, len, cells | entries | fields | text}], outLen, done?, error?, skipped?,
+  more? }`. A value is the text Java would print (`"hi"`, `'x'`, `3.0`, `null`) or the number of a heap object; numbers are given in the order
+  objects are first seen and never change, so two variables showing `→ #3` share one object. Names come from the checker: `stmt()` puts on each
+  statement, under symbol keys (the checker's walkers enumerate every ordinary key), the scope it was checked in and how many slots had been handed
+  out; a local is visible when it is in that scope chain with a smaller slot, so a loop variable is gone after its loop. The hot path pays one
+  `R.tr !== null` test per statement (and per loop turn); nothing is added to `ev()`, and a frame's JS stack size is unchanged (checked in
+  node with a small `--stack-size`). Cost control: a frame below the top cannot change its locals, so its snapshot is made once and shared;
+  an object whose record is unchanged reuses the previous record (shared again by the structured clone of the message); 40 cells per
+  container, 60 objects and 24 frames (main and the innermost 23) per step, strings cut at 60 characters, 2000 steps, after which the program is
+  stopped and the page says so. The recorder never runs the program's code: a `TreeMap`/`TreeSet` of the program's objects is drawn in insertion
+  order rather than calling `compareTo`. An uncaught exception ends the record with a step drawn from the frames saved in the exception (its
+  line is the throw). A Scanner program takes the Program input box (as Run does; the run is recorded in one go, so it cannot stop to ask).
+  `src/javastep.js` (in the page) checks the record (`clean`) and draws it with `el()`: call stack beside the objects, changed values
+  highlighted, pointing at a reference lights up its object. `test_javatrace.js` checks the record and traces every lesson example, exercise
+  solution and probe, which must print exactly what a plain run prints. Not shown: return values, the expression being evaluated within a
+  statement, and a constructor's frame while a field initializer runs (it has no statement).
 - **Floating point.** Arithmetic, `Math.sqrt/floor/ceil/rint/abs` and `pow` with small integer exponents are exact (IEEE rounding is the
   same in both); `Math.sin/log/exp/pow/hypot/atan2...` use JavaScript's math library, which can differ from the JVM's in the last binary
   digit (so the printed value can differ in its last decimal). The generated tests compare those to 12 significant digits.
@@ -537,11 +591,35 @@ in the tests) wraps method-writing exercises in a class with a `main`.
 A command line for learning the Unix shell, in the Code Lab (the **Terminal** button; a course on it is planned). Design notes:
 
 - **It is a shell, not an emulator.** `shell.js` has its own tokenizer and parser (words with `' " \` quoting, `$VAR ${VAR} $? $# $@ $1` and the `${…}` forms (default `:-` `:=` `:+`, length, slices with negative offsets, `#` `##` `%` `%%` pattern removal, `/` `//` `/#` `/%` substitution, `^` `,` case; others are "bad substitution"),
-  `$(…)`, `$((…))`, `{a,b}` and `{1..5}`, `~`, `* ? […]`, `> >> < 2> 2>&1 | ; && || !`, `if/elif/else/fi`, `for/in/do/done`, `while`, `until`,
+  `$(…)`, `$((…))` (with `?:`, `a[i]` and `$(…)` inside), `{a,b}` and `{1..5}`, `~`, `* ? […]`, `> >> < 2> 2>&1 | ; && || !`, `if/elif/else/fi`,
+  `for/in/do/done`, `for ((;;))`, `while`, `until`, `case/esac` (with `|`, `;;`, `;&`, `;;&`), `(( ))`, `break`/`continue [n]`, `time [-p]`,
   `{ }` and `( )`), an executor that runs pipelines stage by stage (each stage's output buffered into the next: nothing runs concurrently),
-  and about seventy commands written here with GNU's wording for their errors (`ls: cannot access 'x': No such file or directory`,
+  and about ninety commands (130 names) written here with GNU's wording for their errors (`ls: cannot access 'x': No such file or directory`,
   `bash: x: command not found`, exit 127, and so on). `help` lists them, `man NAME` prints a page from the same table (`COMMANDS`).
   No `eval`, no `new Function`; the module has no DOM and runs in node (`test_shell.js`).
+- **Read a line at a time.** `parser(src, { aliases }).next()` returns the commands up to the next newline, and `exec`/`runScript` run each
+  before reading the next, as bash does: an alias defined on one line works from the next one, and a syntax error further down a script
+  stops it there (the lines before it have run). An expansion error (`$((1/0))`, a bad `${…}`, a bad array subscript on assignment, a
+  function nested too deep) drops the rest of its line only. `parse(src)` still reads everything at once.
+- **Functions** (`name() { …; }`, `function name { …; }`, any compound command as the body, redirections on it) are kept in `sh.funcs`
+  (a null-prototype dictionary) and found before builtins and commands (`command name` skips them). They run in the same shell with their own
+  `$1…`, `$#`, `$@` (`$0` stays); `local` saves what a name held and puts it back on return (dynamic scope, as in bash); `return [n]`
+  (also ends a `source`d script). Nesting stops at `FUNCNEST` or `LIMITS.funcDepth` (500) with bash's message, `f: maximum function nesting
+  level exceeded (500)`; the step limit still bounds the work. `type f` and `declare -f` print the body in bash's own layout (`printFunc`:
+  four spaces a level, `;` after each command inside `if`/`for`/`while`, `elif` as `else` + `if`), from the words as typed (tokens keep `raw`).
+- **Arrays** (indexed only): `sh.arrays[name] = { v: sparse JS array, n, bytes }`; a name is a variable or an array, not both (`$a` is
+  `${a[0]}`, `a[1]=x` turns a variable into an array). `a=(…)`, `a+=(…)`, `a[i]=x`, `${a[i]}` (i is arithmetic, negative counts from the end),
+  `${a[@]}`/`"${a[@]}"`/`${a[*]}`, `${#a[@]}`, `${#a[i]}`, `${!a[@]}`, `${a[@]:from:len}`, `unset 'a[i]'`, `declare -a`/`-p`, `local -a`,
+  `read -a`. Capped at `LIMITS.array` (10 000) values and 4 × `LIMITS.vars` characters each: past that the line stops with a message.
+  Assignments are no longer split or globbed (`x=*`, `x=$(ls)` keep their text, as in bash); `local`/`declare`/`export` arguments neither.
+- **Aliases** (`alias`, `unalias [-a]`, `type`): expanded when a line is parsed, at the start of a command, not again inside their own text,
+  a text ending in a space making the next word a candidate too; capped at 100 aliases of 1000 characters and 10 000 tokens of expansion
+  per line. As in bash they work at the prompt (`io.tty`) and in a script only after `shopt -s expand_aliases`, so the grader and the
+  differential tests (`tty: false`) see none. The Code Lab terminal saves them with its history (`aliases` in
+  `shortcourses.shell.v1`, and in backups), checked on load by `SHELL.cleanAliases` (the alias builtin's name rule and caps; null prototype).
+- **History expansion** (`!!`, `!n`, `!-n`, `!prefix`, `!?text?`, `!$`, `!^`, `!*`, `:n`, `^old^new`) only for a line typed at the terminal
+  (`io.tty`), never in scripts: the expanded line is echoed and kept; a failed one says `event not found` and is neither run nor kept. As in
+  bash nothing happens in `'…'`, before a space, `=` or `(`, or in `[!…]`, `${!…}`, `$!`. Modifiers (`:s/a/b/`, `:h`) are refused.
 - **The file system** is a tree in memory (`makeFS`): `/home/student` (the home, `~`), `/tmp`, and a read-only system (`/bin` with a stub
   per command, `/etc/passwd`, `/etc/hostname`, `/etc/motd`, `/dev/null`). Caps (`LIMITS`): 500 files, 2 MB in all, 256 KB a file, 32 levels,
   100-character names; names may not contain `/` or control characters. Children live in null-prototype dictionaries, so `__proto__` is
@@ -554,8 +632,18 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   write a file with `bin: { lang, src, std }` and ELF-looking bytes; `./name` runs the source through the same sandbox as the Run button.
   `javac` checks with `JAVARUN.check` (`java.js: run(..., {checkOnly})`) and writes `Name.class`; `java Name` runs it; `java Name.java`
   compiles and runs. `python file.py` and `scheme file.scm` run the file. stdin: a pipe or `<` gives the text; otherwise Python's `input()`
-  asks on the command line, and a C++ or Java program that reads (`cin`, `Scanner`) is given its lines first (an empty line ends them).
+  asks on the command line, and so do a Java `Scanner` and the teaching C++'s `cin` (typed input, above; Ctrl+D ends it). Full C++, and `scanf`
+  or `getchar`, are given their lines first (an empty line ends them).
   stdout can go to a file or pipe. Exit status: the program's, or 1 on an error.
+- **Interactive shells** (`src/repl.js`, `test_repl.js`): `python` and `scheme` with no file and the keyboard as input start a REPL on the
+  command line. Scheme keeps one evaluator. Python replays: each entry runs after the accepted ones (seeded `random`, their `input()` answers
+  given again, their output skipped); an entry is tried as `__repl_v = (entry)` first, since Skulpt has no `eval`, and printed with `repr`;
+  an entry that errors is dropped. Errors are shown as Python's REPL shows them (`File "<stdin>", line n`). `jshell` does the same for Java:
+  the kept snippets are rebuilt into one class `JShell` each time (top-level variables become static fields so methods see them, methods become
+  static, classes stay top-level classes, imports go first); an expression is tried as `var __vN = (expr)` and shown as `$N ==> value`
+  (strings quoted, arrays as `int[3] { 1, 2, 3 }`), a statement otherwise. /list /vars /methods /reset /help /exit. No Scanner input in jshell.
+- **Line editing** (`terminal.js`): Ctrl+R reverse-i-search (again for older, Enter runs, Esc keeps, Ctrl+G cancels), Ctrl+A/E/K/W/U/Y as in
+  readline, and a Taller button.
 - **Limits that stop runaway lines.** 20 000 simple commands per line typed (`while true; do :; done` ends with a message), 2 MB of output
   into a pipe or capture, 256 KB into a file, 10 000 keyboard lines for a command reading stdin at the terminal, Ctrl+C cancels (`^C`,
   status 130) and also cancels the running sandbox.
@@ -585,8 +673,49 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   `test_course.js shell` runs it through a fresh shell and the empty history must fail. Progress saves the history as the exercise's
   "code". `answer`-kind exercises work in a shell lesson too (mathgrade). The `fstree` figure draws a setup's tree with paths.
   `setup NAME` in the Code Lab's terminal writes a lesson's tree into the home directory (`terminal.js: mount`).
-- **Not there (yet):** job control (`&`), functions, `case`, `[[ ]]`, arrays, `${x:-default}`, here-documents, `awk`, `tar`, `ssh` and
-  anything needing a network (those names answer with a sentence saying so), a Windows `cmd`/PowerShell dialect (planned with the course).
+- **More commands** (October 2026): `basename`, `dirname`, `realpath` (walks the path as the real one does), `du [-s -h -a -c]` (sizes as an
+  ext4 disk gives them: whole 4 KB blocks, a directory one block), `expr` (GNU's grammar and exit statuses, BigInt numbers), `yes` (into a
+  pipe it stops by itself after 1 MB; elsewhere the output cap stops it), `fold`, `paste`, `comm` (with the unsorted-input warnings),
+  `column -t` (util-linux is not on the test machine, so not differential-tested), `sha256sum`/`md5sum` (plain JavaScript, checked against
+  node's crypto in `test_shell.js`), `time` (a keyword: `real` is measured, `user` shown as the same, `sys` as 0). **awk** (`awkLex`,
+  `awkParse`, `awkRun`): patterns, ranges, BEGIN/END, print/printf (C formats, ties rounded to even), `> file`, all the control statements,
+  fields and NF assignment, associative arrays with SUBSEP, strnum comparisons, the string and maths builtins; output follows mawk, the awk
+  `test_diff.js` runs. Refused with "… not available in this practice awk": functions of your own, `getline`, `print | cmd`, `system()`.
+  Its own caps: `LIMITS.awk` (1 000 000) steps, strings of 4 × `LIMITS.vars`, 100 000 array elements, the usual output cap. Known
+  differences from mawk: `substr` with a start below 1 or not whole follows POSIX (mawk differs), `printf` with too few arguments prints
+  empty values (mawk stops), `rand()` is another sequence.
+- **git** (`shellgit.js`, added to the shell's command table by `SHELL.register`, which must run before the first `makeFS` so `/bin/git`
+  exists). A local git for learning version control: init, status (-s -b), add (-A -u -f), rm, mv, restore (--staged --source), commit
+  (-m -a --amend --allow-empty), log (--oneline -n --all -p --stat --format --decorate, paths), diff (worktree, --staged, commits, --stat,
+  --name-only, `diff --cc` during a conflict), show (commit, tag, `rev:path`), branch (-d -D -m -v), switch / checkout (-b, --detach,
+  `-- paths`, --ours/--theirs/-m), merge (fast-forward, --no-ff, --ff-only, three-way with diff3 "zealous" conflicts, add/add and
+  modify/delete, --abort, --continue), reset (--soft --mixed --hard, paths), tag (lightweight and -a -m), config (--global in
+  `~/.gitconfig`), reflog, ls-files, cat-file, rev-parse, gc, help. Messages, exit statuses and formats are git 2.43's, checked against the
+  real one (`node test_git.js --real`); ids are real SHA-1s of git's serialization, so with the same name, email and time a commit has the
+  same id as in real git. Dates come from the shell's clock (`now`), in the browser's time zone.
+  - The repository is a `.git` directory in the virtual file system (so `ls -a`, `cat .git/HEAD` and `rm -rf .git` work as in real life):
+    HEAD, config, description, refs/heads/…, refs/tags/…, logs/HEAD (the last 100 moves), MERGE_HEAD, MERGE_MSG, ORIG_HEAD as text like
+    git's; the objects in **one JSON file**, `.git/objects.json` (`{"v":1,"objects":{id: ["blob", text] | ["tree", [[mode, name, id]…]] |
+    ["commit"|"tag", raw text]}}`, one object a line), and the index as JSON in `.git/index` (entries `[path, mode, blob]`, and a merge's
+    conflicts as `[path, base, ours, theirs]`). Files are text, as everywhere in the shell; modes are 100644 and 100755 (`chmod +x`).
+  - **Caps.** Everything goes through the file system's own writes, so its caps hold: objects.json is one file, so a repository's whole
+    history must fit in 256 KB (and in the 2 MB of the whole terminal). When a write would not fit, objects nothing reaches are dropped
+    (as `git gc`) and it is tried once more; then the command stops with "fatal: the repository is too big for this practice terminal..."
+    before changing any ref, and checkouts check the space for the files they will write before writing any.
+  - **Untrusted on every read.** objects.json: every id is checked against its contents (so an edited object is "damaged", not believed),
+    shapes and links are checked (a commit's tree and parents, a tree's entries), tree entry names must be file names here and never `.git`,
+    `..` or contain `/`; a tree that names more than 1000 files (a self-repeating tree could name 2^25) stops. index: paths checked the
+    same way, every blob must exist, no path both a file and a directory. HEAD, refs, MERGE_HEAD and ORIG_HEAD must hold commit ids; a
+    broken branch ref is skipped in lists. Config lines git would refuse stop every command, as in git. Dictionaries are null-prototype, so
+    `__proto__` is an ordinary file or branch name. Damage gives `fatal: .git/<file> is damaged: <why>` with the hint that `rm -rf .git`
+    starts again (test_git.js has a hostile case for each).
+  - **Not here:** remotes (clone, push, pull, fetch, remote say there is no network), stash, rebase, cherry-pick, revert, blame, bisect,
+    clean; an editor for messages (`git commit` without `-m` says to use `-m`; a merge's own message is used); naming files on `git commit`;
+    rename detection other than exact (100%) renames; a merge commit's combined diff in `git show`; submodules (a nested repository's files
+    are just files).
+- **Not there (yet):** job control (`&`), `[[ ]]`, associative arrays in the shell (`declare -A`), here-documents and `<<<`, `select`, `ln`
+  (the file system has no links), `tar`, `ssh` and anything needing a network (those names answer with a sentence saying so), a Windows
+  `cmd`/PowerShell dialect (planned with the course).
 
 ## 9g. Algorithms in motion and Where it is used (`algos.js`, `algo_*.js`, `applied.js`)
 
@@ -750,7 +879,7 @@ Students write a bot (Python, Java, C++ or Scheme) that plays Tron against built
 
 1. `npm install`. `npm test` applies the JSCPP patches itself (`scripts/patch-jscpp.js`, idempotent).
 2. `node build.js`, then `npm test`: `test_course.js` for each course (every solution passes, every starter fails,
-   every playground runs), `test_cppstep.js`, `test_subst.js`, `test_app.js`, `test_scheme.js`, `test_security.js` and `test_backup.js`. C++ in both test scripts goes through the site's own
+   every playground runs), `test_cppstep.js`, `test_javatrace.js`, `test_subst.js`, `test_app.js`, `test_scheme.js`, `test_security.js` and `test_backup.js`. C++ in both test scripts goes through the site's own
    `ensureMainReturns` (`src/cpputil.js`), so programs are graded exactly as on the site.
    `npm run test:browser` (needs a built site and Chromium: `npx playwright-core install chromium`) checks what node cannot: the interpreters
    are not in the page, programs cannot reach it (hostile code is sent into a worker and into a sandboxed iframe), an infinite loop cannot
