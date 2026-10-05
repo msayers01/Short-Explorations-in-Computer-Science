@@ -212,7 +212,7 @@ finally { ... }
 throw new IllegalArgumentException("must be positive");
 Math.sqrt(x)  Math.pow(a, b)  Math.abs(x)  Math.max(a, b)  Math.round(x)  Math.random()
 Random r = new Random();  r.nextInt(6) + 1</code></pre>
-<p class="ref-note">This Java runs in your browser, in an interpreter written for this site. It checks programs the way <code>javac</code> does (the same error messages) and covers the language an introductory course uses: classes, inheritance, interfaces, arrays, strings, <code>ArrayList</code>, <code>HashMap</code>, <code>HashSet</code>, <code>Scanner</code>, <code>Random</code>, exceptions. Not available: generics in your own classes, lambdas, nested classes, enums, files and threads. A program is stopped after about 5 seconds, and recursion deeper than about a thousand calls stops with a <code>StackOverflowError</code>.</p>`,
+<p class="ref-note">This Java runs in your browser, in an interpreter written for this site. It checks programs the way <code>javac</code> does (the same error messages) and covers the language an introductory course uses: classes, inheritance, interfaces, arrays, strings, <code>ArrayList</code>, <code>HashMap</code>, <code>HashSet</code>, <code>Scanner</code>, <code>Random</code>, exceptions. Not available: generics in your own classes, lambdas, nested classes, enums, files and threads. A program is stopped after about 5 seconds, and recursion deeper than about a thousand calls stops with a <code>StackOverflowError</code>. <b>Step through</b> shows a program one statement at a time (the first 2000 statements).</p>`,
     scheme: `<h3>Scheme quick reference</h3>
 <h4>Expressions</h4>
 <pre><code>(+ 1 2)   (* 3 4)   (- 10 3)   (/ 1 3)   (quotient 7 2)   (remainder 7 2)
@@ -589,9 +589,10 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const main = el('main', { class: 'lab' });
     const status = el('span', { class: 'lab-status' });
     let running = false, tracer = null, memTrace = null, memIdx = 0, memToken = 0;
+    let jsTrace = null, jsIdx = 0, jsToken = 0;   // the Java step-through (src/javastep.js draws it)
 
     // ----- editor
-    const editor = LabEditor({ lang: S.lang, onChange: (v) => { curFile().code = v; save(); if (!findBar.hidden && findInp.value) computeMatches(); if (memTrace) endMem('The program changed, so the memory view was closed. Press Step through memory to start again.'); }, onRun: () => run(), onSave: () => download(), onCursor: () => renderStatusBar(), onFind: (withReplace) => openFind(withReplace), onEscape: () => { if (!findBar.hidden) closeFind(); } });
+    const editor = LabEditor({ lang: S.lang, onChange: (v) => { curFile().code = v; save(); if (!findBar.hidden && findInp.value) computeMatches(); if (memTrace) endMem('The program changed, so the memory view was closed. Press Step through memory to start again.'); if (jsTrace) endJStep('The program changed, so the step-through was closed. Press Step through to start again.'); }, onRun: () => run(), onSave: () => download(), onCursor: () => renderStatusBar(), onFind: (withReplace) => openFind(withReplace), onEscape: () => { if (!findBar.hidden) closeFind(); } });
     editor.value = curFile().code;
     editor.el.style.setProperty('--lab-font', S.fontSize + 'px');
 
@@ -710,6 +711,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const stepBtn = el('button', { class: 'btn', title: 'Run one line at a time and watch the variables', onclick: () => startTrace() }, 'Step through');
     const substBtn = el('button', { class: 'btn', title: 'Show the substitution model: the expression rewritten one step at a time', onclick: () => startSubst() }, 'Substitution');
     const memBtn = el('button', { class: 'btn', title: 'Run one line at a time and watch every variable, address and pointer in memory', onclick: () => startMem() }, 'Step through memory');
+    const jstepBtn = el('button', { class: 'btn', title: 'Run one statement at a time and watch the call stack, the variables and the objects; you can step backwards too', onclick: () => startJStep() }, 'Step through');
     const shareBtn = el('button', { class: 'btn quiet', onclick: share }, 'Share link');
     const openBtn = el('button', { class: 'btn quiet', onclick: () => fileInput.click() }, 'Open');
     const saveBtn = el('button', { class: 'btn quiet', title: 'Download this file', onclick: download }, 'Save');
@@ -736,7 +738,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       endMem(); renderToolbar();
     }
     const fileInput = el('input', { type: 'file', accept: '.py,.cpp,.cc,.cxx,.h,.java,.scm,.ss,.rkt,.txt', hidden: '', onchange: openFiles });
-    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'python' ? stepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, findBtn, tplBtn, refBtn, window.TERMINAL ? termBtn : null, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
+    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'python' ? stepBtn : null, S.lang === 'java' && window.JAVASTEP ? jstepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, findBtn, tplBtn, refBtn, window.TERMINAL ? termBtn : null, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
     function setFont(d) { S.fontSize = Math.min(24, Math.max(11, S.fontSize + d)); save(); editor.el.style.setProperty('--lab-font', S.fontSize + 'px'); editor.render(); }
 
     // ----- find / replace bar
@@ -810,7 +812,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const replBox = el('div', { class: 'repl-box', hidden: S.lang !== 'scheme' ? '' : null }, el('div', { class: 'panel-head' }, el('b', {}, 'REPL'), el('span', { class: 'panel-note' }, 'Type an expression and press Enter. Run the file first to load its definitions. ↑ ↓ recall earlier lines.')), repl.el);
 
     // ----- running
-    function setRunning(on) { running = on; runBtn.disabled = on; stopBtn.hidden = !on || S.lang === 'scheme'; stepBtn.disabled = on; memBtn.disabled = on; status.textContent = on ? 'running…' : ''; }
+    function setRunning(on) { running = on; runBtn.disabled = on; stopBtn.hidden = !on || S.lang === 'scheme'; stepBtn.disabled = on; memBtn.disabled = on; jstepBtn.disabled = on; status.textContent = on ? 'running…' : ''; }
     function explain(lang, err) { const tip = tipFor(lang, err); for (const [re, msg] of EXPLAIN[lang] || []) if (re.test(err)) return msg; return tip; }
     function showError(lang, err) {
       out.error(err);
@@ -937,8 +939,69 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       } else if (!shown) out.hide();
     }
     function endMem(msg) {
+      endJStep();   // everything that closes the memory view (another file, another language, Run) closes the Java step-through too
       if (!memTrace && memBox.hidden) return;
       memToken++; memTrace = null; memBox.hidden = true; memView.innerHTML = ''; editor.setTrace(0);
+      if (msg) status.textContent = msg, setTimeout(() => { if (status.textContent === msg) status.textContent = ''; }, 6000);
+    }
+
+    // ----- Java step-through (JAVA.trace records the whole run in the sandbox, so stepping can go backwards too)
+    const jsView = el('div', { class: 'mem-view' });
+    const jsMsg = el('span', { class: 'panel-note' });
+    const jsSlider = el('input', { type: 'range', min: '0', max: '0', value: '0', class: 'mem-slider', 'aria-label': 'Step' });
+    const jsBack = el('button', { class: 'btn', title: 'Back one step (B or Backspace)', onclick: () => jsShow(jsIdx - 1) }, '\u25C0 Back');
+    const jsNext = el('button', { class: 'btn primary', title: 'Next step (N or Enter)', onclick: () => jsShow(jsIdx + 1) }, 'Next \u25B6');
+    const jsEnd = el('button', { class: 'btn', onclick: () => jsTrace && jsShow(jsTrace.steps.length - 1) }, 'Run to end');
+    const jsRestart = el('button', { class: 'btn quiet', onclick: () => jsShow(0) }, 'Restart');
+    const jsClose = el('button', { class: 'btn quiet', onclick: () => endJStep() }, 'Close');
+    const jsBox = el('div', { class: 'jstep-box', hidden: '', tabindex: '0' },
+      el('div', { class: 'panel-head' }, el('b', {}, 'Step through'), jsMsg),
+      el('div', { class: 'toolbar' }, jsBack, jsNext, jsSlider, jsEnd, jsRestart, jsClose),
+      el('p', { class: 'panel-note mem-help' }, 'Each method call gets its own frame on the call stack, with its variables. Objects and arrays live on their own, numbered; a variable that holds one shows \u2192 and its number, so two variables with the same number refer to the same object. Changed values are highlighted. Keys: N or Enter next, B or Backspace back.'),
+      jsView);
+    jsSlider.addEventListener('input', () => jsShow(+jsSlider.value));
+    jsBox.addEventListener('keydown', (e) => {
+      if (!jsTrace || e.target === jsSlider) return;
+      if (e.key === 'Enter' && e.target.closest && e.target.closest('button')) return;   // Enter on a button presses it
+      if (e.key === 'Enter' || e.key === 'n' || e.key === 'N' || e.key === 'ArrowRight') { e.preventDefault(); jsShow(jsIdx + 1); }
+      else if (e.key === 'b' || e.key === 'B' || e.key === 'Backspace' || e.key === 'ArrowLeft') { e.preventDefault(); jsShow(jsIdx - 1); }
+    });
+    // A program that reads with a Scanner takes the Program input box's text, as Run does (the run is recorded in one go, so it cannot stop to ask)
+    async function startJStep() {
+      if (running || !window.JAVASTEP || !window.JAVARUN) return; if (tracer) tracer.stop(); endMem();
+      const code = editor.value;
+      if (/\bScanner\b/.test(code)) { stdinBox.hidden = false; if (!stdinTa.value.trim()) { out.clear(); out.note('This program reads input with a Scanner. Type the values in the Program input box, one per line, then press Step through again.'); stdinTa.focus(); return; } }
+      const token = ++jsToken;
+      out.clear(); jsBox.hidden = false; jsView.textContent = ''; jsMsg.textContent = 'running the program\u2026'; setRunning(true);
+      let r; try { r = await window.JAVARUN.trace(code, stdinTa.value, { maxSteps: 2000 }); } finally { setRunning(false); }
+      if (token !== jsToken) return;   // closed, or the program changed, while it ran
+      jsTrace = window.JAVASTEP.clean(r.result) || { steps: [], output: '', error: r.err || 'The program could not be run.' };
+      if (!jsTrace.steps.length) { jsView.textContent = ''; jsMsg.textContent = 'the program could not start'; jsSlider.max = '0'; if (jsTrace.error || r.err) showError('java', jsTrace.error || r.err); editor.setTrace(0); return; }
+      jsSlider.max = String(jsTrace.steps.length - 1);
+      jsShow(0);
+      if (!isTouch()) jsBox.focus();
+    }
+    function jsShow(i) {
+      if (!jsTrace) return;
+      const n = jsTrace.steps.length; i = Math.max(0, Math.min(n - 1, i)); jsIdx = i;
+      const st = jsTrace.steps[i];
+      window.JAVASTEP.render(jsView, jsTrace, i);
+      jsSlider.value = String(i);
+      jsBack.disabled = i === 0; jsRestart.disabled = i === 0; jsNext.disabled = i === n - 1; jsEnd.disabled = i === n - 1;
+      jsMsg.textContent = window.JAVASTEP.describe(jsTrace, i);
+      editor.setTrace(st.done ? 0 : st.line);
+      out.clear();
+      const shown = jsTrace.output.slice(0, st.outLen);
+      if (shown) out.write(shown);
+      if (i === n - 1) {
+        if (jsTrace.error) showError('java', jsTrace.error);
+        else if (jsTrace.truncated) out.note('Stepping stops after ' + n + ' steps. Press Run to run the whole program.');
+        else if (!shown) out.note('(nothing printed)');
+      } else if (!shown) out.hide();
+    }
+    function endJStep(msg) {
+      if (!jsTrace && jsBox.hidden) return;
+      jsToken++; jsTrace = null; jsBox.hidden = true; jsView.textContent = ''; editor.setTrace(0);
       if (msg) status.textContent = msg, setTimeout(() => { if (status.textContent === msg) status.textContent = ''; }, 6000);
     }
 
@@ -1051,6 +1114,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
 <li>Brackets and quotes close themselves; type the closing one to skip over it. The matching bracket is highlighted when the cursor is next to one.</li>
 <li>Start typing a name and a list of completions appears: <b>↑ ↓</b> to choose, <b>Tab</b> or <b>Enter</b> to accept, <b>Esc</b> to dismiss.</li>
 <li><b>+ New</b> makes a file and asks for its name; <b>Rename</b> is under the editor (double-clicking a tab also works). <b>Save</b> downloads the file; <b>Open</b> loads files from your device; <b>Share link</b> copies a link that carries the program inside it. Errors that mention a line number have a "go to line" link.</li>
+<li>Java: <b>Step through</b> runs the program one statement at a time and shows the call stack (each method call with its variables), the static fields and the objects and arrays they refer to, numbered so you can see when two variables share one object. You can step backwards as well as forwards. A program that reads with a <code>Scanner</code> takes its input from the Program input box.</li>
 <li>Python: <b>Step through</b> runs one line at a time and shows the variables. <code>import turtle</code> opens a drawing canvas. <b>Stop</b> ends a program that is stuck in a loop.</li>
 <li>Scheme: Run loads the file's definitions, then use the REPL below the output to try expressions one at a time. <b>Substitution</b> shows the substitution model from SICP: each expression is rewritten one step at a time, exactly the way the Lisp course draws it.</li>
 <li><b>Teacher tools</b> (the switch at the top) let a teacher write an assignment with tests and share it as a link or QR code; students <b>Check</b> their work against the visible tests and <b>Submit</b>, which makes a link carrying their program. The teacher opens submission links in her own Code Lab, where hidden tests run and a grade book collects the results. Nothing is sent to any server.</li>
@@ -1061,12 +1125,13 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
 <li>On a phone or tablet, the <b>Indent</b> and <b>Outdent</b> buttons under the editor stand in for the Tab key, and <b>Wrap</b> keeps long lines on screen.</li></ul>` }));
     const editorArea = el('div', { class: 'lab-editor-area' }, tabs, findBar, editor.el, statusBar);
     const side = el('div', { class: 'lab-side' }, tplBox, refBox);
-    const body = el('div', { class: 'lab-body' }, el('div', { class: 'lab-main' }, teach ? teach.panel : null, asgHost, exBar, toolbar, editorArea, exVerdict, stdinBox, out.el, term ? term.el : null, traceBox, memBox, substBox, turtleBox, replBox), side);
+    const body = el('div', { class: 'lab-body' }, el('div', { class: 'lab-main' }, teach ? teach.panel : null, asgHost, exBar, toolbar, editorArea, exVerdict, stdinBox, out.el, term ? term.el : null, traceBox, memBox, jsBox, substBox, turtleBox, replBox), side);
     renderTabs(); renderToolbar(); applyWrap(); renderStatusBar(); renderExBar(); renderAsgBar(); engineChanged();
     if (term && S.panels.term) { term.show(false); termBtn.classList.add('on'); }
     if (pendingStep) {
       const ps = pendingStep; pendingStep = null;
       if (ps.mode === 'mem' && S.lang === 'cpp') { if (ps.stdin != null) { stdinTa.value = ps.stdin; stdinBox.hidden = false; } setTimeout(startMem, 0); }
+      if (ps.mode === 'mem' && S.lang === 'java') { if (ps.stdin != null) { stdinTa.value = ps.stdin; stdinBox.hidden = false; } setTimeout(startJStep, 0); }
       if (ps.mode === 'subst' && S.lang === 'scheme') setTimeout(startSubst, 0);
     }
     if (teach && (kind === 'assign' || kind === 'review' || /(^|&)b=/.test(query || ''))) setTimeout(() => teach.handleQuery(kind, query), 0);
@@ -1077,7 +1142,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
 
   let pendingStep = null;   // set by openCode({step: true} or {subst: true}); consumed by page()
   /** Called from the courses: put code into the Lab as a new file and go there.
-      o.step opens the C++ memory stepper; o.subst opens the Scheme substitution panel. */
+      o.step opens the C++ memory stepper (or the Java step-through); o.subst opens the Scheme substitution panel. */
   function openCode(o) {
     load();
     pendingStep = o.step ? { mode: 'mem', stdin: o.stdin } : (o.subst ? { mode: 'subst' } : null);

@@ -64,6 +64,9 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   `java.util.Formatter`. Exception messages follow JDK 21's wording. `test_java.js` expectations were produced by a real JDK: keep it so.
 - After changing `java.js` or `shell.js`, run `npm run test:diff` and a few extra seeds (`SEED=2 COUNT=40 node test_diff.js java`). A new
   difference is a bug to fix; only a deliberate one goes in `difftest/known.json`, with its reason.
+- **Step-through** (ARCHITECTURE §9e): `JAVA.trace` records every statement (frames with locals by name, statics, numbered heap objects) in the worker;
+  `src/javastep.js` replays it in the Lab (Back/Next/slider, N/Enter/B/Backspace). Hooks are `R.tr` checks in `exec` and the loops, and symbol-keyed scope info
+  set by the checker's `stmt()`; `test_javatrace.js` traces every Java example and must print what a plain run prints.
 - Exercises: whole programs with `{stdin, expect}`; methods with `{call, expect}` (the student writes only the `static` method; `prelude`
   for imports); whole classes with `ex.classes: true` and `{main, expect}`. Ids are `jv-<n>-<k>`.
 
@@ -177,7 +180,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - The DOM's own `append`/`replaceChildren` used to print `null`/`false` and arrays as text: `src/domsafe.js` (first in the script) now makes them skip those and flatten arrays (the stray "null" in the Life demo, the bits and knn figures and the shell lesson's tree came from this). Still prefer `el()`.
 - Ideas not started: C in the Code Lab (same compiler); lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
-  beside the single-page design and needs a policy change); splitting CI (about 4 minutes now); a Java step-through debugger like the C++ memory stepper.
+  beside the single-page design and needs a policy change); splitting CI (about 4 minutes now).
 - Not verified: Full C++ on low-end devices (needs about 84 MB plus the program), and on the production URL since the security-review merge.
 
 - **Bot Arena** (ARCHITECTURE §9j, `src/tron.js`, `arena*.js`, `test_arena.js`): Tron bots in Python/Java/C++/Scheme at `#/arena` and `#/arena/tournament` (PR #40, merged).

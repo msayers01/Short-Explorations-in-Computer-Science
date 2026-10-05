@@ -9,7 +9,7 @@
    window.PYRUN.run(code, {stdin, execLimit, turtle:{mount,width,height}, onOutput, onInput}) → Promise<{out, err}>
    window.PYRUN.trace(code, {…, onStep}) → {done, next(), finish(), stop()}        window.PYRUN.cancel()
    window.CPPRUN.run(code, {stdin, onOutput, maxMs}) → Promise<{out, err}>      window.CPPRUN.trace(code, stdin) → Promise<{trace, err}>
-   window.JAVARUN.run(code, {stdin, onOutput, maxMs}) → Promise<{out, err}>     (the site's own Java interpreter, src/java.js)
+   window.JAVARUN.run(code, {stdin, onOutput, maxMs}) → Promise<{out, err}>     (the site's own Java interpreter, src/java.js)   window.JAVARUN.trace(code, stdin) → Promise<{result, err}>
    window.CLANGRUN.run(code, {stdin, std, onOutput, onNote}) → Promise<{out, err, exit, notes}>   (real C++; see below: downloaded on demand)
    window.CLANGRUN.runMany(code, [stdin…]) → Promise<{err, parts:[{out, all, err, exit}]}>        compile once, run once for each input
    window.CPPRUN.check(code), window.JAVARUN.check(code), window.CLANGRUN.compile(code, {std}) → Promise<{err}>   compile only (the terminal's g++ and javac) */
@@ -228,6 +228,8 @@
     // opts.maxMs: the program's time limit (the Bot Arena gives a bot a few hundred milliseconds a move); the page waits 3 seconds longer before it ends the worker itself
     run: (code, opts) => { opts = opts || {}; const ms = opts.maxMs || 5000; return java.run({ t: 'run', totalMs: ms + 3000, idleMs: ms + 3000, opts, payload: { code: String(code), stdin: opts.stdin == null ? '' : String(opts.stdin), maxTimeout: ms } }); },
     check: (code) => java.run({ t: 'run', totalMs: 8000, idleMs: 8000, opts: {}, payload: { code: String(code), stdin: '', maxTimeout: 5000, checkOnly: true } }),
+    // the step-through: the program is run once in the sandbox and every statement recorded (JAVA.trace) → Promise<{result: trace, err}>
+    trace: (code, stdin, opts) => { opts = opts || {}; return java.run({ t: 'trace', totalMs: 9000, idleMs: 9000, opts, payload: { code: String(code), stdin: String(stdin || ''), maxSteps: opts.maxSteps || 2000 } }); },
     cancel: () => java.cancel()
   };
   window.CPPRUN = {

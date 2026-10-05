@@ -2,8 +2,8 @@
    iframe; see runner.js), never into the page, so a program can reach nothing but this interpreter, and a program that does not finish is
    stopped by the page ending the worker.
 
-   Messages from the page: {t:'run', id, code, stdin, maxTimeout, checkOnly}   (checkOnly: compile as javac would, run nothing)
-   Messages to the page:   {t:'ready'} {t:'out', id, text} {t:'done', id, err, exit} */
+   Messages from the page: {t:'run', id, code, stdin, maxTimeout, checkOnly}   (checkOnly: compile as javac would, run nothing)   {t:'trace', id, code, stdin, maxSteps}
+   Messages to the page:   {t:'ready'} {t:'out', id, text} {t:'result', id, trace} {t:'done', id, err, exit} */
 (function () {
   'use strict';
   const isWorker = typeof document === 'undefined';
@@ -34,8 +34,20 @@
     post({ t: 'done', id, err: r.err, exit: r.exit });
   }
 
+  // The step-through (src/javastep.js draws it): the whole run is recorded here and sent back in one message
+  function startTrace(msg) {
+    busy = true;
+    let trace;
+    try { trace = JAVA.trace(String(msg.code), typeof msg.stdin === 'string' ? msg.stdin : '', { maxSteps: Math.min(5000, Number(msg.maxSteps) || 2000), maxMs: 5000 }); }
+    catch (e) { trace = { steps: [], output: '', error: 'Internal error in the Java interpreter: ' + (e && e.message ? e.message : String(e)) }; }
+    busy = false;
+    post({ t: 'result', id: msg.id, trace });
+    post({ t: 'done', id: msg.id, err: null });
+  }
+
   listen((m) => {
     if (m && typeof m === 'object' && m.t === 'bot') { if (busy) post({ t: 'done', id: m.id, err: 'The Java sandbox is busy with another program.' }); else startBot(m); return; }
+    if (m && typeof m === 'object' && m.t === 'trace') { if (busy) post({ t: 'done', id: m.id, err: 'The Java sandbox is busy with another program.' }); else startTrace(m); return; }
     if (!m || typeof m !== 'object' || m.t !== 'run') return;
     if (busy) post({ t: 'done', id: m.id, err: 'The Java sandbox is busy with another program.' }); else start(m);
   });

@@ -44,6 +44,7 @@ ${r('src/style.css')}
 const scripts = [
   'src/domsafe.js',   // first: the DOM's own append() and friends skip null, undefined and false instead of printing them
   'src/cppstep.js',   // only render() and describe() run in the page; the program is traced in the C++ sandbox
+  'src/javastep.js',  // the Java step-through's drawing; the program is traced in the Java sandbox (JAVA.trace)
 
   'src/scheme.js',
   'src/subst.js',
