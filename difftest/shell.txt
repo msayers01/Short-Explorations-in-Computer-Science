@@ -1282,3 +1282,543 @@ awk 'BEGIN { x = "abc"; print x ~ "b", x ~ /^a/, "b" ~ x }'
 awk -F, -f prog.awk grades.csv 2>/dev/null || echo failed; printf 'NR > 1 { print $2 }\n' > prog.awk; awk -F, -f prog.awk grades.csv
 ===
 ls -d; ls -d -F
+===
+# here-documents and here-strings
+cat <<E2
+a
+b
+c
+===
+cat <<E2
+===
+echo 1
+cat <<A <<B
+a
+A
+b
+B
+echo 2
+===
+x=world
+cat <<EOF
+hello $x ${x^^} $(echo sub) $((1+2)) `echo bq` \$x \\ \` "quoted" 'single' \n
+EOF
+===
+x=world
+cat <<'EOF'
+hello $x \$x
+EOF
+cat <<"EOF"
+hello $x
+EOF
+cat <<E"O"F
+hello $x
+EOF
+cat <<\EOF
+hello $x
+EOF
+===
+	cat <<-EOF
+		tab $HOME
+	  space
+		EOF
+echo after
+===
+cat <<EOF | tr a-z A-Z
+piped
+EOF
+===
+f() {
+  cat <<EOF
+in f: $1
+EOF
+}
+f arg
+f two
+declare -f f
+===
+for i in 1 2; do cat <<EOF; done
+loop $i
+EOF
+===
+cat <<EOF > out.txt
+saved
+EOF
+cat out.txt
+===
+cat <<<'here string'
+cat <<< "$HOME/x"
+x='a b'
+cat <<< $x
+wc -l <<< ""
+read a b <<< "one two three"; echo "$a|$b"
+===
+cat <<EOF
+line one \
+continued
+EOF
+===
+while read -r l; do echo "got $l"; done <<EOF
+1
+2
+EOF
+===
+cat << EOF
+spaced delimiter
+EOF
+===
+cat <<
+===
+cat <<EOF
+ EOF
+EOF
+===
+cat <<EOF; echo same line
+body
+EOF
+===
+x=$(cat <<EOF
+inside
+EOF
+)
+echo "$x"
+===
+# here-documents in scripts, functions and pipelines
+printf 'cat <<E\nx\n' > s.sh; bash s.sh; echo $?
+===
+printf 'f() {\ncat <<E\nin\nE\n}\nf\ncat <<Z\nend' > s2.sh; bash s2.sh
+===
+if true; then
+  cat <<EOF
+inside if
+EOF
+fi
+===
+cat <<EOF |
+piped later
+EOF
+tr a-z A-Z
+===
+cat <<A; cat <<B
+first
+A
+second
+B
+===
+a=(x 'y z'); cat <<EOF
+${a[@]} ${#a[@]} ${a[1]}
+"$HOME" '$HOME'
+EOF
+===
+cat <<"E"OF
+$HOME
+EOF
+===
+cat <<EOF
+EOF
+EOF
+===
+while read -r l; do echo "<$l>"; done <<< "$(printf 'a\nb')"
+===
+cat <<<
+===
+x=1; cat <<EOF
+$((x + 1)) $(echo "q'uote") ok
+EOF
+===
+cat <<'EOF' > script.sh
+echo "args: $#"
+EOF
+bash script.sh a b
+===
+f() {
+	cat <<-END
+	indented $1
+	END
+}
+f one; type f
+===
+g() { cat <<< "here $1"; }; g x; declare -f g
+===
+cat <<EOF
+a\
+b
+EOF
+cat <<'EOF'
+a\
+b
+EOF
+===
+cat <<EOF
+$(cat <<INNER
+nested
+INNER
+)
+EOF
+===
+cat <<-'X'
+		tabs gone, $not expanded
+	X
+===
+echo before; cat << EOF
+spaced
+EOF
+echo after
+===
+cat <<EOF >> out.txt
+one
+EOF
+cat <<EOF >> out.txt
+two
+EOF
+cat out.txt
+===
+printf 'one\ntwo\n' > f.txt; mkdir d; cat < f.txt <<EOF
+heredoc wins
+EOF
+===
+printf 'one\ntwo\n' > f.txt; mkdir d; cat <<EOF < f.txt
+file wins
+EOF
+===
+# [[ ]]
+[[ ]]
+===
+[[ a == ]]
+===
+[[ -f ]]; echo $?
+===
+[[ a ]
+===
+[[ a b ]]
+===
+[[ -q x ]]
+===
+[[ a -foo b ]]
+===
+[[ ( a == a ]]
+===
+[[ a == a && ]]
+===
+[[ ! ]]; echo $?
+===
+[[ -n ]]; echo $?
+===
+x=''; [[ $x ]]; echo $?; [[ -z $x ]]; echo $?; [[ -n $x ]]; echo $?
+===
+x='a b'; [[ $x == 'a b' ]] && echo same; [[ $x == a* ]] && echo glob; [[ $x == "a*" ]] || echo literal; p='a*'; [[ $x == $p ]] && echo pvar; [[ $x == "$p" ]] || echo pquoted
+===
+[[ abc < abd ]] && echo lt; [[ b > a ]] && echo gt; [[ B < a ]] && echo upper
+===
+[[ 1+1 -eq 2 ]] && echo arith; x=5; [[ x -gt 3 ]] && echo name; [[ 010 -eq 8 ]] && echo octal
+===
+[[ 1.5 -eq 1 ]]; echo $?
+===
+[[ abc -eq 1 ]]; echo $?
+===
+printf 'one\ntwo\n' > f.txt; mkdir d; [[ -e f.txt && -f f.txt && -d d && ! -d f.txt ]] && echo files; [[ -s f.txt ]] && echo nonempty; [[ -e nope || -e d ]] && echo or
+===
+[[ a == a || b == c && c == d ]]; echo $?; [[ ( a == a || b == c ) && c == d ]]; echo $?
+===
+s='hello world 42'; if [[ $s =~ ([a-z]+)\ ([a-z]+)\ ([0-9]+) ]]; then echo "${BASH_REMATCH[0]}|${BASH_REMATCH[1]}|${BASH_REMATCH[3]}|${#BASH_REMATCH[@]}"; fi
+===
+[[ abc =~ ^a(b|x)c$ ]] && echo alt "${BASH_REMATCH[1]}"; [[ a.c =~ a.c ]] && echo dot; [[ abc =~ "a.c" ]] || echo quoted; re='^[0-9]+$'; [[ 123 =~ $re ]] && echo num; [[ x123 =~ $re ]] || echo notnum
+===
+[[ ab =~ [[:alpha:]]+ ]] && echo cls "${BASH_REMATCH[0]}"; [[ 'a b' =~ a[[:space:]]b ]] && echo sp
+===
+[[ abc =~ ( ]]; echo $?
+===
+[[ abc =~ x ]]; echo $? "${#BASH_REMATCH[@]}"
+===
+x=*; [[ $x == '*' ]] && echo nostar; y="a   b"; [[ $y == "a   b" ]] && echo nosplit
+===
+[[ a == a ]] && [[ b != c ]] && echo chain; ! [[ a == b ]] && echo neg
+===
+[[ -v HOME ]] && echo set; [[ -v nope ]] || echo unset; a=(1 2); [[ -v a[1] ]] && echo elem
+===
+f() { [[ $1 == y* ]]; }; f yes && echo yes; declare -f f
+===
+[[ a = a ]] && echo single-eq
+===
+printf 'one\ntwo\n' > f.txt; mkdir d; [[ f.txt -nt d ]]; echo $?; [[ f.txt -ef ./f.txt ]] && echo ef
+===
+[[ $nope == "" ]] && echo empty
+===
+if [[ "$1" = "" ]]; then echo noargs; fi
+===
+[[ a == b ]
+echo next
+===
+[[ x =~ (a b) ]]; echo $?
+===
+[[ 'a b' =~ (a b) ]]; echo $? ${BASH_REMATCH[0]}
+===
+echo [[ a ]]
+===
+[[ -z "" ]]&&echo ok
+===
+[[ 3 -lt 10 ]] && echo numlt; [[ 3 < 10 ]] || echo strlt
+===
+# [[ ]] syntax errors (bash also prints the line, as a script)
+[[ -f ]]
+===
+[[ a == ]]; echo x
+===
+[[ ! ]]
+===
+[[ ]]; echo x
+===
+[[ a b ]]; echo x
+===
+[[ a == a && ]]; echo x
+===
+[[ ( a == a ]]; echo x
+===
+[[ a == b ]; echo x
+===
+[[ a
+===
+[[ a == b
+===
+[[ a == b ]] ]]
+===
+[[ ( ]]
+===
+[[ ) ]]
+===
+[[ a == b c ]]
+===
+[[ -f a b ]]
+===
+[[ a && ]]
+===
+[[ && a ]]
+===
+[[ a == b ) ]]
+===
+[[ ! -f nope ]] && echo notf; [[ ! ! a ]] && echo dbl
+===
+[[ a == a ]] > out.txt; echo $?; cat out.txt
+===
+[[ "a" == "a"
+]] && echo nl
+===
+[[ a == a &&
+b == b ]] && echo nl2
+===
+# [[ ]] in use
+re='('; [[ a =~ $re ]]; echo $?
+===
+re='a{2}'; [[ xaay =~ $re ]] && echo "$BASH_REMATCH"
+===
+[[ 1.5 -eq 1 || a == a ]]; echo $?
+===
+[[ a == a || 1.5 -eq 1 ]]; echo $?
+===
+for f in *; do if [[ -d $f ]]; then echo "dir $f"; elif [[ $f == *.txt ]]; then echo "text $f"; fi; done
+===
+i=0; while [[ $i -lt 3 ]]; do echo $i; ((i++)); done
+===
+[[ "$(echo hi)" == hi ]] && echo sub
+===
+x=abc; [[ $x == ?b? ]] && echo q; [[ $x == [ab]* ]] && echo br; [[ $x != *z* ]] && echo nz
+===
+[[ $HOME == ~ ]] && echo tilde
+===
+[[ -n "$x" ]] || echo empty; [[ -z ${y:-} ]] && echo z
+===
+[[ a\ b == "a b" ]] && echo esc
+===
+s=foo.tar.gz; [[ $s =~ \.([a-z]+)$ ]] && echo ext ${BASH_REMATCH[1]}
+===
+[[ 'x(y)' =~ \( ]] && echo paren
+===
+[[ ab =~ a|c ]] && echo bar; [[ AB =~ [A-Z]{2} ]] && echo br2
+===
+[[ abc =~ b ]] && echo "${BASH_REMATCH[0]}"; declare -p BASH_REMATCH
+===
+[[ 2 -eq 2 ]] && [[ 3 -ne 2 ]] && [[ 1 -le 1 ]] && [[ 5 -ge 4 ]] && echo allnum
+===
+[[ -1 -lt 0 ]] && echo neg
+===
+type [[; type -t ]]
+===
+f() { if [[ $1 =~ ^[0-9]+$ && $1 -gt 10 ]]; then echo big; else echo small; fi; }; f 42; f 3; f x; declare -f f
+===
+printf 'one\ntwo\n' > f.txt; mkdir d; [[ ! -e nope && ( -f f.txt || -d nope ) ]] && echo complex
+===
+[[ abc == "a"* ]] && echo mixq
+===
+[[ a < b && b > a ]] && echo both
+===
+[[ x == x ]] 2>/dev/null; echo $?
+===
+[[ $undefined -eq 0 ]] && echo zero
+===
+[[ 08 -eq 8 ]]; echo $?
+===
+# associative arrays: keys in bash's hash-table order
+declare -A m=([a]=1 [b]=2 [c]=3); echo "${!m[@]}"; echo "${m[@]}"; declare -p m
+===
+declare -A m; for k in apple banana cherry date elderberry fig grape; do m[$k]=${#k}; done; echo "${!m[@]}"; declare -p m
+===
+declare -A m; for i in $(seq 1 40); do m[k$i]=$i; done; echo "${!m[@]}"
+===
+declare -A m; m[x]=1; m[y]=2; m[x]=3; echo "${!m[@]}" "${m[@]}"; unset 'm[x]'; echo "${!m[@]}"; m[x]=4; echo "${!m[@]}"
+===
+declare -A m; m["two words"]=a; m[__proto__]=p; m[constructor]=c; m['$x']=d; m[""]=e; echo "${#m[@]}"; declare -p m
+===
+declare -A m=([é]=1 [ü]=2 [日本]=3 [a]=4); echo "${!m[@]}"
+===
+declare -A m; for i in $(seq 1 3000); do m[$i]=x; done; echo "${#m[@]}"; echo "${!m[@]}" | cut -c1-200
+===
+# associative arrays
+declare -A m; m["two words"]=a; m[__proto__]=p; m[constructor]=c; m['$x']=d; m['a"b']=q; m['*']=s; m[-1]=n; m[' ']=sp; declare -p m
+===
+declare -A m; declare -p m; declare -a a; declare -p a; declare -A e=(); declare -p e
+===
+declare -A m=(a 1 b 2 c); declare -p m
+===
+declare -A m=([a]=1 b 2); declare -p m
+===
+a=(1 2); declare -A a
+===
+declare -A m=([x]=1); m=(y 2); declare -p m
+===
+declare -A m=([x]=1); m+=([y]=2); m[x]+=0; declare -p m; echo ${#m[@]} ${#m[x]}
+===
+declare -A m; k='a b'; m[$k]=1; echo "${m[$k]}" "${m[a b]}" "${m["a b"]}"; unset "m[$k]"; echo ${#m[@]}
+===
+declare -A m=([one]=1); echo $m "[${m[0]}]"; m[0]=zero; echo $m
+===
+declare -A m=([k]=v); m=v2; declare -p m
+===
+f() { local -A loc=([a]=1); declare -p loc; }; f; declare -p loc
+===
+f() { declare -A d; d[x]=1; echo ${#d[@]}; }; f; echo "[${d[x]}]"
+===
+declare -A count; for w in the cat the dog the end; do ((count[$w]++)); done; for k in the cat dog end; do echo $k ${count[$k]}; done
+===
+declare -A m=([a]=5); echo $(( m[a] * 2 )); (( m[b] = 7 )); echo ${m[b]}; k=a; echo $(( m[$k] + 1 ))
+===
+declare -A m=([a]=1 [b]=2); for k in "${!m[@]}"; do echo "$k=${m[$k]}"; done | sort
+===
+declare -A m=([a]=1); unset m[a]; declare -p m; unset m; declare -p m
+===
+declare -A m=([x]=1 [y]=2); unset 'm[@]'; declare -p m
+===
+declare -A m=([a]=1); [[ -v m[a] ]] && echo seta; [[ -v m[b] ]] || echo unsetb; [[ -v m ]] || echo nozero
+===
+declare -A m; m[$nope]=1
+===
+declare -A m=([a]=1); echo "${m[nope]}" "${#m[nope]}"
+===
+declare -A m=([a]=x [b]=y); echo "${m[*]}" | wc -w; printf '%s\n' "${m[@]}" | sort
+===
+declare -A m=([a]=1); declare -a m
+===
+declare -aA x
+===
+declare -A m=([a]=1); m[a]=2 echo hi; declare -p m
+===
+# read and IFS, mapfile, printf -v, ${x@Q}, shopt, $SECONDS, $RANDOM (seeded: bash's own generator)
+IFS=, read a b <<< "1,2,"; echo "[$a][$b]"; IFS=, read a b <<< "1,2,3,"; echo "[$a][$b]"; IFS=, read a b <<< "1,,2"; echo "[$a][$b]"
+===
+IFS=, read a b c <<< "x , y ,z"; echo "[$a][$b][$c]"
+===
+IFS=', ' read a b c <<< "  x , y ,z  "; echo "[$a][$b][$c]"
+===
+IFS=: read -a parts <<< "a:b::c:"; echo "${#parts[@]}"; printf '[%s]' "${parts[@]}"; echo
+===
+read a b <<< '  one\ two  three\\four  '; echo "[$a][$b]"; read -r a b <<< '  one\ two  three\\four  '; echo "[$a][$b]"
+===
+printf 'abc\\\ndef\n' | { read x; echo "[$x]"; }; printf 'abc\\\ndef\n' | { read -r x; echo "[$x]"; }
+===
+read <<< "  spaced  "; echo "[$REPLY]"; read -r <<< ' a\b '; echo "[$REPLY]"
+===
+IFS= read -r line <<< "  keep  "; echo "[$line]"
+===
+read -d , first <<< "a,b,c"; echo "[$first]"; echo $?
+===
+read -d , first <<< "abc"; echo "[$first] $?"
+===
+printf 'l1\nl2\nl3' | while read -r l; do echo "[$l]"; done
+===
+printf 'l1\nl2\nl3' | while IFS= read -r l || [[ -n $l ]]; do echo "[$l]"; done
+===
+read a <<< ""; echo "$? [$a]"
+===
+read -a arr <<< "  x  y  "; declare -p arr
+===
+printf 'one\ntwo\n' > f.txt; mkdir d; mapfile -t lines < f.txt; declare -p lines; mapfile lines2 < f.txt; declare -p lines2
+===
+printf 'a\nb\nc\nd\n' > g.txt; mapfile -t -n 2 x < g.txt; declare -p x; mapfile -t -s 1 y < g.txt; declare -p y; mapfile -t -O 5 y < g.txt; declare -p y
+===
+readarray -t r <<< "one
+two"; echo ${#r[@]} "${r[1]}"; mapfile <<< "x"; declare -p MAPFILE
+===
+mapfile -t -d , c <<< "a,b,c"; declare -p c
+===
+printf 'one\ntwo\n' > f.txt; mkdir d; mapfile -t 1bad < f.txt; echo $?
+===
+mapfile -t e < /dev/null; declare -p e
+===
+mapfile -q x
+===
+printf -v out '%05d|%s' 42 hi; echo "[$out]"; printf -v 'arr[2]' '%s' two; declare -p arr; declare -A m; printf -v 'm[k]' 'v%d' 1; declare -p m
+===
+printf -v 1x '%s' a; echo $?
+===
+printf -v
+===
+printf -v x; echo $?
+===
+printf -v x '%s-' a b c; echo "[$x]"
+===
+x="it's"; echo "${x@Q}"; y='a b'; echo ${y@Q}; z=; echo "[${z@Q}]"; echo "[${nope@Q}]"; t=$'a\tb'; echo "${t@Q}"
+===
+s='hello World'; echo "${s@U}" "${s@L}" "${s@u}"; e='a\tb'; echo "${e@E}"
+===
+a=(x 'y z'); echo "${a[@]@Q}"; echo "${a[1]@U}"; echo "${a[@]@U}"
+===
+x=1; echo "${x@Z}"
+===
+shopt -s nullglob; for f in *.nope; do echo "never $f"; done; echo none: *.nope; shopt nullglob; shopt -u nullglob; echo *.nope; shopt -p nullglob
+===
+shopt -s dotglob; touch .a; echo *; shopt -u dotglob; echo *
+===
+shopt -s failglob; echo *.nope; echo after
+===
+shopt -s nosuch; echo $?
+===
+SECONDS=100; echo $SECONDS
+===
+RANDOM=42; echo $RANDOM $RANDOM $RANDOM; RANDOM=42; echo $RANDOM; RANDOM=0; echo $RANDOM $RANDOM; RANDOM=7; a=$RANDOM; b=$RANDOM; echo $a $b
+===
+RANDOM=1; for i in 1 2 3 4 5 6 7 8 9 10; do echo -n "$((RANDOM % 6 + 1)) "; done; echo
+===
+read -n 3 three <<< "abcdef"; echo "[$three] $?"
+===
+echo $'tab\there' $'it\'s' $'\x41\101' "$'not'" $"plain"
+===
+read 1x <<< a; echo $?
+===
+a=(x 'y z'); echo "${a@a}"; declare -A as; echo "${as@a}"; export ex=1; echo "${ex@a}"; echo "${a[@]@Q}" "${a[1]@U}"
+===
+printf 'shopt -s nullglob\necho in: *.zz\n' > so.sh; bash so.sh; echo out: *.zz
+===
+[[ -e "" ]] || echo noname; mkdir d; [[ -s d ]] && echo dirsize; [[ -x d ]] && echo dirx; [[ -c /dev/null ]] && echo chr
+===
+x=$'a\nb'; declare -p x; y=$'\e[1m'; declare -p y; z=$'\001'; echo "${z@Q}"
+===
+shopt -s nullglob; a=(*.none); echo ${#a[@]}
+===
+e=$'\\x41'; echo "${e@E}" "$(printf %s "$e")"
+===
+IFS=, ; read -r a b <<< "p,q"; echo "$a $b"
+===
+[[ a =~ ]]
+===
+[[ a =~ ]] ]]; echo $?
+===
+[[ ((1)) ]]

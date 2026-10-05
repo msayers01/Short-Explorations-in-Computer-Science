@@ -380,6 +380,16 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await page.fill('.term-inp', 'seven'); await page.press('.term-inp', 'Enter');
   await page.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 15000 });
   check('terminal: input() is answered on the command line', /N\? seven\ngot seven/.test(await page.locator('.lab-term .term-scroll').innerText()));
+  // a here-document typed at the prompt: its lines are asked for with bash's "> " until the word that ends it
+  await page.fill('.term-inp', 'x=5; cat <<EOF | tr a-z A-Z'); await page.press('.term-inp', 'Enter');
+  await page.waitForFunction(() => document.querySelector('.lab-term .term-ps1').textContent === '> ', null, { timeout: 15000 });
+  const hdHint = await page.locator('.lab-term .term-inp').getAttribute('placeholder');
+  await page.fill('.term-inp', 'typed $x'); await page.press('.term-inp', 'Enter');
+  await page.waitForFunction(() => /> typed \$x\n?$/.test(document.querySelector('.lab-term .term-scroll').innerText) && document.querySelector('.lab-term .term-ps1').textContent === '> ', null, { timeout: 15000 });
+  await page.fill('.term-inp', 'EOF'); await page.press('.term-inp', 'Enter');
+  await page.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 15000 });
+  tt = await page.locator('.lab-term .term-scroll').innerText();
+  check('terminal: a here-document asks for its lines with "> ", then runs', /cat <<EOF \| tr a-z A-Z\n> typed \$x\n> EOF\nTYPED 5\n/.test(tt) && /here-document/.test(hdHint || '') && (await termStatus()) === 'exit 0' && /\$ $/.test(await page.locator('.lab-term .term-ps1').innerText()), tt.slice(-200) + ' | ' + hdHint);
   tt = await term('printf \'public class Main { public static void main(String[] a) { System.out.println("from java"); } }\\n\' > Main.java; javac Main.java && java Main; printf \'class B { void f() { int x = "s"; } }\\n\' > B.java; javac B.java');
   check('terminal: javac and java through the Java sandbox, errors name the file', /from java\nB\.java:1: error: incompatible types/.test(tt), tt.slice(-300));
   await page.fill('.term-inp', 'printf \'import java.util.*;\\npublic class Ask { public static void main(String[] a) { Scanner s = new Scanner(System.in); System.out.print("N? "); int n = s.nextInt(); System.out.println("twice " + 2 * n); } }\\n\' > Ask.java; java Ask.java'); await page.press('.term-inp', 'Enter');
