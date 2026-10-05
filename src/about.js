@@ -56,7 +56,7 @@
       h('ul', { class: 'ab-list' }, tp.map(t => h('li', {},
         ext(t.url, t.name), ' ', h('span', { class: 'ab-meta' }, t.version + ' \u00b7 ' + t.licence), ': ', t.role, '.',
         t.changes ? h('span', { class: 'ab-meta ab-changes' }, ' ' + t.changes) : null))),
-      h('p', {}, 'Written for this site: the Scheme interpreter, the substitution-model stepper, the C++ memory stepper, the QR code encoder, the code editor, the Code Lab, the teacher tools, the portfolio, classroom mode and the interactive figures.'),
+      h('p', {}, 'Written for this site: the Java interpreter and its step-through, the Scheme interpreter, the substitution-model stepper, the C++ memory stepper, the practice terminal (its shell and its git), the QR code encoder, the code editor, the Code Lab, the teacher tools, the portfolio, classroom mode, the Bot Arena, the algorithm demonstrations and the interactive figures.'),
       tp.length ? h('details', { class: 'ab-licences' },
         h('summary', {}, 'Full licence texts of the software above'),
         tp.map(t => h('div', { class: 'ab-lic' }, h('h4', {}, t.name + ' ' + t.version), h('pre', {}, t.text)))) : null
@@ -98,7 +98,7 @@
 
       section('ab-privacy', 'What the site keeps about you',
         h('p', {}, 'Nothing you do leaves your computer unless you send it yourself. There are no accounts, no tracking and no advertising. The web host sees that the page was downloaded, as with any website, but the page itself never sends anything back.'),
-        h('p', {}, 'What you do is saved in this browser only: your progress and your code in the lessons, which quick checks you answered and when they come back for review, your Code Lab files, your portfolio settings, a teacher\u2019s assignments and grade book, and display choices such as light or dark. Another computer, or another browser on this one, starts empty, unless you use \u201cSave my work to a file\u201d on the home page and restore the file there (the file holds your code and your name, so keep it private). \u201cReset my progress\u201d on the home page clears the lessons; clearing the browser\u2019s site data clears everything.'),
+        h('p', {}, 'What you do is saved in this browser only: your progress and your code in the lessons, which quick checks you answered and when they come back for review, your Code Lab files and the practice terminal\u2019s files, your Arena bots, your portfolio settings, a teacher\u2019s assignments and grade book, and display choices such as light or dark. Another computer, or another browser on this one, starts empty, unless you use \u201cSave my work to a file\u201d on the home page and restore the file there (the file holds your code and your name, so keep it private). \u201cReset my progress\u201d on the home page clears the lessons; clearing the browser\u2019s site data clears everything.'),
         h('p', {}, 'The links the site makes (a shared program, an assignment, a submission, a portfolio) carry their contents inside the link itself. Anyone who has a link can read what is in it, so share them the way you would share the work itself.'),
         h('p', {}, 'The page makes no requests to any other site: the typefaces are part of the page itself, so no one else, not even a font provider, learns that you opened it. The one thing the page ever fetches is the real C++ compiler (about ' + ((window.BUILD && window.BUILD.clang && window.BUILD.clang.mb) || 28) + ' MB), and only from this same site, only after you agree, and only when you choose Full C++ or the Modern C++ course. It is stored by your browser so it is downloaded once. The pictures in the lessons also come from this same site, one at a time as you scroll to them; the people and archives credited below do not see that you looked.')),
 
@@ -128,7 +128,7 @@
         h('p', { class: 'ab-meta' },
           B.date ? 'This copy was built on ' + B.date + '. ' : '',
           SITE.sourceUrl ? ['The source code is at ', ext(SITE.sourceUrl, SITE.sourceUrl.replace(/^https?:\/\//, '')), '. '] : null,
-          'The whole site is a single file, index.html, which also works opened from a computer\u2019s disk or a USB stick.'))
+          'The whole site is one page, index.html, with the lessons\u2019 pictures in an img folder beside it; copied together, they also work opened from a computer\u2019s disk or a USB stick (all but Full C++, which needs a web address).'))
     ].filter(Boolean));
     return main;
   }
