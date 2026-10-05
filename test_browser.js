@@ -166,6 +166,8 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   const termStatus = () => page.locator('.lab-term .term-status').innerText();
   let tt = await term('mkdir notes; echo "hello there" > notes/a.txt; cat notes/a.txt | tr a-z A-Z; ls nope');
   check('terminal: commands, pipes and error text', /HELLO THERE\nls: cannot access 'nope': No such file or directory/.test(tt) && (await termStatus()) === 'exit 2', tt.slice(-200));
+  tt = await term('cd notes; git init -q; git add a.txt; git commit -q -m first; git log --oneline; cd ~');
+  check('terminal: git (shellgit.js) commits in the practice file system', /[0-9a-f]{7} \(HEAD -> main\) first\n/.test(tt) && (await termStatus()) === 'exit 0', tt.slice(-200));
   tt = await term('python lab/main.py');
   check('terminal: runs the Lab file through the Python sandbox', /python lab\/main\.py\nfrom the lab\n/.test(tt), tt.slice(-200));
   await page.fill('.term-inp', 'printf \'x = input("N? ")\\nprint("got", x)\\n\' > ask.py; python ask.py'); await page.press('.term-inp', 'Enter');
