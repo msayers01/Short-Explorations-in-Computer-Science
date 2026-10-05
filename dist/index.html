@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+43/68Q1zhzEPwveHSsKBAXMlc85oLjx/SFvhV0qNJw=' 'sha256-lt1yAcIYHkdHPvPnLjTlGSRPrT3LhDrZd+ZBOdhFtqs=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+43/68Q1zhzEPwveHSsKBAXMlc85oLjx/SFvhV0qNJw=' 'sha256-4H+5itARcCA9DT/lE/7Q77kPHCTHnXkq/RRmV4KhCvA=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -18124,7 +18124,7 @@ public class Main {
 <table class="growth-table"><thead><tr><th></th><th>Merge sort</th><th>Quicksort</th></tr></thead><tbody>
 <tr><td>Worst case</td><td>n log n</td><td>n² (random pivot: with vanishing probability)</td></tr>
 <tr><td>Average</td><td>n log n</td><td>n log n, with a smaller constant</td></tr>
-<tr><td>Extra memory</td><td>n cells</td><td>log n (the recursion stack)</td></tr>
+<tr><td>Extra memory</td><td>n cells</td><td>log n (the recursion stack) with good pivots; n in the bad case</td></tr>
 <tr><td>Stable</td><td>yes</td><td>no</td></tr>
 <tr><td>Works on linked lists and tapes</td><td>yes</td><td>not well (good pivots need random access)</td></tr>
 </tbody></table>

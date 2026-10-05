@@ -795,7 +795,7 @@ public class Main {
 <table class="growth-table"><thead><tr><th></th><th>Merge sort</th><th>Quicksort</th></tr></thead><tbody>
 <tr><td>Worst case</td><td>n log n</td><td>n² (random pivot: with vanishing probability)</td></tr>
 <tr><td>Average</td><td>n log n</td><td>n log n, with a smaller constant</td></tr>
-<tr><td>Extra memory</td><td>n cells</td><td>log n (the recursion stack)</td></tr>
+<tr><td>Extra memory</td><td>n cells</td><td>log n (the recursion stack) with good pivots; n in the bad case</td></tr>
 <tr><td>Stable</td><td>yes</td><td>no</td></tr>
 <tr><td>Works on linked lists and tapes</td><td>yes</td><td>not well (good pivots need random access)</td></tr>
 </tbody></table>
