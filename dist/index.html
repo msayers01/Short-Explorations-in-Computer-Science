@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+43/68Q1zhzEPwveHSsKBAXMlc85oLjx/SFvhV0qNJw=' 'sha256-/+lOcquqbtZtYMNq5ZkKVfWlu2tJcp53uM1JpBarmTI=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+43/68Q1zhzEPwveHSsKBAXMlc85oLjx/SFvhV0qNJw=' 'sha256-1N3wtyRPFZnH8ERG+0vxZXdbKj2w5LoTbGkry9UYm4E=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -38862,7 +38862,7 @@ public class Main {
    Nothing here runs student code; everything on these pages is drawn by the page itself. In node (test_algos.js) only the pure parts
    are used, so nothing touches the DOM until page() is called. */
 (function () {
-  const GROUPS = ['Searching', 'Sorting', 'Paths and graphs', 'Mazes', 'Games and adversarial search', 'Puzzles and simulations', 'More to explore'];
+  const GROUPS = ['Searching', 'Sorting', 'Paths and graphs', 'Mazes', 'Games and adversarial search', 'Puzzles and simulations', 'Nature and emergence', 'Geometry and fractals', 'More to explore'];
   const demos = [];
   const register = (d) => { if (!d || !d.id || demos.some((x) => x.id === d.id)) return; demos.push(d); };
   const el = (...a) => window.__app.internal.el(...a);
@@ -43193,6 +43193,46 @@ public class Main {
   }
 
   if (typeof module !== 'undefined') module.exports = { selfTest, hanoi, legal, startPegs, nearestNeighbour, twoOpt, tourLength, crossings, makeTowns, lifeStep, PATTERNS, placePattern, drops };
+})();
+
+;
+/* src/algo_nature.js */
+/* Algorithms in motion: nature and emergence. Demos for the #/algorithms page (see src/algos.js for the frame).
+   The algorithms are pure (no DOM) and checked by selfTest() in node (test_algos.js). */
+(function () {
+  const A = (typeof window !== 'undefined' && window.ALGOS) || require('./algos.js');
+  function selfTest() { return []; }
+  if (typeof module !== 'undefined') module.exports = { selfTest };
+})();
+
+;
+/* src/algo_geometry.js */
+/* Algorithms in motion: geometry and fractals. Demos for the #/algorithms page (see src/algos.js for the frame).
+   The algorithms are pure (no DOM) and checked by selfTest() in node (test_algos.js). */
+(function () {
+  const A = (typeof window !== 'undefined' && window.ALGOS) || require('./algos.js');
+  function selfTest() { return []; }
+  if (typeof module !== 'undefined') module.exports = { selfTest };
+})();
+
+;
+/* src/algo_logic.js */
+/* Algorithms in motion: backtracking and greedy choices. Demos for the #/algorithms page (see src/algos.js for the frame).
+   The algorithms are pure (no DOM) and checked by selfTest() in node (test_algos.js). */
+(function () {
+  const A = (typeof window !== 'undefined' && window.ALGOS) || require('./algos.js');
+  function selfTest() { return []; }
+  if (typeof module !== 'undefined') module.exports = { selfTest };
+})();
+
+;
+/* src/algo_play.js */
+/* Algorithms in motion: games and learning. Demos for the #/algorithms page (see src/algos.js for the frame).
+   The algorithms are pure (no DOM) and checked by selfTest() in node (test_algos.js). */
+(function () {
+  const A = (typeof window !== 'undefined' && window.ALGOS) || require('./algos.js');
+  function selfTest() { return []; }
+  if (typeof module !== 'undefined') module.exports = { selfTest };
 })();
 
 ;

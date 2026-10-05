@@ -10,7 +10,7 @@
    Nothing here runs student code; everything on these pages is drawn by the page itself. In node (test_algos.js) only the pure parts
    are used, so nothing touches the DOM until page() is called. */
 (function () {
-  const GROUPS = ['Searching', 'Sorting', 'Paths and graphs', 'Mazes', 'Games and adversarial search', 'Puzzles and simulations', 'More to explore'];
+  const GROUPS = ['Searching', 'Sorting', 'Paths and graphs', 'Mazes', 'Games and adversarial search', 'Puzzles and simulations', 'Nature and emergence', 'Geometry and fractals', 'More to explore'];
   const demos = [];
   const register = (d) => { if (!d || !d.id || demos.some((x) => x.id === d.id)) return; demos.push(d); };
   const el = (...a) => window.__app.internal.el(...a);

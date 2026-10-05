@@ -99,6 +99,10 @@ const scripts = [
   'src/algo_paths.js',
   'src/algo_games.js',
   'src/algo_puzzles.js',
+  'src/algo_nature.js',   // flocking, ants, sandpiles, slime moulds: simple rules, surprising patterns
+  'src/algo_geometry.js', // convex hulls, the Mandelbrot set, L-system plants, Voronoi cells
+  'src/algo_logic.js',    // backtracking and greedy choices: Sudoku, the eight queens, minimum spanning trees
+  'src/algo_play.js',     // Reversi against Monte Carlo tree search, a genetic algorithm, Huffman coding
   'src/applied.js',    // the #/real-world page: where the ideas of the courses are used
   'src/standards.js'   // the #/standards page and the standards box under each lesson's summary
 ];
