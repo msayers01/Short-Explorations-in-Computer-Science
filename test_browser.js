@@ -529,7 +529,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   // ---- the top bar, the courses page (grouped, with search), Algorithms in motion and the real-world page
   await goto('#/');
   const topLinks = await page.locator('.top-links a').allInnerTexts();
-  check('top bar: Courses, Algorithms, Real world, Arena and Code Lab instead of a link per course', topLinks.join('|') === 'Courses|Algorithms|Real world|Arena|Code Lab', topLinks);
+  check('top bar: Courses, Algorithms, Real world, Arena, Showcase and Code Lab instead of a link per course', topLinks.join('|') === 'Courses|Algorithms|Real world|Arena|Showcase|Code Lab', topLinks);
   await goto('#/courses');
   const courseCount = await page.evaluate(() => window.COURSES.length);
   const listed = await page.locator('.courses-page .catalog li').evaluateAll((ls) => ls.map((l) => l.getAttribute('data-course')));

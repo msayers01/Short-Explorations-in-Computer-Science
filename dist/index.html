@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-B3fqBG+ACMpg9PLLqALj2gJiddy0YMchwEMGDrrvw7w=' 'sha256-U8+2fiRLQ1h9LeONjxo+XKHOywaB+kKWFPjx2OyhQyc=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-B3fqBG+ACMpg9PLLqALj2gJiddy0YMchwEMGDrrvw7w=' 'sha256-NyAbS6RGohOtVUCpxi2zmAZp5OUPBMRE+ZBQyIDrumk=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -24360,7 +24360,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
         window.ALGOS ? el('a', { href: '#/algorithms', class: 'algos-link' + (course === 'algorithms' ? ' current' : '') }, 'Algorithms') : null,
         window.APPLIED ? el('a', { href: '#/real-world', class: 'applied-link' + (course === 'applied' ? ' current' : '') }, 'Real world') : null,
         window.ARENA && window.ARENA.page ? el('a', { href: '#/arena', class: 'arena-link-top' + (course === 'arena' ? ' current' : '') }, 'Arena') : null,   // write a bot that plays Tron (src/arena.js)
-        window.SHOWCASE && window.SHOWCASE.count() ? el('a', { href: '#/showcase', class: 'showcase-link' + (course === 'showcase' ? ' current' : '') }, 'Showcase') : null,   // student projects (src/showcase.js); there is no link until there is a project
+        window.SHOWCASE ? el('a', { href: '#/showcase', class: 'showcase-link' + (course === 'showcase' ? ' current' : '') }, 'Showcase') : null,   // student projects (src/showcase.js)
         el('a', { href: '#/lab', class: 'lab-link' + (course === 'lab' ? ' current' : '') }, 'Code Lab'),
         window.REVIEW ? window.REVIEW.topLink(course === 'today') : null),   // appears once there is something to review (src/review.js)
       el('div', { class: 'top-tools' },   // the three small controls sit close together so the links keep their room
@@ -24460,7 +24460,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
         el('div', { class: 'course-groups' }, groupedCatalog('')),
         el('p', { class: 'more-pages' }, el('a', { href: '#/courses' }, 'All courses, with search'),
           window.ALGOS ? [' · ', el('a', { href: '#/algorithms' }, 'Algorithms in motion')] : null,
-          window.SHOWCASE && window.SHOWCASE.count() ? [' · ', el('a', { href: '#/showcase' }, 'Student showcase')] : null,
+          window.SHOWCASE ? [' · ', el('a', { href: '#/showcase' }, 'Student showcase')] : null,
           window.APPLIED ? [' · ', el('a', { href: '#/real-world' }, 'Where this is used in the real world')] : null,
           window.STANDARDS ? [' · ', el('a', { href: '#/standards' }, 'Standards alignment')] : null)
       ),
@@ -24559,7 +24559,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
     if (parts[0] === 'algorithms' && window.ALGOS) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('algorithms'), window.ALGOS.page(parts[1])); window.scrollTo(0, 0); return; }
     if (parts[0] === 'arena' && window.ARENA && window.ARENA.page) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('arena'), window.ARENA.page(parts[1], query)); window.scrollTo(0, 0); return; }
     if (parts[0] === 'standards' && window.STANDARDS) { document.documentElement.setAttribute('data-course', ''); document.title = 'Standards — ' + SITE.name; app.append(topBar('standards'), window.STANDARDS.page(parts[1])); if (parts[1]) { const t = document.getElementById('std-' + parts[1]); if (t && t.scrollIntoView) { t.scrollIntoView(); return; } } window.scrollTo(0, 0); return; }
-    if (parts[0] === 'showcase' && window.SHOWCASE && window.SHOWCASE.count()) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('showcase'), window.SHOWCASE.page(parts[1])); window.scrollTo(0, 0); return; }
+    if (parts[0] === 'showcase' && window.SHOWCASE) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('showcase'), window.SHOWCASE.page(parts[1])); window.scrollTo(0, 0); return; }
     if (parts[0] === 'real-world' && window.APPLIED) { document.documentElement.setAttribute('data-course', ''); document.title = 'Where it is used — ' + SITE.name; app.append(topBar('applied'), window.APPLIED.page(parts[1])); if (parts[1]) { const t = document.getElementById(parts[1]); if (t && t.scrollIntoView) { t.scrollIntoView(); return; } } window.scrollTo(0, 0); return; }
     if ((parts[0] === 'lab' || parts[0] === 'assign' || parts[0] === 'review') && window.LAB) { document.title = 'Code Lab — ' + SITE.name; app.append(topBar('lab'), window.LAB.page(query, parts[0])); window.scrollTo(0, 0); return; }
     let course = parts[0] ? courseById(parts[0]) : null;
@@ -24589,7 +24589,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
   const STEPS = [
     { route: '#/', target: '.hero', title: 'Welcome', text: 'Everything on this site runs in your browser: nothing to install, no account, nothing sent anywhere. Your progress is saved on this device. This tour takes two minutes; press Esc to leave it at any time.' },
     { route: '#/', target: '.catalog li', title: 'The courses', text: 'The courses come in three groups: start here, programming languages, and computer science. SC 099 is for anyone who has never programmed; SC 100 follows Scratch; SC 101 is the usual start. Each card says how many lessons and graded exercises the course has, and how many you have completed.' },
-    { route: '#/', target: '.top-links', title: 'The top bar', text: 'From any page: Courses lists every course by group, with a search box; Algorithms shows searching, sorting, mazes, game search and puzzles in motion, with races to bet on; Real world says where each idea is used in software, security and engineering; Arena is where you write a bot that plays Tron against other bots; and the Code Lab. Once you have answered a few quick checks, Review appears too, with the number of questions due today. The circle at the right switches between light and dark.', place: 'bottom' },
+    { route: '#/', target: '.top-links', title: 'The top bar', text: 'From any page: Courses lists every course by group, with a search box; Algorithms shows searching, sorting, mazes, game search and puzzles in motion, with races to bet on; Real world says where each idea is used in software, security and engineering; Arena is where you write a bot that plays Tron against other bots; Showcase shows finished student projects; and the Code Lab. Once you have answered a few quick checks, Review appears too, with the number of questions due today. The circle at the right switches between light and dark.', place: 'bottom' },
     { route: '#/', target: '.backup', title: 'Your work', text: 'Exercises you pass and programs you write stay on this device. Save them to a file here to keep them safe or carry them to another computer, and restore them from the file later.', optional: true },
     { route: '#/python/1', target: '.lesson-map', title: 'Inside a lesson', text: 'Every lesson has the same parts: a short true story, numbered sections, runnable examples, quick checks, graded exercises and a recap. This map jumps to any of them, and the list on the side follows you as you read.' },
     { route: '#/python/1', target: '.blk-play', title: 'Examples run here', text: 'Press Run and the program runs in the page. Change something and run again; Reset puts it back. Open in Code Lab copies it into your own workspace.', place: 'top' },
@@ -48476,14 +48476,14 @@ public class Main {
     const list = projects();
     return el('main', { class: 'home showcase' },
       el('h1', {}, 'Student Showcase'),
-      el('p', { class: 'showcase-lede' }, 'Projects made by students who learned with these courses, shared with their permission. Each one is real code: read it, run it, and open a copy in the Code Lab to change it.'),
+      list.length ? el('p', { class: 'showcase-lede' }, 'Projects made by students who learned with these courses, shared with their permission. Each one is real code: read it, run it, and open a copy in the Code Lab to change it.') : null,
       list.length
         ? el('ul', { class: 'showcase-grid' }, list.map((p) => el('li', {}, el('a', { class: 'showcase-card', href: '#/showcase/' + p.id },
           el('span', { class: 'sc-lang' }, LANG_NAMES[p.lang] || p.lang),
           el('span', { class: 'sc-title' }, p.title),
-          el('span', { class: 'sc-by' }, 'by ' + p.name + (p.grade ? ' · ' + gradeText(p.grade) : '')),
-          p.note ? el('span', { class: 'sc-note' }, p.note.length > 150 ? p.note.slice(0, 147).replace(/\s+\S*$/, '') + '…' : p.note) : null))))
-        : el('p', { class: 'showcase-empty' }, 'No projects here yet.'));
+          el('span', { class: 'sc-by' }, 'by ' + p.name + (p.grade ? ' \u00b7 ' + gradeText(p.grade) : '')),
+          p.note ? el('span', { class: 'sc-note' }, p.note.length > 150 ? p.note.slice(0, 147).replace(/\s+\S*$/, '') + '\u2026' : p.note) : null))))
+        : el('p', { class: 'showcase-empty' }, 'Nothing here yet.'));
   }
 
   function project(el, p) {

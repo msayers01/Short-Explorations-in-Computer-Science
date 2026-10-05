@@ -18,14 +18,14 @@
     const list = projects();
     return el('main', { class: 'home showcase' },
       el('h1', {}, 'Student Showcase'),
-      el('p', { class: 'showcase-lede' }, 'Projects made by students who learned with these courses, shared with their permission. Each one is real code: read it, run it, and open a copy in the Code Lab to change it.'),
+      list.length ? el('p', { class: 'showcase-lede' }, 'Projects made by students who learned with these courses, shared with their permission. Each one is real code: read it, run it, and open a copy in the Code Lab to change it.') : null,
       list.length
         ? el('ul', { class: 'showcase-grid' }, list.map((p) => el('li', {}, el('a', { class: 'showcase-card', href: '#/showcase/' + p.id },
           el('span', { class: 'sc-lang' }, LANG_NAMES[p.lang] || p.lang),
           el('span', { class: 'sc-title' }, p.title),
-          el('span', { class: 'sc-by' }, 'by ' + p.name + (p.grade ? ' · ' + gradeText(p.grade) : '')),
-          p.note ? el('span', { class: 'sc-note' }, p.note.length > 150 ? p.note.slice(0, 147).replace(/\s+\S*$/, '') + '…' : p.note) : null))))
-        : el('p', { class: 'showcase-empty' }, 'No projects here yet.'));
+          el('span', { class: 'sc-by' }, 'by ' + p.name + (p.grade ? ' \u00b7 ' + gradeText(p.grade) : '')),
+          p.note ? el('span', { class: 'sc-note' }, p.note.length > 150 ? p.note.slice(0, 147).replace(/\s+\S*$/, '') + '\u2026' : p.note) : null))))
+        : el('p', { class: 'showcase-empty' }, 'Nothing here yet.'));
   }
 
   function project(el, p) {

@@ -154,7 +154,7 @@ Hash routes; a `?query` after the path is split off first.
 | `#/courses` | every course in groups (`COURSE_GROUPS` in app.js; a course in no group is listed under "More courses"), with a search box |
 | `#/algorithms`, `#/algorithms/<demo-id>` | Algorithms in motion: the index of demos, or one demo (§9g) |
 | `#/arena`, `#/arena/tournament`, `#/arena?bot=` / `?replay=` | Bot Arena: write a bot that plays Tron; the teacher's tournament; a shared bot or replay (§9j) |
-| `#/showcase`, `#/showcase/<id>` | Student Showcase: projects from `showcase/`, only once there is one (§9l) |
+| `#/showcase`, `#/showcase/<id>` | Student Showcase: projects from `showcase/`; "Nothing here yet." while there is none (§9l) |
 | `#/real-world`, `#/real-world/<topic-id>` | where the ideas of the courses are used, scrolled to a topic (§9g) |
 | `#/standards`, `#/standards/<code>` | the CSTA and Minnesota standards with the lessons that address them, scrolled to one standard (§9k) |
 | `#/<course>` | course page (audience, outcomes, "Your skills" once started (§9i), lesson list with progress) |
@@ -959,8 +959,7 @@ publishes, a project is rebuilt into `dist/index.html`, so adding one is a commi
   .txt/.md); control characters are stripped and line endings normalised. Everything is drawn as text (`el()` children, `highlight()` which escapes).
 - **Running** uses `runCell` as a lesson's example does (Python, Java, C++, Scheme; Java files joined by `JPROJ.join`), so the same sandboxes and limits apply.
   C has no runner outside the Code Lab, so a C project offers only "Open a copy in the Code Lab". `LAB.openCode` copies the main file only.
-- **No project, no page.** `SHOWCASE.count()` is zero until a folder exists: the top bar has no Showcase link, the home page has no link and
-  `#/showcase` falls through to the usual not-found. The tour's top-bar step does not mention Showcase: add it there when the first project is published.
+- **Always visible.** The top bar and home page link to `#/showcase` whether or not a project exists; the empty gallery says only "Nothing here yet."
 - Not done: images or screenshots for projects that draw (turtle runs in the page as in a lesson), a search or filter by language, projects in backups
   (they are the owner's content, not a visitor's), and a check that a project actually runs in the build (the author has to).
 

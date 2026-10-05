@@ -1,7 +1,7 @@
 # Student Showcase
 
-Each folder here is one student project, shown at `#/showcase/<folder-name>` and on the gallery `#/showcase`. The top bar gets a
-"Showcase" link as soon as there is one project. Folders whose name starts with `_` or `.` are ignored (use `_drafts/`).
+Each folder here is one student project, shown at `#/showcase/<folder-name>` and on the gallery `#/showcase`. The top bar always has a
+"Showcase" link; with no project the page says "Nothing here yet." Folders whose name starts with `_` or `.` are ignored (use `_drafts/`).
 
 ## Adding a project
 
