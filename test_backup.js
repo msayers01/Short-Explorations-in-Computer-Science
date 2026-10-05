@@ -8,7 +8,7 @@ const store = (init) => { const m = new Map(Object.entries(init || {})); return 
 const J = JSON.stringify;
 
 const progress = { done: { 'py-1-1': 1000, 'py-2-1': 2000 }, code: { 'py-1-1': 'print(1)', 'py-3-1': 'draft' }, pass: { 'py-1-1': 'print(1)' } };
-const lab = { lang: 'scheme', files: { python: [{ name: 'main.py', code: 'print("hi")' }, { name: 'ex.py', code: 'x = 1', ex: { id: 'py-1-1', course: 'python', lesson: 1 } }], cpp: [], java: [], scheme: [{ name: 'main.scm', code: '(+ 1 2)' }] }, active: { python: 1, cpp: 0, java: 0, scheme: 0 }, fontSize: 18, wrap: true, panels: { ref: true } };
+const lab = { lang: 'scheme', files: { python: [{ name: 'main.py', code: 'print("hi")' }, { name: 'ex.py', code: 'x = 1', ex: { id: 'py-1-1', course: 'python', lesson: 1 } }], cpp: [], c: [{ name: 'main.c', code: '#include <stdio.h>\nint main(void) { puts("hi"); return 0; }\n' }], java: [], scheme: [{ name: 'main.scm', code: '(+ 1 2)' }] }, active: { python: 1, cpp: 0, c: 0, java: 0, scheme: 0 }, fontSize: 18, wrap: true, panels: { ref: true } };
 const portfolio = { name: 'Ada', note: 'my work', unfinished: true, tasks: false, lab: ['python/main.py'] };
 const asg = { id: 'abcd2345', v: 1, title: 'Sum', lang: 'python', text: 't', starter: 's', tests: [{ k: 'stdin', in: '1 2', expect: '3', hidden: true }, { k: 'stdin', in: '2 2', expect: '4', hidden: false }], hints: ['h'], roster: ['Ann'], author: 'T', due: 'Fri', created: 5 };
 const teach = { teacher: true, name: 'Ms T', studentName: 'Ada', assignments: { abcd2345: asg }, book: { abcd2345: { Ann: { name: 'Ann', at: 10, code: 'print(3)', reviewed: 20, title: 'Sum', claimed: { passed: 1, total: 2 }, result: { passed: 2, total: 2, hiddenPassed: 1, hiddenTotal: 1, results: [{ name: 't', ok: true, expected: '3', got: '3' }], error: null } } } }, received: { zzzz9999: Object.assign({}, asg, { id: 'zzzz9999' }) } };
@@ -29,7 +29,7 @@ check('hidden tests are never in a received assignment', withT.data.teach.receiv
 
 // ---- round trip: replace into an empty device gives back the same work
 const parsed = BACKUP.parse(J(withT));
-check('summary counts', parsed.summary.exercises === 2 && parsed.summary.programs === 3 && parsed.summary.received === 1 && parsed.summary.assignments === 1 && parsed.summary.submissions === 1 && parsed.summary.hasTeacher, parsed.summary);
+check('summary counts', parsed.summary.exercises === 2 && parsed.summary.programs === 4 && parsed.summary.received === 1 && parsed.summary.assignments === 1 && parsed.summary.submissions === 1 && parsed.summary.hasTeacher, parsed.summary);
 const s2 = store();
 BACKUP.apply(s2, parsed.data, 'replace');
 check('progress round trip', J(s2.dump('shortcourses.progress.v1')) === J(progress), s2.dump('shortcourses.progress.v1'));
@@ -135,6 +135,27 @@ check('broken storage does not throw', Object.keys(BACKUP.collect(broken, { teac
   }
 }
 
+// ---- C in the Lab: its files, its standard and its arguments survive a backup; hostile values do not
+{
+  const labC = Object.assign({}, lab, { lang: 'c', cStd: 'gnu23', args: { c: 'one "two words"' }, active: Object.assign({}, lab.active, { c: 1 }), files: Object.assign({}, lab.files, { c: lab.files.c.concat([{ name: 'list.c', code: 'int main(void) { return 0; }' }]) }) });
+  const sc = store(); BACKUP.apply(sc, BACKUP.parse(J({ app: 'short-explorations-backup', v: 1, saved: new Date().toISOString(), data: { lab: labC } })).data, 'replace');
+  const d = sc.dump('shortcourses.lab.v1');
+  check('C: the language, files, active tab, standard and arguments survive a backup', d.lang === 'c' && d.files.c.length === 2 && d.files.c[1].name === 'list.c' && d.active.c === 1 && d.cStd === 'gnu23' && d.args.c === 'one "two words"', d);
+  for (const evil of ['c++20', 'gnu++17', 'c99 -fplugin=x', 23, {}, null, '__proto__', 'gnu17']) {   // gnu17 is the default, so it is not written
+    const sh = store(); BACKUP.apply(sh, BACKUP.parse(J({ app: 'short-explorations-backup', v: 1, saved: new Date().toISOString(), data: { lab: Object.assign({}, lab, { cStd: evil }) } })).data, 'replace');
+    check('C: standard ' + J(evil) + ' is not kept', !('cStd' in sh.dump('shortcourses.lab.v1')), sh.dump('shortcourses.lab.v1'));
+  }
+  const hostile = '{"app":"short-explorations-backup","v":1,"saved":"2026-01-01T00:00:00Z","data":{"lab":{"lang":"c","files":{"c":[{"name":"<script>.c","code":"int main(void){}","ex":{"id":"__proto__"}},{"name":"","code":"x"},{"name":"a.c","code":7},"str",null],"python":[]},"active":{"c":-3},"args":{"c":"a\\u0000b\\nc"}}}}';
+  const sh = store(); BACKUP.apply(sh, BACKUP.parse(hostile).data, 'replace');
+  const h = sh.dump('shortcourses.lab.v1');
+  check('C: hostile files are dropped or cleaned, the index repaired, the arguments one line', h.lang === 'c' && h.files.c.length === 1 && h.files.c[0].name === '<script>.c' && !('ex' in h.files.c[0]) && h.active.c === 0 && h.args.c === 'a b c', h);
+  // merge: a C file from the backup is added beside the one here
+  const mine = store({ 'shortcourses.lab.v1': J(Object.assign({}, lab, { cStd: 'gnu99', files: Object.assign({}, lab.files, { c: [{ name: 'main.c', code: 'local' }] }) })) });
+  BACKUP.apply(mine, BACKUP.parse(J({ app: 'short-explorations-backup', v: 1, saved: new Date().toISOString(), data: { lab } })).data, 'merge');
+  const m = mine.dump('shortcourses.lab.v1');
+  check('C: merging keeps the C file here and adds the backup\'s under another name, and the standard here', m.files.c.map((f) => f.name).join() === 'main.c,main-restored.c' && m.files.c[0].code === 'local' && m.cStd === 'gnu99', m.files.c);
+}
+
 // ---- the Lab's program arguments: kept through a backup, hostile values dropped
 {
   const labA = Object.assign({}, lab, { args: { python: 'one "two words"', java: 'x' } });
@@ -196,5 +217,11 @@ check('broken storage does not throw', Object.keys(BACKUP.collect(broken, { teac
   check('at most 60 arena bots are restored', many.length === 60);
   check('a file whose arena part is junk adds nothing', ['nope', [], 5].every((junk) => { const o = J({ app: 'short-explorations-backup', v: 1, saved: 'x', data: { progress: { done: { 'py-1-1': 1 } }, arena: junk === 'nope' ? { bots: 'nope' } : junk } }); return !('arena' in BACKUP.parse(o).data); }));
 }
+// ---- the Code Lab's file history (shortcourses.labhistory.v1) and its side-by-side setting stay on the device (ARCHITECTURE §7)
+{ const s = store({ 'shortcourses.lab.v1': J(Object.assign({}, lab, { split: true })), 'shortcourses.labhistory.v1': J({ v: 1, files: { python: { 'main.py': [{ t: 1, why: 'run', code: 'old' }] } } }) });
+  const f = BACKUP.collect(s, {});
+  check('the file history is not in a backup', !J(f).includes('labhistory') && !J(f).includes('"old"') && !('split' in f.data.lab), Object.keys(f.data));
+  const t = store(); BACKUP.apply(t, BACKUP.parse(J({ app: 'short-explorations-backup', v: 1, saved: 'x', data: { lab, labhistory: { v: 1, files: { python: { 'main.py': [{ t: 1, code: 'x' }] } } } } })).data, 'replace');
+  check('a backup cannot write a file history', t.getItem('shortcourses.labhistory.v1') === null); }
 if (bad) { console.log(bad + ' problems'); process.exit(1); }
 console.log('backup OK');

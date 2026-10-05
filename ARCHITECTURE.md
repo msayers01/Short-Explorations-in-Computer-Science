@@ -93,6 +93,7 @@ site/
     mathgrade.js         grader for non-code exercise kinds → window.MATHGRADE (shared with tests)
     app.js               router, pages, course editor, runners, grader, progress, widgets glue
     lab.js               Code Lab page → window.LAB
+    labhistory.js        the Code Lab's file history, line diff and find in all files (pure) → window.LABHIST; node: test_labhistory.js (§9)
     shell.js             the practice shell and its file system → window.SHELL (also required by node tests and backup.js) (§9f)
     shellgit.js          the practice git, registered into the shell with SHELL.register → window.SHELLGIT; node: test_git.js (§9f)
     terminal.js          the terminals in front of shell.js: the Code Lab panel, lesson examples and shell exercises → window.TERMINAL (§9f)
@@ -235,6 +236,7 @@ lesson 7 has `ma-13-1/2`, and lessons 8–13 have `ma-7-*` … `ma-12-*`.
 | `shortcourses.progress.v1` | app.js `Progress` | `{ done: {exId: timestamp}, code: {exId: savedCode or JSON answers}, pass: {exId: the code/answers that passed} }`; `markDone(id, code)` fills `pass` (for records without `pass`, the portfolio falls back to `code`, then to a Lab copy). A math exercise's answers are saved as `JSON.stringify` of one entry per input; a choice exercise therefore saves `[[indices]]` |
 | `shortcourses.theme` | app.js | `'light'` / `'dark'` |
 | `shortcourses.lab.v1` | lab.js | `{ lang, files: {python:[…], cpp:[…], java:[…], scheme:[…]}, active: {lang: idx}, fontSize, wrap, panels }`; a file is `{ name, code, ex?: {id, course, lesson}, asg?: assignmentId, asgSeen?, lastCheck? }` |
+| `shortcourses.labhistory.v1` | lab.js via `labhistory.js` | `{ v: 1, files: { lang: { fileName: [{ t, why, code }] oldest first } } }`; `why` is a key of `LABHIST.WHY` (run, edit, opened, restore, replace, reset, terminal). Caps: 30 versions a file, 400 000 characters of code in all (the oldest version anywhere goes first), 100 000 a version, 400 files; a text is stored once per file. Read through `LABHIST.clean` (null-prototype maps, names and languages checked). **Not in backups**: it is a cache of earlier versions of files whose current text is in the file already, it would add up to 400 KB to every backup, and merging two histories has no clear rule; "Reset the Code Lab" clears it |
 | `shortcourses.portfolio.v1` | portfolio.js | `{ name, note, unfinished, tasks, lab: ["<lang>/<file name>", …] }` (name starts as teach's `studentName` if set) |
 | `shortcourses.classroom.v1` | classroom.js | `{ on, scale: index into [1.1, 1.25, 1.4, 1.6, 1.8], spot }` |
 | `shortcourses.review.v1` | review.js | `{ v: 1, items: { id: { box 0-4, due, n, miss, last } } }`; id = `<course id>:<FNV-1a hash of the question and options, base 36>`; in the backup file (merge: the copy answered last wins) |
@@ -340,6 +342,25 @@ button and every Scheme playground not marked `expectError` a "Show the substitu
   the program's name. JSCPP calls `main` with no parameters, so C++ has none. The output panel's title bar (opt-in `outputPanel({tools})`) has
   Copy, Wrap (kept as `S.outWrap`) and Clear; Ctrl+G opens a go-to-line bar; the Shortcuts button under the editor lists every key (`KEYS_HTML`,
   kept in step with the keydown handlers).
+- **File history** (the **History** button under the editor; `src/labhistory.js`, pure, `test_labhistory.js`): versions of each file under
+  their own key (§7), keyed by language and file name: `rename` moves them with the file (the Lab's Rename), closing a tab or `rm` in the
+  terminal's `~/lab` drops them (a terminal `mv` is a remove and an add, so it loses the history). Lab.js `snapshot(l, f, why)` is called on Run,
+  after 30 s without typing (`histEdit`/`histFlush`; typing in another file keeps the first at once), at a file's first change in a visit
+  (`opened`: the text as it was), and before Restore, Replace all (one file or all), the teacher tools' Reset to starter / Put the starter
+  in the editor (`ctx.setCode`) and a terminal write-back. Templates, Open and share links make new tabs, so they replace nothing. The panel
+  lists the versions newest first and draws `LABHIST.diff` (an LCS line diff after trimming the common start and end; a middle larger than
+  4 million line pairs is shown as all removed then all added; lines compare with their newline, so a missing final newline is a change and
+  says so) folded by `hunks` to three lines of context, as text nodes. Restore goes through `editor.replaceRange`, so Ctrl+Z undoes it and the
+  usual change handling runs. **Compare files** in the same panel diffs any two tabs of the language.
+- **Find in all files** (Ctrl+Shift+F in the editor or anywhere on the page, the **Search files** button, or **In all files** in the find bar):
+  `LABHIST.search` over every tab of the language or of all (match case, whole word: no word character beside an end that is one; at most
+  1000 matches); a result opens its tab (switching language if needed) with the match selected, or at its line if the text has changed
+  since. Replace all is armed (`armConfirm`, with the count), keeps each changed file's text in its history first, and goes through the
+  editor for the current file (undoable) and straight into the others.
+- **Side by side** (`S.split`, a display choice of this device: `backup.js: cleanLab` leaves it out): `.lab-work` holds the editor area and
+  `.lab-outcol` (verdict, arguments, input, output, terminal, step-throughs, turtle, REPL); `.split` makes them two grid columns. `applySplit`
+  (a `ResizeObserver` on the main column) adds it only while that column is at least 860 px wide, so a narrow window or an open side panel
+  puts the panels back under the editor without changing the setting.
 - Bars above the editor: exercise bar (file has `ex`), assignment bar (file has `asg`), teacher panel.
 - `teach.js` is mounted with a `ctx` object: `{ el, S, save, editor, armConfirm, isTouch, grade,
   renderVerdict, status, renderToolbar, openAssignmentFile, openReviewFile }` and returns
@@ -486,6 +507,35 @@ with `runtime: 'full'` (SC 105); an exercise inherits `runtime` from its course 
   that reads the test's number from the first line of stdin (so a whole exercise is one compile); compile errors are moved back by the
   lines the harness put before the student's code. Exercises of a full course do not mix call tests with whole-program tests.
 - **Standard.** With Full C++ the Lab shows a C++17 / 20 / 23 picker (`S.cppStd`, default `gnu++20`, saved in the Lab state and in back-ups); the worker accepts only `gnu++11`…`gnu++23`. Checks of exercises and assignments always use the default, so a student's choice cannot change a result.
+- **C.** The Code Lab's fifth language (`LANG_INFO.c`, first file `main.c`) is the same compiler run as C: the worker's `run` message takes
+  `lang: 'c'` (compiled as `main.c` with `language: 'C'`), the same download and the same agreement (`fullCpp()` in app.js words the box for
+  C; `Runners.c`). There is no teaching engine and no stepper for C. Standards: the Lab's picker offers C99 / C11 / C17 / C23 as the GNU
+  dialects `gnu99`…`gnu23` (`S.cStd`, default `gnu17`, saved and backed up as `cStd`), because strict `-std=c17` hides POSIX names students use
+  (`M_PI`, `strdup`); the terminal's `gcc -std=c99` passes the strict one, as gcc would (`stdFor` in the worker accepts `c|gnu` with 89…23 and
+  nothing else). The worker appends three lines AFTER the student's code (`C_TAIL`, so no line number moves): a constructor that makes
+  stdout unbuffered, as a terminal shows it (otherwise `printf("Name? ")` would still be in the buffer when `scanf` reads, and typed input
+  would ask before the question is on screen), and a `clock()`, which wasi-libc leaves out (no process clock in WASI), counting from the
+  program's start. A student's own function named `clock` or `setvbuf` would clash with it; nothing in the courses does that. `argv` is
+  passed (`args`, `argv0`: the Arguments box, or the words after `./prog` in the terminal); the worker sends what is printed in pieces of at
+  most 4 KB or 50 ms, and all of it before each read, since unbuffered output would otherwise be one message per `putchar`.
+- **Typed input for C** (`clangTyped` in runner.js; `typedInput` and `replayed` in clangworker.js). The compiler's worker cannot wait for the
+  page either, so C uses the replay of Java and the teaching C++: a read past the lines typed so far throws out of the stdin callback, the run
+  ends with `needInput`, the page asks, and the program runs again from the start with one more line; the first `skip` characters of output
+  are not sent again. It works because the build is cached by source (`lastGood`), so a replay costs milliseconds, and because a replay can be
+  made to see what the run before it saw: `rand()` starts from the same seed in every run, and while a typed run goes on the program's WASI
+  `clock_time_get` and `random_get` are wrapped (the only module instantiated with WASI imports then is the student's), so `time()` follows a
+  clock that reaches each line's time as it is read (`srand(time(0))` picks the same numbers in every replay) and `getentropy` gets bytes from
+  the run's seed. Compiler warnings are shown once, from the first run. Full C++ keeps reading its input before it starts (the Input box).
+- **Errors in C.** `LABUTIL.errorLine('c', …)` takes the first `main.c:N:C: error` line (a warning may come first), so the editor marks and
+  "go to line" work for the current tab whatever its name; the terminal's `gcc` rewrites `main.c:` to the file's own name, as gcc prints it.
+  `TIPS.c` in app.js explains the common clang C errors (a missing `#include`, a function used before it is declared, `.` for `->`, `=` on an
+  array, a missing `&` in `scanf`, undefined symbols) and the run-time crashes. C does not check array indexes, so an out-of-range write may
+  go on silently; only a wild pointer or `abort()` stops the program.
+- **The terminal's C.** `gcc`, `cc` and `clang` compile a `.c` as C (`bin.lang 'c'`, with the standard it was built with); `g++` and
+  `clang++` compile any file as C++, as the real drivers do, so `g++` on a `.cpp` is unchanged. `./prog` runs the source again through
+  `Runners.c` (compiled once: the worker still has that build), with typed input from the keyboard or the pipe or file it is given.
+  `test_c.js` runs the real worker in node's `worker_threads` with the node build of the toolchain (output, argv, exit status, compile
+  errors, C99 refusing C23, typed replay with `srand(time(0))`), and drives the shell's `gcc` with stub hooks.
 - **Security of Full C++** (reviewed once; `test_browser.js` §7b and `test_security.js` §5 keep these true):
   - *What a program can reach.* It is WebAssembly with only WASI imports on a private in-memory file system that is new for every run (nothing is
     written from one run, or one program, to the next; there is no host file, socket or environment). It runs in a blob worker, so no DOM,
@@ -607,10 +657,48 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   (also ends a `source`d script). Nesting stops at `FUNCNEST` or `LIMITS.funcDepth` (500) with bash's message, `f: maximum function nesting
   level exceeded (500)`; the step limit still bounds the work. `type f` and `declare -f` print the body in bash's own layout (`printFunc`:
   four spaces a level, `;` after each command inside `if`/`for`/`while`, `elif` as `else` + `if`), from the words as typed (tokens keep `raw`).
-- **Arrays** (indexed only): `sh.arrays[name] = { v: sparse JS array, n, bytes }`; a name is a variable or an array, not both (`$a` is
-  `${a[0]}`, `a[1]=x` turns a variable into an array). `a=(…)`, `a+=(…)`, `a[i]=x`, `${a[i]}` (i is arithmetic, negative counts from the end),
+- **Arrays**: `sh.arrays[name] = { v: sparse JS array, n, bytes }`; a name is a variable or an array, not both (`$a` is
+  `${a[0]}`, `a[1]=x` turns a variable into an array). `a=(…)`, `a=([3]=x y)`, `a+=(…)`, `a[i]=x`, `${a[i]}` (i is arithmetic, negative counts from the end),
   `${a[@]}`/`"${a[@]}"`/`${a[*]}`, `${#a[@]}`, `${#a[i]}`, `${!a[@]}`, `${a[@]:from:len}`, `unset 'a[i]'`, `declare -a`/`-p`, `local -a`,
-  `read -a`. Capped at `LIMITS.array` (10 000) values and 4 × `LIMITS.vars` characters each: past that the line stops with a message.
+  `read -a`, `mapfile`/`readarray` (-t -n -s -O -d). Capped at `LIMITS.array` (10 000) values and 4 × `LIMITS.vars` characters each (keys
+  included): past that the line stops with a message. **Associative** ones (`declare -A`, `local -A`): `{ assoc: true, v: null-prototype
+  dictionary, b: buckets, nb }`, so `__proto__` or a key with spaces is an ordinary key; the key of `m[key]=v`, `${m[key]}` and `(( m[$w]++ ))`
+  is text, not arithmetic (`arith`'s `assocP`), and may not be empty (`bad array subscript`, with the subscript as typed). Keys come out
+  (`${!m[@]}`, `"${m[@]}"`, `declare -p m`) in **bash's own order**: `fnv` is bash's hash (FNV-1 over the key's UTF-8 bytes as signed chars),
+  1024 buckets, the newest key first in its bucket, four times the buckets once there are twice as many keys (hashlib.c), so the differential
+  tests compare the order itself (3000 keys included). `declare -A m=(a 1 b 2)` takes pairs; plain words among `[k]=v` ones get bash's "must
+  use subscript" message; converting between the two kinds is refused with bash's message; `declare -p` writes `declare -A m=([k]="v" )`
+  (keys quoted only when the shell would read them otherwise; values with control characters as `$'…'`, as bash does for any variable).
+  `unset 'm[@]'` removes the key `@` (bash 5.2). Not here: `m[a b]=x` without quotes (bash reads the brackets of an assignment as one word;
+  here quote the key), `${!m[@]:0:2}`.
+- **Here-documents** (`tokenize`: `pending`, `readBodies`): `<<WORD` (and `<<-WORD`, leading tabs removed) waits for the end of its line; the
+  lines after it, up to a line that is exactly WORD, are its text, so several on one line take their texts in order, and they work in functions
+  (`declare -f` prints the text after the command, as bash does), loops, `$(…)` and scripts. A quoted WORD (any of `' " \`) keeps the text as it
+  is; otherwise `hereParts` reads it like the inside of `"…"` (a `"` is only a character; `\` before a newline joins lines). The redirection
+  carries the record (`r.hd`); stdin is the text, expanded each time the command runs. With no line holding WORD the text runs to the end
+  with bash's "warning: here-document at line N delimited by end-of-file (wanted \`WORD')", given through the parser's `warn` as the command is
+  read (in a script: `name: line LAST:`). **At the prompt** (`io.tty` with `io.ask`), `sh.exec` asks for more lines with `> ` while the
+  tokenizer says a here-document is still open (`toks.open`; the terminal shows a hint in the placeholder: `ask(prompt, hint)`), Ctrl+D ends
+  it (the warning), Ctrl+C cancels (`^C`, 130), at most 10 000 lines and 256 KB; the history keeps the first line only (the command line
+  cannot hold the others). `<<< word`: the word expanded (not split, no wildcards) and a newline. A lesson example's terminal runs its lines one
+  by one, so a here-document there would wait for the student: write such an example as a script file. Not here: a here-document inside
+  `$(…)` whose text has an unmatched `'` or `)` (the `$(…)` reader does not know about here-documents).
+- **`[[ … ]]`** (`condExpr` in the parser, `condEval`): `== = !=` with a pattern on the right (quoted parts literal, `~` expanded), `< >` on
+  text, `=~` with a POSIX extended expression (`posixRegex`; quoted parts literal; the tokenizer reads the expression as one word, `( ) |` and
+  spaces inside brackets included) setting `BASH_REMATCH`, `-eq -ne -lt -le -gt -ge` on arithmetic (`[[ x+1 -eq 2 ]]`; an error says
+  `bash: [[: …` and that test is false), `-nt -ot -ef`, the unary tests of `test` plus `-v name`/`-v a[i]`, `&& || ! ( )`, newlines after `&&`
+  and `||`, no splitting or globbing. A regular expression that does not compile gives status 2. Syntax errors are bash's own, line by line:
+  what was wrong ("conditional binary operator expected", "unexpected argument ]] to conditional unary operator", …), then "syntax error near
+  X", where X is the word at fault or the operator after it (bash's reader has looked one token ahead), an operator showing its last
+  character. Leftmost-longest matching (POSIX) is not copied: `a|ab` matches as JavaScript does.
+- **Syntax errors in a script** (`synText`): run as a script (not typed at the prompt), bash follows a "near" error with the line itself
+  (bash: \`[[ a b ]]'); so does this shell now. An error token at the end of the text is `newline`, as in bash.
+- **Smaller pieces** (October 2026): `read` splits by `IFS` as bash does (whitespace runs, one other separator, the last name takes the rest
+  unless it is one word), handles backslashes unless `-r` (and joins a line ending in one), returns 1 at the end of the input with the partial
+  line assigned (`while read -r l || [[ -n $l ]]`), `-d C`, `-n N`; `printf -v NAME` (also `NAME[i]`, `m[key]`); `$'…'` (escapes) and `$"…"`;
+  `${x@Q} @E @U @L @u @a` (also on `${a[@]}`); `$RANDOM` is bash 5.2's generator (Park-Miller, halves XORed, no repeat), so `RANDOM=42`
+  gives bash's numbers (difftest checks it); unseeded it starts from the clock; `$SECONDS` (and `SECONDS=n`); `shopt -s nullglob`,
+  `failglob` (`no match: …`, the line stops), `dotglob`, `-p`, `-q`; a script's `shopt` changes end with it.
   Assignments are no longer split or globbed (`x=*`, `x=$(ls)` keep their text, as in bash); `local`/`declare`/`export` arguments neither.
 - **Aliases** (`alias`, `unalias [-a]`, `type`): expanded when a line is parsed, at the start of a command, not again inside their own text,
   a text ending in a space making the next word a candidate too; capped at 100 aliases of 1000 characters and 10 000 tokens of expansion
@@ -689,10 +777,32 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   (-m -a --amend --allow-empty), log (--oneline -n --all -p --stat --format --decorate, paths), diff (worktree, --staged, commits, --stat,
   --name-only, `diff --cc` during a conflict), show (commit, tag, `rev:path`), branch (-d -D -m -v), switch / checkout (-b, --detach,
   `-- paths`, --ours/--theirs/-m), merge (fast-forward, --no-ff, --ff-only, three-way with diff3 "zealous" conflicts, add/add and
-  modify/delete, --abort, --continue), reset (--soft --mixed --hard, paths), tag (lightweight and -a -m), config (--global in
-  `~/.gitconfig`), reflog, ls-files, cat-file, rev-parse, gc, help. Messages, exit statuses and formats are git 2.43's, checked against the
-  real one (`node test_git.js --real`); ids are real SHA-1s of git's serialization, so with the same name, email and time a commit has the
+  modify/delete, --abort, --continue, --quit), reset (--soft --mixed --hard, paths), tag (lightweight and -a), stash (push -m -u/-a, save,
+  list, show -p -u, pop, apply, drop, clear; `stash@{n}` and `stash` as revisions), revert and cherry-pick (one commit; -x, -e/--no-edit,
+  conflicts, --continue --abort --skip --quit, "Reapply" for a revert of a revert), log --graph (with --oneline, --format, --all, -n),
+  blame (-s -e, a revision, the working tree's uncommitted lines as `00000000 Not Committed Yet`), clean (-n -f -d -x -X, pathspecs,
+  `clean.requireForce`), config (--global in `~/.gitconfig`), reflog, ls-files, cat-file, rev-parse, gc, help. Messages, exit statuses and
+  formats are git 2.43's, checked against the real one (`node test_git.js --real`, which also draws eight random histories with
+  `--graph` both ways); ids are real SHA-1s of git's serialization, so with the same name, email and time a commit (or a stash) has the
   same id as in real git. Dates come from the shell's clock (`now`), in the browser's time zone.
+  - **The editor.** Where git would start `$EDITOR`, the practice git calls the shell's `sh.hooks.nano(title, text, write)` (the terminal's
+    nano, `terminal.js`) on `.git/COMMIT_EDITMSG` (`MERGE_MSG` for a merge, `TAG_EDITMSG` for a tag) with git's template: the message so
+    far, "It looks like you may be committing a merge/cherry-pick", the "# Please enter the commit message..." lines, `# Author:` and
+    `# Date:` when git shows them (amend, cherry-pick), and the status without its hints as `#` lines (`commitTemplate`). When the student
+    leaves, the file is read back and cleaned as git's `--cleanup=strip`; empty aborts with git's words. Used by `git commit` without -m
+    (and `--amend`, the conclusion of a merge or a pick), `git merge` when it makes a merge commit (unless -m or --no-edit; an empty
+    message leaves MERGE_HEAD for `git commit`, as git), `git revert` (unless --no-edit: git opens it at a terminal), `git cherry-pick -e`,
+    `git tag -a` without -m. A hook may answer the text instead of saving through `write` (the node tests' fake editor does). Without the
+    hook (node, a shell built without it) everything behaves as before: commit says to use -m, merge and revert take their message as is.
+  - **Stash, revert, cherry-pick** share the merge's three-way code (`threeWay`, `mergeWrites`, `writeMerge`): a stash's changes merge into
+    the index as it is now ("Updated upstream" / "Stashed changes"; then the index goes back to what it was, plus the new files), a
+    cherry-pick merges the commit into HEAD with its parent as the base, a revert the parent with the commit as the base. A stash entry is
+    git's three commits (the working tree, with HEAD, the index and, with -u, the untracked files as parents); `refs/stash` names the newest
+    and `logs/refs/stash` lists them all. An interrupted pick writes `CHERRY_PICK_HEAD` / `REVERT_HEAD` and `MERGE_MSG` as git does (one
+    commit at a time, so no `.git/sequencer`); `git status`, `git commit` (the picked commit's author is kept) and `git switch` (which
+    refuses during a merge, cherry-pick or revert, as git) know about them.
+  - **log --graph** is git's `graph.c` ported state for state (padding, skip, pre-commit, commit, post-merge, collapsing; no colours), over
+    git's `--topo-order` in "graph order" (a LIFO of ready commits, so a merge's second parent is drawn first). Not with paths, -p or --stat.
   - The repository is a `.git` directory in the virtual file system (so `ls -a`, `cat .git/HEAD` and `rm -rf .git` work as in real life):
     HEAD, config, description, refs/heads/…, refs/tags/…, logs/HEAD (the last 100 moves), MERGE_HEAD, MERGE_MSG, ORIG_HEAD as text like
     git's; the objects in **one JSON file**, `.git/objects.json` (`{"v":1,"objects":{id: ["blob", text] | ["tree", [[mode, name, id]…]] |
@@ -708,14 +818,22 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
     same way, every blob must exist, no path both a file and a directory. HEAD, refs, MERGE_HEAD and ORIG_HEAD must hold commit ids; a
     broken branch ref is skipped in lists. Config lines git would refuse stop every command, as in git. Dictionaries are null-prototype, so
     `__proto__` is an ordinary file or branch name. Damage gives `fatal: .git/<file> is damaged: <why>` with the hint that `rm -rf .git`
-    starts again (test_git.js has a hostile case for each).
-  - **Not here:** remotes (clone, push, pull, fetch, remote say there is no network), stash, rebase, cherry-pick, revert, blame, bisect,
-    clean; an editor for messages (`git commit` without `-m` says to use `-m`; a merge's own message is used); naming files on `git commit`;
-    rename detection other than exact (100%) renames; a merge commit's combined diff in `git show`; submodules (a nested repository's files
-    are just files).
-- **Not there (yet):** job control (`&`), `[[ ]]`, associative arrays in the shell (`declare -A`), here-documents and `<<<`, `select`, `ln`
-  (the file system has no links), `tar`, `ssh` and anything needing a network (those names answer with a sentence saying so), a Windows
-  `cmd`/PowerShell dialect (planned with the course).
+    starts again (test_git.js has a hostile case for each). The stash's files are checked the same way: every line of `logs/refs/stash`
+    must be `old new who<TAB>message` (at most 100 lines, which is also the most `git stash` keeps) naming a commit of a stash's shape, and
+    `refs/stash` must name the newest; `CHERRY_PICK_HEAD` and `REVERT_HEAD`, like `MERGE_HEAD`, count only when they hold a commit's id.
+    `git gc` keeps every stash entry and an interrupted pick's commit.
+  - **Not here:** remotes (clone, push, pull, fetch, remote say there is no network), rebase, bisect; revert or cherry-pick of several
+    commits, of a merge (-m) or without committing (-n); `git stash` with paths, -p, --index, --keep-index, `stash branch`; `git clean -i`;
+    `git restore -p` and the other interactive modes; `--graph` with paths, -p or --stat; `diff --word-diff`; blame following renames
+    (a line is the commit's where the file first has its name), `-L`, `--porcelain`; naming files on `git commit`; rename detection other
+    than exact (100%) renames; a merge commit's combined diff in `git show`; submodules (a nested repository's files are just files).
+    Known small differences from git: `blame`'s "Not Committed Yet" time is the shell's clock (git's is the moment you run it), and the
+    line diff is Myers' (git's xdiff can pick a different but equally short diff when lines repeat).
+- **Not there (yet):** job control (`&`), `select`, `eval`, `let`, `trap`, `getopts`, process substitution (`<(…)`), `>&2` and other fd
+  redirections, extended globs (`@(a|b)`, `shopt -s extglob`), `**` (`globstar`), `nocasematch`, `${!prefix*}` and namerefs, `ln` (the file system
+  has no links), `tar`, `ssh` and anything needing a network (those names answer with a sentence saying so), a Windows `cmd`/PowerShell dialect
+  (planned with the course). In a pipeline every part runs in this shell, so `… | read x` and `… | mapfile a` set the variable (bash runs them
+  in a subshell; a known difference).
 
 ## 9g. Algorithms in motion and Where it is used (`algos.js`, `algo_*.js`, `applied.js`)
 

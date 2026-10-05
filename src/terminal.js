@@ -1,6 +1,6 @@
 /* Terminals in front of the practice shell (src/shell.js), drawn like the output panel.
    Registered as window.TERMINAL:
-     mount(ctx)                    the Code Lab's Terminal panel (src/lab.js mounts it with { el, armConfirm, isTouch, Runners, isFull, cppStd, stop,
+     mount(ctx)                    the Code Lab's Terminal panel (src/lab.js mounts it with { el, armConfirm, isTouch, Runners, isFull, cppStd, cStd, stop,
                                    labFiles, addLabFile, labChanged, openInEditor, onClose }). Its file system is saved under shortcourses.shell.v1
                                    (only /home and /tmp; the system part is rebuilt), and ~/lab mirrors the Code Lab's files both ways.
      playBlock(b, course)          a lesson example in a shell course: the commands as a listing, Run types them into a live terminal below
@@ -11,13 +11,13 @@
   'use strict';
   const KEY = 'shortcourses.shell.v1';
   const LAB_DIR = '/home/student/lab';
-  const EXT = { '.py': 'python', '.cpp': 'cpp', '.cc': 'cpp', '.cxx': 'cpp', '.h': 'cpp', '.java': 'java', '.scm': 'scheme', '.ss': 'scheme', '.rkt': 'scheme' };
+  const EXT = { '.py': 'python', '.cpp': 'cpp', '.cc': 'cpp', '.cxx': 'cpp', '.h': 'cpp', '.c': 'c', '.java': 'java', '.scm': 'scheme', '.ss': 'scheme', '.rkt': 'scheme' };
   const langOf = (name) => { const m = name.match(/\.\w+$/); return m && Object.prototype.hasOwnProperty.call(EXT, m[0].toLowerCase()) ? EXT[m[0].toLowerCase()] : null; };
   const MAX_SCROLLBACK = 300000;   // characters kept on screen
   const A = () => window.__app.internal;
 
   /* ---------------- the panel ----------------
-     o: { fs, title, hooks: {edit?, setup?}, armConfirm, isFull?, cppStd?, stop?, before?(), after?(), onReset?() → fs, resetTitle, onClose?, persist?: key, history?: [] } */
+     o: { fs, title, hooks: {edit?, setup?}, armConfirm, isFull?, cppStd?, cStd?, stop?, before?(), after?(), onReset?() → fs, resetTitle, onClose?, persist?: key, history?: [] } */
   function makePanel(o) {
     const { el } = window.__h;
     const SHELL = window.SHELL;
@@ -56,9 +56,9 @@
     const setStatus = (cls, text) => { status.className = 'term-status' + (cls ? ' ' + cls : ''); status.textContent = text; };
     const setPrompt = () => { ps1.textContent = sh.prompt(); };
 
-    // program input: a prompt from input()/Scanner reuses the command line
+    // program input: a prompt from input()/Scanner reuses the command line, and so do a here-document's lines (prompt '> '; hint: the placeholder)
     let asking = null;   // { resolve, prompt }
-    const ask = (prompt) => new Promise((resolve) => { flush(); asking = { resolve, prompt: prompt || '' }; ps1.textContent = asking.prompt; inp.placeholder = 'the program is waiting for input (Ctrl+D: end of input)'; inp.focus(); });
+    const ask = (prompt, hint) => new Promise((resolve) => { flush(); asking = { resolve, prompt: prompt || '' }; ps1.textContent = asking.prompt; inp.placeholder = (hint || 'the program is waiting for input') + ' (Ctrl+D: end of input)'; inp.focus(); });
 
     // ----- running a line
     let running = false;
@@ -173,6 +173,10 @@
         const r = await R().java.run(src, { stdin: onInput ? null : (p.stdin == null ? '' : p.stdin), onOutput, onInput, args, mainClass: cls });
         return { err: proj ? window.JPROJ.mapError(proj, r.err) : r.err, exit: r.err ? (r.exit === 130 ? 130 : 1) : (r.exit || 0) };
       }
+      if (lang === 'c') {   // the real compiler, as C (cached: gcc compiled this source a moment ago); typed input as it asks, or the pipe or file
+        const r = await R().c.run(src, { stdin: onInput ? null : (p.stdin == null ? '' : p.stdin), onInput, std: p.std, args, argv0: typeof p.name === 'string' ? p.name : './a.out', onOutput, onNote: (s) => write(s + '\n', 'note'), host: box });
+        return { err: r.err, exit: r.err ? (r.err === 'Stopped.' ? 130 : (r.exit || 1)) : (r.exit || 0) };
+      }
       if (lang === 'scheme') { const r = await R().scheme.run(src, { onOutput }); return { err: r.error ? ';' + String(r.error).replace(/^;/, '') : null, exit: r.error ? 1 : 0 }; }
       if (lang === 'cpp') {
         if (p.std) { const r = await R().cppFull.run(src, { stdin: p.stdin == null ? '' : p.stdin, std: p.std, onOutput, onNote: (s) => write(s + '\n', 'note'), host: box }); return { err: r.err, exit: r.err ? 1 : (r.exit || 0) }; }
@@ -182,10 +186,19 @@
       return { err: lang + ': no way to run this here', exit: 126 };
     }
     // which programs take their input a line at a time as they ask; the shell collects the others' input before they start
-    function typedInput(lang, src, std) { return lang === 'java' || (lang === 'cpp' && !std && !/\b(scanf|getchar)\b/.test(src)); }
+    function typedInput(lang, src, std) { return lang === 'java' || lang === 'c' || (lang === 'cpp' && !std && !/\b(scanf|getchar)\b/.test(src)); }
     const stdOf = (s) => { const m = String(s || '').match(/(11|14|17|20|23)$/); return m ? 'gnu++' + m[1] : 'gnu++20'; };
+    // gcc's -std= for C: c99 / gnu11 / c18 (= c17) / c2x (= c23) …; null for something that is not a C standard (-std=c++20 given to a .c)
+    const cStdOf = (s) => { const m = String(s).match(/^(c|gnu|iso9899:)(89|90|99|11|17|18|2x|23)$/); return m ? (m[1] === 'gnu' ? 'gnu' : 'c') + ({ 90: '89', 18: '17', '2x': '23' }[m[2]] || m[2]) : null; };
     async function compile(lang, src, p) {
       if (lang === 'java') { const r = await window.JAVARUN.check(src); return { err: r.err }; }
+      if (lang === 'c') {   // C has only the real compiler; its messages say main.c, so they are given the file's own name, as gcc prints it
+        const std = p.std ? cStdOf(p.std) : ((o.cStd && o.cStd()) || 'gnu17');
+        if (!std) return { err: "error: invalid value '" + p.std + "' in '-std=" + p.std + "'\nnote: use 'c99', 'c11', 'c17' or 'c23' for C (or the 'gnu' ones: gnu17 …)" };
+        const name = typeof p.name === 'string' ? p.name : 'main.c', named = (t) => String(t).replace(/^main\.c:/gm, name + ':');
+        const r = await R().c.compile(src, { std, host: box }); if (r.notes) write(named(r.notes) + '\n', 'note');
+        return { err: r.err ? named(r.err) : null, std: r.err ? undefined : std };
+      }
       if (lang === 'cpp') {
         const wantFull = (o.isFull && o.isFull()) || !!p.std;
         if (wantFull && R().cppFull.available()) { const std = p.std ? stdOf(p.std) : ((o.cppStd && o.cppStd()) || 'gnu++20'); const r = await R().cppFull.compile(src, { std, host: box }); if (r.notes) write(r.notes + '\n', 'note'); return { err: r.err, std: r.err ? undefined : std }; }
@@ -307,7 +320,7 @@
     // setup NAME: the files of a lesson, into the home directory (src/shellgrade.js finds the lesson)
     const setup = (name, sh) => { const SG = window.SHELLGRADE; if (!SG) return null; const tree = SG.setupFor(name); if (!tree) return null; SG.populate(sh.fs, tree); sh.fs.cwd = SHELL.HOME; return 'the files for ' + name + ' are in your home directory now (you are there: ls to see them)'; };
     const panel = makePanel({
-      fs: SHELL.makeFS(saved && saved.fs), history: saved && saved.history, aliases: saved && saved.aliases, persist: KEY, armConfirm: ctx.armConfirm, isFull: ctx.isFull, cppStd: ctx.cppStd, stop: ctx.stop,
+      fs: SHELL.makeFS(saved && saved.fs), history: saved && saved.history, aliases: saved && saved.aliases, persist: KEY, armConfirm: ctx.armConfirm, isFull: ctx.isFull, cppStd: ctx.cppStd, cStd: ctx.cStd, stop: ctx.stop,
       hooks: { edit, setup }, before: syncIn, after: syncOut, onClose: ctx.onClose,
       onReset: () => { try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ } mirrored = new Set(); return SHELL.makeFS(null); },
       resetTitle: 'Forget every file and folder made in this terminal (the Code Lab files stay)',

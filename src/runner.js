@@ -10,7 +10,8 @@
    window.PYRUN.trace(code, {…, onStep}) → {done, next(), finish(), stop()}        window.PYRUN.cancel()
    window.CPPRUN.run(code, {stdin, onOutput, onInput, maxMs}) → Promise<{out, err}>    window.CPPRUN.trace(code, stdin) → Promise<{trace, err}>
    window.JAVARUN.run(code, {stdin, onOutput, onInput, maxMs, args, mainClass}) → Promise<{out, err}>     (the site's own Java interpreter, src/java.js; onInput without stdin: typed input)   window.JAVARUN.trace(code, stdin) → Promise<{result, err}>
-   window.CLANGRUN.run(code, {stdin, std, onOutput, onNote}) → Promise<{out, err, exit, notes}>   (real C++; see below: downloaded on demand)
+   window.CLANGRUN.run(code, {stdin, std, onOutput, onNote, lang, args, argv0, onInput}) → Promise<{out, err, exit, notes}>   (real C++, or C with lang 'c'; see below:
+                                                                  downloaded on demand; onInput without stdin: typed input, replayed as for Java)
    window.CLANGRUN.runMany(code, [stdin…]) → Promise<{err, parts:[{out, all, err, exit}]}>        compile once, run once for each input
    window.CPPRUN.check(code), window.JAVARUN.check(code), window.CLANGRUN.compile(code, {std}) → Promise<{err}>   compile only (the terminal's g++ and javac) */
 (function () {
@@ -206,15 +207,25 @@
     /** compile once, run once for each input in stdins → Promise<{out, err, parts:[{out, all, err, exit}], notes}>; err is the compiler's messages */
     // compiling gets 60 s (a heavy header such as <format> takes Clang 10 s or more on a slow machine); then the worker says so ('phase') and
     // the program gets 10 s plus 2 s for each input, counted from zero, so a loop that never ends is stopped as soon as before
-    runMany: (code, stdins, opts) => { opts = opts || {}; const n = stdins.length; return clang.run({ t: 'run', totalMs: 60000, idleMs: 60000, opts, payload: { code: String(code), stdins: stdins.map(String), std: opts.std, runMs: 10000 + 2000 * n } }); },
-    run: (code, opts) => { opts = opts || {}; return window.CLANGRUN.runMany(code, [opts.stdin == null ? '' : opts.stdin], opts).then((r) => Object.assign(r, { exit: r.parts[0] ? r.parts[0].exit : 0, err: r.err || (r.parts[0] && r.parts[0].err) || null })); },
+    // opts.lang 'c' compiles as C; opts.args and opts.argv0 are the program's argv (C in the Lab and the terminal)
+    runMany: (code, stdins, opts) => { opts = opts || {}; const n = stdins.length; return clang.run(clangJob(code, stdins.map(String), opts, 10000 + 2000 * n)); },
+    run: (code, opts) => {
+      opts = opts || {};
+      if (opts.stdin == null && typeof opts.onInput === 'function') return clangTyped.run(code, opts, 10000);
+      return window.CLANGRUN.runMany(code, [opts.stdin == null ? '' : opts.stdin], opts).then(firstPart);
+    },
     /** compile only, nothing run → Promise<{err, notes}> */
-    compile: (code, opts) => { opts = opts || {}; return clang.run({ t: 'run', totalMs: 60000, idleMs: 60000, opts, payload: { code: String(code), stdins: [], std: opts.std, compileOnly: true } }); },
-    cancel: () => clang.cancel()
+    compile: (code, opts) => { opts = opts || {}; return clang.run({ t: 'run', totalMs: 60000, idleMs: 60000, opts, payload: { code: String(code), stdins: [], std: opts.std, lang: opts.lang === 'c' ? 'c' : undefined, compileOnly: true } }); },
+    cancel: () => { clangTyped.cancel(); clang.cancel(); }
   };
 
   // program arguments (the Lab's Arguments box, or the words after  python app.py  /  java Main  in the terminal): plain strings, a bounded number
   const argList = (a) => (Array.isArray(a) ? a.slice(0, 1000).map(String) : []);
+  // a job for the compiler's worker: compiling gets 60 s, then the program its own runMs from the worker's 'phase' message (above)
+  function clangJob(code, stdins, opts, runMs, typed) {
+    return { t: 'run', totalMs: 60000, idleMs: 60000, opts, payload: { code: String(code), stdins, std: opts.std, runMs, lang: opts.lang === 'c' ? 'c' : undefined, args: argList(opts.args), argv0: typeof opts.argv0 === 'string' ? opts.argv0 : undefined, typed } };
+  }
+  const firstPart = (r) => Object.assign(r, { exit: r.parts && r.parts[0] ? r.parts[0].exit : 0, err: r.err || (r.parts && r.parts[0] && r.parts[0].err) || null });
   const pyJob = (t, code, opts) => {
     opts = opts || {};
     const execLimit = opts.execLimit || 6000;
@@ -234,14 +245,18 @@
   // the program wants a line nobody has typed yet the run ends, the student is asked, and the program runs again from the start with every line
   // so far, the same random numbers and a clock that has moved on as it really did (javaworker.js, cppworker.js: typedInput). What is already
   // on the screen is not printed twice. onInput(prompt) resolves with the line, or null for the end of the input (Ctrl+D). test_typed.js.
-  function typedRunner(engine) {
+  // job(code, ms, typed, extra, o) builds one run (the interpreters' by default; C's in clangTyped), done(r) reads its result. The compiler's warnings
+  // (onNote) are passed on from the first run only: each replay would repeat them.
+  const interpJob = (code, ms, typed, extra, o) => ({ t: 'run', totalMs: ms + 3000, idleMs: ms + 3000, opts: o, payload: Object.assign({ code: String(code), stdin: '', maxTimeout: ms, typed }, extra) });
+  function typedRunner(engine, job, done) {
     let gen = 0, wait = null;
+    job = job || interpJob; done = done || ((r) => r);
     async function run(code, opts, ms, extra) {
       const mine = gen, lines = [], times = [], t0 = Date.now(), seed = (Math.random() * 2147483647) | 0;
       let out = '';
       const onOutput = (s) => { out += s; if (opts.onOutput) opts.onOutput(s); };
       for (;;) {
-        const r = await engine.run({ t: 'run', totalMs: ms + 3000, idleMs: ms + 3000, opts: { onOutput }, payload: Object.assign({ code: String(code), stdin: '', maxTimeout: ms, typed: { lines, times, t0, seed, skip: out.length } }, extra) });
+        const r = done(await engine.run(job(code, ms, { lines, times, t0, seed, skip: out.length }, extra, Object.assign({}, opts, { onOutput, onNote: lines.length ? undefined : opts.onNote, onInput: undefined }))));
         if (mine !== gen) return { out, err: 'Stopped.', exit: 130 };
         if (!r.needInput) return { out, err: r.err, exit: r.exit };
         if (lines.length >= 5000) return { out, err: 'The program asked for more lines of input than it is allowed here.', exit: 1 };
@@ -254,6 +269,8 @@
     return { run, cancel() { gen++; if (wait) { const w = wait; wait = null; w(null); } } };
   }
   const javaTyped = typedRunner(java), cppTyped = typedRunner(cpp);
+  // C (Clang): the same replay. The compile is done once (the worker keeps the last good build of a source), each replay only runs the program.
+  const clangTyped = typedRunner(clang, (code, ms, typed, extra, o) => clangJob(code, [''], o, ms, typed), firstPart);
   window.JAVARUN = {
     // opts.maxMs: the program's time limit (the Bot Arena gives a bot a few hundred milliseconds a move); the page waits 3 seconds longer before it ends the worker itself
     run: (code, opts) => {

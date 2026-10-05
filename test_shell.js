@@ -646,7 +646,6 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('read -a', await run('read -a r < words.txt; echo "${r[1]} ${#r[@]}"'), 'cat 3\n', 0);
     eq('indices loop', await run('a=(b c a); for i in "${!a[@]}"; do echo "$i=${a[i]}"; done'), '0=b\n1=c\n2=a\n', 0);
     eq('bad subscripts', await run('a=(x y); echo "[${a[-9]}]"; a[-9]=q; echo not reached'), 'bash: a: bad array subscript\n[]\nbash: a[-9]: bad array subscript\n', 1);
-    eq('declare -A is refused', await run('declare -A m'), 'bash: declare: -A: associative arrays are not available in this practice shell\n', 2);
     eq('an array has a cap on values', await run('big=($(seq 10000)); echo ${#big[@]}; big+=(one more)'), '10000\nbash: stopped: an array here holds at most ' + SHELL.LIMITS.array + ' values and ' + SHELL.LIMITS.vars * 4 + ' characters.\n', 1);
     eq('and on characters', await run('s=aaaaaaaaaa; for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do s=$s$s; done; h=($s $s $s $s $s)'), /stopped: an array here holds at most/, 1);
     check('arrays are kept in a dictionary', Object.getPrototypeOf(sh.arrays), null);
@@ -768,6 +767,130 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('awk usage', await run('awk'), "usage: awk [-F value] [-v var=value] [--] 'program text' [file ...]\n", 2);
   }
 
+  // ---- here-documents and here-strings (bash 5.2's behaviour; difftest/shell.txt compares many of these with the real bash)
+  {
+    const { sh, run } = fresh();
+    eq('a here-document, expanded', await run('x=world; cat <<EOF\nhello $x ${x^^} $(echo sub) $((1+2)) \\$x "q" \'s\'\nEOF', NOHIST), 'hello world WORLD sub 3 $x "q" \'s\'\n', 0);
+    eq('a quoted word: taken as it is', await run("cat <<'EOF'\n$HOME \\$x `x`\nEOF\ncat <<E\"O\"F\n$HOME\nEOF\ncat <<\\EOF\n$HOME\nEOF", NOHIST), '$HOME \\$x `x`\n$HOME\n$HOME\n', 0);
+    eq('<<- takes the leading tabs off', await run('cat <<-EOF\n\t\ttab\n\t  space\n\t\tEOF\necho after', NOHIST), 'tab\n  space\nafter\n', 0);
+    eq('two on one line, and the rest of the line runs', await run('cat <<A <<B; echo done\na\nA\nb\nB', NOHIST), 'b\ndone\n', 0);
+    eq('one each for two commands', await run('cat <<A; cat <<B\n1\nA\n2\nB', NOHIST), '1\n2\n', 0);
+    eq('in a pipeline, into a file, in a loop', await run('cat <<EOF | tr a-z A-Z\npiped\nEOF\ncat <<EOF > hd.txt\nsaved\nEOF\ncat hd.txt\nfor i in 1 2; do cat <<EOF; done\nloop $i\nEOF', NOHIST), 'PIPED\nsaved\nloop 1\nloop 2\n', 0);
+    eq('feeding a while read loop', await run('while read -r l; do echo "got $l"; done <<EOF\n1\n2\nEOF', NOHIST), 'got 1\ngot 2\n', 0);
+    eq('in a function, kept for every call; declare -f shows it', await run('f() {\n  cat <<EOF\nin f: $1\nEOF\n}\nf arg\nf two\ndeclare -f f', NOHIST), 'in f: arg\nin f: two\nf () \n{ \n    cat <<EOF\nin f: $1\nEOF\n\n}\n', 0);
+    eq('a backslash at the end of a line joins it (unquoted only)', await run("cat <<EOF\na\\\nb\nEOF\ncat <<'EOF'\na\\\nb\nEOF", NOHIST), 'ab\na\\\nb\n', 0);
+    eq('the word must be the whole line', await run('cat <<EOF\n EOF\nEOF \nEOF', NOHIST), ' EOF\nEOF \n', 0);
+    eq('no line with the word: bash\'s warning, then the text', await run('cat <<E2\na\nb', NOHIST), "bash: warning: here-document at line 1 delimited by end-of-file (wanted `E2')\na\nb\n", 0);
+    eq('...also on the last line', await run('echo 1\ncat <<E', NOHIST), "1\nbash: warning: here-document at line 2 delimited by end-of-file (wanted `E')\n", 0);
+    eq('...in a script it names the script and its last line', await run("printf 'echo x\\ncat <<E\\nbody\\n' > w.sh; bash w.sh", NOHIST), "x\nw.sh: line 3: warning: here-document at line 2 delimited by end-of-file (wanted `E')\nbody\n", 0);
+    eq('<< with no word', await run('cat <<', NOHIST), "bash: syntax error near unexpected token `newline'\nbash: `cat <<'\n", 2);
+    eq('inside $(...)', await run('x=$(cat <<EOF\ninside\nEOF\n)\necho "[$x]"', NOHIST), '[inside]\n', 0);
+    eq('here-strings', await run('cat <<<\'here string\'; x=\'a  b\'; cat <<< $x; wc -l <<< ""; read a b <<< "one two three"; echo "$a|$b"; g() { cat <<< "in $1"; }; g x; declare -f g', NOHIST), 'here string\na  b\n1\none|two three\nin x\ng () \n{ \n    cat <<< "in $1"\n}\n', 0);
+    eq('the last redirection of stdin wins', await run('echo file > in.txt; cat < in.txt <<EOF\nheredoc\nEOF\ncat <<EOF < in.txt\nheredoc\nEOF', NOHIST), 'heredoc\nfile\n', 0);
+    // at the prompt: the lines are asked for with "> " until the word, as bash does; the history keeps the first line
+    let lines = [], asked = [];
+    const typed = (s) => ({ ask: async (p, hint) => { asked.push(p); return lines.length ? lines.shift() : null; } });
+    lines = ['a $x', 'b', 'EOF', 'never asked'];
+    eq('typed at the prompt: the lines are asked for', await run('x=5; cat <<EOF', typed()), 'a 5\nb\n', 0);
+    check('...with bash\'s "> " prompt, until the word', asked.join('|'), '> |> |> ');
+    check('...and the history keeps the line typed', sh.history[sh.history.length - 1], 'x=5; cat <<EOF');
+    check('...the extra line was not taken', lines.join('|'), 'never asked');
+    lines = ['1', 'A', '\t2', '\tB']; asked = [];
+    eq('two of them at the prompt', await run('cat <<A <<-B', typed()), '2\n', 0);
+    lines = ['only']; asked = [];
+    eq('Ctrl+D (the end of input) ends the text, with the warning', await run('cat <<E', typed()), "bash: warning: here-document at line 1 delimited by end-of-file (wanted `E')\nonly\n", 0);
+    lines = []; asked = [];
+    eq('a here-string asks for nothing', await run('cat <<< "hi there"', typed()), 'hi there\n', 0);
+    check('...really nothing', asked.length, 0);
+    {
+      const f2 = fresh(); let n = 0;
+      const r = await f2.run('cat <<EOF; echo never', { ask: async () => { if (++n === 2) f2.sh.cancel(); return 'line'; } });
+      eq('Ctrl+C while typing the lines: nothing runs', r, '^C\n', 130);
+      const r2 = await f2.run('cat <<EOF', { ask: async () => 'x'.repeat(1000) });
+      check('typed lines are capped (no word ever comes)', r2.out.length < SHELL.LIMITS.fileBytes * 1.1 && /delimited by end-of-file/.test(r2.out), true);
+    }
+  }
+  // ---- [[ ]]
+  {
+    const { run } = fresh();
+    await run('touch f.txt; echo hi > full.txt; mkdir d');
+    eq('[[ ]]: strings, patterns, quoting', await run('x=\'a b\'; [[ $x == \'a b\' ]] && echo same; [[ $x == a* ]] && echo glob; [[ $x == "a*" ]] || echo literal; p=\'a*\'; [[ $x == $p ]] && echo pvar; [[ $x == "$p" ]] || echo pquoted; [[ $x != b* ]] && echo ne; [[ a = a ]] && echo single'), 'same\nglob\nliteral\npvar\npquoted\nne\nsingle\n', 0);
+    eq('[[ ]]: no splitting, no wildcards, ~ in a pattern', await run('x=*; [[ $x == \'*\' ]] && echo nostar; y="a   b"; [[ $y == "a   b" ]] && echo nosplit; [[ $nope == "" ]] && echo empty; [[ $HOME == ~ ]] && echo tilde'), 'nostar\nnosplit\nempty\ntilde\n', 0);
+    eq('[[ ]]: < and > compare text, -lt numbers (arithmetic)', await run('[[ abc < abd ]] && echo lt; [[ b > a ]] && echo gt; [[ 3 < 10 ]] || echo strlt; [[ 3 -lt 10 ]] && echo numlt; [[ 1+1 -eq 2 ]] && echo arith; x=5; [[ x -gt 3 ]] && echo name; [[ 010 -eq 8 ]] && echo octal'), 'lt\ngt\nstrlt\nnumlt\narith\nname\noctal\n', 0);
+    eq('[[ ]]: an arithmetic error says so; that test is false', await run('[[ 1.5 -eq 1 ]]; echo $?; [[ 1.5 -eq 1 || a == a ]]; echo $?'), 'bash: [[: 1.5: syntax error: invalid arithmetic operator (error token is ".5")\n1\nbash: [[: 1.5: syntax error: invalid arithmetic operator (error token is ".5")\n0\n', 0);
+    eq('[[ ]]: files', await run('[[ -e f.txt && -f f.txt && -d d && ! -d f.txt ]] && echo files; [[ -s f.txt ]] || echo empty; [[ -s full.txt ]] && echo full; [[ -e nope || -e d ]] && echo or; [[ -e "" ]] || echo noname; [[ full.txt -ef ./full.txt ]] && echo ef'), 'files\nempty\nfull\nor\nnoname\nef\n', 0);
+    eq('[[ ]]: -z -n, a lone word', await run("x=''; [[ $x ]]; echo $?; [[ -z $x ]]; echo $?; [[ -n $x ]]; echo $?; [[ -v HOME ]] && echo set; [[ -v nope ]] || echo unset; a=(1 2); [[ -v a[1] ]] && echo elem"), '1\n0\n1\nset\nunset\nelem\n', 0);
+    eq('[[ ]]: && || ! ( )', await run('[[ a == a || b == c && c == d ]]; echo $?; [[ ( a == a || b == c ) && c == d ]]; echo $?; [[ ! -f nope && ( -f f.txt || -d nope ) ]] && echo complex; [[ ! ! a ]] && echo dbl'), '0\n1\ncomplex\ndbl\n', 0);
+    eq('[[ ]]: =~ and BASH_REMATCH', await run('s=\'hello world 42\'; [[ $s =~ ([a-z]+)\\ ([a-z]+)\\ ([0-9]+) ]] && echo "${BASH_REMATCH[0]}|${BASH_REMATCH[1]}|${BASH_REMATCH[3]}|${#BASH_REMATCH[@]}"; [[ abc =~ ^a(b|x)c$ ]] && echo alt "${BASH_REMATCH[1]}"; [[ abc =~ "a.c" ]] || echo quoted; re=\'^[0-9]+$\'; [[ 123 =~ $re ]] && echo num; [[ ab =~ [[:alpha:]]+ ]] && echo cls "${BASH_REMATCH[0]}"; [[ abc =~ x ]]; echo $? "${#BASH_REMATCH[@]}"; [[ \'a b\' =~ (a b) ]] && echo spaced'), 'hello world 42|hello|42|4\nalt b\nquoted\nnum\ncls ab\n1 0\nspaced\n', 0);
+    eq('[[ ]]: a regular expression that does not compile gives 2', await run("re='('; [[ a =~ $re ]]; echo $?"), '2\n', 0);
+    eq('[[ ]] across lines, in if and while, with redirections', await run('[[ a == a &&\nb == b ]] && echo nl; i=0; while [[ $i -lt 2 ]]; do if [[ $i == 1 ]]; then echo one; fi; ((i++)); done; [[ x == x ]] > o.txt; echo $?', NOHIST), 'nl\none\n0\n', 0);
+    eq('[[ ]] in a function: declare -f', await run('f() { [[ $1 == y* ]]; }; f yes && echo yes; declare -f f'), 'yes\nf () \n{ \n    [[ $1 == y* ]]\n}\n', 0);
+    eq('[[ ]] is a keyword', await run('type [[; type -t ]]; echo [[ a ]]'), '[[ is a shell keyword\nkeyword\n[[ a ]]\n', 0);
+    // bash's syntax errors: what was wrong, then "near" the token at fault; run as a script, the line too
+    eq('[[ ]] errors: nothing inside', await run('[[ ]]'), "bash: syntax error near `]]'\n", 2);
+    eq('[[ ]] errors: the line is shown in a script', await run('[[ a == ]]; echo x', NOHIST), "bash: unexpected argument `]]' to conditional binary operator\nbash: syntax error near `;'\nbash: `[[ a == ]]; echo x'\n", 2);
+    eq('[[ ]] errors: a missing operator', await run('[[ a b ]]', NOHIST), "bash: conditional binary operator expected\nbash: syntax error near `b'\nbash: `[[ a b ]]'\n", 2);
+    eq('[[ ]] errors: a unary test with nothing to test', await run('[[ -f ]]', NOHIST), "bash: unexpected argument `]]' to conditional unary operator\nbash: syntax error near `]]'\nbash: `[[ -f ]]'\n", 2);
+    eq('[[ ]] errors: brackets', await run('[[ ( a == a ]]; [[ ( ]]', NOHIST), "bash: unexpected token `]]', expected `)'\nbash: syntax error near `;'\nbash: `[[ ( a == a ]]; [[ ( ]]'\n", 2);
+    eq('[[ ]] errors: ( with nothing', await run('[[ ( ]]', NOHIST), "bash: expected `)'\nbash: syntax error near `]]'\nbash: `[[ ( ]]'\n", 2);
+    eq('[[ ]] errors: ]] missing', await run('[[ a == b ]; echo x', NOHIST), "bash: syntax error in conditional expression\nbash: syntax error near `;'\nbash: `[[ a == b ]; echo x'\n", 2);
+    eq('[[ ]] errors: the end of the text', await run('[[ a == b', NOHIST), "bash: unexpected EOF while looking for `]]'\nbash: syntax error: unexpected end of file\n", 2);
+    eq('[[ ]] errors: an operator where a test should be', await run('[[ && a ]]', NOHIST), "bash: unexpected token `&&' in conditional command\nbash: syntax error near `&'\nbash: `[[ && a ]]'\n", 2);
+    eq('[[ ]] errors: an unclosed bracket in =~', await run('[[ abc =~ ( ]]; echo $?', NOHIST), "bash: unexpected EOF while looking for matching `)'\nbash: unexpected argument to conditional binary operator\n", 2);
+    eq('[[ ]] errors stop a script there', await run("printf 'echo 1\\n[[ a b ]]\\necho 3\\n' > e.sh; bash e.sh", NOHIST), "1\ne.sh: line 2: conditional binary operator expected\ne.sh: line 2: syntax error near `b'\ne.sh: line 2: `[[ a b ]]'\n", 2);
+  }
+  // ---- associative arrays
+  {
+    const { sh, run } = fresh();
+    eq('declare -A: keys in bash\'s order', await run('declare -A m=([a]=1 [b]=2 [c]=3); echo "${!m[@]}"; echo "${m[@]}"; echo ${#m[@]} ${m[b]}; declare -p m'), 'c b a\n3 2 1\n3 2\ndeclare -A m=([c]="3" [b]="2" [a]="1" )\n', 0);
+    eq('...the order of bash\'s hash table', await run('unset m; declare -A m; for k in apple banana cherry date elderberry fig grape; do m[$k]=${#k}; done; echo "${!m[@]}"'), 'cherry grape elderberry apple fig date banana\n', 0);
+    eq('...after it grows past 2048 keys', await run('unset m; declare -A m; for i in $(seq 1 3000); do m[$i]=x; done; echo "${#m[@]}"; echo "${!m[@]}" | cut -c1-60'), '3000\n818 819 814 815 816 817 810 811 812 813 744 745 746 747 740 \n', 0);
+    eq('...and with letters that are not ASCII', await run('unset m; declare -A m=([é]=1 [ü]=2 [日本]=3 [a]=4); echo "${!m[@]}"'), '日本 a ü é\n', 0);
+    eq('an existing key keeps its place; an unset one comes back first', await run('unset m; declare -A m; m[x]=1; m[y]=2; m[x]=3; echo "${!m[@]}" "${m[@]}"; unset \'m[x]\'; echo "${!m[@]}"; m[x]=4; echo "${!m[@]}"'), 'y x 2 3\ny\ny x\n', 0);
+    eq('keys with spaces, quotes, $ and __proto__', await run('unset m; declare -A m; m["two words"]=a; m[__proto__]=p; m[constructor]=c; m[\'$x\']=d; m[\'a"b\']=q; m[\'*\']=s; m[-1]=n; m[\' \']=sp; declare -p m; k=\'two words\'; echo "${m[$k]}" "${m[two words]}" "${m["two words"]}" ${m[__proto__]} ${#m[@]}'), 'declare -A m=([__proto__]="p" ["*"]="s" [" "]="sp" [-1]="n" ["two words"]="a" ["a\\"b"]="q" ["\\$x"]="d" [constructor]="c" )\na a a p 8\n', 0);
+    check('associative arrays keep their values in a dictionary', Object.getPrototypeOf(sh.arrays.m.v), null);
+    eq('an empty key is a bad subscript', await run('declare -A e; e[$nope]=1; echo not reached', NOHIST), 'bash: e[$nope]: bad array subscript\n', 1);
+    eq('declare -A with no values, and empty', await run('declare -A n1; declare -p n1; declare -A n2=(); declare -p n2'), 'declare -A n1\ndeclare -A n2=()\n', 0);
+    eq('key value pairs, and words without a key', await run('declare -A p=(a 1 b 2 c); declare -p p; declare -A q=([a]=1 b 2); declare -p q'), "declare -A p=([c]=\"\" [b]=\"2\" [a]=\"1\" )\nbash: q: 'b': must use subscript when assigning associative array\nbash: q: '2': must use subscript when assigning associative array\ndeclare -A q=([a]=\"1\" )\n", 0);
+    eq('=(...), +=(...), [k]+=', await run('declare -A r=([x]=1); r=(y 2); declare -p r; r+=([z]=3); r[z]+=0; declare -p r; echo ${#r[z]}'), 'declare -A r=([y]="2" )\ndeclare -A r=([z]="30" [y]="2" )\n2\n', 0);
+    eq('$m is ${m[0]}; m=v sets the key 0', await run('declare -A s=([one]=1); echo "[$s]"; s=v2; declare -p s'), '[]\ndeclare -A s=([0]="v2" [one]="1" )\n', 0);
+    eq('converting is refused, as in bash', await run('ia=(1 2); declare -A ia; echo $?; declare -A aa=([a]=1); declare -a aa; declare -aA both'), 'bash: declare: ia: cannot convert indexed to associative array\n1\nbash: declare: aa: cannot convert associative to indexed array\nbash: declare: both: cannot convert associative to indexed array\n', 1);
+    eq('local -A and declare -A in a function', await run('f() { local -A loc=([a]=1); declare -p loc; declare -A d; d[x]=1; echo ${#d[@]}; }; f; declare -p loc; echo "[${d[x]}]"'), 'declare -A loc=([a]="1" )\n1\nbash: declare: loc: not found\n[]\n', 0);
+    eq('counting words with (( m[$w]++ ))', await run('declare -A count; for w in the cat the dog the end; do ((count[$w]++)); done; for k in the cat dog end; do echo $k ${count[$k]}; done'), 'the 3\ncat 1\ndog 1\nend 1\n', 0);
+    eq('in arithmetic the key is text', await run('declare -A am=([a]=5); echo $(( am[a] * 2 )); (( am[b] = 7 )); echo ${am[b]}; k=a; echo $(( am[$k] + 1 ))'), '10\n7\n6\n', 0);
+    eq('unset an element or all', await run('declare -A u=([a]=1 [b]=2); unset u[a]; declare -p u; unset \'u[@]\'; declare -p u; unset u; declare -p u'), 'declare -A u=([b]="2" )\ndeclare -A u=([b]="2" )\nbash: declare: u: not found\n', 1);
+    eq('[[ -v m[k] ]]', await run('declare -A v=([a]=1); [[ -v v[a] ]] && echo seta; [[ -v v[b] ]] || echo unsetb; [[ -v v ]] || echo nozero'), 'seta\nunsetb\nnozero\n', 0);
+    eq('a key with an assignment before a command is refused', await run('declare -A w=([a]=1); w[a]=2 echo hi; declare -p w'), "bash: `w[a]': not a valid identifier\nhi\ndeclare -A w=([a]=\"1\" )\n", 0);
+    eq('declare -p -A lists only associative arrays', await fresh().run('declare -A only=([k]=v); ix=(1); declare -p -A'), 'declare -A only=([k]="v" )\n', 0);
+    eq('an associative array has the indexed one\'s cap', await run('declare -A big=($(seq 20000)); echo ${#big[@]}; big[more]=1'), '10000\nbash: stopped: an array here holds at most ' + SHELL.LIMITS.array + ' values and ' + SHELL.LIMITS.vars * 4 + ' characters.\n', 1);
+    eq('...and on characters, keys included', await run('declare -A ch; k=kkkkkkkkkk; for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16; do k=$k$k; done; ch[$k]=1; ch[x$k]=1; ch[y$k]=1; ch[z$k]=1; ch[w$k]=1'), /stopped: an array here holds at most/, 1);
+  }
+  // ---- read, mapfile, printf -v, $RANDOM, $SECONDS, ${x@Q}, shopt
+  {
+    const { sh, run } = fresh();
+    await run("printf 'one\\ntwo\\n' > f.txt");
+    eq('read and IFS', await run('IFS=, read a b <<< "1,2,"; echo "[$a][$b]"; IFS=, read a b <<< "1,2,3,"; echo "[$a][$b]"; IFS=, read a b <<< "1,,2"; echo "[$a][$b]"; IFS=\', \' read a b c <<< "  x , y ,z  "; echo "[$a][$b][$c]"; IFS=: read -a parts <<< "a:b::c:"; printf \'[%s]\' "${parts[@]}"; echo'), '[1][2]\n[1][2,3,]\n[1][,2]\n[x][y][z]\n[a][b][][c]\n', 0);
+    eq('read: backslashes without -r, and with it', await run("read a b <<< '  one\\ two  three\\\\four  '; echo \"[$a][$b]\"; read -r a b <<< '  one\\ two  three\\\\four  '; echo \"[$a][$b]\"; printf 'abc\\\\\\ndef\\n' | { read x; echo \"[$x]\"; }; printf 'abc\\\\\\ndef\\n' | { read -r x; echo \"[$x]\"; }"), '[one two][three\\four]\n[one\\][two  three\\\\four]\n[abcdef]\n[abc\\]\n', 0);
+    eq('read: REPLY keeps the spaces; IFS= keeps them too', await run('read <<< "  spaced  "; echo "[$REPLY]"; IFS= read -r line <<< "  keep  "; echo "[$line]"'), '[  spaced  ]\n[  keep  ]\n', 0);
+    eq('read: the last line without a newline is read, with status 1', await run("printf 'l1\\nl2\\nl3' | while read -r l; do echo \"[$l]\"; done; printf 'l1\\nl2' | while IFS= read -r l || [[ -n $l ]]; do echo \"[$l]\"; done"), '[l1]\n[l2]\n[l1]\n[l2]\n', 0);
+    eq('read -d and -n', await run('read -d , first <<< "a,b,c"; echo "[$first] $?"; read -d , all <<< "abc"; echo "[$all] $?"; read -n 3 three <<< "abcdef"; echo "[$three]"'), '[a] 0\n[abc] 1\n[abc]\n', 0);
+    eq('read: a bad name', await run('read 1x <<< a; echo $?'), "bash: read: `1x': not a valid identifier\n1\n", 0);
+    eq('mapfile -t, and with the newlines (declare -p shows $\'...\')', await run('mapfile -t lines < f.txt; declare -p lines; mapfile lines2 < f.txt; declare -p lines2'), 'declare -a lines=([0]="one" [1]="two")\ndeclare -a lines2=([0]=$\'one\\n\' [1]=$\'two\\n\')\n', 0);
+    eq('mapfile -n -s -O -d, readarray, MAPFILE', await run("printf 'a\\nb\\nc\\nd\\n' > g.txt; mapfile -t -n 2 x < g.txt; declare -p x; mapfile -t -s 1 y < g.txt; mapfile -t -O 5 y < g.txt; declare -p y; readarray -t r <<< \"one\ntwo\"; echo ${#r[@]} \"${r[1]}\"; mapfile <<< x; declare -p MAPFILE; mapfile -t -d , c <<< 'a,b,c'; declare -p c; mapfile -t e < /dev/null; declare -p e", NOHIST), 'declare -a x=([0]="a" [1]="b")\ndeclare -a y=([0]="b" [1]="c" [2]="d" [5]="a" [6]="b" [7]="c" [8]="d")\n2 two\ndeclare -a MAPFILE=([0]=$\'x\\n\')\ndeclare -a c=([0]="a" [1]="b" [2]=$\'c\\n\')\ndeclare -a e=()\n', 0);
+    eq('mapfile errors', await run('mapfile -t 1bad < f.txt; echo $?; mapfile -q x'), "bash: mapfile: `1bad': not a valid identifier\n1\nbash: mapfile: -q: invalid option\nmapfile: usage: mapfile [-d delim] [-n count] [-O origin] [-s count] [-t] [-u fd] [-C callback] [-c quantum] [array]\n", 2);
+    eq('mapfile is capped like any array', await run('seq 20000 > many.txt; mapfile -t m < many.txt'), /stopped: an array here holds at most/, 1);
+    eq('printf -v', await run("printf -v out '%05d|%s' 42 hi; echo \"[$out]\"; printf -v 'arr[2]' '%s' two; declare -p arr; declare -A pm; printf -v 'pm[k]' 'v%d' 1; declare -p pm; printf -v x '%s-' a b c; echo \"[$x]\""), '[00042|hi]\ndeclare -a arr=([2]="two")\ndeclare -A pm=([k]="v1" )\n[a-b-c-]\n', 0);
+    eq('printf -v errors', await run('printf -v 1x %s a; echo $?; printf -v; printf -v x; echo $?'), "bash: printf: `1x': not a valid identifier\n2\nbash: printf: -v: option requires an argument\nprintf: usage: printf [-v var] format [arguments]\nprintf: usage: printf [-v var] format [arguments]\n2\n", 0);
+    eq('$RANDOM is bash\'s generator: the same numbers from the same seed', await run('RANDOM=42; echo $RANDOM $RANDOM $RANDOM; RANDOM=42; echo $RANDOM; RANDOM=0; echo $RANDOM $RANDOM; RANDOM=1; for i in 1 2 3 4 5 6 7 8 9 10; do echo -n "$((RANDOM % 6 + 1)) "; done; echo'), '17772 26794 1435\n17772\n20814 24386\n2 4 1 4 4 1 2 6 1 4 \n', 0);
+    eq('...unseeded, numbers from 0 to 32767', await run('unseeded=1; for i in 1 2 3 4 5; do r=$RANDOM; (( r >= 0 && r < 32768 )) || echo bad; done; echo ok'), 'ok\n', 0);
+    eq('$SECONDS', await run('echo $SECONDS; SECONDS=100; echo $SECONDS'), '0\n100\n', 0);
+    eq('${x@Q} ${x@U} ${x@L} ${x@u} ${x@E} ${x@a}', await run("x=\"it's\"; echo \"${x@Q}\"; y='a b'; echo ${y@Q}; z=; echo \"[${z@Q}]\" \"[${nope@Q}]\"; t=$'a\\tb'; echo \"${t@Q}\"; s='hello World'; echo \"${s@U}\" \"${s@L}\" \"${s@u}\"; e='a\\tb'; echo \"${e@E}\"; a=(x 'y z'); echo \"${a[@]@Q}\" \"${a[1]@U}\" \"${a@a}\"; declare -A as; echo \"${as@a}\"; echo \"${x@Z}\"; echo not reached"), "'it'\\''s'\n'a b'\n[''] []\n$'a\\tb'\nHELLO WORLD hello world Hello World\na\tb\n'x' 'y z' Y Z a\nA\nbash: ${x@Z}: bad substitution\n", 1);
+    eq("$'...' and $\"...\"", await run("echo $'tab\\there' $'it\\'s' $'\\x41\\101' \"$'not'\" $\"plain\""), "tab\there it's AA $'not' plain\n", 0);
+    eq('shopt -s nullglob', await run('shopt -s nullglob; for f in *.nope; do echo "never $f"; done; echo none: *.nope; shopt nullglob; shopt -u nullglob; echo *.nope; shopt -p nullglob; shopt nullglob'), 'none:\nnullglob       \ton\n*.nope\nshopt -u nullglob\nnullglob       \toff\n', 1);
+    eq('shopt -s dotglob and failglob', await run('touch .a d1; shopt -s dotglob; echo *; shopt -u dotglob; echo *; shopt -s failglob; echo *.nope; echo after'), '.a d1 f.txt g.txt many.txt\nd1 f.txt g.txt many.txt\nbash: no match: *.nope\n', 1);
+    eq('shopt: the list, and options not here', await run('shopt -u failglob; shopt; shopt -s; shopt -s nosuch extglob; echo $?'), 'dotglob        \toff\nexpand_aliases \ton\nfailglob       \toff\nnullglob       \toff\nexpand_aliases \ton\nbash: shopt: nosuch: invalid shell option name\nbash: shopt: extglob: not available in this practice shell (dotglob, expand_aliases, failglob, nullglob are)\n1\n', 0);
+    eq('a script\'s shopt ends with it', await run("printf 'shopt -s nullglob\\necho in: *.zz\\n' > so.sh; bash so.sh; echo out: *.zz", NOHIST), 'in:\nout: *.zz\n', 0);
+  }
   // ---- saving and reloading a session's work
   {
     const { fs, run } = fresh();

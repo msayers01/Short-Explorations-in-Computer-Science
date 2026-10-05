@@ -12,9 +12,11 @@
    sh.cancel()                                       ends the command that is running (Ctrl+C)
 
    What the shell knows: words with ' " and \ quoting, $VAR ${VAR} (and ${x:-d} ${x#pat} ${x%pat} ${x/a/b} ${x^^} ${x:1:2}) $? $# $@ $1, $(command), $((arithmetic)), {a,b} and {1..5}, ~, * ? [...] wildcards,
-   > >> < 2> 2>&1 | ; && || and !, if/elif/else/fi, for/in/do/done, for ((;;)), while/until, case/esac, (( )), break/continue, functions (name() { ...; },
-   local, return), indexed arrays (a=(x y), ${a[i]}, "${a[@]}", ${#a[@]}, ${!a[@]}), aliases, history expansion at the prompt (!! !$ !n !prefix ^old^new),
-   time, scripts with #! lines, and the commands listed in COMMANDS below. */
+   > >> < 2> 2>&1 | ; && || and !, <<EOF here-documents (<<'EOF' <<-EOF) and <<< here-strings, $'...', if/elif/else/fi, for/in/do/done, for ((;;)),
+   while/until, case/esac, (( )), [[ ]] (== != < > =~ -eq -f ... && || ! ( )), break/continue, functions (name() { ...; }, local, return), indexed and
+   associative arrays (a=(x y), declare -A m=([k]=v), ${a[i]}, ${m[key]}, "${a[@]}", ${#a[@]}, ${!a[@]}), ${x@Q}, aliases, history expansion at the prompt
+   (!! !$ !n !prefix ^old^new), time, $RANDOM (bash's generator), $SECONDS, shopt nullglob/failglob/dotglob, scripts with #! lines, and the commands
+   listed in COMMANDS below. */
 (function (factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else window.SHELL = factory();
@@ -199,8 +201,11 @@
   const RESERVED = ['if', 'then', 'elif', 'else', 'fi', 'for', 'in', 'do', 'done', 'while', 'until', 'case', 'esac', '{', '}', '!'];
   const KEYWORDS = RESERVED.concat(['function', 'time', 'select', '[[', ']]']);   // what type calls "a shell keyword"
 
-  function tokenize(src) {
-    const toks = []; let i = 0, start = 0; const n = src.length;
+  // whole: the text is one word, spaces and operators included (an associative array's key, ${m[two words]})
+  function tokenize(src, whole) {
+    const toks = []; let i = 0, start = 0, n = src.length;
+    // here-documents: <<WORD (or <<-WORD) waits for the end of its line; then the lines up to WORD are its text. pending: the ones waiting
+    const pending = []; let hdNext = null, cond = false;
     // each token knows its line (for "script.sh: line 3: ..." messages): the line where it starts
     const nls = []; for (let k = src.indexOf('\n'); k >= 0; k = src.indexOf('\n', k + 1)) nls.push(k);
     const lineAt = (pos) => { let lo = 0, hi = nls.length; while (lo < hi) { const mid = (lo + hi) >> 1; if (nls[mid] < pos) lo = mid + 1; else hi = mid; } return lo + 1; };
@@ -222,6 +227,9 @@
     const dollar = (parts, q) => {   // i is at '$'
       i++;
       const c = peek();
+      // $'...': backslash escapes (\n \t \' \x41 ...) worked out, the rest literal; $"..." is "..." (no translations here). Inside "..." both are plain text
+      if (c === "'" && !q) { let j = i + 1; while (j < n && src[j] !== "'") j += src[j] === '\\' ? 2 : 1; if (j >= n) synErr("unexpected EOF while looking for matching `''"); parts.push({ v: escapesE(src.slice(i + 1, j)), q: true }); i = j + 1; return; }
+      if (c === '"' && !q) return;
       if (c === '(') { i++; if (peek() === '(') { i++; parts.push({ x: 'arith', v: balanced('(', ')', true), q }); } else parts.push({ x: 'sub', v: balanced('(', ')'), q }); return; }
       if (c === '{') {
         i++;
@@ -241,6 +249,7 @@
         else if ((m = body.match(/^([A-Za-z_][A-Za-z0-9_]*|[0-9]+)(##?|%%?)([^]*)$/))) parts.push({ x: 'strip', v: m[1], op: m[2], pat: m[3], q });   // ${f%.txt} ${p##*/}: take a pattern off the start or the end
         else if ((m = body.match(/^([A-Za-z_][A-Za-z0-9_]*|[0-9]+)\/(\/|#|%)?([^]*)$/))) { const cut = splitSubst(m[3]); parts.push({ x: 'subst', v: m[1], all: m[2] === '/', anchor: m[2] === '#' || m[2] === '%' ? m[2] : '', pat: cut[0], repl: cut[1], q }); }   // ${s/a/b} ${s//a/b}
         else if ((m = body.match(/^([A-Za-z_][A-Za-z0-9_]*)(\^\^?|,,?)$/))) parts.push({ x: 'case', v: m[1], op: m[2], q });   // ${s^} ${s^^} ${s,} ${s,,}
+        else if ((m = body.match(/^([A-Za-z_][A-Za-z0-9_]*|[0-9]+|[@*])(?:\[([^\]]+)\])?@([QEULua])$/))) parts.push({ x: 'xform', v: m[1], idx: m[2], op: m[3], q });   // ${x@Q} ${a[@]@U}: a transformation
         else if ((m = body.match(/^([A-Za-z_][A-Za-z0-9_]*|[0-9]+)(:?)([-=+])([^]*)$/))) parts.push({ x: 'def', v: m[1], colon: m[2] === ':', op: m[3], word: m[4], q });
         else parts.push({ x: 'bad', v: body, q });   // refused when it is expanded, as bash does
         return;
@@ -249,21 +258,73 @@
       if (m) { parts.push({ x: 'var', v: m[1], q }); i += m[1].length; return; }
       parts.push({ v: '$', q });
     };
+    // [[ x =~ RE ]]: find where RE ends (an unquoted space outside brackets, or a ) that closes a group of the condition), then read it as one word
+    const condRegex = () => {
+      let j = i, depth = 0;
+      for (; j < n; j++) {
+        const ch = src[j];
+        if (ch === '\\') { j++; continue; }
+        if (ch === "'") { const e = src.indexOf("'", j + 1); if (e < 0) return null; j = e; continue; }
+        if (ch === '"') { let e = j + 1; while (e < n && src[e] !== '"') e += src[e] === '\\' ? 2 : 1; if (e >= n) return null; j = e; continue; }
+        if (ch === '\n' || (depth === 0 && /[ \t\r;&]/.test(ch))) break;
+        if (ch === '(') depth++; else if (ch === ')') { if (!depth) break; depth--; }
+      }
+      if (j === i || src.slice(i, j) === ']]') return null;
+      if (depth) { const e = new SyntaxError_("unexpected EOF while looking for matching `)'"); e.more = ['unexpected argument to conditional binary operator']; throw e; }   // bash reads to the end looking for the )
+      const text = src.slice(i, j), w = tokenize(text, true)[0]; i = j;
+      return { t: 'word', parts: w ? w.parts : [], raw: text, end: j, regex: true };
+    };
+    // the text of an unquoted here-document: $ ` and \ work as inside "...", but a " is only a character
+    const hereParts = (text) => {
+      const keep = [src, i, n], parts = []; src = text; i = 0; n = text.length;
+      try {
+        while (i < n) {
+          const ch = src[i];
+          if (ch === '\\' && i + 1 < n && '\\$`\n'.includes(src[i + 1])) { if (src[i + 1] !== '\n') parts.push({ v: src[i + 1], q: true }); i += 2; continue; }
+          if (ch === '$') { dollar(parts, true); continue; }
+          if (ch === '`') { i++; const j = src.indexOf('`', i); if (j < 0) synErr('unexpected EOF while looking for matching ``\''); parts.push({ x: 'sub', v: src.slice(i, j), q: true }); i = j + 1; continue; }
+          let j = i + 1; while (j < n && !'\\$`'.includes(src[j])) j++;
+          parts.push({ v: src.slice(i, j), q: true }); i = j;
+        }
+      } finally { [src, i, n] = keep; }
+      return parts;
+    };
+    // at the end of a line: each waiting here-document takes the lines up to its word (with <<-, leading tabs removed first)
+    const readBodies = () => {
+      for (const hd of pending.splice(0)) {
+        let body = '', done = false;
+        while (i < n) {
+          let e = src.indexOf('\n', i); if (e < 0) e = n;
+          let ln = src.slice(i, e); i = Math.min(n, e + 1);
+          if (hd.strip) ln = ln.replace(/^\t+/, '');
+          if (ln === hd.delim) { done = true; break; }
+          body += ln + '\n';
+        }
+        if (!done) { hd.warn = 'warning: here-document at line ' + hd.line + " delimited by end-of-file (wanted `" + hd.delim + "')"; toks.open = true; }
+        hd.text = body; if (!hd.quoted) hd.parts = hereParts(body);
+      }
+    };
     while (i < n) {
       const c = src[i]; start = i;
+      if (!whole) {
       if (c === ' ' || c === '\t' || c === '\r') { i++; continue; }
       if (c === '\\' && src[i + 1] === '\n') { i += 2; continue; }
-      if (c === '\n') { toks.push({ t: 'op', v: '\n' }); i++; continue; }
+      if (c === '\n') { toks.push({ t: 'op', v: '\n' }); i++; hdNext = null; if (pending.length) readBodies(); continue; }
       if (c === '#') { while (i < n && src[i] !== '\n') i++; continue; }
       const two = src.substr(i, 2), four = src.substr(i, 4);
+      if (src.substr(i, 3) === '<<<') { toks.push({ t: 'op', v: '<<<' }); i += 3; continue; }
+      if (two === '<<') { const strip = src[i + 2] === '-', t = { t: 'op', v: strip ? '<<-' : '<<' }; toks.push(t); i += strip ? 3 : 2; hdNext = t; continue; }
+      // inside [[ ]], the regular expression after =~ is one word: ( ) | are part of it, and spaces too inside brackets
+      if (cond && toks.length && toks[toks.length - 1].raw === '=~') { const w = condRegex(); if (w) { toks.push(w); continue; } }
       if (four === '2>&1') { toks.push({ t: 'op', v: '2>&1' }); i += 4; continue; }
       if (src.substr(i, 3) === '2>>') { toks.push({ t: 'op', v: '2>>' }); i += 3; continue; }
       // ;; ;& ;;& end a case item (the parser refuses them anywhere else, with bash's words)
       if (src.substr(i, 3) === ';;&') { toks.push({ t: 'op', v: ';;&' }); i += 3; continue; }
       if (['||', '&&', '>>', '2>', '&>', ';;', ';&'].includes(two)) { toks.push({ t: 'op', v: two }); i += 2; continue; }
       // (( arithmetic )) as a command: only when the brackets balance as one expression, otherwise ((a); b) is two subshells
-      if (two === '((') { let depth = 0, end = -1; for (let k = i + 2; k < n; k++) { const ch = src[k]; if (ch === '(') depth++; else if (ch === ')') { if (depth === 0) { if (src[k + 1] === ')') end = k; break; } depth--; } } if (end >= 0) { toks.push({ t: 'arith', v: src.slice(i + 2, end), raw: src.slice(i, end + 2) }); i = end + 2; continue; } }
+      if (two === '((' && !cond) { let depth = 0, end = -1; for (let k = i + 2; k < n; k++) { const ch = src[k]; if (ch === '(') depth++; else if (ch === ')') { if (depth === 0) { if (src[k + 1] === ')') end = k; break; } depth--; } } if (end >= 0) { toks.push({ t: 'arith', v: src.slice(i + 2, end), raw: src.slice(i, end + 2) }); i = end + 2; continue; } }
       if ('|;<>()&'.includes(c)) { if (c === '&') synErr('background jobs (&) are not available here'); toks.push({ t: 'op', v: c }); i++; continue; }
+      }
       // a word
       const parts = []; let q = null;
       while (i < n) {
@@ -282,14 +343,21 @@
         if (ch === '\\') { if (i + 1 >= n) synErr('unexpected EOF after \\'); if (src[i + 1] === '\n') { i += 2; continue; } parts.push({ v: src[i + 1], q: true }); i += 2; continue; }
         if (ch === '$') { dollar(parts, false); continue; }
         if (ch === '`') { i++; const j = src.indexOf('`', i); if (j < 0) synErr('unexpected EOF while looking for matching ``\''); parts.push({ x: 'sub', v: src.slice(i, j), q: false }); i = j + 1; continue; }
-        if (' \t\r\n|;<>()&'.includes(ch)) break;
-        if (ch === '#' && !parts.length) break;
-        let j = i; while (j < n && !' \t\r\n|;<>()&\'"\\$`'.includes(src[j])) j++;
+        if (!whole && ' \t\r\n|;<>()&'.includes(ch)) break;
+        if (ch === '#' && !parts.length && !whole) break;
+        let j = i + 1; while (j < n && !(whole ? '\'"\\$`' : ' \t\r\n|;<>()&\'"\\$`').includes(src[j])) j++;
         parts.push({ v: src.slice(i, j), q: false }); i = j;
       }
       if (q) synErr('unexpected EOF while looking for matching `' + q + "'");
-      toks.push({ t: 'word', parts, raw: src.slice(start, i), end: i });
+      const w = { t: 'word', parts, raw: src.slice(start, i), end: i };
+      toks.push(w);
+      if (hdNext) {   // the word after << is the delimiter; quoting any of it means the text is taken as it is
+        const quoted = /['"\\]/.test(w.raw), delim = parts.every((x) => !x.x) ? parts.map((x) => x.v).join('') : w.raw.replace(/['"\\]/g, '');
+        pending.push(hdNext.hd = { strip: hdNext.v === '<<-', quoted, delim, line: hdNext.line }); hdNext = null;
+      }
+      if (w.raw === '[[') cond = true; else if (w.raw === ']]') cond = false;
     }
+    if (pending.length) readBodies();   // a here-document on the last line, with no lines after it
     return toks;
     } catch (e) { if (e instanceof SyntaxError_ && e.line === undefined) e.line = lineAt(start); throw e; }
   }
@@ -312,10 +380,11 @@
     const isWord = (v) => { const t = toks[p]; return !!t && t.t === 'word' && plainText(t) === v; };
     const expectWord = (v) => { if (!isWord(v)) synErr("syntax error near unexpected token `" + tokDesc(peek()) + "' (expected " + v + ')'); p++; };
     const skipNl = () => { while (isOp('\n') || isOp(';')) p++; };
-    const tokDesc = (t) => !t ? 'end of line' : t.t === 'op' ? (t.v === '\n' ? 'newline' : t.v) : t.t === 'arith' ? t.raw : wordText(t);
+    const tokDesc = (t) => !t ? 'newline' : t.t === 'op' ? (t.v === '\n' ? 'newline' : t.v) : t.t === 'arith' ? t.raw : wordText(t);
     const caseEnd = () => isOp(';;') || isOp(';&') || isOp(';;&');
-    const REDIR = ['>', '>>', '<', '2>', '2>>', '&>', '2>&1'];
-    const redirs = (list) => { while (peek() && peek().t === 'op' && REDIR.includes(peek().v)) { const op = toks[p++].v; if (op === '2>&1') { list.push({ op }); continue; } const t = toks[p++]; if (!t || t.t !== 'word') synErr("syntax error near unexpected token `" + tokDesc(t) + "'"); list.push({ op, target: t }); } };
+    const REDIR = ['>', '>>', '<', '2>', '2>>', '&>', '2>&1', '<<', '<<-', '<<<'];
+    // a here-document's warning (no line with its word) is given as the command is read, before anything runs, as bash does
+    const redirs = (list) => { while (peek() && peek().t === 'op' && REDIR.includes(peek().v)) { const ot = toks[p++], op = ot.v; if (op === '2>&1') { list.push({ op }); continue; } const t = toks[p++]; if (!t || t.t !== 'word') synErr("syntax error near unexpected token `" + tokDesc(t) + "'"); list.push({ op, target: t, hd: ot.hd }); if (ot.hd && ot.hd.warn && !ot.hd.told && opts && opts.warn) { ot.hd.told = true; opts.warn(ot.hd.warn); } } };
     const listUntil = (stops) => {   // a list of commands ending before one of the stop words, a ) or a ;; (not consumed)
       const items = []; skipNl();
       const stop = () => stops.some(isWord) || isOp(')') || caseEnd();
@@ -350,14 +419,73 @@
       const ps = [{ v: p0.v.slice(m[0].length), q: false }].concat(w.parts.slice(1)), idx = [];
       for (let k = 0; k < ps.length; k++) {
         const pt = ps[k], e = !pt.x && !pt.q ? pt.v.match(/\](\+?)=/) : null;
-        if (e) { if (e.index) idx.push({ v: pt.v.slice(0, e.index), q: false }); return { name: m[1], append: !!e[1], idx: { parts: idx }, rest: { parts: [{ v: pt.v.slice(e.index + e[0].length), q: false }].concat(ps.slice(k + 1)) } }; }
+        if (e) { if (e.index) idx.push({ v: pt.v.slice(0, e.index), q: false }); return { name: m[1], append: !!e[1], idx: { parts: idx }, rawIdx: rawIdx(w.raw || '', m[0].length), rest: { parts: [{ v: pt.v.slice(e.index + e[0].length), q: false }].concat(ps.slice(k + 1)) } }; }
         idx.push(pt);
       }
       return null;
     };
-    const arrayList = () => {   // after NAME=( : words, across lines, up to )
+    // the subscript as typed (for messages): from just after NAME[ to the ] before = or +=, quotes skipped over
+    const rawIdx = (raw, from) => { for (let k = from, q = null; k < raw.length; k++) { const c = raw[k]; if (q) { if (c === q) q = null; else if (c === '\\' && q === '"') k++; continue; } if (c === '\\') { k++; continue; } if (c === "'" || c === '"') { q = c; continue; } if (c === ']' && (raw[k + 1] === '=' || raw.startsWith('+=', k + 1))) return raw.slice(from, k); } return raw.slice(from); };
+    const arrayList = () => {   // after NAME=( : words, across lines, up to ); [key]=value words get .sub (the key and the value)
       p++; const list = [];
-      for (;;) { while (isOp('\n')) p++; if (isOp(')')) { p++; return list; } const t = toks[p]; if (!t || t.t !== 'word') synErr("syntax error near unexpected token `" + tokDesc(t) + "'"); list.push(t); p++; }
+      for (;;) {
+        while (isOp('\n')) p++; if (isOp(')')) { p++; return list; }
+        const t = toks[p]; if (!t || t.t !== 'word') synErr("syntax error near unexpected token `" + tokDesc(t) + "'");
+        const p0 = t.parts[0];
+        if (p0 && !p0.x && !p0.q && p0.v[0] === '[') { const a = assignment({ parts: [{ v: 'X' + p0.v, q: false }].concat(t.parts.slice(1)), raw: 'X' + t.raw }); if (a && a.idx) t.sub = a; }
+        list.push(t); p++;
+      }
+    };
+    /* [[ expression ]]: || && ! ( ), unary tests (-f x), binary ones (a == b, a =~ re, a -lt b, a < b) and a lone word (-n). Its errors are
+       bash's: a message saying what was wrong, then "syntax error near `X'", where X is the word at fault, or the operator after it when one
+       follows (bash's reader has looked one token ahead by then); an operator shows only its last character. */
+    const UNOPS = 'abcdefghknoprstuvwxzGLNOSR', BINOPS = ['=', '==', '!=', '=~', '-eq', '-ne', '-lt', '-le', '-gt', '-ge', '-nt', '-ot', '-ef'];
+    const condExpr = () => {
+      const isW = (t) => !!t && t.t === 'word' && t.raw !== ']]', isEnd = (t) => !!t && t.t === 'word' && t.raw === ']]', isNl = (t) => !t || (t.t === 'op' && t.v === '\n');
+      const etext = (t) => isNl(t) ? 'newline' : t.t === 'op' ? t.v : isEnd(t) ? ']]' : t.t === 'arith' ? t.raw : null;   // what bash names in its message: tokens, not words
+      const fail = (lead, at, silent) => {
+        const E = toks[at];
+        if (!E && at >= toks.length) { const e = new SyntaxError_("unexpected EOF while looking for `]]'"); e.more = ['syntax error: unexpected end of file']; throw e; }
+        let near = E;
+        if (isNl(E)) near = toks[at - 1];
+        else if (E.t === 'word') { const N = toks[at + 1]; if (N && N.t === 'op' && N.v !== '\n') near = N; }
+        const txt = near.t === 'word' || near.t === 'arith' ? near.raw : near.v.slice(-1);
+        const e = new SyntaxError_(lead.length ? lead[0] : 'syntax error near `' + txt + "'"); e.more = lead.length ? lead.slice(1).concat('syntax error near `' + txt + "'") : []; e.near = true; e.line = near.line; e.silent = silent; throw e;
+      };
+      const skip = () => { while (isOp('\n')) p++; };
+      const or = () => { let l = and(); while (isOp('||')) { p++; skip(); l = { k: 'or', l, r: and() }; } return l; };
+      const and = () => { let l = term(); while (isOp('&&')) { p++; skip(); l = { k: 'and', l, r: term() }; } return l; };
+      const term = () => {
+        const t = toks[p];
+        if (!t) fail([], p);
+        if (isEnd(t)) fail([], p, true);   // nothing where a test should be: [[ ]], [[ a && ]], [[ ! ]]
+        if (isOp('(')) {
+          p++; skip(); let e;
+          try { e = or(); } catch (x) { if (x.silent) { x.more.unshift(x.message); x.message = "expected `)'"; x.silent = false; } throw x; }
+          if (!isOp(')')) { const et = toks[p] ? etext(toks[p]) : null; fail([et ? 'unexpected token `' + et + "', expected `)'" : "expected `)'"], p); }
+          p++; skip(); return { k: 'group', e };
+        }
+        if (isWord('!')) { p++; return { k: 'not', e: term() }; }
+        if (t.t !== 'word') fail(['unexpected token `' + etext(t) + "' in conditional command"], p);
+        const w = plainText(t);
+        if (w && w.length === 2 && w[0] === '-' && UNOPS.includes(w[1])) {
+          p++; const a = toks[p];
+          if (!isW(a)) fail([a && etext(a) || !a ? 'unexpected argument `' + (a ? etext(a) : 'newline') + "' to conditional unary operator" : 'unexpected argument to conditional unary operator'], a ? p : p - 1);
+          p++; skip(); return { k: 'unary', op: w, a };
+        }
+        p++; const o = toks[p];
+        let op = null;
+        if (o && o.t === 'word' && BINOPS.includes(plainText(o))) op = plainText(o);
+        else if (o && o.t === 'op' && (o.v === '<' || o.v === '>')) op = o.v;
+        else if (isEnd(o) || (o && o.t === 'op' && ['&&', '||', ')'].includes(o.v))) return { k: 'unary', op: '-n', a: t };   // a lone word: is it non-empty?
+        else fail([o && o.t !== 'word' || !o ? 'unexpected token `' + (o ? etext(o) : 'newline') + "', conditional binary operator expected" : 'conditional binary operator expected'], o ? p : p - 1);
+        p++; const b = toks[p];
+        if (!isW(b)) fail(['unexpected argument `' + (b ? etext(b) : 'newline') + "' to conditional binary operator"], b ? p : p - 1);
+        p++; skip(); return { k: 'binary', op, a: t, b };
+      };
+      const e = or();
+      if (!isEnd(toks[p])) { if (!toks[p]) fail([], p); const et = toks[p].t === 'word' ? null : etext(toks[p]); fail(['syntax error in conditional expression' + (et ? ': unexpected token `' + et + "'" : '')], p); }
+      p++; return e;
     };
     const compound = () => {
       if (isWord('if')) {
@@ -407,6 +535,7 @@
         return { k: 'case', word, items };
       }
       if (peek() && peek().t === 'arith') { const t = toks[p++]; return { k: 'arith', v: t.v, raw: t.raw }; }
+      if (isWord('[[')) { const p0 = ++p, e = condExpr(); return { k: 'cond', e, raw: toks.slice(p0, p - 1).filter((t) => t.v !== '\n').map((t) => t.t === 'op' ? t.v : t.raw).join(' ') }; }
       if (isWord('{')) { p++; const body = listUntil(['}']); expectWord('}'); return { k: 'group', body }; }
       if (isOp('(')) { p++; const body = listUntil([]); if (!isOp(')')) synErr("syntax error: unexpected end of file (expected `)')"); p++; return { k: 'group', body, sub: true }; }
       return null;
@@ -484,9 +613,10 @@
      elif as else + if. Words are printed as they were typed. */
   function printFunc(name, body) {
     const IND = '    ';
-    const words = (n) => n.raw.concat(n.redirs.map(redir)).join(' ');
-    const redir = (r) => r.op === '2>&1' ? '2>&1' : r.op + ' ' + r.target.raw;
-    const redirs = (n) => n.redirs && n.redirs.length ? ' ' + n.redirs.map(redir).join(' ') : '';
+    const words = (n) => n.raw.concat(n.redirs.map(redir)).join(' ') + bodies(n);
+    const redir = (r) => r.op === '2>&1' ? '2>&1' : r.op + (r.hd ? '' : ' ') + r.target.raw;
+    const bodies = (n) => n.redirs.filter((r) => r.hd).map((r) => '\n' + r.hd.text + r.hd.delim).join('') + (n.redirs.some((r) => r.hd) ? '\n' : '');   // a here-document's lines follow its command
+    const redirs = (n) => n.redirs && n.redirs.length ? ' ' + n.redirs.map(redir).join(' ') + bodies(n) : '';
     const inline = (list, ind) => list.items.map((it) => andor(it, ind)).join('; ');
     const block = (list, ind, semi) => list.items.map((it) => ind + andor(it, ind)).join(';\n') + (semi && list.items.length ? ';' : '');
     const andor = (n, ind) => pipe(n.first, ind) + n.rest.map((r) => ' ' + r.op + ' ' + pipe(r.p, ind)).join('');
@@ -505,6 +635,7 @@
       if (n.k === 'while') return (n.until ? 'until ' : 'while ') + inline(n.cond, ind) + '; do\n' + block(n.body, ind + IND, true) + '\n' + ind + 'done' + redirs(n);
       if (n.k === 'case') return 'case ' + n.word.raw + ' in \n' + n.items.map((it) => ind + IND + it.pats.map((t) => t.raw).join(' | ') + ')\n' + block(it.body, ind + IND + IND, false) + '\n' + ind + IND + it.end).join('\n') + '\n' + ind + 'esac' + redirs(n);
       if (n.k === 'arith') return '(( ' + n.v.trim() + ' ))' + redirs(n);
+      if (n.k === 'cond') return '[[ ' + n.raw + ' ]]' + redirs(n);
       if (n.k === 'group' && n.sub) return '( ' + n.body.items.map((it) => andor(it, ind)).join(';\n' + ind) + ' )' + redirs(n);
       if (n.k === 'group') return '{ \n' + block(n.body, ind + IND, false) + '\n' + ind + '}' + redirs(n);
       if (n.k === 'func') return func(n.name, n.body, ind);
@@ -517,7 +648,7 @@
   /* ---------------- $(( arithmetic )) ---------------- */
   // bash's integer arithmetic: numbers in base 10, 0x hex and 0 octal; variables (their values are expressions too); = += -= *= /= %=,
   // x++ x-- ++x --x; unary - + ! bind tighter than **. Errors use bash's words: "EXPR: MESSAGE (error token is "REST")".
-  function arith(src, vars, setVar, depth) {
+  function arith(src, vars, setVar, depth, assocP) {   // assocP(name): an associative array, whose [key] is text, not arithmetic
     depth = depth || 0;
     const shown = src.replace(/^\s+/, '');
     const fail = (msg, at, tok) => { const e = new SyntaxError_((tok ? shown.replace(/\s+$/, '') : shown) + ': ' + msg + ' (error token is "' + (tok || src.slice(at)) + '")'); e.exit = 1; throw e; };
@@ -529,6 +660,7 @@
       re.lastIndex = pos; const m = re.exec(src);
       if (!m) fail('syntax error: invalid arithmetic operator', pos);
       toks.push({ v: m[0], pos, k: m[1] ? 'num' : m[2] ? 'name' : 'op' }); pos = re.lastIndex;
+      if (m[2] && assocP && src[pos] === '[' && assocP(m[2])) { let d = 0, e = pos; for (; e < src.length; e++) { if (src[e] === '[') d++; else if (src[e] === ']' && --d === 0) break; } if (e < src.length) { toks.push({ v: '[', pos, k: 'op' }, { v: src.slice(pos + 1, e), pos: pos + 1, k: 'key' }, { v: ']', pos: e, k: 'op' }); pos = e + 1; } }
     }
     // ++ and -- belong to a variable next to them; otherwise they are two signs (1--2 is 1 - -2)
     for (let k = 0; k < toks.length; k++) {
@@ -547,10 +679,10 @@
       const v = String(vars(name, ix) || '').trim();
       if (v === '') return 0;
       if (depth > 10) { const e = new SyntaxError_(name + ': expression recursion level exceeded'); e.exit = 1; throw e; }
-      return arith(v, vars, setVar, depth + 1);
+      return arith(v, vars, setVar, depth + 1, assocP);
     };
     const assign = (name, v, ix) => { if (setVar) setVar(name, String(v), ix); return v; };
-    const index = () => { if (peek() !== '[') return undefined; i++; const v = expr(); if (peek() !== ']') fail("missing `]'", at()); i++; return v; };   // a[i+1]
+    const index = () => { if (peek() !== '[') return undefined; i++; if (toks[i].k === 'key') { i += 2; return toks[i - 2].v; } const v = expr(); if (peek() !== ']') fail("missing `]'", at()); i++; return v; };   // a[i+1]
     const prim = () => {
       const t = toks[i];
       if (!t) fail('syntax error: operand expected', at());
@@ -663,7 +795,7 @@
     return new RegExp(anchored === false ? re : '^' + re + '$');
   }
   const unescapeGlob = (s) => s.replace(/\\(.)/g, '$1');
-  function globExpand(fs, pat) {
+  function globExpand(fs, pat, dotglob) {   // dotglob: * matches names starting with a dot too
     const absolute = pat.startsWith('/');
     const comps = pat.split('/').filter((c, i, a) => c !== '' || false);
     let bases = [absolute ? '/' : ''];   // '' = relative to cwd
@@ -674,7 +806,7 @@
         if (!GLOB_CHARS.test(comp.replace(/\\./g, ''))) { const name = unescapeGlob(comp); const cand = join(b, name); if (k === comps.length - 1 ? fs.exists(fs.resolve(cand)) : fs.isDir(fs.resolve(cand))) next.push(cand); continue; }
         const dir = fs.resolve(b === '' ? '.' : b); if (!fs.isDir(dir)) continue;
         const re = globToRegExp(comp);
-        for (const name of fs.list(dir)) { if (name.startsWith('.') && !comp.startsWith('.')) continue; if (!re.test(name)) continue; const cand = join(b, name); if (k < comps.length - 1 && !fs.isDir(fs.resolve(cand))) continue; next.push(cand); }
+        for (const name of fs.list(dir)) { if (name.startsWith('.') && !comp.startsWith('.') && !dotglob) continue; if (!re.test(name)) continue; const cand = join(b, name); if (k < comps.length - 1 && !fs.isDir(fs.resolve(cand))) continue; next.push(cand); }
       }
       bases = next;
     }
@@ -743,12 +875,29 @@
   function Stop(kind, code) { this.kind = kind; this.code = code; }   // 'exit' (exit n), 'cancel' (Ctrl+C), 'steps', 'output', 'array'
   function Return(code) { this.code = code; }   // return n: caught by the function (or the sourced script) it ends
   function LoopCtl(kind, n) { this.kind = kind; this.n = n; }   // break n and continue n: caught by the loops, one level each
+  // $'...', as bash writes a value that holds control characters (declare -p, ${x@Q})
+  const ansiQ = (s) => "$'" + String(s).replace(/[\\'\u0000-\u001f\u007f]/g, (c) => ({ '\\': '\\\\', "'": "\\'", '\u0007': '\\a', '\b': '\\b', '\u001b': '\\E', '\f': '\\f', '\n': '\\n', '\r': '\\r', '\t': '\\t', '\v': '\\v' })[c] || '\\' + c.charCodeAt(0).toString(8).padStart(3, '0')) + "'";
+  // ${x@Q}: quoted so the shell would read it back; ${x@E}: backslash escapes worked out, as in $'...'
+  const quoteQ = (s) => /[\u0000-\u001f\u007f]/.test(s) ? ansiQ(s) : "'" + s.replace(/'/g, "'\\''") + "'";
+  const escapesE = (s) => s.replace(/\\(x[0-9A-Fa-f]{1,2}|u[0-9A-Fa-f]{1,4}|[0-7]{1,3}|.)/g, (m, c) => c[0] === 'x' || c[0] === 'u' ? String.fromCharCode(parseInt(c.slice(1), 16)) : /^[0-7]/.test(c) ? String.fromCharCode(parseInt(c, 8) & 255) : ({ a: '\u0007', b: '\b', e: '\u001b', E: '\u001b', f: '\f', n: '\n', r: '\r', t: '\t', v: '\v', '\\': '\\', "'": "'", '"': '"', '?': '?' })[c] || m);
   const cap = (s, n) => s.length > n ? s.slice(0, n) : s;
   // time's report: real is the wall-clock time; user is given the same (the commands run in this one thread) and sys 0, in bash's two formats
   const clock = (s) => Math.floor(s / 60) + 'm' + (s % 60).toFixed(3) + 's';
   const timeReport = (s, posix) => posix ? 'real ' + s.toFixed(2) + '\nuser ' + s.toFixed(2) + '\nsys 0.00\n' : '\nreal\t' + clock(s) + '\nuser\t' + clock(s) + '\nsys\t' + clock(0) + '\n';
   const globEsc = (v) => v.replace(/[\\*?[\]'"]/g, '\\$&');   // quoted text inside a case pattern matches itself
 
+  // bash's hash of a string (FNV-1, 32 bits, over the UTF-8 bytes taken as signed chars): where an associative array's key goes
+  function fnv(s) {
+    let h = 2166136261;
+    const add = (b) => { h = Math.imul(h, 16777619) ^ (b > 127 ? b - 256 : b); };
+    for (const ch of s) {
+      const c = ch.codePointAt(0);
+      if (c < 0x80) add(c); else if (c < 0x800) { add(0xc0 | c >> 6); add(0x80 | c & 63); }
+      else if (c < 0x10000) { add(0xe0 | c >> 12); add(0x80 | c >> 6 & 63); add(0x80 | c & 63); }
+      else { add(0xf0 | c >> 18); add(0x80 | c >> 12 & 63); add(0x80 | c >> 6 & 63); add(0x80 | c & 63); }
+    }
+    return h >>> 0;
+  }
   function makeShell(opts) {
     opts = opts || {};
     const fs = opts.fs || makeFS();
@@ -764,36 +913,76 @@
       if (name === '0') return ctx.name || 'bash';
       if (/^[0-9]+$/.test(name)) return ctx.args[+name - 1] || '';
       if (name === '$') return '4242';
-      if (name === 'RANDOM') return String(Math.floor(Math.random() * 32768));
+      if (name === 'RANDOM') return String(random());
+      if (name === 'SECONDS') return String(sh.secs + Math.floor((now() - sh.t0) / 1000));
       if (name === 'PWD') return fs.cwd;
       if (name === 'OLDPWD') return sh.oldpwd || '';
       if (has(sh.arrays, name)) { const a = sh.arrays[name].v[0]; return a === undefined ? '' : a; }   // $a is ${a[0]}
       return has(sh.vars, name) ? sh.vars[name] : '';
     };
     const isSet = (name) => has(sh.vars, name) || (has(sh.arrays, name) && sh.arrays[name].v[0] !== undefined);
-    const setVar = (name, v) => { if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) return; if (has(sh.arrays, name)) { arrSet(sh.arrays[name], 0, v); return; } sh.vars[name] = cap(String(v), LIMITS.vars); };
-    // ----- arrays. Each is capped (LIMITS.array values, four times LIMITS.vars characters), so a loop cannot fill the memory with one
-    const arrMake = (name) => { if (has(sh.arrays, name)) return sh.arrays[name]; const a = { v: [], n: 0, bytes: 0 }; if (has(sh.vars, name)) { arrSet(a, 0, sh.vars[name]); delete sh.vars[name]; } sh.arrays[name] = a; return a; };
+    // $RANDOM is bash's own generator (variables.c: a Park-Miller step, the two halves XORed, never the same number twice in a row), so
+    // RANDOM=n gives the numbers bash gives; unseeded it starts from the clock. $SECONDS counts from the start or from SECONDS=n.
+    let rseed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0, lastRandom = 0;
+    const random = () => {
+      let rv;
+      do { let last = rseed || 123459876; const h = Math.floor(last / 127773), l = last % 127773; let t = (16807 * l - 2836 * h) | 0; if (t < 0) t += 0x7fffffff; rseed = t >>> 0; rv = ((rseed >>> 16) ^ (rseed & 65535)) & 32767; } while (rv === lastRandom);
+      return (lastRandom = rv);
+    };
+    sh.t0 = now(); sh.secs = 0;
+    const special = (name, v) => { const n = (String(v).match(/^\s*\d+/) || ['0'])[0].trim(); if (name === 'RANDOM') { rseed = Number(BigInt(n) & 0xffffffffn); lastRandom = 0; } else { sh.secs = parseInt(n, 10) || 0; sh.t0 = now(); } };
+    const setVar = (name, v) => { if (name === 'RANDOM' || name === 'SECONDS') { special(name, v); return; } if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) return; if (has(sh.arrays, name)) { arrSet(sh.arrays[name], 0, v); return; } sh.vars[name] = cap(String(v), LIMITS.vars); };
+    // ----- arrays. Each is capped (LIMITS.array values, four times LIMITS.vars characters), so a loop cannot fill the memory with one.
+    // An associative one (declare -A: assoc) keeps its values in a null-prototype dictionary (a key may be __proto__ or hold spaces) and its
+    // keys in bash's own order (${!m[@]}, declare -p): a hash table of 1024 buckets (FNV-1 over the key's UTF-8 bytes), the newest key first in
+    // its bucket, the buckets made four times as many once it holds twice as many keys as buckets (hashlib.c)
+    const newArr = (assoc) => assoc ? { v: dict(), n: 0, bytes: 0, assoc: true, b: [], nb: 1024 } : { v: [], n: 0, bytes: 0 };
+    const arrMake = (name, assoc) => { if (has(sh.arrays, name)) return sh.arrays[name]; const a = newArr(assoc); if (has(sh.vars, name)) { arrSet(a, 0, sh.vars[name]); delete sh.vars[name]; } sh.arrays[name] = a; return a; };
+    const into = (a, k) => { const j = fnv(k) & (a.nb - 1); (a.b[j] || (a.b[j] = [])).unshift(k); };
     const arrSet = (a, i, val) => {
       val = cap(String(val), LIMITS.vars);
+      if (a.assoc) i = String(i);
       const old = a.v[i];
-      if (old === undefined) { if (a.n >= LIMITS.array) throw new Stop('array', 1); a.n++; }
+      if (old === undefined) {
+        if (a.n >= LIMITS.array) throw new Stop('array', 1);
+        if (a.assoc) { if (a.n >= a.nb * 2) { const was = a.b; a.nb *= 4; a.b = []; for (const l of was) if (l) for (const k of l) into(a, k); } into(a, i); a.bytes += i.length; }
+        a.n++;
+      }
       a.bytes += val.length - (old === undefined ? 0 : old.length); if (a.bytes > LIMITS.vars * 4) throw new Stop('array', 1);
       a.v[i] = val; a.bare = false;
     };
-    const arrUnset = (a, i) => { if (a.v[i] === undefined) return; a.n--; a.bytes -= a.v[i].length; delete a.v[i]; };
-    const arrKeys = (a) => Object.keys(a.v).map(Number);   // a sparse array lists its indices in order
+    const arrUnset = (a, i) => { if (a.assoc) i = String(i); if (a.v[i] === undefined) return; a.n--; a.bytes -= a.v[i].length; if (a.assoc) { const l = a.b[fnv(i) & (a.nb - 1)]; l.splice(l.indexOf(i), 1); a.bytes -= i.length; } delete a.v[i]; };
+    const arrKeys = (a) => { if (!a.assoc) return Object.keys(a.v).map(Number); const out = []; for (const l of a.b) if (l) out.push(...l); return out; };   // a sparse array lists its indices in order
     const arrVals = (a) => arrKeys(a).map((k) => a.v[k]);
-    const arrMax = (a) => { const k = arrKeys(a); return k.length ? k[k.length - 1] : -1; };
+    const arrMax = (a) => { if (a.assoc) return -1; const k = arrKeys(a); return k.length ? k[k.length - 1] : -1; };
+    const isAssoc = (name) => has(sh.arrays, name) && !!sh.arrays[name].assoc;
     const badSub = (what) => { const e = new SyntaxError_(what + ': bad array subscript'); e.exit = 1; throw e; };
-    // an index is arithmetic; a negative one counts back from the end, as in bash
-    const subscript = (name, a, i, shown) => { if (i < 0) { i += (a ? arrMax(a) : isSet(name) ? 0 : -1) + 1; if (i < 0) badSub(shown); } if (i > 2147483647) badSub(shown); return i; };
+    // an index is arithmetic; a negative one counts back from the end, as in bash. An associative array's key is text, and may not be empty.
+    const subscript = (name, a, i, shown) => { if (a && a.assoc) { if (String(i) === '') badSub(shown); return String(i); } if (i < 0) { i += (a ? arrMax(a) : isSet(name) ? 0 : -1) + 1; if (i < 0) badSub(shown); } if (i > 2147483647) badSub(shown); return i; };
     const elemGet = (name, i) => { const a = has(sh.arrays, name) ? sh.arrays[name] : null; i = subscript(name, a, i, name); if (a) return a.v[i] === undefined ? '' : a.v[i]; return i === 0 ? getVar(name, { args: [] }) : ''; };
     const elemSet = (name, i, v) => { const a = arrMake(name); arrSet(a, subscript(name, a, i, name + '[' + i + ']'), v); };
-    const assignArray = (name, vals, append) => { let a; if (append) a = arrMake(name); else { delete sh.vars[name]; a = sh.arrays[name] = { v: [], n: 0, bytes: 0 }; } let i = arrMax(a) + 1; for (const v of vals) arrSet(a, i++, v); };
+    // NAME=(...): items are values, or { k, v, raw } for [key]=value (k: the key, still text). kind 'A' or 'a' makes the array that kind; otherwise
+    // an existing one keeps its kind. An associative array takes [key]=value items, or else the words as key value key value...
+    const assignArray = (name, items, append, kind, io) => {
+      const assoc = kind ? kind === 'A' : isAssoc(name);
+      let a; if (append) a = arrMake(name, assoc); else { delete sh.vars[name]; a = sh.arrays[name] = newArr(assoc); }
+      if (a.assoc) {
+        if (!items.some((it) => typeof it === 'object')) { for (let k = 0; k < items.length; k += 2) arrSet(a, subscript(name, a, items[k], name + '[' + items[k] + ']'), k + 1 < items.length ? items[k + 1] : ''); return; }
+        for (const it of items) {
+          if (typeof it !== 'object') { if (io) io.err('bash: ' + name + ": '" + it + "': must use subscript when assigning associative array\n"); continue; }
+          const k = subscript(name, a, it.k, name + '[' + it.raw + ']'); arrSet(a, k, it.append ? (a.v[k] || '') + it.v : it.v);
+        }
+        return;
+      }
+      let i = arrMax(a) + 1;
+      for (const it of items) {
+        if (typeof it === 'object') { i = subscript(name, a, arithOf(it.k, { args: [] }), name + '[' + it.raw + ']'); arrSet(a, i, it.append ? (a.v[i] || '') + it.v : it.v); i++; continue; }
+        arrSet(a, i++, it);
+      }
+    };
     // $(( )), (( )) and for (( )): $x inside is replaced first, as in bash; a[i] reads and writes array elements
     const arithOf = (text, ctx) => arith(text.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*|[0-9]+|[?#])\}|\$([A-Za-z_][A-Za-z0-9_]*|[0-9?#])/g, (m, a, b) => getVar(a || b, ctx)),
-      (n, ix) => ix === undefined ? getVar(n, ctx) : elemGet(n, ix), (n, v, ix) => ix === undefined ? setVar(n, v) : elemSet(n, ix, v));
+      (n, ix) => ix === undefined ? getVar(n, ctx) : elemGet(n, ix), (n, v, ix) => ix === undefined ? setVar(n, v) : elemSet(n, ix, v), 0, isAssoc);   // m[key] of an associative array: the key is text
     const tilde = (fsPath) => fsPath === HOME ? '~' : fsPath.startsWith(HOME + '/') ? '~' + fsPath.slice(HOME.length) : fsPath;
     sh.prompt = () => USER + '@' + HOST + ':' + tilde(fs.cwd) + '$ ';
     sh.cancel = () => { sh.cancelled = true; if (opts.cancel) opts.cancel(); };
@@ -805,10 +994,12 @@
     // the parts with many values: "$@" ${a[@]} ${!a[@]} ${a[@]:1:2} (each value its own word when quoted); null for the others
     const listOf = (p, ctx) => {
       const all = (name) => has(sh.arrays, name) ? arrVals(sh.arrays[name]) : isSet(name) ? [getVar(name, ctx)] : [];
+      if (p.x === 'xform' && (p.idx === '@' || p.idx === '*' || p.v === '@' || p.v === '*')) { const base = listOf(p.idx ? { x: 'elem', v: p.v, idx: p.idx } : { x: 'var', v: p.v }, ctx); return base.map((v) => xform(p.op, v, p.v)); }
       if (p.x === 'var' && (p.v === '@' || p.v === '*')) return ctx.args.slice();
       if (p.x === 'elem' && (p.idx === '@' || p.idx === '*')) return all(p.v);
       if (p.x === 'keys') return has(sh.arrays, p.v) ? arrKeys(sh.arrays[p.v]).map(String) : isSet(p.v) ? ['0'] : [];
       if (p.x === 'aslice') {
+        if (isAssoc(p.v)) { const vs = arrVals(sh.arrays[p.v]), from = p.from < 0 ? Math.max(0, vs.length + p.from) : p.from; return vs.slice(from, p.len === null ? undefined : from + Math.max(0, p.len)); }   // in bash's order
         const a = has(sh.arrays, p.v) ? sh.arrays[p.v] : null, keys = a ? arrKeys(a) : isSet(p.v) ? [0] : [], from = p.from < 0 ? (keys.length ? keys[keys.length - 1] + 1 : 0) + p.from : p.from;
         if (p.len !== null && p.len < 0) { const e = new SyntaxError_(p.len + ': substring expression < 0'); e.exit = 1; throw e; }
         const picked = keys.filter((k) => k >= from).slice(0, p.len === null ? undefined : p.len);
@@ -816,15 +1007,23 @@
       }
       return null;
     };
+    // ${m[key]}: the key is a word of its own (quotes removed, $x and $(...) expanded, spaces kept)
+    const keyText = (p, ctx, io) => { if (!p.idxw) { try { p.idxw = tokenize(p.idx, true)[0] || { parts: [] }; } catch (e) { p.idxw = { parts: [{ v: p.idx, q: true }] }; } } return expandSingle(p.idxw, ctx, io); };
+    const xform = (op, v, name) => op === 'Q' ? quoteQ(v) : op === 'E' ? escapesE(v) : op === 'U' ? v.toUpperCase() : op === 'L' ? v.toLowerCase() : op === 'u' ? v.slice(0, 1).toUpperCase() + v.slice(1) : (isAssoc(name) ? 'A' : has(sh.arrays, name) ? 'a' : '') + (sh.exported.has(name) ? 'x' : '');
     const joined = (p) => p.v === '*' || p.idx === '*';   // "$*" and "${a[*]}" are one word
     // the value of a part with one value
     async function partValue(p, ctx, io) {
       if (p.x === 'bad') { const e = new SyntaxError_('${' + p.v + '}: bad substitution'); e.exit = 1; throw e; }
       if (p.x === 'var') return getVar(p.v, ctx);
-      if (p.x === 'elem') { try { return elemGet(p.v, arithOf(p.idx, ctx)); } catch (e) { if (!(e instanceof SyntaxError_ && / bad array subscript$/.test(e.message))) throw e; io.err('bash: ' + e.message + '\n'); return ''; } }   // reading ${a[-9]}: a message, then nothing
+      if (p.x === 'xform') {   // an unset name gives nothing, even for @Q
+        const v = p.idx !== undefined ? await partValue({ x: 'elem', v: p.v, idx: p.idx }, ctx, io) : getVar(p.v, ctx);
+        const set = p.idx !== undefined ? v !== '' || has(sh.arrays, p.v) : /^[0-9]+$/.test(p.v) ? +p.v <= ctx.args.length : isSet(p.v);
+        return p.op === 'a' ? xform('a', v, p.v) : set || v !== '' ? xform(p.op, v, p.v) : '';
+      }
+      if (p.x === 'elem') { try { return elemGet(p.v, isAssoc(p.v) ? await keyText(p, ctx, io) : arithOf(p.idx, ctx)); } catch (e) { if (!(e instanceof SyntaxError_ && / bad array subscript$/.test(e.message))) throw e; io.err('bash: ' + e.message + '\n'); return ''; } }   // reading ${a[-9]}: a message, then nothing
       if (p.x === 'len') {
         if (p.idx === '@' || p.idx === '*') return String(has(sh.arrays, p.v) ? sh.arrays[p.v].n : isSet(p.v) ? 1 : 0);
-        if (p.idx !== undefined) return String(elemGet(p.v, arithOf(p.idx, ctx)).length);
+        if (p.idx !== undefined) return String(elemGet(p.v, isAssoc(p.v) ? await keyText(p, ctx, io) : arithOf(p.idx, ctx)).length);
         return String(p.v === '@' || p.v === '*' ? ctx.args.length : getVar(p.v, ctx).length);
       }
       if (p.x === 'slice') {
@@ -873,7 +1072,11 @@
         // 3. ~ at the start, then wildcards on unquoted text; quoted characters are protected with \ in the pattern
         if (f[0].v.startsWith('~') && !f[0].q) { const m = f[0].v.match(/^~([^/]*)(.*)$/); if (m[1] === '' || m[1] === USER) f[0] = { v: HOME + m[2], q: false }; }
         const pat = f.map((c) => c.q ? c.v.replace(/[\\*?[\]]/g, '\\$&') : c.v).join('');
-        if (f.some((c) => !c.q && GLOB_CHARS.test(c.v))) { const m = globExpand(fs, pat); if (m.length) { out.push(...m); continue; } }
+        if (f.some((c) => !c.q && GLOB_CHARS.test(c.v))) {
+          const m = globExpand(fs, pat, sh.shopt.dotglob); if (m.length) { out.push(...m); continue; }
+          if (sh.shopt.failglob) { const e = new SyntaxError_('no match: ' + unescapeGlob(pat)); e.exit = 1; throw e; }   // shopt -s failglob: an error, and the line stops
+          if (sh.shopt.nullglob) continue;   // shopt -s nullglob: the word goes away
+        }
         out.push(unescapeGlob(pat));
       }
       return out;
@@ -886,7 +1089,7 @@
         const p = w.parts[k];
         const list = p.x ? listOf(p, ctx) : null;
         let v = !p.x ? p.v : list ? list.join(' ') : await partValue(p, ctx, io);
-        if (!p.x && k === 0 && !p.q && !pattern && /^~(\/|$)/.test(v)) v = HOME + v.slice(1);
+        if (!p.x && k === 0 && !p.q && pattern !== true && /^~(\/|$)/.test(v)) v = HOME + v.slice(1);   // pattern 'tilde': [[ x == ~/* ]]
         // in a case pattern an unquoted expansion keeps its wildcards and its backslashes (bash: p='a\*' matches only "a*"), so only quotes,
         // which the pattern reader would take as quoting, are made literal
         s += pattern ? (p.q ? globEsc(v) : p.x ? v.replace(/['"]/g, (c) => '\\' + c) : v) : v;
@@ -901,7 +1104,7 @@
     // ----- running a text and keeping its output (for $(...))
     async function capture(text, ctx, io) {
       let buf = ''; const sub = Object.assign({}, io, { out: (s) => { buf += s; if (buf.length > LIMITS.out) throw new Stop('output', 1); }, tty: false });
-      await runList(parse(text, { aliases: aliasTable() }), ctx, sub);
+      await runList(parse(text, { aliases: aliasTable(), warn: (m) => io.err('bash: ' + m + '\n') }), ctx, sub);
       return buf;
     }
 
@@ -956,6 +1159,9 @@
       for (const r of redirs) {
         // 2>&1 sends errors wherever the output goes at that point, so the order counts: > f 2>&1 puts both in f, 2>&1 > f only the output
         if (r.op === '2>&1') { errBuf = outBuf || 'out'; continue; }
+        // <<EOF: the lines, expanded unless the word was quoted; <<< word: the word (not split, no wildcards) and a newline
+        if (r.hd) { sub.stdin = stdinOf(r.hd.quoted ? r.hd.text : await expandSingle({ parts: r.hd.parts }, ctx, io)); continue; }
+        if (r.op === '<<<') { sub.stdin = stdinOf(await expandSingle(r.target, ctx, io) + '\n'); continue; }
         const target = await expandOne(r.target, ctx, io); const abs = fs.resolve(target);
         if (abs === '/dev/null') { if (r.op === '<') sub.stdin = stdinOf(''); else { const w = { abs: null, buf: '' }; if (r.op !== '2>' && r.op !== '2>>') outBuf = w; if (r.op !== '>' && r.op !== '>>') errBuf = w; } continue; }
         try {
@@ -1014,8 +1220,53 @@
         }
         if (node.k === 'arith') { tick(); try { return arithOf(await arithSubs(node.v, ctx, io2), ctx) !== 0 ? 0 : 1; } catch (e) { if (!(e instanceof SyntaxError_ && e.exit)) throw e; io2.err('bash: ((: ' + e.message + '\n'); return 1; } }
         if (node.k === 'func') { tick(); sh.funcs[node.name] = node.body; return 0; }
+        if (node.k === 'cond') { tick(); try { return await condEval(node.e, ctx, io2) ? 0 : 1; } catch (e) { if (e === BAD_RE) return 2; throw e; } }   // [[ ]]: 0 true, 1 false, 2 a regular expression that does not compile
         return 0;
       });
+    }
+    // the tests of [[ ]]: the words are expanded but not split or globbed; the right side of == != is a pattern (quoted parts literal), of =~ an
+    // extended regular expression (quoted parts literal), whose match and groups go into BASH_REMATCH; -eq and friends compare arithmetic
+    const BAD_RE = {};
+    async function condEval(e, ctx, io) {
+      if (e.k === 'and') return await condEval(e.l, ctx, io) && condEval(e.r, ctx, io);
+      if (e.k === 'or') return await condEval(e.l, ctx, io) || condEval(e.r, ctx, io);
+      if (e.k === 'not') return !await condEval(e.e, ctx, io);
+      if (e.k === 'group') return condEval(e.e, ctx, io);
+      const a = await expandSingle(e.a, ctx, io);
+      if (e.k === 'unary') {
+        if (e.op === '-n') return a !== ''; if (e.op === '-z') return a === '';
+        if (e.op === '-v') { const m = a.match(/^([A-Za-z_][A-Za-z0-9_]*)(?:\[(.+)\])?$/); if (!m) return false; if (m[2] === undefined) return isSet(m[1]); const arr = has(sh.arrays, m[1]) ? sh.arrays[m[1]] : null; if (m[2] === '@' || m[2] === '*') return !!arr && arr.n > 0; if (arr && arr.assoc) return arr.v[m[2]] !== undefined; try { const i = arithOf(m[2], ctx); return arr ? arr.v[i < 0 ? i + arrMax(arr) + 1 : i] !== undefined : i === 0 && isSet(m[1]); } catch (x) { return false; } }
+        if (e.op === '-o' || e.op === '-t' || e.op === '-R') return false;
+        const n = a === '' ? null : fs.stat(fs.resolve(a));
+        if (!n) return false;
+        switch (e.op) {
+          case '-a': case '-e': case '-r': case '-w': case '-N': return true;
+          case '-f': return n.t === 'f'; case '-d': return n.t === 'd'; case '-s': return n.t === 'd' || n.d.length > 0; case '-x': return n.t === 'd' || n.x;
+          case '-c': return fs.resolve(a) === '/dev/null';
+          case '-O': case '-G': { const p = fs.resolve(a); return p === '/home' || p.startsWith('/home/') || p === '/tmp' || p.startsWith('/tmp/'); }   // the student owns their files
+          default: return false;   // -b -p -S -h -L -g -u -k: no devices, pipes, sockets, links or special bits here
+        }
+      }
+      if (e.op === '=~') {
+        let re = '';
+        for (const p of e.b.parts) { const list = p.x ? listOf(p, ctx) : null, v = !p.x ? p.v : list ? list.join(' ') : await partValue(p, ctx, io); re += p.q ? v.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&') : v; }
+        let rx; try { rx = new RegExp(posixRegex(re, true)); } catch (x) { throw BAD_RE; }
+        const m = rx.exec(a);
+        assignArray('BASH_REMATCH', m ? Array.from(m, (g) => g === undefined ? '' : g) : [], false);
+        return !!m;
+      }
+      if (e.op === '==' || e.op === '=' || e.op === '!=') { const hit = paramPattern(await expandSingle(e.b, ctx, io, 'tilde'))(a); return e.op === '!=' ? !hit : hit; }
+      const b = await expandSingle(e.b, ctx, io);
+      if (e.op === '<') return a < b; if (e.op === '>') return a > b;
+      if (e.op === '-nt' || e.op === '-ot' || e.op === '-ef') {
+        const na = a === '' ? null : fs.stat(fs.resolve(a)), nb = b === '' ? null : fs.stat(fs.resolve(b));
+        if (e.op === '-ef') return !!na && !!nb && fs.resolve(a) === fs.resolve(b);
+        const [x, y] = e.op === '-nt' ? [na, nb] : [nb, na];
+        return !!x && (!y || x.m > y.m);
+      }
+      let x, y;
+      try { x = arithOf(a, ctx); y = arithOf(b, ctx); } catch (er) { if (!(er instanceof SyntaxError_ && er.exit)) throw er; io.err('bash: [[: ' + er.message + '\n'); return false; }   // said, and that test is false
+      return e.op === '-eq' ? x === y : e.op === '-ne' ? x !== y : e.op === '-lt' ? x < y : e.op === '-le' ? x <= y : e.op === '-gt' ? x > y : x >= y;
     }
     async function runSimple(node, ctx, io) {
       tick(); if (node.line) { ctx.line = node.line; if (ctx.root) ctx.root.line = node.line; }
@@ -1023,21 +1274,27 @@
       const decl = node.words.length && DECL.includes(plainText(node.words[0]) || '');
       const words = [], arrays = dict();
       for (const w of node.words) {
-        if (decl && w.decl) { if (w.decl.list) { arrays[words.length - 1] = { name: w.decl.name, values: await expandAll(w.decl.list, ctx, io), append: w.decl.append }; words.push(w.decl.name + '=(...)'); } else words.push(await expandSingle(w, ctx, io)); continue; }
+        if (decl && w.decl) { if (w.decl.list) { arrays[words.length - 1] = { name: w.decl.name, values: await compoundItems(w.decl.list, ctx, io), append: w.decl.append }; words.push(w.decl.name + '=(...)'); } else words.push(await expandSingle(w, ctx, io)); continue; }
         words.push(...await expandWord(w, ctx, io));
       }
       if (!words.length) { for (const a of node.assigns) await assignOne(a, ctx, io); return 0; }
       const saved = [];   // VAR=value cmd: the variable holds for that command only
-      for (const [name, w, a] of node.assigns) { if (a.list || a.idx) continue; saved.push([name, has(sh.vars, name) ? sh.vars[name] : null]); setVar(name, await expandSingle(w, ctx, io)); }
+      for (const [name, w, a] of node.assigns) { if (a.idx) io.err('bash: `' + name + '[' + a.rawIdx + "]': not a valid identifier\n"); if (a.list || a.idx) continue; saved.push([name, has(sh.vars, name) ? sh.vars[name] : null]); setVar(name, await expandSingle(w, ctx, io)); }
       try { return await runWords(words, ctx, Object.keys(arrays).length ? Object.assign({}, io, { arrays }) : io); }
       finally { for (const [name, old] of saved) { if (old === null) delete sh.vars[name]; else sh.vars[name] = old; } }
     }
     // NAME=value, NAME+=value, NAME[i]=value, NAME=(a b c), NAME+=(d)
     async function assignOne([name, w, a], ctx, io) {
-      if (a && a.list) { assignArray(name, await expandAll(a.list, ctx, io), a.append); return; }
+      if (a && a.list) { assignArray(name, await compoundItems(a.list, ctx, io), a.append, undefined, io); return; }
       const v = await expandSingle(w, ctx, io);
-      if (a && a.idx) { const shown = await expandSingle(a.idx, ctx, io), arr = arrMake(name), i = subscript(name, arr, arithOf(shown, ctx), name + '[' + shown + ']'); arrSet(arr, i, a.append ? (arr.v[i] || '') + v : v); return; }
+      if (a && a.idx) { const shown = await expandSingle(a.idx, ctx, io), arr = arrMake(name), i = subscript(name, arr, arr.assoc ? shown : arithOf(shown, ctx), name + '[' + (arr.assoc ? a.rawIdx : shown) + ']'); arrSet(arr, i, a.append ? (arr.v[i] || '') + v : v); return; }
       setVar(name, a && a.append ? getVar(name, { args: [] }) + v : v);
+    }
+    // the words of NAME=(...): [key]=value gives { k, v, raw } (neither split nor globbed, as an assignment), other words their values
+    async function compoundItems(list, ctx, io) {
+      const out = [];
+      for (const w of list) { if (w.sub) out.push({ k: await expandSingle(w.sub.idx, ctx, io), v: await expandSingle(w.sub.rest, ctx, io), raw: w.sub.rawIdx, append: w.sub.append }); else out.push(...await expandWord(w, ctx, io)); }
+      return out;
     }
     async function runWords(words, ctx, io, noFunc) {
       const name = words[0], args = words.slice(1);
@@ -1083,12 +1340,13 @@
     async function runScript(text, name, args, io, fromFile, sourced) {
       const ctx = { name, args, line: 1, sourced: !!sourced };
       const where = (line) => fromFile ? name + ': line ' + line + ': ' : name + ': ';
-      if (fromFile) io = Object.assign({}, io, { err: ((err) => (s) => err(String(s).replace(/^bash: /, where(ctx.line))))(io.err) });
-      const keep = { interactive: sh.interactive, expand: sh.shopt.expand_aliases };
+      const err0 = io.err, lastLine = (text.match(/\n/g) || []).length + (text.endsWith('\n') ? 0 : 1);
+      if (fromFile) io = Object.assign({}, io, { err: (s) => err0(String(s).replace(/^bash: /, where(ctx.line))) });
+      const keep = { interactive: sh.interactive, shopt: Object.assign(dict(), sh.shopt) };   // a script's shopt -s ends with it, as a child bash's would
       if (!sourced) sh.interactive = false;
       try {
         // an error in an expansion ($((1/0)), a bad ${...}) abandons the rest of its line, and the script goes on with the next one
-        const ps = parser(text, { aliases: aliasTable }); let exit = 0;
+        const ps = parser(text, { aliases: aliasTable, warn: (m) => err0(where(lastLine) + m + '\n') }); let exit = 0;
         for (let chunk; (chunk = ps.next());) {
           for (const item of chunk.items) {
             try { exit = await runAndOr(item, ctx, io); }
@@ -1100,12 +1358,18 @@
       catch (e) {
         if (e instanceof Stop && e.kind === 'exit') return e.code;
         if (e instanceof Return && sourced) return e.code;
-        if (e instanceof SyntaxError_) { io.err(where(e.line || ctx.line) + e.message + '\n'); return e.exit || 2; }
+        if (e instanceof SyntaxError_) { io.err(synText(e, where(e.line || ctx.line), text, false)); return e.exit || 2; }
         throw e;
       }
-      finally { if (!sourced) { sh.interactive = keep.interactive; sh.shopt.expand_aliases = keep.expand; } }
+      finally { if (!sourced) { sh.interactive = keep.interactive; sh.shopt = keep.shopt; } }
     }
     sh.runScript = runScript;
+    // a syntax error's message (and the lines that came with it); run as a script, bash also shows the line at fault ("near" errors only)
+    const synText = (e, prefix, src, tty) => {
+      let s = ''; for (const m of [e.message].concat(e.more || [])) s += prefix + m + '\n';
+      if (!tty && (e.near || /^syntax error near unexpected token/.test(e.message))) { const l = String(src).split('\n')[(e.line || 1) - 1]; if (l !== undefined) s += prefix + '`' + l + "'\n"; }
+      return s;
+    };
     // a program in one of the site's languages, through the sandbox hook. stdin: the pipe or file, or the keyboard.
     async function runProgram(bin, name, args, io) {
       if (!opts.run) { io.err(name + ': programs cannot run here\n'); return 126; }
@@ -1119,7 +1383,7 @@
       if (r && r.err) { io.err(r.err.replace(/\n?$/, '\n')); return r.exit || 1; }
       return (r && r.exit) || 0;
     }
-    const readsInput = (lang, src) => lang === 'cpp' ? /\b(cin|getline|scanf|getchar)\b/.test(src) : lang === 'java' ? /\bScanner\b|System\.in/.test(src) : lang === 'scheme' ? /\(read\)/.test(src) : /\binput\s*\(/.test(src);
+    const readsInput = (lang, src) => lang === 'cpp' ? /\b(cin|getline|scanf|getchar)\b/.test(src) : lang === 'c' ? /\b(scanf|getchar|fgets|getline|fgetc|getc|fread|gets)\b/.test(src) : lang === 'java' ? /\bScanner\b|System\.in/.test(src) : lang === 'scheme' ? /\(read\)/.test(src) : /\binput\s*\(/.test(src);
     sh.runProgram = runProgram;
 
     // ----- the entry point. A line typed at the terminal (io.tty) gets history expansion and aliases, as in an interactive bash; other
@@ -1134,18 +1398,30 @@
         if (h.error) { io.err('bash: ' + h.error + '\n'); return sh.lastExit; }
         if (h.changed) { line = h.line; io.out(line + '\n'); }
       }
-      if (line.trim() && (sh.history.length === 0 || sh.history[sh.history.length - 1] !== line)) { sh.history.push(line); if (sh.history.length > LIMITS.history) sh.history.shift(); }
+      const typed = line;   // what the history keeps: the first line (the command line cannot hold a here-document's lines)
+      // a here-document typed at the prompt: its lines are asked for with bash's "> " until its word (Ctrl+D: the end of the text, with bash's warning)
+      if (io.tty && io.ask && line.includes('<<')) {
+        sh.cancelled = false;
+        const open = (s) => { try { return !!tokenize(s).open; } catch (e) { return false; } };
+        for (let k = 0; k < 10000 && line.length < LIMITS.fileBytes && open(line); k++) {
+          const more = await io.ask('> ', 'here-document: type its lines, then the word that ends it');
+          if (sh.cancelled) { io.err('^C\n'); return (sh.lastExit = 130); }
+          if (more == null) break;
+          line += '\n' + String(more).replace(/\u0000/g, '');
+        }
+      }
+      if (typed.trim() && (sh.history.length === 0 || sh.history[sh.history.length - 1] !== typed)) { sh.history.push(typed); if (sh.history.length > LIMITS.history) sh.history.shift(); }
       sh.cancelled = false; sh.steps = 0; sh.outBytes = 0; sh.interactive = !!io.tty;
       const ctx = { name: 'bash', args: [] };
       try {
-        const ps = parser(line, { aliases: aliasTable });
+        const ps = parser(line, { aliases: aliasTable, warn: (m) => io.err('bash: ' + m + '\n') });
         for (let chunk; (chunk = ps.next());) {
           try { sh.lastExit = await runList(chunk, ctx, io); }
           catch (e) { if (!(e instanceof SyntaxError_ && e.exit)) throw e; io.err('bash: ' + e.message + '\n'); sh.lastExit = e.exit; }   // an expansion error drops the rest of its line
         }
       }
       catch (e) {
-        if (e instanceof SyntaxError_) { io.err('bash: ' + e.message + '\n'); sh.lastExit = e.exit || 2; }
+        if (e instanceof SyntaxError_) { io.err(synText(e, 'bash: ', line, io.tty)); sh.lastExit = e.exit || 2; }
         else if (e instanceof Stop) {
           if (e.kind === 'cancel') io.err('^C\n');
           else if (e.kind === 'steps') io.err('bash: stopped: more than ' + LIMITS.steps + ' commands ran from this line. Is there a loop that never ends?\n');
@@ -1192,7 +1468,9 @@
     sh.exec_words = (words, ctx, io, noFunc) => runWords(words, ctx, io, noFunc);
     sh.getVar = (n) => getVar(n, { name: 'bash', args: [] });
     sh.setVar = setVar;
-    Object.assign(sh, { arrMake, arrSet, arrKeys, arrVals, arrUnset, assignArray, isSet, elemSet, arithOf, printFunc: (name) => printFunc(name, sh.funcs[name]) });
+    // NAME or NAME[sub] (printf -v): an indexed array's sub is arithmetic, an associative one's is the key
+    sh.assignTo = (spec, v, ctx) => { const m = spec.match(/^([A-Za-z_][A-Za-z0-9_]*)(?:\[(.+)\])?$/); if (m[2] === undefined) setVar(m[1], v); else elemSet(m[1], isAssoc(m[1]) ? m[2] : arithOf(m[2], ctx), v); };
+    Object.assign(sh, { arrMake, arrSet, arrKeys, arrVals, arrUnset, assignArray, isSet, isAssoc, elemSet, arithOf, printFunc: (name) => printFunc(name, sh.funcs[name]) });
     return sh;
   }
 
@@ -2418,8 +2696,14 @@
     run(args, io) { let n = false, e = false; while (args.length && /^-[neE]+$/.test(args[0])) { const a = args.shift(); if (a.includes('n')) n = true; if (a.includes('e')) e = true; if (a.includes('E')) e = false; } let s = args.join(' '); if (e) s = unescape(s); io.out(s + (n ? '' : '\n')); return 0; } });
   def('printf', { cat: 'shell', builtin: true, use: 'printf FORMAT [arguments...]', desc: 'Print with a format, as in C: %s a string, %d a whole number, %5.2f a decimal; \\n is a newline. The format is reused if there are more arguments than it needs.',
     ex: ['printf "%s is %d years old\\n" Ada 36', 'printf "%-10s|%5d|\\n" name 42', 'printf "%.2f\\n" 3.14159'],
-    run(args, io) {
-      if (!args.length) { io.err('printf: usage: printf format [arguments]\n'); return 2; }
+    run(args, io, sh, ctx) {
+      let into = null;   // printf -v NAME: the text goes into the variable (or NAME[i]) instead
+      if (args[0] === '-v') {
+        if (args.length < 2) { io.err('bash: printf: -v: option requires an argument\nprintf: usage: printf [-v var] format [arguments]\n'); return 2; }
+        into = args[1]; args = args.slice(2);
+        if (!/^[A-Za-z_][A-Za-z0-9_]*(\[.+\])?$/.test(into)) { io.err("bash: printf: `" + into + "': not a valid identifier\n"); return 2; }
+      }
+      if (!args.length) { io.err('printf: usage: printf [-v var] format [arguments]\n'); return 2; }
       const fmt = unescape(args[0]); let rest = args.slice(1), out = '', rounds = 0, used = 0;
       const one = () => fmt.replace(/%(%|[-+ 0]*\d*(?:\.\d+)?[sdifoxXceE])/g, (m, spec) => {
         if (spec === '%') return '%';
@@ -2434,6 +2718,7 @@
         return v;
       });
       do { used = 0; out += one(); if (++rounds > 1000) break; } while (rest.length && used > 0);   // the format is reused only while it takes arguments
+      if (into !== null) { sh.assignTo(into, out, ctx); return 0; }
       io.out(out); return 0;
     } });
   def('seq', { cat: 'text', use: 'seq [first] [step] last', desc: 'Print the numbers from first to last, one per line.', ex: ['seq 5', 'seq 1 10', 'seq 0 5 20', 'for i in $(seq 3); do echo $i; done'],
@@ -2488,6 +2773,7 @@
         if (/^-[fv]+$/.test(a)) { mode = a.slice(-1); continue; }
         if (mode === 'f') { delete sh.funcs[a]; continue; }
         const m = a.match(/^([A-Za-z_][A-Za-z0-9_]*)\[(.+)\]$/);
+        if (m && sh.isAssoc(m[1])) { sh.arrUnset(sh.arrays[m[1]], m[2]); continue; }   // the key as it is (bash 5.2: m[@] is the key @)
         if (m) { if (m[2] === '@' || m[2] === '*') delete sh.arrays[m[1]]; else if (has(sh.arrays, m[1])) sh.arrUnset(sh.arrays[m[1]], sh.arithOf(m[2], { args: [] })); else if (has(sh.vars, m[1]) && sh.arithOf(m[2], { args: [] }) === 0) delete sh.vars[m[1]]; continue; }
         if (has(sh.vars, a) || has(sh.arrays, a)) { delete sh.vars[a]; delete sh.arrays[a]; } else if (mode !== 'v') delete sh.funcs[a];
       }
@@ -2547,15 +2833,9 @@
     ex: ['greet() { local name=$1; echo "Hello, $name"; }', 'f() { local list=(a b c); echo ${#list[@]}; }'],
     run(args, io, sh, ctx) {
       if (!ctx.fn) { io.err('bash: local: can only be used in a function\n'); return 1; }
-      let exit = 0, arr = false;
-      args.forEach((a, k) => {
-        if (/^-[a-z]+$/.test(a)) { if (a.includes('a')) arr = true; return; }
-        const list = io.arrays && io.arrays[k], m = list ? [null, list.name] : a.match(/^([A-Za-z_][A-Za-z0-9_]*)(?:=([^]*))?$/);
-        if (!m) { io.err("bash: local: `" + a + "': not a valid identifier\n"); exit = 1; return; }
-        sh.makeLocal(ctx, m[1]);
-        if (list) sh.assignArray(m[1], list.values, false); else if (m[2] !== undefined) sh.setVar(m[1], m[2]); else if (arr) sh.assignArray(m[1], [], false);
-      });
-      return exit;
+      const flags = new Set(); let k = 0;
+      for (; k < args.length && /^-[a-zA-Z]+$/.test(args[k]); k++) for (const c of args[k].slice(1)) flags.add(c);
+      return declareNames(sh, ctx, io, 'local', args.slice(k), k, flags, true);
     } });
   def('return', { cat: 'shell', builtin: true, use: 'return [n]', desc: 'Leave a function (or a script run with source) with status n: 0 means success. Without n, the status of the last command.', ex: ['is_even() { return $(( $1 % 2 )); }', 'is_even 4 && echo even'],
     run(args, io, sh, ctx) {
@@ -2573,8 +2853,29 @@
       if (!ctx.loops) { io.err('bash: ' + this.name + ": only meaningful in a `for', `while', or `until' loop\n"); return 0; }
       throw new LoopCtl(this.name, Math.min(+v, ctx.loops));
     } });
-  // a value the way declare -p writes it
-  const dqs = (s) => '"' + String(s).replace(/[\\"$`]/g, '\\$&') + '"';
+  // a value the way declare -p writes it; an associative array's key is quoted only when it holds a character the shell would read
+  const dqs = (s) => /[\u0000-\u001f\u007f]/.test(s) ? ansiQ(s) : '"' + String(s).replace(/[\\"$`]/g, '\\$&') + '"';
+  const keyQ = (k) => /[ \t\n'"\\|&;()<>!{}*[\]?^$`]|^[~#]|[=:]~/.test(k) ? dqs(k) : k;
+  const elems = (sh, a) => a.assoc ? sh.arrKeys(a).map((k) => '[' + keyQ(k) + ']=' + dqs(a.v[k]) + ' ').join('') : sh.arrKeys(a).map((i) => '[' + i + ']=' + dqs(a.v[i])).join(' ');
+  // declare and local: NAME, NAME=value, NAME=(...) with -a (indexed), -A (associative), -x; inside a function (local, or declare without -g)
+  // each name is the function's own. io.arrays[offset + i]: the NAME=(...) list of the i-th name, already expanded (runSimple)
+  function declareNames(sh, ctx, io, cmd, names, offset, flags, local) {
+    let exit = 0;
+    const kind = flags.has('A') ? 'A' : flags.has('a') ? 'a' : undefined;
+    names.forEach((a, i) => {
+      const list = io.arrays && io.arrays[offset + i], m = list ? [null, list.name] : a.match(/^([A-Za-z_][A-Za-z0-9_]*)(?:=([^]*))?$/);
+      if (!m) { io.err('bash: ' + cmd + ": `" + a + "': not a valid identifier\n"); exit = 1; return; }
+      const n = m[1];
+      if (flags.has('A') && flags.has('a')) { io.err('bash: ' + cmd + ': ' + n + ': cannot convert associative to indexed array\n'); exit = 1; return; }
+      if (local || (ctx.fn && !flags.has('g'))) sh.makeLocal(ctx, n);
+      if (kind && has(sh.arrays, n) && !!sh.arrays[n].assoc !== (kind === 'A')) { io.err('bash: ' + cmd + ': ' + n + ': cannot convert ' + (kind === 'A' ? 'indexed to associative' : 'associative to indexed') + ' array\n'); exit = 1; return; }
+      if (flags.has('x')) sh.exported.add(n);
+      if (list) { sh.assignArray(n, list.values, list.append, kind, io); return; }
+      if (kind && !has(sh.arrays, n)) { const bare = !has(sh.vars, n); sh.arrMake(n, kind === 'A').bare = bare; }   // declared with no values yet: declare -p shows no =()
+      if (m[2] !== undefined) sh.setVar(n, m[2]);
+    });
+    return exit;
+  }
   const ENV = ['HOME', 'USER', 'SHELL', 'PATH', 'TERM', 'LANG'];   // the variables the shell starts with that are exported
   def('declare typeset', { cat: 'shell', builtin: true, use: 'declare [-a] [-p] [-f] [-F] [NAME[=value]...]', desc: 'Make variables and arrays, or show them. Inside a function the names are local to it, as with local.',
     opts: [['-a', 'the names are (indexed) arrays'], ['-p', 'show each name as a declare command that would make it again'], ['-f', 'show the definitions of functions'], ['-F', 'only the names of the functions']],
@@ -2582,37 +2883,35 @@
     run(args, io, sh, ctx) {
       const flags = new Set(); let k = 0;
       for (; k < args.length && /^[-+][a-zA-Z]+$/.test(args[k]); k++) for (const c of args[k].slice(1)) flags.add(c);
-      const names = args.slice(k), bad = [...flags].find((c) => !'apfFxg'.includes(c));
-      if (bad) { io.err('bash: ' + this.name + ': -' + bad + ': ' + (bad === 'A' ? 'associative arrays are' : 'this option is') + ' not available in this practice shell\n'); return 2; }
-      const show = (n) => { const x = sh.exported.has(n) ? 'x' : ''; return has(sh.arrays, n) ? 'declare -a' + x + ' ' + n + (sh.arrays[n].bare ? '' : '=(' + sh.arrKeys(sh.arrays[n]).map((i) => '[' + i + ']=' + dqs(sh.arrays[n].v[i])).join(' ') + ')') : has(sh.vars, n) ? 'declare -' + (x || '-') + ' ' + n + '=' + dqs(sh.vars[n]) : null; };
+      const names = args.slice(k), bad = [...flags].find((c) => !'aApfFxg'.includes(c));
+      if (bad) { io.err('bash: ' + this.name + ': -' + bad + ': this option is not available in this practice shell\n'); return 2; }
+      const show = (n) => { const x = sh.exported.has(n) ? 'x' : '', a = sh.arrays[n]; return has(sh.arrays, n) ? 'declare -' + (a.assoc ? 'A' : 'a') + x + ' ' + n + (a.bare ? '' : '=(' + elems(sh, a) + ')') : has(sh.vars, n) ? 'declare -' + (x || '-') + ' ' + n + '=' + dqs(sh.vars[n]) : null; };
       if (flags.has('f') || flags.has('F')) {
         const fs = names.length ? names : Object.keys(sh.funcs).sort(); let exit = 0;
         for (const n of fs) { if (!has(sh.funcs, n)) { exit = 1; continue; } io.out(flags.has('F') ? (names.length ? n : 'declare -f ' + n) + '\n' : sh.printFunc(n) + '\n'); }
         return exit;
       }
       if (flags.has('p') || !names.length) {
-        if (!names.length) { for (const n of [...new Set(Object.keys(sh.vars).concat(Object.keys(sh.arrays)))].sort()) io.out(flags.has('p') ? show(n) + '\n' : has(sh.arrays, n) ? n + '=(' + sh.arrKeys(sh.arrays[n]).map((i) => '[' + i + ']=' + dqs(sh.arrays[n].v[i])).join(' ') + ')\n' : n + '=' + sh.vars[n] + '\n'); return 0; }
+        if (!names.length) { for (const n of [...new Set(Object.keys(sh.vars).concat(Object.keys(sh.arrays)))].sort().filter((n) => flags.has('A') ? sh.isAssoc(n) : !flags.has('a') || (has(sh.arrays, n) && !sh.isAssoc(n)))) io.out(flags.has('p') ? show(n) + '\n' : has(sh.arrays, n) ? n + '=(' + elems(sh, sh.arrays[n]) + ')\n' : n + '=' + sh.vars[n] + '\n'); return 0; }
         let exit = 0; for (const n of names) { const s = show(n); if (s === null) { io.err('bash: ' + this.name + ': ' + n + ': not found\n'); exit = 1; } else io.out(s + '\n'); } return exit;
       }
-      let exit = 0;
-      names.forEach((a, i) => {
-        const list = io.arrays && io.arrays[k + i], m = list ? [null, list.name] : a.match(/^([A-Za-z_][A-Za-z0-9_]*)(?:=([^]*))?$/);
-        if (!m) { io.err('bash: ' + this.name + ": `" + a + "': not a valid identifier\n"); exit = 1; return; }
-        if (ctx.fn && !flags.has('g')) sh.makeLocal(ctx, m[1]); if (flags.has('x')) sh.exported.add(m[1]);
-        if (list) sh.assignArray(m[1], list.values, false); else if (m[2] !== undefined) sh.setVar(m[1], m[2]); else if (flags.has('a') && !has(sh.arrays, m[1])) sh.arrMake(m[1]).bare = true;   // declared with no values yet: declare -p shows no =()
-      });
-      return exit;
+      return declareNames(sh, ctx, io, this.name, names, k, flags, false);
     } });
-  const SHOPTS = 'autocd cdable_vars cdspell checkhash checkjobs checkwinsize cmdhist dotglob execfail extdebug extglob extquote failglob force_fignore globasciiranges globstar gnu_errfmt histappend histreedit histverify hostcomplete huponexit inherit_errexit interactive_comments lastpipe lithist localvar_inherit login_shell mailwarn no_empty_cmd_completion nocaseglob nocasematch nullglob progcomp promptvars shift_verbose sourcepath xpg_echo'.split(' ');   // bash's other options
-  def('shopt', { cat: 'shell', builtin: true, use: 'shopt [-s|-u] expand_aliases', desc: 'Turn a shell option on (-s) or off (-u). The one here is expand_aliases: aliases in scripts (at the prompt they always work).', ex: ['shopt -s expand_aliases'],
+  const SHOPTS = 'autocd cdable_vars cdspell checkhash checkjobs checkwinsize cmdhist execfail extdebug extglob extquote force_fignore globasciiranges globstar gnu_errfmt histappend histreedit histverify hostcomplete huponexit inherit_errexit interactive_comments lastpipe lithist localvar_inherit login_shell mailwarn no_empty_cmd_completion nocaseglob nocasematch progcomp promptvars shift_verbose sourcepath xpg_echo'.split(' ');   // bash's other options
+  const SHOPT_HERE = ['dotglob', 'expand_aliases', 'failglob', 'nullglob'];
+  def('shopt', { cat: 'shell', builtin: true, use: 'shopt [-s|-u] [-p] [-q] [option...]', desc: 'Turn shell options on (-s) or off (-u), or show them. The ones here: nullglob (a pattern that matches nothing goes away), failglob (it is an error), dotglob (* matches hidden files too), expand_aliases (aliases in scripts; at the prompt they always work).',
+    opts: [['-s', 'set: turn on'], ['-u', 'unset: turn off'], ['-p', 'print as shopt commands'], ['-q', 'quiet: only the status says whether it is on']], ex: ['shopt -s nullglob', 'shopt -s expand_aliases', 'shopt'],
     run(args, io, sh) {
-      const mode = args[0] === '-s' || args[0] === '-u' ? args[0] : null, names = mode ? args.slice(1) : args;
-      const on = () => !!(sh.shopt.expand_aliases || sh.interactive);
-      if (!names.length) { io.out('expand_aliases \t' + (on() ? 'on' : 'off') + '\n'); return 0; }
+      let mode = null, print = false, quiet = false, k = 0;
+      for (; k < args.length && /^-[supq]+$/.test(args[k]); k++) for (const c of args[k].slice(1)) { if (c === 's' || c === 'u') mode = '-' + c; else if (c === 'p') print = true; else quiet = true; }
+      const names = args.slice(k);
+      const on = (n) => n === 'expand_aliases' ? !!(sh.shopt.expand_aliases || sh.interactive) : !!sh.shopt[n];
+      const line = (n) => print ? 'shopt ' + (on(n) ? '-s ' : '-u ') + n + '\n' : padR(n, 15) + '\t' + (on(n) ? 'on' : 'off') + '\n';
+      if (!names.length) { for (const n of SHOPT_HERE) if (!mode || on(n) === (mode === '-s')) io.out(line(n)); return 0; }   // shopt -s alone lists those that are on
       let exit = 0;
       for (const n of names) {
-        if (n !== 'expand_aliases') { io.err('bash: shopt: ' + n + ': ' + (SHOPTS.includes(n) ? 'not available in this practice shell (only expand_aliases is)' : 'invalid shell option name') + '\n'); exit = 1; continue; }
-        if (mode) sh.shopt.expand_aliases = mode === '-s'; else { io.out('expand_aliases \t' + (on() ? 'on' : 'off') + '\n'); if (!on()) exit = 1; }
+        if (!SHOPT_HERE.includes(n)) { io.err('bash: shopt: ' + n + ': ' + (SHOPTS.includes(n) ? 'not available in this practice shell (' + SHOPT_HERE.join(', ') + ' are)' : 'invalid shell option name') + '\n'); exit = 1; continue; }
+        if (mode) sh.shopt[n] = mode === '-s'; else { if (!quiet) io.out(line(n)); if (!on(n)) exit = 1; }
       }
       return exit;
     } });
@@ -2635,20 +2934,76 @@
       };
       try { return term(args) ? 0 : 1; } catch (e) { io.err('bash: ' + this.name + ': ' + e.message + '\n'); return 2; }
     } });
-  def('read', { cat: 'shell', builtin: true, use: 'read [-p prompt] [-a array] NAME...', desc: 'Read a line typed by the user (or the next line of the input) into a variable.', opts: [['-p TEXT', 'show TEXT as the prompt first'], ['-a NAME', 'put the words of the line into the array NAME']],
-    ex: ['read -p "Your name: " name', 'echo "Hello, $name"', 'while read line; do echo "got: $line"; done < list.txt'],
+  def('read', { cat: 'shell', builtin: true, use: 'read [-r] [-p prompt] [-a array] [-d delim] [NAME...]', desc: 'Read a line typed by the user (or the next line of the input) into variables: one word each, the last one taking the rest. IFS says what separates the words (spaces, tabs and newlines unless it is set). Without -r a backslash keeps the next character as it is (and joins a line ending in one to the next). The status is 1 at the end of the input.',
+    opts: [['-r', 'raw: a backslash is an ordinary character (use it almost always)'], ['-p TEXT', 'show TEXT as the prompt first'], ['-a NAME', 'put the words of the line into the array NAME'], ['-d C', 'read up to the character C instead of a newline']],
+    ex: ['read -p "Your name: " name', 'echo "Hello, $name"', 'while read -r line; do echo "got: $line"; done < list.txt', 'IFS=, read -r name score <<< "Ada,90"'],
     async run(args, io, sh) {
-      const o = getopts(args, 'p:a:rs', io, 'read'); if (!o) return 1;
-      let line, eof = false;
-      if (io.stdin) { const rest = io.stdin.text.slice(io.stdin.pos); if (rest === '') eof = true; else { const k = rest.indexOf('\n'); line = k < 0 ? rest : rest.slice(0, k); io.stdin.pos += k < 0 ? rest.length : k + 1; } }
-      else if (io.ask) { line = await io.ask(o.f.p || ''); if (line == null) eof = true; }
+      const o = getopts(args, 'p:a:rsd:n:t:', io, 'read'); if (!o) return 1;
+      const names = o.args.length ? o.args : [];
+      for (const n of o.f.a !== undefined ? [o.f.a] : names) if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(n)) { io.err("bash: read: `" + n + "': not a valid identifier\n"); return 1; }
+      const delim = o.f.d === undefined ? '\n' : o.f.d === '' ? '\u0000' : o.f.d[0], max = o.f.n !== undefined ? parseInt(o.f.n, 10) : Infinity;
+      let line = '', eof = false;
+      if (io.stdin) {   // up to the delimiter; without -r, a backslash just before it joins the next piece
+        const st = io.stdin, t = st.text;
+        if (st.pos >= t.length) eof = true;
+        while (!eof) {
+          let k = t.indexOf(delim, st.pos); if (k < 0) k = t.length;
+          if (line.length + (k - st.pos) >= max) { const take = max - line.length; line += t.slice(st.pos, st.pos + take); st.pos += take; break; }   // -n N: N characters at most
+          line += t.slice(st.pos, k); st.pos = Math.min(t.length, k + 1);
+          if (k >= t.length) { eof = true; break; }
+          if (!o.f.r && /(^|[^\\])(\\\\)*\\$/.test(line)) { line = line.slice(0, -1); if (st.pos >= t.length) { eof = true; break; } continue; }
+          break;
+        }
+      } else if (io.ask) { line = await io.ask(o.f.p || ''); if (line == null) { line = ''; eof = true; } }
       else eof = true;
-      if (o.f.a !== undefined) { if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(o.f.a)) { io.err("bash: read: `" + o.f.a + "': not a valid identifier\n"); return 1; } sh.assignArray(o.f.a, eof ? [] : line.split(/[ \t]+/).filter(Boolean), false); return eof ? 1 : 0; }   // read -a words
-      const names = o.args.length ? o.args : ['REPLY'];
-      if (eof) { for (const n of names) sh.setVar(n, ''); return 1; }
-      // one word for each name; the last name takes the rest of the line as it is, only the spaces at its two ends removed
-      let rest = line.replace(/^[ \t]+/, '');
-      names.forEach((n, i) => { if (i === names.length - 1) { sh.setVar(n, rest.replace(/[ \t]+$/, '')); return; } const m = rest.match(/^(\S*)[ \t]*/); sh.setVar(n, m[1]); rest = rest.slice(m[0].length); });
+      // the characters, each marked when a backslash protected it (so it neither splits nor is trimmed)
+      const ch = [], esc = [];
+      for (let k = 0; k < line.length; k++) { if (!o.f.r && line[k] === '\\') { if (k + 1 < line.length) { ch.push(line[++k]); esc.push(true); } continue; } ch.push(line[k]); esc.push(false); }
+      const N = ch.length, ifs = sh.isSet('IFS') ? sh.getVar('IFS') : ' \t\n';
+      const isIfs = (i) => !esc[i] && ifs.includes(ch[i]), isWs = (i) => isIfs(i) && ' \t\n'.includes(ch[i]);
+      const skipWs = (i) => { while (i < N && isWs(i)) i++; return i; };
+      const field = (i) => {   // one word from i, and where the next starts: spaces, at most one other IFS character, spaces
+        let f = ''; while (i < N && !isIfs(i)) f += ch[i++];
+        if (i < N) { if (isWs(i)) { i = skipWs(i); if (i < N && isIfs(i)) i = skipWs(i + 1); } else i = skipWs(i + 1); }
+        return [f, i];
+      };
+      const text = (a, b) => ch.slice(a, b).join('');
+      if (o.f.a !== undefined) { const vals = []; for (let i = skipWs(0); i < N;) { const [f, j] = field(i); vals.push(f); i = j; } sh.assignArray(o.f.a, vals, false, 'a'); return eof ? 1 : 0; }   // read -a words
+      if (!names.length) { sh.setVar('REPLY', text(0, N)); return eof ? 1 : 0; }   // REPLY: the line as it is
+      let i = skipWs(0);
+      names.forEach((n, k) => {
+        if (k < names.length - 1) { const [f, j] = field(i); sh.setVar(n, f); i = j; return; }
+        // the last name: the rest of the line, unless it is a single word (then without the separator after it)
+        const [f, j] = field(i); if (j >= N) { sh.setVar(n, f); return; }
+        let e = N; while (e > i && isWs(e - 1)) e--; sh.setVar(n, text(i, e));
+      });
+      return eof ? 1 : 0;
+    } });
+  def('mapfile readarray', { cat: 'shell', builtin: true, use: 'mapfile [-t] [-n count] [-s count] [-O origin] [-d delim] [array]', desc: 'Read the lines of the input into an array, one line an element (MAPFILE if no name is given). Each keeps its newline unless -t is given.',
+    opts: [['-t', 'take the newline (or the -d character) off each line'], ['-n N', 'at most N lines'], ['-s N', 'skip the first N lines'], ['-O N', 'start at index N (and keep what the array held)'], ['-d C', 'lines end with C instead of a newline']],
+    ex: ['mapfile -t lines < notes.txt', 'echo "${#lines[@]} lines; the first is ${lines[0]}"', 'readarray -t words <<< "$(tr \' \' \'\\n\' < story.txt)"'],
+    async run(args, io, sh) {
+      const name = this.name, usage = name + ': usage: ' + name + ' [-d delim] [-n count] [-O origin] [-s count] [-t] [-u fd] [-C callback] [-c quantum] [array]\n';
+      const f = dict(); let k = 0;
+      for (; k < args.length && /^-./.test(args[k]); k++) {
+        const a = args[k]; if (a === '--') { k++; break; }
+        for (let j = 1; j < a.length; j++) {
+          const c = a[j];
+          if (c === 't') { f.t = true; continue; }
+          if ('nsOdu'.includes(c)) { const v = j + 1 < a.length ? a.slice(j + 1) : args[++k]; if (v === undefined) { io.err('bash: ' + name + ': -' + c + ': option requires an argument\n' + usage); return 2; } f[c] = v; break; }
+          io.err('bash: ' + name + ': -' + c + ': invalid option\n' + usage); return 2;
+        }
+      }
+      const arr = args[k] === undefined ? 'MAPFILE' : args[k];
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(arr)) { io.err('bash: ' + name + ": `" + arr + "': not a valid identifier\n"); return 1; }
+      for (const c of ['n', 's', 'O']) if (f[c] !== undefined && !/^\d+$/.test(f[c])) { io.err('bash: ' + name + ': ' + f[c] + ': invalid ' + (c === 'O' ? 'array origin' : 'line count') + '\n'); return 1; }
+      const delim = f.d === undefined ? '\n' : f.d === '' ? '\u0000' : f.d[0], text = await readAll(io, name);
+      const pieces = []; for (let i = 0; i < text.length;) { let e = text.indexOf(delim, i); e = e < 0 ? text.length : e + 1; pieces.push(text.slice(i, e)); i = e; }
+      const skip = +(f.s || 0), count = +(f.n || 0), origin = +(f.O || 0);
+      const take = pieces.slice(skip, count ? skip + count : undefined).map((l) => f.t && l.endsWith(delim) ? l.slice(0, -1) : l);
+      if (f.O === undefined) sh.assignArray(arr, [], false, 'a');
+      const a = sh.arrMake(arr); a.bare = false;
+      take.forEach((l, i) => sh.arrSet(a, origin + i, l));
       return 0;
     } });
   def('source .', { cat: 'shell', builtin: true, use: 'source script.sh', desc: 'Run a script in this shell, so its variables, functions and aliases stay. return ends it.', ex: ['source settings.sh'],
@@ -2713,9 +3068,9 @@
       if (!cls || cls.t !== 'f' || !cls.bin || cls.bin.lang !== 'java') { io.err('Error: Could not find or load main class ' + name + '\nCaused by: java.lang.ClassNotFoundException: ' + name + (sh.fs.isFile(sh.fs.resolve(name + '.java')) ? '\n(there is a ' + name + '.java: compile it first with javac ' + name + '.java)' : '') + '\n'); return 1; }
       return sh.runProgram(cls.bin, name, args.slice(1), io);
     } });
-  def('g++ gcc clang++ cc c++', { cat: 'run', use: 'g++ file.cpp -o name', desc: 'Compile a C++ program into a program file, then run it with ./name. Without -o the program is called a.out.',
-    opts: [['-o NAME', 'the name of the program to make'], ['-std=c++20', 'the language version (Full C++ only)'], ['-Wall', 'accepted and ignored, as are -O2 and friends']],
-    ex: ['g++ hello.cpp -o hello', './hello', 'g++ game.cpp -o game && ./game < moves.txt'],
+  def('g++ gcc clang++ clang cc c++', { cat: 'run', use: 'g++ file.cpp -o name', desc: 'Compile a C++ program into a program file, then run it with ./name. Without -o the program is called a.out. gcc, cc and clang compile a .c file as C, with the real compiler.',
+    opts: [['-o NAME', 'the name of the program to make'], ['-std=c++20', 'the language version (Full C++ only; for C: -std=c99, c11, c17, c23 or gnu17…)'], ['-Wall', 'accepted and ignored, as are -O2 and friends']],
+    ex: ['g++ hello.cpp -o hello', './hello', 'g++ game.cpp -o game && ./game < moves.txt', 'gcc hello.c -o hello && ./hello'],
     async run(args, io, sh) {
       const name = this.name; let out = 'a.out', std; const srcs = [];
       for (let i = 0; i < args.length; i++) { const a = args[i]; if (a === '-o') { out = args[++i]; if (out === undefined) { io.err(name + ": error: missing filename after '-o'\n"); return 1; } } else if (a.startsWith('-std=')) std = a.slice(5); else if (a.startsWith('-')) { /* -Wall, -O2, -g: accepted */ } else srcs.push(a); }
@@ -2724,9 +3079,10 @@
       for (const s of srcs) { const n = sh.fs.stat(sh.fs.resolve(s)); if (!n || n.t !== 'f') { io.err(name + ': error: ' + s + ': No such file or directory\n'); } else if (!/\.(cpp|cc|cxx|c\+\+|C|c)$/.test(s)) { io.err(name + ': error: ' + s + ': file not recognized: not a C++ source file\n'); } else texts.push(n.d); }
       if (texts.length !== srcs.length) { io.err(name + ': fatal error: no input files\ncompilation terminated.\n'); return 1; }
       if (texts.length > 1) { io.err(name + ': error: only one source file at a time is supported here\n'); return 1; }
-      const r = await opts_compile(sh, 'cpp', texts[0], { std, name: srcs[0] });
+      const lang = /\.c$/.test(srcs[0]) && !/\+\+$/.test(name) ? 'c' : 'cpp';   // as the real drivers do: gcc, cc and clang compile a .c as C; g++ and clang++ as C++
+      const r = await opts_compile(sh, lang, texts[0], { std, name: srcs[0] });
       if (r && r.err) { io.err(r.err.replace(/\n?$/, '\n')); return 1; }
-      sh.fs.write(sh.fs.resolve(out), ELF_BYTES + '(compiled from ' + srcs[0] + ')', false, { lang: 'cpp', src: texts[0], std: r && r.std || std });
+      sh.fs.write(sh.fs.resolve(out), ELF_BYTES + '(compiled from ' + srcs[0] + ')', false, { lang, src: texts[0], std: r && r.std || std });
       sh.fs.chmod(sh.fs.resolve(out), true);
       return 0;
     } });

@@ -13,7 +13,6 @@
     "tac noeol.txt": "tac on a file without a final newline: GNU glues the last two lines together; ours keeps them apart.",
     "wc < fruit.txt": "wc reading standard input: GNU sizes the columns from the file it can see behind the redirection; ours always uses width 7, as GNU does for a pipe.",
     "echo one two | read a b; echo \"[$a]\"": "Each part of a pipeline runs in the same shell here, so read in a pipeline sets the variable (bash runs it in a subshell).",
-    "[[ -f fruit.txt ]] && echo yes": "[[ ]] is not supported: the course teaches [ ].",
     "find notes -name \"*.txt\"": "find lists entries in the file system's own order, which differs between machines; ours lists them sorted.",
     "find notes -maxdepth 1": "find lists entries in the file system's own order, which differs between machines; ours lists them sorted.",
     "find . -name \"*.txt\" -exec echo {} \\;": "find -exec is not supported (use a pipe to xargs).",
@@ -22,7 +21,6 @@
     "tree notes": "tree is not installed on the machine running the test; ours has it.",
     "echo ~/notes ~student": "~student: the practice computer has a user called student; the machine running the test does not.",
     "echo $0": "$0 is the script file on the real side (the test runs each case as a script) and bash in the terminal.",
-    "echo ${#HOME}": "HOME is a temporary directory on the real side, so its length differs.",
-    ")": "Run as a script, bash also echoes the offending line; at the prompt it prints only the message, as ours does."
+    "echo ${#HOME}": "HOME is a temporary directory on the real side, so its length differs."
   }
 }

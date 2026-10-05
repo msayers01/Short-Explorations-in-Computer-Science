@@ -232,7 +232,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('Lab: Ctrl+G goes to a line', /Ln 3,/.test(await page.locator('.sb-pos').innerText()) && (await page.locator('.goto-bar').isHidden()), await page.locator('.sb-pos').innerText());
   await page.click('.lab-statusbar button:has-text("Shortcuts")');
   const keysText = await page.locator('.lab-keys').innerText();
-  check('Lab: the Shortcuts panel lists the editor keys', /Ctrl\s*\+\s*G\s+go to a line/.test(keysText) && /Alt\s*\+\s*↑/.test(keysText), keysText.slice(0, 200));
+  check('Lab: the Shortcuts panel lists the editor keys', /Ctrl\s*\+\s*G\s+go to a line/.test(keysText) && /Alt\s*\+\s*↑/.test(keysText) && /Ctrl\s*\+\s*Shift\s*\+\s*F\s+find \(and replace\) in all files/.test(keysText), keysText.slice(0, 200));
   await page.click('.lab-statusbar button:has-text("Shortcuts")');
   // Python: sys.argv from the Arguments box, an error marker on the line Skulpt names, cleared by the next run
   await page.click('.lang-btn:has-text("Python")'); await page.waitForSelector('.lab-editor textarea');
@@ -287,6 +287,82 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await page.fill('.repl-inp', '(* 6 7)'); await page.press('.repl-inp', 'Enter');
   check('Lab: Scheme REPL', /;Value: 42/.test(await page.locator('.repl-log').innerText()));
 
+  // ---- file history, find in all files, side by side (lab.js; the logic is src/labhistory.js, tested by test_labhistory.js)
+  await page.click('.lang-btn:has-text("Python")'); await page.waitForSelector('.lab-editor textarea');
+  const hist = () => page.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.labhistory.v1') || 'null'));
+  const pyName = await activeTab();
+  await setCode('print("version one")\n'); await runLab();
+  let hv = ((await hist()) || { files: {} }).files.python || {};
+  check('history: a run keeps a version of the file', (hv[pyName] || []).some((v) => v.why === 'run' && v.code === 'print("version one")\n'), hv[pyName]);
+  await setCode('print("version two")\nprint("<b>not html</b>")\n');
+  await page.click('.lab-statusbar button:has-text("History")'); await page.waitForSelector('.lab-hist:not([hidden]) .hist-item');
+  check('history: the panel lists the versions with what made them', /run/.test(await page.locator('.lab-hist .hist-item').first().innerText()) && /differs from line 1/.test(await page.locator('.lab-hist').innerText()), await page.locator('.lab-hist').innerText());
+  await page.locator('.lab-hist .hist-item', { hasText: 'run' }).first().click();
+  check('history: a version shows a line diff against the text now, as text', (await page.locator('.lab-hist .dl.d-del').count()) === 1 && (await page.locator('.lab-hist .dl.d-add').count()) === 2 && /version one/.test(await page.locator('.lab-hist .d-del').innerText()) && (await page.locator('.lab-hist .diff b').count()) === 0 && (await page.locator('.lab-hist .diff').innerText()).includes('<b>not html</b>'), await page.locator('.lab-hist .diff').innerText());
+  await page.click('.lab-hist button:has-text("Restore this version")'); await page.waitForTimeout(100);
+  check('history: Restore brings the version back', (await page.locator('.lab-editor textarea').inputValue()) === 'print("version one")\n');
+  hv = (await hist()).files.python[pyName];
+  check('history: Restore kept the text it replaced first', hv.some((v) => v.why === 'restore' && /version two/.test(v.code)), hv.map((v) => v.why));
+  await page.click('.lab-editor textarea'); await page.keyboard.press('Control+z');
+  check('history: Ctrl+Z undoes a Restore', /version two/.test(await page.locator('.lab-editor textarea').inputValue()));
+  await page.click('.lab-hist button:has-text("Compare files")');
+  check('history: Compare files with one tab asks for a second', /second tab/.test(await page.locator('.lab-hist').innerText()));
+  // find in all files: two files share a name; the results are grouped and open the tab at the line
+  await page.click('.lab-tabs .tab.add'); await page.fill('.tab-rename', 'helper.py'); await page.press('.tab-rename', 'Enter'); await page.waitForTimeout(200);
+  await setCode('def total(xs):\n    return sum(xs)\n\nprint(total([1, 2]))\n'); await page.waitForTimeout(500);
+  check('history: Compare files shows a diff of two tabs', (await page.locator('.lab-hist .diff .dl').count()) > 2 && /only in helper\.py/.test(await page.locator('.lab-hist').innerText()), await page.locator('.lab-hist').innerText());
+  await tabNamed(pyName).click(); await setCode('import helper\nx = 1\nprint(total)\n');
+  await page.click('.lab-editor textarea'); await page.keyboard.press('Control+Shift+F'); await page.waitForSelector('.lab-search:not([hidden])');
+  check('find in all files: Ctrl+Shift+F opens the panel, and closes History', (await page.locator('.lab-hist').isHidden()) && (await page.evaluate(() => document.activeElement.id)) === 'lab-search');
+  await page.fill('#lab-search', 'total'); await page.waitForTimeout(400);
+  const sres = await page.locator('.lab-search').innerText();
+  check('find in all files: results grouped by file, with lines and the match marked', (await page.locator('.search-file').count()) === 2 && /3 matches in 2 files/.test(sres) && (await page.locator('.search-hit mark').count()) === 3, sres);
+  await page.locator('.search-file', { hasText: 'helper.py' }).locator('.search-hit').nth(1).click(); await page.waitForTimeout(150);
+  check('find in all files: a result opens its tab at its line', (await activeTab()) === 'helper.py' && /Ln 4,/.test(await page.locator('.sb-pos').innerText()), [await activeTab(), await page.locator('.sb-pos').innerText()]);
+  await page.check('.search-opts input >> nth=1'); await page.fill('#lab-search', 'x'); await page.waitForTimeout(400);
+  check('find in all files: whole word', /^1 match in 1 file$/m.test(await page.locator('.lab-search').innerText()), await page.locator('.lab-search').innerText());
+  await page.uncheck('.search-opts input >> nth=1');
+  await page.fill('#lab-search', 'total'); await page.fill('.search-repl .find-inp', 'grand_total'); await page.waitForTimeout(400);
+  await page.click('.search-repl button'); check('find in all files: Replace all asks first', /Replace 3 in 2 files\?/.test(await page.locator('.search-repl button').innerText()), await page.locator('.search-repl button').innerText());
+  await page.click('.search-repl button'); await page.waitForTimeout(150);
+  const both = await page.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.lab.v1')).files.python.map((f) => f.code).join('\n'));
+  check('find in all files: Replace all changed both files', (both.match(/grand_total/g) || []).length === 3 && !/\btotal\b/.test(both), both);
+  await tabNamed(pyName).click();
+  await page.click('.lab-statusbar button:has-text("History")'); await page.waitForSelector('.lab-hist:not([hidden]) .hist-item');
+  await page.locator('.lab-hist .hist-item', { hasText: 'before replace all' }).first().click();
+  await page.click('.lab-hist button:has-text("Restore this version")'); await page.waitForTimeout(100);
+  check('find in all files: History undoes Replace all in one file', (await page.locator('.lab-editor textarea').inputValue()) === 'import helper\nx = 1\nprint(total)\n' && /grand_total/.test(await page.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.lab.v1')).files.python.find((f) => f.name === 'helper.py').code)), await page.locator('.lab-editor textarea').inputValue());
+  await page.click('.lab-statusbar button:has-text("History")');
+  // side by side: two columns while the main column is wide, under each other otherwise, and kept
+  await page.setViewportSize({ width: 1400, height: 900 }); await page.waitForTimeout(100);
+  await page.click('.lab-statusbar button:has-text("Side by side")'); await page.waitForTimeout(200); await runLab();
+  const box = async (sel) => page.locator(sel).first().boundingBox();
+  let eb = await box('.lab-editor'), ob = await box('.lab-out');
+  check('side by side: the output is beside the editor', eb && ob && ob.x > eb.x + eb.width - 1 && ob.y < eb.y + eb.height && JSON.parse(await page.evaluate(() => localStorage.getItem('shortcourses.lab.v1'))).split === true, [eb, ob]);
+  await page.click('.lab-toolbar button:has-text("Terminal")'); await page.waitForSelector('.lab-term:not([hidden])');
+  const tb = await box('.lab-term');
+  check('side by side: the terminal is in the right column too', tb && tb.x > eb.x + eb.width - 1, tb);
+  await page.click('.lab-toolbar button:has-text("Terminal")');
+  const keep = await page.locator('.lab-editor textarea').inputValue();
+  await setCode('x = 1\ny = x + 1'); await page.click('.lab-toolbar button:has-text("Step through")'); await page.waitForSelector('.trace-vars table', { timeout: 8000 });
+  const trb = await box('.trace-box');
+  check('side by side: the step-through works, in the right column', trb && trb.x > eb.x + eb.width - 1 && (await page.locator('.trace-vars table').count()) === 1 && (await page.locator('.lab-editor .line.trace').count()) === 1, trb);
+  await page.click('.trace-box button:has-text("Stop")'); await page.waitForTimeout(200);
+  await setCode('import turtle\nt = turtle.Turtle()\nt.forward(50)\nturtle.done()\nprint("drawn")'); await runLab();
+  const tub = await box('.turtle-box');
+  check('side by side: the turtle canvas draws in the right column', tub && tub.x > eb.x + eb.width - 1 && (await page.frameLocator('#lab-turtle iframe').locator('canvas').count()) > 0 && /drawn/.test(await outText()), [tub, await outText()]);
+  await page.click('.turtle-box button:has-text("×")'); await setCode(keep);
+  await page.setViewportSize({ width: 800, height: 900 }); await page.waitForTimeout(200);
+  eb = await box('.lab-editor'); ob = await box('.lab-out');
+  check('side by side: a narrow window puts the output back under the editor', ob.y >= eb.y + eb.height - 1, [eb, ob]);
+  await page.setViewportSize({ width: 1400, height: 900 }); await page.waitForTimeout(200);
+  await page.click('.lab-statusbar button:has-text("Side by side")'); await page.waitForTimeout(200);
+  eb = await box('.lab-editor'); ob = await box('.lab-out');
+  check('side by side: off again, the output is under the editor', ob.y >= eb.y + eb.height - 1 && (await page.locator('.lab-work.split').count()) === 0, [eb, ob]);
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await tabNamed('helper.py').click(); await page.locator('.lab-tabs .tab.on .tab-x').click(); await page.locator('.lab-tabs .tab.on .tab-x').click(); await page.waitForTimeout(100);
+  check('history: closing a file drops its history', !((await hist()).files.python || {})['helper.py'] && (await page.locator('.lab-tabs .tab:not(.add)').count()) === 1, Object.keys((await hist()).files.python || {}));
+
   // ---- the terminal (src/terminal.js in front of src/shell.js): commands, the ~/lab mirror, programs through the sandboxes, persistence
   await page.click('.lang-btn:has-text("Python")'); await page.waitForSelector('.lab-editor textarea');
   await setCode('print("from the lab")');
@@ -304,6 +380,16 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await page.fill('.term-inp', 'seven'); await page.press('.term-inp', 'Enter');
   await page.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 15000 });
   check('terminal: input() is answered on the command line', /N\? seven\ngot seven/.test(await page.locator('.lab-term .term-scroll').innerText()));
+  // a here-document typed at the prompt: its lines are asked for with bash's "> " until the word that ends it
+  await page.fill('.term-inp', 'x=5; cat <<EOF | tr a-z A-Z'); await page.press('.term-inp', 'Enter');
+  await page.waitForFunction(() => document.querySelector('.lab-term .term-ps1').textContent === '> ', null, { timeout: 15000 });
+  const hdHint = await page.locator('.lab-term .term-inp').getAttribute('placeholder');
+  await page.fill('.term-inp', 'typed $x'); await page.press('.term-inp', 'Enter');
+  await page.waitForFunction(() => /> typed \$x\n?$/.test(document.querySelector('.lab-term .term-scroll').innerText) && document.querySelector('.lab-term .term-ps1').textContent === '> ', null, { timeout: 15000 });
+  await page.fill('.term-inp', 'EOF'); await page.press('.term-inp', 'Enter');
+  await page.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 15000 });
+  tt = await page.locator('.lab-term .term-scroll').innerText();
+  check('terminal: a here-document asks for its lines with "> ", then runs', /cat <<EOF \| tr a-z A-Z\n> typed \$x\n> EOF\nTYPED 5\n/.test(tt) && /here-document/.test(hdHint || '') && (await termStatus()) === 'exit 0' && /\$ $/.test(await page.locator('.lab-term .term-ps1').innerText()), tt.slice(-200) + ' | ' + hdHint);
   tt = await term('printf \'public class Main { public static void main(String[] a) { System.out.println("from java"); } }\\n\' > Main.java; javac Main.java && java Main; printf \'class B { void f() { int x = "s"; } }\\n\' > B.java; javac B.java');
   check('terminal: javac and java through the Java sandbox, errors name the file', /from java\nB\.java:1: error: incompatible types/.test(tt), tt.slice(-300));
   await page.fill('.term-inp', 'printf \'import java.util.*;\\npublic class Ask { public static void main(String[] a) { Scanner s = new Scanner(System.in); System.out.print("N? "); int n = s.nextInt(); System.out.println("twice " + 2 * n); } }\\n\' > Ask.java; java Ask.java'); await page.press('.term-inp', 'Enter');
@@ -387,6 +473,22 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('terminal: nano Y saves, N does not, and the Save button keeps the keyboard in nano', /kept\na\.txt  b\.txt  c\.txt  e\.txt\nby button\n$/.test(tt), tt.slice(-200));
   tt = await term('cat notes/b.txt; edit notes/b.txt; edit ask.py');
   check('terminal: nano writes the file; edit opens a copy in the Lab', /from nano\n/.test(tt) && /use nano b\.txt/.test(tt) && /opened a copy of ask\.py/.test(tt) && (await page.locator('.lab-tabs .tab.on, .lab-tabs .on').innerText()).includes('ask.py'), tt.slice(-300));
+  // git commit without -m opens nano on git's template (.git/COMMIT_EDITMSG); what is saved there, without the # lines, is the message
+  await term('mkdir gitdemo; cd gitdemo; git init -q; echo hi > a.txt; git add a.txt');
+  await page.fill('.term-inp', 'git commit'); await page.press('.term-inp', 'Enter'); await page.waitForSelector('.nano-ta');
+  const tpl = await page.locator('.nano-ta').inputValue();
+  check('terminal: git commit opens nano with git\'s template', /^\n# Please enter the commit message for your changes\./.test(tpl) && /\n#\tnew file:   a\.txt\n/.test(tpl) && /COMMIT_EDITMSG/.test(await page.locator('.nano-head').innerText()), tpl.slice(0, 300));
+  await page.evaluate(() => { const ta = document.querySelector('.nano-ta'); ta.focus(); ta.setSelectionRange(0, 0); });
+  await page.keyboard.type('First commit from nano'); await page.keyboard.press('Control+s'); await page.keyboard.press('Control+x');
+  await page.waitForFunction(() => !document.querySelector('.nano-ta') && /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 5000 });
+  tt = await term('git log --format=%s; cd ..');
+  check('terminal: the message written in nano is the commit\'s', /\[main \(root-commit\) [0-9a-f]{7}\] First commit from nano\n[^]*\nFirst commit from nano\n/.test(tt), tt.slice(-300));
+  // leaving nano without a message aborts, as git does
+  await page.fill('.term-inp', 'cd gitdemo; echo more >> a.txt; git commit -a'); await page.press('.term-inp', 'Enter'); await page.waitForSelector('.nano-ta');
+  await page.keyboard.press('Control+x');
+  await page.waitForFunction(() => !document.querySelector('.nano-ta') && /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 5000 });
+  tt = await term('git log --oneline | wc -l; cd ..');
+  check('terminal: an empty message aborts the commit', /Aborting commit due to empty commit message\.\n[^]*\b1\n/.test(tt), tt.slice(-200));
   await page.reload(); await page.waitForSelector('.lab-term:not([hidden])');
   tt = await term('cat notes/a.txt; ls -F m');
   check('terminal: files, the exec bit and the open panel survive a reload', /hello there\nm\*\n/.test(tt), tt.slice(-100));
@@ -704,6 +806,12 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await pp.locator('.guess-result').waitFor({ state: 'visible', timeout: 20000 }).catch(() => { });
   const sum = await pp.locator('.guess-sum').textContent().catch(() => '');
   check('an example with a prediction asks for a guess, then compares it line by line and shows the explanation', capHidden && nudged && /2 of 3 lines/.test(sum) && (await pp.locator('.guess-lines .bad').count()) === 1 && await pp.locator('.play-cap').isVisible(), sum);
+  // a failed output test says what differs (src/outdiff.js): the reason, the line, the differing part marked, white space visible
+  const ex12 = page.locator('#py-1-2');
+  await ex12.locator('textarea').first().evaluate((t) => { t.value = 'seconds = int(input("Seconds: "))\nprint(seconds, "seconds is", seconds // 60, "minutes and", seconds % 60, "second")\n'; t.dispatchEvent(new Event('input', { bubbles: true })); });
+  await ex12.locator('.toolbar button:has-text("Check")').click(); await ex12.locator('.verdict.fail, .verdict.pass').waitFor({ timeout: 20000 });
+  const odNote = await ex12.locator('.od-note').first().textContent().catch(() => '');
+  check('a failed output test names the difference and marks it', /starts right but stops early: “s” is missing/.test(odNote) && (await ex12.locator('tr.od-diff mark').first().textContent()) === 's' && (await ex12.locator('.t-diff').first().locator('.od-full pre').count()) === 2, odNote);
   // the new exercise kinds: a trace table and a Parsons problem in Python lesson 4
   await goto('#/python/4');
   const tr = page.locator('#py-4-3');
@@ -992,6 +1100,77 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await fp.click('.clang-gate button:has-text("Not now")'); await fp.waitForTimeout(500);
   check('full c++ assignment: "Not now" downloads nothing and says so', freshReqs.length === 0 && /not downloaded/.test(await fp.locator('.asg-bar .verdict').innerText()), freshReqs);
   await fresh.close();
+  // ---- C in the Code Lab: the same compiler (agreed to above), as C; errors marked, argv, typed scanf, and the terminal's gcc
+  {
+    await hp.goto(origin + '/index.html#/lab'); await hp.reload(); await hp.waitForSelector('.lab-editor-area textarea');
+    await hp.click('.lang-btn:text-is("C")');
+    check('C: the Lab has a C language with main.c and a standard picker (C17 by default)', (await hp.locator('.lab-tabs .tab.on').innerText()).startsWith('main.c') && (await hp.locator('select.std-sel').inputValue()) === 'gnu17', await hp.locator('.lab-tabs').innerText());
+    check('C: no engine button and no memory stepper for C', (await hp.locator('button:has-text("Engine:")').count()) === 0 && (await hp.locator('button:has-text("Step through memory")').count()) === 0);
+    check('C: the editor highlights preprocessor lines and C types', (await hp.locator('.lab-editor .hl .p').first().innerText()) === '#include <stdio.h>' && (await hp.locator('.lab-editor .hl .k:text-is("int")').count()) > 0);
+    const statusDone = () => hp.waitForFunction(() => /^(exit|error|stopped)/.test(document.querySelector('.lab-out .term-status').textContent), null, { timeout: 90000 });
+    await setHpCode('#include <stdio.h>\n\nint main(int argc, char *argv[]) {\n    printf("Hello, C! argc=%d", argc);\n    for (int i = 1; i < argc; i++) printf(" [%s]", argv[i]);\n    printf(" long=%zu\\n", sizeof(long));\n    return 0;\n}\n');
+    await hp.click('.lab-toolbar button:has-text("Arguments")'); await hp.fill('#lab-args', 'one "two words"');
+    await hp.click('.lab-toolbar button:has-text("Run")'); await statusDone();
+    r = await hpOut();
+    check('C: a program runs on the real compiler, with its arguments', /Hello, C! argc=3 \[one\] \[two words\] long=4\n/.test(r), r);
+    check('C: the command line shown is gcc with the standard', /gcc -std=gnu17 main\.c -o main && \.\/main one 'two words'/.test(r), r);
+    await hp.fill('#lab-args', '');
+    await setHpCode('#include <stdio.h>\n\nint main(void) {\n    int x = 1\n    printf("%d\\n", x);\n    return 0;\n}\n');
+    await hp.click('.lab-toolbar button:has-text("Run")'); await statusDone();
+    r = await hpOut();
+    check('C: a compile error is shown with a link to its line and a tip', /main\.c:4:\d+: error: expected ';'/.test(r) && /go to line 4/.test(r) && /↳/.test(r), r);
+    check('C: the error line is marked in the editor', (await hp.locator('.lab-editor .hl .line.err').count()) === 1 && (await hp.locator('.lab-editor .err-pin').count()) === 1 && (await hp.locator('.lab-editor .hl .line.err').getAttribute('data-n')) === '4');
+    await setHpCode('int main(void) {\n    printf("hi\\n");\n    return 0;\n}\n');
+    await hp.click('.lab-toolbar button:has-text("Run")'); await statusDone();
+    await setHpCode('#include <stdio.h>\nint main(void) {\n    printf("start\\n");\n    for (;;) { }\n}\n');
+    await hp.click('.lab-toolbar button:has-text("Run")');
+    await hp.waitForFunction(() => /start/.test(document.querySelector('.lab-out .out-text').textContent), null, { timeout: 60000 });
+    await hp.click('.lab-toolbar button:has-text("Stop")'); await statusDone();
+    check('C: a line printed before a loop that never ends is shown, and Stop ends it', /Stopped|stopped/.test(await hpOut()), await hpOut());
+    await setHpCode('int main(void) {\n    printf("hi\\n");\n    return 0;\n}\n');
+    await hp.click('.lab-toolbar button:has-text("Run")'); await statusDone();
+    check('C: a missing #include is explained',/<stdio\.h>/.test(await hp.locator('.lab-out').innerText()), await hpOut());
+    // typed input: the prompt is printed before scanf waits, and the program goes on with each line typed
+    await setHpCode('#include <stdio.h>\n\nint main(void) {\n    char name[40];\n    int age;\n    printf("Name? ");\n    scanf("%39s", name);\n    printf("Age? ");\n    scanf("%d", &age);\n    printf("Hello %s, %d next year\\n", name, age + 1);\n    return 0;\n}\n');
+    await hp.click('.lab-toolbar button:has-text("Run")');
+    await hp.waitForSelector('.lab-out .inline-input', { timeout: 90000 });
+    check('C: typed input asks after the prompt is on the screen', /Name\? $/.test((await hp.locator('.lab-out .out-text').innerText()).replace(/\n$/, '')), await hpOut());
+    await hp.fill('.lab-out .inline-input', 'Ada'); await hp.press('.lab-out .inline-input', 'Enter');
+    await hp.waitForFunction(() => document.querySelectorAll('.lab-out .inline-input').length === 1 && /Age\?/.test(document.querySelector('.lab-out .out-text').textContent), null, { timeout: 30000 });
+    await hp.fill('.lab-out .inline-input', '36'); await hp.press('.lab-out .inline-input', 'Enter'); await statusDone();
+    r = await hpOut();
+    check('C: typed input answers scanf line by line, nothing printed twice', /Name\? Ada\nAge\? 36\nHello Ada, 37 next year\n/.test(r) && (r.match(/Name\?/g) || []).length === 1, r);
+    check('C: the standard and the files are saved', await hp.evaluate(() => { const s = JSON.parse(localStorage.getItem('shortcourses.lab.v1')); return s.lang === 'c' && s.cStd === 'gnu17' && s.files.c.some((f) => /Name\?/.test(f.code)); }));
+    await hp.selectOption('select.std-sel', 'gnu99');
+    await setHpCode('#include <stdio.h>\nint main(void) {\n    int *p = nullptr;\n    printf("%d\\n", p == nullptr);\n    return 0;\n}\n');
+    await hp.click('.lab-toolbar button:has-text("Run")'); await statusDone();
+    check('C: C99 refuses a C23 feature', /error:.*nullptr/.test(await hpOut()), await hpOut());
+    await hp.selectOption('select.std-sel', 'gnu23'); await hp.click('.lab-toolbar button:has-text("Run")'); await statusDone();
+    check('C: C23 accepts it', /\n1\n/.test(await hpOut()) && !/error:/.test(await hpOut()), await hpOut());
+    await hp.selectOption('select.std-sel', 'gnu17');
+    // a share link carries a C program
+    const cLink = await hp.evaluate(() => location.href.split('#')[0] + '#/lab?l=c&n=shared.c&c=' + btoa('#include <stdio.h>\nint main(void) { puts("from a link"); return 0; }\n').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''));
+    await hp.goto('about:blank'); await hp.goto(cLink); await hp.waitForSelector('.lab-editor-area textarea');
+    check('C: a share link opens in the C tab', (await hp.locator('.lang-btn.on').innerText()).trim() === 'C' && (await hp.locator('.lab-tabs .tab.on').innerText()).startsWith('shared.c') && /from a link/.test(await hp.locator('.lab-editor-area textarea').inputValue()));
+    // the terminal: gcc builds a .c with the real compiler, ./name runs it; errors name the file; g++ still builds C++
+    await hp.click('.lab-toolbar button:has-text("Terminal")'); await hp.waitForSelector('.lab-term:not([hidden])');
+    const hterm = async (cmd) => { await hp.fill('.term-inp', cmd); await hp.press('.term-inp', 'Enter'); await hp.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 90000 }); return hp.locator('.lab-term .term-scroll').innerText(); };
+    await hterm('clear');
+    r = await hterm('printf \'#include <stdio.h>\\nint main(int argc, char **argv) { printf("C says %%s %%d\\\\n", argv[0], argc); return 4; }\\n\' > hello.c && gcc hello.c -o hello && ./hello a b; echo "status $?"');
+    check('C terminal: gcc compiles a .c and ./hello runs it with its arguments and exit status', /C says \.\/hello 3\n/.test(r) && /status 4/.test(r), r);
+    r = await hterm('printf \'int main(void) {\\n  return x;\\n}\\n\' > bad.c; cc bad.c -o bad; ls bad');
+    check('C terminal: a compile error names the file and line, and makes no program', /bad\.c:2:\d+: error: use of undeclared identifier 'x'/.test(r) && /cannot access 'bad'/.test(r), r);
+    r = await hterm('printf \'#include <stdio.h>\\nint main(void) { int *p = nullptr; return p != 0; }\\n\' > n.c; gcc -std=c99 n.c -o n; gcc -std=c2x n.c -o n && ./n && echo c23ok');
+    check('C terminal: -std=c99 refuses nullptr and -std=c2x accepts it', /error:.*nullptr/.test(r) && /c23ok/.test(r), r);
+    r = await hterm('printf \'#include <iostream>\\nint main() { std::cout << "still C++" << std::endl; }\\n\' > k.cpp && g++ k.cpp -o k && ./k');
+    check('C terminal: g++ on a .cpp is unchanged', /still C\+\+\n/.test(r), r);
+    await hp.fill('.term-inp', 'printf \'#include <stdio.h>\\nint main(void) { int n; printf("N? "); scanf("%%d", &n); printf("twice %%d\\\\n", 2 * n); return 0; }\\n\' > ask.c && gcc ask.c -o ask && ./ask'); await hp.press('.term-inp', 'Enter');
+    await hp.waitForFunction(() => /waiting for input/.test(document.querySelector('.lab-term .term-inp').placeholder), null, { timeout: 90000 });
+    await hp.fill('.term-inp', '21'); await hp.press('.term-inp', 'Enter');
+    await hp.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 30000 });
+    check('C terminal: a C program asks for its input as it reads it', /N\? 21\ntwice 42\n/.test(await hp.locator('.lab-term .term-scroll').innerText()), await hp.locator('.lab-term .term-scroll').innerText());
+    await hp.click('.lab-toolbar button:has-text("Terminal")');
+  }
   // ---- Bot Arena, persistent mode: needs the page to be cross-origin isolated, which the headers in dist/_headers make it (not so for a file)
   {
     check('arena persistent: the shipped headers isolate the page', indexHeaders['Cross-Origin-Opener-Policy'] === 'same-origin' && indexHeaders['Cross-Origin-Embedder-Policy'] === 'require-corp', indexHeaders);

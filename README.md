@@ -66,7 +66,8 @@ add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is w
     src/javastep.js        Java step-through, drawn in the page (the run is recorded by src/java.js)
     src/java.js            the Java interpreter: lexer, parser, javac-style checker, library, interpreter
     src/javaworker.js      the Java sandbox (a Web Worker); src/javautil.js wraps method exercises for grading
-    src/clangworker.js     the Full C++ worker (real Clang, downloaded on demand); src/cppfull.js grades its exercises
+    src/outdiff.js         what differs between the expected and the printed output (an exercise's verdict)
+    src/clangworker.js     the Full C++ and C worker (real Clang, downloaded on demand); src/cppfull.js grades its exercises
     src/qr.js              QR code encoder for sharing links
     vendor/jscpp.min.js    the JSCPP C++ interpreter, bundled for the browser (see below)
     stubs/                 shims used when bundling JSCPP
@@ -80,6 +81,7 @@ add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is w
     test_javatrace.js      checks the Java step-through recorder
     test_java.js           checks the Java interpreter against what javac and java print
     test_typed.js          typed input: Java Scanner and C++ cin answered a line at a time, in the real workers
+    test_c.js              C in the Code Lab and the terminal: the real Clang worker in node (run, errors, -std, argv, typed scanf)
     test_subst.js          checks the substitution stepper
     test_security.js       checks the Python sandbox and the size limit on links
     test_backup.js         checks saving and restoring work to a file, including hostile files

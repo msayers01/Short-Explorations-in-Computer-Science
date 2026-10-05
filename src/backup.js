@@ -18,7 +18,7 @@
   'use strict';
   const FORMAT = 'short-explorations-backup', VERSION = 1, MAX_FILE = 8 * 1024 * 1024;
   const KEYS = { progress: 'shortcourses.progress.v1', lab: 'shortcourses.lab.v1', portfolio: 'shortcourses.portfolio.v1', teach: 'shortcourses.teach.v1', shell: 'shortcourses.shell.v1', review: 'shortcourses.review.v1', arena: 'shortcourses.arena.v1' };
-  const LANGS = ['python', 'cpp', 'java', 'scheme'];
+  const LANGS = ['python', 'cpp', 'c', 'java', 'scheme'];   // the Code Lab's languages (lab.js LANG_INFO)
   const TEACH = () => (typeof window !== 'undefined' && window.TEACH) || null;
   // the terminal's file system: shell.js checks and caps everything it loads, so it is the sanitizer here (in node the module is required)
   const SHELL = () => (typeof window !== 'undefined' && window.SHELL) || (typeof require === 'function' ? require('./shell.js') : null);
@@ -69,6 +69,7 @@
     const out = { lang: LANGS.includes(l.lang) ? l.lang : 'python', files: {}, active: {}, fontSize: l.fontSize === undefined ? 15 : fin(l.fontSize, 11, 24) || 15, wrap: !!l.wrap, panels: {} };
     if (l.fullCpp === true) out.fullCpp = true;
     if (['gnu++17', 'gnu++20', 'gnu++23'].includes(l.cppStd) && l.cppStd !== 'gnu++20') out.cppStd = l.cppStd;
+    if (['gnu99', 'gnu11', 'gnu23'].includes(l.cStd)) out.cStd = l.cStd;   // C's standard (gnu17, the default, is not written)
     for (const lang of LANGS) {
       const files = (isObj(l.files) && Array.isArray(l.files[lang]) ? l.files[lang] : []).slice(0, 200).map(cleanLabFile).filter(Boolean);
       out.files[lang] = files;
@@ -206,6 +207,7 @@
     const out = { lang: mine.lang, files: {}, active: Object.assign({}, mine.active), fontSize: mine.fontSize, wrap: mine.wrap, panels: Object.assign({}, theirs.panels, mine.panels) };
     if (mine.fullCpp) out.fullCpp = true;
     if (mine.cppStd) out.cppStd = mine.cppStd;
+    if (mine.cStd) out.cStd = mine.cStd;
     if (mine.args || theirs.args) out.args = Object.assign({}, theirs.args, mine.args);
     for (const lang of LANGS) {
       const files = mine.files[lang].map((f) => Object.assign({}, f));

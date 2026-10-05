@@ -63,8 +63,10 @@ const scripts = [
   'src/mathgrade.js',
   'src/cppfull.js',
   'src/javautil.js',
+  'src/outdiff.js',    // what differs between the expected and the printed output, for an exercise's verdict (also loaded by node: test_outdiff.js)
   'src/javaproject.js', // several Java files as one program: joining and line mapping (the Lab's Run, the terminal's javac; also loaded by node)
   'src/labutil.js',    // the Code Lab's pure helpers: program arguments, error lines (also loaded by node and backup.js)
+  'src/labhistory.js', // the Code Lab's file history, line diff and find in all files (also loaded by node: test_labhistory.js)
   'src/botsession.js', // a bot that stays running (Bot Arena persistent mode): the page's side of the shared-memory channel (also loaded by node)
   'src/runner.js',
   'src/parsons.js',    // Parsons problems: blocks, order, program (also loaded by node: test_course.js)
@@ -119,7 +121,7 @@ const THIRD_PARTY = [
   { name: 'Newsreader', pkg: '@fontsource-variable/newsreader', file: 'LICENSE', url: 'https://github.com/productiontype/Newsreader', role: 'is the typeface for text and headings' },
   { name: 'Source Sans 3', pkg: '@fontsource-variable/source-sans-3', file: 'LICENSE', url: 'https://github.com/adobe-fonts/source-sans', role: 'is the typeface for labels and buttons' },
   { name: 'IBM Plex Mono', pkg: '@fontsource/ibm-plex-mono', file: 'LICENSE', url: 'https://github.com/IBM/plex', role: 'is the typeface for code' },
-  { name: 'Clang and LLVM, as packaged by clang-wasm', pkg: '@live-codes/clang-wasm', file: 'LICENSE', url: 'https://github.com/live-codes/clang-wasm', role: 'is the real C++ compiler (Clang 22 built for WebAssembly), downloaded only when a student chooses Full C++',
+  { name: 'Clang and LLVM, as packaged by clang-wasm', pkg: '@live-codes/clang-wasm', file: 'LICENSE', url: 'https://github.com/live-codes/clang-wasm', role: 'is the real C and C++ compiler (Clang 22 built for WebAssembly), downloaded only when a student chooses Full C++ or runs C',
     extra: 'THIRD-PARTY-NOTICES.md' },
   { name: 'PEG.js', pkg: 'pegjs', file: 'LICENSE', url: 'https://pegjs.org/', role: 'generated the C++ parser inside JSCPP' }
 ].map(t => { const j = pkg(t.pkg); return { name: t.name, version: j.version, licence: j.license, url: t.url, role: t.role, changes: t.changes || '', text: licenceText(t.pkg, t.file) + (t.extra ? '\n\n' + licenceText(t.pkg, t.extra) : '') }; });

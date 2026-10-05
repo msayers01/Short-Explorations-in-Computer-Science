@@ -493,6 +493,17 @@ html.classroom .out-text, html.classroom .term-input, html.classroom .nano { fon
 .t-io { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.3rem; }
 .t-io .lbl { font-size: 0.8rem; color: var(--ink-3); display: block; }
 .t-io pre { margin: 0; background: var(--code-bg); padding: 0.4rem 0.6rem; font-size: 0.82rem; white-space: pre-wrap; }
+/* the output comparison in a verdict (outdiff.js): the reason, then the lines around the first difference */
+.t-diff { margin-top: 0.35rem; } .od-note { margin: 0 0 0.35rem; font-size: 0.9rem; }
+.od { border-collapse: collapse; font-family: var(--mono); font-size: 0.82rem; width: 100%; table-layout: fixed; }
+.od th { font-family: var(--sans); font-weight: 600; font-size: 0.75rem; color: var(--ink-3); text-align: left; padding: 0.15rem 0.5rem; }
+.od td { padding: 0.12rem 0.5rem; white-space: pre-wrap; word-break: break-word; vertical-align: top; background: var(--code-bg); border-top: 1px solid var(--rule-2); }
+.od th:first-child, .od td.od-n { width: 3rem; color: var(--ink-3); text-align: right; }
+.od tr.od-same td { color: var(--ink-3); }
+.od tr.od-diff td mark { background: var(--err-soft); color: var(--err); border-radius: 2px; } .od mark.od-gap { padding: 0 1px; font-weight: 700; }
+.od td.od-none { color: var(--ink-3); font-style: italic; font-family: var(--sans); }
+.od tr.od-missing td:nth-child(2), .od tr.od-extra td:nth-child(3) { box-shadow: inset 3px 0 0 var(--err); }
+.od-full { margin-top: 0.35rem; font-size: 0.85rem; } .od-full summary { cursor: pointer; color: var(--ink-3); }
 .hints { margin-top: 0.5rem; font-family: var(--sans); font-size: 0.95rem; }
 .hint { margin: 0.4rem 0; padding: 0.5rem 0.8rem; background: var(--accent-soft); border-left: 3px solid var(--accent); }
 .hint b { color: var(--accent); }
@@ -706,6 +717,35 @@ table.vars td, table.vars th { text-align: left; } table.vars code { font-size: 
 .lab-editor.wrap .hl, .lab-editor.wrap textarea { white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
 .lab-out .goto { font-family: var(--sans); font-size: 0.85rem; color: var(--accent); }
 .trace-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Code Lab: file history, the line diff (also Compare files), find in all files (lab.js; the diff and the search are src/labhistory.js) */
+.lab-hist .panel-head .spacer { flex: 1; }
+.hist-list { list-style: none; margin: 0.5rem 0 0; padding: 0 0.5rem; max-height: 16rem; overflow: auto; }
+.hist-item { display: grid; grid-template-columns: auto 1fr; gap: 0 0.6rem; width: 100%; text-align: left; font: inherit; font-family: var(--sans); font-size: 0.85rem; background: transparent; color: var(--ink); border: 1px solid transparent; border-bottom-color: var(--rule-2); padding: 0.35rem 0.4rem; cursor: pointer; }
+.hist-item:hover { border-color: var(--rule); } .hist-item.on { border-color: var(--accent); background: var(--accent-soft); }
+.hist-time { font-weight: 600; white-space: nowrap; } .hist-why { color: var(--ink-2); } .hist-meta { grid-column: 1 / -1; color: var(--ink-3); font-size: 0.8rem; }
+.hist-diff-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; padding: 0.6rem 0.8rem 0; font-size: 0.85rem; }
+.diff { margin: 0.5rem 0.5rem 0.7rem; border: 1px solid var(--rule); background: var(--code-bg); font-family: var(--mono); font-size: 0.78rem; line-height: 1.45; overflow: auto; max-height: 26rem; }
+.dl { display: grid; grid-template-columns: 2.6em 2.6em 1.2em minmax(0, 1fr); white-space: pre; min-width: max-content; }
+.dl .dn { color: var(--ink-3); text-align: right; padding-right: 0.4em; user-select: none; } .dl .dm { text-align: center; user-select: none; }
+.dl.d-add { background: var(--ok-soft); } .dl.d-add .dm { color: var(--ok); font-weight: 700; }
+.dl.d-del { background: var(--err-soft); } .dl.d-del .dm { color: var(--err); font-weight: 700; }
+.dl.d-skip { display: block; color: var(--ink-3); font-family: var(--sans); padding: 0.15rem 0.6rem; border-block: 1px dashed var(--rule); }
+.d-noeol { color: var(--ink-3); font-family: var(--sans); font-style: italic; }
+.cmp-pick { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; padding: 0.6rem 0.8rem 0; font-size: 0.85rem; }
+.search-form { padding: 0.6rem 0.8rem 0; display: grid; gap: 0.4rem; } .search-form .find-inp { width: 100%; max-width: none; box-sizing: border-box; }
+.search-opts { display: flex; flex-wrap: wrap; gap: 0.2rem 0.8rem; font-size: 0.85rem; } .search-repl { display: flex; gap: 0.4rem; align-items: center; }
+.search-results { padding: 0.3rem 0.5rem 0.7rem; }
+.search-file { margin-top: 0.5rem; } .search-fname { font-family: var(--mono); font-size: 0.8rem; font-weight: 600; padding: 0.15rem 0.3rem; border-bottom: 1px solid var(--rule); }
+.search-hit { display: flex; gap: 0.5rem; width: 100%; text-align: left; font: inherit; font-family: var(--mono); font-size: 0.78rem; background: transparent; color: var(--ink); border: 0; padding: 0.15rem 0.3rem; cursor: pointer; }
+.search-hit:hover, .search-hit:focus-visible { background: var(--accent-soft); }
+.search-ln { color: var(--ink-3); min-width: 2.5em; text-align: right; } .search-text { white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+.search-text mark { background: rgba(255, 200, 0, 0.45); color: inherit; }
+.split-btn.on { color: var(--accent); border-color: var(--accent); }
+/* side by side (lab.js applySplit adds .split only while the main column is wide enough) */
+.lab-work.split { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.lab-work.split .lab-outcol { margin-top: -0.7rem; min-width: 0; }   /* the panels' own top margins line the first one up with the tabs */
+.lab-work.split .lab-editor { height: calc(100vh - 13rem); min-height: 22rem; }
+.lab-work.split .lab-out .out-text { max-height: 50vh; }
 @media (max-width: 900px) {
   .lab-body { grid-template-columns: minmax(0, 1fr); }
   .lab-side { width: auto; position: static; }

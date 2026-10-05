@@ -1,0 +1,44 @@
+// The comparison of expected and actual output shown in an exercise's verdict (src/outdiff.js).
+'use strict';
+const D = require('./src/outdiff.js');
+let fails = 0, passes = 0;
+const check = (name, ok, extra) => { if (ok) passes++; else { fails++; console.log('FAIL ' + name + (extra !== undefined ? '\n   ' + JSON.stringify(extra) : '')); } };
+const kinds = (r) => r.rows.map((x) => x.kind[0]).join('');
+
+let r = D.compare('a\nb\n', 'a\nb');
+check('equal outputs (a trailing newline does not count) have no difference', kinds(r) === 'ss' && r.note === '' && r.firstBad === 0, r);
+r = D.compare('Hello, World', 'Hello,World');
+check('a missing space: the column and the spaces sentence', r.rows[0].kind === 'diff' && r.rows[0].col === 6 && /only in its spaces/.test(r.note), r);
+r = D.compare('Total: 5', 'total: 5');
+check('capitals', /different capitals/.test(r.note), r);
+r = D.compare('average 3', 'average 3.0');
+check('a number written another way', /right numbers written another way/.test(r.note), r);
+r = D.compare('1\n2\n3', '1\n2');
+check('stops early', kinds(r) === 'ssm' && /stops early: the first 2 lines match, then 1 line are missing|stops early: the first 2 lines match, then 1 line/.test(r.note) && r.firstBad === 3, r);
+r = D.compare('1\n2', '1\n2\ndebug x=4');
+check('an extra line at the end', kinds(r) === 'sse' && /printed 1 more line/.test(r.note), r);
+r = D.compare('a\nb\nc', 'a\nDEBUG\nb\nc');
+check('an extra line in the middle shifts the rest', /Line 2 of your output is one the exercise does not expect/.test(r.note), r);
+r = D.compare('a\nb\nc', 'a\nc');
+check('a missing line in the middle', /Line 2 of the expected output is missing from yours/.test(r.note), r);
+r = D.compare('x', '');
+check('nothing printed', /printed nothing/.test(r.note) && kinds(r) === 'm', r);
+r = D.compare('Area: 12', 'Area: 12 cm');
+check('more after a right start', /starts right but has more after it: “ cm”/.test(r.note), r);
+r = D.compare('one two three', 'one two');
+check('stops early on the line', /stops early: “ three” is missing/.test(r.note), r);
+r = D.compare('cat', 'dog');
+check('otherwise, the character', /first differs at character 1/.test(r.note), r);
+r = D.compare('135 seconds is 2 minutes', '135 seconds is 2.25 minutes');
+check('a different number is named, and only the differing part is marked', /prints 2.25 where 2 is expected/.test(r.note) && r.rows[0].col === 16 && r.rows[0].eEnd === 16 && r.rows[0].gEnd === 19, r);
+r = D.compare('Hello, World', 'Hello,World');
+check('a missing character: an empty part on one side, the space on the other', r.rows[0].col === 6 && r.rows[0].gEnd === 6 && r.rows[0].eEnd === 7, r);
+check('visible white space', D.visible('a b\tc') === 'a·b→c');
+r = D.compare('a\r\nb', 'a\nb');
+check('carriage returns do not count', r.note === '', r);
+const big = Array.from({ length: 1000 }, (_, i) => String(i)).join('\n');
+check('rows are capped', D.compare(big, '').rows.length === 200);
+check('null and numbers are safe', D.compare(null, undefined).note === '' && D.compare(5, '5').note === '');
+
+console.log((fails ? 'FAILED ' : 'ok ') + passes + ' passed, ' + fails + ' failed (outdiff)');
+process.exit(fails ? 1 : 0);
