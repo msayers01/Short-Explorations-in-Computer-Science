@@ -1,4 +1,5 @@
-# Differential cases for the practice shell (test_diff.js). The files below exist in the home directory for every case;
+# Differential cases for the practice shell (test_diff.js). awk cases keep to what mawk (this sandbox) and gawk (CI) agree on: their error
+# messages, 1e20's formatting and the grammar of an unparenthesized ?: after print differ, so those are checked in test_shell.js instead. The files below exist in the home directory for every case;
 # each case is one or more command lines, separated by a line of ===. Lines starting with # are comments.
 @file fruit.txt
 banana
@@ -1208,7 +1209,7 @@ awk 'BEGIN { exit 1 } END { print "end" }'; echo $?
 ===
 awk '{ print > "out.txt" } END { print "done" }' fruit.txt; cat out.txt | head -2
 ===
-awk 'BEGIN { print 1 > 2 ? "a" : "b" }'; cat a
+awk 'BEGIN { print (1 > 2 ? "a" : "b"); print 7 > "out.txt" }'; cat out.txt
 ===
 awk 'BEGIN { print (1 > 2) ? "a" : "b" }'
 ===
@@ -1220,7 +1221,7 @@ awk '{ print ($1 < $2) }' words.txt; echo '10 9' | awk '{ print ($1 < $2) }'
 ===
 awk 'BEGIN { print int(3.9), int(-3.9), sqrt(16), exp(0), log(1), sin(0), cos(0), atan2(0, 1) }'
 ===
-awk 'BEGIN { print 0.1 + 0.2, 1e6, 1e20, 123456789, 3/2, 100/3 }'
+awk 'BEGIN { print 0.1 + 0.2, 1e6, 123456789, 3/2, 100/3 }'
 ===
 awk 'BEGIN { CONVFMT = "%.2f"; x = 3.14159; y = x ""; print y; OFMT = "%.1f"; print x }'
 ===
@@ -1236,9 +1237,9 @@ awk 'BEGIN { x; print length(x), x + 0, (x == 0), (x == "") }'
 ===
 awk '{ print length }' fruit.txt | head -2
 ===
-awk '{ print $1 }' nope; echo $?
+awk '{ print $1 }' nope 2>/dev/null; echo $?
 ===
-awk '{ print $1 ' fruit.txt; echo $?
+awk '{ print $1 ' fruit.txt 2>/dev/null || echo failed
 ===
 awk 'BEGIN { print index("abc", ""), length("") }'
 ===
@@ -1278,6 +1279,6 @@ printf '3\n1\n2\n' | awk '{ s += $1 } END { print s, s / NR }'
 ===
 awk 'BEGIN { x = "abc"; print x ~ "b", x ~ /^a/, "b" ~ x }'
 ===
-awk -F, -f prog.awk grades.csv 2>&1; printf 'NR > 1 { print $2 }\n' > prog.awk; awk -F, -f prog.awk grades.csv
+awk -F, -f prog.awk grades.csv 2>/dev/null || echo failed; printf 'NR > 1 { print $2 }\n' > prog.awk; awk -F, -f prog.awk grades.csv
 ===
 ls -d; ls -d -F

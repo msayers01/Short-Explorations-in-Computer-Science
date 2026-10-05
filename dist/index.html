@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Il290fMFeGOsBzwTX/eNf24SUOj/VKL0yAYKt7YD0p0=' 'sha256-4ThMFQqJO+eYKwiicYvsvSJzKIGPeveNoPO/+Vt2l3U=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Il290fMFeGOsBzwTX/eNf24SUOj/VKL0yAYKt7YD0p0=' 'sha256-XD9LUPmCLcRgAspK/Wrlz0imhxpv5zQa95uaXafPeX4=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -25202,7 +25202,9 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
         const list = p.x ? listOf(p, ctx) : null;
         let v = !p.x ? p.v : list ? list.join(' ') : await partValue(p, ctx, io);
         if (!p.x && k === 0 && !p.q && !pattern && /^~(\/|$)/.test(v)) v = HOME + v.slice(1);
-        s += pattern ? (p.q ? globEsc(v) : p.x ? v.replace(/['"]/g, '\\$&') : v) : v;
+        // in a case pattern an unquoted expansion keeps its wildcards and its backslashes (bash: p='a\*' matches only "a*"), so only quotes,
+        // which the pattern reader would take as quoting, are made literal
+        s += pattern ? (p.q ? globEsc(v) : p.x ? v.replace(/['"]/g, (c) => '\\' + c) : v) : v;
       }
       return s;
     }
@@ -28292,7 +28294,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
         return 0;
       }
       const tty = io.tty, h = headId(R, true), list = listRefs(R, 'heads'), w = Math.max(0, ...list.map((b) => b.name.length));
-      if (!R.head.branch && h) io.out('* ', tty ? 'exe' : undefined), io.out('(' + branchLine(R).replace(/^HEAD /, 'HEAD ') + ')' + (o.verbose ? ' ' + short(h) + ' ' + subject(R.objs[h].message) : '') + '\n', tty ? 'exe' : undefined);
+      if (!R.head.branch && h) io.out('* ', tty ? 'exe' : undefined), io.out('(' + branchLine(R) + ')' + (o.verbose ? ' ' + short(h) + ' ' + subject(R.objs[h].message) : '') + '\n', tty ? 'exe' : undefined);
       for (const b of list) {
         const cur = b.name === R.head.branch;
         io.out(cur ? '* ' : '  '); io.out(o.verbose ? b.name.padEnd(w) : b.name, cur && tty ? 'exe' : undefined);
@@ -29751,7 +29753,9 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     return S;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
-  const curFile = () => S.files[S.lang][S.active[S.lang]];
+  // S.lang is checked with hasLang when it is set (it can come from a link), and checked again here, where files are written through it
+  const filesOf = (l) => (l !== '__proto__' && Object.prototype.hasOwnProperty.call(S.files, l) ? S.files[l] : S.files.python);
+  const curFile = () => { const fs = filesOf(S.lang); return fs[Math.max(0, Math.min(fs.length - 1, Number(S.active[S.lang]) | 0))]; };   // the index is a number, whatever was saved
 
   /* ---------------- share links ---------------- */
   const b64e = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -30103,7 +30107,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       nameForm(uniqueName(l, 'untitled' + LANG_INFO[l].ext), (name) => { const n = cleanName(name, l); if (n == null) { renderTabs(); return; } S.files[l].push({ name: uniqueName(l, n), code: '' }); activate(S.files[l].length - 1); }, addBtn);
     }
     function rename(i) {
-      const f = S.files[S.lang][i]; if (!tabs.children[i]) return;
+      i = Number(i) | 0; const f = filesOf(S.lang)[i]; if (!f || !tabs.children[i]) return;
       nameForm(f.name, (name) => { const n = cleanName(name, S.lang); if (n != null && n !== f.name) { f.name = uniqueName(S.lang, n); save(); } renderTabs(); renderStatusBar(); }, tabs.children[i]);
     }
     // status bar under the editor: file name, cursor position, rename, wrap, touch helpers

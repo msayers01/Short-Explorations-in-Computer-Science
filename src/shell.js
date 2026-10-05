@@ -887,7 +887,9 @@
         const list = p.x ? listOf(p, ctx) : null;
         let v = !p.x ? p.v : list ? list.join(' ') : await partValue(p, ctx, io);
         if (!p.x && k === 0 && !p.q && !pattern && /^~(\/|$)/.test(v)) v = HOME + v.slice(1);
-        s += pattern ? (p.q ? globEsc(v) : p.x ? v.replace(/['"]/g, '\\$&') : v) : v;
+        // in a case pattern an unquoted expansion keeps its wildcards and its backslashes (bash: p='a\*' matches only "a*"), so only quotes,
+        // which the pattern reader would take as quoting, are made literal
+        s += pattern ? (p.q ? globEsc(v) : p.x ? v.replace(/['"]/g, (c) => '\\' + c) : v) : v;
       }
       return s;
     }

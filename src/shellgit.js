@@ -1157,7 +1157,7 @@
         return 0;
       }
       const tty = io.tty, h = headId(R, true), list = listRefs(R, 'heads'), w = Math.max(0, ...list.map((b) => b.name.length));
-      if (!R.head.branch && h) io.out('* ', tty ? 'exe' : undefined), io.out('(' + branchLine(R).replace(/^HEAD /, 'HEAD ') + ')' + (o.verbose ? ' ' + short(h) + ' ' + subject(R.objs[h].message) : '') + '\n', tty ? 'exe' : undefined);
+      if (!R.head.branch && h) io.out('* ', tty ? 'exe' : undefined), io.out('(' + branchLine(R) + ')' + (o.verbose ? ' ' + short(h) + ' ' + subject(R.objs[h].message) : '') + '\n', tty ? 'exe' : undefined);
       for (const b of list) {
         const cur = b.name === R.head.branch;
         io.out(cur ? '* ' : '  '); io.out(o.verbose ? b.name.padEnd(w) : b.name, cur && tty ? 'exe' : undefined);

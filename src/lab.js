@@ -339,7 +339,9 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     return S;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
-  const curFile = () => S.files[S.lang][S.active[S.lang]];
+  // S.lang is checked with hasLang when it is set (it can come from a link), and checked again here, where files are written through it
+  const filesOf = (l) => (l !== '__proto__' && Object.prototype.hasOwnProperty.call(S.files, l) ? S.files[l] : S.files.python);
+  const curFile = () => { const fs = filesOf(S.lang); return fs[Math.max(0, Math.min(fs.length - 1, Number(S.active[S.lang]) | 0))]; };   // the index is a number, whatever was saved
 
   /* ---------------- share links ---------------- */
   const b64e = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -691,7 +693,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       nameForm(uniqueName(l, 'untitled' + LANG_INFO[l].ext), (name) => { const n = cleanName(name, l); if (n == null) { renderTabs(); return; } S.files[l].push({ name: uniqueName(l, n), code: '' }); activate(S.files[l].length - 1); }, addBtn);
     }
     function rename(i) {
-      const f = S.files[S.lang][i]; if (!tabs.children[i]) return;
+      i = Number(i) | 0; const f = filesOf(S.lang)[i]; if (!f || !tabs.children[i]) return;
       nameForm(f.name, (name) => { const n = cleanName(name, S.lang); if (n != null && n !== f.name) { f.name = uniqueName(S.lang, n); save(); } renderTabs(); renderStatusBar(); }, tabs.children[i]);
     }
     // status bar under the editor: file name, cursor position, rename, wrap, touch helpers
