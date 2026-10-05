@@ -87,7 +87,8 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   `src/lockdown.js` (strips network/worker APIs from the interpreter workers).
 - Hard-won facts: compile is 1-4 s, run is native speed; a program is compiled once and run once per input (`runMany`); **a crashed compile
   used to run the previous program** (fixed: output files are emptied, clang `error:` lines count as failure); program memory capped at
-  256 MB, compiler at 1 GB; node's `execute` differs from the browser's, so test memory behaviour in the browser.
+  256 MB, compiler at 1 GB; compiling gets 60 s and the program its own 10 s + 2 s per input from the worker's `phase` message (a `<format>`
+  compile took over 12 s in this sandbox, which used to count against the program's limit); node's `execute` differs from the browser's, so test memory behaviour in the browser.
 
 ## Current state (October 2026)
 

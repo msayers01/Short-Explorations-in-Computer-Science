@@ -139,6 +139,8 @@
           r.waitingInput = false; r.last = Date.now();
           r.ch.send({ t: 'input', id: r.id, value: String(v == null ? '' : v) });
         });
+      } else if (m.t === 'phase') {   // the compiler is done (clangworker.js): the program's own time starts now, from zero, with its own budget
+        r.busy = 0; r.totalMs = Math.max(1000, Math.min(120000, Number(m.ms) || r.totalMs)); r.idleMs = Math.max(r.idleMs, r.totalMs);
       } else if (m.t === 'step') {
         r.paused = true;
         if (o.onStep) o.onStep({ line: Number(m.line) || 0, depth: Number(m.depth) || 1, vars: (Array.isArray(m.vars) ? m.vars : []).filter((v) => Array.isArray(v) && v.length === 2).map((v) => [String(v[0]), String(v[1])]) });
@@ -202,10 +204,12 @@
     state: () => clangState,
     subscribe(f) { clangListeners.add(f); return () => clangListeners.delete(f); },
     /** compile once, run once for each input in stdins → Promise<{out, err, parts:[{out, all, err, exit}], notes}>; err is the compiler's messages */
-    runMany: (code, stdins, opts) => { opts = opts || {}; const n = stdins.length; return clang.run({ t: 'run', totalMs: 10000 + 2000 * n, idleMs: 10000 + 2000 * n, opts, payload: { code: String(code), stdins: stdins.map(String), std: opts.std } }); },
+    // compiling gets 60 s (a heavy header such as <format> takes Clang 10 s or more on a slow machine); then the worker says so ('phase') and
+    // the program gets 10 s plus 2 s for each input, counted from zero, so a loop that never ends is stopped as soon as before
+    runMany: (code, stdins, opts) => { opts = opts || {}; const n = stdins.length; return clang.run({ t: 'run', totalMs: 60000, idleMs: 60000, opts, payload: { code: String(code), stdins: stdins.map(String), std: opts.std, runMs: 10000 + 2000 * n } }); },
     run: (code, opts) => { opts = opts || {}; return window.CLANGRUN.runMany(code, [opts.stdin == null ? '' : opts.stdin], opts).then((r) => Object.assign(r, { exit: r.parts[0] ? r.parts[0].exit : 0, err: r.err || (r.parts[0] && r.parts[0].err) || null })); },
     /** compile only, nothing run → Promise<{err, notes}> */
-    compile: (code, opts) => { opts = opts || {}; return clang.run({ t: 'run', totalMs: 12000, idleMs: 12000, opts, payload: { code: String(code), stdins: [], std: opts.std, compileOnly: true } }); },
+    compile: (code, opts) => { opts = opts || {}; return clang.run({ t: 'run', totalMs: 60000, idleMs: 60000, opts, payload: { code: String(code), stdins: [], std: opts.std, compileOnly: true } }); },
     cancel: () => clang.cancel()
   };
 
