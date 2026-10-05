@@ -1,4 +1,4 @@
-/* Code Lab: a browser-only sandbox for Python, C++, Java and Scheme.
+/* Code Lab: a browser-only sandbox for Python, C++, C, Java and Scheme.
    Registered as window.LAB; app.js routes #/lab here and passes its internals. */
 (function () {
   const A = () => window.__app.internal;   // shared helpers from app.js
@@ -6,6 +6,7 @@
   const LANG_INFO = {
     python: { label: 'Python', ext: '.py', accent: 'python', first: 'main.py' },
     cpp: { label: 'C++', ext: '.cpp', accent: 'cpp', first: 'main.cpp' },
+    c: { label: 'C', ext: '.c', accent: 'cpp', first: 'main.c' },   // always the real compiler (Clang, as C): there is no teaching engine for C
     java: { label: 'Java', ext: '.java', accent: 'java', first: 'Main.java' },
     scheme: { label: 'Scheme', ext: '.scm', accent: 'lisp', first: 'main.scm' }
   };
@@ -36,6 +37,17 @@
       { name: 'Array', code: '#include <iostream>\nusing namespace std;\n\nint main() {\n    int scores[5] = {70, 85, 92, 60, 78};\n    int best = scores[0];\n    for (int i = 1; i < 5; i++) {\n        if (scores[i] > best) best = scores[i];\n    }\n    cout << "Best score: " << best << endl;\n    return 0;\n}\n' },
       { name: 'Characters', code: '#include <iostream>\nusing namespace std;\n\nint main() {\n    char word[] = "hello";\n    for (int i = 0; word[i] != 0; i++) {\n        char c = word[i];\n        if (c >= \'a\' && c <= \'z\') c = c - \'a\' + \'A\';\n        cout << c;\n    }\n    cout << endl;\n    return 0;\n}\n' },
       { name: 'Recursion', code: '#include <iostream>\nusing namespace std;\n\nlong factorial(int n) {\n    if (n == 0) return 1;\n    return n * factorial(n - 1);\n}\n\nint main() {\n    for (int n = 0; n < 8; n++) cout << n << " " << factorial(n) << endl;\n    return 0;\n}\n' }
+    ],
+    c: [
+      { name: 'Hello', code: '#include <stdio.h>\n\nint main(void) {\n    printf("Hello from the Code Lab!\\n");\n    return 0;\n}\n' },
+      { name: 'Input with scanf', code: '#include <stdio.h>\n\nint main(void) {\n    char name[50];\n    int age;\n    printf("What is your name? ");\n    scanf("%49s", name);          // a string is already an address: no &\n    printf("How old are you? ");\n    scanf("%d", &age);            // a number needs the address of the variable\n    printf("Hello, %s. In ten years you will be %d.\\n", name, age + 10);\n    return 0;\n}\n' },
+      { name: 'Array', code: '#include <stdio.h>\n\nint main(void) {\n    int scores[] = {70, 85, 92, 60, 78};\n    int n = sizeof scores / sizeof scores[0];   // how many elements\n    int best = scores[0], total = 0;\n    for (int i = 0; i < n; i++) {\n        if (scores[i] > best) best = scores[i];\n        total += scores[i];\n    }\n    printf("%d scores, best %d, average %.1f\\n", n, best, (double) total / n);\n    return 0;\n}\n' },
+      { name: 'Strings', code: '#include <stdio.h>\n#include <string.h>\n#include <ctype.h>\n\nint main(void) {\n    char word[50] = "hello";\n    char shout[50];\n    strcpy(shout, word);                        // = does not copy an array\n    for (size_t i = 0; shout[i] != \'\\0\'; i++) shout[i] = toupper((unsigned char) shout[i]);\n    strcat(shout, "!");\n    printf("%s has %zu letters; shouted: %s\\n", word, strlen(word), shout);\n    printf("\\"apple\\" comes before \\"banana\\": %s\\n", strcmp("apple", "banana") < 0 ? "yes" : "no");\n    return 0;\n}\n' },
+      { name: 'Struct', code: '#include <stdio.h>\n\nstruct Point {\n    double x, y;\n};\n\ndouble squaredDistance(struct Point a, struct Point b) {\n    double dx = a.x - b.x, dy = a.y - b.y;\n    return dx * dx + dy * dy;\n}\n\nint main(void) {\n    struct Point p = {0, 0}, q = {3, 4};\n    struct Point *r = &q;\n    r->x = 6;                                   // -> reaches a field through a pointer\n    printf("(%g, %g) to (%g, %g): squared distance %g\\n", p.x, p.y, q.x, q.y, squaredDistance(p, q));\n    return 0;\n}\n' },
+      { name: 'Pointers', code: '#include <stdio.h>\n\nvoid swap(int *a, int *b) {\n    int t = *a;\n    *a = *b;\n    *b = t;\n}\n\nint main(void) {\n    int x = 1, y = 2;\n    int *p = &x;              // p holds the address of x\n    *p = 10;                  // so this changes x\n    printf("x = %d, y = %d, p points at %d\\n", x, y, *p);\n    swap(&x, &y);\n    printf("after swap: x = %d, y = %d\\n", x, y);\n    return 0;\n}\n' },
+      { name: 'malloc and free', code: '#include <stdio.h>\n#include <stdlib.h>\n\nint main(void) {\n    int n = 10;\n    int *squares = malloc(n * sizeof *squares);   // room for n ints\n    if (squares == NULL) {\n        printf("out of memory\\n");\n        return 1;\n    }\n    for (int i = 0; i < n; i++) squares[i] = i * i;\n    for (int i = 0; i < n; i++) printf("%d ", squares[i]);\n    printf("\\n");\n    free(squares);                                // give it back\n    return 0;\n}\n' },
+      { name: 'Command-line arguments', code: '#include <stdio.h>\n#include <stdlib.h>\n\n// Type some numbers in the Arguments box (or in the Terminal: ./main 3 4 5)\nint main(int argc, char *argv[]) {\n    printf("%s was given %d argument(s)\\n", argv[0], argc - 1);\n    int total = 0;\n    for (int i = 1; i < argc; i++) total += atoi(argv[i]);\n    printf("their sum: %d\\n", total);\n    return 0;\n}\n' },
+      { name: 'Project: guessing game', code: '#include <stdio.h>\n#include <stdlib.h>\n#include <time.h>\n\nint main(void) {\n    srand(time(NULL));\n    int secret = rand() % 100 + 1, guess, tries = 0;\n    printf("I am thinking of a number from 1 to 100.\\n");\n    for (;;) {\n        printf("Your guess: ");\n        if (scanf("%d", &guess) != 1) {\n            printf("\\nBye! It was %d.\\n", secret);\n            return 0;\n        }\n        tries++;\n        if (guess < secret) printf("Higher.\\n");\n        else if (guess > secret) printf("Lower.\\n");\n        else break;\n    }\n    printf("Yes, %d! You took %d tries.\\n", secret, tries);\n    return 0;\n}\n' }
     ],
     java: [
       { name: 'Hello', code: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello from the Code Lab!");\n    }\n}\n' },
@@ -153,6 +165,50 @@ strlen(word)   'a' + 1 == 'b'   c - '0' turns a digit char into a number</code><
 #include &lt;cstdlib&gt;   srand(1); rand() % 6 + 1
 #include &lt;cstring&gt;   strlen(s)  strcmp(a, b)</code></pre>
 <p class="ref-note">This C++ runs in your browser (JSCPP). Not supported: <code>std::string</code>, <code>vector</code>, classes and structs, references (<code>int&amp;</code>). Overflow and out-of-range array indices are reported as errors. Keep loops under about 50 000 steps.</p>`,
+    c: `<h3>C quick reference</h3>
+<h4>Program shape</h4>
+<pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    // statements end with ;
+    return 0;            // 0 means it went well
+}</code></pre>
+<h4>Output and input</h4>
+<pre><code>printf("x = %d, y = %.2f, c = %c, s = %s\\n", x, y, c, s);
+scanf("%d", &amp;n);         // a number: give the address &amp;n
+scanf("%49s", word);     // a word into char word[50]: no &amp;
+fgets(line, sizeof line, stdin);   // a whole line
+while (scanf("%d", &amp;n) == 1) { ... }   // until the input ends</code></pre>
+<h4>Types and numbers</h4>
+<pre><code>int n = 7;   double d = 3.5;   char c = 'a';   long long big = 1LL &lt;&lt; 40;
+%d int  %ld long  %lld long long  %f %g double  %zu size_t  %p pointer
+7 / 2 = 3   (integer division)   7.0 / 2 = 3.5   7 % 2 = 1
+#include &lt;stdbool.h&gt;   bool ok = true;   (built in from C23)</code></pre>
+<h4>Decisions, loops, functions</h4>
+<pre><code>if (x &gt; 5 &amp;&amp; y != 0) { ... } else { ... }
+for (int i = 0; i &lt; 10; i++) { ... }   while (cond) { ... }
+switch (c) { case 'a': ...; break; default: ...; }
+int add(int a, int b);            // a prototype: declare before use
+int add(int a, int b) { return a + b; }</code></pre>
+<h4>Arrays and strings</h4>
+<pre><code>int xs[5] = {1, 2, 3, 4, 5};     sizeof xs / sizeof xs[0] == 5
+char s[20] = "hi";                // ends with '\\0'
+#include &lt;string.h&gt;  strlen(s)  strcpy(d, s)  strcat(d, s)  strcmp(a, b) == 0</code></pre>
+<h4>Pointers and memory</h4>
+<pre><code>int *p = &amp;x;   *p = 6;          // x is now 6
+void swap(int *a, int *b);        // change the caller's variables
+#include &lt;stdlib.h&gt;
+int *a = malloc(n * sizeof *a);   if (a == NULL) ...
+free(a);                          // every malloc once</code></pre>
+<h4>Structs</h4>
+<pre><code>struct Point { int x, y; };
+struct Point p = {1, 2};   p.x = 5;
+struct Point *q = &amp;p;      q-&gt;y = 7;     // -&gt; through a pointer
+typedef struct { char name[30]; int age; } Person;</code></pre>
+<h4>Useful headers</h4>
+<pre><code>&lt;math.h&gt;    sqrt pow fabs floor     &lt;ctype.h&gt;  isdigit isalpha toupper
+&lt;stdlib.h&gt;  rand srand atoi abs exit  &lt;time.h&gt;   time clock</code></pre>
+<p class="ref-note">C runs on a real compiler (Clang 22) in your browser, in 32-bit mode: <code>int</code>, <code>long</code> and pointers are 4 bytes, <code>long long</code> is 8. C does not check array indexes or pointers: going outside an array may change other variables silently, or stop the program. No threads, no files beyond the program's input and output. The standard picker chooses C99, C11, C17 (the default) or C23. The compiler is the one Full C++ uses, downloaded the first time (about 28 MB).</p>`,
     java: `<h3>Java quick reference</h3>
 <h4>A program</h4>
 <pre><code>import java.util.*;          // Scanner, ArrayList, HashMap ...
@@ -316,6 +372,8 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
 
   // The language standards Full C++ can compile for; the second is the default.
   const STANDARDS = [['gnu++17', 'C++17'], ['gnu++20', 'C++20'], ['gnu++23', 'C++23']];
+  // and C's (the GNU dialects, as for C++: strict -std=c17 hides POSIX names such as M_PI and strdup); the third, C17, is the default
+  const C_STANDARDS = [['gnu99', 'C99'], ['gnu11', 'C11'], ['gnu17', 'C17'], ['gnu23', 'C23']];
 
   /* ---------------- state ---------------- */
   let S = null;
@@ -334,6 +392,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     if (!S.panels) S.panels = {};
     S.fullCpp = S.fullCpp === true;
     if (!STANDARDS.some(s => s[0] === S.cppStd)) S.cppStd = STANDARDS[1][0];
+    if (!C_STANDARDS.some(s => s[0] === S.cStd)) S.cStd = C_STANDARDS[2][0];
     S.args = window.LABUTIL ? window.LABUTIL.cleanArgs(S.args) : {};   // the Arguments box of each language: strings only (labutil.js)
     S.outWrap = S.outWrap !== false;
     S.split = S.split === true;   // side by side (a display choice of this device: backup.js leaves it out)
@@ -555,7 +614,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
         e.preventDefault();
         const ls = v.lastIndexOf('\n', s - 1) + 1, line = v.slice(ls, s);
         let indent = (line.match(/^\s*/) || [''])[0]; const trimmed = line.trim();
-        const opens = (lang === 'python' && trimmed.endsWith(':')) || ((lang === 'cpp' || lang === 'java') && trimmed.endsWith('{')) || (lang === 'scheme' && (trimmed.split('(').length > trimmed.split(')').length));
+        const opens = (lang === 'python' && trimmed.endsWith(':')) || ((lang === 'cpp' || lang === 'c' || lang === 'java') && trimmed.endsWith('{')) || (lang === 'scheme' && (trimmed.split('(').length > trimmed.split(')').length));
         if (opens) indent += L.tab;
         // C++: Enter between { and } puts } on its own line
         if ((lang === 'cpp' || lang === 'java') && trimmed.endsWith('{') && v[t] === '}') { const ins = '\n' + indent + '\n' + indent.slice(L.tab.length); edit(s, t, ins, s + 1 + indent.length); return; }
@@ -786,7 +845,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const termBtn = el('button', { class: 'btn quiet', title: 'A command line: practise Unix commands on your own files, and run your programs from it', onclick: () => toggleTerm() }, 'Terminal');
     const findBtn = el('button', { class: 'btn quiet', title: 'Find and replace (Ctrl+F / Ctrl+H)', onclick: () => openFind(false) }, 'Find');
     const inputBtn = el('button', { class: 'btn quiet', title: 'A box for the text the program reads (stdin), given all at once', onclick: () => { if (stdinBox.hidden) { showStdin(S.lang); stdinTa.focus(); } else stdinBox.hidden = true; } }, 'Input');
-    const argsBtn = el('button', { class: 'btn quiet', title: 'Words to hand the program when it starts, as after its name on a command line: sys.argv in Python, args in main in Java', 'aria-expanded': 'false', onclick: () => { argsOpen = !argsOpen; renderArgs(); if (argsOpen) argsInp.focus(); } }, 'Arguments');
+    const argsBtn = el('button', { class: 'btn quiet', title: 'Words to hand the program when it starts, as after its name on a command line: sys.argv in Python, args in main in Java, argv in C', 'aria-expanded': 'false', onclick: () => { argsOpen = !argsOpen; renderArgs(); if (argsOpen) argsInp.focus(); } }, 'Arguments');
     const fontDown = el('button', { class: 'btn quiet font-btn', title: 'Smaller text', onclick: () => setFont(-1) }, 'A−');
     const fontUp = el('button', { class: 'btn quiet font-btn', title: 'Larger text', onclick: () => setFont(1) }, 'A+');
     // C++ has two engines: the teaching one (JSCPP; step-through memory, always available, works offline) and Full C++ (Clang; the whole language and library,
@@ -796,6 +855,8 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const stdSel = el('select', { class: 'teach-select std-sel', 'aria-label': 'Language standard', title: 'Which version of C++ the compiler accepts. C++20 is the default; checks on exercises always use it.', onchange: () => { S.cppStd = stdSel.value; save(); } }, STANDARDS.map(([v, label]) => el('option', { value: v }, label)));
     stdSel.value = S.cppStd;
     const engineBtn = el('button', { class: 'btn quiet', onclick: () => { S.fullCpp = !S.fullCpp; save(); engineChanged(); } });
+    const cStdSel = el('select', { class: 'teach-select std-sel', 'aria-label': 'C standard', title: 'Which version of C the compiler accepts (with the GNU extensions, as gcc has by default). C17 is the default.', onchange: () => { S.cStd = cStdSel.value; save(); } }, C_STANDARDS.map(([v, label]) => el('option', { value: v }, label)));
+    cStdSel.value = S.cStd;
     function engineChanged() {
       if (S.lang !== 'cpp') return;
       const why = window.CLANGRUN.unavailable(), forced = exFull();
@@ -805,8 +866,8 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       refBody.innerHTML = REFERENCE[isFull() ? 'cppfull' : 'cpp'];
       endMem(); renderToolbar();
     }
-    const fileInput = el('input', { type: 'file', accept: '.py,.cpp,.cc,.cxx,.h,.java,.scm,.ss,.rkt,.txt', hidden: '', onchange: openFiles });
-    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'python' ? stepBtn : null, S.lang === 'java' && window.JAVASTEP ? jstepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, S.lang === 'cpp' || S.lang === 'java' ? inputBtn : null, hasArgs() ? argsBtn : null, findBtn, tplBtn, refBtn, window.TERMINAL ? termBtn : null, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
+    const fileInput = el('input', { type: 'file', accept: '.py,.cpp,.cc,.cxx,.h,.c,.java,.scm,.ss,.rkt,.txt', hidden: '', onchange: openFiles });
+    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'c' ? cStdSel : null, S.lang === 'python' ? stepBtn : null, S.lang === 'java' && window.JAVASTEP ? jstepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, S.lang === 'cpp' || S.lang === 'c' || S.lang === 'java' ? inputBtn : null, hasArgs() ? argsBtn : null, findBtn, tplBtn, refBtn, window.TERMINAL ? termBtn : null, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
     function setFont(d) { S.fontSize = Math.min(24, Math.max(11, S.fontSize + d)); save(); editor.el.style.setProperty('--lab-font', S.fontSize + 'px'); editor.render(); }
 
     // ----- find / replace bar
@@ -997,7 +1058,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     // ----- the terminal (src/terminal.js in front of src/shell.js). ~/lab in it mirrors the files here, both ways.
     function removeLabFile(l, f) { const i = S.files[l].indexOf(f); if (i < 0) return; S.files[l].splice(i, 1); histDrop(l, f.name); if (!S.files[l].length) S.files[l].push({ name: LANG_INFO[l].first, code: '' }); if (S.active[l] >= S.files[l].length) S.active[l] = S.files[l].length - 1; else if (i < S.active[l]) S.active[l]--; save(); }
     const term = window.TERMINAL && window.SHELL ? window.TERMINAL.mount({
-      el, armConfirm, isTouch, Runners, isFull, cppStd: () => S.cppStd, stop,
+      el, armConfirm, isTouch, Runners, isFull, cppStd: () => S.cppStd, cStd: () => S.cStd, stop,
       labFiles: () => { const all = []; for (const l in LANG_INFO) for (const f of S.files[l]) all.push({ lang: l, name: f.name, code: f.code, set: (c) => { if (c !== f.code) snapshot(l, f, 'terminal'); f.code = c; save(); }, remove: () => removeLabFile(l, f) }); return all; },
       addLabFile: (l, name, code) => { if (!hasLang(l)) return; S.files[l].push({ name: uniqueName(l, name), code }); save(); },
       labChanged: () => { if (editor.value !== curFile().code) editor.value = curFile().code; applyErrMark(); renderTabs(); renderStatusBar(); renderExBar(); renderAsgBar(); },
@@ -1008,12 +1069,12 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const stdinTa = el('textarea', { class: 'stdin-ta', rows: 3, placeholder: 'Type each value the program will read, one per line, before pressing Run.', 'aria-label': 'Program input' });
     const stdinNote = el('span', { class: 'panel-note' });
     const stdinBox = el('div', { class: 'stdin-box', hidden: '' }, el('div', { class: 'panel-head' }, el('b', {}, 'Program input'), stdinNote, el('button', { class: 'btn quiet', title: 'Hide the input box', 'aria-label': 'Hide the input box', onclick: () => { stdinBox.hidden = true; } }, '×')), stdinTa);
-    // Java and the teaching C++ ask for each line in the output panel as the program reads it (typed input, runner.js); text in this box is given
+    // Java, C and the teaching C++ ask for each line in the output panel as the program reads it (typed input, runner.js); text in this box is given
     // instead, all at once, like a file piped in. Full C++ (and scanf or getchar in the teaching C++) read all of their input before they start,
     // so for them the box is the only way in.
-    const typedOk = (lang, code) => lang === 'java' || (lang === 'cpp' && !isFull() && !/\b(scanf|getchar)\b/.test(code));
+    const typedOk = (lang, code) => lang === 'java' || lang === 'c' || (lang === 'cpp' && !isFull() && !/\b(scanf|getchar)\b/.test(code));
     const showStdin = (lang) => { stdinNote.textContent = typedOk(lang, editor.value) ? 'Optional: text here is given to the program all at once, as if piped from a file. Leave it empty to type each line as the program asks.' : 'This program reads its input before it starts, so type it here, one value per line.'; stdinBox.hidden = false; };
-    // Program arguments (Python and Java): the words after the program's name, as  python main.py one two  or  java Main one two  would give.
+    // Program arguments (Python, Java and C): the words after the program's name, as  python main.py one two  or  java Main one two  would give.
     // The teaching C++ engine (JSCPP) calls main with no arguments at all, so C++ has none.
     const hasArgs = () => (window.LABUTIL ? window.LABUTIL.ARG_LANGS : []).includes(S.lang);
     let argsOpen = false;
@@ -1027,7 +1088,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       const on = hasArgs() && (argsOpen || !!(S.args[S.lang] || '').trim());   // shown while it holds words, so a run never takes them by surprise
       argsBox.hidden = !on; argsBtn.classList.toggle('on', on); argsBtn.setAttribute('aria-expanded', String(on));
       if (argsInp.value !== (S.args[S.lang] || '')) argsInp.value = S.args[S.lang] || '';
-      argsNote.textContent = S.lang === 'java' ? 'Given to main(String[] args), split at spaces; quote a word that has spaces in it.' : 'Given to the program as sys.argv[1:], split at spaces; quote a word that has spaces in it.';
+      argsNote.textContent = S.lang === 'java' ? 'Given to main(String[] args), split at spaces; quote a word that has spaces in it.' : S.lang === 'c' ? 'Given to main(int argc, char *argv[]) as argv[1] onwards, split at spaces; quote a word that has spaces in it.' : 'Given to the program as sys.argv[1:], split at spaces; quote a word that has spaces in it.';
     }
     const argWords = () => (hasArgs() && window.LABUTIL ? window.LABUTIL.splitArgs(S.args[S.lang] || '') : []);
     const shellWord = (w) => (/^[\w@%+=:,./-]+$/.test(w) ? w : "'" + w.replace(/'/g, "'\\''") + "'");
@@ -1073,7 +1134,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     // The error marker in the editor: one line of one file, kept while that file is unchanged (any edit, from the editor or the terminal, drops it)
     let errMark = null;
     function setErrMark(loc, err) {
-      errMark = loc ? { file: loc.file, line: loc.line, code: loc.file.code, msg: String(err || '').split('\n')[0].replace(/^[^\s:]+:\d+:(\d+:)? ?/, '').slice(0, 300) || 'error' } : null;
+      errMark = loc ? { file: loc.file, line: loc.line, code: loc.file.code, msg: ((String(err || '').split('\n').find((l) => /^\S+:\d+:\d+: (fatal )?error:/.test(l))) || String(err || '').split('\n')[0]).replace(/^[^\s:]+:\d+:(\d+:)? ?/, '').slice(0, 300) || 'error' } : null;
       applyErrMark();
     }
     function applyErrMark() {
@@ -1093,6 +1154,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       const tail = args.length ? ' ' + args.map(shellWord).join(' ') : '';
       if (lang === 'python') return 'python ' + shellWord(curFile().name) + tail;
       if (lang === 'java' && proj) return 'javac ' + proj.files.map((f) => shellWord(f.name)).join(' ') + ' && java ' + (proj.main || 'Main') + tail;
+      if (lang === 'c') { const exe = curFile().name.replace(/\.c$/, '') || 'main'; return 'gcc -std=' + S.cStd + ' ' + shellWord(curFile().name) + ' -o ' + shellWord(exe) + ' && ./' + shellWord(exe) + tail; }
       return ((window.__app.COMMANDS || {})[lang === 'cpp' && isFull() ? 'cppfull' : lang] || '') + tail;
     }
     async function run() {
@@ -1124,6 +1186,13 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
           const r = await Runners.cppFull.run(code, { onOutput: (s) => out.write(s), onNote: (s) => out.note(s), stdin: stdinTa.value, std: S.cppStd, host: out.el });
           if (r.err) showError('cppfull', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
           if (r.exit) out.note('(the program ended with status ' + r.exit + ')');
+          exit = r.exit || 0;
+        } else if (lang === 'c') {
+          // the real compiler, as C; typed input as the program asks (runner.js replays it), or the Input box all at once; argv from Arguments
+          const r = await Runners.c.run(code, { onOutput: (s) => out.write(s), onNote: (s) => out.note(s), stdin: typed ? null : stdinTa.value, onInput: typed ? (p) => out.ask(p) : undefined, std: S.cStd, args, argv0: curFile().name.replace(/\.c$/, '') || 'main', host: out.el });
+          stopped = r.err === 'Stopped.';
+          if (stopped) out.note('(stopped)'); else if (r.err) showError('c', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
+          if (r.exit && !stopped) out.note('(the program ended with status ' + r.exit + ')');
           exit = r.exit || 0;
         } else if (lang === 'cpp') {
           const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: typed ? null : stdinTa.value, onInput: (p) => out.ask(p) });
@@ -1392,7 +1461,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       let last = -1;
       files.forEach((file) => file.text().then((text) => {
         const ext = (file.name.match(/\.\w+$/) || [''])[0].toLowerCase();
-        const l = ext === '.py' ? 'python' : ['.cpp', '.cc', '.cxx', '.h'].includes(ext) ? 'cpp' : ext === '.java' ? 'java' : ['.scm', '.ss', '.rkt'].includes(ext) ? 'scheme' : S.lang;
+        const l = ext === '.py' ? 'python' : ['.cpp', '.cc', '.cxx', '.h'].includes(ext) ? 'cpp' : ext === '.c' ? 'c' : ext === '.java' ? 'java' : ['.scm', '.ss', '.rkt'].includes(ext) ? 'scheme' : S.lang;
         S.files[l].push({ name: uniqueName(l, file.name), code: text }); last = S.files[l].length - 1;
         if (l !== S.lang) { S.active[l] = last; switchLang(l); } else activate(last);
       }));
@@ -1414,13 +1483,14 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
 <li><b>+ New</b> makes a file and asks for its name; <b>Rename</b> is under the editor (double-clicking a tab also works). <b>Save</b> downloads the file; <b>Open</b> loads files from your device; <b>Share link</b> copies a link that carries the program inside it. Errors that mention a line number have a "go to line" link, and the line is marked in the editor (a red pin in the margin; point at it for the message) until you change the file or run again. The output panel's title bar has <b>Copy</b>, <b>Wrap</b> (long lines wrapped or kept whole) and <b>Clear</b>.</li>
 <li>Java: <b>Step through</b> runs the program one statement at a time and shows the call stack (each method call with its variables), the static fields and the objects and arrays they refer to, numbered so you can see when two variables share one object. You can step backwards as well as forwards. A program that reads with a <code>Scanner</code> takes its input from the Program input box.</li>
 <li>Java: <b>Run</b> compiles every Java tab together, as <code>javac *.java</code> would, so a program can be split into <code>Main.java</code>, <code>Dog.java</code> and so on; the tab you are in goes first, so its <code>main</code> runs if it has one. As in Java, a <code>public</code> class must be in a file of its own name. Tabs that declare a class another tab already has (separate programs, each with its own <code>Main</code>) are left out, and so are exercise files, which run alone.</li>
-<li><b>Arguments</b> (Python and Java) gives the program words to start with, as on a command line: <code>sys.argv[1:]</code> in Python, <code>args</code> in <code>main</code>. In the Terminal, <code>python app.py one two</code> and <code>java Main one two</code> do the same. The teaching C++ engine has no <code>argc</code>/<code>argv</code>.</li>
+<li><b>Arguments</b> (Python, Java and C) gives the program words to start with, as on a command line: <code>sys.argv[1:]</code> in Python, <code>args</code> in <code>main</code> in Java, <code>argv</code> in C. In the Terminal, <code>python app.py one two</code>, <code>java Main one two</code> and <code>./prog one two</code> do the same. The teaching C++ engine has no <code>argc</code>/<code>argv</code>.</li>
 <li>Python: <b>Step through</b> runs one line at a time and shows the variables. <code>import turtle</code> opens a drawing canvas. <b>Stop</b> ends a program that is stuck in a loop.</li>
 <li>Scheme: Run loads the file's definitions, then use the REPL below the output to try expressions one at a time. <b>Substitution</b> shows the substitution model from SICP: each expression is rewritten one step at a time, exactly the way the Lisp course draws it.</li>
 <li><b>Teacher tools</b> (the switch at the top) let a teacher write an assignment with tests and share it as a link or QR code; students <b>Check</b> their work against the visible tests and <b>Submit</b>, which makes a link carrying their program. The teacher opens submission links in her own Code Lab, where hidden tests run and a grade book collects the results. Nothing is sent to any server.</li>
 <li>Every code example and exercise in the courses has an <b>Open in Code Lab</b> button. A file opened from an exercise keeps its link to it: a bar above the editor lets you check your program against the exercise's tests, and passing counts as completing it in the course.</li>
+<li>C: the real compiler (Clang, the one Full C++ uses; downloaded once, after you agree), with a standard picker (C99, C11, C17, C23). Compiler errors mark their line in the editor, and <code>scanf</code> asks for each line as the program reads it. In the Terminal, <code>gcc hello.c -o hello</code> then <code>./hello</code>. C does not check array indexes: a program that goes past the end of an array may print nonsense rather than stop.</li>
 <li>C++: <b>Step through memory</b> runs the program one line at a time and shows every variable in memory: its type, its address and its value, with arrays drawn cell by cell and pointers showing what they point at. You can step backwards as well as forwards.</li>
-<li>Input: a Python <code>input()</code>, a Java <code>Scanner</code> or a C++ <code>cin</code> asks for each line in the output panel as the program reads it; <b>Ctrl+D</b> on an empty line ends the input. <b>Input</b> (Java and C++) opens a box whose text is given to the program all at once instead, like a file. Full C++ reads all of its input before it starts, so it uses the box. C++, Java and Scheme programs stop themselves after a few seconds if they run too long.</li>
+<li>Input: a Python <code>input()</code>, a Java <code>Scanner</code>, a C <code>scanf</code> or a C++ <code>cin</code> asks for each line in the output panel as the program reads it; <b>Ctrl+D</b> on an empty line ends the input. <b>Input</b> (Java, C and C++) opens a box whose text is given to the program all at once instead, like a file. Full C++ reads all of its input before it starts, so it uses the box. C, C++, Java and Scheme programs stop themselves after a few seconds if they run too long.</li>
 <li><b>Terminal</b> opens a command line under the output: a practice Unix shell with its own files (saved on this device). Your Code Lab files appear in its <code>lab</code> folder, so <code>python lab/main.py</code> runs the file in the editor; <code>nano</code> edits a file there, <code>edit file.py</code> opens it in the editor above. Type <code>help</code> for the list of commands; <b>Tab</b> completes names, <b>↑ ↓</b> recall commands, <b>Ctrl+R</b> searches them, <b>Ctrl+A</b> / <b>Ctrl+E</b> / <b>Ctrl+K</b> / <b>Ctrl+W</b> edit the line as in bash, <b>Ctrl+C</b> stops a program. It runs scripts with functions, <code>case</code>, arrays and aliases, and tools such as <code>awk</code>. <code>python</code>, <code>scheme</code> or <code>jshell</code> with no file start an interactive shell (<code>&gt;&gt;&gt;</code>, <code>1 ]=&gt;</code>, <code>jshell&gt;</code>) where each line is run at once.</li>
 <li>On a phone or tablet, the <b>Indent</b> and <b>Outdent</b> buttons under the editor stand in for the Tab key, and <b>Wrap</b> keeps long lines on screen.</li></ul>` }));
     const editorArea = el('div', { class: 'lab-editor-area' }, tabs, findBar, gotoBar, editor.el, statusBar);

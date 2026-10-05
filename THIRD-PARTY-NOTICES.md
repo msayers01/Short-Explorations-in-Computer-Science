@@ -483,7 +483,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
 ## Clang and LLVM, as packaged by clang-wasm 0.3.0
 
-https://github.com/live-codes/clang-wasm. Is the real C++ compiler (Clang 22 built for WebAssembly), downloaded only when a student chooses Full C++. Licence: MIT.
+https://github.com/live-codes/clang-wasm. Is the real C and C++ compiler (Clang 22 built for WebAssembly), downloaded only when a student chooses Full C++ or runs C. Licence: MIT.
 
 ```
 MIT License

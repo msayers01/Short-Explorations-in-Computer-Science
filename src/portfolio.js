@@ -9,8 +9,8 @@
   const A = () => window.__app.internal;
   const el = (...a) => A().el(...a);
   const baseUrl = () => location.href.split('#')[0];
-  const LANG_NAME = { python: 'Python', cpp: 'C++', java: 'Java', scheme: 'Scheme', lisp: 'Scheme' };
-  const LANG_EXT = { python: 'py', cpp: 'cpp', java: 'java', scheme: 'scm', lisp: 'scm' };
+  const LANG_NAME = { python: 'Python', cpp: 'C++', c: 'C', java: 'Java', scheme: 'Scheme', lisp: 'Scheme' };
+  const LANG_EXT = { python: 'py', cpp: 'cpp', c: 'c', java: 'java', scheme: 'scm', lisp: 'scm' };
 
   // ---------- settings (this device) ----------
   let S = null;

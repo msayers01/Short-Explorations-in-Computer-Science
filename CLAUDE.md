@@ -16,6 +16,7 @@ not written down there.
     node test_course.js python|lisp|cpp|math|modern|java|ml   # one course; "modern" compiles with the real compiler, about 1.5 minutes
     node test_java.js      # the Java interpreter against what javac/java print (a few seconds)
     node test_typed.js     # typed input (Scanner, cin answered as the program asks), in the real worker sources (a few seconds)
+    node test_c.js         # C in the Lab and terminal: the real clang worker in node (compile, run, -std, argv, typed scanf; about 15 s)
     node test_shell.js     # the practice shell: file system, parser, every command, limits, hostile saved copies (a second)
     node test_git.js       # the practice git (--real also runs its scenarios through the real git and compares)
     node test_lessons.js   # the lesson linter (part of npm test); --update records new exercise ids in lint/exercise-ids.txt
@@ -92,6 +93,12 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   used to run the previous program** (fixed: output files are emptied, clang `error:` lines count as failure); program memory capped at
   256 MB, compiler at 1 GB; compiling gets 60 s and the program its own 10 s + 2 s per input from the worker's `phase` message (a `<format>`
   compile took over 12 s in this sandbox, which used to count against the program's limit); node's `execute` differs from the browser's, so test memory behaviour in the browser.
+- **C** (October 2026, ARCHITECTURE §9d): the Lab's fifth language (`main.c`) is the same Clang run as C (`lang: 'c'` in the worker's `run`
+  message, `Runners.c`, the same download and agreement), with a C99/C11/C17/C23 picker (`S.cStd`, GNU dialects, default `gnu17`; strict
+  `-std=c99` only from the terminal's `gcc`). The worker appends lines after the student's code (`C_TAIL`: unbuffered stdout, and a `clock()`,
+  which wasi-libc lacks). Typed `scanf` input uses the replay of Java's typed input (`clangTyped`): the build is cached, `rand()` is the same
+  each run, and the program's WASI clock and random bytes are replayed. Terminal: `gcc`/`cc`/`clang` compile a `.c` as C; `g++`/`clang++`
+  stay C++. `node test_c.js` runs the real worker in node (about 15 s). No step-through, no exercises or assignments in C yet.
 
 ## Current state (October 2026)
 
@@ -195,7 +202,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   is Ada Lovelace in SC 101. A machine with someone standing beside it is fine; a person as the subject is not. Prefer a picture
   that explains the concept (dice for Monte Carlo, a sieve for the Sieve of Eratosthenes, a plan for a class).
 - The DOM's own `append`/`replaceChildren` used to print `null`/`false` and arrays as text: `src/domsafe.js` (first in the script) now makes them skip those and flatten arrays (the stray "null" in the Life demo, the bits and knn figures and the shell lesson's tree came from this). Still prefer `el()`.
-- Ideas not started: C in the Code Lab (same compiler); lessons 9-10 of SC 105
+- Ideas not started: lessons 9-10 of SC 105
   (templates, `unique_ptr`, file streams; exceptions are impossible here); a service worker so the compiler stays cached offline (adds a file
   beside the single-page design and needs a policy change); splitting CI (about 4 minutes now).
 - Not verified: Full C++ on low-end devices (needs about 84 MB plus the program), and on the production URL since the security-review merge.

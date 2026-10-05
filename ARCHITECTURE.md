@@ -507,6 +507,35 @@ with `runtime: 'full'` (SC 105); an exercise inherits `runtime` from its course 
   that reads the test's number from the first line of stdin (so a whole exercise is one compile); compile errors are moved back by the
   lines the harness put before the student's code. Exercises of a full course do not mix call tests with whole-program tests.
 - **Standard.** With Full C++ the Lab shows a C++17 / 20 / 23 picker (`S.cppStd`, default `gnu++20`, saved in the Lab state and in back-ups); the worker accepts only `gnu++11`…`gnu++23`. Checks of exercises and assignments always use the default, so a student's choice cannot change a result.
+- **C.** The Code Lab's fifth language (`LANG_INFO.c`, first file `main.c`) is the same compiler run as C: the worker's `run` message takes
+  `lang: 'c'` (compiled as `main.c` with `language: 'C'`), the same download and the same agreement (`fullCpp()` in app.js words the box for
+  C; `Runners.c`). There is no teaching engine and no stepper for C. Standards: the Lab's picker offers C99 / C11 / C17 / C23 as the GNU
+  dialects `gnu99`…`gnu23` (`S.cStd`, default `gnu17`, saved and backed up as `cStd`), because strict `-std=c17` hides POSIX names students use
+  (`M_PI`, `strdup`); the terminal's `gcc -std=c99` passes the strict one, as gcc would (`stdFor` in the worker accepts `c|gnu` with 89…23 and
+  nothing else). The worker appends three lines AFTER the student's code (`C_TAIL`, so no line number moves): a constructor that makes
+  stdout unbuffered, as a terminal shows it (otherwise `printf("Name? ")` would still be in the buffer when `scanf` reads, and typed input
+  would ask before the question is on screen), and a `clock()`, which wasi-libc leaves out (no process clock in WASI), counting from the
+  program's start. A student's own function named `clock` or `setvbuf` would clash with it; nothing in the courses does that. `argv` is
+  passed (`args`, `argv0`: the Arguments box, or the words after `./prog` in the terminal); the worker sends what is printed in pieces of at
+  most 4 KB or 50 ms, and all of it before each read, since unbuffered output would otherwise be one message per `putchar`.
+- **Typed input for C** (`clangTyped` in runner.js; `typedInput` and `replayed` in clangworker.js). The compiler's worker cannot wait for the
+  page either, so C uses the replay of Java and the teaching C++: a read past the lines typed so far throws out of the stdin callback, the run
+  ends with `needInput`, the page asks, and the program runs again from the start with one more line; the first `skip` characters of output
+  are not sent again. It works because the build is cached by source (`lastGood`), so a replay costs milliseconds, and because a replay can be
+  made to see what the run before it saw: `rand()` starts from the same seed in every run, and while a typed run goes on the program's WASI
+  `clock_time_get` and `random_get` are wrapped (the only module instantiated with WASI imports then is the student's), so `time()` follows a
+  clock that reaches each line's time as it is read (`srand(time(0))` picks the same numbers in every replay) and `getentropy` gets bytes from
+  the run's seed. Compiler warnings are shown once, from the first run. Full C++ keeps reading its input before it starts (the Input box).
+- **Errors in C.** `LABUTIL.errorLine('c', …)` takes the first `main.c:N:C: error` line (a warning may come first), so the editor marks and
+  "go to line" work for the current tab whatever its name; the terminal's `gcc` rewrites `main.c:` to the file's own name, as gcc prints it.
+  `TIPS.c` in app.js explains the common clang C errors (a missing `#include`, a function used before it is declared, `.` for `->`, `=` on an
+  array, a missing `&` in `scanf`, undefined symbols) and the run-time crashes. C does not check array indexes, so an out-of-range write may
+  go on silently; only a wild pointer or `abort()` stops the program.
+- **The terminal's C.** `gcc`, `cc` and `clang` compile a `.c` as C (`bin.lang 'c'`, with the standard it was built with); `g++` and
+  `clang++` compile any file as C++, as the real drivers do, so `g++` on a `.cpp` is unchanged. `./prog` runs the source again through
+  `Runners.c` (compiled once: the worker still has that build), with typed input from the keyboard or the pipe or file it is given.
+  `test_c.js` runs the real worker in node's `worker_threads` with the node build of the toolchain (output, argv, exit status, compile
+  errors, C99 refusing C23, typed replay with `srand(time(0))`), and drives the shell's `gcc` with stub hooks.
 - **Security of Full C++** (reviewed once; `test_browser.js` §7b and `test_security.js` §5 keep these true):
   - *What a program can reach.* It is WebAssembly with only WASI imports on a private in-memory file system that is new for every run (nothing is
     written from one run, or one program, to the next; there is no host file, socket or environment). It runs in a blob worker, so no DOM,
