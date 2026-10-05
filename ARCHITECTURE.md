@@ -567,6 +567,12 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   asks on the command line, and so do a Java `Scanner` and the teaching C++'s `cin` (typed input, above; Ctrl+D ends it). Full C++, and `scanf`
   or `getchar`, are given their lines first (an empty line ends them).
   stdout can go to a file or pipe. Exit status: the program's, or 1 on an error.
+- **Interactive shells** (`src/repl.js`, `test_repl.js`): `python` and `scheme` with no file and the keyboard as input start a REPL on the
+  command line. Scheme keeps one evaluator. Python replays: each entry runs after the accepted ones (seeded `random`, their `input()` answers
+  given again, their output skipped); an entry is tried as `__repl_v = (entry)` first, since Skulpt has no `eval`, and printed with `repr`;
+  an entry that errors is dropped. Errors are shown as Python's REPL shows them (`File "<stdin>", line n`).
+- **Line editing** (`terminal.js`): Ctrl+R reverse-i-search (again for older, Enter runs, Esc keeps, Ctrl+G cancels), Ctrl+A/E/K/W/U/Y as in
+  readline, and a Taller button.
 - **Limits that stop runaway lines.** 20 000 simple commands per line typed (`while true; do :; done` ends with a message), 2 MB of output
   into a pipe or capture, 256 KB into a file, 10 000 keyboard lines for a command reading stdin at the terminal, Ctrl+C cancels (`^C`,
   status 130) and also cancels the running sandbox.

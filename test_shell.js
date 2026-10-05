@@ -338,7 +338,7 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     const { sh, run, asks } = fresh({ nano: async (p, text) => text + 'edited\n', edit: (abs) => 'opened ' + abs, setup: (n) => n === 'lesson2' ? 'made files' : null });
     eq('python', await run('echo "print(1)" > h.py; python h.py; python3 h.py a b'), 'python:print(1)\npython:print(1) a,b\n', 0);
     eq('python missing', await run('python nope.py'), "python: can't open file '/home/student/nope.py': [Errno 2] No such file or directory\n", 2);
-    eq('python no args', await run('python'), /interactive Python shell is not available/, 2);
+    eq('python no args', await run('python'), /interactive Python shell needs the keyboard/, 2);
     eq('python < file', await run('echo 5 > in.txt; python h.py < in.txt'), 'python:print(1)<"5\\n"\n');
     eq('python | pipe', await run('echo 7 | python h.py'), 'python:print(1)<"7\\n"\n');
     eq('python > file', await run('python h.py > out.txt; cat out.txt'), 'python:print(1)\n');

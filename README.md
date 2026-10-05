@@ -44,6 +44,7 @@ add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is w
     src/lab.js             the Code Lab (#/lab): files, editor, Python tracer and turtle, Scheme REPL,
                            templates, quick reference, share links, open and save, the Terminal panel
     src/shell.js           the practice shell: a Unix-style command line with its own file system (no eval, no DOM)
+    src/repl.js            python and scheme with no file in the terminal: the interactive shells (Python's replays its entries)
     src/terminal.js        the terminals in front of it: the Code Lab panel (history, Tab completion, nano, the ~/lab mirror)
                            and the lesson terminals of the shell course (examples and graded exercises)
     src/shellgrade.js      the shell course's file setups and its grader (file-system state and command output)

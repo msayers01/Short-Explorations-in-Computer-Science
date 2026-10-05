@@ -231,6 +231,15 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await page.keyboard.press('Escape');
   await page.fill('.term-inp', 'echo one two three'); await page.keyboard.press('Control+w'); await page.keyboard.press('Control+a'); await page.keyboard.press('Control+k'); await page.keyboard.press('Control+y');
   check('terminal: Ctrl+W cuts a word, Ctrl+A goes to the start, Ctrl+K cuts to the end and Ctrl+Y puts it back', (await page.locator('.term-inp').inputValue()) === 'echo one two ', await page.locator('.term-inp').inputValue());
+  // python with no file: the interactive shell (src/repl.js), answered on the command line; entries are replayed, so names carry over
+  const ps1Is = (t) => page.waitForFunction((t) => document.querySelector('.lab-term .term-ps1').textContent === t, t, { timeout: 15000 });
+  await page.fill('.term-inp', 'python'); await page.press('.term-inp', 'Enter'); await ps1Is('>>> ');
+  for (const line of ['x = 6', 'x * 7', 'def twice(s):', '    return s + s', '']) { await page.fill('.term-inp', line); await page.press('.term-inp', 'Enter'); await page.waitForFunction(() => /^(>>>|\.\.\.) $/.test(document.querySelector('.lab-term .term-ps1').textContent), null, { timeout: 15000 }); }
+  await page.fill('.term-inp', 'twice("ab")'); await page.press('.term-inp', 'Enter'); await ps1Is('>>> ');
+  await page.keyboard.press('Control+d');
+  await page.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 15000 });
+  tt = await page.locator('.lab-term .term-scroll').innerText();
+  check('terminal: python with no file is an interactive shell that keeps its names', />>> x \* 7\n42\n/.test(tt) && />>> twice\("ab"\)\n'abab'\n/.test(tt) && (await termStatus()) === 'exit 0', tt.slice(-300));
   await page.click('.lab-term .term-size');
   check('terminal: Taller makes the panel taller', await page.evaluate(() => document.querySelector('.lab-term').classList.contains('term-big') && document.querySelector('.lab-term .term-scroll').getBoundingClientRect().height > 300));
   await page.click('.lab-term .term-size');

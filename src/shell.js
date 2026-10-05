@@ -1493,12 +1493,13 @@
   const CLASS_BYTES = 'Êþº¾\u0000\u0000\u0000A';
   const ELF_BYTES = '\u007fELF\u0002\u0001\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000';
   const className = (src) => { const m = src.match(/public\s+class\s+([A-Za-z_$][\w$]*)/) || src.match(/\bclass\s+([A-Za-z_$][\w$]*)/); return m ? m[1] : null; };
-  def('python python3', { cat: 'run', use: 'python file.py [arguments]', desc: 'Run a Python program. Its input comes from the keyboard, or from a file with < input.txt; its output can go to a file with > out.txt.',
+  def('python python3', { cat: 'run', use: 'python [file.py [arguments]]', desc: 'With no file, start Python\'s interactive shell (>>>; exit() or Ctrl+D leaves). With a file, run a Python program. Its input comes from the keyboard, or from a file with < input.txt; its output can go to a file with > out.txt.',
     ex: ['python hello.py', 'python game.py < moves.txt', 'python report.py > report.txt'],
     async run(args, io, sh) {
       if (args[0] === '-c') { if (args[1] === undefined) { io.err('Argument expected for the -c option\n'); return 2; } return sh.runProgram({ lang: 'python', src: args[1] }, 'python', args.slice(2), io); }
       if (args[0] === '--version' || args[0] === '-V') { io.out('Python 3.9.0 (Skulpt, in your browser)\n'); return 0; }
-      if (!args.length || args[0].startsWith('-')) { io.err('python: the interactive Python shell is not available here. Give it a file: python hello.py\n'); return 2; }
+      if (!args.length && io.ask && !io.stdin && sh.hooks.repl) return sh.hooks.repl('python', io, sh);   // the interactive shell (src/repl.js)
+      if (!args.length || args[0].startsWith('-')) { io.err('python: the interactive Python shell needs the keyboard. Give it a file: python hello.py\n'); return 2; }
       const abs = sh.fs.resolve(args[0]), n = sh.fs.stat(abs);
       if (!n) { io.err(this.name + ": can't open file " + q(abs) + ': [Errno 2] No such file or directory\n'); return 2; }
       if (n.t === 'd') { io.err(this.name + ": can't open file " + q(abs) + ': [Errno 21] Is a directory\n'); return 2; }
@@ -1551,8 +1552,8 @@
       sh.fs.chmod(sh.fs.resolve(out), true);
       return 0;
     } });
-  def('scheme mit-scheme racket', { cat: 'run', use: 'scheme file.scm', desc: 'Run a Scheme program.', ex: ['scheme fact.scm'],
-    async run(args, io, sh) { if (!args.length) { io.err(this.name + ': the interactive Scheme shell is not available here. Give it a file: scheme fact.scm\n'); return 2; } const n = sh.fs.stat(sh.fs.resolve(args[0])); if (!n || n.t !== 'f') { io.err(this.name + ': ' + args[0] + ': No such file or directory\n'); return 2; } return sh.runProgram({ lang: 'scheme', src: n.d }, args[0], args.slice(1), io); } });
+  def('scheme mit-scheme racket', { cat: 'run', use: 'scheme [file.scm]', desc: 'Run a Scheme program; with no file, start the interactive Scheme shell (1 ]=>; (exit) or Ctrl+D leaves).', ex: ['scheme fact.scm'],
+    async run(args, io, sh) { if (!args.length && io.ask && !io.stdin && sh.hooks.repl) return sh.hooks.repl('scheme', io, sh); if (!args.length) { io.err(this.name + ': the interactive Scheme shell needs the keyboard. Give it a file: scheme fact.scm\n'); return 2; } const n = sh.fs.stat(sh.fs.resolve(args[0])); if (!n || n.t !== 'f') { io.err(this.name + ': ' + args[0] + ': No such file or directory\n'); return 2; } return sh.runProgram({ lang: 'scheme', src: n.d }, args[0], args.slice(1), io); } });
   const opts_compile = (sh, lang, src, o) => sh.hooks.compile ? sh.hooks.compile(lang, src, o) : Promise.resolve({ err: null });
 
   // ----- editors
