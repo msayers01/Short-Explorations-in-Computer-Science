@@ -58,6 +58,13 @@
       builtins: 'System out in println print printf String Math Scanner Integer Double Character Boolean ArrayList HashMap HashSet List Map Set StringBuilder Random Arrays Collections Object main args length'.split(' '),
       tab: '    '
     },
+    c: {   // C (the Code Lab, with the real compiler): its keywords and types, the common library names, and every preprocessor line
+      comment: /(?:\/\/.*$|\/\*[\s\S]*?\*\/)/m, string: /(?:"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')/,
+      pre: /#[ \t]*[a-z]+(?:[ \t]*<[^>\n]*>)?/,
+      keywords: 'auto break case char const continue default do double else enum extern float for goto if inline int long register restrict return short signed sizeof static struct switch typedef union unsigned void volatile while bool true false nullptr _Bool size_t FILE NULL EOF'.split(' '),
+      builtins: 'main printf scanf puts putchar getchar fgets fputs fprintf sprintf snprintf sscanf malloc calloc realloc free strlen strcpy strncpy strcat strcmp strncmp strchr strstr memcpy memset atoi atof abs sqrt pow rand srand time exit stdin stdout stderr'.split(' '),
+      tab: '    '
+    },
     shell: {   // the practice terminal's language (src/shell.js)
       comment: /#.*$/m, string: /(?:"(?:[^"\\\n]|\\.)*"|'[^'\n]*')/,
       keywords: 'if then elif else fi for in do done while until function case esac'.split(' '),
@@ -68,7 +75,7 @@
   const langOf = (lang) => (typeof lang === 'string' && Object.prototype.hasOwnProperty.call(LANGS, lang)) ? LANGS[lang] : LANGS.python;   // not LANGS[lang]: "constructor" is truthy
   function highlight(code, lang) {
     const L = langOf(lang);
-    const re = new RegExp('(' + L.comment.source + ')|(' + L.string.source + ')|(#\\s*include\\s*<[^>]*>)|(\\b\\d+(?:\\.\\d+)?\\b)|([A-Za-z_][A-Za-z0-9_!?*<>=\\-+/]*)', 'gm');
+    const re = new RegExp('(' + L.comment.source + ')|(' + L.string.source + ')|(' + (L.pre ? L.pre.source : '#\\s*include\\s*<[^>]*>') + ')|(\\b\\d+(?:\\.\\d+)?\\b)|([A-Za-z_][A-Za-z0-9_!?*<>=\\-+/]*)', 'gm');
     let out = '', last = 0, m;
     while ((m = re.exec(code))) {
       out += esc(code.slice(last, m.index));
@@ -216,25 +223,32 @@
       run: (code, opts) => fullCpp((o) => window.CLANGRUN.run(code, o), opts),
       runMany: (code, stdins, opts) => fullCpp((o) => window.CLANGRUN.runMany(code, stdins, o), opts),
       compile: (code, opts) => fullCpp((o) => window.CLANGRUN.compile(code, o), opts)   // the terminal's g++: nothing runs
+    },
+    // C: the same compiler (Clang, as C), the same download and the same agreement. opts: {stdin, std, args, argv0, onInput (typed input), host}
+    c: {
+      available: () => !window.CLANGRUN.unavailable(),
+      run: (code, opts) => fullCpp((o) => window.CLANGRUN.run(code, o), Object.assign({}, opts, { lang: 'c' })),
+      compile: (code, opts) => fullCpp((o) => window.CLANGRUN.compile(code, o), Object.assign({}, opts, { lang: 'c' }))   // the terminal's gcc
     }
   };
   async function fullCpp(go, opts) {
     opts = Object.assign({}, opts);
     const C = window.CLANGRUN, host = opts.host, none = (err) => ({ out: '', err, parts: [], notes: '', exit: 0 });
+    const isC = opts.lang === 'c', what = isC ? 'C' : 'Full C++';   // C uses the same compiler files: agreeing once covers both
     const why = C.unavailable();
-    if (why) return none('Full C++ is not available here: ' + why + '. The teaching engine still works.');
+    if (why) return none(what + ' is not available here: ' + why + (isC ? '.' : '. The teaching engine still works.'));
     if (!C.allowed()) {
-      if (!host) return none('Full C++ needs to download its compiler first. Run a program in the Code Lab with Full C++ chosen to do that.');
+      if (!host) return none(what + ' needs to download its compiler first. Run a program in the Code Lab with ' + (isC ? 'C' : 'Full C++ chosen') + ' to do that.');
       const yes = await new Promise((resolve) => {
         const box = el('div', { class: 'clang-gate' },
-          el('p', {}, el('b', {}, 'Full C++ uses a real compiler. '), 'It runs in your browser, so nothing you write leaves this device, but the first time your browser has to download it: about ' + C.mb() + ' MB. After that it is kept on this device, and only this part of the site needs the internet.'),
+          el('p', {}, el('b', {}, what + ' uses a real compiler. '), 'It runs in your browser, so nothing you write leaves this device, but the first time your browser has to download it: about ' + C.mb() + ' MB. After that it is kept on this device, and only this part of the site needs the internet.'),
           el('div', { class: 'toolbar' }, el('button', { class: 'btn primary', onclick: () => { C.allow(); box.remove(); resolve(true); } }, 'Download it and continue'), el('button', { class: 'btn quiet', onclick: () => { box.remove(); resolve(false); } }, 'Not now')));
         host.hidden = false; host.append(box);
       });
       if (!yes) return none('Not run: the compiler was not downloaded.');
     }
     const status = el('div', { class: 'clang-status', role: 'status' });
-    const show = (st) => { status.textContent = st.state === 'loading' ? 'Getting the C++ compiler… ' + Math.round(st.v * 100) + '% (this happens the first time only)' : 'Compiling…'; };
+    const show = (st) => { status.textContent = st.state === 'loading' ? 'Getting the ' + (isC ? 'C' : 'C++') + ' compiler… ' + Math.round(st.v * 100) + '% (this happens the first time only)' : 'Compiling…'; };
     show(C.state());
     if (host) { host.hidden = false; host.append(status); }
     const unsub = C.subscribe(show);
@@ -248,10 +262,10 @@
   // The output panel is drawn as a terminal: a title bar with a status pill, a prompt line with the command that "ran", the program's
   // output (stderr in red, notes dimmed), a blinking cursor while the program runs, and input() answered on an inline prompt.
   // Everything written into it is text: output from a sandbox is never interpreted as HTML.
-  const COMMANDS = { python: 'python main.py', scheme: 'scheme main.scm', cpp: 'g++ main.cpp -o main && ./main', cppfull: 'clang++ -std=c++20 main.cpp -o main && ./main', java: 'javac Main.java && java Main' };
+  const COMMANDS = { python: 'python main.py', scheme: 'scheme main.scm', cpp: 'g++ main.cpp -o main && ./main', cppfull: 'clang++ -std=c++20 main.cpp -o main && ./main', c: 'gcc main.c -o main && ./main', java: 'javac Main.java && java Main' };
   // A program waiting at input() is ended when its output panel is cleared or leaves the page; otherwise it would hold the engine's queue forever.
   const askers = new Set();
-  const abandonAsk = (a) => { askers.delete(a); a.resolve(null); for (const k of ['PYRUN', 'JAVARUN', 'CPPRUN']) if (window[k]) window[k].cancel(); };
+  const abandonAsk = (a) => { askers.delete(a); a.resolve(null); for (const k of ['PYRUN', 'JAVARUN', 'CPPRUN', 'CLANGRUN']) if (window[k]) window[k].cancel(); };   // CLANGRUN: C's typed input
   document.addEventListener('routed', () => { for (const a of [...askers]) if (!a.row.isConnected) abandonAsk(a); });
   // opts.tools (the Code Lab): Copy, Wrap and Clear buttons in the title bar; opts.wrap the starting state of Wrap, opts.onWrap(on) to keep it.
   function outputPanel(opts) {
@@ -448,6 +462,26 @@
       [/non-const|binding reference|discards qualifiers/, 'A const value is being used where it may be changed. Either the parameter or variable should not be const, or the code should not change it.'],
       [/stopped abnormally/, 'The program was stopped by something it did that cannot continue: an out-of-range .at(), a failed assert, abort(), or recursion that never ends. Print values before the failing line to find where.'],
       [/Time limit/, 'The program ran for too long. Check that every loop changes something that will end it.']
+    ],
+    // messages from Clang compiling C (the Code Lab's C), and from the program as it runs
+    c: [
+      [/call to undeclared library function '(\w+)'/, 'That function is in the C library, but its header was not included. Add the #include it needs at the top: printf and scanf need <stdio.h>, strlen and strcpy <string.h>, malloc and free <stdlib.h>, sqrt <math.h>.'],
+      [/call to undeclared function/, 'C must see a function before it is called. Move the function above main, or put its prototype (the first line, ending with ;) above main. Check the spelling too.'],
+      [/member reference type .* is a pointer|did you mean to use '->'/, 'The variable is a pointer to a struct, so its fields are reached with -> (p->x), not with a dot. The dot is for a struct itself (s.x).'],
+      [/member reference base type .* is not a structure|no member named/, 'That struct has no field with this name, or the value is not a struct at all. Check the spelling against the struct definition.'],
+      [/array type .* is not assignable/, 'An array cannot be given a new value with =. Copy a string with strcpy(dest, src) from <string.h>, or copy an array element by element in a loop.'],
+      [/incompatible (integer|pointer) to (pointer|integer)|incompatible pointer types/, 'A number is being used where an address (a pointer) is needed, or the other way round. scanf needs the address of a variable (&x), except for a string (char name[20]), which already is one.'],
+      [/(too few|too many) arguments to function call/, 'The call passes a different number of arguments from the function\'s definition. Compare the two.'],
+      [/conflicting types for|redefinition of/, 'The same name is declared twice in different ways. A prototype must match the function exactly (return type and parameters), and a variable or function may be defined only once.'],
+      [/expected ';'|expected '\)'|expected '\}'|expected expression|expected identifier/, 'The compiler could not read the code at that point. Look at the line it points to and at the one before it: a missing semicolon, an unmatched bracket or brace, or a misspelt keyword.'],
+      [/use of undeclared identifier '(bool|true|false)'/, 'bool, true and false are built into C23 only. With an older standard, add #include <stdbool.h> at the top (or pick C23).'],
+      [/use of undeclared identifier/, 'A name is used that the compiler has not seen. Check the spelling, that the variable is declared (with its type) before it is used, and that it is in scope: a variable declared inside { } is gone after the }.'],
+      [/subscripted value is not an array/, 'Only an array or a pointer can be indexed with [ ]. Check that the variable is the array you meant.'],
+      [/undefined symbol: (\w+)/, 'The program calls a function that has no body anywhere. Check its spelling where it is called and where it is defined, and that main exists (int main(void)).'],
+      [/memory that is not its own/, 'The program read or wrote memory it does not own: a NULL pointer, memory already given back with free(), or an index far outside an array. C does not check indexes, so look at every [i] and every pointer on the way there.'],
+      [/stopped abnormally/, 'The program was stopped by something that cannot continue: abort(), a failed assert, or recursion that never ends. Print values before the failing line to find where.'],
+      [/more memory than it can have/, 'The program asked for more memory than it may use (256 MB). Check the sizes given to malloc and to big arrays.'],
+      [/Time limit/, 'The program ran for too long. Check that every loop changes something that will end it (and that a scanf loop stops at the end of the input: while (scanf(...) == 1)).']
     ]
   };
   function tipFor(lang, err) { for (const [re, tip] of TIPS[lang] || []) if (re.test(err)) return tip; return null; }
@@ -1183,7 +1217,7 @@
           el('a', { class: 'cat-code', href: '#/lab' }, 'LAB'),
           el('div', { class: 'cat-body' },
             el('a', { class: 'cat-title', href: '#/lab' }, 'Code Lab: a sandbox for your own programs'),
-            el('p', { class: 'cat-desc' }, 'A full editor for Python, C++, Java and Scheme that runs entirely in your browser: nothing to install, nothing to sign up for. Files and multi-file Java projects, templates, a quick reference, step-through debuggers for Python, Java and C++ (with memory), a turtle canvas, a Scheme REPL, and a terminal with a practice shell, git, and interactive Python, Scheme and Java.'),
+            el('p', { class: 'cat-desc' }, 'A full editor for Python, C++, C, Java and Scheme that runs entirely in your browser: nothing to install, nothing to sign up for. Files and multi-file Java projects, templates, a quick reference, step-through debuggers for Python, Java and C++ (with memory), a turtle canvas, a Scheme REPL, and a terminal with a practice shell, git, and interactive Python, Scheme and Java.'),
             el('p', { class: 'cat-meta' }, 'Your files are saved on this device. Share a program with a link.'))))
       ),
       window.PORTFOLIO ? el('section', { class: 'section' },

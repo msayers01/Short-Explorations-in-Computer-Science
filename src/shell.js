@@ -1119,7 +1119,7 @@
       if (r && r.err) { io.err(r.err.replace(/\n?$/, '\n')); return r.exit || 1; }
       return (r && r.exit) || 0;
     }
-    const readsInput = (lang, src) => lang === 'cpp' ? /\b(cin|getline|scanf|getchar)\b/.test(src) : lang === 'java' ? /\bScanner\b|System\.in/.test(src) : lang === 'scheme' ? /\(read\)/.test(src) : /\binput\s*\(/.test(src);
+    const readsInput = (lang, src) => lang === 'cpp' ? /\b(cin|getline|scanf|getchar)\b/.test(src) : lang === 'c' ? /\b(scanf|getchar|fgets|getline|fgetc|getc|fread|gets)\b/.test(src) : lang === 'java' ? /\bScanner\b|System\.in/.test(src) : lang === 'scheme' ? /\(read\)/.test(src) : /\binput\s*\(/.test(src);
     sh.runProgram = runProgram;
 
     // ----- the entry point. A line typed at the terminal (io.tty) gets history expansion and aliases, as in an interactive bash; other
@@ -2713,9 +2713,9 @@
       if (!cls || cls.t !== 'f' || !cls.bin || cls.bin.lang !== 'java') { io.err('Error: Could not find or load main class ' + name + '\nCaused by: java.lang.ClassNotFoundException: ' + name + (sh.fs.isFile(sh.fs.resolve(name + '.java')) ? '\n(there is a ' + name + '.java: compile it first with javac ' + name + '.java)' : '') + '\n'); return 1; }
       return sh.runProgram(cls.bin, name, args.slice(1), io);
     } });
-  def('g++ gcc clang++ cc c++', { cat: 'run', use: 'g++ file.cpp -o name', desc: 'Compile a C++ program into a program file, then run it with ./name. Without -o the program is called a.out.',
-    opts: [['-o NAME', 'the name of the program to make'], ['-std=c++20', 'the language version (Full C++ only)'], ['-Wall', 'accepted and ignored, as are -O2 and friends']],
-    ex: ['g++ hello.cpp -o hello', './hello', 'g++ game.cpp -o game && ./game < moves.txt'],
+  def('g++ gcc clang++ clang cc c++', { cat: 'run', use: 'g++ file.cpp -o name', desc: 'Compile a C++ program into a program file, then run it with ./name. Without -o the program is called a.out. gcc, cc and clang compile a .c file as C, with the real compiler.',
+    opts: [['-o NAME', 'the name of the program to make'], ['-std=c++20', 'the language version (Full C++ only; for C: -std=c99, c11, c17, c23 or gnu17…)'], ['-Wall', 'accepted and ignored, as are -O2 and friends']],
+    ex: ['g++ hello.cpp -o hello', './hello', 'g++ game.cpp -o game && ./game < moves.txt', 'gcc hello.c -o hello && ./hello'],
     async run(args, io, sh) {
       const name = this.name; let out = 'a.out', std; const srcs = [];
       for (let i = 0; i < args.length; i++) { const a = args[i]; if (a === '-o') { out = args[++i]; if (out === undefined) { io.err(name + ": error: missing filename after '-o'\n"); return 1; } } else if (a.startsWith('-std=')) std = a.slice(5); else if (a.startsWith('-')) { /* -Wall, -O2, -g: accepted */ } else srcs.push(a); }
@@ -2724,9 +2724,10 @@
       for (const s of srcs) { const n = sh.fs.stat(sh.fs.resolve(s)); if (!n || n.t !== 'f') { io.err(name + ': error: ' + s + ': No such file or directory\n'); } else if (!/\.(cpp|cc|cxx|c\+\+|C|c)$/.test(s)) { io.err(name + ': error: ' + s + ': file not recognized: not a C++ source file\n'); } else texts.push(n.d); }
       if (texts.length !== srcs.length) { io.err(name + ': fatal error: no input files\ncompilation terminated.\n'); return 1; }
       if (texts.length > 1) { io.err(name + ': error: only one source file at a time is supported here\n'); return 1; }
-      const r = await opts_compile(sh, 'cpp', texts[0], { std, name: srcs[0] });
+      const lang = /\.c$/.test(srcs[0]) && !/\+\+$/.test(name) ? 'c' : 'cpp';   // as the real drivers do: gcc, cc and clang compile a .c as C; g++ and clang++ as C++
+      const r = await opts_compile(sh, lang, texts[0], { std, name: srcs[0] });
       if (r && r.err) { io.err(r.err.replace(/\n?$/, '\n')); return 1; }
-      sh.fs.write(sh.fs.resolve(out), ELF_BYTES + '(compiled from ' + srcs[0] + ')', false, { lang: 'cpp', src: texts[0], std: r && r.std || std });
+      sh.fs.write(sh.fs.resolve(out), ELF_BYTES + '(compiled from ' + srcs[0] + ')', false, { lang, src: texts[0], std: r && r.std || std });
       sh.fs.chmod(sh.fs.resolve(out), true);
       return 0;
     } });

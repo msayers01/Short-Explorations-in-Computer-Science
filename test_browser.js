@@ -992,6 +992,77 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await fp.click('.clang-gate button:has-text("Not now")'); await fp.waitForTimeout(500);
   check('full c++ assignment: "Not now" downloads nothing and says so', freshReqs.length === 0 && /not downloaded/.test(await fp.locator('.asg-bar .verdict').innerText()), freshReqs);
   await fresh.close();
+  // ---- C in the Code Lab: the same compiler (agreed to above), as C; errors marked, argv, typed scanf, and the terminal's gcc
+  {
+    await hp.goto(origin + '/index.html#/lab'); await hp.reload(); await hp.waitForSelector('.lab-editor-area textarea');
+    await hp.click('.lang-btn:text-is("C")');
+    check('C: the Lab has a C language with main.c and a standard picker (C17 by default)', (await hp.locator('.lab-tabs .tab.on').innerText()).startsWith('main.c') && (await hp.locator('select.std-sel').inputValue()) === 'gnu17', await hp.locator('.lab-tabs').innerText());
+    check('C: no engine button and no memory stepper for C', (await hp.locator('button:has-text("Engine:")').count()) === 0 && (await hp.locator('button:has-text("Step through memory")').count()) === 0);
+    check('C: the editor highlights preprocessor lines and C types', (await hp.locator('.lab-editor .hl .p').first().innerText()) === '#include <stdio.h>' && (await hp.locator('.lab-editor .hl .k:text-is("int")').count()) > 0);
+    const statusDone = () => hp.waitForFunction(() => /^(exit|error|stopped)/.test(document.querySelector('.lab-out .term-status').textContent), null, { timeout: 90000 });
+    await setHpCode('#include <stdio.h>\n\nint main(int argc, char *argv[]) {\n    printf("Hello, C! argc=%d", argc);\n    for (int i = 1; i < argc; i++) printf(" [%s]", argv[i]);\n    printf(" long=%zu\\n", sizeof(long));\n    return 0;\n}\n');
+    await hp.click('.lab-toolbar button:has-text("Arguments")'); await hp.fill('#lab-args', 'one "two words"');
+    await hp.click('.lab-toolbar button:has-text("Run")'); await statusDone();
+    r = await hpOut();
+    check('C: a program runs on the real compiler, with its arguments', /Hello, C! argc=3 \[one\] \[two words\] long=4\n/.test(r), r);
+    check('C: the command line shown is gcc with the standard', /gcc -std=gnu17 main\.c -o main && \.\/main one 'two words'/.test(r), r);
+    await hp.fill('#lab-args', '');
+    await setHpCode('#include <stdio.h>\n\nint main(void) {\n    int x = 1\n    printf("%d\\n", x);\n    return 0;\n}\n');
+    await hp.click('.lab-toolbar button:has-text("Run")'); await statusDone();
+    r = await hpOut();
+    check('C: a compile error is shown with a link to its line and a tip', /main\.c:4:\d+: error: expected ';'/.test(r) && /go to line 4/.test(r) && /↳/.test(r), r);
+    check('C: the error line is marked in the editor', (await hp.locator('.lab-editor .hl .line.err').count()) === 1 && (await hp.locator('.lab-editor .err-pin').count()) === 1 && (await hp.locator('.lab-editor .hl .line.err').getAttribute('data-n')) === '4');
+    await setHpCode('int main(void) {\n    printf("hi\\n");\n    return 0;\n}\n');
+    await hp.click('.lab-toolbar button:has-text("Run")'); await statusDone();
+    await setHpCode('#include <stdio.h>\nint main(void) {\n    printf("start\\n");\n    for (;;) { }\n}\n');
+    await hp.click('.lab-toolbar button:has-text("Run")');
+    await hp.waitForFunction(() => /start/.test(document.querySelector('.lab-out .out-text').textContent), null, { timeout: 60000 });
+    await hp.click('.lab-toolbar button:has-text("Stop")'); await statusDone();
+    check('C: a line printed before a loop that never ends is shown, and Stop ends it', /Stopped|stopped/.test(await hpOut()), await hpOut());
+    await setHpCode('int main(void) {\n    printf("hi\\n");\n    return 0;\n}\n');
+    await hp.click('.lab-toolbar button:has-text("Run")'); await statusDone();
+    check('C: a missing #include is explained',/<stdio\.h>/.test(await hp.locator('.lab-out').innerText()), await hpOut());
+    // typed input: the prompt is printed before scanf waits, and the program goes on with each line typed
+    await setHpCode('#include <stdio.h>\n\nint main(void) {\n    char name[40];\n    int age;\n    printf("Name? ");\n    scanf("%39s", name);\n    printf("Age? ");\n    scanf("%d", &age);\n    printf("Hello %s, %d next year\\n", name, age + 1);\n    return 0;\n}\n');
+    await hp.click('.lab-toolbar button:has-text("Run")');
+    await hp.waitForSelector('.lab-out .inline-input', { timeout: 90000 });
+    check('C: typed input asks after the prompt is on the screen', /Name\? $/.test((await hp.locator('.lab-out .out-text').innerText()).replace(/\n$/, '')), await hpOut());
+    await hp.fill('.lab-out .inline-input', 'Ada'); await hp.press('.lab-out .inline-input', 'Enter');
+    await hp.waitForFunction(() => document.querySelectorAll('.lab-out .inline-input').length === 1 && /Age\?/.test(document.querySelector('.lab-out .out-text').textContent), null, { timeout: 30000 });
+    await hp.fill('.lab-out .inline-input', '36'); await hp.press('.lab-out .inline-input', 'Enter'); await statusDone();
+    r = await hpOut();
+    check('C: typed input answers scanf line by line, nothing printed twice', /Name\? Ada\nAge\? 36\nHello Ada, 37 next year\n/.test(r) && (r.match(/Name\?/g) || []).length === 1, r);
+    check('C: the standard and the files are saved', await hp.evaluate(() => { const s = JSON.parse(localStorage.getItem('shortcourses.lab.v1')); return s.lang === 'c' && s.cStd === 'gnu17' && s.files.c.some((f) => /Name\?/.test(f.code)); }));
+    await hp.selectOption('select.std-sel', 'gnu99');
+    await setHpCode('#include <stdio.h>\nint main(void) {\n    int *p = nullptr;\n    printf("%d\\n", p == nullptr);\n    return 0;\n}\n');
+    await hp.click('.lab-toolbar button:has-text("Run")'); await statusDone();
+    check('C: C99 refuses a C23 feature', /error:.*nullptr/.test(await hpOut()), await hpOut());
+    await hp.selectOption('select.std-sel', 'gnu23'); await hp.click('.lab-toolbar button:has-text("Run")'); await statusDone();
+    check('C: C23 accepts it', /\n1\n/.test(await hpOut()) && !/error:/.test(await hpOut()), await hpOut());
+    await hp.selectOption('select.std-sel', 'gnu17');
+    // a share link carries a C program
+    const cLink = await hp.evaluate(() => location.href.split('#')[0] + '#/lab?l=c&n=shared.c&c=' + btoa('#include <stdio.h>\nint main(void) { puts("from a link"); return 0; }\n').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''));
+    await hp.goto('about:blank'); await hp.goto(cLink); await hp.waitForSelector('.lab-editor-area textarea');
+    check('C: a share link opens in the C tab', (await hp.locator('.lang-btn.on').innerText()).trim() === 'C' && (await hp.locator('.lab-tabs .tab.on').innerText()).startsWith('shared.c') && /from a link/.test(await hp.locator('.lab-editor-area textarea').inputValue()));
+    // the terminal: gcc builds a .c with the real compiler, ./name runs it; errors name the file; g++ still builds C++
+    await hp.click('.lab-toolbar button:has-text("Terminal")'); await hp.waitForSelector('.lab-term:not([hidden])');
+    const hterm = async (cmd) => { await hp.fill('.term-inp', cmd); await hp.press('.term-inp', 'Enter'); await hp.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 90000 }); return hp.locator('.lab-term .term-scroll').innerText(); };
+    await hterm('clear');
+    r = await hterm('printf \'#include <stdio.h>\\nint main(int argc, char **argv) { printf("C says %%s %%d\\\\n", argv[0], argc); return 4; }\\n\' > hello.c && gcc hello.c -o hello && ./hello a b; echo "status $?"');
+    check('C terminal: gcc compiles a .c and ./hello runs it with its arguments and exit status', /C says \.\/hello 3\n/.test(r) && /status 4/.test(r), r);
+    r = await hterm('printf \'int main(void) {\\n  return x;\\n}\\n\' > bad.c; cc bad.c -o bad; ls bad');
+    check('C terminal: a compile error names the file and line, and makes no program', /bad\.c:2:\d+: error: use of undeclared identifier 'x'/.test(r) && /cannot access 'bad'/.test(r), r);
+    r = await hterm('printf \'#include <stdio.h>\\nint main(void) { int *p = nullptr; return p != 0; }\\n\' > n.c; gcc -std=c99 n.c -o n; gcc -std=c2x n.c -o n && ./n && echo c23ok');
+    check('C terminal: -std=c99 refuses nullptr and -std=c2x accepts it', /error:.*nullptr/.test(r) && /c23ok/.test(r), r);
+    r = await hterm('printf \'#include <iostream>\\nint main() { std::cout << "still C++" << std::endl; }\\n\' > k.cpp && g++ k.cpp -o k && ./k');
+    check('C terminal: g++ on a .cpp is unchanged', /still C\+\+\n/.test(r), r);
+    await hp.fill('.term-inp', 'printf \'#include <stdio.h>\\nint main(void) { int n; printf("N? "); scanf("%%d", &n); printf("twice %%d\\\\n", 2 * n); return 0; }\\n\' > ask.c && gcc ask.c -o ask && ./ask'); await hp.press('.term-inp', 'Enter');
+    await hp.waitForFunction(() => /waiting for input/.test(document.querySelector('.lab-term .term-inp').placeholder), null, { timeout: 90000 });
+    await hp.fill('.term-inp', '21'); await hp.press('.term-inp', 'Enter');
+    await hp.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent), null, { timeout: 30000 });
+    check('C terminal: a C program asks for its input as it reads it', /N\? 21\ntwice 42\n/.test(await hp.locator('.lab-term .term-scroll').innerText()), await hp.locator('.lab-term .term-scroll').innerText());
+    await hp.click('.lab-toolbar button:has-text("Terminal")');
+  }
   // ---- Bot Arena, persistent mode: needs the page to be cross-origin isolated, which the headers in dist/_headers make it (not so for a file)
   {
     check('arena persistent: the shipped headers isolate the page', indexHeaders['Cross-Origin-Opener-Policy'] === 'same-origin' && indexHeaders['Cross-Origin-Embedder-Policy'] === 'require-corp', indexHeaders);
