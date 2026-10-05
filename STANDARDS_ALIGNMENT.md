@@ -190,9 +190,10 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 | 4. Pipes and redirection | 3A-AP-18, 3A-CS-02, 3B-DA-05 |
 | 5. Checkpoint one | 3A-CS-02, 3B-DA-05 |
 | 6. Running your programs | 3A-CS-02, 3A-AP-18, 3B-AP-20 |
-| 7. A first script | 2-AP-12, 3A-AP-13, 3B-CS-01 |
-| 8. Checkpoint two | 3A-AP-13, 3A-CS-02, 3B-CS-01 |
-| 9. Project: tidy a messy folder | 3A-AP-13, 3A-AP-17, 3B-AP-21 |
+| 7. Windows: cmd and PowerShell | 3A-CS-02, 3B-CS-01, 3A-AP-18 |
+| 8. A first script | 2-AP-12, 3A-AP-13, 3B-CS-01 |
+| 9. Checkpoint two | 3A-AP-13, 3A-CS-02, 3B-CS-01 |
+| 10. Project: tidy a messy folder | 3A-AP-13, 3A-AP-17, 3B-AP-21 |
 
 ### SC 109 How Machines Learn
 
@@ -222,7 +223,7 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 | **2-DA-09** Refine computational models based on the data they generate | SC 101 L12, SC 103 L11, SC 109 L6 |  |
 | **2-AP-10** Use flowcharts or pseudocode to express algorithms | SC 099 L9, SC 099 L11, SC 100 L1 |  |
 | **2-AP-11** Create clearly named variables of different data types and operate on them | SC 100 L1, SC 100 L2, SC 100 L5, SC 100 L6, SC 100 L11, SC 101 L1, SC 101 L5, SC 101 L7, SC 103 L1, SC 103 L5, SC 106 L1, SC 106 L5, SC 106 L7 |  |
-| **2-AP-12** Design programs combining control structures (nested loops, compound conditionals) | SC 099 L7, SC 099 L11, SC 100 L3, SC 100 L4, SC 100 L5, SC 100 L8, SC 100 L9, SC 100 L10, SC 101 L2, SC 101 L3, SC 101 L4, SC 101 L5, SC 103 L2, SC 103 L3, SC 103 L5, SC 104 L1, SC 104 L5, SC 106 L2, SC 106 L3, SC 106 L5, SC 108 L7 |  |
+| **2-AP-12** Design programs combining control structures (nested loops, compound conditionals) | SC 099 L7, SC 099 L11, SC 100 L3, SC 100 L4, SC 100 L5, SC 100 L8, SC 100 L9, SC 100 L10, SC 101 L2, SC 101 L3, SC 101 L4, SC 101 L5, SC 103 L2, SC 103 L3, SC 103 L5, SC 104 L1, SC 104 L5, SC 106 L2, SC 106 L3, SC 106 L5, SC 108 L8 |  |
 | **2-AP-13** Decompose problems into parts | SC 100 L8, SC 100 L10, SC 101 L8, SC 101 L10 |  |
 | **2-AP-14** Create procedures with parameters to organize and reuse code | SC 100 L7, SC 100 L9, SC 101 L8, SC 103 L4, SC 103 L5, SC 106 L4, SC 106 L5 |  |
 | **2-AP-15** Seek and use feedback from teammates and users | SC 100 L8 |  |
@@ -231,7 +232,7 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 | **2-AP-19** Document programs so they are easier to follow, test and debug | SC 100 L7, SC 101 L8 |  |
 | **2-IC-23** Describe tradeoffs between public and private/secure information | SC 099 L10 |  |
 | **3A-CS-01** Explain how abstractions hide implementation details of computing systems | SC 099 L1, SC 099 L4, SC 099 L5, SC 102 L2, SC 105 L3, SC 105 L6, SC 106 L9, SC 106 L10, SC 106 L11 |  |
-| **3A-CS-02** Compare levels of abstraction: application software, system software, hardware | SC 099 L4, SC 099 L5, SC 102 L1, SC 102 L5, SC 103 L1, SC 103 L6, SC 106 L1, SC 108 L1, SC 108 L4, SC 108 L5, SC 108 L6, SC 108 L8 |  |
+| **3A-CS-02** Compare levels of abstraction: application software, system software, hardware | SC 099 L4, SC 099 L5, SC 102 L1, SC 102 L5, SC 103 L1, SC 103 L6, SC 106 L1, SC 108 L1, SC 108 L4, SC 108 L5, SC 108 L6, SC 108 L7, SC 108 L9 |  |
 | **3A-CS-03** Develop guidelines for systematic troubleshooting | SC 101 L9, SC 103 L9, SC 103 L10, SC 106 L12, SC 106 L14 |  |
 | **3A-NI-04** Evaluate scalability and reliability of networks (routers, switches, servers, topology, addressing) | SC 099 L8 |  |
 | **3A-NI-05** Give examples of how malware and attacks affect sensitive data | SC 099 L10 |  |
@@ -239,16 +240,16 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 | **3A-DA-09** Translate between bit representations of characters, numbers, images | SC 099 L2, SC 099 L6, SC 099 L9, SC 101 L16, SC 103 L8 |  |
 | **3A-DA-10** Evaluate tradeoffs in how data is organized and where it is stored | SC 099 L3, SC 099 L5, SC 101 L6, SC 101 L11, SC 105 L8, SC 105 L9, SC 106 L13, SC 106 L14, SC 107 L1, SC 107 L5, SC 107 L6, SC 107 L9, SC 107 L10, SC 107 L15, SC 108 L2 |  |
 | **3A-DA-12** Create computational models of relationships among data elements | SC 101 L12, SC 101 L15, SC 103 L11, SC 104 L6, SC 104 L7, SC 104 L10, SC 109 L1, SC 109 L2, SC 109 L6 |  |
-| **3A-AP-13** Create prototypes that use algorithms to solve problems | SC 101 L16, SC 105 L10, SC 106 L15, SC 108 L7, SC 108 L8, SC 108 L9 | Bot Arena |
+| **3A-AP-13** Create prototypes that use algorithms to solve problems | SC 101 L16, SC 105 L10, SC 106 L15, SC 108 L8, SC 108 L9, SC 108 L10 | Bot Arena |
 | **3A-AP-14** Use lists to simplify solutions instead of many simple variables | SC 100 L6, SC 101 L6, SC 101 L7, SC 101 L10, SC 101 L11, SC 101 L15, SC 103 L7, SC 105 L2, SC 105 L5, SC 106 L6, SC 106 L8, SC 106 L10 |  |
 | **3A-AP-15** Justify the choice of control structures and discuss tradeoffs | SC 101 L3, SC 101 L4, SC 101 L5, SC 102 L3, SC 102 L5, SC 103 L2, SC 103 L3, SC 103 L5, SC 106 L2, SC 106 L3 |  |
-| **3A-AP-17** Decompose problems using procedures, modules and/or objects | SC 101 L8, SC 101 L10, SC 102 L2, SC 102 L5, SC 102 L9, SC 102 L13, SC 103 L4, SC 105 L3, SC 105 L4, SC 105 L5, SC 105 L6, SC 105 L9, SC 106 L4, SC 106 L9, SC 106 L11, SC 106 L14, SC 108 L9 |  |
-| **3A-AP-18** Build artifacts from procedures, data+procedures, or interrelated programs | SC 101 L8, SC 102 L2, SC 103 L4, SC 105 L4, SC 106 L4, SC 108 L4, SC 108 L6 |  |
+| **3A-AP-17** Decompose problems using procedures, modules and/or objects | SC 101 L8, SC 101 L10, SC 102 L2, SC 102 L5, SC 102 L9, SC 102 L13, SC 103 L4, SC 105 L3, SC 105 L4, SC 105 L5, SC 105 L6, SC 105 L9, SC 106 L4, SC 106 L9, SC 106 L11, SC 106 L14, SC 108 L10 |  |
+| **3A-AP-18** Build artifacts from procedures, data+procedures, or interrelated programs | SC 101 L8, SC 102 L2, SC 103 L4, SC 105 L4, SC 106 L4, SC 108 L4, SC 108 L6, SC 108 L7 |  |
 | **3A-AP-21** Evaluate and refine artifacts to make them more usable and accessible |  | Code Lab |
 | **3A-IC-24** Evaluate how computing affects personal, ethical, social, economic, cultural practices | SC 104 L8, SC 104 L10 | Where it is used |
 | **3A-IC-26** Show how an algorithm applies to problems across disciplines |  | Algorithms in motion; Where it is used |
 | **3A-IC-29** Explain privacy concerns of automated data collection | SC 099 L10 |  |
-| **3B-CS-01** Categorize the roles of operating system software | SC 099 L3, SC 099 L4, SC 099 L5, SC 108 L1, SC 108 L2, SC 108 L7, SC 108 L8 |  |
+| **3B-CS-01** Categorize the roles of operating system software | SC 099 L3, SC 099 L4, SC 099 L5, SC 108 L1, SC 108 L2, SC 108 L7, SC 108 L8, SC 108 L9 |  |
 | **3B-CS-02** Illustrate how hardware implements logic, input and output | SC 099 L2, SC 099 L7, SC 104 L1, SC 104 L5, SC 104 L7, SC 104 L10 |  |
 | **3B-NI-03** Describe issues that affect network functionality | SC 099 L8 |  |
 | **3B-NI-04** Compare ways developers protect devices and information from unauthorized access | SC 104 L16 |  |
@@ -266,7 +267,7 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 | **3B-AP-17** Plan and develop programs for broad audiences with a software development process | SC 106 L15 |  |
 | **3B-AP-18** Explain security issues that can compromise programs | SC 103 L7, SC 103 L9, SC 103 L10 |  |
 | **3B-AP-20** Use version control, IDEs and collaborative tools in a group project | SC 108 L6 |  |
-| **3B-AP-21** Develop test cases to verify a program meets its specification | SC 108 L9 |  |
+| **3B-AP-21** Develop test cases to verify a program meets its specification | SC 108 L10 |  |
 
 ## Other parts of the site
 

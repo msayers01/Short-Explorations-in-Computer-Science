@@ -432,7 +432,7 @@
         { f: 'eng', t: 'Scientists run long simulations on shared supercomputers by submitting shell scripts to a job queue.' }
       ],
       jobs: ['DevOps engineer', 'System administrator', 'Security operations analyst', 'Research software engineer'],
-      learn: ['shell/1', 'shell/2', 'shell/3', 'shell/4', 'computer/4'],
+      learn: ['shell/1', 'shell/2', 'shell/3', 'shell/4', 'shell/6', 'shell/7', 'shell/8', 'shell/10', 'computer/4'],
       teach: 'Hook: rename 300 photos by hand, or with one line in the terminal? Time the first ten by hand, then show the command.'
     }
   ];

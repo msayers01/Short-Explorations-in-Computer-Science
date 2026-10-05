@@ -4,7 +4,7 @@
 // are graded on what the files look like afterwards and on what was typed, not on the exact commands.
 window.COURSES = window.COURSES || [];
 window.COURSES.push({
-  id: 'shell', code: 'SC 108', short: 'Command line', lang: 'shell', status: 'developing', standard: 1,
+  id: 'shell', code: 'SC 108', short: 'Command line', lang: 'shell', standard: 1,
   title: 'The Command Line',
   grades: 'Grades 7–12 · no experience needed',
   audience: `<p><b>Grades 7–12</b>, and anyone who has only ever used a computer through windows and a mouse. Nothing to install and nothing to break: the terminal on these pages is a practice one, with its own files, inside your browser.</p><p>Programmers, scientists, system administrators and anyone who runs a server spend much of their day typing commands. It looks like a wall of text at first. It is actually a small language with about twenty words, and after two lessons you will be reading it.</p>`,
@@ -41,6 +41,8 @@ window.COURSES.push({
     { id: 'compile', name: 'Compile with javac or g++, then run' },
     { id: 'program-io', name: 'Point a program\'s input and output at files and pipes' },
     { id: 'exit-status', name: 'Act on an exit status with &&, || and $?' },
+    { id: 'windows-cmd', name: 'Do the same jobs in the Windows Command Prompt' },
+    { id: 'powershell', name: 'Use PowerShell cmdlets and pipes of objects' },
     { id: 'scripts', name: 'Write a script and make it run with #! and chmod +x' },
     { id: 'variables', name: 'Use variables, $(…) and a script\'s arguments' },
     { id: 'loops', name: 'Repeat for each file with a for loop' },
@@ -158,6 +160,16 @@ window.COURSES.push({
       'downloads/song.mp3': '(song.mp3)\n',
       'downloads/timetable.pdf': '(timetable.pdf)\n',
       'downloads/old projects/': null
+    },
+    lesson7: {
+      'notes.txt': 'buy seeds\nfix the gate\n',
+      'todo.txt': 'water the tulips\n',
+      'hello.py': 'print("hello from Python")\n',
+      'garden/flowers.txt': 'roses\ntulips\ndaisies\n',
+      'garden/shed/key.txt': 'The key opens the gate.\nThe password is: tulip\n',
+      'garden/shed/tools.txt': 'rake\nspade\nhose\nwatering can\nshears\n',
+      'garden/pond/fish.txt': 'three goldfish\n',
+      'garden/pond/frogs.txt': 'one frog, maybe two\nit sings at night\nnobody has seen it\n'
     },
     lesson8: {
       'hello.sh': '#!/bin/bash\necho "Hello from a script"\necho "You are in $(pwd)"\n',
@@ -639,6 +651,99 @@ python valid.py < bad.txt || echo "fix the file first"`, setup: 'lesson6', expec
     },
     /* ================================================================== */
     {
+      standard: 1, standards: ['3A-CS-02', '3B-CS-01', '3A-AP-18'],
+      title: 'Windows: cmd and PowerShell', summary: 'The same ideas in the two shells of Windows: the Command Prompt\'s dir, cd, type, copy and del, with backslashes and drive letters; PowerShell\'s Verb-Noun commands, its aliases, and pipes that carry objects instead of text.',
+      blocks: [
+        `<p>In August 2002 Jeffrey Snover, an engineer at Microsoft, wrote a paper he called the <em>Monad Manifesto</em>. Windows had a command line, the Command Prompt, descended from the MS-DOS of 1981, but nobody ran a large system with it: Windows was built to be driven with a mouse. Snover admired the Unix shell, and he also saw its weak point. Unix commands pass <em>text</em> to each other, so every stage of a pipeline has to cut the text up again to find what it needs: the fifth column, the third field. On Windows, he wrote, the commands should pass <em>objects</em>: a file that knows its own name, size and date, handed down the pipe whole. Four years later, in November 2006, his project was released as Windows PowerShell. Since 2016 it has been open source and runs on Linux and the Mac too.</p>
+<p>So Windows has two shells, and they look nothing like <code>bash</code>. But everything this course has taught is about ideas, not spellings: a working directory, paths, making and moving, reading and searching, pipes and redirection. If the ideas are the same everywhere, what actually changes when you sit down at a Windows computer?</p>
+<h2>The Command Prompt</h2>
+<p>Type <code>cmd</code> in the practice terminal and it becomes the Windows Command Prompt, over the same files; <code>exit</code> comes back to <code>bash</code>. (On a real Windows computer, open it from the Start menu by typing <code>cmd</code>.) Your home directory is now called <code>C:\\Users\\student</code>.</p>`,
+        { play: `cmd
+cd
+dir
+cd garden
+dir /b
+type shed\\key.txt
+cd ..
+exit
+pwd`, setup: 'lesson7', caption: 'The Command Prompt\'s versions of <code>pwd</code>, <code>ls</code>, <code>cd</code> and <code>cat</code>. <code>dir</code> lists with dates and sizes; <code>dir /b</code> gives only the names. After <code>exit</code>, <code>bash</code>\'s <code>pwd</code> shows the same place under its Unix name.' },
+        `<details class="reveal"><summary>Guess first: what does <code>cd</code> with nothing after it do in the Command Prompt, and where are you after <code>exit</code>?</summary><p>In <code>bash</code>, a bare <code>cd</code> goes home. In the Command Prompt it only prints where you are, <code>C:\\Users\\student</code>, like <code>pwd</code>. And after <code>exit</code> you are back in <code>bash</code>, in <code>/home/student</code>: the same directory, by its other name. The files never moved; only the language for them changed.</p></details>`,
+        `<div class="stmt"><p><span class="kind">Paths, the Windows way.</span> A path starts with a <em>drive letter</em>, <code>C:</code>, and the separator is a backslash: <code>C:\\Users\\student\\garden</code>. <code>..</code> and <code>.</code> mean what they mean in Unix. Capitals do not matter: <code>GARDEN</code> and <code>garden</code> are the same folder. Options start with a slash instead of a dash: <code>dir /b</code>.</p>
+<p><span class="kind">The same jobs, other words.</span></p>
+<table class="small"><thead><tr><th>bash</th><th>Command Prompt</th><th>what it does</th></tr></thead><tbody>
+<tr><td><code>pwd</code></td><td><code>cd</code></td><td>where am I?</td></tr>
+<tr><td><code>ls</code></td><td><code>dir</code>, <code>dir /b</code></td><td>list a directory</td></tr>
+<tr><td><code>cat</code></td><td><code>type</code></td><td>print a file</td></tr>
+<tr><td><code>cp</code>, <code>mv</code></td><td><code>copy</code>, <code>move</code>, <code>ren</code></td><td>copy, move, rename</td></tr>
+<tr><td><code>rm</code>, <code>rm -r</code></td><td><code>del</code>, <code>rmdir /s</code></td><td>remove (no recycle bin here either)</td></tr>
+<tr><td><code>grep</code></td><td><code>findstr</code>, <code>find</code></td><td>search inside files</td></tr>
+<tr><td><code>clear</code></td><td><code>cls</code></td><td>clear the screen</td></tr>
+</tbody></table>
+<p><code>mkdir</code>, <code>cd</code>, <code>&gt;</code>, <code>&gt;&gt;</code>, <code>&lt;</code>, <code>|</code>, <code>&amp;&amp;</code> and wildcards like <code>*.txt</code> are the same in both.</p></div>`,
+        { play: `cmd
+mkdir projects\\game
+echo my game> projects\\game\\readme.txt
+move projects\\game\\readme.txt projects
+ren projects\\readme.txt about.txt
+dir /b projects
+rmdir projects
+rmdir /s /q projects
+find "tulip" garden\\flowers.txt todo.txt
+ls`, setup: 'lesson7', expectError: true, caption: 'Lesson 2\'s jobs in Windows words: make, write, move, rename, and remove a folder (<code>rmdir</code> refuses one that is not empty, as in Unix; <code>/s /q</code> removes it all, quietly). Then a search with <code>find</code>, and a Unix command that the Command Prompt does not know.' },
+        `<details class="reveal"><summary>Guess first: what does the Command Prompt say to <code>ls</code>?</summary><p><code>'ls' is not recognized as an internal or external command, operable program or batch file.</code> That is cmd's "command not found". Notice also how <code>find</code> prints a header, the file's name in capitals, before each file's matching lines.</p></details>`,
+        { check: 'In the Command Prompt, which command prints the text of <code>notes.txt</code>, as <code>cat notes.txt</code> does in bash?', skill: 'windows-cmd', options: ['<code>dir notes.txt</code>', '<code>type notes.txt</code>', '<code>cat notes.txt</code>', '<code>print notes.txt</code>'], answer: 1, why: '<code>type</code> is the Command Prompt\'s <code>cat</code>. <code>dir</code> would show the file\'s date and size, but not what is inside it.', wrong: ['<code>dir</code> lists: it shows the file\'s name, date and size, not its text.', null, 'The Command Prompt has no <code>cat</code>: "\'cat\' is not recognized as an internal or external command".', '<code>print</code> sends a file to a printer on Windows; it is not how you read one.'] },
+        `<h2>PowerShell</h2>
+<p>PowerShell is the newer shell, and the one Microsoft recommends. Its commands, called <em>cmdlets</em>, are named <em>Verb-Noun</em>: <code>Get-Location</code>, <code>Get-ChildItem</code>, <code>Set-Location</code>, <code>Get-Content</code>, <code>Copy-Item</code>, <code>Remove-Item</code>. The names are long, but you can always guess them, and Tab completes them. Type <code>powershell</code> (or <code>pwsh</code>) to start it.</p>`,
+        { play: `powershell
+Get-Location
+Get-ChildItem
+Set-Location garden
+Get-Content shed\\key.txt
+cd ..
+ls
+Get-Alias ls, cd, cat, pwd
+exit`, setup: 'lesson7', caption: 'Where am I, what is here, move, read. Then <code>cd</code> and <code>ls</code>, which work too: PowerShell keeps short <em>aliases</em> for its cmdlets, and <code>Get-Alias</code> says what each one stands for.' },
+        `<details class="reveal"><summary>Guess first: what does <code>ls</code> print in PowerShell, the short list of <code>bash</code> or something else?</summary><p>The same table as <code>Get-ChildItem</code>, with <code>Mode</code>, <code>LastWriteTime</code>, <code>Length</code> and <code>Name</code> columns, because <code>ls</code> is only another name for <code>Get-ChildItem</code>. The familiar words work, but they run PowerShell's commands, with PowerShell's options: <code>ls -l</code> is an error here.</p></details>`,
+        { check: 'Which PowerShell cmdlet does the job of <code>cd</code>?', skill: 'powershell', options: ['<code>Get-Location</code>', '<code>Set-Location</code>', '<code>Move-Item</code>', '<code>Change-Directory</code>'], answer: 1, why: 'Moving to another directory <em>sets</em> your location; finding out where you are <em>gets</em> it. <code>cd</code> is an alias of <code>Set-Location</code>, and <code>pwd</code> of <code>Get-Location</code>.', wrong: ['<code>Get-Location</code> only reports where you are, like <code>pwd</code>.', null, '<code>Move-Item</code> moves a file or a folder, like <code>mv</code>; you stay where you are.', 'There is no such cmdlet. PowerShell\'s verbs come from a short approved list: Get, Set, New, Remove, Copy, Move…'] },
+        `<h2>Pipes that carry objects</h2>
+<p>Here is Snover's idea at work. In <code>bash</code>, sorting files by size means asking <code>ls -l</code> for text and cutting the size out of the fifth column. In PowerShell, <code>Get-ChildItem</code> sends <em>file objects</em> down the pipe, and each object knows its <code>Name</code>, its <code>Length</code> (the size in bytes) and its <code>LastWriteTime</code>. The next cmdlet just names the property it wants.</p>
+<div class="stmt"><p><span class="kind">Objects in the pipe.</span> <code>Sort-Object Length</code> sorts by a property (<code>-Descending</code> for biggest first). <code>Select-Object Name, Length</code> keeps some properties; <code>-First 3</code> keeps the first three objects; <code>-ExpandProperty Name</code> passes on the bare names. <code>Measure-Object</code> counts, and <code>Select-String</code> is PowerShell's <code>grep</code>. Only at the end of the pipeline are the objects turned into text, for you to read.</p></div>`,
+        { play: `powershell
+Get-ChildItem garden -Recurse -File | Sort-Object Length -Descending | Select-Object Name, Length
+Get-ChildItem garden -Recurse -File | Sort-Object Length -Descending | Select-Object -First 3 -ExpandProperty Name
+Get-Content garden\\flowers.txt | Measure-Object -Line -Word -Character
+Select-String -Pattern "gate" -Path *.txt
+"one" > list.txt
+"two" >> list.txt
+Get-Content list.txt`, setup: 'lesson7', caption: 'Every file under <code>garden</code>, biggest first; only the names of the three biggest; lines, words and characters (PowerShell\'s <code>wc</code>); a search; and redirection, which works as in <code>bash</code>.' },
+        `<details class="reveal"><summary>Guess first: which file under <code>garden</code> is the biggest, and how did <code>Sort-Object</code> know the sizes without any <code>cut</code>?</summary><p><code>frogs.txt</code>, at 57 bytes, then <code>key.txt</code> (47) and <code>tools.txt</code> (36). <code>Sort-Object</code> never saw any text: each file arrived as an object, and <code>Length</code> is one of its properties. No column to count, no spaces to split on: the reason PowerShell was built.</p></details>`,
+        { check: 'Why can <code>Get-ChildItem | Sort-Object Length</code> sort files by size without cutting a column out of text?', skill: 'powershell', options: ['<code>Sort-Object</code> reads the file sizes from the disk itself', 'The pipe carries file objects, and <code>Length</code> is a property of each one', '<code>Length</code> is the fifth column of the text, and PowerShell counts columns for you', 'It sorts the names by how long they are'], answer: 1, why: 'In PowerShell the pipe carries objects, not lines of text. Each file object brings its properties with it, so the next cmdlet names the one it wants. Only the last stage turns objects into text for the screen.', wrong: ['<code>Sort-Object</code> knows nothing about disks; it sorts whatever objects arrive, by the property you name.', null, 'There are no columns until the very end, when the objects are printed. Before that, <code>Length</code> is a named property.', '<code>Length</code> here is the file\'s size in bytes, not the length of its name.'] },
+        { ex: { id: 'sh-7-1', kind: 'shell', skill: 'windows-cmd', title: 'Back up in the Command Prompt', setup: 'lesson7',
+          prompt: '<p>Start the Command Prompt with <code>cmd</code>. In it, make a folder called <code>backup</code> in your home directory, copy every <code>.txt</code> file of your home directory into it with <code>copy</code>, and save the bare list of what <code>backup</code> holds in a file <code>list.txt</code> in your home directory. The check reads <code>list.txt</code>, which should hold:</p><pre class="code"><code>notes.txt\ntodo.txt</code></pre>',
+          tests: [{ ran: /^\s*cmd(\.exe)?\s*$/i, name: 'the Command Prompt was started with cmd' }, { ran: /^\s*copy\b/i, name: 'the files were copied with copy' }, { exists: 'backup/notes.txt' }, { exists: 'backup/todo.txt' }, { content: 'list.txt', expect: 'notes.txt\ntodo.txt' }],
+          hints: ['After <code>cmd</code>: <code>mkdir backup</code>, then <code>copy *.txt backup</code>. The wildcard works as in bash.', '<code>dir /b backup</code> prints the bare names; add <code>&gt; list.txt</code> to put them in a file, and check with <code>type list.txt</code>.'],
+          failTip: 'Make the list of <code>backup</code>, not of your home directory: <code>dir /b backup &gt; list.txt</code>. A plain <code>dir</code> adds dates, sizes and totals; <code>/b</code> gives only the names. And make the list after copying, or it is empty.',
+          solution: 'cmd\nmkdir backup\ncopy *.txt backup\ndir /b backup > list.txt\ntype list.txt\nexit',
+          followup: 'Still in the Command Prompt, use find to show which of the backed-up files mention "tulip", and then remove the backup folder and everything in it with one command.' } },
+        { ex: { id: 'sh-7-2', kind: 'shell', skill: 'powershell', title: 'The three biggest, in PowerShell', setup: 'lesson7',
+          prompt: '<p>In PowerShell, write the names of the three biggest files anywhere under <code>garden</code>, biggest first, into a file <code>big.txt</code> in your home directory, one name per line. Use a pipeline of cmdlets, not by-hand typing. The check reads <code>big.txt</code>:</p><pre class="code"><code>frogs.txt\nkey.txt\ntools.txt</code></pre>',
+          tests: [{ ran: /^\s*(powershell|pwsh)(\.exe)?\s*$/i, name: 'PowerShell was started' }, { ran: /\bSort-Object\b|\|\s*sort\b/i, name: 'the files were sorted with Sort-Object' }, { content: 'big.txt', expect: 'frogs.txt\nkey.txt\ntools.txt' }],
+          hints: ['Start from the example: <code>Get-ChildItem garden -Recurse -File | Sort-Object Length -Descending</code>.', 'Add <code>| Select-Object -First 3 -ExpandProperty Name</code> to keep three bare names, and <code>&gt; big.txt</code> at the end. Check with <code>Get-Content big.txt</code>.'],
+          failTip: 'If <code>big.txt</code> holds a table with <code>Name</code> and <code>Length</code> headings, you used <code>Select-Object Name</code>, which keeps objects with a Name property; <code>-ExpandProperty Name</code> passes on the names themselves. If the wrong files appear, check <code>-Recurse</code> (the biggest are inside <code>shed</code> and <code>pond</code>) and <code>-Descending</code>.',
+          solution: 'powershell\nGet-ChildItem garden -Recurse -File | Sort-Object Length -Descending | Select-Object -First 3 -ExpandProperty Name > big.txt\nGet-Content big.txt\nexit',
+          followup: 'Count the files under garden with Measure-Object, then find every line under garden that mentions "the" with Get-ChildItem -Recurse and Select-String. Then do the same two jobs in bash, and compare the lengths of the commands.' } },
+        `<div class="recap"><h3>In this lesson</h3>
+<p><b>What changes on Windows?</b> The spelling, not the ideas. There is still a working directory, paths absolute and relative, making, copying and removing, reading and searching, <code>&gt;</code> and <code>|</code>. The Command Prompt uses other words for them, and PowerShell passes objects, not text, down its pipes.</p><ul>
+<li><b>Paths</b> start with a drive, <code>C:\\</code>, use backslashes, and ignore capitals. Your home is <code>C:\\Users\\</code><em>name</em>.</li>
+<li><b>Command Prompt:</b> <code>cd</code> (alone: where am I), <code>dir</code> and <code>dir /b</code>, <code>type</code>, <code>copy</code>, <code>move</code>, <code>ren</code>, <code>del</code>, <code>rmdir /s</code>, <code>find</code> and <code>findstr</code>, <code>cls</code>. Options start with <code>/</code>.</li>
+<li><b>PowerShell:</b> Verb-Noun cmdlets (<code>Get-Location</code>, <code>Get-ChildItem</code>, <code>Set-Location</code>, <code>Get-Content</code>, <code>Copy-Item</code>, <code>Remove-Item</code>) with aliases such as <code>ls</code>, <code>cd</code>, <code>cat</code>; <code>Get-Alias</code> tells you which is which.</li>
+<li><b>Objects in the pipe:</b> <code>Sort-Object Length</code>, <code>Select-Object -First 3</code>, <code>Measure-Object</code> and <code>Select-String</code> work on properties, so nothing has to be cut out of text.</li>
+<li>On a Mac or Linux, and in WSL on Windows, it is <code>bash</code> (or <code>zsh</code>) again: everything from lessons 1 to 6.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
       standard: 1, standards: ['2-AP-12', '3A-AP-13', '3B-CS-01'],
       title: 'A first script', summary: 'A file of commands that runs as one: #! and chmod +x, variables and arguments, a for loop over files, and if with test, so that a chore you do by hand is done by one command.',
       blocks: [
@@ -725,6 +830,8 @@ if grep -q ERROR server.log; then echo "look at the log"; fi`, setup: 'lesson8',
         { check: '<code>greet.py</code> prints <code>"Hello, " + sys.argv[1] + "!"</code>. What does <code>python greet.py "Grace Hopper"</code> print?', skill: 'run-programs', options: ['<code>Hello, Grace!</code>', '<code>Hello, Grace Hopper!</code>', '<code>Hello, "Grace Hopper"!</code>', 'An error: there is no <code>sys.argv[2]</code>'], answer: 1, wrong: ['Without the quotes it would be: the shell would split the name into two arguments. The quotes keep it as one word.', null, 'The shell removes the quotes after using them to group the words; the program never sees them.', 'The program only asks for <code>sys.argv[1]</code>, which is the whole quoted name.'], why: 'Quotes make one argument out of words with spaces between them, and the shell takes the quotes away before the program starts.' },
         { check: 'You have just written <code>Hello.java</code>. Which two commands run it?', skill: 'compile', options: ['<code>javac Hello</code>, then <code>java Hello</code>', '<code>javac Hello.java</code>, then <code>java Hello</code>', '<code>javac Hello.java</code>, then <code>./Hello.class</code>', '<code>java Hello.class</code>'], answer: 1, wrong: ['<code>javac</code> wants the source file, with <code>.java</code>; given a bare class name it refuses.', null, 'A <code>.class</code> file is not a program the shell can start; <code>java</code> runs it, given the class name.', '<code>java</code> takes the class name, without <code>.class</code>, and the file has not been compiled yet anyway.'], why: '<code>javac</code> compiles the file (<code>Hello.java</code>) and writes <code>Hello.class</code>; <code>java</code> runs a class, by its name (<code>Hello</code>).' },
         { check: '<code>g++ game.cpp -o game &amp;&amp; ./game</code>, and the compiler finds an error. What happens?', skill: 'exit-status', options: ['The error is shown and <code>./game</code> does not run', 'The error is shown and then the last working <code>game</code> runs', '<code>./game</code> runs and shows the error itself', 'Nothing at all is shown'], answer: 0, wrong: [null, 'That is what <code>;</code> would do. <code>&amp;&amp;</code> runs the right side only after a status of 0, and a failed compile is not 0.', 'The compiler reports the error and stops; nothing of yours runs.', 'The compiler always says what went wrong, with a line number.'], why: 'A failed compile ends with a status that is not 0, so <code>&amp;&amp;</code> skips <code>./game</code>. That is why build lines are joined with <code>&amp;&amp;</code>: you never run an old program by mistake.' },
+        { check: 'In the Command Prompt you type <code>cd</code> with nothing after it, hoping to go home. What happens?', skill: 'windows-cmd', options: ['You go to <code>C:\\Users\\student</code>, as in bash', 'It prints the directory you are in, and you stay there', 'An error: <code>cd</code> needs a folder', 'You go to <code>C:\\</code>, the top of the drive'], answer: 1, wrong: ['That is what a bare <code>cd</code> does in bash. In the Command Prompt it is a question, not a move.', null, 'It is allowed: alone, it answers "where am I?", like <code>pwd</code>.', '<code>cd \\</code> goes to the top of the drive; a bare <code>cd</code> moves nowhere.'], why: 'In the Command Prompt a bare <code>cd</code> prints the current directory, the job of <code>pwd</code> in bash. To go home there you name it: <code>cd C:\\Users\\student</code>, or <code>cd %USERPROFILE%</code>.' },
+        { check: 'In PowerShell, what does <code>Get-ChildItem | Sort-Object Length -Descending | Select-Object -First 1</code> show?', skill: 'powershell', options: ['The biggest file in the directory', 'The file whose name is longest', 'The first line of every file', 'An error: <code>Length</code> is not a column of the listing'], answer: 0, wrong: [null, '<code>Length</code> is a file object\'s size in bytes, not the length of its name.', '<code>Get-ChildItem</code> sends file objects, not the lines inside the files; <code>Get-Content</code> reads lines.', 'The pipe carries objects, and <code>Length</code> is one of their properties. There are no columns until the end, when the result is printed.'], why: 'The file objects are sorted by their <code>Length</code> property, biggest first, and <code>-First 1</code> keeps one object: the biggest file, printed as a one-row table.' },
         { check: 'You wrote <code>tidy.sh</code> but have not used <code>chmod</code>. Which command runs it anyway?', skill: 'scripts', options: ['<code>./tidy.sh</code>', '<code>bash tidy.sh</code>', '<code>tidy.sh</code>', '<code>cat tidy.sh</code>'], answer: 1, wrong: ['Running the file as a program needs the execute permission: "Permission denied".', null, 'A bare name is looked up in <code>PATH</code>, not here: "command not found".', '<code>cat</code> prints the script\'s text; it runs nothing.'], why: '<code>bash tidy.sh</code> runs <code>bash</code>, which only needs to <em>read</em> the file. <code>./tidy.sh</code> asks to run the file itself, which needs <code>chmod +x</code> first.' },
         { check: 'A script contains <code>cd /tmp</code>. You are in your home directory and run it with <code>./go.sh</code>. Where are you afterwards?', skill: 'scripts', options: ['In <code>/tmp</code>', 'Still in your home directory', 'In the directory where <code>go.sh</code> lives', 'Nowhere: the shell closes'], answer: 1, wrong: ['The script\'s <code>cd</code> happened in the script\'s own shell, which ended with it.', null, 'The script started in your directory and then moved itself to <code>/tmp</code>; neither move reaches you.', 'Only the script\'s own shell ends; yours carries on.'], why: 'A script runs in a new shell of its own: its <code>cd</code> and its variables end with it. (<code>source go.sh</code> runs it in your shell instead, and then the <code>cd</code> would stay.)' },
         { check: 'Inside a script started as <code>./greet.sh Ada Grace</code>, what are <code>$#</code> and <code>$2</code>?', skill: 'variables', options: ['1 and <code>Ada</code>', '2 and <code>Grace</code>', '3 and <code>Grace</code>', '2 and <code>Ada</code>'], answer: 1, wrong: ['<code>$#</code> counts every argument after the script\'s name: there are two.', null, 'The script\'s own name is <code>$0</code>, and it is not counted.', '<code>$1</code> is <code>Ada</code>; <code>$2</code> is the second word.'], why: '<code>$1</code>, <code>$2</code>… are the words after the script\'s name and <code>$#</code> is how many there are, like <code>sys.argv[1:]</code> in Python.' },
@@ -755,6 +862,7 @@ if grep -q ERROR server.log; then echo "look at the log"; fi`, setup: 'lesson8',
 <p><b>Which one fits?</b> Ask what goes where: a word for the program (an argument) or a file for it to read (<code>&lt;</code>); the next command always (<code>;</code>) or only after a success (<code>&amp;&amp;</code>); a script that may change your shell (<code>source</code>) or one in a shell of its own (<code>./</code>).</p><ul>
 <li>Programs: <code>python f.py</code>; <code>javac Name.java</code> then <code>java Name</code>; <code>g++ f.cpp -o f</code> then <code>./f</code>. Arguments are <code>sys.argv[1]</code> and on; quotes keep spaces in one.</li>
 <li><code>&lt;</code>, <code>&gt;</code> and <code>|</code> connect your programs as they do any command. The exit status (0 for success) drives <code>&amp;&amp;</code>, <code>||</code> and <code>if</code>.</li>
+<li>Windows: the Command Prompt (<code>dir</code>, <code>type</code>, <code>copy</code>, <code>del</code>, backslashes, <code>/</code> options; a bare <code>cd</code> asks where you are) and PowerShell (Verb-Noun cmdlets, aliases, pipes of objects).</li>
 <li>Scripts: <code>#!/bin/bash</code> and <code>chmod +x</code>; <code>name="value"</code> with no spaces; <code>$1</code> and <code>$#</code>; <code>for f in *.txt; do …; done</code>; <code>if [ -f "$f" ]; then …; fi</code>. A script runs in a shell of its own.</li>
 <li>Next: a project, tidying a messy folder with a script that looks before it moves.</li>
 </ul></div>`

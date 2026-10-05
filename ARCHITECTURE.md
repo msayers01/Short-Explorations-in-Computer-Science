@@ -307,6 +307,13 @@ button and every Scheme playground not marked `expectError` a "Show the substitu
   by `MAX_STACK` (200 000 frames, then "maximum recursion depth exceeded"), not by the JS call stack; `do`, named-let
   inits, `letrec` and quasiquote still recurse into `evaluate`. Integers beyond 2^53 are BigInts (`isInt`, `norm`,
   `arith` in scheme.js keep arithmetic exact and fold results back to plain numbers when they fit).
+  Streams (October 2026, for SC 102 lesson 14): `delay` and `cons-stream` are special forms (`cons-stream a b` is `(cons a (delay b))`),
+  `force` evaluates a promise once and keeps the value (`SPromise`), and MIT's stream procedures are there (`stream-car`/`-cdr`/`-pair?`/
+  `-null?`, `empty-stream?`, `stream`, `list->stream`, `stream->list`, `stream-head`, `stream-tail`, `stream-ref`, `stream-length`,
+  `stream-map`). A promise prints as `#[promise]` and a stream as the items forced so far, `{1 2 ...}` (MIT's form; not checked against a
+  real MIT Scheme, and no lesson prints one). The substitution stepper (`subst.js`) refuses every `set!` (`SUBST.SET_MSG`: the model stops
+  being true there, which is SC 102 lesson 13's point); a playground that uses `set!` carries `noSubst: true`, which hides its "Show the
+  substitution" button, and `test_subst.js` fails if one does not.
 - Memory stepper (C++): `CPPSTEP.trace(code, stdin, {prepare, errorText, maxSteps, maxMs})` runs in the C++ sandbox (`CPPRUN.trace`; the
   result is plain data and comes back by message, `CPPSTEP.render` draws it in the page) and runs the program
   under JSCPP's debugger (`debug: true`), stopping whenever the line changes, and records every snapshot:
@@ -852,6 +859,29 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
     than exact (100%) renames; a merge commit's combined diff in `git show`; submodules (a nested repository's files are just files).
     Known small differences from git: `blame`'s "Not Committed Yet" time is the shell's clock (git's is the moment you run it), and the
     line diff is Myers' (git's xdiff can pick a different but equally short diff when lines repeat).
+- **Windows: cmd and PowerShell** (`shellwin.js`, `test_win.js`, October 2026, for SC 108 lesson 7). `cmd` and `powershell`/`pwsh` at the
+  bash prompt start the Command Prompt of Windows 11 (10.0.22631) or PowerShell 7.4.6 over the same file system. `sh.dialect` is a stack
+  whose top reads the lines (shell.js consults it only in `exec`, `prompt` and `complete`); `exit [n]` returns to the shell that started it
+  (they nest, 16 at most), history is shared, and `cmd /c` and `pwsh -c` run one line as a child (their `cd` ends with them).
+  - **Paths.** `C:\` is `/` but shows only `Users` (= /home, so `C:\Users\student` is `~`), `Temp` (= /tmp) and a read-only
+    `Windows\System32` of 0-byte stand-ins kept outside the file system. Names are found ignoring case when one entry matches, `\` and `/`
+    both separate, output uses `\`. The working directory is `fs.cwd`, shared with bash on purpose (inside C:\Windows it is `/` plus
+    `sh.win.overlay`). Writes go through `fs.*`, so the caps hold; line ends stay `\n`.
+  - **cmd** reads a line as cmd does (`%VAR%` first, then `"` `^` `& && || |` and redirections), with its own messages, ERRORLEVEL (9009
+    for an unknown command), the blank line before each prompt and its Y/N questions through `io.ask`. dir (with its header and totals),
+    cd, type, copy, move, ren, del, mkdir, rmdir, xcopy, echo, find, findstr, sort, more, tree, set and %VAR% forms, a one-command `if`,
+    where, whoami, ver, prompt, cls, help. No `for`, `goto`, `( )` blocks or batch files (it says so). **All of cmd is from memory**: there
+    was no cmd.exe to compare with.
+  - **PowerShell** parses pwsh's two modes (arguments and expressions) and runs pipelines of objects (file items, MatchInfo, measure
+    results, PSCustomObjects), binds parameters as pwsh does (prefixes, positions, mandatory prompts) and formats like Out-Default at 120
+    columns (the FileSystem table and list views, autosized tables). About 40 cmdlets with their aliases, variables, strings with `$x` and
+    `$(…)`, operators, `if/foreach/while/for`, functions and `.ps1` scripts; errors in pwsh 7's concise view; `>>` asks for the rest of an
+    unfinished line. Formats and messages were compared with a real pwsh 7.4.6 (Linux build, en-US) and adapted to Windows (Mode `-a---`,
+    a plain space before AM). No classes, `switch`, `try`/`catch` or `param()` blocks. Caps: 200 000 steps and 100 000 items a line, call
+    depth 100, the usual output and size caps; null-prototype dictionaries.
+  - **Lessons and the grader.** `{cmd}` checks always run in bash (the dialect is saved and put back), and in node `shellgrade.js` loads
+    shellwin.js. A lesson listing shows each line's prompt (`$`, `C:\Users\student>`, `PS C:\…>`) from `SHELLWIN.listingPrompts`, which
+    follows `cmd`/`powershell`/`cd`/`exit` as text. The dialect is not saved: a reloaded terminal starts in bash.
 - **Not there (yet):** job control (`&`), `select`, `eval`, `let`, `trap`, `getopts`, process substitution (`<(…)`), `>&2` and other fd
   redirections, extended globs (`@(a|b)`, `shopt -s extglob`), `**` (`globstar`), `nocasematch`, `${!prefix*}` and namerefs, `ln` (the file system
   has no links), `tar`, `ssh` and anything needing a network (those names answer with a sentence saying so). In a pipeline every part runs in this shell, so `… | read x` and `… | mapfile a` set the variable (bash runs them

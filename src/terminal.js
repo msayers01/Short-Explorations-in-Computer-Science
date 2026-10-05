@@ -340,13 +340,15 @@
     const make = () => SG.makeFS(setup, course);
     return makePanel(Object.assign({ fs: make(), armConfirm: A().armConfirm, title: 'Terminal', onReset: make, hooks: { setup: (name, sh) => { const tree = SG.setupFor(name, course); if (!tree) return null; SG.populate(sh.fs, tree); return 'the files are back'; } } }, extra || {}));
   }
+  // the prompt before each line of a listing: $ in bash, C:\Users\student> in cmd, PS C:\Users\student> in PowerShell (shellwin.js follows cmd, powershell, cd and exit)
+  const psHtml = (lines) => (window.SHELLWIN ? window.SHELLWIN.listingPrompts(lines) : lines.map(() => '$')).map((p) => p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
   function playBlock(b, course) {
     const { el } = window.__h;
     const { highlight } = A();
     const box = el('div', { class: 'play shell-play' });
     if (b.caption) box.append(el('div', { class: 'play-cap' }, el('span', { class: 'play-label' }, A().lbl('tryIt')), el('span', { html: b.caption })));
     const lines = String(b.play).split('\n').filter((l) => l.trim() !== '');
-    const listing = el('pre', { class: 'code shell-cmds' }, el('code', { html: lines.map((l) => '<span class="sh-ps">$</span> ' + highlight(l, 'shell').replace(/\n$/, '')).join('\n') }));
+    const listing = el('pre', { class: 'code shell-cmds' }, el('code', { html: psHtml(lines).map((ps, i) => '<span class="sh-ps">' + ps + '</span> ' + highlight(lines[i], 'shell').replace(/\n$/, '')).join('\n') }));
     const panel = lessonPanel(b.setup, course);
     let busy = false;
     const runBtn = el('button', { class: 'btn primary', onclick: async () => { if (busy) return; busy = true; runBtn.disabled = true; panel.show(false); for (const l of lines) await panel.exec(l); busy = false; runBtn.disabled = false; if (!(window.matchMedia && matchMedia('(hover: none)').matches)) panel.focus(); } }, 'Run');
@@ -386,7 +388,7 @@
     if (!ex.hints || !ex.hints.length) hintBtn.disabled = true;
     const solBox = el('div', { class: 'solution', hidden: '' });
     const solBtn = el('button', { class: 'btn quiet', onclick: () => {
-      const show = () => { solBtn.classList.remove('armed'); solBox.hidden = !solBox.hidden; if (!solBox.hidden && !solBox.childNodes.length) solBox.append(el('p', {}, el('b', {}, 'One solution. '), 'Compare it with what you typed; there are usually several ways.'), el('pre', { class: 'code shell-cmds' }, el('code', { html: String(ex.solution).split('\n').filter((l) => l.trim()).map((l) => '<span class="sh-ps">$</span> ' + highlight(l, 'shell').replace(/\n$/, '')).join('\n') }))); };
+      const show = () => { solBtn.classList.remove('armed'); solBox.hidden = !solBox.hidden; if (!solBox.hidden && !solBox.childNodes.length) solBox.append(el('p', {}, el('b', {}, 'One solution. '), 'Compare it with what you typed; there are usually several ways.'), el('pre', { class: 'code shell-cmds' }, el('code', { html: ((ls) => psHtml(ls).map((ps, i) => '<span class="sh-ps">' + ps + '</span> ' + highlight(ls[i], 'shell').replace(/\n$/, '')).join('\n'))(String(ex.solution).split('\n').filter((l) => l.trim())) }))); };
       if (attempts < 2 && solBox.hidden) armConfirm(solBtn, 'Show before trying twice?', show); else show();
     } }, 'Solution');
     box.append(panel.el, el('div', { class: 'toolbar' }, checkBtn, resetBtn, el('span', { class: 'spacer' }), hintBtn, solBtn), verdict, hintBox, solBox);

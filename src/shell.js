@@ -904,7 +904,9 @@
     const now = opts.now || fs.now;
     // funcs: name → the body (a compound command); arrays: name → { v: a sparse array of strings, n: how many are set, bytes }; a name is
     // a plain variable or an array, not both. aliases: name → text. Aliases and functions last as long as the shell (the terminal's session).
-    const sh = { fs, vars: dict(), arrays: dict(), funcs: dict(), aliases: dict(), shopt: dict(), exported: new Set(ENV), history: [], lastExit: 0, cancelled: false, steps: 0, outBytes: 0, LIMITS, hooks: opts };
+    // dialect: the Windows shells started from this one (shellwin.js: cmd, PowerShell), a stack; while it is not empty its top reads the lines
+    const sh = { fs, vars: dict(), arrays: dict(), funcs: dict(), aliases: dict(), shopt: dict(), exported: new Set(ENV), history: [], lastExit: 0, cancelled: false, steps: 0, outBytes: 0, LIMITS, hooks: opts, dialect: [] };
+    const dialect = () => (sh.dialect && sh.dialect.length ? sh.dialect[sh.dialect.length - 1] : null);
     Object.assign(sh.vars, { HOME, USER, HOSTNAME: HOST, SHELL: '/bin/bash', PATH: '/usr/local/bin:/usr/bin:/bin', TERM: 'xterm-256color', LANG: 'en_US.UTF-8', PS1: '\\u@\\h:\\w\\$ ' });
     const getVar = (name, ctx) => {
       if (name === '?') return String(sh.lastExit);
@@ -984,7 +986,7 @@
     const arithOf = (text, ctx) => arith(text.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*|[0-9]+|[?#])\}|\$([A-Za-z_][A-Za-z0-9_]*|[0-9?#])/g, (m, a, b) => getVar(a || b, ctx)),
       (n, ix) => ix === undefined ? getVar(n, ctx) : elemGet(n, ix), (n, v, ix) => ix === undefined ? setVar(n, v) : elemSet(n, ix, v), 0, isAssoc);   // m[key] of an associative array: the key is text
     const tilde = (fsPath) => fsPath === HOME ? '~' : fsPath.startsWith(HOME + '/') ? '~' + fsPath.slice(HOME.length) : fsPath;
-    sh.prompt = () => USER + '@' + HOST + ':' + tilde(fs.cwd) + '$ ';
+    sh.prompt = () => (dialect() ? dialect().prompt() : USER + '@' + HOST + ':' + tilde(fs.cwd) + '$ ');
     sh.cancel = () => { sh.cancelled = true; if (opts.cancel) opts.cancel(); };
     const tick = () => { if (sh.cancelled) throw new Stop('cancel', 130); if (++sh.steps > LIMITS.steps) throw new Stop('steps', 1); };
     // aliases are expanded at the prompt, as in an interactive bash; in a script only after shopt -s expand_aliases
@@ -1407,6 +1409,7 @@
     // ----- the entry point. A line typed at the terminal (io.tty) gets history expansion and aliases, as in an interactive bash; other
     // callers (the grader, the differential tests) get a script's rules. The text is run a line at a time.
     sh.exec = async (line, io) => {
+      if (dialect()) return dialect().exec(line, io);   // cmd or PowerShell is active: the line is theirs
       io = Object.assign({ out: () => { }, err: () => { }, tty: true }, io || {});
       if (!io.err) io.err = io.out;
       io.stdin = io.stdin == null ? null : (typeof io.stdin === 'string' ? stdinOf(io.stdin) : io.stdin);
@@ -1457,6 +1460,7 @@
     // Returns { start, items, display }: the items replace the line from `start`; each ends in a space (a file) or a slash (a directory),
     // with spaces and quotes in names escaped; display holds the bare names for a list.
     sh.complete = (line) => {
+      if (dialect() && dialect().complete) return dialect().complete(line);
       const m = line.match(/(?:^|[\s|;&()<>])((?:[^\s|;&()<>\\]|\\.)*)$/);
       let word = m ? m[1] : line, start = line.length - word.length;
       let quote = '';

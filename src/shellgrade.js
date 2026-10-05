@@ -4,7 +4,7 @@
    a key ending in ! is an executable file): { 'notes/': null, 'notes/todo.txt': 'milk\n', 'tidy.sh!': '#!/bin/bash\n…' }.
    An exercise of kind 'shell' has tests on the state of the terminal after the student worked: see grade() for the kinds. */
 (function (factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./shell.js'));
+  if (typeof module === 'object' && module.exports) { require('./shellwin.js'); module.exports = factory(require('./shell.js')); }   // shellwin: lessons use cmd and PowerShell
   else window.SHELLGRADE = factory(window.SHELL);
 })(function (SHELL) {
   'use strict';
@@ -69,10 +69,12 @@
         name = name || t.cmd + ' prints the right thing'; io = true; expected = t.expect;
         const cwd = fs.cwd; fs.cwd = HOME; let out = '';
         const hist = sh.history.slice(), lastExit = sh.lastExit;
+        // the check runs in bash even when the student left cmd or PowerShell running (and a cmd in the check ends with it)
+        const dialect = sh.dialect, overlay = sh.win ? sh.win.overlay : null; sh.dialect = [];
         try { await sh.exec(t.cmd, { out: (s) => { out += s; }, err: (s) => { out += s; }, tty: false }); } catch (e) { out += 'error: ' + (e && e.message || e); }
         // the check's own command is not the student's: the history is put back as it was (a full history drops its oldest line on a push,
         // so cutting it back to its old length would not do), and so is $?
-        sh.history.splice(0, sh.history.length, ...hist); sh.lastExit = lastExit;
+        sh.history.splice(0, sh.history.length, ...hist); sh.lastExit = lastExit; sh.dialect = dialect; if (sh.win) sh.win.overlay = overlay;
         fs.cwd = cwd; got = out; ok = norm(out) === norm(t.expect);
       }
       else if (t.ran !== undefined) { name = name || 'a command like ' + String(t.ran); expected = 'typed'; ok = sh.history.some((h) => t.ran.test(h)); got = ok ? 'typed' : 'not typed yet'; }
