@@ -218,6 +218,16 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   All four phases of the owner's spec are built. **Persistent mode** needs cross-origin isolation: `dist/_headers` sends COOP `same-origin` and COEP `require-corp` on a `/*` rule (a rule for `/` or `/index.html` does not reach the document on Cloudflare: `/index.html` only answers with a redirect; checked with curl on a PR preview, October 2026; the page's own `/` also gets none of the CSP *headers*, only the `<meta>` policy, which predates this and is left alone because a `/*` CSP rule would break the teacher guide's script hash). The page loads nothing from another origin, so persistent mode should be on in production and previews and is off for a file or a framed copy (not yet seen working on a deployed URL: this sandbox's Chromium cannot trust the proxy certificate); the worker side is `botio.js` (SharedArrayBuffer + `Atomics.wait`), the page side `botsession.js`, and `test_arena.js` runs the real worker source in node's `worker_threads`. Arena bots are in the backup file (not the match setup). Known gaps: no stderr in the sandboxes (so `LOG ` lines);
   the teaching C++ has no `string`/`vector` (the C++ bots use char arrays); Scheme has no vectors, so its Flood Fill uses lists; the first-legal-move starter beats Random only about
   55-65% of the time (the spec's 90 of 100 holds for the Flood Fill solutions). Scheme gained `read`, `read-line`, `eof-object` (stdin option).
+- **Course audit** (October 2026, branch `claude/course-audit`): every course was read end to end; every example's real output was compared with its
+  caption and reveal (a dump script runs each `play` block through the same runners `test_course.js` uses; for Scheme it prints the `;Value:` replies
+  the page shows); every quick-check key and `wrong` text and every exercise expectation was re-derived; the stories were checked against sources;
+  Java, C++ and Python values were re-run on JDK 21, g++ and CPython 3.11. Found: no wrong quick-check key or exercise expectation anywhere; about
+  thirty wording and fact slips, all fixed (commits "Course audit, part 1-4": the cpu figure's ADD, RAMAC, Boole 1847, https and the site name, a
+  dictionary's order, Levin 1973, the hash check's key, javac's wording, std::swap, long long, C++20's cin, the dangling shell "lesson 8"). One real
+  gap: SC 101 used list comprehensions in lessons 12 and 14 without teaching them (now loops). Rules that came out of it: a lesson must not state a
+  value or an error message that the site and a home interpreter print differently (say "on this site ... a home Python says ..."); an example may
+  use only what the course has taught by then; a stated number is checked against the real toolchain, not reasoned. Courses marked `developing`
+  still promise lessons that do not exist (SC 108 Windows and scripts, SC 109 unit three); the catalogue text says they are planned.
 
 ## Gotchas
 

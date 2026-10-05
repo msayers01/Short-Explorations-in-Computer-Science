@@ -14,7 +14,7 @@ window.COURSES.push({
     'Write conditions, loops and functions in C++ syntax',
     'Explain what a pointer is, and use one to let a function change the caller\u2019s variables',
     'Use arrays and character strings safely',
-    'Implement selection sort, binary search, a Monte Carlo simulation and the Sieve of Eratosthenes'
+    'Implement insertion sort, binary search, a Monte Carlo simulation and the Sieve of Eratosthenes, and read selection sort with its invariant'
   ],
   howItWorks: `<h3>How to use these pages</h3><p>Each lesson has runnable code. Press <b>Run</b> and read the output; change something and run again. Exercises are checked by running your program on hidden inputs, so read the expected output carefully. Your work is saved in this browser.</p><p>The course has <b>thirteen lessons in three stretches</b>. Lessons 1 to 4 (hello, decisions, loops, functions) end with <b>Checkpoint one</b>; lessons 6 to 9 (pointers, arrays, strings, bugs) end with <b>Checkpoint two</b>; the last three (random numbers, searching and sorting, the sieve project) put everything to work. A checkpoint teaches nothing new: it mixes questions on the lessons before it, because telling apart ideas that look alike (<code>=</code> and <code>==</code>, a value and its address, <code>'a'</code> and <code>"a"</code>) is a skill of its own. The course names 28 small skills; every question and exercise practises one, and the Review page brings the questions back after a day, three days and so on, so what you learn lasts.</p><p>Each lesson stands on its own as an <b>Hour of Code</b> activity: read, run, predict, and finish the two exercises in about 45–60 minutes. A lesson likely to take longer is marked in the list below and at the top of the lesson.</p><p><b>The interpreter here is deliberately small.</b> It has no <code>std::string</code>, <code>vector</code>, classes or references (<code>int&amp;</code>). Programs that stick to the features taught in these lessons will compile unchanged with g++ or clang.</p>`,
   // The named skills of the course (LESSON_STANDARD.md §4): every quick check and exercise names the skill it practises. The skills map on
@@ -948,7 +948,7 @@ int main() {
     int* p;              // declared, never given an address
     cout << *p << endl;  // follow it: to where?
     return 0;
-}`, expectError: true, caption: 'This site refuses: "you cannot dereference an uninitialized pointer". A real program may print garbage, crash, or silently change some other variable. Always give a pointer an address when you declare it.' },
+}`, expectError: true, caption: 'This site refuses: "you cannot dereference an unitialized pointer" (spelled that way by the interpreter itself). A real program may print garbage, crash, or silently change some other variable. Always give a pointer an address when you declare it.' },
         { check: "What does following an uninitialised pointer do on a real computer?", options: ["Gives 0", "Anything: garbage, a crash, or a silent change elsewhere", "A compile error"], skill: 'pointer-safety', answer: 1, wrong: ["Nothing sets a new pointer to 0 for you, just as a new int is not set to 0. It holds whatever bits were left in that memory, so following it goes to a random place.", null, "The line is perfectly legal, so the compiler accepts it. The trouble appears only when the program runs, which is what makes it dangerous."], why: "The pointer holds whatever bits were in memory. This site refuses; a real program may do anything." },
         `<p>Real C++ has a special value, <code>nullptr</code>, meaning "points nowhere", which you can store in a pointer and test for; following it is undefined behaviour, and usually crashes the program. (This site's interpreter does not know <code>nullptr</code>.) The types must also match: <code>double* q = &amp;x;</code> with an <code>int x</code> is rejected, because a pointer's type says what kind of value is found at the address.</p>
 <h2>Passing an address to a function</h2>
@@ -1610,7 +1610,7 @@ int main() {
 using namespace std;
 
 int passed = 0, failed = 0;
-void check(bool ok, const char* what) {
+void check(bool ok, const char* what) {   // const char*: a read-only pointer to the text
     if (ok) { passed++; }
     else { failed++; cout << "FAILED: " << what << endl; }
 }
