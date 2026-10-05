@@ -454,6 +454,24 @@
   const tipLang = (ex) => (ex.lang === 'cpp' && ex.runtime === 'full' ? 'cppfull' : ex.lang);
   const norm = (s) => String(s).replace(/\r/g, '').split('\n').map(l => l.replace(/\s+$/, '')).join('\n').replace(/\n+$/, '');
 
+  // Where a program's output differs from the expected output (src/outdiff.js): a sentence naming the usual reason, then the lines around the
+  // first difference, with white space made visible and the differing part marked on a line that differs; the whole outputs stay below.
+  function outputDiff(expected, got) {
+    const raw = el('div', { class: 't-io' }, el('div', {}, el('span', { class: 'lbl' }, 'expected output'), el('pre', {}, expected)), el('div', {}, el('span', { class: 'lbl' }, 'your output'), el('pre', {}, got === '' || got == null ? '(nothing)' : got)));
+    const D = window.OUTDIFF; if (!D) return raw;
+    const c = D.compare(expected, got); if (!c.firstBad) return raw;
+    const from = Math.max(0, c.firstBad - 3), rows = c.rows.slice(from, from + 8);
+    const cell = (text, r, side) => {
+      if (text == null) return el('td', { class: 'od-none' }, side === 'got' ? '(no line)' : '(no line expected)');
+      if (r.kind !== 'diff') return el('td', {}, text);
+      const end = side === 'got' ? r.gEnd : r.eEnd, mid = text.slice(r.col, end);   // · is a space, → a tab; an empty part is where something is missing
+      return el('td', {}, D.visible(text.slice(0, r.col)), mid ? el('mark', {}, D.visible(mid)) : el('mark', { class: 'od-gap', title: 'something is missing here' }, '\u2038'), D.visible(text.slice(end)));
+    };
+    const table = el('table', { class: 'od' }, el('thead', {}, el('tr', {}, el('th', {}, 'line'), el('th', {}, 'expected'), el('th', {}, 'yours'))),
+      el('tbody', {}, rows.map((r) => el('tr', { class: 'od-' + r.kind }, el('td', { class: 'od-n' }, String(r.n)), cell(r.exp, r, 'exp'), cell(r.got, r, 'got')))));
+    return el('div', { class: 't-diff' }, c.note ? el('p', { class: 'od-note' }, c.note) : null, table, el('details', { class: 'od-full' }, el('summary', {}, 'The whole outputs'), raw));
+  }
+
   /** Grade an exercise. Returns {passed, results:[{name, ok, expected, got, err}], error} */
   async function grade(ex, code, host) {
     const lang = ex.lang;
@@ -713,7 +731,7 @@
       li.append(el('code', { class: 't-name' }, t.name));
       if (!t.ok) {
         if (t.err) { li.append(el('div', { class: 't-detail' }, 'raised an error: ', el('code', {}, t.err))); const tip = tipFor(tipLang(ex), t.err); if (tip) li.append(el('div', { class: 't-tip' }, tip)); }
-        else if (t.io) li.append(el('div', { class: 't-io' }, el('div', {}, el('span', { class: 'lbl' }, 'expected output'), el('pre', {}, t.expected)), el('div', {}, el('span', { class: 'lbl' }, 'your output'), el('pre', {}, t.got === '' ? '(nothing)' : t.got))));
+        else if (t.io) li.append(outputDiff(t.expected, t.got));
         else li.append(el('div', { class: 't-detail' }, 'expected ', el('code', {}, t.expected), ' but got ', el('code', {}, t.got === '' || t.got == null ? '(nothing)' : t.got)));
       }
       list.append(li);

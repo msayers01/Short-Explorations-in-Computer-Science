@@ -223,8 +223,9 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   after 1, 3, 10, 30, 90 days (key `shortcourses.review.v1`, in backups); the skills map shows each lesson as not started / practising /
   secure on the course page and `#/today`. `#/review` was already the Lab's teacher route, hence `#/today`. **Trace and Parsons exercises** (ARCHITECTURE §6): `kind: 'trace'`
   (graded by mathgrade.js; `test_course.js` runs the program and checks every value) and `kind: 'parsons'` (`src/parsons.js`; with
-  `tests` the built program is run). First uses: py-4-3, py-4-4, jv-3-3, jv-5-3. Still to build from the same
-  review, in order: diagnostic feedback (whitespace-visible diffs, hand-written notes for common errors); exit codes and a class table for teachers;
+  `tests` the built program is run). First uses: py-4-3, py-4-4, jv-3-3, jv-5-3. Diagnostic feedback for output tests is built (`src/outdiff.js`, `test_outdiff.js`: a sentence naming
+  the usual reason, the lines around the first difference with white space visible and only the differing part marked). Still to build from the same
+  review, in order: hand-written notes for common errors; exit codes and a class table for teachers;
   a display panel and read-aloud.
 - **SC 109 How Machines Learn** (`src/course_ml.js`, Python, grades 9-12 after SC 101 up to Dictionaries, `standard: 1`): the first course
   written to LESSON_STANDARD.md from lesson 1. Unit one: 1 rules or examples (Paul Graham's *A Plan for Spam*, 2002: a hand-written rule,

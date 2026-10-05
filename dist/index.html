@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Il290fMFeGOsBzwTX/eNf24SUOj/VKL0yAYKt7YD0p0=' 'sha256-XD9LUPmCLcRgAspK/Wrlz0imhxpv5zQa95uaXafPeX4=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Il290fMFeGOsBzwTX/eNf24SUOj/VKL0yAYKt7YD0p0=' 'sha256-LFpsXoxdFO0Mtiiit98Xsv7gS1UAAZmIlpYG4nvvblU=' 'sha256-M3K0SUh8c7mCqVaIpyi5TPNn6oDNj1Wglrac3sIcyqU=' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src 'self' data: blob:; connect-src 'self'; media-src 'none'; frame-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Short Explorations in Computer Science</title>
 <style>
@@ -510,6 +510,17 @@ html.classroom .out-text, html.classroom .term-input, html.classroom .nano { fon
 .t-io { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.3rem; }
 .t-io .lbl { font-size: 0.8rem; color: var(--ink-3); display: block; }
 .t-io pre { margin: 0; background: var(--code-bg); padding: 0.4rem 0.6rem; font-size: 0.82rem; white-space: pre-wrap; }
+/* the output comparison in a verdict (outdiff.js): the reason, then the lines around the first difference */
+.t-diff { margin-top: 0.35rem; } .od-note { margin: 0 0 0.35rem; font-size: 0.9rem; }
+.od { border-collapse: collapse; font-family: var(--mono); font-size: 0.82rem; width: 100%; table-layout: fixed; }
+.od th { font-family: var(--sans); font-weight: 600; font-size: 0.75rem; color: var(--ink-3); text-align: left; padding: 0.15rem 0.5rem; }
+.od td { padding: 0.12rem 0.5rem; white-space: pre-wrap; word-break: break-word; vertical-align: top; background: var(--code-bg); border-top: 1px solid var(--rule-2); }
+.od th:first-child, .od td.od-n { width: 3rem; color: var(--ink-3); text-align: right; }
+.od tr.od-same td { color: var(--ink-3); }
+.od tr.od-diff td mark { background: var(--err-soft); color: var(--err); border-radius: 2px; } .od mark.od-gap { padding: 0 1px; font-weight: 700; }
+.od td.od-none { color: var(--ink-3); font-style: italic; font-family: var(--sans); }
+.od tr.od-missing td:nth-child(2), .od tr.od-extra td:nth-child(3) { box-shadow: inset 3px 0 0 var(--err); }
+.od-full { margin-top: 0.35rem; font-size: 0.85rem; } .od-full summary { cursor: pointer; color: var(--ink-3); }
 .hints { margin-top: 0.5rem; font-family: var(--sans); font-size: 0.95rem; }
 .hint { margin: 0.4rem 0; padding: 0.5rem 0.8rem; background: var(--accent-soft); border-left: 3px solid var(--accent); }
 .hint b { color: var(--accent); }
@@ -22280,6 +22291,73 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
 });
 
 ;
+/* src/outdiff.js */
+/* What is different between the output an exercise expects and the output the program printed: line by line, where on the line the
+   first difference is, and a plain sentence for the usual reasons (capitals, spaces, a number written another way, lines missing or
+   extra). Used by the verdict of an exercise (app.js); pure, so test_outdiff.js checks it in node. Registered as window.OUTDIFF.
+
+     OUTDIFF.compare(expected, got) → { rows: [{ n, kind: 'same'|'diff'|'missing'|'extra', exp, got, col }], note, firstBad }
+       Lines are compared as the grader compares them: trailing spaces and blank lines at the end do not count. col is the index of the first
+       character that differs on a 'diff' row, eEnd and gEnd where the differing part ends (what follows is the same on both lines).
+       note is one sentence, or '' when no reason is recognised.
+     OUTDIFF.visible(text) → the text with spaces as · and tabs as → (for showing a line where white space matters) */
+(function (factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else window.OUTDIFF = factory();
+})(function () {
+  'use strict';
+  const MAX_ROWS = 200;
+  const linesOf = (s) => String(s == null ? '' : s).replace(/\r/g, '').split('\n').map((l) => l.replace(/\s+$/, '')).join('\n').replace(/\n+$/, '').split('\n');
+  const visible = (t) => String(t).replace(/ /g, '·').replace(/\t/g, '→');
+  const firstDiff = (a, b) => { let i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++; return i; };
+  const squash = (s) => s.replace(/\s+/g, '');
+  const NUM = /-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
+  const sameNumbers = (a, b) => { const x = a.match(NUM) || [], y = b.match(NUM) || []; return x.length > 0 && x.length === y.length && x.every((v, i) => Number(v) === Number(y[i])) && a.replace(NUM, '#') === b.replace(NUM, '#'); };
+
+  function compare(expected, got) {
+    const E = linesOf(expected), G = got === '' || got == null ? [] : linesOf(got);
+    if (E.length === 1 && E[0] === '') E.length = 0;   // nothing expected is no lines, not one empty line
+    const rows = [], n = Math.min(MAX_ROWS, Math.max(E.length, G.length));
+    for (let i = 0; i < n; i++) {
+      const e = E[i], g = G[i];
+      if (e === undefined) rows.push({ n: i + 1, kind: 'extra', exp: null, got: g });
+      else if (g === undefined) rows.push({ n: i + 1, kind: 'missing', exp: e, got: null });
+      else if (e === g) rows.push({ n: i + 1, kind: 'same', exp: e, got: g });
+      else { const col = firstDiff(e, g); let k = 0; while (k < e.length - col && k < g.length - col && e[e.length - 1 - k] === g[g.length - 1 - k]) k++; rows.push({ n: i + 1, kind: 'diff', exp: e, got: g, col, eEnd: e.length - k, gEnd: g.length - k }); }   // the differing part is [col, end) of each
+    }
+    const bad = rows.filter((r) => r.kind !== 'same'), first = bad[0] || null;
+    return { rows, note: first ? noteFor(E, G, rows, first) : '', firstBad: first ? first.n : 0 };
+  }
+
+  function noteFor(E, G, rows, first) {
+    const plural = (k, w) => k + ' ' + w + (k === 1 ? '' : 's');
+    if (!G.length) return 'Your program printed nothing. Check that it prints its answer, not only works it out.';
+    const diffs = rows.filter((r) => r.kind === 'diff');
+    // the same lines with one more or one fewer before them: an extra or a missing line shifted everything after it
+    if (first.kind === 'diff' && E.length !== G.length) {
+      if (G.length > E.length && G.slice(first.n).join('\n') === E.slice(first.n - 1).join('\n')) return 'Line ' + first.n + ' of your output is one the exercise does not expect; after it, your lines match.';
+      if (E.length > G.length && E.slice(first.n).join('\n') === G.slice(first.n - 1).join('\n')) return 'Line ' + first.n + ' of the expected output is missing from yours; after it, your lines match.';
+    }
+    if (!diffs.length) {
+      const extra = rows.filter((r) => r.kind === 'extra').length, missing = rows.filter((r) => r.kind === 'missing').length;
+      if (missing) return 'Your output stops early: the first ' + plural(first.n - 1, 'line') + ' match, then ' + plural(missing, 'line') + ' are missing.';
+      return 'Everything expected is there, then your program printed ' + plural(extra, 'more line') + '. A debugging print left in?';
+    }
+    const d = diffs[0];
+    if (d.exp.toLowerCase() === d.got.toLowerCase()) return 'Line ' + d.n + ' has the right letters but different capitals.';
+    if (squash(d.exp) === squash(d.got)) return 'Line ' + d.n + ' differs only in its spaces: compare the · marks, where each · is one space.';
+    if (sameNumbers(d.exp, d.got)) return 'Line ' + d.n + ' has the right numbers written another way (for example 3 and 3.0): check whole-number and decimal division, and the format.';
+    const numAt = (s, i) => { NUM.lastIndex = 0; let m; while ((m = NUM.exec(s))) { if (m.index <= i && i <= m.index + m[0].length) return m[0]; } return null; };
+    const ne = numAt(d.exp, d.col), ng = numAt(d.got, d.col);
+    if (ne !== null && ng !== null && ne !== ng && d.exp.replace(NUM, '#') === d.got.replace(NUM, '#')) return 'Line ' + d.n + ' prints ' + ng + ' where ' + ne + ' is expected.';
+    if (d.col >= d.exp.length && d.got.length > d.exp.length) return 'Line ' + d.n + ' starts right but has more after it: “' + d.got.slice(d.col, d.col + 30) + '”.';
+    if (d.col >= d.got.length && d.exp.length > d.got.length) return 'Line ' + d.n + ' starts right but stops early: “' + d.exp.slice(d.col, d.col + 30) + '” is missing.';
+    return 'Line ' + d.n + ' first differs at character ' + (d.col + 1) + '.';
+  }
+  return { compare, visible, _internal: { linesOf, sameNumbers } };
+});
+
+;
 /* src/javaproject.js */
 /* Java programs made of several files (the Code Lab's Java tabs, the terminal's  javac A.java B.java). Exposed as window.JPROJ or module.exports.
 
@@ -23347,6 +23425,24 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
   const tipLang = (ex) => (ex.lang === 'cpp' && ex.runtime === 'full' ? 'cppfull' : ex.lang);
   const norm = (s) => String(s).replace(/\r/g, '').split('\n').map(l => l.replace(/\s+$/, '')).join('\n').replace(/\n+$/, '');
 
+  // Where a program's output differs from the expected output (src/outdiff.js): a sentence naming the usual reason, then the lines around the
+  // first difference, with white space made visible and the differing part marked on a line that differs; the whole outputs stay below.
+  function outputDiff(expected, got) {
+    const raw = el('div', { class: 't-io' }, el('div', {}, el('span', { class: 'lbl' }, 'expected output'), el('pre', {}, expected)), el('div', {}, el('span', { class: 'lbl' }, 'your output'), el('pre', {}, got === '' || got == null ? '(nothing)' : got)));
+    const D = window.OUTDIFF; if (!D) return raw;
+    const c = D.compare(expected, got); if (!c.firstBad) return raw;
+    const from = Math.max(0, c.firstBad - 3), rows = c.rows.slice(from, from + 8);
+    const cell = (text, r, side) => {
+      if (text == null) return el('td', { class: 'od-none' }, side === 'got' ? '(no line)' : '(no line expected)');
+      if (r.kind !== 'diff') return el('td', {}, text);
+      const end = side === 'got' ? r.gEnd : r.eEnd, mid = text.slice(r.col, end);   // · is a space, → a tab; an empty part is where something is missing
+      return el('td', {}, D.visible(text.slice(0, r.col)), mid ? el('mark', {}, D.visible(mid)) : el('mark', { class: 'od-gap', title: 'something is missing here' }, '\u2038'), D.visible(text.slice(end)));
+    };
+    const table = el('table', { class: 'od' }, el('thead', {}, el('tr', {}, el('th', {}, 'line'), el('th', {}, 'expected'), el('th', {}, 'yours'))),
+      el('tbody', {}, rows.map((r) => el('tr', { class: 'od-' + r.kind }, el('td', { class: 'od-n' }, String(r.n)), cell(r.exp, r, 'exp'), cell(r.got, r, 'got')))));
+    return el('div', { class: 't-diff' }, c.note ? el('p', { class: 'od-note' }, c.note) : null, table, el('details', { class: 'od-full' }, el('summary', {}, 'The whole outputs'), raw));
+  }
+
   /** Grade an exercise. Returns {passed, results:[{name, ok, expected, got, err}], error} */
   async function grade(ex, code, host) {
     const lang = ex.lang;
@@ -23606,7 +23702,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
       li.append(el('code', { class: 't-name' }, t.name));
       if (!t.ok) {
         if (t.err) { li.append(el('div', { class: 't-detail' }, 'raised an error: ', el('code', {}, t.err))); const tip = tipFor(tipLang(ex), t.err); if (tip) li.append(el('div', { class: 't-tip' }, tip)); }
-        else if (t.io) li.append(el('div', { class: 't-io' }, el('div', {}, el('span', { class: 'lbl' }, 'expected output'), el('pre', {}, t.expected)), el('div', {}, el('span', { class: 'lbl' }, 'your output'), el('pre', {}, t.got === '' ? '(nothing)' : t.got))));
+        else if (t.io) li.append(outputDiff(t.expected, t.got));
         else li.append(el('div', { class: 't-detail' }, 'expected ', el('code', {}, t.expected), ' but got ', el('code', {}, t.got === '' || t.got == null ? '(nothing)' : t.got)));
       }
       list.append(li);

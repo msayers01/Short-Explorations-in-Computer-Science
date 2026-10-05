@@ -63,6 +63,7 @@ const scripts = [
   'src/mathgrade.js',
   'src/cppfull.js',
   'src/javautil.js',
+  'src/outdiff.js',    // what differs between the expected and the printed output, for an exercise's verdict (also loaded by node: test_outdiff.js)
   'src/javaproject.js', // several Java files as one program: joining and line mapping (the Lab's Run, the terminal's javac; also loaded by node)
   'src/labutil.js',    // the Code Lab's pure helpers: program arguments, error lines (also loaded by node and backup.js)
   'src/botsession.js', // a bot that stays running (Bot Arena persistent mode): the page's side of the shared-memory channel (also loaded by node)

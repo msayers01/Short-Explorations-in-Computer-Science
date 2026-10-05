@@ -704,6 +704,12 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await pp.locator('.guess-result').waitFor({ state: 'visible', timeout: 20000 }).catch(() => { });
   const sum = await pp.locator('.guess-sum').textContent().catch(() => '');
   check('an example with a prediction asks for a guess, then compares it line by line and shows the explanation', capHidden && nudged && /2 of 3 lines/.test(sum) && (await pp.locator('.guess-lines .bad').count()) === 1 && await pp.locator('.play-cap').isVisible(), sum);
+  // a failed output test says what differs (src/outdiff.js): the reason, the line, the differing part marked, white space visible
+  const ex12 = page.locator('#py-1-2');
+  await ex12.locator('textarea').first().evaluate((t) => { t.value = 'seconds = int(input("Seconds: "))\nprint(seconds, "seconds is", seconds // 60, "minutes and", seconds % 60, "second")\n'; t.dispatchEvent(new Event('input', { bubbles: true })); });
+  await ex12.locator('.toolbar button:has-text("Check")').click(); await ex12.locator('.verdict.fail, .verdict.pass').waitFor({ timeout: 20000 });
+  const odNote = await ex12.locator('.od-note').first().textContent().catch(() => '');
+  check('a failed output test names the difference and marks it', /starts right but stops early: “s” is missing/.test(odNote) && (await ex12.locator('tr.od-diff mark').first().textContent()) === 's' && (await ex12.locator('.t-diff').first().locator('.od-full pre').count()) === 2, odNote);
   // the new exercise kinds: a trace table and a Parsons problem in Python lesson 4
   await goto('#/python/4');
   const tr = page.locator('#py-4-3');

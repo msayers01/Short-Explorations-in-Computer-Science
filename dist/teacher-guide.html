@@ -510,6 +510,17 @@ html.classroom .out-text, html.classroom .term-input, html.classroom .nano { fon
 .t-io { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.3rem; }
 .t-io .lbl { font-size: 0.8rem; color: var(--ink-3); display: block; }
 .t-io pre { margin: 0; background: var(--code-bg); padding: 0.4rem 0.6rem; font-size: 0.82rem; white-space: pre-wrap; }
+/* the output comparison in a verdict (outdiff.js): the reason, then the lines around the first difference */
+.t-diff { margin-top: 0.35rem; } .od-note { margin: 0 0 0.35rem; font-size: 0.9rem; }
+.od { border-collapse: collapse; font-family: var(--mono); font-size: 0.82rem; width: 100%; table-layout: fixed; }
+.od th { font-family: var(--sans); font-weight: 600; font-size: 0.75rem; color: var(--ink-3); text-align: left; padding: 0.15rem 0.5rem; }
+.od td { padding: 0.12rem 0.5rem; white-space: pre-wrap; word-break: break-word; vertical-align: top; background: var(--code-bg); border-top: 1px solid var(--rule-2); }
+.od th:first-child, .od td.od-n { width: 3rem; color: var(--ink-3); text-align: right; }
+.od tr.od-same td { color: var(--ink-3); }
+.od tr.od-diff td mark { background: var(--err-soft); color: var(--err); border-radius: 2px; } .od mark.od-gap { padding: 0 1px; font-weight: 700; }
+.od td.od-none { color: var(--ink-3); font-style: italic; font-family: var(--sans); }
+.od tr.od-missing td:nth-child(2), .od tr.od-extra td:nth-child(3) { box-shadow: inset 3px 0 0 var(--err); }
+.od-full { margin-top: 0.35rem; font-size: 0.85rem; } .od-full summary { cursor: pointer; color: var(--ink-3); }
 .hints { margin-top: 0.5rem; font-family: var(--sans); font-size: 0.95rem; }
 .hint { margin: 0.4rem 0; padding: 0.5rem 0.8rem; background: var(--accent-soft); border-left: 3px solid var(--accent); }
 .hint b { color: var(--accent); }
