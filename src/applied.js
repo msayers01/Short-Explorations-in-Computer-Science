@@ -213,7 +213,7 @@
         { f: 'data', t: 'Decision trees, and "forests" of many of them, are among the most widely used machine-learning models for tables of data.' }
       ],
       jobs: ['Database engineer', 'Compiler engineer', 'Web developer', 'Machine-learning engineer'],
-      learn: ['shell/1', 'math/6', 'dsa/11', 'lisp/8', 'lisp/13'],
+      learn: ['shell/1', 'math/6', 'dsa/11', 'lisp/8', 'lisp/16'],
       teach: 'Hook: open a computer\'s file browser and follow a path such as /home/student/projects down from the root. Every folder has exactly one parent. Why can a folder not be inside itself?'
     },
     {
@@ -311,7 +311,7 @@
         { f: 'data', t: 'Machine learning shuffles its data and starts from random weights; fixing the seed makes an experiment repeatable.' }
       ],
       jobs: ['Data scientist', 'Quantitative analyst', 'Game designer', 'Cryptographer'],
-      learn: ['python/12', 'cpp/11'],
+      learn: ['python/12', 'cpp/11', 'lisp/13'],
       teach: 'Hook: ask the class to write down a "random" list of 20 coin flips, then flip a real coin 20 times. Which list has the longer runs? People are bad random generators, and so are simple formulas.'
     },
     {
@@ -324,7 +324,7 @@
         { f: 'data', t: 'Spreadsheet and database work is mostly maps (compute a new column), filters (keep some rows) and reductions (SUM, COUNT).' }
       ],
       jobs: ['Data engineer', 'Front-end developer', 'Backend developer'],
-      learn: ['lisp/9', 'lisp/11', 'modern/7'],
+      learn: ['lisp/9', 'lisp/11', 'lisp/14', 'modern/7'],
       teach: 'Activity: give a spreadsheet of made-up scores. Which operations are a map, which a filter, which a reduce?'
     },
     {
@@ -337,7 +337,7 @@
         { f: 'data', t: 'Machine-learning libraries work out derivatives automatically to train neural networks (automatic differentiation, a cousin of the symbolic differentiation in the Lisp course\'s project).' }
       ],
       jobs: ['Compiler engineer', 'Developer-tools engineer', 'Application security engineer'],
-      learn: ['lisp/1', 'lisp/12', 'lisp/13', 'math/11'],
+      learn: ['lisp/1', 'lisp/12', 'lisp/16', 'math/11'],
       teach: 'Discussion: a calculator app that runs whatever the user types as code works perfectly in a demo. Why is it dangerous on a website?'
     },
     {

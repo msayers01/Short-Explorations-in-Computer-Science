@@ -4,17 +4,27 @@
    runaway program is stopped by the page ending the worker. sandbox.js has already removed Skulpt's modules that reach the page.
 
    Messages from the page (all carry the id of the run they belong to):
-     {t:'run', id, code, stdin, execLimit, turtle, args, argv0}   run a program; stdin is a string, or null to ask the page for each input(); sys.argv is [argv0, ...args]
+     {t:'run', id, code, stdin, execLimit, turtle, args, argv0, promptsOut}   run a program; stdin is a string, or null to ask the page for each input(); sys.argv is [argv0, ...args];
+                                                     promptsOut: print input()'s prompt also when stdin is given
      {t:'trace', id, ...}                            the same, paused before every line (the page answers each pause)
      {t:'input', id, value}   the answer to an input request       {t:'next'}  run the next line       {t:'fast'}  run to the end
    Messages to the page: {t:'ready'} {t:'out', id, text} {t:'input', id, prompt} {t:'step', id, line, depth, vars}
-                         {t:'tick', id} {t:'done', id, err} */
+                         {t:'tick', id} {t:'done', id, err, exit}   (exit: the status, from sys.exit) */
 (function () {
   'use strict';
   const isWorker = typeof document === 'undefined';
   const post = (m) => { if (isWorker) self.postMessage(m); else parent.postMessage(m, '*'); };
   const listen = (f) => { if (isWorker) self.onmessage = (e) => f(e.data); else addEventListener('message', (e) => { if (e.source === parent) f(e.data); }); };
-  const read = (x) => { if (Sk.builtinFiles === undefined || Sk.builtinFiles.files[x] === undefined) throw "File not found: '" + x + "'"; return Sk.builtinFiles.files[x]; };
+  // Skulpt's sys has no exit(): it is added to the module's source as it is read. It raises SystemExit, and the run ends with python's status (exitOf).
+  const SYS_EXIT = '\nvar $sysModule=$builtinmodule;$builtinmodule=function(n){var m=$sysModule(n);m.exit=new Sk.builtin.func(function(a){throw new Sk.builtin.SystemExit(a===undefined?Sk.builtin.none.none$:a);});return m;};';
+  const read = (x) => { if (Sk.builtinFiles === undefined || Sk.builtinFiles.files[x] === undefined) throw "File not found: '" + x + "'"; return x === 'src/builtin/sys.js' ? Sk.builtinFiles.files[x] + SYS_EXIT : Sk.builtinFiles.files[x]; };
+  // sys.exit(): no argument or None is status 0, a whole number is that status (as a byte), anything else is printed (to stderr) with status 1
+  function exitOf(e) {
+    const a = e.args && e.args.v ? e.args.v : [], v = a.length ? a[0] : Sk.builtin.none.none$;
+    if (v === Sk.builtin.none.none$) return { err: null, exit: 0 };
+    if (Sk.builtin.checkInt(v)) { const n = Number(Sk.ffi.remapToJs(v)); return { err: null, exit: ((n % 256) + 256) % 256 }; }
+    return { err: new Sk.builtin.str(v).v, exit: 1 };
+  }
 
   function errText(e) {
     let s = e && e.toString ? e.toString() : String(e);
@@ -42,7 +52,7 @@
     const output = (s) => { buf += s; if (buf.length >= 4096) flush(); else if (!timer) timer = setTimeout(flush, 0); };
     const inputs = msg.stdin != null ? String(msg.stdin).split('\n') : null;
     const inputfun = (prompt) => {
-      if (inputs) { const v = inputs.shift(); return v === undefined ? '' : v; }
+      if (inputs) { if (msg.promptsOut && prompt != null) output(String(prompt)); const v = inputs.shift(); return v === undefined ? '' : v; }   // python prints the prompt even when the input comes from a file (the terminal asks for that)
       flush();
       return new Promise((resolve) => { run.waitInput = resolve; post({ t: 'input', id, prompt: String(prompt == null ? '' : prompt) }); });
     };
@@ -66,8 +76,8 @@
       post({ t: 'step', id, line: inner.$lineno, depth, vars });
     }
     Sk.misceval.asyncToPromise(() => Sk.importMainWithBody('<stdin>', false, String(msg.code), true), handlers)
-      .then(() => null, (e) => errText(e))
-      .then((err) => { flush(); cur = null; post({ t: 'done', id, err }); });
+      .then(() => ({ err: null, exit: 0 }), (e) => e instanceof Sk.builtin.SystemExit ? exitOf(e) : { err: errText(e), exit: 1 })
+      .then((r) => { flush(); cur = null; post({ t: 'done', id, err: r.err, exit: r.exit }); });
   }
 
   // A program that stays running (Bot Arena persistent mode): input() waits, in this worker, for the next turn (src/botio.js), and the

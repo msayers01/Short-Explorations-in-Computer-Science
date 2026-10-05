@@ -72,7 +72,7 @@ site/
     site.js              SITE: name, role, contact, home-page text, footer; about (html), licence (code and content
                          licences) and sourceUrl (the repository) for #/about
     course_python.js     SC 101 (13 lessons)   ─┐
-    course_lisp.js       SC 102 (11 lessons)    │ each pushes one course object onto window.COURSES
+    course_lisp.js       SC 102 (16 lessons)    │ each pushes one course object onto window.COURSES
     course_cpp.js        SC 103 (11 lessons)    │
     course_math.js       SC 104 (13 lessons)   ─┤
     course_modern.js     SC 105 (runtime: 'full') ─┘
@@ -763,6 +763,27 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   `test_course.js shell` runs it through a fresh shell and the empty history must fail. Progress saves the history as the exercise's
   "code". `answer`-kind exercises work in a shell lesson too (mathgrade). The `fstree` figure draws a setup's tree with paths.
   `setup NAME` in the Code Lab's terminal writes a lesson's tree into the home directory (`terminal.js: mount`).
+  Programs typed in a lesson's terminal (lesson 6 onwards) run through the same sandboxes as the Run button; `test_course.js shell` gives the
+  shell node's copies of the interpreters (`shellHooks`: Skulpt, java.js, JSCPP, scheme.js) with what the sandboxes add, so examples and
+  exercises that run `python`, `javac`/`java` or `g++` are tested like the rest. An exercise can test a student's *script* by running it
+  from a clean start in a `{cmd}` test (`rm -rf /tmp/t; …; ./tidy.sh /tmp/t; find /tmp/t | sort`), which is how lessons 8-10 check that
+  the script works and not only that the files ended up right.
+- **Scripts run in a child shell** (`inChild`, October 2026): `bash s.sh`, `./s.sh` and `bash -c` get a copy of the shell that sees only the
+  exported variables and no functions, arrays or aliases, and everything they change (variables, `cd`, functions, options) is put back when
+  they end, as bash's child process would; `( … )` and `$( … )` get a full copy, also put back. Only `source` runs in the shell itself.
+  (Before, a script's `cd` and variables leaked into the prompt.) Cases in `difftest/shell.txt` compare it with bash.
+- **ls at a terminal quotes names** as GNU ls does (coreutils' shell-escape style, `lsQuote`): `'holiday photo.jpg'`, `"it's.txt"`,
+  `'it'\''s$x'`, and in columns or with `-l` the other names get a space in front to line up; `-F`'s mark goes after the quotes. Into a pipe
+  or a file (`io.tty` false) names are bare, as in ls. Checked against coreutils 9.4 through `script`; names here cannot hold control
+  characters, so the `$'\t'` form is not needed.
+- **Basic regular expressions** (grep without -E, sed, expr): `^` is an anchor only at the start (or after `\(`, `\|`) and `$` only at the
+  end (or before `\)`, `\|`); elsewhere they are plain characters, as in GNU's (`sed 's|$f|X|'` finds the text `$f`).
+- **Exit statuses of programs**: a Python program's `sys.exit(n)` (Skulpt has none: `pyworker.js` adds `exit` to the `sys` module's source as
+  it is read, and turns SystemExit into the run's `exit`; `sys.exit("text")` prints the text as an error with status 1) and a teaching C++
+  program's `return n` from `main` (`cppworker.js`: JSCPP returns it) reach `$?`, `&&`, `||` and `if`; the Lab and lesson examples note
+  "(the program ended with status n)". In the terminal, Python's `input("prompt")` prints its prompt even when the input comes from `<` or a
+  pipe, as python does (`promptsOut` in the run message; lessons and graders keep the old behaviour). `test_typed.js` runs both in the real
+  worker sources.
 - **More commands** (October 2026): `basename`, `dirname`, `realpath` (walks the path as the real one does), `du [-s -h -a -c]` (sizes as an
   ext4 disk gives them: whole 4 KB blocks, a directory one block), `expr` (GNU's grammar and exit statuses, BigInt numbers), `yes` (into a
   pipe it stops by itself after 1 MB; elsewhere the output cap stops it), `fold`, `paste`, `comm` (with the unsorted-input warnings),
@@ -833,8 +854,7 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
     line diff is Myers' (git's xdiff can pick a different but equally short diff when lines repeat).
 - **Not there (yet):** job control (`&`), `select`, `eval`, `let`, `trap`, `getopts`, process substitution (`<(…)`), `>&2` and other fd
   redirections, extended globs (`@(a|b)`, `shopt -s extglob`), `**` (`globstar`), `nocasematch`, `${!prefix*}` and namerefs, `ln` (the file system
-  has no links), `tar`, `ssh` and anything needing a network (those names answer with a sentence saying so), a Windows `cmd`/PowerShell dialect
-  (planned with the course). In a pipeline every part runs in this shell, so `… | read x` and `… | mapfile a` set the variable (bash runs them
+  has no links), `tar`, `ssh` and anything needing a network (those names answer with a sentence saying so). In a pipeline every part runs in this shell, so `… | read x` and `… | mapfile a` set the variable (bash runs them
   in a subshell; a known difference).
 
 ## 9g. Algorithms in motion and Where it is used (`algos.js`, `algo_*.js`, `applied.js`)

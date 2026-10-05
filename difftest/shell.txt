@@ -1822,3 +1822,19 @@ IFS=, ; read -r a b <<< "p,q"; echo "$a $b"
 [[ a =~ ]] ]]; echo $?
 ===
 [[ ((1)) ]]
+===
+# a script, ( ) and $( ) run in a child: their cd, variables, arrays and functions end with them; a script sees only exported variables
+printf 'cd /tmp\nv=1\npwd\n' > s.sh; v=0; bash s.sh; pwd; echo $v
+===
+printf 'cd /tmp\nv=1\n' > s.sh; chmod +x s.sh; ./s.sh; pwd; echo "[$v]"; source s.sh; pwd; echo "[$v]"
+===
+printf 'echo "[$a][$b]"\nf() { echo f; }\n' > s.sh; a=1; export b=2; bash s.sh; f 2>/dev/null || echo "no f"
+===
+w=1; (w=2; arr=(a b); cd /tmp); echo "$w ${#arr[@]}"; pwd; x=$(w=5; echo $w); echo "$w $x"
+===
+arr=(p q); f() { echo in-f; }; (echo ${arr[1]}; f; arr[1]=z); echo ${arr[1]}
+===
+# in a basic expression ^ and $ in the middle are plain characters (sed, grep without -E)
+echo 'a $f b' | sed 's|$f|X|'; echo 'a^b' | sed 's/a^b/Y/'; echo 'a$' | sed 's/a$/E/'; echo 'x$y' | grep -c 'x$y'; echo 'ab' | sed 's/\(^a\)/[\1]/'; echo 'ab' | sed 's/\(b$\)/[\1]/'
+===
+echo 'x$y' | grep -cE 'x$y'; echo 'q^r' | grep -c 'q^r'; printf 'a\nb\n' | grep '^b$'

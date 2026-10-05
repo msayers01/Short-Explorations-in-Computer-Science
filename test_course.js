@@ -28,7 +28,35 @@ if (course.lang === 'cpp' && course.runtime !== 'full') {
 const CPPFULL = require('./src/cppfull.js');
 // The shell course: exercises are graded on the state of a practice shell after the solution's commands ran (src/shellgrade.js).
 const SHELL = course.lang === 'shell' ? require('./src/shell.js') : null, SG = course.lang === 'shell' ? require('./src/shellgrade.js') : null;
-async function shellRun(setup, commands) { const fs = SG.makeFS(setup, course, { now: () => 1759330000000 }); const sh = SHELL.makeShell({ fs }); const errs = []; for (const line of String(commands || '').split('\n')) { if (!line.trim()) continue; let err = ''; const exit = await sh.exec(line, { out: () => { }, err: (t) => { err += t; }, tty: true }); if (exit) errs.push(line + ' → exit ' + exit + ' ' + err.trim()); } return { sh, errs }; }
+// Programs typed in the shell (python, javac/java, g++ and ./prog, scheme) run here through node's copies of the site's interpreters, with what
+// the page's sandboxes add: sys.exit (src/pyworker.js) and main's return value as the status of a C++ program (src/cppworker.js).
+const shellHooks = SHELL ? (() => {
+  require('./node_modules/skulpt/dist/skulpt.min.js'); require('./node_modules/skulpt/dist/skulpt-stdlib.js');
+  const SYS_EXIT = '\nvar $sysModule=$builtinmodule;$builtinmodule=function(n){var m=$sysModule(n);m.exit=new Sk.builtin.func(function(a){throw new Sk.builtin.SystemExit(a===undefined?Sk.builtin.none.none$:a);});return m;};';
+  const J = require('./src/java.js'), JS = require('./node_modules/JSCPP/lib/commonjs.js'), { ensureMainReturns: emr } = require('./src/cpputil.js');
+  const byte = (n) => ((Math.trunc(n) % 256) + 256) % 256;
+  async function run(lang, src, o) {
+    const stdin = o.stdin == null ? '' : o.stdin;
+    if (lang === 'python') {
+      const inp = stdin.split('\n'); let err = null, exit = 0;
+      Sk.configure({ output: (t) => o.onOutput(t), read: (f) => { if (!Sk.builtinFiles.files[f]) throw 'not found ' + f; return f === 'src/builtin/sys.js' ? Sk.builtinFiles.files[f] + SYS_EXIT : Sk.builtinFiles.files[f]; }, __future__: Sk.python3, execLimit: 15000,
+        inputfun: (q) => { if (q != null) o.onOutput(String(q)); return Promise.resolve(inp.length ? inp.shift() : ''); }, inputfunTakesPrompt: true, sysargv: [o.name || 'main.py'].concat(o.args || []) });
+      try { await Sk.misceval.asyncToPromise(() => Sk.importMainWithBody('<stdin>', false, src, true)); }
+      catch (e) {
+        if (e instanceof Sk.builtin.SystemExit) { const v = e.args.v.length ? e.args.v[0] : Sk.builtin.none.none$; if (v === Sk.builtin.none.none$) exit = 0; else if (Sk.builtin.checkInt(v)) exit = byte(Number(Sk.ffi.remapToJs(v))); else { err = new Sk.builtin.str(v).v; exit = 1; } }
+        else { err = e.toString(); exit = 1; }
+      }
+      return { err, exit };
+    }
+    if (lang === 'java') { const r = J.run(src, stdin, { write: o.onOutput, args: o.args, mainClass: o.name && !/\.java$/.test(o.name) ? o.name.split('/').pop().replace(/\.class$/, '') : undefined }); return { err: r.err, exit: r.err ? 1 : r.exit || 0 }; }
+    if (lang === 'cpp') { try { const ret = JS.run(emr(src), stdin, { stdio: { write: o.onOutput }, maxTimeout: 4000, unsigned_overflow: 'warn' }); return { err: null, exit: typeof ret === 'number' ? byte(ret) : 0 }; } catch (e) { return { err: String(e && e.message || e), exit: 1 }; } }
+    if (lang === 'scheme') { const r = Scheme.runProgram(src); o.onOutput(r.it.output.join('')); return { err: r.error ? ';' + r.error : null, exit: r.error ? 1 : 0 }; }
+    return { err: lang + ': no way to run this here', exit: 126 };
+  }
+  async function compile(lang, src) { if (lang === 'java') { const r = J.run(src, '', { checkOnly: true }); return { err: r.err }; } return { err: null }; }
+  return { run, compile };
+})() : null;
+async function shellRun(setup, commands) { const fs = SG.makeFS(setup, course, { now: () => 1759330000000 }); const sh = SHELL.makeShell(Object.assign({ fs }, shellHooks)); const errs = []; for (const line of String(commands || '').split('\n')) { if (!line.trim()) continue; let err = ''; const exit = await sh.exec(line, { out: () => { }, err: (t) => { err += t; }, tty: true }); if (exit) errs.push(line + ' → exit ' + exit + ' ' + err.trim()); } return { sh, errs }; }
 let full = null;
 if (course.runtime === 'full') {
   full = (async () => {

@@ -15,12 +15,15 @@
   class Lambda { constructor(params, rest, body, env, name) { this.params = params; this.rest = rest; this.body = body; this.env = env; this.name = name || null; } }
   class Primitive { constructor(name, fn, min, max) { this.name = name; this.fn = fn; this.min = min; this.max = max; } }
   class SchemeError extends Error { constructor(msg) { super(msg); this.name = 'SchemeError'; } }
+  // A promise (delay, cons-stream): an expression and its environment, or a JS thunk, evaluated once by force and then remembered.
+  class SPromise { constructor(expr, env, thunk) { this.expr = expr; this.env = env; this.thunk = thunk || null; this.done = false; this.value = undefined; } }
+  const forcedPromise = (v) => { const p = new SPromise(null, null); p.done = true; p.value = v; return p; };
 
   const S = {
     quote: sym('quote'), define: sym('define'), lambda: sym('lambda'), if: sym('if'), cond: sym('cond'), else: sym('else'),
     let: sym('let'), letstar: sym('let*'), begin: sym('begin'), and: sym('and'), or: sym('or'), set: sym('set!'), arrow: sym('=>'),
     quasi: sym('quasiquote'), unquote: sym('unquote'), when: sym('when'), unless: sym('unless'), letrec: sym('letrec'), dot: sym('.'),
-    do: sym('do'), splice: sym('unquote-splicing'), case: sym('case')
+    do: sym('do'), splice: sym('unquote-splicing'), case: sym('case'), delay: sym('delay'), consStream: sym('cons-stream')
   };
 
   const list = (...xs) => { let r = NIL; for (let i = xs.length - 1; i >= 0; i--) r = new Pair(xs[i], r); return r; };
@@ -116,6 +119,17 @@
     if (x instanceof Sym) return x.name;
     if (x === NIL) return '()';
     if (x === UNSPEC) return '';
+    if (x instanceof Pair && x.cdr instanceof SPromise) {   // a stream: MIT Scheme shows the elements forced so far, {1 2 ...}
+      const parts = [], seen = new Set(); let p = x;
+      while (p instanceof Pair && p.cdr instanceof SPromise) {
+        if (seen.has(p) || parts.length > 1e5) return '{' + parts.join(' ') + ' ...}';
+        seen.add(p); parts.push(write(p.car, display));
+        if (!p.cdr.done) return '{' + parts.join(' ') + ' ...}';
+        p = p.cdr.value;
+      }
+      return '{' + parts.join(' ') + (p === NIL ? '' : ' . ' + write(p, display)) + '}';
+    }
+    if (x instanceof SPromise) return '#[promise]';
     if (x instanceof Pair) {
       if (x.car === S.quote && x.cdr instanceof Pair && x.cdr.cdr === NIL) return "'" + write(x.cdr.car, display);
       const parts = []; let p = x, count = 0;
@@ -163,7 +177,7 @@
     // (the non-tail recursion in the lessons: (+ 1 (f (- n 1))) ...) is limited by MAX_STACK, not by the JS call stack.
     // Tail positions reuse the current frame, so tail calls take constant space. do, named-let inits, letrec and
     // quasiquote still recurse into evaluate(); they are never what makes a program deep.
-    const F = { IF: 1, SEQ: 2, DEF: 3, SET: 4, APP: 5, COND: 6, ARROW: 7, AND: 8, OR: 9, WHEN: 10, LET: 11, LETSTAR: 12, CASE: 13 };
+    const F = { IF: 1, SEQ: 2, DEF: 3, SET: 4, APP: 5, COND: 6, ARROW: 7, AND: 8, OR: 9, WHEN: 10, LET: 11, LETSTAR: 12, CASE: 13, CSTREAM: 14 };
     const MAX_STACK = 200000;
     const ill = (x) => new SchemeError('Ill-formed special form: ' + write(x));
 
@@ -198,6 +212,12 @@
                 if (!(x.cdr instanceof Pair && x.cdr.cdr instanceof Pair)) throw ill(x);
                 stack.push({ k: F.SET, target: x.cdr.car, env }); x = x.cdr.cdr.car; continue main;
               case S.lambda: val = makeLambda(x.cdr.car, x.cdr.cdr, env, null); break step;
+              case S.delay:   // (delay e): a promise to evaluate e later, in this environment
+                if (!(x.cdr instanceof Pair) || x.cdr.cdr !== NIL) throw ill(x);
+                val = new SPromise(x.cdr.car, env); break step;
+              case S.consStream:   // (cons-stream a b) is (cons a (delay b)): a special form, so b is not evaluated now
+                if (!(x.cdr instanceof Pair && x.cdr.cdr instanceof Pair) || x.cdr.cdr.cdr !== NIL) throw ill(x);
+                stack.push({ k: F.CSTREAM, x, env }); x = x.cdr.car; continue main;
               case S.begin: {
                 const b = x.cdr; if (b === NIL) { val = UNSPEC; break step; }
                 if (b.cdr !== NIL) stack.push({ k: F.SEQ, rest: b.cdr, env });
@@ -310,6 +330,7 @@
               val = UNSPEC; continue ret;
             }
             case F.ARROW: { val = apply(val, [f.t]); continue ret; }
+            case F.CSTREAM: { val = new Pair(val, new SPromise(f.x.cdr.cdr.car, f.env)); continue ret; }
             case F.CASE: {
               const key = val, same = (d) => d === key || (typeof d === 'bigint' || typeof key === 'bigint') && typeof d !== 'object' && typeof key !== 'object' && Number(d) === Number(key);
               let hit = null;
@@ -393,6 +414,19 @@
         try { const r = bindArgs(f, args); return evaluate(r.body, r.env); } finally { depth--; }
       }
       throw new SchemeError('The object ' + write(f) + ' is not applicable.');
+    }
+
+    // force: evaluate a promise's expression the first time, and give back the remembered value every time after
+    function force(p) {
+      if (!(p instanceof SPromise)) return p;
+      while (!p.done) {
+        if (++depth > 20000) { depth = 0; throw new SchemeError(';Aborting!: maximum recursion depth exceeded'); }
+        let v;
+        try { v = p.thunk ? p.thunk() : evaluate(p.expr, p.env); } finally { depth--; }
+        if (p.done) break;   // forced again while it was being forced: the first value to finish wins (R7RS)
+        p.done = true; p.value = v; p.expr = p.env = p.thunk = null;
+      }
+      return p.value;
     }
 
     // ---------- primitives ----------
@@ -542,6 +576,30 @@
     def('assert', ([x]) => { if (x === false) throw new SchemeError('Assertion failed'); return UNSPEC; }, 1, 1);
     G.define(sym('nil'), NIL); G.define(sym('the-empty-stream'), NIL);
 
+    // Promises and streams (SICP §3.5, MIT Scheme's names): a stream is a pair whose cdr is a promise; the empty stream is ().
+    def('force', ([p]) => force(p), 1, 1);
+    def('make-promise', ([v]) => v instanceof SPromise ? v : forcedPromise(v), 1, 1);
+    def('promise?', ([p]) => p instanceof SPromise, 1, 1);
+    const isStreamPair = (s) => s instanceof Pair && s.cdr instanceof SPromise;
+    const spair = (s, who) => { if (!isStreamPair(s)) throw new SchemeError('The object ' + write(s) + ', passed as the first argument to ' + who + ', is not the correct type.'); return s; };
+    const index = (k, who) => { if (!(Number.isInteger(k) && k >= 0)) throw new SchemeError('The object ' + write(k) + ', passed as the second argument to ' + who + ', is not in the correct range.'); return k; };
+    def('stream-pair?', ([s]) => isStreamPair(s), 1, 1);
+    def('stream-null?', ([s]) => s === NIL, 1, 1); def('empty-stream?', ([s]) => s === NIL, 1, 1);
+    for (const n of ['stream-car', 'stream-first']) def(n, ([s]) => spair(s, n).car, 1, 1);
+    for (const n of ['stream-cdr', 'stream-rest']) def(n, ([s]) => force(spair(s, n).cdr), 1, 1);
+    const streamOf = (xs) => { let r = NIL; for (let i = xs.length - 1; i >= 0; i--) r = new Pair(xs[i], forcedPromise(r)); return r; };
+    def('stream', (a) => streamOf(a), 0);
+    def('list->stream', ([l]) => streamOf(arr(l)), 1, 1);
+    // running off the end of a stream is a range error, as in MIT Scheme's runtime (stream.scm); like it, stream-head forces the tail after each element it takes
+    const inStream = (s, who) => { if (!isStreamPair(s)) throw new SchemeError('The object ' + write(s) + ', passed as the first argument to ' + who + ', is not in the correct range.'); return s; };
+    def('stream-head', ([s, k]) => { index(k, 'stream-head'); const out = []; for (let i = 0; i < k; i++) { inStream(s, 'stream-head'); out.push(s.car); s = force(s.cdr); } return fromArr(out); }, 2, 2);
+    def('stream-tail', ([s, k]) => { index(k, 'stream-tail'); for (let i = 0; i < k; i++) s = force(inStream(s, 'stream-tail').cdr); return s; }, 2, 2);
+    def('stream-ref', ([s, k]) => { index(k, 'stream-ref'); for (let i = 0; i < k; i++) s = force(inStream(s, 'stream-ref').cdr); return inStream(s, 'stream-ref').car; }, 2, 2);
+    def('stream->list', ([s, k]) => { const out = []; while (s instanceof Pair && (k === undefined || out.length < k)) { spair(s, 'stream->list'); out.push(s.car); s = force(s.cdr); if (out.length > MAX_ALLOC) throw tooBig(); } return fromArr(out); }, 1, 2);
+    def('stream-length', ([s]) => { let n = 0; while (s instanceof Pair) { s = force(spair(s, 'stream-length').cdr); if (++n > MAX_ALLOC) throw tooBig(); } return n; }, 1, 1);
+    const streamMap = (f, ss) => ss.some((s) => s === NIL) ? NIL : new Pair(apply(f, ss.map((s, i) => spair(s, 'stream-map').car)), new SPromise(null, null, () => streamMap(f, ss.map((s) => force(s.cdr)))));
+    def('stream-map', (a) => streamMap(a[0], a.slice(1)), 2);
+
     // ---------- public surface ----------
     function run(src, env) {
       env = env || G;
@@ -553,7 +611,7 @@
       }
       return results;
     }
-    return { run, evaluate, apply, G, output, write, parseAll, list, arr, Pair, NIL, UNSPEC, Sym, sym, Lambda, Primitive, SchemeError, isList, reset: () => { steps = 0; depth = 0; } };
+    return { run, evaluate, apply, force, G, output, write, parseAll, list, arr, Pair, NIL, UNSPEC, Sym, sym, Lambda, Primitive, SchemeError, isList, reset: () => { steps = 0; depth = 0; } };
   }
 
   /** Runs source in a fresh interpreter. Returns {ok, results:[{form,value,text}], output, error}. */
@@ -572,5 +630,5 @@
     return { ok: !error, results, output: it.output.join(''), error, it };
   }
 
-  return { makeEvaluator, runProgram, write, parseAll, Pair, NIL, UNSPEC, Sym, sym, list, Lambda, Primitive, SchemeError, tokenize };
+  return { makeEvaluator, runProgram, write, parseAll, Pair, NIL, UNSPEC, Sym, sym, list, Lambda, Primitive, SchemeError, SPromise, tokenize };
 });

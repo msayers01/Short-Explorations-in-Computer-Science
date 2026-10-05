@@ -5,19 +5,21 @@ window.COURSES.push({
   title: 'Introduction to Lisp',
   tagline: 'The ideas you already know, seen through a mathematician\u2019s eyes: procedures, processes, and data, in the spirit of SICP.',
   grades: 'Grades 11–12 (strong 10th) · after Python',
-  audience: `<p><b>Grades 11–12</b>, or a strong 10th grader, after the Python course or equivalent. This is the course for students who like math: it treats programs the way algebra treats expressions, and it rewards the habit of asking "why does that work?" Being comfortable with functions like <em>f</em>(<em>x</em>) is enough; the final project takes derivatives, but the rules are given, so calculus is a bonus rather than a requirement.</p><p>Each lesson is a self-contained Hour of Code activity (lesson 2, on the substitution model, runs a little longer), and lessons 1–3 work well on their own for a taste.</p><p>There are thirteen lessons. Lessons 5 and 10 are <b>checkpoints</b>, with no new material: mixed questions on the lessons before them, a choice of definition and a program. The last lesson is a project.</p>`,
+  audience: `<p><b>Grades 11–12</b>, or a strong 10th grader, after the Python course or equivalent. This is the course for students who like math: it treats programs the way algebra treats expressions, and it rewards the habit of asking "why does that work?" Being comfortable with functions like <em>f</em>(<em>x</em>) is enough; the final project takes derivatives, but the rules are given, so calculus is a bonus rather than a requirement.</p><p>Each lesson is a self-contained Hour of Code activity (lesson 2, on the substitution model, runs a little longer), and lessons 1–3 work well on their own for a taste.</p><p>There are sixteen lessons. Lessons 5, 10 and 15 are <b>checkpoints</b>, with no new material: mixed questions on the lessons before them, a choice of definition and a program. The last lesson is a project.</p>`,
   description: `<p>Lisp is the second-oldest programming language still in use, and the one with the least to memorise: everything is either a single value or a parenthesised list. That is the point. With almost no syntax in the way, all your attention goes to the ideas: how expressions get their values, how procedures create processes, and how a couple of primitives can build any data structure you like.</p>
-<p>If you have done the Python course, you will recognise every concept here. What changes is the angle. Python taught you to <em>write</em> programs; Lisp teaches you to <em>reason</em> about them, the way you reason about algebra. These lessons follow the opening chapters of <em>Structure and Interpretation of Computer Programs</em>, the MIT textbook that used Scheme, a dialect of Lisp, to teach this way of thinking for nearly thirty years. By the end you will have written a program that does calculus on algebraic expressions: a thing Lisp does in thirty lines and most languages make you fight for.</p>`,
-  howItWorks: `<h3>How these pages work</h3><p>Every code block has a <b>Run</b> button. Change the code and run it again: that is the whole method. Some blocks ask you to say what they will print before they run; do it, because a wrong guess that you then correct is remembered better than a right answer you were given. <b>Quick checks</b> ask how sure you are before they mark you, and each one comes back on the Review page after a day and then after longer gaps. Exercises have a <b>Check answer</b> button that runs your code against hidden tests and tells you what it expected; hints are progressive. Your progress and code are saved in this browser only.</p><p>Each lesson is one <b>Hour of Code</b>, and the course has named skills, shown on this page as you practise them. Lessons 5 and 10 are <b>checkpoints</b>: no new ideas, just mixed questions on the lessons before them, because the mistakes in Scheme are mostly confusions between two things that look alike. Lessons build on each other, so go in order if you can.</p>`,
+<p>If you have done the Python course, you will recognise every concept here. What changes is the angle. Python taught you to <em>write</em> programs; Lisp teaches you to <em>reason</em> about them, the way you reason about algebra. These lessons follow the opening chapters of <em>Structure and Interpretation of Computer Programs</em>, the MIT textbook that used Scheme, a dialect of Lisp, to teach this way of thinking for nearly thirty years. Near the end they show what changes when a program is allowed to change things, and how streams, lists that never end, can describe change without changing anything. By the end you will have written a program that does calculus on algebraic expressions: a thing Lisp does in thirty lines and most languages make you fight for.</p>`,
+  howItWorks: `<h3>How these pages work</h3><p>Every code block has a <b>Run</b> button. Change the code and run it again: that is the whole method. Some blocks ask you to say what they will print before they run; do it, because a wrong guess that you then correct is remembered better than a right answer you were given. <b>Quick checks</b> ask how sure you are before they mark you, and each one comes back on the Review page after a day and then after longer gaps. Exercises have a <b>Check answer</b> button that runs your code against hidden tests and tells you what it expected; hints are progressive. Your progress and code are saved in this browser only.</p><p>Each lesson is one <b>Hour of Code</b>, and the course has named skills, shown on this page as you practise them. Lessons 5, 10 and 15 are <b>checkpoints</b>: no new ideas, just mixed questions on the lessons before them, because the mistakes in Scheme are mostly confusions between two things that look alike. Lessons build on each other, so go in order if you can.</p>`,
   outcomes: [
     'Read and write prefix expressions and predict exactly how the interpreter evaluates them',
     'Define procedures and trace them with the substitution model',
     'Tell a recursive process from an iterative one, and write both',
     'Build and take apart lists with cons, car and cdr',
     'Pass procedures to procedures: map, filter and accumulate',
+    'Give a procedure local state with set!, and explain why the substitution model then gives way to the environment model',
+    'Build infinite streams with delayed evaluation, and use them to describe change without assignment',
     'Treat expressions as data and write a symbolic differentiator'
   ],
-  textbook: `<h3>The book</h3><p>Abelson, Sussman and Sussman, <a href="https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/index.html" target="_blank" rel="noopener"><em>Structure and Interpretation of Computer Programs</em></a>, 2nd ed., free online. These lessons follow §1.1–1.3 and §2.1–2.3 loosely. Reading alongside is encouraged but not required.</p><p class="small">Several examples, exercises and the final project are adapted from the book, which is licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a> by the MIT Press; each lesson names the section it draws on. The adaptations rewrite the material for this course and are shared under the same licence.</p>`,
+  textbook: `<h3>The book</h3><p>Abelson, Sussman and Sussman, <a href="https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/index.html" target="_blank" rel="noopener"><em>Structure and Interpretation of Computer Programs</em></a>, 2nd ed., free online. These lessons follow §1.1–1.3, §2.1–2.3, §3.1–3.2 and §3.5 loosely. Reading alongside is encouraged but not required.</p><p class="small">Several examples, exercises and the final project are adapted from the book, which is licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a> by the MIT Press; each lesson names the section it draws on. The adaptations rewrite the material for this course and are shared under the same licence.</p>`,
   standard: 1,
   // The named skills of the course (LESSON_STANDARD.md §4). Each quick check and exercise names the skill it practises; the skills map on
   // the course page and on #/today shows each as not started, practising or secure.
@@ -49,8 +51,9 @@ window.COURSES.push({
     { id: 'quote', name: 'Quote an expression to treat it as data' },
     { id: 'equality', name: 'Choose between =, eq? and equal?' },
     { id: 'code-as-data', name: 'Build and run expressions as lists' },
-    { id: 'symbolic-deriv', name: 'Differentiate an expression by recursion' },
-    { id: 'simplify', name: 'Simplify with smarter constructors' }
+    { id: 'local-state', name: 'Keep state in a procedure with set!' },
+    { id: 'streams', name: 'Delay evaluation with streams' },
+    { id: 'symbolic-deriv', name: 'Differentiate and simplify an expression' }
   ],
   lessons: [
     /* ================================================================== */
@@ -219,7 +222,7 @@ square`, predict: true, caption: 'The first reply, square, only confirms the def
           { text: '(+ 36 100)', note: 'One addition to go.' },
           { text: '136', note: 'The value of (f 5), the same as the interpreter printed.' }
         ], caption: 'Each line follows from the one before by one of two moves: do some built-in arithmetic, or replace a call to a defined procedure by its body.' },
-        `<p>This is how you simplify an algebraic expression with pencil and paper, and the resemblance is deliberate: a Scheme program is something you can reason about the way you reason about algebra. You do not have to do it by hand every time: press <b>Show the substitution</b> under any example in this course, and the Code Lab carries out these steps for every expression in it, marking the part about to be rewritten and explaining each move. Try it on the playground above: it shows <code>(f 5)</code> becoming 136, step by step.</p>
+        `<p>This is how you simplify an algebraic expression with pencil and paper, and the resemblance is deliberate: a Scheme program is something you can reason about the way you reason about algebra. You do not have to do it by hand every time: press <b>Show the substitution</b> under an example in this course, and the Code Lab carries out these steps for every expression in it, marking the part about to be rewritten and explaining each move. Try it on the playground above: it shows <code>(f 5)</code> becoming 136, step by step.</p>
 <details class="reveal"><summary>Predict: with <code>(define (double x) (+ x x))</code>, write out every step of <code>(double (double 3))</code>.</summary><p>The operand is evaluated first, and it is itself a call: <code>(double 3)</code> becomes <code>(+ 3 3)</code>, which is 6. So the outer call is <code>(double 6)</code>, which becomes <code>(+ 6 6)</code>, which is <code>12</code>. Four lines: <code>(double (double 3))</code>, <code>(double (+ 3 3))</code>, <code>(double 6)</code>, <code>(+ 6 6)</code>, then 12.</p></details>
 <h2>Whose x is it?</h2>
 <p>A natural worry: <code>square</code> uses the name <code>x</code>. What if the program has also defined an <code>x</code> of its own? The substitution rule settles it. When <code>(square 3)</code> is applied, the <code>x</code> in the body is replaced by 3 before anything in the body is evaluated, so the body never goes looking for any other <code>x</code>. And the rule never stores anything anywhere, so the outside <code>x</code> cannot be changed either.</p>
@@ -1669,6 +1672,499 @@ d
     },
     /* ================================================================== */
     {
+      standards: ['3A-AP-17', '3B-AP-14'],
+      standard: 1, title: 'Assignment and local state', summary: 'Procedures that remember: set! and begin, a bank account with a balance of its own, objects that answer messages, why random numbers want state, what assignment costs, and the environment model that replaces substitution.',
+      blocks: [
+        `<p>On 27 June 1967 a branch of Barclays Bank in Enfield, north London, opened what is usually called the world's first cash machine. It knew nothing about your account. You fed it a paper cheque issued by the bank, marked with a faintly radioactive substance, carbon-14, so that the machine could recognise it, and it paid out £10. Five years later, in December 1972, Lloyds Bank began using IBM machines that were connected to the bank's computers: they paid out the amount you asked for and took it off your account at once.</p>
+<p>The second kind of machine has to remember. Ask it for £10 twice, and the second answer depends on the first, because the first changed the balance that the second one sees. Every procedure in this course so far has been like the first machine: give it the same arguments and it gives the same answer, whenever you ask. This lesson follows SICP §3.1 and §3.2. So how can a Scheme procedure remember what happened to it, so that <code>(withdraw 10)</code> gives a different answer each time, and what does that cost?</p>
+<h2>Changing a name: set!</h2>
+<p>Lesson 1's <code>define</code> creates a name. One more special form changes the value of a name that already exists, and with it comes a form for doing several things in order.</p>
+<div class="stmt"><p><span class="kind">Rule (set!).</span> <code>(set! <i>name</i> <i>expression</i>)</code> evaluates the expression and changes the value of <i>name</i> to it. The name must already exist: <code>define</code> makes a name, <code>set!</code> changes one. It is a special form, because the name is not evaluated. Its value is unspecified: use it for what it does, not for what it returns.</p>
+<p><span class="kind">Rule (begin).</span> <code>(begin <i>e</i><sub>1</sub> … <i>e</i><sub><i>n</i></sub>)</code> evaluates the expressions one after another and has the value of the last. A procedure body with several expressions already works this way.</p></div>
+<p>Here is SICP's bank account in its first form: the balance is a global name, and <code>withdraw</code> changes it. Predict all four replies to <code>withdraw</code>.</p>`,
+        { play: `(define balance 100)
+
+(define (withdraw amount)
+  (if (>= balance amount)
+      (begin (set! balance (- balance amount))
+             balance)
+      "Insufficient funds"))
+
+(withdraw 25)
+(withdraw 25)
+(withdraw 60)
+(withdraw 15)`, predict: true, noSubst: true, caption: 'The replies are 75, 50, "Insufficient funds" and 35. The expression (withdraw 25) is typed twice and has two different values, because the first one changed balance. The third call asks for more than the 50 left, so nothing changes, and the fourth takes 15 from 50. The begin does two things in order: change balance, then give its new value. Add a fifth call, (withdraw 35), and predict it.' },
+        { check: "Nothing has defined <code>y</code>. What does <code>(set! y 5)</code> do?", skill: 'local-state', options: ["It creates y, with the value 5", "An error: Unbound variable: y", "Nothing at all"], answer: 1, why: "set! changes the value of a name that already exists, and it looks the name up to find it. Creating a name is the job of define.", wrong: ["That is define's job. set! looks the name up in order to change it, and y is not there to change, so the interpreter reports it unbound.", null, "set! is not silently ignored. It looks for y, does not find it, and the interpreter stops with an error."] },
+        `<h2>A balance of its own</h2>
+<p>That version has a flaw: <code>balance</code> is a global name, so any part of the program can change it, and there is only one of it. Lesson 9's closures fix both. A procedure made inside another call keeps the names of that call alive, so each account can carry its own balance, which nothing else can reach.</p>
+<div class="stmt"><p><span class="kind">Rule (local state).</span> A procedure made by <code>lambda</code> inside a call keeps that call's names. If it changes one of them with <code>set!</code>, the change is still there the next time it is applied: the name is the procedure's <em>local state</em>. Each call of the outer procedure makes a fresh set of names, so each procedure it returns has state of its own.</p></div>
+<p>Below, <code>make-withdraw</code> makes a withdrawing procedure with its own balance (SICP §3.1.1). Two are made, each starting at 100. Predict the four replies at the bottom.</p>`,
+        { play: `(define (make-withdraw balance)
+  (lambda (amount)
+    (if (>= balance amount)
+        (begin (set! balance (- balance amount))
+               balance)
+        "Insufficient funds")))
+
+(define W1 (make-withdraw 100))
+(define W2 (make-withdraw 100))
+
+(W1 50)
+(W2 70)
+(W2 40)
+(W1 40)`, predict: true, noSubst: true, caption: 'The replies are 50, 30, "Insufficient funds" and 10. W1 and W2 were made by the same procedure, but each call of make-withdraw made its own balance, so taking 70 from W2 leaves W1 untouched: W1 still has 50 when it is asked for 40. Make a third account, W3, with 20 in it, and try (W3 25).' },
+        { check: "After <code>(define W1 (make-withdraw 100))</code>, <code>(define W2 (make-withdraw 100))</code> and <code>(W1 30)</code>, what is <code>(W2 10)</code>?", skill: 'local-state', options: ["90", "60", "70"], answer: 0, why: "Each call of make-withdraw made a balance of its own. W1's withdrawal changed W1's balance only, so W2 still has 100, and 100 − 10 is 90.", wrong: [null, "That would be true if the two accounts shared one balance, as the global version did. Each call of make-withdraw makes a separate balance, so W1's withdrawal does not reach W2.", "70 is W1's balance after it gave out 30. W2 has its own balance, which nothing has touched yet."] },
+        `<p>A real account does more than one thing. SICP's answer is the style of Lesson 7's <code>my-cons</code>: the account is a procedure, called <code>dispatch</code>, that takes a <em>message</em> and hands back the procedure that carries it out. All the procedures inside share the one balance. SICP calls this style <em>message passing</em>. An object in Python or Java is the same idea: some state, and the procedures that act on it, bundled together.</p>`,
+        { play: `(define (make-account balance)
+  (define (withdraw amount)
+    (if (>= balance amount)
+        (begin (set! balance (- balance amount))
+               balance)
+        "Insufficient funds"))
+  (define (deposit amount)
+    (set! balance (+ balance amount))
+    balance)
+  (define (dispatch m)
+    (cond ((eq? m 'withdraw) withdraw)
+          ((eq? m 'deposit) deposit)
+          (else (error "Unknown request" m))))
+  dispatch)
+
+(define acc (make-account 100))
+((acc 'withdraw) 50)
+((acc 'withdraw) 60)
+((acc 'deposit) 40)
+((acc 'withdraw) 60)`, noSubst: true, caption: 'Read ((acc \'withdraw) 50) from the inside out: (acc \'withdraw) gives back the procedure withdraw, which is then applied to 50. The replies are 50, "Insufficient funds", 90 and 30, as in SICP. Send the message \'balance and read the error.' },
+        `<h2>Why have state at all?</h2>
+<p>State makes some programs much simpler. SICP's example is a <em>random-number generator</em>: a procedure <code>rand</code> that gives a different number each time it is called. Inside, a computer's "random" numbers are made by a rule, from a starting number: each number is computed from the one before. Below, the rule is the "minimal standard" that Stephen Park and Keith Miller recommended in 1988: multiply by 16807 and keep the remainder after dividing by 2147483647. <code>rand</code> keeps the last number in its own <code>x</code>.</p>
+<p>The numbers are put to work on a fact due to the Italian mathematician Ernesto Cesàro: two whole numbers chosen at random have no common factor except 1 with probability 6/π². So count how often <code>gcd</code> of two random numbers is 1, and solve for π. This way of estimating by repeated random trials is the <em>Monte Carlo method</em>.</p>
+<details class="reveal"><summary>Guess first: <code>rand</code> below takes no arguments. How can <code>(rand)</code> give a different number each time, and what would <code>cesaro-test</code> have to do if there were no <code>set!</code>?</summary><p><code>rand</code> keeps its last number in its own <code>x</code> and replaces it with <code>set!</code> on every call. Without <code>set!</code>, the current number would have to be passed in and handed back by every procedure that uses random numbers: <code>cesaro-test</code> would take a number and return the next one alongside its answer, and so would <code>monte-carlo</code>. The state would leak into every part of the program.</p></details>`,
+        { play: `(define random-init 2026)
+(define (rand-update x)
+  (modulo (* x 16807) 2147483647))
+
+(define rand
+  (let ((x random-init))
+    (lambda ()
+      (set! x (rand-update x))
+      x)))
+
+(define (cesaro-test)
+  (= (gcd (rand) (rand)) 1))
+
+(define (monte-carlo trials experiment)
+  (define (iter remaining passed)
+    (cond ((= remaining 0) (/ passed trials))
+          ((experiment) (iter (- remaining 1) (+ passed 1)))
+          (else (iter (- remaining 1) passed))))
+  (iter trials 0))
+
+(sqrt (/ 6 (monte-carlo 1000 cesaro-test)))
+(sqrt (/ 6 (monte-carlo 10000 cesaro-test)))`, noSubst: true, caption: 'The estimates are 3.11840877014 after 1000 trials and 3.14684352891 after 10000 more: close to π, and closer with more trials. monte-carlo knows nothing about random numbers, and cesaro-test does not pass any state around; rand looks after its own. Change random-init and the estimates change, because the numbers do.' },
+        `<h2>What assignment costs</h2>
+<p>Here is the price. Below are two procedures from SICP §3.1.3 that look almost the same. Both are made with a balance of 25; one changes its balance with <code>set!</code>, the other only computes a difference. Predict the four replies.</p>`,
+        { play: `(define (make-simplified-withdraw balance)
+  (lambda (amount)
+    (set! balance (- balance amount))
+    balance))
+
+(define (make-decrementer balance)
+  (lambda (amount)
+    (- balance amount)))
+
+(define W (make-simplified-withdraw 25))
+(W 20)
+(W 10)
+
+(define D (make-decrementer 25))
+(D 20)
+(D 10)`, predict: true, noSubst: true, caption: '(W 20) is 5 and (W 10) is -5: W remembers what it gave out. (D 20) is 5 and (D 10) is 15: D always starts from 25. Now try the substitution model of Lesson 2 on ((make-simplified-withdraw 25) 20). Replace balance by 25 everywhere in the body, and you get (set! 25 (- 25 20)) followed by 25: the model says 25, and the interpreter says 5. The model is not just inconvenient here; it is wrong.' },
+        `<div class="stmt"><p><span class="kind">Rule (the substitution model stops).</span> Without <code>set!</code>, a name stands for one value for as long as it exists, so a name can be replaced by its value, and equals can be replaced by equals. With <code>set!</code>, a name stands for a <em>place</em> that holds a value, and what the place holds can change. Replacing the name by its value is no longer allowed, so the substitution model no longer predicts what a program does. That is why the examples in this lesson have no <b>Show the substitution</b> button.</p></div>
+<p>Two things follow. The first is about sameness. <code>(make-decrementer 25)</code> called twice gives two procedures that behave identically for ever, so either can replace the other. <code>(make-simplified-withdraw 25)</code> called twice gives two accounts that start alike and then drift apart; to say whether they are "the same", you must say <em>when</em>. A language in which equals can always be replaced by equals is called <em>referentially transparent</em>, and <code>set!</code> takes that away.</p>
+<p>The second is about order. Without assignment, the order in which independent expressions are evaluated cannot change an answer. With it, it can. Here is SICP's factorial written with <code>set!</code>, and a copy with its two assignments the other way round. Predict both answers.</p>`,
+        { play: `(define (factorial n)
+  (let ((product 1) (counter 1))
+    (define (iter)
+      (if (> counter n)
+          product
+          (begin (set! product (* counter product))
+                 (set! counter (+ counter 1))
+                 (iter))))
+    (iter)))
+
+(define (factorial-swapped n)
+  (let ((product 1) (counter 1))
+    (define (iter)
+      (if (> counter n)
+          product
+          (begin (set! counter (+ counter 1))
+                 (set! product (* counter product))
+                 (iter))))
+    (iter)))
+
+(factorial 5)
+(factorial-swapped 5)`, predict: true, noSubst: true, caption: '(factorial 5) is 120, but the swapped copy gives 720. It increases counter before using it, so it multiplies by 2, 3, 4, 5 and 6. Lesson 6’s fact-iter could not make this mistake: it computed all its new values from the old ones at once, as the arguments of one call. With set!, every assignment happens at a moment, and the moments must be in the right order.' },
+        { check: "With <code>(define W (make-simplified-withdraw 25))</code>, substitution says <code>(W 20)</code> is 25, and the interpreter says 5. Which is right?", skill: 'substitution', options: ["The interpreter: balance names a place that set! changes, so replacing it by 25 throughout the body is not allowed", "Substitution: the interpreter has a bug", "Both, depending on the order of evaluation"], answer: 0, why: "Substitution assumes a name stands for one value for ever. set! breaks that assumption, so the model no longer applies; the environment model below does.", wrong: [null, "The interpreter is right: W gave out 20 of its 25. Substitution replaced balance by 25 even inside (set! balance …), which turns the assignment into nonsense.", "The order of evaluation is not what goes wrong here. The model itself does not fit a program with set!: a name is no longer a value."] },
+        `<h2>The environment model</h2>
+<p>If a name is a place, the interpreter needs places to keep values in. SICP §3.2 replaces substitution with a model built from them. It has been true all along, since Lesson 1 called the table of names "the environment"; now the table has a structure.</p>
+<div class="stmt"><p><span class="kind">Rule (the environment model).</span> An <em>environment</em> is a chain of <em>frames</em>. A frame is a table of names and their values, and each frame except the global one points to an <em>enclosing</em> frame. To look a name up, try the first frame, then the one it points to, and so on; <code>set!</code> changes the name in the first frame where it is found, and <code>define</code> adds it to the first frame.</p>
+<p>A procedure is a pair: its code, and the environment it was <em>made</em> in. To apply it, make a new frame that binds the parameters to the arguments, pointing to the procedure's own environment, and evaluate the body there.</p></div>
+<p>Step through what happens to the frames as <code>W1</code> and <code>W2</code> are made and used.</p>`,
+        { fig: 'subst', steps: [
+          { text: '(define W1 (make-withdraw 100))', note: 'make-withdraw is applied to 100. A new frame, call it E1, binds balance to 100 and points to the global frame, where make-withdraw was made. The lambda is evaluated in E1, so the procedure it makes is the pair (its code, E1). define names that pair W1 in the global frame.' },
+          { text: '(define W2 (make-withdraw 100))', note: 'A second application makes a second frame, E2, with a balance of its own, also 100. W2 is the same code paired with E2.' },
+          { text: '(W1 50)', note: 'Applying W1 makes a new frame that binds amount to 50. It points to E1, W1’s own environment, not to the place where (W1 50) was typed.' },
+          { text: '(>= balance amount)', note: 'amount is found in the new frame. balance is not there, so the lookup moves on to E1 and finds 100. The test is true.' },
+          { text: '(set! balance (- balance amount))', note: 'set! finds balance the same way and changes it where it is: in E1, balance is now 50. E2 is not on this chain, so W2’s balance is still 100.' },
+          { text: 'balance', note: 'The body’s value is 50. The frame that held amount is not needed any more; E1 stays, because W1 still points to it.' },
+          { text: '(W2 70)', note: 'The same steps on the chain through E2: there, balance becomes 30. One piece of code, two frames, two balances: 50 and 30.' }
+        ], caption: 'Each line is the expression being evaluated; the note says which frame it makes, reads or changes.' },
+        `<p>After those steps the frames hold this. Every frame made for a call of <code>W1</code> or <code>W2</code> has already gone; the two frames made by <code>make-withdraw</code> stay as long as the procedures that point to them.</p>
+<div class="tbl-wrap"><table>
+<tr><th>frame</th><th>points to</th><th>names in it</th></tr>
+<tr><td>global</td><td>nothing</td><td><code>make-withdraw</code>, <code>W1</code>, <code>W2</code></td></tr>
+<tr><td>E1, made for <code>W1</code></td><td>global</td><td><code>balance</code>: 50</td></tr>
+<tr><td>E2, made for <code>W2</code></td><td>global</td><td><code>balance</code>: 30</td></tr>
+</table></div>
+<details class="reveal"><summary>Guess first: in <code>make-account</code>, <code>withdraw</code> and <code>deposit</code> both change <code>balance</code>. Why do they change the same one?</summary><p>Both were defined inside the same call of <code>make-account</code>, so both were made in the same frame, the one that binds <code>balance</code>. When either is applied, its new frame points to that frame, and <code>set!</code> finds <code>balance</code> there. A second account is a second call, with a second frame and a second balance.</p></details>
+<h2>Before the exercises</h2>
+<p>Both exercises make procedures with local state. The method has three steps: decide what the state is; make it a name in a frame that only the returned procedure can see, either a parameter of the outer procedure or a <code>let</code> around the <code>lambda</code>; and in the body, change it with <code>set!</code> before giving the answer. Here is a worked example: a tracker that remembers the largest number it has been shown. Predict the six replies after the definitions.</p>`,
+        { play: `(define (make-max-tracker)
+  (let ((best #f))
+    (lambda (x)
+      (if (or (not best) (> x best))
+          (set! best x))
+      best)))
+
+(define track (make-max-tracker))
+(track 3)
+(track 8)
+(track 5)
+(define other (make-max-tracker))
+(other 1)
+(track 2)`, predict: true, noSubst: true, caption: 'The replies are 3, 8, 8, then other, 1 and 8. best starts as #f, meaning "nothing seen yet", and set! replaces it only with something bigger. other has a best of its own, so showing it 1 does not disturb track. The if has no alternative because it is used for what it does, not for a value; the value of the body is best, on the last line.' },
+        { aside: `<p><b>Common mistakes in this lesson.</b> Using <code>set!</code> on a name that was never defined: <code>define</code> creates, <code>set!</code> changes. Putting the <code>let</code> inside the <code>lambda</code> instead of around it, so the state is made afresh, and forgotten, on every call. Computing <code>(+ count 1)</code> and expecting <code>count</code> to change. Returning the value of <code>set!</code>, which is unspecified, instead of the name after it. Assignments in the wrong order. Trying to predict a program with <code>set!</code> by substitution.</p>` },
+        {
+          ex: {
+            id: 'ls-14-3', kind: 'parsons', skill: 'local-state', title: 'Put it in order: a counter',
+            prompt: `<p>Build <code>(make-counter)</code>, which returns a new counter: a procedure of no arguments that gives 1 the first time it is called, then 2, then 3, and so on. Each counter counts on its own. The program has no indentation to set; you only choose the order, and the order decides where the state lives. Not every block belongs: two of them are wrong.</p>`,
+            lines: ['(define (make-counter)', '(let ((count 0))', '(lambda ()', '(set! count (+ count 1))', 'count)))'],
+            distractors: ['(+ count 1)', '(define count (+ count 1))'],
+            tests: [{ call: '(let ((c (make-counter))) (c) (c) (c))', expect: '3' }, { call: '(let ((a (make-counter)) (b (make-counter))) (a) (a) (b))', expect: '1' }, { call: '((make-counter))', expect: '1' }],
+            hints: ['The state is count, and it must be made once for each counter, not once for each call: the let goes around the lambda, not inside it.', 'The body of the lambda changes count with set! and then gives its value.'],
+            failTip: 'If every call gives 1, the count is made afresh on each call (the lambda is outside the let) or never changed (no set!).',
+            followup: 'Change the counter so that it takes a message: (c \'next) counts up and (c \'reset) goes back to 0.'
+          }
+        },
+        {
+          ex: {
+            id: 'ls-14-1', skill: 'local-state', title: 'An accumulator',
+            prompt: `<p>Define <code>(make-accumulator total)</code>, which returns a procedure of one number. Each call adds the number to a running total and returns the new total. Each accumulator keeps its own total. This is SICP exercise 3.1:</p>
+<pre>(define A (make-accumulator 5))
+(A 10)   ; 15
+(A 10)   ; 25</pre>`,
+            starter: `(define (make-accumulator total)\n  ...)\n\n(define A (make-accumulator 5))\n(A 10)\n(A 10)`,
+            solution: `(define (make-accumulator total)\n  (lambda (amount)\n    (set! total (+ total amount))\n    total))\n\n(define A (make-accumulator 5))\n(A 10)\n(A 10)`,
+            hints: ['The state is the running total, and the parameter total already lives in a frame made for each accumulator, just as balance did in make-withdraw.', 'Return (lambda (amount) ...): its body sets total to (+ total amount) and then gives total.'],
+            tests: [{ call: '(let ((A (make-accumulator 5))) (A 10) (A 10))', expect: '25' }, { call: '((make-accumulator 7) 0)', expect: '7' }, { call: '(let ((A (make-accumulator 5)) (B (make-accumulator 100))) (A 10) (B 1) (A 0))', expect: '15' }, { call: '(let ((A (make-accumulator 0))) (A 1) (A 2) (A 3) (A 4))', expect: '10' }],
+            mustContain: [{ re: /\(set!\s+total\b/, msg: 'Change the running total with set!.' }],
+            failTip: 'If (A 10) gives 15 every time, the total is computed but never stored: change it with set! before returning it.',
+            followup: 'Make the accumulator answer the message \'total with the total so far, without adding anything.'
+          }
+        },
+        {
+          ex: {
+            id: 'ls-14-2', skill: 'local-state', title: 'An account with a password',
+            prompt: `<p>Change <code>make-account</code> so that it takes a password as well as a balance, and <code>dispatch</code> takes the password and the message. With the right password it hands back <code>withdraw</code> or <code>deposit</code> as before; with a wrong one it hands back a procedure that ignores its argument and returns the string <code>"Incorrect password"</code>, so that the call still works. This is SICP exercise 3.3:</p>
+<pre>(define acc (make-account 100 'rosebud))
+((acc 'rosebud 'withdraw) 40)    ; 60
+((acc 'swordfish 'deposit) 50)   ; "Incorrect password"</pre>`,
+            starter: `(define (make-account balance password)\n  (define (withdraw amount)\n    (if (>= balance amount)\n        (begin (set! balance (- balance amount))\n               balance)\n        "Insufficient funds"))\n  (define (deposit amount)\n    (set! balance (+ balance amount))\n    balance)\n  (define (dispatch p m)\n    ...)\n  dispatch)\n\n(define acc (make-account 100 'rosebud))\n((acc 'rosebud 'withdraw) 40)\n((acc 'swordfish 'deposit) 50)`,
+            solution: `(define (make-account balance password)\n  (define (withdraw amount)\n    (if (>= balance amount)\n        (begin (set! balance (- balance amount))\n               balance)\n        "Insufficient funds"))\n  (define (deposit amount)\n    (set! balance (+ balance amount))\n    balance)\n  (define (dispatch p m)\n    (cond ((not (eq? p password)) (lambda (amount) "Incorrect password"))\n          ((eq? m 'withdraw) withdraw)\n          ((eq? m 'deposit) deposit)\n          (else (error "Unknown request" m))))\n  dispatch)\n\n(define acc (make-account 100 'rosebud))\n((acc 'rosebud 'withdraw) 40)\n((acc 'swordfish 'deposit) 50)`,
+            hints: ['password is a parameter of make-account, so it sits in the same frame as balance, and dispatch can see it.', 'Check the password first: (cond ((not (eq? p password)) (lambda (amount) "Incorrect password")) ...), then the two messages as in the lesson.'],
+            tests: [{ call: "(let ((acc (make-account 100 'rosebud))) ((acc 'rosebud 'withdraw) 40))", expect: '60' }, { call: "(let ((acc (make-account 100 'rosebud))) ((acc 'rosebud 'deposit) 25))", expect: '125' }, { call: "(let ((acc (make-account 100 'rosebud))) ((acc 'swordfish 'withdraw) 40))", expect: '"Incorrect password"' }, { call: "(let ((acc (make-account 100 'rosebud))) ((acc 'swordfish 'withdraw) 40) ((acc 'rosebud 'withdraw) 10))", expect: '90' }, { call: "(let ((a (make-account 100 'x)) (b (make-account 100 'y))) ((a 'x 'withdraw) 30) ((b 'y 'withdraw) 10))", expect: '90' }],
+            mustContain: [{ re: /\(eq\?\s+p\s+password\)|\(eq\?\s+password\s+p\)/, msg: 'Compare the password given with the account’s own, using eq?.' }],
+            failTip: 'If a wrong password gives an error about applying a string, dispatch returned the string itself: it must return a procedure, (lambda (amount) "Incorrect password"), because the caller applies whatever dispatch gives back.',
+            followup: 'SICP exercise 3.4: count the wrong passwords in a row, and after seven of them return "The police have been called" instead.'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li><code>(set! name expression)</code> changes the value of a name that already exists; <code>(begin e …)</code> does several things in order and has the value of the last.</li>
+<li>A <code>lambda</code> made inside a call keeps that call's names, and <code>set!</code> on them is local state: each account, counter or generator has its own. A procedure that answers messages is an object.</li>
+<li>State can make a program simpler: <code>rand</code> looks after its own number, so nothing else has to carry it.</li>
+<li>Today's question: a procedure remembers by changing, with <code>set!</code>, a name in a frame that only it can reach. The cost is that a name now stands for a place whose value changes, so the substitution model no longer works, sameness depends on time, and the order of assignments matters.</li>
+<li>The environment model replaces substitution: frames of names, a procedure as code plus the environment it was made in, a new frame for each application, and <code>set!</code> changing the first frame where the name is found.</li>
+<li>Next: streams, a way to describe things that change over time without changing anything.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      standards: ['3B-AP-12', '3B-AP-11'],
+      standard: 1, title: 'Streams', summary: 'Lists whose rest is computed only when it is needed: delay and force, cons-stream, a search that stops as soon as it can, infinite streams, the sieve of Eratosthenes, streams defined by themselves, and state described without set!.',
+      blocks: [
+        `<p>On 11 October 1964 Doug McIlroy of Bell Labs typed a memo that said: "We should have some ways of coupling programs like garden hose — screw in another segment when it becomes necessary to massage data in another way." Nine years later, in 1973, Ken Thompson added that idea to Unix as the <em>pipe</em>, and it is still there. In a pipeline the programs run side by side, each reading what the one before it writes, and a program that writes faster than the next one reads is simply made to wait. So <code>yes | head -n 3</code> works: <code>yes</code> prints <code>y</code> for ever, <code>head</code> takes three lines and stops, and <code>yes</code> is stopped with it. A producer that never finishes is harmless, as long as nothing asks it for more than is needed.</p>
+<p>Lesson 11's pipelines were not like that: every stage built its whole list before the next stage began. And Lesson 13 left a second problem: to model something that changes, such as a bank balance, it used <code>set!</code>, and paid for it. This lesson follows SICP §3.5. So how can a program work with a list that never ends, computing only the part that is used, and can such lists describe change without changing anything?</p>
+<h2>A promise to compute later</h2>
+<div class="stmt"><p><span class="kind">Rule (delay and force).</span> The special form <code>(delay <i>expression</i>)</code> does not evaluate the expression. Its value is a <em>promise</em> to evaluate it later, in the environment where the <code>delay</code> was. <code>(force <i>promise</i>)</code> keeps the promise: the first time, it evaluates the expression and remembers the value; every time after, it gives back the remembered value without evaluating anything.</p></div>
+<p>The example below counts how many times the delayed expression really runs, with Lesson 13's <code>set!</code>. Predict the four replies after the definitions.</p>`,
+        { play: `(define count 0)
+(define p
+  (delay (begin (set! count (+ count 1))
+                (* 6 7))))
+count
+(force p)
+(force p)
+count`, predict: true, noSubst: true, caption: 'The replies are 0, 42, 42 and 1. When p was defined, nothing in the delay ran, so count is still 0. The first force did the work, the second only handed back the remembered 42, and so count ends at 1. Remembering the value is called memoization; without it, forcing the same promise twice would do the work twice.' },
+        { check: "What happens when <code>(define p (delay (/ 1 0)))</code> is evaluated?", skill: 'streams', options: ["An error: division by zero", "p is a promise, and nothing is divided until p is forced", "p is 0"], answer: 1, why: "delay is a special form: it keeps the expression for later instead of evaluating it. The division by zero happens only if p is forced.", wrong: ["That would be true of an ordinary procedure, which evaluates its operand first. delay is a special form, like if: it leaves its expression unevaluated.", null, "Nothing is computed yet, so there is no number at all. The value of p is a promise."] },
+        `<h2>Streams</h2>
+<p>A <em>stream</em> is a list whose rest is a promise. Its first item is there to be read, and the rest is computed only when somebody asks for it.</p>
+<div class="stmt"><p><span class="kind">Rule (streams).</span> <code>(cons-stream <i>a</i> <i>b</i>)</code> means <code>(cons <i>a</i> (delay <i>b</i>))</code>: it is a special form that evaluates <i>a</i> and not <i>b</i>. <code>(stream-car <i>s</i>)</code> is the first item, and <code>(stream-cdr <i>s</i>)</code> forces the promise to give the rest of the stream. The empty stream is <code>the-empty-stream</code>, and <code>(stream-null? <i>s</i>)</code> asks whether <i>s</i> is empty.</p></div>
+<p>A stream procedure is a list procedure from Lesson 8's template, with <code>cons-stream</code>, <code>stream-car</code> and <code>stream-cdr</code> in place of <code>cons</code>, <code>car</code> and <code>cdr</code>. SICP's first example asks for the second prime number between 10,000 and 1,000,000. With lists, the program would build a list of 990,001 numbers and test every one of them before taking the second prime. With streams, the numbers are made only as the filter asks for them. A counter in <code>prime?</code> records how many numbers it tests. Predict that count.</p>`,
+        { play: `(define tested 0)
+(define (prime? n)
+  (define (iter d)
+    (cond ((> (* d d) n) #t)
+          ((= (remainder n d) 0) #f)
+          (else (iter (+ d 1)))))
+  (set! tested (+ tested 1))
+  (iter 2))
+
+(define (stream-enumerate-interval low high)
+  (if (> low high)
+      the-empty-stream
+      (cons-stream low (stream-enumerate-interval (+ low 1) high))))
+
+(define (stream-filter pred s)
+  (cond ((stream-null? s) the-empty-stream)
+        ((pred (stream-car s))
+         (cons-stream (stream-car s) (stream-filter pred (stream-cdr s))))
+        (else (stream-filter pred (stream-cdr s)))))
+
+(stream-car (stream-cdr (stream-filter prime? (stream-enumerate-interval 10000 1000000))))
+tested`, predict: true, noSubst: true, caption: 'The second prime is 10009, and only 10 numbers were tested: 10000 to 10009. stream-filter asked for the next number only when it needed one, and stream-car and stream-cdr asked for only two primes, so the rest of the interval was never made. The program reads like Lesson 11’s pipelines and runs like a loop that stops early.' },
+        { check: "Why does <code>(define s (cons-stream 1 (/ 1 0)))</code> work, when <code>(define s (cons 1 (/ 1 0)))</code> is an error?", skill: 'streams', options: ["cons-stream is a special form that delays its second operand; cons is a procedure, so both operands are evaluated first", "cons-stream catches the error and returns 1", "They both work until the cdr is taken"], answer: 0, why: "cons-stream means (cons 1 (delay (/ 1 0))). The division is kept as a promise, and only (stream-cdr s) would carry it out.", wrong: [null, "Nothing is caught: the division has not happened at all. It waits in a promise, and (stream-cdr s) would still divide by zero.", "cons is an ordinary procedure: by Lesson 1's evaluation rule its operands are evaluated before it is applied, so (/ 1 0) fails at once."] },
+        `<h2>Lists without an end</h2>
+<p>A stream's rest is not made until it is asked for, so nothing stops a stream from going on for ever. Here are the positive integers, as a procedure that always promises one more, and SICP's <code>stream-ref</code>, which walks down a stream to the item at a given position. MIT Scheme also has <code>stream-head</code>, which gives the first <i>n</i> items as a list, so you can look at them. Predict the three replies.</p>`,
+        { play: `(define (integers-starting-from n)
+  (cons-stream n (integers-starting-from (+ n 1))))
+(define integers (integers-starting-from 1))
+
+(define (stream-ref s n)
+  (if (= n 0)
+      (stream-car s)
+      (stream-ref (stream-cdr s) (- n 1))))
+
+(define (stream-filter pred s)
+  (cond ((stream-null? s) the-empty-stream)
+        ((pred (stream-car s))
+         (cons-stream (stream-car s) (stream-filter pred (stream-cdr s))))
+        (else (stream-filter pred (stream-cdr s)))))
+
+(define no-sevens
+  (stream-filter (lambda (x) (not (= (remainder x 7) 0))) integers))
+
+(stream-ref integers 99)
+(stream-ref no-sevens 100)
+(stream-head no-sevens 8)`, predict: true, caption: 'The replies are 100, 117 and (1 2 3 4 5 6 8 9). Item 99 of the integers is 100, because positions count from 0. no-sevens is every integer not divisible by 7, also infinite, and its item 100 is 117: SICP gives the same answer. Only the integers up to 117 were ever made.' },
+        `<p>SICP goes further: a stream of all the primes, made by the method of Eratosthenes. Start with the integers from 2. The first, 2, is prime; remove its multiples from the rest. The first of what is left, 3, is prime; remove its multiples. And so on for ever: each prime puts a new filter on the stream behind it.</p>`,
+        { play: `(define (integers-starting-from n)
+  (cons-stream n (integers-starting-from (+ n 1))))
+
+(define (stream-filter pred s)
+  (cond ((stream-null? s) the-empty-stream)
+        ((pred (stream-car s))
+         (cons-stream (stream-car s) (stream-filter pred (stream-cdr s))))
+        (else (stream-filter pred (stream-cdr s)))))
+
+(define (sieve s)
+  (cons-stream
+   (stream-car s)
+   (sieve (stream-filter
+           (lambda (x) (not (= (remainder x (stream-car s)) 0)))
+           (stream-cdr s)))))
+
+(define primes (sieve (integers-starting-from 2)))
+(stream-head primes 10)
+(stream-ref primes 50)`, predict: true, caption: 'The first ten primes are (2 3 5 7 11 13 17 19 23 29), and item 50 is 233, as in SICP. sieve never finishes building primes, and it does not need to: each stream-cdr adds just enough work to find one more. Strictly, this tests every number against every prime found so far; Melissa O’Neill pointed out in 2009 that the true sieve only crosses out multiples, which is much faster.' },
+        `<h2>Streams defined by themselves</h2>
+<p>A stream can even be defined in terms of itself, because its rest is not looked at until later. <code>stream-map</code>, built into MIT Scheme, is <code>map</code> for streams: <code>(stream-map + s1 s2)</code> adds two streams item by item. With it, <code>ones</code> is a 1 followed by <code>ones</code>; the integers are 1 followed by the integers plus <code>ones</code>; and the Fibonacci numbers are 0 and 1 followed by the Fibonacci numbers added to themselves shifted by one place.</p>
+<details class="reveal"><summary>Guess first: <code>(define ones (cons-stream 1 ones))</code> uses <code>ones</code> in its own definition. Why is that not an error, and what is <code>(stream-head ones 3)</code>?</summary><p>The second operand of <code>cons-stream</code> is not evaluated while the <code>define</code> runs, so <code>ones</code> does not need a value yet. By the time <code>(stream-cdr ones)</code> forces it, <code>ones</code> is defined, and its rest turns out to be <code>ones</code> itself. <code>(stream-head ones 3)</code> is <code>(1 1 1)</code>.</p></details>`,
+        { play: `(define ones (cons-stream 1 ones))
+(define (add-streams s1 s2) (stream-map + s1 s2))
+
+(define integers (cons-stream 1 (add-streams ones integers)))
+
+(define fibs
+  (cons-stream 0
+               (cons-stream 1
+                            (add-streams (stream-cdr fibs) fibs))))
+
+(stream-head integers 5)
+(stream-head fibs 10)`, predict: true, caption: 'The replies are (1 2 3 4 5) and (0 1 1 2 3 5 8 13 21 34). Each item of integers is 1 more than the item before it, and each Fibonacci number from the third on is the sum of the two before it, which is exactly what adding fibs to its own rest says. Memoization matters here: each Fibonacci number is computed once, so the work grows in proportion to n, like Lesson 6’s iterative version, and not like the tree.' },
+        `<h2>State without set!</h2>
+<p>Now back to Lesson 13's problem. A bank balance changes over time, and Lesson 13 modelled it with a name whose value changed. A stream offers another view: the balance is not one changing number but the whole sequence of its values, one after another. Below, <code>stream-withdraw</code> turns a stream of amounts into the stream of balances (SICP §3.5.5). It has no <code>set!</code>, and nothing in it changes; <code>stream</code>, built into MIT Scheme, makes a stream of the items it is given.</p>`,
+        { play: `(define (stream-withdraw balance amounts)
+  (cons-stream balance
+               (stream-withdraw (- balance (stream-car amounts))
+                                (stream-cdr amounts))))
+
+(define amounts (stream 20 10 5 15))
+(stream-head (stream-withdraw 100 amounts) 4)`, predict: true, caption: 'The reply is (100 80 70 65): the balance before any withdrawal, then after each of the first three. The same amounts always give the same balances, so the substitution model works again. The change over time is in the stream, not in any name.' },
+        { check: "<code>stream-withdraw</code> has no <code>set!</code>. Where is the changing balance kept?", skill: 'streams', options: ["In a hidden variable that cons-stream changes", "In the stream itself: each item is the balance at one moment, and each is computed from the one before", "Nowhere: the balance cannot change without set!"], answer: 1, why: "The history of the balance is a sequence of values, and a stream is a sequence. Time in the model becomes position in the stream.", wrong: ["cons-stream changes nothing: it makes a pair with a promise in it. The values are new items of a stream, never old values overwritten.", null, "The balance does go down, from 100 to 80 to 70: as a sequence of values, each a new item of the stream, not as one name whose value is replaced."] },
+        `<p>Lesson 13's Monte Carlo estimate of π can be rebuilt the same way. The random numbers become a stream, each made from the one before by <code>rand-update</code>; the trials become a stream of true and false; and the estimates become a stream that gets better as it goes. There is no <code>rand</code> with a hidden number in it, and no <code>set!</code>. Predict the result before you run the box: compare it with the estimate after 1000 trials in Lesson 13, which used the same numbers.</p>`,
+        { play: `(define random-init 2026)
+(define (rand-update x)
+  (modulo (* x 16807) 2147483647))
+(define random-numbers
+  (cons-stream (rand-update random-init)
+               (stream-map rand-update random-numbers)))
+
+(define (map-successive-pairs f s)
+  (cons-stream (f (stream-car s) (stream-car (stream-cdr s)))
+               (map-successive-pairs f (stream-cdr (stream-cdr s)))))
+(define cesaro-stream
+  (map-successive-pairs (lambda (r1 r2) (= (gcd r1 r2) 1))
+                        random-numbers))
+
+(define (monte-carlo experiments passed failed)
+  (define (next passed failed)
+    (cons-stream (/ passed (+ passed failed))
+                 (monte-carlo (stream-cdr experiments) passed failed)))
+  (if (stream-car experiments)
+      (next (+ passed 1) failed)
+      (next passed (+ failed 1))))
+
+(define estimates (monte-carlo cesaro-stream 0 0))
+(sqrt (/ 6 (stream-ref estimates 999)))`, predict: true, caption: 'The reply is 3.11840877014, exactly Lesson 13’s estimate after 1000 trials, because the same numbers were paired the same way. Item 999 is the estimate after the 1000th trial. Every name here stands for one value for ever; what changed in Lesson 13 is here a stream. The price is different too: a program built this way must be written as streams all the way through.' },
+        `<h2>Before the exercises</h2>
+<p>Both exercises build streams from other streams. The second carries a running value along, the way Lesson 6's iterative processes carried their state variables, and puts each new value into the stream. Here is a worked example of that shape: the running maximum of a stream, the largest item seen so far at each position. It also handles a stream that ends. Predict the reply.</p>`,
+        { play: `(define (running-max s)
+  (define (from s best)
+    (if (stream-null? s)
+        the-empty-stream
+        (let ((new-best (max best (stream-car s))))
+          (cons-stream new-best
+                       (from (stream-cdr s) new-best)))))
+  (from s (stream-car s)))
+
+(stream-head (running-max (stream 3 1 4 1 5 9 2 6)) 8)`, predict: true, caption: 'The reply is (3 3 4 4 5 9 9 9). best is the state, carried as an argument to the next call instead of being changed with set!, and each new best becomes the next item of the stream. Compare it with Lesson 13’s make-max-tracker: the same job, with the history in a stream instead of a changing name.' },
+        { aside: `<p><b>Common mistakes in this lesson.</b> Writing <code>cons</code> where <code>cons-stream</code> is meant: <code>cons</code> evaluates its second operand at once, so an infinite stream recurses until the interpreter runs out of room. Using <code>car</code> and <code>cdr</code> on a stream: <code>cdr</code> gives the promise, not the rest of the stream; use <code>stream-cdr</code>. Asking for all of an infinite stream, with <code>stream-head</code> of a huge number or a recursion with no end. Forgetting that items are numbered from 0 in <code>stream-ref</code>. Expecting a delayed expression with <code>display</code> in it to print each time it is forced: it runs once.</p>` },
+        {
+          ex: {
+            id: 'ls-15-3', kind: 'parsons', skill: 'streams', title: 'Put it in order: the first n items',
+            prompt: `<p>Build <code>(stream-take s n)</code>, which gives the first <code>n</code> items of a stream as an ordinary <em>list</em>, like MIT Scheme's built-in <code>stream-head</code>. So <code>(stream-take (stream 1 2 3 4) 2)</code> is <code>(1 2)</code>, and it must work on infinite streams too. The program has no indentation to set; you only choose the order. Not every block belongs: two of them are wrong.</p>`,
+            lines: ['(define (stream-take s n)', '(if (= n 0)', "'()", '(cons (stream-car s)', '(stream-take (stream-cdr s) (- n 1)))))'],
+            distractors: ['(cons-stream (stream-car s)', '(stream-take (cdr s) (- n 1)))))'],
+            tests: [{ call: '(stream-take (stream 1 2 3 4) 2)', expect: '(1 2)' }, { call: '(stream-take (let from ((k 1)) (cons-stream k (from (+ k 1)))) 5)', expect: '(1 2 3 4 5)' }, { call: "(stream-take (stream 'a) 0)", expect: '()' }],
+            hints: ['The answer is a finite list, so it is built with cons, from Lesson 8\'s template: no items wanted gives the empty list.', 'Otherwise cons the first item of the stream onto the first n − 1 items of its rest, and the rest of a stream is (stream-cdr s), which forces the promise.'],
+            failTip: 'If the answer prints in braces, like {1 ...}, it was built with cons-stream: that makes a stream, and the task asks for a list. If a test says a promise is not the correct type, the rest was taken with cdr instead of stream-cdr.',
+            followup: 'With its base case at n = 0, stream-take forces the rest of the stream after the last item it takes: one promise more than it needs. Find a stream for which (stream-take s 3) fails because of that, and change the base case so that it does not.'
+          }
+        },
+        {
+          ex: {
+            id: 'ls-15-1', skill: 'streams', title: 'Powers of two',
+            prompt: `<p>Define <code>(scale-stream s factor)</code>, the stream of every item of <code>s</code> multiplied by <code>factor</code>. Then define <code>powers-of-two</code>, the infinite stream 1, 2, 4, 8, …, in terms of itself: a 1, followed by <code>powers-of-two</code> scaled by 2. You may use the built-in <code>stream-map</code>.</p>
+<pre>(stream-head powers-of-two 6)   ; (1 2 4 8 16 32)</pre>`,
+            starter: `(define (scale-stream s factor)\n  ...)\n\n(define powers-of-two\n  (cons-stream 1 ...))\n\n(stream-head powers-of-two 6)`,
+            solution: `(define (scale-stream s factor)\n  (stream-map (lambda (x) (* x factor)) s))\n\n(define powers-of-two\n  (cons-stream 1 (scale-stream powers-of-two 2)))\n\n(stream-head powers-of-two 6)`,
+            hints: ['scale-stream is a stream-map with a lambda that multiplies by factor.', 'powers-of-two is (cons-stream 1 (scale-stream powers-of-two 2)), like integers made from ones in the lesson.'],
+            tests: [{ call: '(stream-head (scale-stream (stream 1 2 3) 10) 3)', expect: '(10 20 30)' }, { call: '(stream-head powers-of-two 6)', expect: '(1 2 4 8 16 32)' }, { call: '(stream-ref powers-of-two 40)', expect: '1099511627776' }, { call: '(stream-head (scale-stream powers-of-two 3) 3)', expect: '(3 6 12)' }],
+            failTip: 'If the interpreter runs out of room, the definition of powers-of-two uses cons, or calls something that walks the whole stream: the second operand of cons-stream is what must wait.',
+            followup: 'Define the stream of factorials 1, 1, 2, 6, 24, ... in the same style, using a two-stream map of the factorials and the integers.'
+          }
+        },
+        {
+          ex: {
+            id: 'ls-15-2', skill: 'streams', title: 'Running totals',
+            prompt: `<p>Define <code>(partial-sums s)</code>, the stream of running totals of <code>s</code>: its items are the first item of <code>s</code>, then the sum of the first two, then the first three, and so on. For a stream that ends, the totals end with it. This is SICP exercise 3.55, with the total carried along like the best in <code>running-max</code>. <code>integers</code> is in the starter.</p>
+<pre>(stream-head (partial-sums integers) 5)   ; (1 3 6 10 15)</pre>`,
+            starter: `(define (integers-starting-from n)\n  (cons-stream n (integers-starting-from (+ n 1))))\n(define integers (integers-starting-from 1))\n\n(define (partial-sums s)\n  ...)\n\n(stream-head (partial-sums integers) 5)`,
+            solution: `(define (integers-starting-from n)\n  (cons-stream n (integers-starting-from (+ n 1))))\n(define integers (integers-starting-from 1))\n\n(define (partial-sums s)\n  (define (sums-from s total)\n    (if (stream-null? s)\n        the-empty-stream\n        (let ((new-total (+ total (stream-car s))))\n          (cons-stream new-total\n                       (sums-from (stream-cdr s) new-total)))))\n  (sums-from s 0))\n\n(stream-head (partial-sums integers) 5)`,
+            hints: ['Use a helper (sums-from s total), where total is the sum of the items already used. It starts at 0.', 'If s is empty, the result is the-empty-stream. Otherwise compute the new total, and cons-stream it onto (sums-from (stream-cdr s) new-total).'],
+            tests: [{ call: '(stream-head (partial-sums integers) 5)', expect: '(1 3 6 10 15)' }, { call: '(stream-ref (partial-sums integers) 99)', expect: '5050' }, { call: '(stream-head (partial-sums (stream 5 -2 10)) 3)', expect: '(5 3 13)' }, { call: '(stream-head (partial-sums (partial-sums integers)) 4)', expect: '(1 4 10 20)' }],
+            mustNotContain: [{ re: /\(set!/, msg: 'No set!: carry the running total along as an argument.' }],
+            failTip: 'If the third test says the empty list is not the correct type, the helper does not check for the end of the stream: with (stream 5 -2 10), stream-head asks for the rest after the third total, and that rest must be the-empty-stream.',
+            followup: 'The second test is Lesson 4’s (sum-to 100). What does (partial-sums ones) give, and why?'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li><code>(delay e)</code> makes a promise; <code>(force p)</code> evaluates it the first time and remembers the value.</li>
+<li><code>(cons-stream a b)</code> is <code>(cons a (delay b))</code>, a special form. <code>stream-car</code> reads the first item, and <code>stream-cdr</code> forces the rest. Stream procedures follow the list template.</li>
+<li>Today's question: a stream's rest is computed only when it is asked for, so a program can hold a stream that never ends, such as the integers or the primes, and pays only for the part it uses. A pipeline of streams stops as early as a loop would.</li>
+<li>A stream can be defined in terms of itself, because its rest waits until the definition is done.</li>
+<li>Streams describe change without changing anything: a balance becomes the stream of its values, and random numbers a stream made by <code>rand-update</code>. The substitution model works again.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      standards: ['3B-AP-10', '3B-AP-11', '3B-AP-12', '3B-AP-14'],
+      title: 'Checkpoint: data, state and streams', checkpoint: true, summary: 'No new ideas: mixed questions on map, filter and accumulate, symbols and code as data, assignment and local state, and streams, then a choice of definition and a program that keeps state in a closure. Does it change, or does it make something new?',
+      blocks: [
+        `<p>This lesson teaches nothing new. It mixes questions on the four lessons before it, where the pairs that look alike are <code>map</code> and <code>filter</code>, a symbol and the value of a name, <code>eq?</code> and <code>equal?</code>, <code>define</code> and <code>set!</code>, a <code>let</code> around a <code>lambda</code> and one inside it, <code>cons</code> and <code>cons-stream</code>. Answer each question before you look back. If one surprises you, it comes back on the Review page in a day.</p>
+<p>Ready? Here is the first: a pipeline filters a list and then maps over what is left. Which stage decides how long the answer is?</p>
+<h2>Mixed questions</h2>`,
+        { check: "What is <code>(map (lambda (x) (* x x)) (filter odd? '(1 2 3 4)))</code>?", skill: 'map-filter', options: ["<code>(1 9)</code>", "<code>(1 4 9 16)</code>", "<code>(#t #f #t #f)</code>"], answer: 0, why: "Read the pipeline from the inside out: filter keeps the odd items, (1 3), and map squares each of them. filter decides the length; map keeps it.", wrong: [null, "That is the map without the filter. filter runs first and keeps only 1 and 3, so only they are squared.", "That is what (map odd? …) would give. filter uses the answers of odd? to choose items, and returns the items themselves."] },
+        { check: "You have a list of words and need the list of their lengths, in the same order. Which fits?", skill: 'map-filter', options: ["<code>(map string-length words)</code>", "<code>(filter string-length words)</code>", "<code>(accumulate + 0 (map string-length words))</code>"], answer: 0, why: "One answer for each item, in the same order: that is map.", wrong: [null, "filter keeps or drops items; it never changes them. string-length never returns #f, so this would give back all the words, not their lengths.", "That adds the lengths up into one number, the total. The task asks for a list with one length per word."] },
+        { check: "What is <code>(fold-right - 0 (list 1 2 3))</code>?", skill: 'accumulate', options: ["2", "-6", "6"], answer: 0, why: "fold-right puts the brackets on the right: 1 − (2 − (3 − 0)), which is 1 − (2 − 3) = 1 − (−1) = 2.", wrong: [null, "−6 is fold-left, which starts from the left: ((0 − 1) − 2) − 3. Subtraction is not associative, so the two folds differ.", "6 is the sum. With − the brackets matter, and fold-right puts them on the right."] },
+        { check: "What is <code>(list 'a (+ 1 2))</code>?", skill: 'quote', options: ["<code>(a 3)</code>", "<code>(a (+ 1 2))</code>", "<code>('a 3)</code>"], answer: 0, why: "list is a procedure, so its operands are evaluated: 'a gives the symbol a, and (+ 1 2) gives 3. Only what is quoted stays unevaluated.", wrong: [null, "(+ 1 2) has no quote in front of it, so it is evaluated like any operand. The quote on a covers a alone.", "The quote is not part of the value. 'a evaluates to the symbol a, and a list of it prints as a."] },
+        { check: "Which of these is <code>#t</code>?", skill: 'equality', options: ["<code>(eq? (list 'a) (list 'a))</code>", "<code>(equal? (list 'a) (list 'a))</code>", "<code>(= 'a 'a)</code>"], answer: 1, why: "equal? compares shape and contents, and the two lists have the same. eq? asks for the very same object, and = is for numbers.", wrong: ["Each call of list makes a new pair, so these are two different objects with equal contents: eq? says #f.", null, "= accepts only numbers; given symbols it is an error. Symbols are compared with eq?."] },
+        { check: "What is <code>(eval (list '* 2 (list '+ 1 3)) system-global-environment)</code>?", skill: 'code-as-data', options: ["8", "<code>(* 2 (+ 1 3))</code>", "7"], answer: 0, why: "The two calls of list build the expression (* 2 (+ 1 3)), and eval runs it: 2 × 4 is 8.", wrong: [null, "That is the list that was built, the value of the argument. eval goes on to run it as an expression.", "The inner list is the sum (+ 1 3), which is 4, and the product is 2 × 4. Read the built expression from the inside out."] },
+        { check: "<code>(define (make-counter) (lambda () (let ((count 0)) (set! count (+ count 1)) count)))</code> and <code>(define c (make-counter))</code>. What does the third <code>(c)</code> give?", skill: 'local-state', options: ["1", "3", "An error"], answer: 0, why: "The let is inside the lambda, so every call of c makes a new count of 0 and adds 1 to it. To keep the count between calls, the let must go around the lambda.", wrong: [null, "3 would need count to last from one call to the next. Here each call makes its own count, so the earlier calls are forgotten.", "set! on a name made by let is allowed. Nothing goes wrong; the count simply starts again from 0 each time."] },
+        { check: "<code>(define W1 (make-withdraw 100))</code>, typed at the top level. When <code>(W1 50)</code> runs, the new frame for <code>amount</code> points to…", skill: 'local-state', options: ["the frame where W1 was made, the one that holds W1's balance", "the global frame, where <code>(W1 50)</code> was typed", "no other frame"], answer: 0, why: "A procedure is its code and the environment it was made in, and the frame for a call points to that environment. That is how the body finds balance.", wrong: [null, "The place of the call does not matter in Scheme. If the frame pointed to the global frame, the body could not find balance at all.", "Then balance, which is not in the new frame, could not be found. The frame points to W1's own environment."] },
+        { check: "For which of these can the substitution model still predict every value?", skill: 'substitution', options: ["<code>(define (make-decrementer b) (lambda (x) (- b x)))</code>", "<code>(define (make-simplified-withdraw b) (lambda (x) (set! b (- b x)) b))</code>", "Neither: no procedure that returns a procedure can be traced"], answer: 0, why: "make-decrementer never changes a name, so each name stands for one value and can be replaced by it. With set!, a name is a place whose value changes, and substitution gives wrong answers.", wrong: [null, "This one assigns with set!, so its b is a place whose value changes. Substitution would replace b by its first value everywhere and get later calls wrong.", "Lesson 9's closures were traced by substitution: the remembered values are substituted along with the arguments. It is set! that breaks the model."] },
+        { check: "<code>(define s (cons-stream 1 (begin (display \"hi\") 2)))</code>. When is <code>hi</code> printed?", skill: 'streams', options: ["When s is defined", "The first time <code>(stream-cdr s)</code> is evaluated, and never again", "Every time <code>(stream-cdr s)</code> is evaluated"], answer: 1, why: "cons-stream delays its second operand, and forcing a promise evaluates it once and remembers the value.", wrong: ["cons-stream is a special form: the second operand is kept as a promise, not evaluated when s is made.", null, "A promise is memoized: the second stream-cdr hands back the remembered 2 without evaluating the begin again."] },
+        { check: "<code>(define (from n) (cons n (from (+ n 1))))</code>. What does <code>(from 1)</code> give?", skill: 'streams', options: ["An infinite list of the integers", "An error: the interpreter runs out of room", "<code>(1)</code>"], answer: 1, why: "cons is an ordinary procedure, so (from (+ n 1)) is evaluated before cons is applied, and that call does the same, for ever. With cons-stream the rest would wait.", wrong: ["Nothing is ever finished, because every cons waits for the next call. A list cannot be infinite; a stream can, because its rest is not made yet.", null, "Nothing stops the recursion: there is no base case, and cons evaluates its second operand at once."] },
+        { check: "You need the 100th prime, and you do not know in advance how far to search. Which fits best?", skill: 'streams', options: ["Filter a list of the numbers up to a million and take item 99", "Make the infinite stream of primes and take <code>(stream-ref primes 99)</code>", "<code>map</code> a primality test over the infinite list of integers"], answer: 1, why: "A stream makes numbers only as they are asked for, so the search goes exactly as far as it must, with no guess.", wrong: ["That works only if a million is enough, and it tests every number up to a million even though the 100th prime is 541.", null, "map works on lists, and a list cannot be infinite: building one would never finish. The infinite version is a stream."] },
+        `<p>Two programs to finish the unit. The first needs no code: choose the definition that makes the right stream. The second keeps state in a closure and looks words up by name.</p>`,
+        {
+          ex: {
+            id: 'ls-16-1', kind: 'choice', skill: 'streams', title: 'Which definition makes the stream?',
+            prompt: `<p><code>(stream-head (evens-from 2) 5)</code> must give <code>(2 4 6 8 10)</code>, and <code>evens-from</code> must work for as many items as anyone asks for. Exactly one of these definitions is right. Which?</p>`,
+            options: [
+              { text: `<code>(define (evens-from n) (cons n (evens-from (+ n 2))))</code>`, why: 'cons evaluates both operands first, so (evens-from 2) calls (evens-from 4), which calls (evens-from 6), for ever: the interpreter runs out of room before anything is returned.' },
+              { text: `<code>(define (evens-from n) (cons-stream n (evens-from (+ n 2))))</code>`, ok: true },
+              { text: `<code>(define (evens-from n) (cons-stream n (evens-from n)))</code>`, why: 'The rest starts from the same n, so the stream is (2 2 2 2 2): the recursive call must be on the next even number.' },
+              { text: `<code>(define (evens-from n) (lambda () (set! n (+ n 2)) n))</code>`, why: 'That is a generator with local state: calling it gives 4, then 6. It is a procedure, not a stream, so stream-head cannot read it, and it has lost the 2 it started from.' }
+            ],
+            hints: ['Ask of each one what (stream-head (evens-from 2) 5) does: does it give back anything at all, and what are the first two items?', 'Only a special form can leave the recursive call for later. Then check that the call moves on to the next even number.'],
+            solution: '<p>The second. cons-stream leaves (evens-from (+ n 2)) as a promise, so the stream can go on for ever and each item is made only when stream-head asks for it. The others never return, repeat 2, or are not streams at all.</p>',
+            followup: 'Write evens as a stream without evens-from, in terms of itself, the way the lesson defined integers from ones.'
+          }
+        },
+        {
+          ex: {
+            id: 'ls-16-2', skill: 'local-state', title: 'A tally',
+            prompt: `<p>Define <code>(make-tally)</code>, which returns a new tally: a procedure of a message and a word. <code>(t 'add 'apple)</code> counts one more apple and returns how many apples there are now; <code>(t 'count 'apple)</code> returns how many there are without changing anything, 0 for a word never added. Each tally counts on its own.</p>
+<pre>(define t (make-tally))
+(t 'add 'apple)    ; 1
+(t 'add 'pear)     ; 1
+(t 'add 'apple)    ; 2
+(t 'count 'kiwi)   ; 0</pre>
+<p>It combines local state, kept with <code>set!</code> in a <code>let</code> around a <code>lambda</code>, with an association list of words, looked up with <code>assq</code>.</p>`,
+            starter: `(define (make-tally)\n  ...)\n\n(define t (make-tally))\n(t 'add 'apple)\n(t 'add 'pear)\n(t 'add 'apple)\n(t 'count 'kiwi)`,
+            solution: `(define (make-tally)\n  (let ((counts '()))\n    (define (count-of word)\n      (let ((entry (assq word counts)))\n        (if entry (cadr entry) 0)))\n    (lambda (message word)\n      (cond ((eq? message 'add)\n             (set! counts (cons (list word (+ 1 (count-of word))) counts))\n             (count-of word))\n            ((eq? message 'count) (count-of word))\n            (else (error "Unknown request" message))))))\n\n(define t (make-tally))\n(t 'add 'apple)\n(t 'add 'pear)\n(t 'add 'apple)\n(t 'count 'kiwi)`,
+            hints: ['The state is an association list of (word count) entries, starting empty: (let ((counts \'())) (lambda (message word) ...)).', 'A helper (count-of word) uses assq and gives 0 when there is no entry. To add, cons a new entry (word, one more than before) onto the front of counts with set!: assq finds the newest entry first.'],
+            tests: [{ call: "(let ((t (make-tally))) (t 'add 'apple) (t 'add 'pear) (t 'add 'apple))", expect: '2' }, { call: "(let ((t (make-tally))) (t 'count 'kiwi))", expect: '0' }, { call: "(let ((t (make-tally))) (t 'add 'a) (t 'add 'b) (t 'add 'a) (t 'add 'a) (t 'count 'a))", expect: '3' }, { call: "(let ((t (make-tally))) (t 'add 'a) (t 'count 'b))", expect: '0' }, { call: "(let ((a (make-tally)) (b (make-tally))) (a 'add 'x) (b 'count 'x))", expect: '0' }],
+            mustContain: [{ re: /\(set!/, msg: 'Keep the counts as local state, changed with set!.' }],
+            failTip: 'If the last test gives 1, the tallies share one list: the let that makes counts must run once for each call of make-tally, so it goes inside make-tally, around the lambda.',
+            followup: 'Add a message \'words that returns the list of words counted so far, each once.'
+          }
+        },
+        `<div class="recap"><h3>Unit three in a few lines</h3><ul>
+<li><code>map</code> transforms every item, <code>filter</code> keeps some, and <code>accumulate</code> combines them; read a pipeline from the inside out. <code>fold-right</code> and <code>fold-left</code> differ when the operation is not associative.</li>
+<li>A quote stops evaluation: <code>'a</code> is a symbol and <code>'(+ 1 2)</code> a list. <code>eq?</code> asks for the same object, <code>equal?</code> for the same contents, <code>=</code> for the same number. Expressions are lists, and <code>eval</code> runs one.</li>
+<li><code>define</code> makes a name and <code>set!</code> changes one. A <code>let</code> around a <code>lambda</code> gives each procedure state of its own; a <code>let</code> inside it starts again on every call.</li>
+<li>With <code>set!</code>, names are places in frames, and the environment model replaces substitution.</li>
+<li><code>cons-stream</code> delays the rest, which is computed once, when it is first asked for, so a stream can be infinite; <code>cons</code> cannot wait.</li>
+<li>Next: the project, which puts code as data to work on calculus.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
       standards: ['3B-AP-14', '3B-AP-15'],
       standard: 1, title: 'Project: symbolic differentiation', summary: 'A program that does calculus on expressions, SICP\u2019s classic demonstration of code as data: wishful thinking, abstraction barriers, smart constructors, and a check of the symbolic answer against Lesson 9\u2019s numerical one.',
       blocks: [
@@ -1730,10 +2226,10 @@ d
 <p>The rules are the ones you use by hand. A sum with a 0 in it is just the other term, and a sum of two numbers is their sum. A product with a 0 in it is 0, a product with a 1 is the other factor, and a product of two numbers is their product. Why is this safe? Each rule replaces an expression by a simpler one that has the same value <em>whatever numbers the variables stand for</em>: <i>u</i> + 0 = <i>u</i> and <i>u</i> · 1 = <i>u</i> for every <i>u</i>. That is the contract a constructor must keep, and as long as it keeps it, every answer <code>deriv</code> builds still means the same derivative. A helper makes the checks tidy:</p>`,
         { code: `(define (=number? exp num)
   (and (number? exp) (= exp num)))`, caption: "True when exp is a number equal to num. (= 'x 0) on its own would be an error, since = accepts only numbers; and stops before reaching it." },
-        { check: "Why check <code>(number? exp)</code> before <code>(= exp 0)</code>?", skill: 'simplify', options: ["For speed", "= accepts only numbers; and stops at the false number? test before = is reached", "It makes no difference"], answer: 1, why: "Short-circuit and protects the comparison from a symbol.", wrong: ["Speed is not the point. = accepts only numbers, and the check is there to stop it ever being given a symbol such as x.", null, "It matters whenever exp is a symbol or a list: (= 'x 0) is an error, while and stops at the false (number? 'x) and gives #f."] },
+        { check: "Why check <code>(number? exp)</code> before <code>(= exp 0)</code>?", skill: 'symbolic-deriv', options: ["For speed", "= accepts only numbers; and stops at the false number? test before = is reached", "It makes no difference"], answer: 1, why: "Short-circuit and protects the comparison from a symbol.", wrong: ["Speed is not the point. = accepts only numbers, and the check is there to stop it ever being given a symbol such as x.", null, "It matters whenever exp is a symbol or a list: (= 'x 0) is an error, while and stops at the false (number? 'x) and gives #f."] },
         {
           ex: {
-            id: 'ls-11-2', skill: 'simplify', title: 'Smarter constructors',
+            id: 'ls-11-2', skill: 'symbolic-deriv', title: 'Smarter constructors',
             prompt: `<p>Rewrite <code>make-sum</code> and <code>make-product</code> to simplify as described, using <code>cond</code> and <code>=number?</code>. Nothing else changes. When you are done, <code>(deriv '(* x y) 'x)</code> should give <code>y</code>.</p>`,
             starter: `(define (variable? x) (symbol? x))\n(define (same-variable? v1 v2)\n  (and (variable? v1) (variable? v2) (eq? v1 v2)))\n(define (=number? exp num) (and (number? exp) (= exp num)))\n\n(define (make-sum a1 a2)\n  (cond ...))\n\n(define (make-product m1 m2)\n  (cond ...))\n\n(define (sum? x) (and (pair? x) (eq? (car x) '+)))\n(define (addend s) (cadr s))\n(define (augend s) (caddr s))\n(define (product? x) (and (pair? x) (eq? (car x) '*)))\n(define (multiplier p) (cadr p))\n(define (multiplicand p) (caddr p))\n\n(define (deriv exp var)\n  (cond ((number? exp) 0)\n        ((variable? exp) (if (same-variable? exp var) 1 0))\n        ((sum? exp)\n         (make-sum (deriv (addend exp) var)\n                   (deriv (augend exp) var)))\n        ((product? exp)\n         (make-sum (make-product (multiplier exp)\n                                 (deriv (multiplicand exp) var))\n                   (make-product (deriv (multiplier exp) var)\n                                 (multiplicand exp))))\n        (else (error "unknown expression type" exp))))\n\n(deriv '(+ x 3) 'x)\n(deriv '(* x y) 'x)\n(deriv '(* (* x y) (+ x 3)) 'x)`,
             solution: `(define (variable? x) (symbol? x))\n(define (same-variable? v1 v2)\n  (and (variable? v1) (variable? v2) (eq? v1 v2)))\n(define (=number? exp num) (and (number? exp) (= exp num)))\n\n(define (make-sum a1 a2)\n  (cond ((=number? a1 0) a2)\n        ((=number? a2 0) a1)\n        ((and (number? a1) (number? a2)) (+ a1 a2))\n        (else (list '+ a1 a2))))\n\n(define (make-product m1 m2)\n  (cond ((or (=number? m1 0) (=number? m2 0)) 0)\n        ((=number? m1 1) m2)\n        ((=number? m2 1) m1)\n        ((and (number? m1) (number? m2)) (* m1 m2))\n        (else (list '* m1 m2))))\n\n(define (sum? x) (and (pair? x) (eq? (car x) '+)))\n(define (addend s) (cadr s))\n(define (augend s) (caddr s))\n(define (product? x) (and (pair? x) (eq? (car x) '*)))\n(define (multiplier p) (cadr p))\n(define (multiplicand p) (caddr p))\n\n(define (deriv exp var)\n  (cond ((number? exp) 0)\n        ((variable? exp) (if (same-variable? exp var) 1 0))\n        ((sum? exp)\n         (make-sum (deriv (addend exp) var)\n                   (deriv (augend exp) var)))\n        ((product? exp)\n         (make-sum (make-product (multiplier exp)\n                                 (deriv (multiplicand exp) var))\n                   (make-product (deriv (multiplier exp) var)\n                                 (multiplicand exp))))\n        (else (error "unknown expression type" exp))))\n\n(deriv '(+ x 3) 'x)\n(deriv '(* x y) 'x)\n(deriv '(* (* x y) (+ x 3)) 'x)`,
@@ -1781,7 +2277,7 @@ d
 <p>Each of these extends the program without changing the part of <code>deriv</code> you already have, only adding to it. The first is SICP exercise 2.56: represent <i>u</i><sup><i>n</i></sup> as <code>(** u n)</code> for a number <i>n</i>, and add the rule that its derivative is <i>n</i> · <i>u</i><sup><i>n</i>−1</sup> · d<i>u</i>/d<i>x</i>; that needs a predicate, two selectors, a constructor and one new <code>cond</code> clause. The second is exercise 2.57: let sums and products take any number of terms, so that <code>(+ x y z)</code> works, by changing only <code>augend</code> and <code>multiplicand</code> (the augend of a three-term sum is the sum of the last two). The third is a <code>simplify</code> procedure that rebuilds any expression through the smart constructors, so that <code>(simplify '(+ (* 1 x) 0))</code> is <code>x</code>.</p>
 <h2>Where to go from here</h2>
 <p>So how does a program differentiate an expression it has never seen? It follows the five rules of the table, recursively, on a representation that it reaches only through constructors and selectors; and because of that barrier you could make its answers tidier without touching the algorithm.</p>
-<p>You have now seen the arc of SICP's first two chapters in miniature: expressions and their evaluation, procedures and the processes they generate, data built from pairs, higher-order procedures, and finally symbolic data, a program reasoning about expressions. The book goes on to assignment and state, streams, and, in chapter 4, the <em>metacircular evaluator</em>: a Scheme interpreter written in Scheme, in a few pages. The interpreter running on these pages is that idea, written in JavaScript instead.</p>
+<p>You have now seen the arc of SICP's first three chapters in miniature: expressions and their evaluation, procedures and the processes they generate, data built from pairs, higher-order procedures, symbolic data, assignment with the environment model that explains it, and streams; and finally a program reasoning about expressions. The book goes on, in chapter 4, to the <em>metacircular evaluator</em>: a Scheme interpreter written in Scheme, in a few pages, built on exactly the environment model of Lesson 13. The interpreter running on these pages is that idea, written in JavaScript instead. Chapter 3 also covers what this course left out: mutable lists and tables, a simulator for digital circuits, and what goes wrong when several processes share state at once.</p>
 <p>If the <a href="#/python">Python course</a> felt like learning to write and Lisp felt like learning to think, the <a href="#/cpp">C++ short course</a> is learning how the machine actually does it.</p>`
       ]
     }

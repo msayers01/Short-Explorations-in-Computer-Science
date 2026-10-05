@@ -1101,10 +1101,25 @@
     const expandAll = async (words, ctx, io) => { const out = []; for (const w of words) out.push(...await expandWord(w, ctx, io)); return out; };
     const expandOne = async (w, ctx, io) => (await expandWord(w, ctx, io)).join(' ');   // a redirection target: one field, no splitting
 
-    // ----- running a text and keeping its output (for $(...))
+    // ----- a child process. bash runs ( … ), $( … ), bash s.sh and ./s.sh in a copy of itself: what they change (variables, arrays, functions,
+    // aliases, options, the directory) ends with them. A subshell starts from a copy of everything; a script (script: true) is a new bash, which
+    // sees only the exported variables and nothing else of its parent's.
+    const cloneData = (x) => { if (Array.isArray(x)) return x.map(cloneData); if (!x || typeof x !== 'object') return x; const o = Object.getPrototypeOf(x) === null ? dict() : {}; for (const k of Object.keys(x)) o[k] = cloneData(x[k]); return o; };
+    async function inChild(script, fn) {
+      const keep = { vars: sh.vars, arrays: sh.arrays, funcs: sh.funcs, aliases: sh.aliases, shopt: sh.shopt, exported: sh.exported, cwd: fs.cwd };
+      const vars = dict();
+      for (const k of Object.keys(keep.vars)) if (!script || keep.exported.has(k)) vars[k] = keep.vars[k];
+      sh.vars = vars; sh.exported = new Set(keep.exported); sh.shopt = Object.assign(dict(), keep.shopt);
+      sh.arrays = script ? dict() : cloneData(keep.arrays); sh.funcs = script ? dict() : Object.assign(dict(), keep.funcs); sh.aliases = script ? dict() : Object.assign(dict(), keep.aliases);
+      try { return await fn(); }
+      finally { sh.vars = keep.vars; sh.arrays = keep.arrays; sh.funcs = keep.funcs; sh.aliases = keep.aliases; sh.shopt = keep.shopt; sh.exported = keep.exported; fs.cwd = keep.cwd; }
+    }
+    sh.inChild = inChild;
+
+    // ----- running a text and keeping its output (for $(...)), in a subshell
     async function capture(text, ctx, io) {
       let buf = ''; const sub = Object.assign({}, io, { out: (s) => { buf += s; if (buf.length > LIMITS.out) throw new Stop('output', 1); }, tty: false });
-      await runList(parse(text, { aliases: aliasTable(), warn: (m) => io.err('bash: ' + m + '\n') }), ctx, sub);
+      await inChild(false, () => runList(parse(text, { aliases: aliasTable(), warn: (m) => io.err('bash: ' + m + '\n') }), ctx, sub));
       return buf;
     }
 
@@ -1188,7 +1203,7 @@
     async function runCommand(node, ctx, io) {
       return withRedirs(node.redirs, ctx, io, async (io2) => {
         if (node.k === 'simple') return runSimple(node, ctx, io2);
-        if (node.k === 'group') { if (node.sub) { const cwd = fs.cwd; try { return await runList(node.body, ctx, io2); } finally { fs.cwd = cwd; } } return runList(node.body, ctx, io2); }
+        if (node.k === 'group') { if (node.sub) return inChild(false, () => runList(node.body, ctx, io2)); return runList(node.body, ctx, io2); }
         if (node.k === 'if') {
           for (const c of node.clauses) { tick(); if (await runList(c.cond, ctx, io2) === 0) return runList(c.body, ctx, io2); }
           return node.els ? runList(node.els, ctx, io2) : 0;
@@ -1334,10 +1349,13 @@
       io.err('bash: ' + name + ': cannot execute: ' + interp + ' is not available here\n');
       return 126;
     }
-    // a script runs in this shell (its variables and functions stay), with its own arguments; exit ends only the script. It is read a line at
-    // a time, so a syntax error further down stops it there, as in bash. sourced (source s.sh): return ends it, and aliases work as at the prompt.
+    // a script (bash s.sh, ./s.sh, bash -c) runs as a child bash (inChild): it sees only the exported variables, and its changes, cd included,
+    // end with it; sourced (source s.sh) runs in this shell, so its variables, functions and aliases stay, and return ends it. Either way it has
+    // its own arguments and exit ends only the script. It is read a line at a time, so a syntax error further down stops it there, as in bash.
     // fromFile (bash s.sh, ./s.sh, source s.sh): the shell's own messages say where they come from, "s.sh: line 2: ...", as bash's do
     async function runScript(text, name, args, io, fromFile, sourced) {
+      if (!sourced && !io.inScriptChild) return inChild(true, () => runScript(text, name, args, Object.assign({}, io, { inScriptChild: true }), fromFile, sourced));
+      if (io.inScriptChild) io = Object.assign({}, io, { inScriptChild: false });
       const ctx = { name, args, line: 1, sourced: !!sourced };
       const where = (line) => fromFile ? name + ': line ' + line + ': ' : name + ': ';
       const err0 = io.err, lastLine = (text.match(/\n/g) || []).length + (text.endsWith('\n') ? 0 : 1);
@@ -1539,6 +1557,14 @@
   const kind = (n) => n.t === 'd' ? 'dir' : n.x ? 'exe' : '';
   const WIDTH = 80;
   // names in columns, the way ls fills a terminal (down the columns, then across); io.cols is the terminal's width when the panel knows it
+  // GNU ls at a terminal (coreutils' shell-escape quoting): a name the shell would read otherwise is shown in quotes, 'holiday photo.jpg', or
+  // "it's.txt" when it has a ' and nothing double quotes would change; in columns and with -l the other names then get a space in front
+  // to line up. Names here cannot hold control characters, so the $'\t' form is not needed. Only at a terminal: into a pipe names are bare.
+  const lsQuote = (name) => {
+    if (!/[ \t!"$&'()*;<=>?[\\^`|]|^[#~]/.test(name)) return name;
+    if (name.includes("'") && !/["$`\\!]/.test(name)) return '"' + name + '"';
+    return "'" + name.replace(/'/g, "'\\''") + "'";
+  };
   function columns(items, io) {
     if (!items.length) return;
     const n = items.length, WIDTH = Math.max(20, io.cols || 80);
@@ -1578,6 +1604,10 @@
       const show = (names, dirAbs) => {
         const items = names.map((name) => { const n = dirAbs === null ? fs.stat(fs.resolve(name)) : name === '.' ? fs.stat(dirAbs) : name === '..' ? fs.stat(fs.resolve('..', dirAbs)) : dirAbs === null ? fs.stat(fs.resolve(name)) : fs.stat(dirAbs === '/' ? '/' + name : dirAbs + '/' + name); return { name: name + (o.f.F ? (n.t === 'd' ? '/' : n.x ? '*' : '') : ''), node: n, cls: io.tty ? kind(n) : '' }; });
         if (o.f.t) items.sort((a, b) => b.node.m - a.node.m); if (o.f.r) items.reverse();
+        if (io.tty) {
+          for (const it of items) { const suf = o.f.F ? (it.node.t === 'd' ? '/' : it.node.x ? '*' : '') : ''; it.name = lsQuote(it.name.slice(0, it.name.length - suf.length)) + suf; }
+          if ((o.f.l || !o.f[1]) && items.some((it) => /^['"]/.test(it.name))) for (const it of items) if (!/^['"]/.test(it.name)) it.name = ' ' + it.name;
+        }
         if (o.f.l) {
           if (dirAbs !== null) io.out('total ' + items.reduce((s, it) => s + Math.ceil(sizeOf(it.node) / 1024) * 4, 0) + '\n');
           const w = Math.max(1, ...items.map((it) => String(sizeOf(it.node)).length));
@@ -1820,6 +1850,10 @@
       }
       if (!extended && '()|{}+?'.includes(c)) { out += '\\' + c; continue; }
       if (!extended && c === '*' && (out === '' || out === '^' || /[(|]$/.test(out) && !/\\[(|]$/.test(out))) { out += '\\*'; continue; }
+      // in a basic expression ^ is an anchor only at the start (or after \( or \|) and $ only at the end (or before \) or \|), as in GNU's:
+      // elsewhere they are plain characters, so sed 's|$f|X|' finds the text $f
+      if (!extended && c === '^' && !(out === '' || /[(|]$/.test(out) && !/\\[(|]$/.test(out))) { out += '\\^'; continue; }
+      if (!extended && c === '$' && !(i === pat.length - 1 || /^\\[)|]/.test(pat.slice(i + 1)))) { out += '\\$'; continue; }
       out += c;
     }
     return out;

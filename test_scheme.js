@@ -72,6 +72,38 @@ check('(sort (list 3 1 2) <)', '(1 2 3)');
 check("(sort (list '(b . 1) '(a . 1) '(c . 0)) (lambda (x y) (< (cdr x) (cdr y))))", "((c . 0) (b . 1) (a . 1))");
 check('(let ((a (list 1 2))) (eq? a (list-copy a)))', '#f');
 
+// promises and streams (SICP §3.1-3.5): delay does not evaluate, force evaluates once and remembers; cons-stream delays its second operand
+check('(define n 0) (define p (delay (begin (set! n (+ n 1)) (* 6 7)))) (list n (force p) (force p) n)', '(0 42 42 1)');
+check('(force 5)', '5');
+check('(promise? (delay 1))', '#t');
+check('(force (make-promise 3))', '3');
+check('(delay (+ 1 2))', '#[promise]');
+check('(define s (cons-stream 1 (/ 1 0))) (stream-car s)', '1');   // the division is never done
+errs('(define s (cons-stream 1 (/ 1 0))) (stream-cdr s)', /Division by zero/);
+check('(define (from n) (cons-stream n (from (+ n 1)))) (stream-head (from 1) 5)', '(1 2 3 4 5)');
+check('(define (from n) (cons-stream n (from (+ n 1)))) (stream-ref (from 1) 1000)', '1001');
+check('(define (from n) (cons-stream n (from (+ n 1)))) (stream-car (stream-tail (from 1) 3))', '4');
+check('(define ones (cons-stream 1 ones)) (stream-head (stream-map + ones ones) 3)', '(2 2 2)');
+check('(define (from n) (cons-stream n (from (+ n 1)))) (define s (from 1)) (stream-ref s 2) s', '{1 2 3 ...}');
+check('(cons-stream 1 2)', '{1 ...}');
+check('(stream 1 2 3)', '{1 2 3}');
+check('(stream->list (stream 1 2 3))', '(1 2 3)');
+check("(stream->list (list->stream '(a b)))", '(a b)');
+check('(stream-length (stream 1 2 3))', '3');
+check('(define ones (cons-stream 1 ones)) (stream-cdr ones) ones', '{1 ...}');   // a stream that loops back on itself still prints
+check('(list (stream-pair? (stream 1)) (stream-pair? (list 1)) (stream-null? the-empty-stream) (empty-stream? (stream)))', '(#t #f #t #t)');
+check('(define c 0) (define s (cons-stream 1 (begin (set! c (+ c 1)) (cons-stream 2 the-empty-stream)))) (stream-cdr s) (stream-cdr s) c', '1');
+check('(define fibs (cons-stream 0 (cons-stream 1 (stream-map + fibs (stream-cdr fibs))))) (stream-ref fibs 60)', '1548008755920');
+errs('(stream-car the-empty-stream)', /passed as the first argument to stream-car, is not the correct type/);
+errs('(stream-cdr (list 1 2))', /stream-cdr, is not the correct type/);
+errs('(stream-head (stream 1 2) 3)', /stream-head, is not in the correct range/);
+errs('(stream-ref (stream 1 2) 2)', /stream-ref, is not in the correct range/);
+errs('(cons-stream 1)', /Ill-formed special form/);
+errs('(delay)', /Ill-formed special form/);
+// set! changes the binding where it was found: a closure's own frame (SICP §3.1)
+check('(define (make-counter) (let ((n 0)) (lambda () (set! n (+ n 1)) n))) (define a (make-counter)) (define b (make-counter)) (a) (a) (b) (list (a) (b))', '(3 2)');
+errs('(set! undefined-thing 1)', /Unbound variable: undefined-thing/);
+
 // the REPL-style use: one evaluator, many forms, each with a fresh budget
 errs('(iota 1000000000)', /out of memory/);
 errs('(define (f s n) (if (= n 0) s (f (string-append s s) (- n 1)))) (string-length (f "abcdefghij" 40))', /out of memory/);

@@ -356,7 +356,8 @@
       if (opts.turtleMount && !turtle) { opts.turtleMount.hidden = true; opts.turtleMount.textContent = ''; }
       const r = await Runners.python.run(code, { onOutput: (s) => out.write(s), onInput: (p) => out.ask(p), stdin: opts.stdin, turtle });
       if (r.err) out.error(r.err);
-      else if (!r.out && !turtle) out.note('(the program finished without printing anything)');
+      else if (!r.out && !turtle && !r.exit) out.note('(the program finished without printing anything)');
+      if (!r.err && r.exit) { out.note('(the program ended with status ' + r.exit + ')'); return r.exit; }   // sys.exit(n)
     } else if (lang === 'scheme') {
       const r = await Runners.scheme.run(code, { onOutput: (s) => out.write(s), stepLimit: 2e7 });   // the Lab's REPL limit, so an example behaves as it does there
       for (const res of r.results) {
@@ -375,6 +376,7 @@
       const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: opts.stdin, onInput: /\b(scanf|getchar)\b/.test(code) ? undefined : (p) => out.ask(p) });   // no stdin given: typed as the program asks
       if (r.err) out.error(r.err);
       else if (!r.out) out.note('(the program finished without printing anything)');
+      if (!r.err && r.exit) { out.note('(the program ended with status ' + r.exit + ')'); return r.exit; }   // what main returned
     } else if (lang === 'java') {
       const r = await Runners.java.run(code, { onOutput: (s) => out.write(s), stdin: opts.stdin, onInput: (p) => out.ask(p) });
       if (r.err) { out.error(r.err); const tip = tipFor('java', r.err); if (tip) out.note('↳ ' + tip); }
@@ -892,7 +894,7 @@
     const runBtn = el('button', { class: 'btn primary', onclick: () => (guess ? guess.run(run, out) : run()) }, 'Run');
     const resetBtn = el('button', { class: 'btn quiet', onclick: () => { editor.value = b.code; out.hide(); } }, 'Reset');
     const labBtn = window.LAB ? el('button', { class: 'btn quiet lab-open', title: 'Copy this code into the Code Lab', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, runtime: b.runtime }) }, 'Open in Code Lab') : null;
-    const substBtn = window.LAB && window.SUBST && (b.lang === 'lisp' || b.lang === 'scheme') && !b.expectError ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and watch each expression being rewritten, one step of the substitution model at a time', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, subst: true }) }, 'Show the substitution') : null;
+    const substBtn = window.LAB && window.SUBST && (b.lang === 'lisp' || b.lang === 'scheme') && !b.expectError && !b.noSubst ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and watch each expression being rewritten, one step of the substitution model at a time', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, subst: true }) }, 'Show the substitution') : null;
     const memBtn = window.LAB && window.CPPSTEP && b.lang === 'cpp' && b.runtime !== 'full' ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and run it one line at a time, watching every variable, address and pointer', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, step: true, stdin: b.stdin }) }, 'Step through memory') : window.LAB && window.JAVASTEP && b.lang === 'java' ? el('button', { class: 'btn quiet lab-open mem-open', title: 'Open this program in the Code Lab and run it one statement at a time, watching the call stack, the variables and the objects', onclick: () => window.LAB.openCode({ lang: b.lang, code: editor.value, name: b.labName, step: true, stdin: b.stdin }) }, 'Step through') : null;
     box.append(editor.el, ...(guess ? [guess.el] : []), el('div', { class: 'toolbar' }, runBtn, resetBtn, b.stdin != null ? el('span', { class: 'stdin-note' }, 'input provided: ', el('code', {}, JSON.stringify(b.stdin))) : null, el('span', { class: 'spacer' }), memBtn, substBtn, labBtn), ...[turtleMount, out.el, guess && guess.result, guess && cap].filter(Boolean));   // append() prints a null as text
     return box;
@@ -1028,7 +1030,7 @@
       }
       else if (b.check) { checkCount++; frag.append(tagged('Quick check ' + checkCount, checkBlock(b, { onFirstAnswer: (ok, sure) => window.REVIEW && window.REVIEW.fromLesson(course, b, ok, sure) }), 'blk-check')); }
       else if (b.play && (b.lang || course.lang) === 'shell' && window.TERMINAL) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], window.TERMINAL.playBlock(b, course), 'blk-play')); }
-      else if (b.play) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, predict: b.predict, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount }), 'blk-play')); }
+      else if (b.play) { playCount++; frag.append(tagged(['Example ' + playCount, ' · ', lbl('tryIt')], playgroundBlock({ lang: b.lang || course.lang, code: b.play, caption: b.caption, stdin: b.stdin, expectError: b.expectError, noSubst: b.noSubst, predict: b.predict, runtime: b.runtime || course.runtime, labName: course.id + '-lesson' + (lessonIdx + 1) + '-example' + playCount }), 'blk-play')); }
       else if (b.ex) {
         b.ex.lang = b.ex.lang || course.lang; b.ex.runtime = b.ex.runtime || course.runtime; exCount++;
         const node = window.MATHGRADE && window.MATHGRADE.isMath(b.ex) ? mathExerciseBlock(b.ex, course) : b.ex.kind === 'parsons' ? parsonsBlock(b.ex, course) : b.ex.kind === 'shell' && window.TERMINAL ? window.TERMINAL.exerciseBlock(b.ex, course, lessonIdx) : exerciseBlock(b.ex, course, lessonIdx);

@@ -165,7 +165,7 @@
     async function run(lang, src, p) {
       const onOutput = (s) => p.onOutput(String(s));
       const args = Array.isArray(p.args) ? p.args.map(String) : [];   // the words after the program's name: sys.argv[1:], main(String[] args)
-      if (lang === 'python') { const r = await window.PYRUN.run(src, { stdin: p.stdin == null ? null : p.stdin, execLimit: 15000, args, argv0: typeof p.name === 'string' ? p.name : 'main.py', onOutput, onInput: p.onInput ? (q) => p.onInput(q) : undefined }); return { err: r.err, exit: r.err ? (/^Stopped/.test(r.err) ? 130 : 1) : 0 }; }
+      if (lang === 'python') { const r = await window.PYRUN.run(src, { stdin: p.stdin == null ? null : p.stdin, promptsOut: true, execLimit: 15000, args, argv0: typeof p.name === 'string' ? p.name : 'main.py', onOutput, onInput: p.onInput ? (q) => p.onInput(q) : undefined }); return { err: r.err, exit: r.err ? (/^Stopped/.test(r.err) ? 130 : (r.exit || 1)) : (r.exit || 0) }; }
       // Java and the teaching C++ read typed input a line at a time as they ask (runner.js); a pipe or a file (< in.txt) is given all at once
       const onInput = p.stdin == null && p.onInput ? (q) => p.onInput(q) : undefined;
       if (lang === 'java') {
@@ -182,7 +182,7 @@
       if (lang === 'cpp') {
         if (p.std) { const r = await R().cppFull.run(src, { stdin: p.stdin == null ? '' : p.stdin, std: p.std, onOutput, onNote: (s) => write(s + '\n', 'note'), host: box }); return { err: r.err, exit: r.err ? 1 : (r.exit || 0) }; }
         const typed = onInput && typedInput('cpp', src, null);
-        const r = await R().cpp.run(src, { stdin: typed ? null : (p.stdin == null ? '' : p.stdin), onOutput, onInput: typed ? onInput : undefined }); return { err: r.err, exit: r.err ? (r.exit === 130 ? 130 : 1) : 0 };
+        const r = await R().cpp.run(src, { stdin: typed ? null : (p.stdin == null ? '' : p.stdin), onOutput, onInput: typed ? onInput : undefined }); return { err: r.err, exit: r.err ? (r.exit === 130 ? 130 : 1) : (r.exit || 0) };
       }
       return { err: lang + ': no way to run this here', exit: 126 };
     }

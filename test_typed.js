@@ -101,6 +101,27 @@ async function typed(w, code, answers, waits) {
     check('C++: while (cin >> x) waits for typing, and Ctrl+D ends it', r.out === 'total 6\n', r);
     r = await cpp.run({ code: ceof, stdin: '5 6', maxTimeout: 4000 });
     check('C++: and reads given input to its end as before', r.out === 'total 11\n', r);
+
+    // ---------------- exit statuses (the practice terminal's $?) and Python's prompts with stdin given
+    r = await cpp.run({ code: 'int main() { return 3; }\n', stdin: '', maxTimeout: 4000 });
+    check('C++: what main returns is the exit status', r.exit === 3 && !r.err, r);
+    r = await cpp.run({ code: 'int main() { return 258; }\n', stdin: '', maxTimeout: 4000 });
+    check('C++: as a byte', r.exit === 2, r);
+    const py = spawn('py'), pyRun = (code, extra) => py.run(Object.assign({ code, stdin: '', execLimit: 5000 }, extra));
+    try {
+      r = await pyRun('import sys\nprint("a")\nsys.exit(3)\nprint("b")\n');
+      check('Python: sys.exit(3) ends the program with status 3', r.out === 'a\n' && r.exit === 3 && !r.err, r);
+      r = await pyRun('import sys\nsys.exit()\n');
+      check('Python: sys.exit() is status 0', r.exit === 0 && !r.err, r);
+      r = await pyRun('import sys\nsys.exit("no such file")\n');
+      check('Python: sys.exit("text") prints the text as an error, status 1', r.exit === 1 && r.err === 'no such file', r);
+      r = await pyRun('import sys\ntry:\n    sys.exit(4)\nexcept SystemExit as e:\n    print("caught")\n');
+      check('Python: SystemExit can be caught', r.out === 'caught\n' && r.exit === 0, r);
+      r = await pyRun('a = input("first: ")\nb = input("second: ")\nprint(int(a) + int(b))\n', { stdin: '40\n2\n', promptsOut: true });
+      check('Python: promptsOut prints input()\'s prompts when stdin is given, as python does', r.out === 'first: second: 42\n', r);
+      r = await pyRun('a = input("first: ")\nprint(a)\n', { stdin: '7\n' });
+      check('Python: without it (lessons, graders) the prompt is not printed, as before', r.out === '7\n', r);
+    } finally { py.end(); }
   } finally { java.end(); cpp.end(); }
   console.log((fails ? 'FAILED ' : 'ok ') + passes + ' passed, ' + fails + ' failed (typed input)');
   process.exit(fails ? 1 : 0);
