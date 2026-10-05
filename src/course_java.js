@@ -24,7 +24,7 @@ window.COURSES.push({
     'Store and find data by key with HashMap and TreeMap, count with a map, and keep each item once with a set',
     'Plan and build a program of several classes in stages, testing each stage before the next'
   ],
-  howItWorks: `<h3>How to use these pages</h3><p>Each lesson has runnable code. Press <b>Run</b> and read the output; change something and run again. When a program is wrong, the message you see is the one the real Java compiler (<code>javac</code>) gives, so learning to read it here pays off everywhere. Exercises are checked by running your program on hidden inputs, so read the expected output carefully. Your work is saved in this browser.</p><p>Each lesson stands on its own as an <b>Hour of Code</b> activity: read, run, predict, and finish the two exercises in about 45–60 minutes. Every fourth lesson or so is a <b>checkpoint</b>: no new material, only mixed questions and two exercises on the unit you have just finished. Questions you answer come back on the Today page after a few days, so what you learn lasts.</p>`,
+  howItWorks: `<h3>How to use these pages</h3><p>Each lesson has runnable code. Press <b>Run</b> and read the output; change something and run again. When a program is wrong, the message you see is the one the real Java compiler (<code>javac</code>) gives, so learning to read it here pays off everywhere. Exercises are checked by running your program on hidden inputs, so read the expected output carefully. Your work is saved in this browser.</p><p>Each lesson stands on its own as an <b>Hour of Code</b> activity: read, run, predict, and finish the two exercises in about 45–60 minutes. Every fourth lesson or so is a <b>checkpoint</b>: no new material, only mixed questions and two exercises on the unit you have just finished. Questions you answer come back on the Today page a day later, then at longer and longer gaps, so what you learn lasts.</p>`,
   skills: [
     { id: 'compile-run', name: 'Explain javac and the JVM, and read compiler errors' },
     { id: 'types-arithmetic', name: 'Predict int and double arithmetic and text joining' },
@@ -192,7 +192,7 @@ public class Main {
         int hours = days * 24;
         System.out.println(days + " days is " + hours + " hours");
     }
-}`, stdin: '3', caption: 'Three steps: read into a typed variable, compute into a named variable, print one String with the spaces written explicitly. The input, 3, is in the box below the code; change it and run again. Output for 3: "3 days is 72 hours".' },
+}`, stdin: '3', caption: 'Three steps: read into a typed variable, compute into a named variable, print one String with the spaces written explicitly. The input, 3, is given with the example (it is shown beside the Run button). To try another number, press Open in Code Lab and run it there: the program waits while you type the number. Output for 3: "3 days is 72 hours".' },
         `<p><code>in.nextInt()</code> reads an <code>int</code>; <code>in.nextDouble()</code> reads a <code>double</code>; <code>in.next()</code> reads one word; <code>in.nextLine()</code> reads a whole line. If the input holds several numbers, call <code>nextInt()</code> once for each: it skips the spaces and line breaks between them. If the next thing in the input is not a number, <code>nextInt()</code> stops the program with an <code>InputMismatchException</code>; you will learn to guard against that in lesson 2.</p>
 <p>Look at the spaces inside the quoted pieces: <code>" days is "</code> has a space at each end, because <code>+</code> adds none. Your exercises follow the same three steps.</p>`,
         `<details class="reveal"><summary>Puzzle: in Java, what do <code>7 / 2</code>, <code>7.0 / 2</code> and <code>7 % 2</code> give? And <code>"7" + 2</code>?</summary><p><code>3</code>, <code>3.5</code>, <code>1</code> and <code>72</code>. Two <code>int</code>s divide to an <code>int</code>, dropping the fraction; one <code>double</code> keeps it; <code>%</code> gives the remainder. In the last one <code>"7"</code> is text, so <code>+</code> joins: Python would refuse to add a string and a number, Java joins them without complaint, which is convenient in <code>println</code> and a trap everywhere else.</p></details>`,
@@ -334,7 +334,7 @@ public class Main {
             System.out.println(name + " may vote in " + (18 - age) + " years");
         }
     }
-}`, stdin: '16\nAda Lovelace', caption: 'Delete the in.nextLine(); line and run again: name is now the empty rest of line 1, and the output says No name given. Then change the age to 20.' },
+}`, stdin: '16\nAda Lovelace', caption: 'Delete the in.nextLine(); line and run again: name is now the empty rest of line 1, and the output says No name given. Then open it in the Code Lab, run it, and type an age of 20 and a name.' },
         `<p>Input is the part of a program you do not control. If the user types <code>sixteen</code> where a number is expected, <code>nextInt()</code> stops the program with <code>InputMismatchException</code>. A program that must not fall over asks first: <code>in.hasNextInt()</code> is <code>true</code> when the next word of input is a whole number.</p>`,
         { play: `import java.util.Scanner;
 
@@ -349,7 +349,7 @@ public class Main {
             System.out.println("'" + word + "' is not a whole number");
         }
     }
-}`, stdin: 'sixteen', caption: 'Change the input to 21, then to 2.5 (a decimal is not an int either).' },
+}`, stdin: 'sixteen', caption: 'Open it in the Code Lab and type 21, then 2.5 (a decimal is not an int either).' },
         `<h2>switch and the conditional operator</h2>
 <p>When one value is compared against several constants, a <code>switch</code> says it more clearly than a chain of <code>else if</code>. Each <code>case</code> lists one or more values and an arrow to what should happen; <code>default</code> catches everything else. It works on <code>int</code>, <code>char</code> and <code>String</code> values.</p>`,
         { play: `public class Main {
@@ -449,7 +449,7 @@ public class Main {
             n = n + 2;
         }
     }
-}`, expectError: true, caption: 'After about five seconds this site stops the program with "Time limit exceeded". n goes 1, 3, 5, 7, 9, 11, …: always odd, so it is never 10. Change != to < and it stops at 11.' },
+}`, expectError: true, caption: 'Within a second this site stops the program, because it has printed more than it is allowed to; a real machine would print for ever. n goes 1, 3, 5, 7, 9, 11, …: always odd, so it is never 10. Change != to < and it stops at 11.' },
         { skill: 'loop-write', check: "Why prefer <code>n &lt; 10</code> to <code>n != 10</code> as a loop test?", options: ["It is faster", "A counter that steps past 10 ends a &lt; loop and never ends a != one", "It makes no difference"], answer: 1, wrong: ["Both tests take the same time. The reason is what happens when the counter skips over 10.", null, "They differ whenever the counter can step over 10: with != the loop then never ends."], why: "If n goes 1, 3, 5, …, it is never exactly 10. The < test stops at 11; the != test runs forever." },
         `<h2>for</h2>
 <p>Most loops count: start somewhere, test, step. Java's <code>for</code> puts those three parts on one line, separated by semicolons, so the whole shape of the loop can be read at a glance: <code>for (start; keep going while; step)</code>. The variable declared in the start part belongs to the loop and does not exist after it.</p>`,
@@ -744,7 +744,7 @@ public class Main {
     }
 }`, expectError: true, caption: 'Main.java:10: error: cannot find symbol: variable result. The result inside twice belongs to twice. Note that both methods have a variable called value, and they are two different variables.' },
         `<h2>Several methods with one name</h2>
-<p>Java lets you define two methods with the same name as long as their parameters differ in number or type. The compiler picks the one whose parameters match the arguments. This is called <em>overloading</em>, and the library uses it everywhere: <code>println</code> is ten methods, one for each kind of thing it can print (and one for no argument at all), and <code>Math.abs</code> works for <code>int</code> and <code>double</code> alike. Use it when the methods really do the same job for different inputs; two unrelated methods with one name confuse everyone.</p>`,
+<p>Java lets you define two methods with the same name as long as their parameters differ in number or type. The compiler picks the one whose parameters match the arguments. This is called <em>overloading</em>, and the library uses it everywhere: <code>println</code> is ten methods: nine for the kinds of thing it can print and one with no argument at all, and <code>Math.abs</code> works for <code>int</code> and <code>double</code> alike. Use it when the methods really do the same job for different inputs; two unrelated methods with one name confuse everyone.</p>`,
         { predict: true, play: `public class Main {
     static double area(double radius) {
         return Math.PI * radius * radius;
@@ -858,7 +858,7 @@ public class Main {
         {
           ex: {
             id: 'jv-4-2', skill: 'method-write', title: 'Greatest common divisor',
-            prompt: `<p>Write a method</p><pre class="code">static int gcd(int a, int b)</pre><p>that returns the greatest common divisor of two whole numbers that are 0 or more, at least one of them positive: the largest number that divides both. For example <code>gcd(12, 18)</code> is 6, <code>gcd(7, 5)</code> is 1 and <code>gcd(0, 9)</code> is 9. Use Euclid's method, which is over two thousand years old and still the best: while <code>b</code> is not 0, replace the pair <code>(a, b)</code> by <code>(b, a % b)</code>; when <code>b</code> reaches 0, <code>a</code> is the answer. Write only the method.</p>`,
+            prompt: `<p>Write a method</p><pre class="code">static int gcd(int a, int b)</pre><p>that returns the greatest common divisor of two whole numbers that are 0 or more, at least one of them positive: the largest number that divides both. For example <code>gcd(12, 18)</code> is 6, <code>gcd(7, 5)</code> is 1 and <code>gcd(0, 9)</code> is 9. Use Euclid's method, which is over two thousand years old and still the standard one: while <code>b</code> is not 0, replace the pair <code>(a, b)</code> by <code>(b, a % b)</code>; when <code>b</code> reaches 0, <code>a</code> is the answer. Write only the method.</p>`,
             starter: `static int gcd(int a, int b) {\n    // while b is not 0: the new a is b, the new b is a % b\n    return a;\n}`,
             solution: `static int gcd(int a, int b) {\n    while (b != 0) {\n        int remainder = a % b;\n        a = b;\n        b = remainder;\n    }\n    return a;\n}`,
             hints: ['The loop runs while (b != 0). Inside it you need the remainder a % b, but you need it after a has already been overwritten: compute it into a variable first.', 'int remainder = a % b; a = b; b = remainder; Three lines, in that order. Then return a after the loop.', 'Trace gcd(12, 18) on paper: (12, 18) → (18, 12) → (12, 6) → (6, 0) → answer 6. If your trace differs, the order of the three lines is wrong.'],
@@ -1068,7 +1068,7 @@ public class Main {
             System.out.println(" " + count[s]);
         }
     }
-}`, stdin: '5 4 5 3 5 1 4 5 2 4 5 4', caption: 'Making the array one longer than needed, so that count[5] exists, is simpler than subtracting 1 every time. Add a review of 6 stars to the input and run: the index is checked, as always.' },
+}`, stdin: '5 4 5 3 5 1 4 5 2 4 5 4', caption: 'Making the array one longer than needed, so that count[5] exists, is simpler than subtracting 1 every time. Open it in the Code Lab, run it, type some reviews with a 6 among them, and end the input with Ctrl+D on an empty line: the index is checked, as always.' },
         `<h2>Tables of rows and columns</h2>
 <p>An array can hold arrays. <code>char[][] map = new char[4][8]</code> makes 4 rows, each an array of 8 <code>char</code>s. <code>map[r]</code> is one whole row, <code>map[r][c]</code> one square, <code>map.length</code> the number of rows and <code>map[r].length</code> the number of columns in row <code>r</code>. Visiting every square takes two loops, one inside the other: rows on the outside, columns inside, the way you read a page.</p>`,
         { play: `public class Main {
@@ -1274,8 +1274,8 @@ public class Main {
             System.out.println(name + ", born in the " + decade + "s: " + parts[2]);
         }
     }
-}`, stdin: 'Grace Hopper,1906,the first compilers\nKatherine Johnson,1918,John Glenn\'s orbit\nTim Berners-Lee,1955,the World Wide Web', caption: 'Each line splits into three parts; the year is parsed so that it can be divided. Change 1955 to 19x5 in the input and run: NumberFormatException: For input string: "19x5".' },
-        `<p>Back to the start of the lesson. Characters beyond the first 65,536 of Unicode, which include every emoji, take two <code>char</code>s each, and <code>length()</code> counts <code>char</code>s, not the characters you see. Most of the time it does not matter. It matters when you cut text with <code>substring</code> or count its letters, and it is one reason a text box sometimes says you have more characters left than you can see.</p>`,
+}`, stdin: 'Grace Hopper,1906,the first compilers\nKatherine Johnson,1918,John Glenn\'s orbit\nTim Berners-Lee,1955,the World Wide Web', caption: 'Each line splits into three parts; the year is parsed so that it can be divided. Open it in the Code Lab, run it and type a line with the year written 19x5: NumberFormatException: For input string: "19x5".' },
+        `<p>Back to the start of the lesson. Characters beyond the first 65,536 of Unicode, which include every emoji, take two <code>char</code>s each, and <code>length()</code> counts <code>char</code>s, not the characters you see. Most of the time it does not matter. It matters when you cut text with <code>substring</code> or count its letters, and it is one reason a text box with a limit sometimes counts an emoji as two characters.</p>`,
         { play: `public class Main {
     public static void main(String[] args) {
         String plain = "cat";
@@ -1384,7 +1384,7 @@ public class Main {
         }
         System.out.printf("%-10s %6.2f%n", items.size() + " items", total);
     }
-}`, stdin: 'gum 0.67\nbread 2.49\nmilk 1.15\napples 3.20', caption: 'The program has no idea how many items are coming, and does not need one. Add a line to the input, say tea 4.10, and run again: the lists simply grow.' },
+}`, stdin: 'gum 0.67\nbread 2.49\nmilk 1.15\napples 3.20', caption: 'The program has no idea how many items are coming, and does not need one. Open it in the Code Lab, run it, type the four lines and a fifth, say tea 4.10, and end the input with Ctrl+D on an empty line: the lists simply grow.' },
         `<h2>Removing, and two traps</h2>
 <p>A list of <code>Integer</code>s has a trap built in. <code>remove</code> comes in two kinds: <code>remove(int index)</code> removes the item at that position, and <code>remove(Object x)</code> removes the first item equal to <code>x</code>. Given <code>list.remove(3)</code>, Java picks the first, because 3 is an <code>int</code>. To remove the <em>value</em> 3, wrap it: <code>list.remove(Integer.valueOf(3))</code>.</p>`,
         { predict: true, play: `import java.util.ArrayList;
@@ -2312,7 +2312,7 @@ public class Main {
         Map<String, Integer> sorted = new TreeMap<>(counts);
         System.out.println(sorted);
     }
-}`, stdin: 'the cat and the dog and the bird\n', caption: 'For each word, put replaces the old count with the old count plus one; a new word starts from 0. "the" appears 3 times and there are 5 different words. A HashMap prints its pairs in an order of its own, set by the keys\' hash numbers, which is neither the order they arrived nor alphabetical. The same keys always give the same order, but you cannot choose it. A TreeMap keeps its keys sorted, so copying the counts into one gives alphabetical order.' },
+}`, stdin: 'the cat and the dog and the bird\n', caption: 'For each word, put replaces the old count with the old count plus one; a new word starts from 0. "the" appears 3 times and there are 5 different words. A HashMap prints its pairs in an order of its own, set by the keys\' hash numbers, which is neither the order they arrived nor alphabetical. Run it again and the order is the same, but you cannot choose it. A TreeMap keeps its keys sorted, so copying the counts into one gives alphabetical order.' },
         `<div class="stmt"><p><span class="kind">Rule (counting).</span> To count with a map, <code>counts.put(key, counts.getOrDefault(key, 0) + 1)</code> for every item. <b>Order:</b> a <code>HashMap</code> has no order you can rely on; a <code>TreeMap</code> keeps keys sorted; a <code>LinkedHashMap</code> remembers the order in which keys were first put. They all have the same methods, so you can change one word and keep the rest.</p></div>`,
         { skill: 'map-use', check: `<code>counts</code> is an empty map. After <code>counts.put("a", counts.getOrDefault("a", 0) + 1);</code> has run twice, what is <code>counts.get("a")</code>?`, options: [`1`, `2`, `0`, `null`], answer: 1, wrong: [`The second run starts from the 1 that the first run stored: put replaces the value with the old one plus 1.`, null, `0 is only the starting value for a key that is missing. After the first put the key is there.`, `null is what get returns for a missing key, and "a" was put in the map.`], why: `The first run stores 0 + 1; the second reads that 1 and stores 2.` },
         `<h2>Looping over a map</h2>
