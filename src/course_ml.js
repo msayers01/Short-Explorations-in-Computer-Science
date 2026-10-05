@@ -533,7 +533,7 @@ for epoch in range(1, 5):
             w[1] = w[1] + labels[i] * x[1]
             b = b + labels[i]
             mistakes = mistakes + 1
-    print("pass", epoch, "mistakes", mistakes, "w", w, "b", b)`, caption: 'The mistakes go 3, 2, 1, 0, ending with w = [-10, 7] and b = 0: tall when 7 × height is more than 10 × width. That line separates all six training shapes, but it is not the rule "height more than width": it would call a 5 by 6 rectangle wide. The perceptron finds <em>a</em> line that fits its examples, not the one in your head. Add [5, 6] with label 1 and run again.' },
+    print("pass", epoch, "mistakes", mistakes, "w", w, "b", b)`, caption: 'The mistakes go 3, 2, 1, 0, ending with w = [-10, 7] and b = 0: tall when 7 × height is more than 10 × width. That line separates all six training shapes, but it is not the rule "height more than width": it would call a 5 by 6 rectangle wide. The perceptron finds <em>a</em> line that fits its examples, not the one in your head. Add [5, 6] with label 1 and run again: four passes are no longer enough. Change range(1, 5) to range(1, 8) and it needs six.' },
         { fig: 'perceptron', caption: 'The same rule on the sixteen fruit from lesson 2, lemons 1 and oranges −1, with every change made 0.1 times as big. Press <b>Next mistake</b>: the ringed fruit was on the wrong side, and the line swings towards it. Fruit drawn with a red edge are on the wrong side of the line at that moment. Watch how a fix for one fruit can break another, and how the mistakes still die out.' },
         { check: 'Weights <code>[0, -1]</code>, bias 0. The perceptron calls the tall rectangle <code>[1, 3]</code> (label 1) wide. What are the weights and bias after the update?', skill: 'perceptron-rule', options: ['<code>[1, 2]</code>, bias 1', '<code>[-1, -4]</code>, bias −1', '<code>[0, -1]</code>, bias 0'], answer: 0, wrong: [null, 'That subtracts the example, as if the label were −1. The update uses the right label, y = 1, so the example is added.', 'Updates happen exactly when the prediction is wrong, and this one is wrong.'], why: 'The label is 1, so add 1 × [1, 3] to the weights and 1 to the bias: [0 + 1, −1 + 3] = [1, 2], bias 1. The new score of [1, 3] is 1 + 1 + 6 = 8: now tall.' },
         `<h2>What one line cannot do</h2>
@@ -915,7 +915,7 @@ print("windy:", round(gain(windy), 3))`, long: true, caption: 'outlook: 0.247, w
 <li>A <b>perceptron</b> labels by the sign of a weighted sum and learns by moving its weights after each mistake. It can only learn what one straight line separates.</li>
 <li><b>Gradient descent</b> makes the error small by stepping against its slope; the <b>learning rate</b> sets the step, and both too small and too large go wrong.</li>
 <li>A <b>decision tree</b> asks the question with the largest <b>information gain</b> first; <b>entropy</b> measures how mixed a group is, in bits.</li>
-<li>Next: words. Computers only handle numbers, so the next unit turns text into numbers, then builds a model that writes, one word at a time.</li>
+<li>Next: words. Computers only handle numbers, so the next unit turns text into numbers, then builds a model that writes, one letter or one word at a time.</li>
 </ul></div>`
       ]
     }
