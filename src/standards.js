@@ -126,7 +126,7 @@
 
   // Pages of the site that are not courses and practise a standard without a lesson teaching it.
   const SUPPORT = [
-    { name: 'Algorithms in motion', href: '#/algorithms', note: '17 demos: sorting race, searching, paths, games, puzzles', codes: ['3B-AP-10', '3B-AP-11', '3A-IC-26'] },
+    { name: 'Algorithms in motion', href: '#/algorithms', note: '31 demos: sorting, searching, paths, games, puzzles, emergence, geometry, backtracking, compression', codes: ['3B-AP-10', '3B-AP-11', '3A-IC-26'] },
     { name: 'Bot Arena', href: '#/arena', note: 'Tron bots in Python, Java, C++ and Scheme', codes: ['3B-AP-09', '3A-AP-13'] },
     { name: 'Where it is used', href: '#/real-world', note: '30 topics, 147 examples by field', codes: ['3A-IC-24', '3A-IC-26'] },
     { name: 'Code Lab', href: '#/lab', note: 'write, run and test code in four languages', codes: ['2-AP-17', '3A-AP-21'] },

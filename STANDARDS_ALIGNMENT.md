@@ -261,7 +261,7 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 
 ## Other parts of the site
 
-- Algorithms in motion (17 demos: sorting race, searching, paths, games, puzzles): 3B-AP-10, 3B-AP-11, 3A-IC-26
+- Algorithms in motion (31 demos: sorting, searching, paths, games, puzzles, emergence, geometry, backtracking, compression): 3B-AP-10, 3B-AP-11, 3A-IC-26
 - Bot Arena (Tron bots in Python, Java, C++ and Scheme): 3B-AP-09, 3A-AP-13
 - Where it is used (30 topics, 147 examples by field): 3A-IC-24, 3A-IC-26
 - Code Lab (write, run and test code in four languages): 2-AP-17, 3A-AP-21

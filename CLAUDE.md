@@ -194,8 +194,10 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   not on the page), so keep the browser check in `test_browser.js` passing. The step texts describe the UI: update them when it changes.
 - **Standards** (ARCHITECTURE §9k): every lesson has `standards: [...]` (CSTA 2017 codes and Minnesota 2022 math benchmark codes); `src/standards.js` draws `#/standards` and the box under a lesson's summary; `node scripts/standards-map.js` rewrites `STANDARDS_ALIGNMENT.md` (commit it; `test_standards.js` fails if stale). Give a new lesson its `standards`. The mapping is the author's, from titles, summaries and keyword search, and the CSTA texts are paraphrases: say so, do not call a lesson "meets".
 - **Courses, Algorithms, Real world** (ARCHITECTURE §9g): the top bar is Courses / Algorithms / Real world / Arena / Code Lab. `#/courses` groups the
-  courses (`COURSE_GROUPS` in app.js: add a new course to a group). `#/algorithms` has 17 interactive demos (`src/algos.js` frame,
-  `src/algo_{search,sort,paths,games,puzzles}.js`, each with `selfTest()` run by `test_algos.js`). The owner reports that students loved
+  courses (`COURSE_GROUPS` in app.js: add a new course to a group). `#/algorithms` has 31 interactive demos (`src/algos.js` frame,
+  `src/algo_{search,sort,paths,games,puzzles,nature,geometry,logic,play}.js`, each with `selfTest()` run by `test_algos.js`; October 2026 added
+  boids, Langton's ant, the sandpile, slime mould; a convex hull race, the Mandelbrot set, L-systems, Voronoi; a Sudoku solver race, n queens, an MST race;
+  Reversi against MCTS, a genetic algorithm, Huffman coding). The owner reports that students loved
   the sorting race: races with a bet first (sorting, maze), things to play against the computer (Hanoi, the tour) and long-running
   simulations (Life, raindrops) are what to add more of. Redraw counters once a frame (`onceAFrame` in algo_puzzles.js), never per step. `#/real-world` (`src/applied.js`) has 30 topics,
   147 examples tagged by field, and links to the lessons. The tour's top-bar step describes these pages: update it when they change.
