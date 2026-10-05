@@ -1223,6 +1223,7 @@
       el('section', { class: 'section' },
         el('h2', {}, 'Short courses'),
         el('div', { class: 'prose', html: SITE.coursesIntro }),
+        SITE.pitch ? el('aside', { class: 'pitch', html: SITE.pitch }) : null,
         el('div', { class: 'course-groups' }, groupedCatalog('')),
         el('p', { class: 'more-pages' }, el('a', { href: '#/courses' }, 'All courses, with search'),
           window.ALGOS ? [' · ', el('a', { href: '#/algorithms' }, 'Algorithms in motion')] : null,
