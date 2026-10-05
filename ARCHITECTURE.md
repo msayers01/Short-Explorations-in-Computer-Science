@@ -112,7 +112,8 @@ site/
     ojibwe.js            Ojibwe interface words, their sources, the review page (#/ojibwe) → window.OJIBWE
     about.js             About and credits page (#/about) → window.ABOUT
     algos.js             the #/algorithms page (§9g): demo registry, index and demo pages, shared player and canvas → window.ALGOS
-    algo_search.js, algo_sort.js, algo_paths.js, algo_games.js, algo_puzzles.js   the demos (§9g); each also exports selfTest() for test_algos.js
+    algo_search.js, algo_sort.js, algo_paths.js, algo_games.js, algo_puzzles.js,
+    algo_nature.js, algo_geometry.js, algo_logic.js, algo_play.js                 the demos (§9g); each also exports selfTest() for test_algos.js
     applied.js           the #/real-world page (§9g): topics, where each is used, jobs, lesson links → window.APPLIED
     standards.js         the #/standards page and the standards box under each lesson's summary (§9k) → window.STANDARDS
 ```
@@ -850,7 +851,17 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   diagonals; graph traversal with the queue or stack shown; untangle the tour: draw a travelling-salesman tour, then nearest neighbour and
   2-opt race it), mazes (seven generators, six solvers; a maze race of four solvers on one maze), games (minimax and alpha-beta on a tree,
   unbeatable tic-tac-toe, Connect Four with depth-limited alpha-beta run in time slices, Nim by the XOR rule), puzzles and simulations
-  (`algo_puzzles.js`: Towers of Hanoi to play or watch, Conway's Game of Life with a glider gun, raindrops for π). The two races do not
+  (`algo_puzzles.js`: Towers of Hanoi to play or watch, Conway's Game of Life with a glider gun, raindrops for π), and, added in October 2026:
+  nature and emergence (`algo_nature.js`: boids with a hawk to steer, Langton's ant and turmites with a bet on the highway, the abelian
+  sandpile dropped 2^k grains at a time with an avalanche histogram, a Jones-style slime mould on a trail map), geometry and fractals
+  (`algo_geometry.js`: a convex hull race of gift wrapping, Graham scan and Quickhull with exact integer orientation tests; the Mandelbrot set
+  rendered coarse to fine in time slices, with an orbit view, a Julia inset and a dive to a Misiurewicz point; L-system plants with a checked,
+  length-capped rule box; Voronoi cells and Bowyer–Watson Delaunay with Lloyd relaxation), backtracking and greedy choices (`algo_logic.js`:
+  a Sudoku race of plain backtracking, fewest candidates first and Norvig's propagation, with a hint that names the reasoning; n queens with a
+  play mode that counts the solutions still possible; a shortest-network race of Kruskal, Prim and Borůvka after the reader builds one), and
+  play (`algo_play.js`: Reversi against MCTS/UCT with its visit counts drawn on the board and a match against a greedy player; a genetic
+  algorithm on Dawkins' weasel and on rolling shapes in a small rigid-body simulation; Huffman coding of the reader's text, built and decoded
+  step by step). The races do not
   start by themselves: the reader bets on a lane first ("Who will win?") and the result says how the bet did. Each file keeps the algorithms
   as pure generators apart from the drawing, injects its own `<style id="algo-…-css">` with the site's variables, and exports `selfTest()`.
 - **Adding a demo:** register it from an `algo_*.js` file listed in `build.js` after `algos.js` (and in `test_algos.js`), keep the algorithm
