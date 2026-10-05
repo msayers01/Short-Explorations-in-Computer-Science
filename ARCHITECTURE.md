@@ -607,10 +607,48 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   (also ends a `source`d script). Nesting stops at `FUNCNEST` or `LIMITS.funcDepth` (500) with bash's message, `f: maximum function nesting
   level exceeded (500)`; the step limit still bounds the work. `type f` and `declare -f` print the body in bash's own layout (`printFunc`:
   four spaces a level, `;` after each command inside `if`/`for`/`while`, `elif` as `else` + `if`), from the words as typed (tokens keep `raw`).
-- **Arrays** (indexed only): `sh.arrays[name] = { v: sparse JS array, n, bytes }`; a name is a variable or an array, not both (`$a` is
-  `${a[0]}`, `a[1]=x` turns a variable into an array). `a=(…)`, `a+=(…)`, `a[i]=x`, `${a[i]}` (i is arithmetic, negative counts from the end),
+- **Arrays**: `sh.arrays[name] = { v: sparse JS array, n, bytes }`; a name is a variable or an array, not both (`$a` is
+  `${a[0]}`, `a[1]=x` turns a variable into an array). `a=(…)`, `a=([3]=x y)`, `a+=(…)`, `a[i]=x`, `${a[i]}` (i is arithmetic, negative counts from the end),
   `${a[@]}`/`"${a[@]}"`/`${a[*]}`, `${#a[@]}`, `${#a[i]}`, `${!a[@]}`, `${a[@]:from:len}`, `unset 'a[i]'`, `declare -a`/`-p`, `local -a`,
-  `read -a`. Capped at `LIMITS.array` (10 000) values and 4 × `LIMITS.vars` characters each: past that the line stops with a message.
+  `read -a`, `mapfile`/`readarray` (-t -n -s -O -d). Capped at `LIMITS.array` (10 000) values and 4 × `LIMITS.vars` characters each (keys
+  included): past that the line stops with a message. **Associative** ones (`declare -A`, `local -A`): `{ assoc: true, v: null-prototype
+  dictionary, b: buckets, nb }`, so `__proto__` or a key with spaces is an ordinary key; the key of `m[key]=v`, `${m[key]}` and `(( m[$w]++ ))`
+  is text, not arithmetic (`arith`'s `assocP`), and may not be empty (`bad array subscript`, with the subscript as typed). Keys come out
+  (`${!m[@]}`, `"${m[@]}"`, `declare -p m`) in **bash's own order**: `fnv` is bash's hash (FNV-1 over the key's UTF-8 bytes as signed chars),
+  1024 buckets, the newest key first in its bucket, four times the buckets once there are twice as many keys (hashlib.c), so the differential
+  tests compare the order itself (3000 keys included). `declare -A m=(a 1 b 2)` takes pairs; plain words among `[k]=v` ones get bash's "must
+  use subscript" message; converting between the two kinds is refused with bash's message; `declare -p` writes `declare -A m=([k]="v" )`
+  (keys quoted only when the shell would read them otherwise; values with control characters as `$'…'`, as bash does for any variable).
+  `unset 'm[@]'` removes the key `@` (bash 5.2). Not here: `m[a b]=x` without quotes (bash reads the brackets of an assignment as one word;
+  here quote the key), `${!m[@]:0:2}`.
+- **Here-documents** (`tokenize`: `pending`, `readBodies`): `<<WORD` (and `<<-WORD`, leading tabs removed) waits for the end of its line; the
+  lines after it, up to a line that is exactly WORD, are its text, so several on one line take their texts in order, and they work in functions
+  (`declare -f` prints the text after the command, as bash does), loops, `$(…)` and scripts. A quoted WORD (any of `' " \`) keeps the text as it
+  is; otherwise `hereParts` reads it like the inside of `"…"` (a `"` is only a character; `\` before a newline joins lines). The redirection
+  carries the record (`r.hd`); stdin is the text, expanded each time the command runs. With no line holding WORD the text runs to the end
+  with bash's "warning: here-document at line N delimited by end-of-file (wanted \`WORD')", given through the parser's `warn` as the command is
+  read (in a script: `name: line LAST:`). **At the prompt** (`io.tty` with `io.ask`), `sh.exec` asks for more lines with `> ` while the
+  tokenizer says a here-document is still open (`toks.open`; the terminal shows a hint in the placeholder: `ask(prompt, hint)`), Ctrl+D ends
+  it (the warning), Ctrl+C cancels (`^C`, 130), at most 10 000 lines and 256 KB; the history keeps the first line only (the command line
+  cannot hold the others). `<<< word`: the word expanded (not split, no wildcards) and a newline. A lesson example's terminal runs its lines one
+  by one, so a here-document there would wait for the student: write such an example as a script file. Not here: a here-document inside
+  `$(…)` whose text has an unmatched `'` or `)` (the `$(…)` reader does not know about here-documents).
+- **`[[ … ]]`** (`condExpr` in the parser, `condEval`): `== = !=` with a pattern on the right (quoted parts literal, `~` expanded), `< >` on
+  text, `=~` with a POSIX extended expression (`posixRegex`; quoted parts literal; the tokenizer reads the expression as one word, `( ) |` and
+  spaces inside brackets included) setting `BASH_REMATCH`, `-eq -ne -lt -le -gt -ge` on arithmetic (`[[ x+1 -eq 2 ]]`; an error says
+  `bash: [[: …` and that test is false), `-nt -ot -ef`, the unary tests of `test` plus `-v name`/`-v a[i]`, `&& || ! ( )`, newlines after `&&`
+  and `||`, no splitting or globbing. A regular expression that does not compile gives status 2. Syntax errors are bash's own, line by line:
+  what was wrong ("conditional binary operator expected", "unexpected argument ]] to conditional unary operator", …), then "syntax error near
+  X", where X is the word at fault or the operator after it (bash's reader has looked one token ahead), an operator showing its last
+  character. Leftmost-longest matching (POSIX) is not copied: `a|ab` matches as JavaScript does.
+- **Syntax errors in a script** (`synText`): run as a script (not typed at the prompt), bash follows a "near" error with the line itself
+  (bash: \`[[ a b ]]'); so does this shell now. An error token at the end of the text is `newline`, as in bash.
+- **Smaller pieces** (October 2026): `read` splits by `IFS` as bash does (whitespace runs, one other separator, the last name takes the rest
+  unless it is one word), handles backslashes unless `-r` (and joins a line ending in one), returns 1 at the end of the input with the partial
+  line assigned (`while read -r l || [[ -n $l ]]`), `-d C`, `-n N`; `printf -v NAME` (also `NAME[i]`, `m[key]`); `$'…'` (escapes) and `$"…"`;
+  `${x@Q} @E @U @L @u @a` (also on `${a[@]}`); `$RANDOM` is bash 5.2's generator (Park-Miller, halves XORed, no repeat), so `RANDOM=42`
+  gives bash's numbers (difftest checks it); unseeded it starts from the clock; `$SECONDS` (and `SECONDS=n`); `shopt -s nullglob`,
+  `failglob` (`no match: …`, the line stops), `dotglob`, `-p`, `-q`; a script's `shopt` changes end with it.
   Assignments are no longer split or globbed (`x=*`, `x=$(ls)` keep their text, as in bash); `local`/`declare`/`export` arguments neither.
 - **Aliases** (`alias`, `unalias [-a]`, `type`): expanded when a line is parsed, at the start of a command, not again inside their own text,
   a text ending in a space making the next word a candidate too; capped at 100 aliases of 1000 characters and 10 000 tokens of expansion
@@ -713,9 +751,11 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
     clean; an editor for messages (`git commit` without `-m` says to use `-m`; a merge's own message is used); naming files on `git commit`;
     rename detection other than exact (100%) renames; a merge commit's combined diff in `git show`; submodules (a nested repository's files
     are just files).
-- **Not there (yet):** job control (`&`), `[[ ]]`, associative arrays in the shell (`declare -A`), here-documents and `<<<`, `select`, `ln`
-  (the file system has no links), `tar`, `ssh` and anything needing a network (those names answer with a sentence saying so), a Windows
-  `cmd`/PowerShell dialect (planned with the course).
+- **Not there (yet):** job control (`&`), `select`, `eval`, `let`, `trap`, `getopts`, process substitution (`<(…)`), `>&2` and other fd
+  redirections, extended globs (`@(a|b)`, `shopt -s extglob`), `**` (`globstar`), `nocasematch`, `${!prefix*}` and namerefs, `ln` (the file system
+  has no links), `tar`, `ssh` and anything needing a network (those names answer with a sentence saying so), a Windows `cmd`/PowerShell dialect
+  (planned with the course). In a pipeline every part runs in this shell, so `… | read x` and `… | mapfile a` set the variable (bash runs them
+  in a subshell; a known difference).
 
 ## 9g. Algorithms in motion and Where it is used (`algos.js`, `algo_*.js`, `applied.js`)
 

@@ -56,9 +56,9 @@
     const setStatus = (cls, text) => { status.className = 'term-status' + (cls ? ' ' + cls : ''); status.textContent = text; };
     const setPrompt = () => { ps1.textContent = sh.prompt(); };
 
-    // program input: a prompt from input()/Scanner reuses the command line
+    // program input: a prompt from input()/Scanner reuses the command line, and so do a here-document's lines (prompt '> '; hint: the placeholder)
     let asking = null;   // { resolve, prompt }
-    const ask = (prompt) => new Promise((resolve) => { flush(); asking = { resolve, prompt: prompt || '' }; ps1.textContent = asking.prompt; inp.placeholder = 'the program is waiting for input (Ctrl+D: end of input)'; inp.focus(); });
+    const ask = (prompt, hint) => new Promise((resolve) => { flush(); asking = { resolve, prompt: prompt || '' }; ps1.textContent = asking.prompt; inp.placeholder = (hint || 'the program is waiting for input') + ' (Ctrl+D: end of input)'; inp.focus(); });
 
     // ----- running a line
     let running = false;
