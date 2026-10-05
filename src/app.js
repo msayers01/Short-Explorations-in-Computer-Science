@@ -1128,6 +1128,7 @@
         window.ALGOS ? el('a', { href: '#/algorithms', class: 'algos-link' + (course === 'algorithms' ? ' current' : '') }, 'Algorithms') : null,
         window.APPLIED ? el('a', { href: '#/real-world', class: 'applied-link' + (course === 'applied' ? ' current' : '') }, 'Real world') : null,
         window.ARENA && window.ARENA.page ? el('a', { href: '#/arena', class: 'arena-link-top' + (course === 'arena' ? ' current' : '') }, 'Arena') : null,   // write a bot that plays Tron (src/arena.js)
+        window.SHOWCASE && window.SHOWCASE.count() ? el('a', { href: '#/showcase', class: 'showcase-link' + (course === 'showcase' ? ' current' : '') }, 'Showcase') : null,   // student projects (src/showcase.js); there is no link until there is a project
         el('a', { href: '#/lab', class: 'lab-link' + (course === 'lab' ? ' current' : '') }, 'Code Lab'),
         window.REVIEW ? window.REVIEW.topLink(course === 'today') : null),   // appears once there is something to review (src/review.js)
       el('div', { class: 'top-tools' },   // the three small controls sit close together so the links keep their room
@@ -1227,6 +1228,7 @@
         el('div', { class: 'course-groups' }, groupedCatalog('')),
         el('p', { class: 'more-pages' }, el('a', { href: '#/courses' }, 'All courses, with search'),
           window.ALGOS ? [' · ', el('a', { href: '#/algorithms' }, 'Algorithms in motion')] : null,
+          window.SHOWCASE && window.SHOWCASE.count() ? [' · ', el('a', { href: '#/showcase' }, 'Student showcase')] : null,
           window.APPLIED ? [' · ', el('a', { href: '#/real-world' }, 'Where this is used in the real world')] : null,
           window.STANDARDS ? [' · ', el('a', { href: '#/standards' }, 'Standards alignment')] : null)
       ),
@@ -1325,6 +1327,7 @@
     if (parts[0] === 'algorithms' && window.ALGOS) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('algorithms'), window.ALGOS.page(parts[1])); window.scrollTo(0, 0); return; }
     if (parts[0] === 'arena' && window.ARENA && window.ARENA.page) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('arena'), window.ARENA.page(parts[1], query)); window.scrollTo(0, 0); return; }
     if (parts[0] === 'standards' && window.STANDARDS) { document.documentElement.setAttribute('data-course', ''); document.title = 'Standards — ' + SITE.name; app.append(topBar('standards'), window.STANDARDS.page(parts[1])); if (parts[1]) { const t = document.getElementById('std-' + parts[1]); if (t && t.scrollIntoView) { t.scrollIntoView(); return; } } window.scrollTo(0, 0); return; }
+    if (parts[0] === 'showcase' && window.SHOWCASE && window.SHOWCASE.count()) { document.documentElement.setAttribute('data-course', 'algorithms'); app.append(topBar('showcase'), window.SHOWCASE.page(parts[1])); window.scrollTo(0, 0); return; }
     if (parts[0] === 'real-world' && window.APPLIED) { document.documentElement.setAttribute('data-course', ''); document.title = 'Where it is used — ' + SITE.name; app.append(topBar('applied'), window.APPLIED.page(parts[1])); if (parts[1]) { const t = document.getElementById(parts[1]); if (t && t.scrollIntoView) { t.scrollIntoView(); return; } } window.scrollTo(0, 0); return; }
     if ((parts[0] === 'lab' || parts[0] === 'assign' || parts[0] === 'review') && window.LAB) { document.title = 'Code Lab — ' + SITE.name; app.append(topBar('lab'), window.LAB.page(query, parts[0])); window.scrollTo(0, 0); return; }
     let course = parts[0] ? courseById(parts[0]) : null;

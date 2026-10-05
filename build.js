@@ -104,7 +104,8 @@ const scripts = [
   'src/algo_logic.js',    // backtracking and greedy choices: Sudoku, the eight queens, minimum spanning trees
   'src/algo_play.js',     // Reversi against Monte Carlo tree search, a genetic algorithm, Huffman coding
   'src/applied.js',    // the #/real-world page: where the ideas of the courses are used
-  'src/standards.js'   // the #/standards page and the standards box under each lesson's summary
+  'src/standards.js',  // the #/standards page and the standards box under each lesson's summary
+  'src/showcase.js'    // the #/showcase page: student projects from showcase/ (scripts/showcase.js reads the folders)
 ];
 // Third-party code bundled into the page, with each licence text read from the installed package, so the credits
 // on #/about always match what is bundled (the MIT licence asks for its notice to accompany every copy).
@@ -165,7 +166,13 @@ if (fs.existsSync('img/icons')) for (const f of fs.readdirSync('img/icons').filt
   const meta = JSON.parse(fs.readFileSync('img/icons/' + f, 'utf8'));
   ICONS[meta.id] = { src: 'data:image/' + (meta.file.endsWith('.png') ? 'png' : 'svg+xml') + ';base64,' + fs.readFileSync('img/icons/' + meta.file).toString('base64'), title: meta.title, author: meta.author, license: meta.license, licenseUrl: meta.licenseUrl, source: meta.source, credit: meta.credit };
 }
-const BUILD = { date: new Date().toISOString().slice(0, 10), thirdParty: THIRD_PARTY, images: IMAGES, icons: ICONS, clang: { path: CLANG_DIR, mb: Math.round(clangBytes / 1024 / 1024), llvm: CLANG_PKG.version,
+// Student Showcase: showcase/<slug>/ folders (see showcase/README.md). A folder that breaks a rule fails the build, so a project
+// never goes live without its consent line, and never carries more than the page shows.
+const SHOWCASE = require('./scripts/showcase.js').load('showcase');
+if (SHOWCASE.errors.length) { console.error('Student Showcase:\n  ' + SHOWCASE.errors.join('\n  ')); process.exit(1); }
+for (const s of SHOWCASE.skipped) console.log('showcase: left out', s);
+console.log('showcase:', SHOWCASE.projects.length, 'project(s)');
+const BUILD = { showcase: SHOWCASE.projects, date: new Date().toISOString().slice(0, 10), thirdParty: THIRD_PARTY, images: IMAGES, icons: ICONS, clang: { path: CLANG_DIR, mb: Math.round(clangBytes / 1024 / 1024), llvm: CLANG_PKG.version,
   // The page checks the compiler script it downloads against this before running it. (The script then checks every compiler file it fetches against hashes it carries.)
   sha256: crypto.createHash('sha256').update(fs.readFileSync('dist/' + CLANG_DIR + 'toolchain.js')).digest('hex') } };
 // The same notices as a file at the repository root, for copies of the source and of dist/index.html.
