@@ -55,6 +55,7 @@ site/
                          node_modules) + scripts (in order) → dist/index.html
   test_course.js         node harness: solutions pass, starters fail, playgrounds run (per course)
   test_cppstep.js        node tests for the C++ memory stepper, including stepping every C++ course program
+  test_javatrace.js      node tests for the Java step-through recorder, including tracing every Java course program
   test_subst.js          node tests for the substitution stepper: every Lisp playground steps without error and ends at the interpreter's value
   test_diff.js           differential tests: src/java.js against javac/java 21, src/shell.js against bash (§11); difftest/ holds the probe
                          programs, the program generator (javagen.js), the shell cases (shell.txt) and the accepted differences (known.json)
@@ -77,6 +78,7 @@ site/
     course_modern.js     SC 105 (runtime: 'full') ─┘
     style.css            design tokens, layout, course accents, every component's styles
     cppstep.js           C++ memory stepper → window.CPPSTEP { trace, render, describe } (uses JSCPP's debugger)
+    javastep.js          Java step-through, the page side → window.JAVASTEP { clean, render, describe } (the trace is JAVA.trace in the worker)
     clangworker.js       the Full C++ worker (Clang for WebAssembly); cppfull.js builds the programs that grade a Full C++ exercise
     backup.js            save my work to a file / restore it (home page, "Your work") → window.BACKUP { collect, parse, apply, panel }
     runner.js            the page's side of the program sandboxes → window.PYRUN, window.CPPRUN (run, trace, cancel; queue, watchdog, limits)
@@ -560,6 +562,25 @@ in the tests) wraps method-writing exercises in a class with a `main`.
 - **Testing.** `node test_java.js` checks the interpreter against outputs of real javac/java; `node test_course.js java` grades the course;
   the browser test runs Java in the worker, checks the lockdown and the Lab. `node test_diff.js java` (§11) runs every lesson example and
   exercise of SC 106 and SC 107, the probe programs and generated programs on both the interpreter and a real JDK 21 and compares them.
+- **Step-through** (the Lab's "Step through" for Java, and a "Step through" button on every Java lesson example). The interpreter cannot pause,
+  so `JAVA.trace(code, stdin, {maxSteps, maxMs})` runs the program once in the worker (`{t:'trace'}` → `{t:'result', trace}`, `JAVARUN.trace`)
+  and records, before each statement (and at a loop's header each time round), `{ line, frames: [{cls, name, line, vars: [[name, type, value,
+  param]]}], statics, heap: [{id, k: obj|array|list|set|map|sb, cls, len, cells | entries | fields | text}], outLen, done?, error?, skipped?,
+  more? }`. A value is the text Java would print (`"hi"`, `'x'`, `3.0`, `null`) or the number of a heap object; numbers are given in the order
+  objects are first seen and never change, so two variables showing `→ #3` share one object. Names come from the checker: `stmt()` puts on each
+  statement, under symbol keys (the checker's walkers enumerate every ordinary key), the scope it was checked in and how many slots had been handed
+  out; a local is visible when it is in that scope chain with a smaller slot, so a loop variable is gone after its loop. The hot path pays one
+  `R.tr !== null` test per statement (and per loop turn); nothing is added to `ev()`, and a frame's JS stack size is unchanged (checked in
+  node with a small `--stack-size`). Cost control: a frame below the top cannot change its locals, so its snapshot is made once and shared;
+  an object whose record is unchanged reuses the previous record (shared again by the structured clone of the message); 40 cells per
+  container, 60 objects and 24 frames (main and the innermost 23) per step, strings cut at 60 characters, 2000 steps, after which the program is
+  stopped and the page says so. The recorder never runs the program's code: a `TreeMap`/`TreeSet` of the program's objects is drawn in insertion
+  order rather than calling `compareTo`. An uncaught exception ends the record with a step drawn from the frames saved in the exception (its
+  line is the throw). A Scanner program takes the Program input box (as Run does; the run is recorded in one go, so it cannot stop to ask).
+  `src/javastep.js` (in the page) checks the record (`clean`) and draws it with `el()`: call stack beside the objects, changed values
+  highlighted, pointing at a reference lights up its object. `test_javatrace.js` checks the record and traces every lesson example, exercise
+  solution and probe, which must print exactly what a plain run prints. Not shown: return values, the expression being evaluated within a
+  statement, and a constructor's frame while a field initializer runs (it has no statement).
 - **Floating point.** Arithmetic, `Math.sqrt/floor/ceil/rint/abs` and `pow` with small integer exponents are exact (IEEE rounding is the
   same in both); `Math.sin/log/exp/pow/hypot/atan2...` use JavaScript's math library, which can differ from the JVM's in the last binary
   digit (so the printed value can differ in its last decimal). The generated tests compare those to 12 significant digits.
@@ -792,7 +813,7 @@ Students write a bot (Python, Java, C++ or Scheme) that plays Tron against built
 
 1. `npm install`. `npm test` applies the JSCPP patches itself (`scripts/patch-jscpp.js`, idempotent).
 2. `node build.js`, then `npm test`: `test_course.js` for each course (every solution passes, every starter fails,
-   every playground runs), `test_cppstep.js`, `test_subst.js`, `test_app.js`, `test_scheme.js`, `test_security.js` and `test_backup.js`. C++ in both test scripts goes through the site's own
+   every playground runs), `test_cppstep.js`, `test_javatrace.js`, `test_subst.js`, `test_app.js`, `test_scheme.js`, `test_security.js` and `test_backup.js`. C++ in both test scripts goes through the site's own
    `ensureMainReturns` (`src/cpputil.js`), so programs are graded exactly as on the site.
    `npm run test:browser` (needs a built site and Chromium: `npx playwright-core install chromium`) checks what node cannot: the interpreters
    are not in the page, programs cannot reach it (hostile code is sent into a worker and into a sandboxed iframe), an infinite loop cannot

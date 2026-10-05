@@ -574,7 +574,7 @@ html.classroom .out-text, html.classroom .term-input, html.classroom .nano { fon
 .lab-editor .hl { pointer-events: none; }
 .lab-editor .hl code { min-height: 100%; }
 .lab-editor .line.cur { background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent-soft); }
-.lab-editor .line.trace { background: rgba(255, 200, 0, 0.22); }
+.lab-editor .line.trace { display: block; border: 0; background: rgba(255, 200, 0, 0.22); }   /* display, border: not the trace tables' .trace grid */
 .lab-editor .line.trace::before { color: var(--accent); font-weight: 700; opacity: 1; }
 .lab-editor .bm { outline: 1px solid var(--accent); background: var(--accent-soft); border-radius: 2px; }
 .lab-editor .fm { background: rgba(255, 210, 60, 0.4); } .lab-editor .fm-cur { background: rgba(255, 150, 20, 0.6); outline: 1px solid #c07a00; }
@@ -865,6 +865,30 @@ table.mem-vars tr.fresh td { animation: mem-fresh 0.6s ease-out; }
 @keyframes mem-fresh { from { background: var(--accent-soft); } to { background: transparent; } }
 table.mem-vars tr.mem-hit td, .mem-cell.mem-hit { outline: 2px solid var(--link); outline-offset: -2px; }
 @media (prefers-reduced-motion: reduce) { table.mem-vars tr.fresh td { animation: none; } }
+/* ---------- Java step-through (javastep.js; Code Lab "Step through" for Java): the memory stepper's look, call stack beside the objects. Colours are the theme's tokens, so dark mode follows. */
+.jstep-box { border: 1px solid var(--rule); margin-top: 0.7rem; background: var(--paper); }
+.jstep-box[hidden] { display: none; }
+.jstep-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.jstep-box .toolbar { margin: 0.5rem 0.8rem; flex-wrap: wrap; gap: 0.4rem; }
+.jstep { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 0.8rem; align-items: start; }
+@media (max-width: 760px) { .jstep { grid-template-columns: minmax(0, 1fr); } }
+.jstep-col { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+.jstep-title { font-size: 0.75rem; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.05em; }
+.jstep .mem-frame-name .mem-note { font-family: var(--sans); font-weight: 400; }
+.mem-frame.jstep-threw { border-color: var(--err); box-shadow: inset 3px 0 0 var(--err); }
+.mem-frame.jstep-threw .mem-running { color: var(--err); }
+.jstep-skipped { padding: 0 0.6rem; }
+.jstep-obj { border: 1px solid var(--rule); background: var(--paper-2); }
+.jstep-obj.fresh { animation: mem-fresh 0.6s ease-out; }
+.jstep-obj.mem-hit { outline: 2px solid var(--link); outline-offset: -2px; }
+.jstep-body { padding: 0.35rem 0.6rem; overflow-x: auto; font-size: 0.88rem; }
+.jstep-body table.mem-vars td { padding: 0.2rem 0.5rem 0.2rem 0; }
+.jstep-maps { color: var(--ink-3); width: 1rem; }
+.jstep-type { display: block; font-family: var(--mono); font-size: 0.75rem; color: var(--ink-3); overflow-wrap: anywhere; }
+.jstep table.mem-vars td.mem-val { overflow-wrap: anywhere; }
+.jstep-body code.jstep-changed { background: var(--accent-soft); font-weight: 600; }
+.jstep .mem-cell .mem-arrow { font-size: 0.8rem; }
+@media (prefers-reduced-motion: reduce) { .jstep-obj.fresh { animation: none; } }
 
 /* ---------- student portfolio (portfolio.js, #/portfolio) ---------- */
 .pf { max-width: 48rem; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }

@@ -243,6 +243,31 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await page.click('.lang-btn:has-text("C++")'); await page.waitForSelector('.lab-editor textarea');
   await setCode('#include <iostream>\nusing namespace std;\nint main() {\n    int x = 5\n    return 0;\n}\n'); await runLab();
   check('Lab: a C++ error marks its line', (await page.locator('.lab-editor .line.err').count()) === 1, await outText());
+  // the Java step-through (JAVA.trace in the worker, src/javastep.js in the page): steps forwards and back, frames, shared objects, text only
+  await setCode('import java.util.*;\npublic class Main {\n    static int sq(int n) {\n        return n * n;\n    }\n    public static void main(String[] args) {\n        int[] a = {1, 2};\n        int[] b = a;\n        ArrayList<String> list = new ArrayList<>();\n        list.add("<b>x</b>");\n        int s = sq(3);\n        System.out.println(s);\n    }\n}');
+  await page.click('.lab-toolbar button:has-text("Step through")'); await page.waitForSelector('.jstep', { timeout: 10000 });
+  const jsNote = () => page.locator('.jstep-box .panel-head .panel-note').innerText();
+  check('Lab: Java step-through starts at the first statement, its line highlighted', /^step 1 of \d+: about to run line 7$/.test(await jsNote()) && (await page.locator('.lab-editor .line.trace').getAttribute('data-n')) === '7', await jsNote() + ' / ' + await page.locator('.lab-editor .line.trace').count());
+  await page.keyboard.press('n'); await page.keyboard.press('n'); await page.keyboard.press('Enter'); await page.keyboard.press('n');
+  check('Lab: Java step-through: keys step, two variables show the same array', /about to run line 11/.test(await jsNote()) && (await page.locator('.jstep .mem-frame.active tr:has(code:text-is("a")) .mem-arrow').innerText()) === (await page.locator('.jstep .mem-frame.active tr:has(code:text-is("b")) .mem-arrow').innerText()), await jsNote());
+  check('Lab: Java step-through: the array is drawn cell by cell and program text stays text', (await page.locator('.jstep-obj:has-text("int[2]") .mem-cell').count()) === 2 && (await page.locator('.jstep b').count()) === 0 && (await page.locator('.jstep').innerText()).includes('"<b>x</b>"'));
+  await page.keyboard.press('n');
+  check('Lab: Java step-through: a call is a new frame with its parameter', (await page.locator('.jstep .mem-frame').count()) === 2 && /Main\.sq\(\)/.test(await page.locator('.jstep .mem-frame.active .mem-frame-name').innerText()) && (await page.locator('.jstep .mem-frame.active tr:has(code:text-is("n")) .mem-val').innerText()) === '3');
+  await page.keyboard.press('Backspace');
+  check('Lab: Java step-through: Backspace steps back', /about to run line 11/.test(await jsNote()) && (await page.locator('.jstep .mem-frame').count()) === 1, await jsNote());
+  await page.click('.jstep-box button:has-text("Run to end")'); await page.waitForTimeout(200);
+  const jsOut = () => page.locator('.lab-out .out-text').innerText();   // (the replayed output has no command line in front)
+  check('Lab: Java step-through: run to end shows the finish and the output', /the program has finished/.test(await jsNote()) && /^9$/m.test(await jsOut()), await jsNote() + ' / ' + await jsOut());
+  await page.click('.jstep-box button:has-text("Restart")');
+  check('Lab: Java step-through: restart goes back to step 1', /^step 1 of/.test(await jsNote()));
+  await setCode('import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        int n = in.nextInt();\n        int[] a = new int[2];\n        a[n] = 1;\n    }\n}');
+  check('Lab: editing the program closes the Java step-through', await page.locator('.jstep-box').isHidden());
+  await page.click('.lab-toolbar button:has-text("Step through")'); await page.waitForTimeout(200);
+  check('Lab: Java step-through of a Scanner program asks for the input first', await page.locator('.stdin-box').isVisible() && /Program input box/.test(await page.locator('.lab-out').innerText()) && await page.locator('.jstep-box').isHidden());
+  await page.fill('.stdin-ta', '5'); await page.click('.lab-toolbar button:has-text("Step through")'); await page.waitForSelector('.jstep', { timeout: 10000 });
+  await page.click('.jstep-box button:has-text("Run to end")'); await page.waitForTimeout(200);
+  check('Lab: Java step-through reads the Program input box and ends with the exception', /line 7 threw an exception/.test(await jsNote()) && /ArrayIndexOutOfBoundsException: Index 5 out of bounds for length 2/.test(await jsOut()) && (await page.locator('.jstep .mem-frame.jstep-threw tr:has(code:text-is("n")) .mem-val').innerText()) === '5', await jsNote() + ' / ' + await jsOut());
+  await page.fill('.stdin-ta', '');
   await page.click('.lang-btn:has-text("C++")'); await page.waitForSelector('.lab-editor textarea');
   await setCode('#include <iostream>\nusing namespace std;\nint main() { int a = 3; int *p = &a; cout << *p << endl; return 0; }');
   await page.click('.lab-toolbar button:has-text("Step through memory")'); await page.waitForSelector('.mem-view', { timeout: 10000 }); await page.waitForTimeout(400);
@@ -535,6 +560,9 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('C++ lesson example runs', (await page.locator('.play .out-text').first().innerText()).length > 0);
   await goto('#/java/1'); await page.click('.play button:has-text("Run")'); await page.waitForTimeout(2500);
   check('Java lesson example runs', /Hello, world!/.test(await page.locator('.play .out-text').first().innerText()), await page.locator('.play .out-text').first().innerText());
+  await page.click('.play button.mem-open:has-text("Step through") >> nth=0'); await page.waitForSelector('.jstep', { timeout: 10000 });
+  check('a Java lesson example opens in the Lab\'s step-through', /^#\/lab/.test(await page.evaluate(() => location.hash)) && /^step 1 of/.test(await page.locator('.jstep-box .panel-head .panel-note').innerText()));
+  await goto('#/java/1');
   // graded exercises go through the same sandboxes: every starter fails, every solution passes
   for (const course of ['scratch', 'python', 'cpp', 'java', 'dsa']) {
     const res = await page.evaluate(async (id) => {
