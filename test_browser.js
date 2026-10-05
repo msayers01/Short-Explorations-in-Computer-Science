@@ -580,6 +580,25 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await page.locator('.geo-edit textarea').fill('F=F+[F'); await page.locator('.algo-host button:has-text("Use these rules")').click();
   const lsErr = await page.locator('.geo-err').textContent();
   check('algorithms: the three hull algorithms agree and the bet is reported; an L-system rule with an open bracket is refused', hullRows.length === 3 && new Set(hullRows).size === 1 && /^\d+$/.test(hullRows[0]) && /Your bet (won|came)/.test(hullMsg) && /brackets/.test(lsErr), { hullRows, hullMsg, lsErr });
+  // the Sudoku race finishes and reports the bet, a typed puzzle with a clash is refused; a queen in the corner leaves 4 of the 92;
+  // the three spanning-tree algorithms agree
+  await goto('#/algorithms/sudoku');
+  await page.locator('select[aria-label="Your bet"]').selectOption('norvig');
+  await page.locator('.algo-host .algo-controls .btn.primary').first().click(); await page.locator('.algo-host button:has-text("Finish")').click();
+  await page.waitForFunction(() => /Finished/.test((document.querySelector('.algo-host .algo-status') || {}).textContent || ''), null, { timeout: 20000 }).catch(() => { });
+  const sudokuRace = await page.locator('.algo-host .algo-status').first().textContent();
+  await page.locator('.algo-host select').first().selectOption('custom');
+  await page.locator('.lg-custom textarea').fill('11' + '0'.repeat(79)); await page.locator('.lg-custom button:has-text("Use this puzzle")').click();
+  const sudokuBad = await page.locator('.lg-custom p').textContent();
+  await goto('#/algorithms/queens');
+  await page.locator('.lg-tabs .btn').nth(1).click();
+  const qb = await page.locator('.lg-canvas canvas').boundingBox(); await page.mouse.click(qb.x + qb.width / 16, qb.y + qb.width / 16);
+  const queensMsg = await page.locator('.algo-host .lg-msg').textContent();
+  await goto('#/algorithms/mst');
+  await page.locator('.algo-host .algo-controls .btn.primary').first().click(); await page.locator('.algo-host button:has-text("Finish")').click();
+  const mstMsg = await page.locator('.algo-host .algo-status').first().textContent();
+  check('algorithms: the Sudoku race reports the bet and a bad puzzle is refused; a corner queen leaves 4 solutions; the spanning trees agree',
+    /^Your bet (won|came).*Finished/.test(sudokuRace) && /two 1s in row 1/.test(sudokuBad) && /4 solutions are still possible/.test(queensMsg) && /All three built the same network/.test(mstMsg), { sudokuRace, sudokuBad, queensMsg, mstMsg });
   await goto('#/real-world');
   const realLinks = await page.evaluate(() => [...document.querySelectorAll('main a[href^="#/"]')].map((a) => a.getAttribute('href')).filter((h) => /^#\/[a-z]+\/\d+/.test(h)));
   const badLinks = await page.evaluate((hs) => hs.filter((h) => { const [, c, n] = h.match(/^#\/([a-z]+)\/(\d+)/); const course = window.COURSES.find((x) => x.id === c); return !course || !course.lessons[+n - 1]; }), realLinks);
