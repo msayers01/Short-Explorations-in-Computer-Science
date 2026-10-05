@@ -570,6 +570,25 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await page.waitForFunction(() => /Play again/.test((document.querySelector('.algo-host .algo-controls .btn.primary') || {}).textContent || ''), null, { timeout: 20000 }).catch(() => { });
   const tourStats = await page.locator('.pz-stats').textContent();
   check('algorithms: a maze race reports the bet, Hanoi in 7 moves is perfect, the computer\'s tour has no crossings', /Your bet (won|came)/.test(mazeRace) && /Perfect! 7 moves/.test(hanoiMsg) && /Computer: [\d.]+ km · 0 crossings/.test(tourStats), { mazeRace, hanoiMsg, tourStats });
+  // Reversi from the keyboard (the computer then answers); the weasel is found; Huffman decodes its text
+  await goto('#/algorithms/reversi');
+  await page.locator('.pl-sq[tabindex="0"]').focus(); await page.keyboard.press('ArrowLeft'); await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter');   // d3 → c3 → c4, a legal opening
+  const rvAfterMe = await page.locator('.pl-score').textContent();
+  await page.waitForFunction(() => /Your move/.test((document.querySelector('.pl-msg') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => { });
+  const rvAfterIt = await page.locator('.pl-score').textContent(), rvMsg = await page.locator('.pl-msg').first().textContent();
+  await goto('#/algorithms/genetic');
+  await page.locator('select[aria-label="Your bet: how many generations?"]').selectOption('4');
+  await page.locator('.algo-host .algo-speed[aria-label="Speed"]').fill('100'); await page.locator('.algo-host .algo-controls .btn.primary').first().click();
+  await page.waitForFunction(() => /Found after|Gave up/.test(document.querySelector('.algo-host').textContent), null, { timeout: 30000 }).catch(() => { });
+  const weasel = await page.locator('.pl-best').getAttribute('aria-label'), weaselMsg = await page.locator('.algo-host .pl-msg').first().textContent();
+  await goto('#/algorithms/huffman');
+  await page.locator('.algo-host textarea').fill('abracadabra <b>&amp;</b>'); await page.locator('.algo-host button:has-text("Use this text")').click();
+  await page.locator('.algo-host .algo-speed[aria-label="Speed"]').fill('100'); await page.locator('.algo-host .algo-controls .btn.primary').first().click();
+  await page.waitForFunction(() => /Decoded every letter/.test(document.querySelector('.algo-host').textContent), null, { timeout: 30000 }).catch(() => { });
+  const huffOut = await page.locator('.pl-out').textContent(), huffMsg = await page.locator('.algo-host > .pl-msg').first().textContent();
+  check('algorithms: Reversi plays from the keyboard and the computer answers; the weasel finds its phrase and reports the bet; Huffman decodes typed text as text',
+    /Black 4/.test(rvAfterMe) && /Black 3/.test(rvAfterIt) && /White 3/.test(rvAfterIt) && /Your move/.test(rvMsg) && weasel === 'Best phrase: METHINKS IT IS LIKE A WEASEL' && /Found after/.test(weaselMsg) && /bet/.test(weaselMsg)
+    && huffOut === 'abracadabra <b>&amp;</b>' && /Decoded every letter/.test(huffMsg), { rvAfterMe, rvAfterIt, rvMsg, weasel, weaselMsg, huffOut, huffMsg });
   await goto('#/real-world');
   const realLinks = await page.evaluate(() => [...document.querySelectorAll('main a[href^="#/"]')].map((a) => a.getAttribute('href')).filter((h) => /^#\/[a-z]+\/\d+/.test(h)));
   const badLinks = await page.evaluate((hs) => hs.filter((h) => { const [, c, n] = h.match(/^#\/([a-z]+)\/(\d+)/); const course = window.COURSES.find((x) => x.id === c); return !course || !course.lessons[+n - 1]; }), realLinks);
