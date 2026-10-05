@@ -1075,7 +1075,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       } else if (!shown) out.hide();
     }
     function endMem(msg) {
-      endJStep();   // everything that closes the memory view (another file, another language, Run) closes the Java step-through too
+      if (!jsKeep) endJStep();   // everything that closes the memory view (another file, another language, Run) closes the Java step-through too
       if (!memTrace && memBox.hidden) return;
       memToken++; memTrace = null; memBox.hidden = true; memView.innerHTML = ''; editor.setTrace(0);
       if (msg) status.textContent = msg, setTimeout(() => { if (status.textContent === msg) status.textContent = ''; }, 6000);
@@ -1103,16 +1103,27 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       else if (e.key === 'b' || e.key === 'B' || e.key === 'Backspace' || e.key === 'ArrowLeft') { e.preventDefault(); jsShow(jsIdx - 1); }
     });
     // A program that reads with a Scanner takes the Program input box's text, as Run does (the run is recorded in one go, so it cannot stop to ask)
+    // A program in several Java tabs is stepped as Run runs it: joined (javaproject.js), with every recorded line mapped back to its file, and
+    // the editor follows the program into the tab it is in (jsKeep: that switch must not close the step-through, as switching by hand does).
+    let jsProj = null, jsKeep = false;
+    function jsMapTrace(t) {
+      if (!jsProj || !t) return t;
+      const seen = new Set(), map = (o) => { if (!o || seen.has(o)) return; seen.add(o); const m = window.JPROJ.mapLine(jsProj, o.line); if (m) { o.line = m.line; o.file = m.name; } };
+      for (const s of t.steps) { map(s); for (const f of s.frames || []) map(f); }
+      if (t.error) t.error = window.JPROJ.mapError(jsProj, t.error);
+      return t;
+    }
     async function startJStep() {
       if (running || !window.JAVASTEP || !window.JAVARUN) return; if (tracer) tracer.stop(); endMem();
-      const code = editor.value;
-      if (/\bScanner\b/.test(code)) { stdinBox.hidden = false; if (!stdinTa.value.trim()) { out.clear(); out.note('This program reads input with a Scanner. Type the values in the Program input box, one per line, then press Step through again.'); stdinTa.focus(); return; } }
+      const proj = javaProject(); jsProj = proj && proj.files.length > 1 && !proj.error ? proj : null;
+      const code = jsProj ? jsProj.src : editor.value;
+      if (/\bScanner\b/.test(code)) { showStdin('java'); if (!stdinTa.value.trim()) { out.clear(); out.note('This program reads input with a Scanner. Type the values in the Program input box, one per line, then press Step through again.'); stdinTa.focus(); return; } }
       const token = ++jsToken;
       out.clear(); jsBox.hidden = false; jsView.textContent = ''; jsMsg.textContent = 'running the program\u2026'; setRunning(true);
       let r; try { r = await window.JAVARUN.trace(code, stdinTa.value, { maxSteps: 2000 }); } finally { setRunning(false); }
       if (token !== jsToken) return;   // closed, or the program changed, while it ran
-      jsTrace = window.JAVASTEP.clean(r.result) || { steps: [], output: '', error: r.err || 'The program could not be run.' };
-      if (!jsTrace.steps.length) { jsView.textContent = ''; jsMsg.textContent = 'the program could not start'; jsSlider.max = '0'; if (jsTrace.error || r.err) showError('java', jsTrace.error || r.err); editor.setTrace(0); return; }
+      jsTrace = jsMapTrace(window.JAVASTEP.clean(r.result)) || { steps: [], output: '', error: (jsProj ? window.JPROJ.mapError(jsProj, r.err) : r.err) || 'The program could not be run.' };
+      if (!jsTrace.steps.length) { jsView.textContent = ''; jsMsg.textContent = 'the program could not start'; jsSlider.max = '0'; if (jsTrace.error || r.err) showError('java', jsTrace.error || r.err, jsProj); editor.setTrace(0); return; }
       jsSlider.max = String(jsTrace.steps.length - 1);
       jsShow(0);
       if (!isTouch()) jsBox.focus();
@@ -1125,12 +1136,13 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       jsSlider.value = String(i);
       jsBack.disabled = i === 0; jsRestart.disabled = i === 0; jsNext.disabled = i === n - 1; jsEnd.disabled = i === n - 1;
       jsMsg.textContent = window.JAVASTEP.describe(jsTrace, i);
+      if (st.file && st.file !== curFile().name) { const k = S.files.java.findIndex((f) => f.name === st.file); if (k >= 0) { jsKeep = true; try { activate(k); } finally { jsKeep = false; } } }
       editor.setTrace(st.done ? 0 : st.line);
       out.clear();
       const shown = jsTrace.output.slice(0, st.outLen);
       if (shown) out.write(shown);
       if (i === n - 1) {
-        if (jsTrace.error) showError('java', jsTrace.error);
+        if (jsTrace.error) showError('java', jsTrace.error, jsProj);
         else if (jsTrace.truncated) out.note('Stepping stops after ' + n + ' steps. Press Run to run the whole program.');
         else if (!shown) out.note('(nothing printed)');
       } else if (!shown) out.hide();

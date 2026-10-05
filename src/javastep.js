@@ -57,7 +57,7 @@
       const pf = prev && prev.frames[fi] && prev.frames[fi].cls === f.cls && prev.frames[fi].name === f.name ? prev.frames[fi] : null;
       if (fi === 1 && st.skipped) stack.append(el('p', { class: 'mem-empty jstep-skipped' }, '… ' + st.skipped + ' more calls, not shown'));
       stack.append(el('div', { class: 'mem-frame' + (active ? ' active' : '') + (active && st.error ? ' jstep-threw' : '') },
-        el('div', { class: 'mem-frame-name' }, frameName(f), el('span', { class: 'mem-note' }, 'line ' + f.line), active ? el('span', { class: 'mem-running' }, st.error ? 'threw an exception' : 'running') : null),
+        el('div', { class: 'mem-frame-name' }, frameName(f), el('span', { class: 'mem-note' }, f.file ? f.file + ':' + f.line : 'line ' + f.line), active ? el('span', { class: 'mem-running' }, st.error ? 'threw an exception' : 'running') : null),
         f.vars.length ? varTable(f.vars, pf ? pf.vars : (prev ? [] : null)) : el('div', { class: 'mem-none' }, 'no variables yet')));
     });
     const objs = el('div', { class: 'jstep-col' }, el('div', { class: 'jstep-title' }, 'Objects'));
@@ -94,8 +94,9 @@
     const n = tr.steps.length, top = st.frames[st.frames.length - 1];
     const head = 'step ' + (i + 1) + ' of ' + n + ': ';
     if (st.done) return head + 'the program has finished';
-    if (st.error) return head + 'line ' + st.line + ' threw an exception';
-    return head + 'about to run line ' + st.line + (st.frames.length > 1 && top ? ' in ' + frameName(top) : '');
+    const at = st.file ? st.file + ', line ' + st.line : 'line ' + st.line;   // a program in several files (lab.js maps the lines)
+    if (st.error) return head + at + ' threw an exception';
+    return head + 'about to run ' + at + (st.frames.length > 1 && top ? ' in ' + frameName(top) : '');
   }
 
   window.JAVASTEP = { clean, render, describe };

@@ -156,7 +156,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await setCode('import java.util.Scanner;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        System.out.print("Name? ");\n        String name = in.nextLine();\n        System.out.print("Age? ");\n        int age = in.nextInt();\n        System.out.println(name + " will be " + (age + 1));\n    }\n}');
   await page.click('.lab-toolbar button:has-text("Run")');
   await answer('Ada'); await answer('36'); await finished();
-  check('Lab: a Java Scanner asks for each line in the output panel', /Name\? Ada\nAge\? 36\nAda will be 37/.test(await outText()) && /^exit 0/.test(await outStatus()) && (await page.locator('.stdin-box').isHidden()), await outText());
+  check('Lab: a Java Scanner asks for each line in the output panel', /Name\? Ada\nAge\? 36\nAda will be 37/.test(await outText()) && /^exit 0/.test(await outStatus()) && (await page.locator('.stdin-box:not(.args-box)').isHidden()), await outText());
   await setCode('import java.util.Scanner;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        int n = 0;\n        while (in.hasNext()) { in.next(); n++; }\n        System.out.println(n + " words");\n    }\n}');
   await page.click('.lab-toolbar button:has-text("Run")');
   await answer('one two'); await page.waitForSelector('.lab-out .inline-input'); await page.press('.lab-out .inline-input', 'Control+d'); await finished();
@@ -166,7 +166,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await page.click('.lab-toolbar button:has-text("Input")'); await page.fill('.stdin-ta', 'a b c\n');
   await page.click('.lab-toolbar button:has-text("Run")'); await finished();
   check('Lab: the Input box gives a Java program its input all at once', /3 words/.test(await outText()) && (await page.locator('.lab-out .inline-input').count()) === 0, await outText());
-  await page.fill('.stdin-ta', ''); await page.click('.stdin-box button[aria-label="Hide the input box"]');
+  await page.fill('.stdin-ta', ''); await page.click('.stdin-box:not(.args-box) button[aria-label="Hide the input box"]');
   // ---- multi-file Java (javaproject.js): every Java tab is compiled together, errors and stack traces name the right file, and the
   // "go to" link opens that tab; error markers in the editor; program arguments; the output panel's tools; go to line; the shortcuts panel
   const runDone = async () => { await page.waitForFunction(() => /^(exit|error|stopped)/.test(document.querySelector('.lab-out .term-status').textContent), null, { timeout: 15000 }).catch(() => { }); };
@@ -217,6 +217,12 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('Lab: Clear empties the output panel', await page.locator('.lab-out').isHidden());
   await page.fill('#lab-args', ''); await page.click('.args-box button[aria-label^="Close"]');
   check('Lab: an empty Arguments box can be closed', await page.locator('.args-box').isHidden());
+  // the step-through follows a program of several tabs into the file each step is in
+  await tabNamed('Main.java').click();
+  await page.click('.lab-toolbar button:has-text("Step through")'); await page.waitForSelector('.jstep', { timeout: 10000 });
+  let jn = ''; for (let k = 0; k < 12 && !/Dog\.java/.test(jn); k++) { await page.keyboard.press('n'); await page.waitForTimeout(60); jn = await page.locator('.jstep-box .panel-head .panel-note').innerText(); }
+  check('Lab: Java step-through of two tabs steps into Dog.java, opens that tab and names its own line', /Dog\.java, line [345]\b/.test(jn) && (await activeTab()) === 'Dog.java' && !(await page.locator('.jstep-box').isHidden()), [jn, await activeTab()]);
+  await page.click('.jstep-box button:has-text("Close")');
   // close Dog.java so later Java runs are single files again (an empty tab closes without asking)
   await tabNamed('Dog.java').click(); await setCode(''); await tabNamed('Dog.java').locator('.tab-x').click(); await page.waitForTimeout(200);
   check('Lab: back to one Java tab', (await page.locator('.lab-tabs .tab:not(.add)').count()) === 1 && (await activeTab()) === 'Main.java', await page.locator('.lab-tabs').innerText());
@@ -244,6 +250,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await setCode('#include <iostream>\nusing namespace std;\nint main() {\n    int x = 5\n    return 0;\n}\n'); await runLab();
   check('Lab: a C++ error marks its line', (await page.locator('.lab-editor .line.err').count()) === 1, await outText());
   // the Java step-through (JAVA.trace in the worker, src/javastep.js in the page): steps forwards and back, frames, shared objects, text only
+  await page.click('.lang-btn:has-text("Java")'); await page.waitForSelector('.lab-editor textarea');
   await setCode('import java.util.*;\npublic class Main {\n    static int sq(int n) {\n        return n * n;\n    }\n    public static void main(String[] args) {\n        int[] a = {1, 2};\n        int[] b = a;\n        ArrayList<String> list = new ArrayList<>();\n        list.add("<b>x</b>");\n        int s = sq(3);\n        System.out.println(s);\n    }\n}');
   await page.click('.lab-toolbar button:has-text("Step through")'); await page.waitForSelector('.jstep', { timeout: 10000 });
   const jsNote = () => page.locator('.jstep-box .panel-head .panel-note').innerText();
@@ -263,7 +270,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await setCode('import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        int n = in.nextInt();\n        int[] a = new int[2];\n        a[n] = 1;\n    }\n}');
   check('Lab: editing the program closes the Java step-through', await page.locator('.jstep-box').isHidden());
   await page.click('.lab-toolbar button:has-text("Step through")'); await page.waitForTimeout(200);
-  check('Lab: Java step-through of a Scanner program asks for the input first', await page.locator('.stdin-box').isVisible() && /Program input box/.test(await page.locator('.lab-out').innerText()) && await page.locator('.jstep-box').isHidden());
+  check('Lab: Java step-through of a Scanner program asks for the input first', await page.locator('.stdin-box:not(.args-box)').isVisible() && /Program input box/.test(await page.locator('.lab-out').innerText()) && await page.locator('.jstep-box').isHidden());
   await page.fill('.stdin-ta', '5'); await page.click('.lab-toolbar button:has-text("Step through")'); await page.waitForSelector('.jstep', { timeout: 10000 });
   await page.click('.jstep-box button:has-text("Run to end")'); await page.waitForTimeout(200);
   check('Lab: Java step-through reads the Program input box and ends with the exception', /line 7 threw an exception/.test(await jsNote()) && /ArrayIndexOutOfBoundsException: Index 5 out of bounds for length 2/.test(await jsOut()) && (await page.locator('.jstep .mem-frame.jstep-threw tr:has(code:text-is("n")) .mem-val').innerText()) === '5', await jsNote() + ' / ' + await jsOut());
