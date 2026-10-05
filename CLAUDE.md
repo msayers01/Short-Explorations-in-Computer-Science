@@ -17,6 +17,7 @@ not written down there.
     node test_java.js      # the Java interpreter against what javac/java print (a few seconds)
     node test_typed.js     # typed input (Scanner, cin answered as the program asks), in the real worker sources (a few seconds)
     node test_shell.js     # the practice shell: file system, parser, every command, limits, hostile saved copies (a second)
+    node test_git.js       # the practice git (--real also runs its scenarios through the real git and compares)
     node test_lessons.js   # the lesson linter (part of npm test); --update records new exercise ids in lint/exercise-ids.txt
     npm run test:diff      # java.js against a real JDK 21, shell.js against bash (about 35 s; SEED=n COUNT=n searches further)
     npm run test:browser   # needs a built dist and Chromium (playwright-core); serves dist over a local http server; about 1.5 minutes
@@ -147,6 +148,12 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   making and moving things; looking inside files; pipes and redirection; running your programs; Windows cmd and PowerShell as a dialect
   switch over the same file system; a first script; a tidy-a-messy-folder project), terminal exercises graded on file-system state plus
   output, `setup lessonN` through the shell's `setup` hook, terminal tasks in teacher assignments.
+- **The practice git** (`src/shellgit.js`, ARCHITECTURE §9f, October 2026): `git` in the shell, added with `SHELL.register` (the old
+  "needs the internet" stub no longer names git). init/status/add/rm/mv/restore/commit/log/diff/show/branch/switch/checkout/merge (with
+  conflicts)/reset/tag/config/reflog and a few plumbing commands, with git 2.43's messages; real SHA-1 ids (same as real git's for the same
+  name, email and time). The repository is `.git` in the virtual file system with all objects in `.git/objects.json` (so a history must fit
+  in one 256 KB file) and the index as JSON; everything read from .git is checked (hostile cases in `test_git.js`). No remotes, stash,
+  rebase, or editor (`-m` always). Compare with the real git with `node test_git.js --real` after changing it.
 - SC 108 The Command Line (`src/course_shell.js`, grades 7-12): lessons 1-4 (where am I: prompt, tree, paths, cd; making and moving things:
   mkdir, touch, echo >, cp, mv, rm, wildcards; looking inside files: cat, head, tail, wc, grep, find, diff, file; pipes and redirection:
   > >> < | 2> /dev/null $?, sort, uniq -c, cut, tr, McIlroy's word-count pipeline), 8 exercises (`sh-<n>-<k>`; kind `shell` graded by

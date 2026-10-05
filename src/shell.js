@@ -2686,7 +2686,7 @@
   def('setup', { cat: 'run', use: 'setup NAME', desc: 'Prepare the files a lesson or exercise works with (the lesson tells you the name).', ex: ['setup lesson2'],
     run(args, io, sh) { if (!sh.hooks.setup) { io.err('setup: nothing to set up here\n'); return 1; } if (!args.length) { io.err('setup: which one? The lesson tells you, for example: setup lesson2\n'); return 1; } const msg = sh.hooks.setup(args[0], sh); if (msg === null || msg === undefined) { io.err('setup: there is no "' + args[0] + '" to set up\n'); return 1; } if (msg) io.out(String(msg).replace(/\n?$/, '\n')); return 0; } });
   def('sudo su', { cat: 'other', use: 'sudo command', desc: 'Run a command as the administrator. You are not one here.', ex: [], run(args, io) { io.err(this.name === 'su' ? 'su: Authentication failure\n' : USER + ' is not in the sudoers file.  This incident will be reported.\n'); return 1; } });
-  def('apt apt-get pip pip3 npm git curl wget ssh ping brew', { cat: 'other', use: 'git ...', desc: 'Programs that need the internet or install things. There is no network in this practice terminal, so they only say so.', ex: [],
+  def('apt apt-get pip pip3 npm curl wget ssh ping brew', { cat: 'other', use: 'curl ...', desc: 'Programs that need the internet or install things. There is no network in this practice terminal, so they only say so.', ex: [],
     run(args, io) { io.err(this.name + ': ' + (this.name === 'ping' ? 'connect: Network is unreachable' : 'not available in this practice terminal (there is no network here, and nothing to install)') + '\n'); return 1; } });
   def('ps top kill jobs fg bg', { cat: 'other', use: 'ps', desc: 'Programs about running processes. Only your commands run here, one at a time.', ex: [], run(args, io) { if (this.name === 'ps') { io.out('    PID TTY          TIME CMD\n   4242 pts/0    00:00:00 bash\n   4299 pts/0    00:00:00 ps\n'); return 0; } io.err(this.name + ': there are no other processes in this practice terminal\n'); return 1; } });
   def('man', { cat: 'shell', use: 'man command', desc: 'Show the manual page of a command. help lists them all.', ex: ['man ls', 'man grep'],
@@ -2732,5 +2732,7 @@
     }
     return out;
   }
-  return { makeFS, makeShell, cleanAliases, parse, tokenize, arith, braceExpand, globToRegExp, COMMANDS, LIMITS, HOME, USER, HOST };
+  // register(names, spec): how another file adds a command (shellgit.js adds git). It must run before the first makeFS, which puts a stub
+  // for each command in /bin.
+  return { makeFS, makeShell, cleanAliases, parse, tokenize, arith, braceExpand, globToRegExp, COMMANDS, LIMITS, HOME, USER, HOST, FsError, register: def };
 });

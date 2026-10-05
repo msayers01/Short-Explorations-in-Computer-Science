@@ -94,6 +94,7 @@ site/
     app.js               router, pages, course editor, runners, grader, progress, widgets glue
     lab.js               Code Lab page → window.LAB
     shell.js             the practice shell and its file system → window.SHELL (also required by node tests and backup.js) (§9f)
+    shellgit.js          the practice git, registered into the shell with SHELL.register → window.SHELLGIT; node: test_git.js (§9f)
     terminal.js          the terminals in front of shell.js: the Code Lab panel, lesson examples and shell exercises → window.TERMINAL (§9f)
     shellgrade.js        the shell course's setups (file trees) and grader → window.SHELLGRADE; node: test_course.js shell (§9f)
     course_shell.js      SC 108 The Command Line (lang 'shell': examples and exercises are terminals)
@@ -683,6 +684,35 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   Its own caps: `LIMITS.awk` (1 000 000) steps, strings of 4 × `LIMITS.vars`, 100 000 array elements, the usual output cap. Known
   differences from mawk: `substr` with a start below 1 or not whole follows POSIX (mawk differs), `printf` with too few arguments prints
   empty values (mawk stops), `rand()` is another sequence.
+- **git** (`shellgit.js`, added to the shell's command table by `SHELL.register`, which must run before the first `makeFS` so `/bin/git`
+  exists). A local git for learning version control: init, status (-s -b), add (-A -u -f), rm, mv, restore (--staged --source), commit
+  (-m -a --amend --allow-empty), log (--oneline -n --all -p --stat --format --decorate, paths), diff (worktree, --staged, commits, --stat,
+  --name-only, `diff --cc` during a conflict), show (commit, tag, `rev:path`), branch (-d -D -m -v), switch / checkout (-b, --detach,
+  `-- paths`, --ours/--theirs/-m), merge (fast-forward, --no-ff, --ff-only, three-way with diff3 "zealous" conflicts, add/add and
+  modify/delete, --abort, --continue), reset (--soft --mixed --hard, paths), tag (lightweight and -a -m), config (--global in
+  `~/.gitconfig`), reflog, ls-files, cat-file, rev-parse, gc, help. Messages, exit statuses and formats are git 2.43's, checked against the
+  real one (`node test_git.js --real`); ids are real SHA-1s of git's serialization, so with the same name, email and time a commit has the
+  same id as in real git. Dates come from the shell's clock (`now`), in the browser's time zone.
+  - The repository is a `.git` directory in the virtual file system (so `ls -a`, `cat .git/HEAD` and `rm -rf .git` work as in real life):
+    HEAD, config, description, refs/heads/…, refs/tags/…, logs/HEAD (the last 100 moves), MERGE_HEAD, MERGE_MSG, ORIG_HEAD as text like
+    git's; the objects in **one JSON file**, `.git/objects.json` (`{"v":1,"objects":{id: ["blob", text] | ["tree", [[mode, name, id]…]] |
+    ["commit"|"tag", raw text]}}`, one object a line), and the index as JSON in `.git/index` (entries `[path, mode, blob]`, and a merge's
+    conflicts as `[path, base, ours, theirs]`). Files are text, as everywhere in the shell; modes are 100644 and 100755 (`chmod +x`).
+  - **Caps.** Everything goes through the file system's own writes, so its caps hold: objects.json is one file, so a repository's whole
+    history must fit in 256 KB (and in the 2 MB of the whole terminal). When a write would not fit, objects nothing reaches are dropped
+    (as `git gc`) and it is tried once more; then the command stops with "fatal: the repository is too big for this practice terminal..."
+    before changing any ref, and checkouts check the space for the files they will write before writing any.
+  - **Untrusted on every read.** objects.json: every id is checked against its contents (so an edited object is "damaged", not believed),
+    shapes and links are checked (a commit's tree and parents, a tree's entries), tree entry names must be file names here and never `.git`,
+    `..` or contain `/`; a tree that names more than 1000 files (a self-repeating tree could name 2^25) stops. index: paths checked the
+    same way, every blob must exist, no path both a file and a directory. HEAD, refs, MERGE_HEAD and ORIG_HEAD must hold commit ids; a
+    broken branch ref is skipped in lists. Config lines git would refuse stop every command, as in git. Dictionaries are null-prototype, so
+    `__proto__` is an ordinary file or branch name. Damage gives `fatal: .git/<file> is damaged: <why>` with the hint that `rm -rf .git`
+    starts again (test_git.js has a hostile case for each).
+  - **Not here:** remotes (clone, push, pull, fetch, remote say there is no network), stash, rebase, cherry-pick, revert, blame, bisect,
+    clean; an editor for messages (`git commit` without `-m` says to use `-m`; a merge's own message is used); naming files on `git commit`;
+    rename detection other than exact (100%) renames; a merge commit's combined diff in `git show`; submodules (a nested repository's files
+    are just files).
 - **Not there (yet):** job control (`&`), `[[ ]]`, associative arrays in the shell (`declare -A`), here-documents and `<<<`, `select`, `ln`
   (the file system has no links), `tar`, `ssh` and anything needing a network (those names answer with a sentence saying so), a Windows
   `cmd`/PowerShell dialect (planned with the course).

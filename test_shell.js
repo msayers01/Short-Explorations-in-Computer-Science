@@ -265,7 +265,7 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('man missing', await run('man frob'), 'No manual entry for frob\n', 16);
     eq('help', await run('help | grep -c .'), /^\d{2,3}\n$/);
     eq('sudo', await run('sudo ls'), 'student is not in the sudoers file.  This incident will be reported.\n', 1);
-    eq('git', await run('git status'), /no network/, 1);
+    eq('curl', await run('curl example.com'), /no network/, 1);
     eq('vi', await run('vi s.sh'), /use nano s\.sh/, 127);
     eq('exit at prompt', await run('true; exit'), '(this terminal stays open: close its panel to leave)\n', 0);
   }
