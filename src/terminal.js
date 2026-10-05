@@ -28,7 +28,8 @@
     const hooks = Object.assign({ fs, run, compile, nano, typedInput, repl, cancel: () => { if (o.stop) o.stop(); else stopAll(); } }, o.hooks || {});
     let sh = SHELL.makeShell(hooks);
     if (Array.isArray(o.history)) sh.history = o.history.filter((s) => typeof s === 'string' && s.length < 2000).slice(-SHELL.LIMITS.history);
-    const save = () => { if (!o.persist) return; try { localStorage.setItem(o.persist, JSON.stringify({ v: 1, fs: fs.toJSON(), history: sh.history })); } catch (e) { /* storage full or off: the session still works */ } };
+    if (o.aliases) sh.aliases = SHELL.cleanAliases(o.aliases);   // a saved session's aliases come back (they are checked: a saved copy is untrusted)
+    const save = () => { if (!o.persist) return; try { localStorage.setItem(o.persist, JSON.stringify({ v: 1, fs: fs.toJSON(), history: sh.history, aliases: Object.assign({}, sh.aliases) })); } catch (e) { /* storage full or off: the session still works */ } };
 
     const box = el('div', { class: 'out term lab-term', hidden: '' });
     const status = el('span', { class: 'term-status', role: 'status' });
@@ -259,7 +260,7 @@
       /** run a line as if it had been typed → Promise<exit> */
       exec: (text) => runLine(text),
       /** start again: a new file system (from onReset), the history kept */
-      reset() { const next = o.onReset ? o.onReset() : fs; if (!next) return; fs = next; hooks.fs = fs; const hist = sh.history; sh = SHELL.makeShell(hooks); sh.history = hist; io.clear(); setStatus('', ''); setPrompt(); if (o.afterReset) o.afterReset(api); save(); }
+      reset() { const next = o.onReset ? o.onReset() : fs; if (!next) return; fs = next; hooks.fs = fs; const hist = sh.history, als = sh.aliases; sh = SHELL.makeShell(hooks); sh.history = hist; sh.aliases = als; io.clear(); setStatus('', ''); setPrompt(); if (o.afterReset) o.afterReset(api); save(); }
     };
     setPrompt();
     return api;
@@ -306,7 +307,7 @@
     // setup NAME: the files of a lesson, into the home directory (src/shellgrade.js finds the lesson)
     const setup = (name, sh) => { const SG = window.SHELLGRADE; if (!SG) return null; const tree = SG.setupFor(name); if (!tree) return null; SG.populate(sh.fs, tree); sh.fs.cwd = SHELL.HOME; return 'the files for ' + name + ' are in your home directory now (you are there: ls to see them)'; };
     const panel = makePanel({
-      fs: SHELL.makeFS(saved && saved.fs), history: saved && saved.history, persist: KEY, armConfirm: ctx.armConfirm, isFull: ctx.isFull, cppStd: ctx.cppStd, stop: ctx.stop,
+      fs: SHELL.makeFS(saved && saved.fs), history: saved && saved.history, aliases: saved && saved.aliases, persist: KEY, armConfirm: ctx.armConfirm, isFull: ctx.isFull, cppStd: ctx.cppStd, stop: ctx.stop,
       hooks: { edit, setup }, before: syncIn, after: syncOut, onClose: ctx.onClose,
       onReset: () => { try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ } mirrored = new Set(); return SHELL.makeFS(null); },
       resetTitle: 'Forget every file and folder made in this terminal (the Code Lab files stay)',

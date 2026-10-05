@@ -43,6 +43,14 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     check('only home and tmp are saved', saved.root.c.map((e) => e[0]).join(','), 'home,tmp');
     const fs2 = SHELL.makeFS(saved, { now: () => T0 });
     check('round trip', fs2.read('/home/student/g/f.txt'), 'hi there'); check('round trip cwd', fs2.cwd, '/home/student/g'); check('system rebuilt', fs2.isFile('/bin/ls'), true);
+    // saved aliases (terminal.js keeps them with the history; backups carry them): only what the alias builtin would accept comes back
+    {
+      const al = SHELL.cleanAliases(JSON.parse('{"ll":"ls -l","__proto__":"x","bad name":"x","a/b":"x","q\\"":"x","long":"' + 'x'.repeat(1001) + '","n":5,"ok":"echo hi"}'));
+      check('saved aliases are checked: good ones kept, bad names, long texts and non-strings dropped, no prototype', Object.keys(al).sort().join(',') === '__proto__,ll,ok' && Object.getPrototypeOf(al) === null && al.ll === 'ls -l', true);
+      const many = {}; for (let i = 0; i < 500; i++) many['a' + i] = 'echo ' + i;
+      check('saved aliases are capped', Object.keys(SHELL.cleanAliases(many)).length, SHELL.LIMITS.aliases);
+      check('saved aliases: not an object gives none', Object.keys(SHELL.cleanAliases('ls')).length === 0 && Object.keys(SHELL.cleanAliases([1])).length === 0 && Object.keys(SHELL.cleanAliases(null)).length === 0, true);
+    }
     // hostile saved copies
     const h = SHELL.makeFS({ v: 1, cwd: '/etc', root: { t: 'd', c: [['home', { t: 'd', c: [['student', { t: 'd', c: [['__proto__', { t: 'f', d: 'p' }], ['constructor', { t: 'd', c: [] }], ['a/b', { t: 'f', d: 'y' }], ['..', { t: 'd', c: [] }], ['', { t: 'f', d: '' }], ['ctl\u0001', { t: 'f', d: '' }], ['big', { t: 'f', d: 'x'.repeat(SHELL.LIMITS.fileBytes + 1) }], ['ok', { t: 'f', d: 'z', x: 'yes', bin: { lang: 'c++', src: 'int main(){}', std: 'bad std' } }], ['ok2', { t: 'f', d: '', bin: { lang: 'cpp', src: 's', std: 'gnu++20' } }], ['n', { t: 'f', d: 42 }], ['weird', { t: 'x' }]] }]] }], ['bin', { t: 'd', c: [['ls', { t: 'f', d: 'evil', x: true }]] }], ['etc', { t: 'd', c: [['passwd', { t: 'f', d: 'hacked' }]] }]] } }, { now: () => T0 });
     check('hostile: names kept only when valid', h.list('/home/student').join(','), 'constructor,ok,ok2,__proto__');

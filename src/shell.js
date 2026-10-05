@@ -2722,5 +2722,15 @@
       return 0;
     } });
 
-  return { makeFS, makeShell, parse, tokenize, arith, braceExpand, globToRegExp, COMMANDS, LIMITS, HOME, USER, HOST };
+  // the aliases of a saved session (terminal.js keeps them with the history): untrusted, so only names and texts the alias builtin would take
+  function cleanAliases(o) {
+    const out = dict(); if (!o || typeof o !== 'object' || Array.isArray(o)) return out;
+    for (const name of Object.keys(o).slice(0, 1000)) {
+      const val = o[name];
+      if (Object.keys(out).length >= LIMITS.aliases || typeof val !== 'string' || val.length > 1000 || /\u0000/.test(val) || !name || name.length > 100 || /[\s\/$`='"\\|&;()<>\u0000]/.test(name)) continue;
+      out[name] = val;
+    }
+    return out;
+  }
+  return { makeFS, makeShell, cleanAliases, parse, tokenize, arith, braceExpand, globToRegExp, COMMANDS, LIMITS, HOME, USER, HOST };
 });

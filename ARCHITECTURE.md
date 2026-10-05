@@ -614,8 +614,8 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
 - **Aliases** (`alias`, `unalias [-a]`, `type`): expanded when a line is parsed, at the start of a command, not again inside their own text,
   a text ending in a space making the next word a candidate too; capped at 100 aliases of 1000 characters and 10 000 tokens of expansion
   per line. As in bash they work at the prompt (`io.tty`) and in a script only after `shopt -s expand_aliases`, so the grader and the
-  differential tests (`tty: false`) see none. They are **not saved**: they last as long as the shell object (a reset of the terminal, or a
-  reload, forgets them); saving them would mean a field in `terminal.js`'s saved copy, sanitized on load.
+  differential tests (`tty: false`) see none. The Code Lab terminal saves them with its history (`aliases` in
+  `shortcourses.shell.v1`, and in backups), checked on load by `SHELL.cleanAliases` (the alias builtin's name rule and caps; null prototype).
 - **History expansion** (`!!`, `!n`, `!-n`, `!prefix`, `!?text?`, `!$`, `!^`, `!*`, `:n`, `^old^new`) only for a line typed at the terminal
   (`io.tty`), never in scripts: the expanded line is echoed and kept; a failed one says `event not found` and is neither run nor kept. As in
   bash nothing happens in `'…'`, before a space, `=` or `(`, or in `[!…]`, `${!…}`, `$!`. Modifiers (`:s/a/b/`, `:h`) are refused.
