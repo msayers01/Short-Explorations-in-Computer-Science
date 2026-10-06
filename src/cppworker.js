@@ -5,7 +5,7 @@
    Messages from the page: {t:'run', id, code, stdin, maxTimeout, typed}   {t:'trace', id, code, stdin, maxSteps}   (the memory stepper)
                            typed: {lines, times, t0, skip}, input typed as the program asks: replayed as in javaworker.js (runner.js)
                            {t:'check', id, code}   (g++ in the practice terminal: parse the program, run nothing)
-   Messages to the page:   {t:'ready'} {t:'out', id, text} {t:'result', id, trace} {t:'done', id, err} */
+   Messages to the page:   {t:'ready'} {t:'out', id, text} {t:'result', id, trace} {t:'done', id, err, exit} */
 (function () {
   'use strict';
   const isWorker = typeof document === 'undefined';
@@ -18,7 +18,7 @@
     const id = msg.id, stdin = typeof msg.stdin === 'string' ? msg.stdin : '';
     let buf = '';
     const flush = () => { if (buf) { post({ t: 'out', id, text: buf }); buf = ''; } };
-    let err = null, needInput = false;
+    let err = null, needInput = false, exit = 0;
     try {
       if (msg.t === 'check') {
         // JSCPP's debugger parses the program and prepares it without running a statement; the parse errors are what g++ would report here
@@ -29,11 +29,12 @@
       } else {
         let write = (s) => { buf += s; if (buf.length >= 4096) flush(); };
         if (msg.typed && typeof msg.typed === 'object') { typed = typedInput(msg.typed); const w = write; let skip = Math.max(0, Number(msg.typed.skip) || 0); write = (s) => { if (skip) { if (s.length <= skip) { skip -= s.length; return; } s = s.slice(skip); skip = 0; } w(s); }; }
-        JSCPP.run(CPPUTIL.ensureMainReturns(String(msg.code)), typed ? '' : stdin, { stdio: { write }, maxTimeout: msg.maxTimeout || 4000, unsigned_overflow: 'warn' });
+        const ret = JSCPP.run(CPPUTIL.ensureMainReturns(String(msg.code)), typed ? '' : stdin, { stdio: { write }, maxTimeout: msg.maxTimeout || 4000, unsigned_overflow: 'warn' });
+        if (typeof ret === 'number' && isFinite(ret)) exit = ((Math.trunc(ret) % 256) + 256) % 256;   // what main returns is the program's exit status, as a byte
       }
     } catch (e) { if (e === NEED_INPUT || (e && e.needInput)) needInput = true; else err = CPPUTIL.cppErrorText(e && e.message ? e.message : String(e)); }
     typed = null; flush(); busy = false;
-    post({ t: 'done', id, err, needInput });
+    post({ t: 'done', id, err, exit: err ? undefined : exit, needInput });
   }
 
   // Typed input: a run that wants a line nobody has typed yet ends (needInput) and is run again with one more line. time() follows a clock that

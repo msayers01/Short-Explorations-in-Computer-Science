@@ -1,0 +1,16 @@
+{
+  "id": "v7-etc-rc",
+  "file": "v7-etc-rc.jpg",
+  "title": "Version 7 Unix /etc/rc",
+  "alt": "A terminal window running Version 7 Unix. A listing of files dated June 1979 is followed by the command cat /etc/rc, which prints a short startup script: it sets PATH, echoes a licence notice to the console, removes old lock and temporary files with rm -f, mounts a disk, and starts the update and cron programs.",
+  "author": "Huihermit",
+  "license": "CC0",
+  "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+  "source": "https://commons.wikimedia.org/wiki/File:Version_7_UNIX_SIMH_PDP11_Etc_Rc.png",
+  "credit": "Own work",
+  "description": "Version 7 Unix for the PDP-11, running in the SIMH PDP-11 simulator. The contents of \"/etc/rc\", the startup script run by \"/etc/init\" at boot time. The script is executed by the Bourne shell.",
+  "date": "2014-02-17 13:51:19",
+  "width": 652,
+  "height": 416,
+  "fetched": "2026-10-05"
+}

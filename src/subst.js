@@ -13,6 +13,7 @@
   const OPAQUE = new Set([S['set!'], S['let*'], S.letrec, S.do, S.when, S.unless, S.quasiquote, S.delay, S['cons-stream'], S.case]);
   const HIGHER = new Set(['map', 'filter', 'reduce', 'fold-left', 'fold-right', 'fold', 'for-each', 'apply', 'sort', 'accumulate', 'assoc', 'member', 'vector-map', 'list-sort', 'delete', 'find', 'any', 'every', 'assq', 'memq'].map(sym));
 
+  const SET_MSG = 'set! changes the value a name stands for, and the substitution model has no place where a changed value could be kept, so it cannot show this program (Lesson 13 of the Lisp course explains why). Press Run to see what it does.';
   /** A computed value that must not be read as an expression: lists, symbols, procedures, unspecified. */
   class Datum { constructor(v) { this.v = v; } }
   const arr = (p) => { const out = []; while (p instanceof Pair) { out.push(p.car); p = p.cdr; } return out; };
@@ -150,7 +151,9 @@
         return { target: x, result: new Pair(new Pair(S.lambda, new Pair(params, x.cdr.cdr)), list(args)), note: 'let is a lambda applied to the initial values' };
       }
       if (op === S.define) return opaque(x, 'define');
-      if (op === S['set!'] && !(x.cdr.car instanceof Sym)) throw new SchemeError('set! changes a variable, which the substitution model cannot show (the parameter was already replaced by its value). Press Run to see what a program that uses set! does.');
+      // Assignment is where the substitution model stops (SICP §3.1.3, Lisp Lesson 13): a name no longer stands for one value, so
+      // replacing it by its value is no longer allowed. Refuse, rather than show steps that would be wrong.
+      if (op === S['set!']) throw new SchemeError(SET_MSG);
       if (OPAQUE.has(op)) return opaque(x, op.name);
       // an application
       for (const e of [x.car, ...rest]) if (!isValue(e)) return inner(x, e);
@@ -258,5 +261,5 @@
     }
     return { traceProgram, traceExpr, step, render, findPath, it };
   }
-  return { create, Datum };
+  return { create, Datum, SET_MSG };
 });

@@ -298,6 +298,11 @@ Random r = new Random();  r.nextInt(6) + 1</code></pre>
 (filter even? (list 1 2 3 4))
 (reduce + 0 (list 1 2 3))
 (apply + (list 1 2 3))</code></pre>
+<h4>State and streams</h4>
+<pre><code>(set! x 10)   (begin (set! x 1) x)
+(delay (+ 1 2))   (force p)   (cons-stream 1 rest)
+(stream-car s)   (stream-cdr s)   the-empty-stream   (stream-null? s)
+(stream-head s 5)   (stream-ref s 10)   (stream-map + s1 s2)   (stream 1 2 3)</code></pre>
 <h4>Symbols and quotation</h4>
 <pre><code>'x   '(1 2 3)   (quote (a b))   (eq? 'a 'a)   (symbol? 'a)
 (number? 3)   (string? "s")   (equal? '(1 2) '(1 2))</code></pre>
@@ -1173,8 +1178,9 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
         if (lang === 'python') {
           const usesTurtle = usesTurtleIn(code);
           const r = await window.PYRUN.run(code, { execLimit: 15000, args, argv0: curFile().name, onOutput: (s) => out.write(s), onInput: (p) => out.ask(p), turtle: usesTurtle ? turtleOptions() : undefined });
-          if (r.err) showError('python', r.err); else if (!r.out && !usesTurtle) out.note('(the program finished without printing anything)');
+          if (r.err) showError('python', r.err); else if (!r.out && !usesTurtle && !r.exit) out.note('(the program finished without printing anything)');
           stopped = /stopped|cancel/i.test(r.err || '') && !r.out;
+          if (!r.err && r.exit) { out.note('(the program ended with status ' + r.exit + ')'); exit = r.exit; }   // sys.exit(n)
         } else if (lang === 'scheme') {
           repl.reset();
           const r = repl.loadProgram(code, (s) => out.write(s));
@@ -1198,6 +1204,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
           const r = await Runners.cpp.run(code, { onOutput: (s) => out.write(s), stdin: typed ? null : stdinTa.value, onInput: (p) => out.ask(p) });
           stopped = r.err === 'Stopped.';
           if (stopped) out.note('(stopped)'); else if (r.err) showError('cpp', r.err); else if (!r.out) out.note('(the program finished without printing anything)');
+          if (!r.err && r.exit) { out.note('(the program ended with status ' + r.exit + ')'); exit = r.exit; }   // what main returned
         } else if (lang === 'java') {
           const r = await Runners.java.run(proj ? proj.src : code, { onOutput: (s) => out.write(s), stdin: typed ? null : stdinTa.value, onInput: (p) => out.ask(p), args });
           stopped = r.err === 'Stopped.';
@@ -1485,7 +1492,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
 <li>Java: <b>Run</b> compiles every Java tab together, as <code>javac *.java</code> would, so a program can be split into <code>Main.java</code>, <code>Dog.java</code> and so on; the tab you are in goes first, so its <code>main</code> runs if it has one. As in Java, a <code>public</code> class must be in a file of its own name. Tabs that declare a class another tab already has (separate programs, each with its own <code>Main</code>) are left out, and so are exercise files, which run alone.</li>
 <li><b>Arguments</b> (Python, Java and C) gives the program words to start with, as on a command line: <code>sys.argv[1:]</code> in Python, <code>args</code> in <code>main</code> in Java, <code>argv</code> in C. In the Terminal, <code>python app.py one two</code>, <code>java Main one two</code> and <code>./prog one two</code> do the same. The teaching C++ engine has no <code>argc</code>/<code>argv</code>.</li>
 <li>Python: <b>Step through</b> runs one line at a time and shows the variables. <code>import turtle</code> opens a drawing canvas. <b>Stop</b> ends a program that is stuck in a loop.</li>
-<li>Scheme: Run loads the file's definitions, then use the REPL below the output to try expressions one at a time. <b>Substitution</b> shows the substitution model from SICP: each expression is rewritten one step at a time, exactly the way the Lisp course draws it.</li>
+<li>Scheme: Run loads the file's definitions, then use the REPL below the output to try expressions one at a time. <b>Substitution</b> shows the substitution model from SICP: each expression is rewritten one step at a time, exactly the way the Lisp course draws it. It refuses programs that use <code>set!</code>, where the substitution model no longer holds.</li>
 <li><b>Teacher tools</b> (the switch at the top) let a teacher write an assignment with tests and share it as a link or QR code; students <b>Check</b> their work against the visible tests and <b>Submit</b>, which makes a link carrying their program. The teacher opens submission links in her own Code Lab, where hidden tests run and a grade book collects the results. Nothing is sent to any server.</li>
 <li>Every code example and exercise in the courses has an <b>Open in Code Lab</b> button. A file opened from an exercise keeps its link to it: a bar above the editor lets you check your program against the exercise's tests, and passing counts as completing it in the course.</li>
 <li>C: the real compiler (Clang, the one Full C++ uses; downloaded once, after you agree), with a standard picker (C99, C11, C17, C23). Compiler errors mark their line in the editor, and <code>scanf</code> asks for each line as the program reads it. In the Terminal, <code>gcc hello.c -o hello</code> then <code>./hello</code>. C does not check array indexes: a program that goes past the end of an array may print nonsense rather than stop.</li>

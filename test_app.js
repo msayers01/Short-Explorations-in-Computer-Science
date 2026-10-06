@@ -57,5 +57,20 @@ console.error = quiet;
   check('a decimal keeps its tolerance', g('0.3333333333', '0.33333333333'), true);
 }
 
+// the Real world page: every topic is in exactly one theme, ids are unique, every field is known, and every lesson link names a real lesson
+{
+  const A = require('./src/applied.js'), fields = new Set(A.FIELDS.map((f) => f.key)), seen = new Map();
+  for (const g of A.GROUPS) for (const id of g.topics) seen.set(id, (seen.get(id) || 0) + 1);
+  check('real world: every topic is in exactly one theme', A.TOPICS.filter((t) => seen.get(t.id) !== 1).map((t) => t.id).join(' '), '');
+  check('real world: every theme names only real topics', [...seen.keys()].filter((id) => !A.TOPICS.some((t) => t.id === id)).join(' '), '');
+  check('real world: topic ids are unique', new Set(A.TOPICS.map((t) => t.id)).size, A.TOPICS.length);
+  check('real world: every example has a known field', A.TOPICS.flatMap((t) => t.uses).filter((u) => !fields.has(u.f)).length, 0);
+  const saved = global.window; global.window = global.window || {}; const keep = global.window.COURSES; global.window.COURSES = [];
+  for (const f of require('fs').readdirSync('./src').filter((f) => /^course_\w+\.js$/.test(f))) { delete require.cache[require.resolve('./src/' + f)]; require('./src/' + f); }
+  const missing = A.TOPICS.flatMap((t) => t.learn).filter((r) => { const m = /^([a-z]+)\/(\d+)$/.exec(r); const c = m && global.window.COURSES.find((x) => x.id === m[1]); return !c || !c.lessons[+m[2] - 1]; });
+  check('real world: every lesson link names a real lesson', missing.join(' '), '');
+  global.window.COURSES = keep; if (!saved) delete global.window;
+}
+
 if (bad) { console.log(bad + ' problems'); process.exit(1); }
 console.log('app helpers OK');

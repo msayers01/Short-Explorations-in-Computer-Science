@@ -18,6 +18,7 @@ not written down there.
     node test_typed.js     # typed input (Scanner, cin answered as the program asks), in the real worker sources (a few seconds)
     node test_c.js         # C in the Lab and terminal: the real clang worker in node (compile, run, -std, argv, typed scanf; about 15 s)
     node test_shell.js     # the practice shell: file system, parser, every command, limits, hostile saved copies (a second)
+    node test_win.js       # the Windows mode of the shell: cmd and PowerShell (under a second)
     node test_git.js       # the practice git (--real also runs its scenarios through the real git and compares)
     node test_lessons.js   # the lesson linter (part of npm test); --update records new exercise ids in lint/exercise-ids.txt
     npm run test:diff      # java.js against a real JDK 21, shell.js against bash (about 35 s; SEED=n COUNT=n searches further)
@@ -128,7 +129,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   end the game, or the loop runs on empty input until the time limit. Skulpt's turtle supports color (named colours), pensize, begin_fill/
   end_fill, penup/pendown, goto, speed. Planned next: a dictionaries lesson (a Scratch list of pairs → dict) and a final "what next" lesson
   handing over to SC 101.
-- Courses still being written carry `status: 'developing'` (Scratch to Python, Modern C++, The Command Line, How Machines Learn): an "Under development" tag (app.js `devTag`).
+- Courses still being written carry `status: 'developing'` (Scratch to Python, Modern C++, How Machines Learn): an "Under development" tag (app.js `devTag`).
 - SC 106 Introduction to Java (finished October 2026): the interpreter and 12 content lessons (now 15 with the checkpoints) (Hello Java and types; decisions and Scanner; loops; methods;
   arrays; Strings; ArrayList; classes and objects; 9 inheritance and interfaces; 10 exceptions; 11 HashMap and HashSet; 12 project, a text-mode
   Minecraft crafting table), 22 exercises (`jv-<n>-<k>`). Every lesson has `standard: 1` (lesson level: no course-level skills or checkpoints, so no
@@ -142,12 +143,18 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   Probes: `difftest/java/probe-x1..x8.java`, `probe-lh.java`.
 - SC 101 Introduction to Python (`src/course_python.js`, 13 lessons, `py-<n>-<k>`): every lesson has `standard: 1` at lesson level (October 2026: stories end on a question, `predict: true` or a "Guess first" reveal in every section, `wrong` reasons on all quick checks, followups, and new trace exercises `py-5-3`, `py-6-3`, `py-7-3`, `py-8-3`, `py-9-3`, `py-11-3`; lesson 4 already had a trace and a Parsons problem). Not done: course-level skills and checkpoint lessons (they would renumber lessons). Skulpt prints `4/3` as `1.333333333333333` (CPython: `1.3333333333333333`) and `round(x, n)` can differ: do not state such values in captions. Examples that read `input()` use reveals, not `predict`.
 - **Every lesson on the site now has `standard: 1`** (October 2026, lesson level; `node test_lessons.js --standard` shows OK for all). Retrofits of SC 100, 101, 104, 105 and 108 added stories that end on a question, predictions or "Guess first" reveals, `wrong` reasons on every quick check, followups and `failTip`s; new exercises: `py-5-3 py-6-3 py-7-3 py-8-3 py-9-3 py-11-3` (traces) and `mc-8-2`. SC 108 examples are terminals, which ignore `predict`: they use reveals. SC 100 lesson 7's assembled game is `long: true` at 52 lines. Course-level skills and checkpoint lessons now exist in EVERY course (SC 099-109). Retrofit agents ran Python examples in CPython as well as Skulpt: check any printed float in Skulpt.
-- **Course-level architecture** (October 2026): SC 100 Scratch (11 lessons: checkpoints 5 and 10; 21 skills; sp-10-*, sp-11-* checkpoints, Parsons sp-12-1, sp-12-2; the planned dictionaries and what-next lessons will need their own unit and checkpoint), SC 104 Math (16 lessons: checkpoints 5, 10, 15, the RSA project is 16; 29 skills; ma-14-* .. ma-16-* checkpoints, traces ma-17-1..3), SC 105 Modern C++ (10 lessons: checkpoints 5 and 9, the project is 10; 29 skills; mc-9-*, mc-10-* checkpoints, trace mc-3-3, Parsons mc-2-3, mc-7-3; `test_course.js` `verifyTrace` now handles Full C++ too, with `std::cout`), SC 108 Command Line (5 lessons: lesson 5 is the checkpoint, 12 skills, sh-9-* its exercises; the planned lessons are now 6 running programs, 7 Windows, 8 a first script, 9 the tidy-a-folder project) and SC 101 Python (16 lessons, checkpoints 5, 10, 15, the project is 16; 29 skills; ids py-14-* .. py-16-* are the checkpoints', py-17-*, py-18-* new Parsons/traces), SC 102 Lisp (13 lessons, checkpoints 5, 10; 29 skills; ls-12-*, ls-13-* checkpoints, Parsons ls-4-3 ls-7-3 ls-8-3; no Scheme traces because `verifyTrace` handles Python, Java and C++ only) and SC 107 DSA (15 lessons, checkpoints 5, 10, 14, project 15; 29 skills; ds-13-* .. ds-15-* checkpoints, traces ds-2-4 ds-3-4, Parsons ds-5-4; `difftest/known.json` is keyed by lesson number: `dsa/8/play2`), besides SC 106 Java (15 lessons: checkpoints at 5, 10, 14, the project is 15; 25 skills; new exercises jv-13-* .. jv-15-* are the checkpoints' and jv-4-3, jv-7-3, jv-11-3 are a trace and two Parsons problems) and SC 103 C++ (13 lessons: checkpoints at 5 and 10, the project is 13; 28 skills; cp-12-*, cp-13-* are the checkpoints'; traces cp-3-3, cp-5-3, cp-10-3, Parsons cp-6-3) have `standard: 1` on the course. Exercise ids must match `^jv-\d+-\d+$` / `cp-\d+-\d+`, so checkpoint ids borrow unused numbers and are not lesson numbers. Progress and review are keyed by exercise id and a hash of the question, so lesson renumbering is safe for saved data, but links like `#/java/9` and the lists in `applied.js` had to be remapped by hand: do the same whenever lessons are inserted. `test_course.js` now checks C++ trace tables.
-- SC 102 Introduction to Lisp (`src/course_lisp.js`, 11 lessons after SICP 1.1-2.3 plus the symbolic-differentiation project, 22 exercises `ls-<n>-<k>`):
-  every lesson has `standard: 1` (lesson level, October 2026: stories end on a question, `predict: true` on the key example of each section with the
-  caption rewritten as the explanation, `wrong` reasons on all 33 quick checks, followups on every exercise). Not done: course-level skills and
-  checkpoint lessons (they would renumber lessons that other pages link to as `lisp/N`), a networks of ideas beyond SICP (vectors, `set!` and
-  state, streams), and Scheme character literals. The captions' computed values were checked by running the examples.
+- **Course-level architecture** (October 2026): SC 100 Scratch (11 lessons: checkpoints 5 and 10; 21 skills; sp-10-*, sp-11-* checkpoints, Parsons sp-12-1, sp-12-2; the planned dictionaries and what-next lessons will need their own unit and checkpoint), SC 104 Math (16 lessons: checkpoints 5, 10, 15, the RSA project is 16; 29 skills; ma-14-* .. ma-16-* checkpoints, traces ma-17-1..3), SC 105 Modern C++ (10 lessons: checkpoints 5 and 9, the project is 10; 29 skills; mc-9-*, mc-10-* checkpoints, trace mc-3-3, Parsons mc-2-3, mc-7-3; `test_course.js` `verifyTrace` now handles Full C++ too, with `std::cout`), SC 108 Command Line (10 lessons: checkpoints 5 and 9, the project is 10; 24 skills; sh-9-* and sh-11-* are the checkpoints' exercises) and SC 101 Python (16 lessons, checkpoints 5, 10, 15, the project is 16; 29 skills; ids py-14-* .. py-16-* are the checkpoints', py-17-*, py-18-* new Parsons/traces), SC 102 Lisp (16 lessons, checkpoints 5, 10, 15, the project is 16; 30 skills; ls-12-*, ls-13-*, ls-16-* checkpoints, Parsons ls-4-3 ls-7-3 ls-8-3; no Scheme traces because `verifyTrace` handles Python, Java and C++ only) and SC 107 DSA (15 lessons, checkpoints 5, 10, 14, project 15; 29 skills; ds-13-* .. ds-15-* checkpoints, traces ds-2-4 ds-3-4, Parsons ds-5-4; `difftest/known.json` is keyed by lesson number: `dsa/8/play2`), besides SC 106 Java (15 lessons: checkpoints at 5, 10, 14, the project is 15; 25 skills; new exercises jv-13-* .. jv-15-* are the checkpoints' and jv-4-3, jv-7-3, jv-11-3 are a trace and two Parsons problems) and SC 103 C++ (13 lessons: checkpoints at 5 and 10, the project is 13; 28 skills; cp-12-*, cp-13-* are the checkpoints'; traces cp-3-3, cp-5-3, cp-10-3, Parsons cp-6-3) have `standard: 1` on the course. Exercise ids must match `^jv-\d+-\d+$` / `cp-\d+-\d+`, so checkpoint ids borrow unused numbers and are not lesson numbers. Progress and review are keyed by exercise id and a hash of the question, so lesson renumbering is safe for saved data, but links like `#/java/9` and the lists in `applied.js` had to be remapped by hand: do the same whenever lessons are inserted. `test_course.js` now checks C++ trace tables.
+- SC 102 Introduction to Lisp (`src/course_lisp.js`, finished October 2026): 16 lessons following SICP §1.1-1.3, §2.1-2.3, §3.1-3.2 and §3.5;
+  checkpoints 5, 10, 15 (`ls-12-*`, `ls-13-*`, `ls-16-*`), the project (symbolic differentiation) is 16, so links to it are `lisp/16`. Lesson 13
+  assignment and local state (set!/begin, make-withdraw, message-passing make-account, a deterministic Monte Carlo π with a Park-Miller rand,
+  seed 2026, printing 3.11840877014; what assignment costs; the environment model as a `subst`-figure stepper and a frame table), lesson 14
+  streams (delay/force with memoization, cons-stream, infinite streams, the SICP sieve, implicit streams, state without set!: the Monte Carlo
+  stream reproduces lesson 13's value). Exercises `ls-14-1..3`, `ls-15-1..3` (Parsons `ls-14-3`, `ls-15-3`), `ls-16-1`, `ls-16-2`. 30 skills
+  (`local-state` and `streams` added, `simplify` merged into `symbolic-deriv`): the cap of 30 is reached, so a new skill means merging one.
+  scheme.js gained delay/force/cons-stream and MIT's stream procedures (ARCHITECTURE §9); the substitution stepper refuses every `set!`, and a
+  playground using `set!` must carry `noSubst: true` (test_subst.js enforces it). Known gaps: Scheme character literals; no Scheme traces;
+  SICP 3.3-3.4 (mutable data, tables, the circuit simulator, concurrency) and chapter 4 are not covered. Stream printing (`{1 2 ...}`) and
+  `stream-head`'s forcing were not checked against a real MIT Scheme.
 - SC 103 Introduction to C++ (`src/course_cpp.js`, 11 lessons on JSCPP, 22 exercises `cp-<n>-<k>`): every lesson has `standard: 1` at lesson level (October 2026, same
   treatment as SC 102: stories end on a question, predictions, `wrong` reasons, followups). Lesson 9 (random numbers) has no `predict: true`, only "Guess first"
   reveals about properties, because its output varies. Examples were trimmed to 25 lines rather than marked `long`. Not done: course-level skills and
@@ -155,10 +162,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - **The practice terminal** (ARCHITECTURE §9f): `src/shell.js` (a real shell: parser, pipelines, redirections, variables, loops, functions, case, arrays, aliases, history expansion, ~90 commands including a subset of awk,
   virtual file system with caps, saved under `shortcourses.shell.v1`, in backups) and `src/terminal.js` (the Terminal panel in the Code Lab:
   history, Tab completion, nano, `edit`, the `~/lab` mirror). `g++`/`javac` compile through check-only modes of the sandboxes; `./prog`,
-  `java`, `python`, `scheme` run through the usual runners. Planned next: SC 108 The Command Line (grades 7-12, 8 lessons: paths and `cd`;
-  making and moving things; looking inside files; pipes and redirection; running your programs; Windows cmd and PowerShell as a dialect
-  switch over the same file system; a first script; a tidy-a-messy-folder project), terminal exercises graded on file-system state plus
-  output, `setup lessonN` through the shell's `setup` hook, terminal tasks in teacher assignments.
+  `java`, `python`, `scheme` run through the usual runners. `cmd` and `powershell`/`pwsh` switch it to a Windows dialect over the same files (`src/shellwin.js`, ARCHITECTURE §9f). Not done: terminal tasks in teacher assignments.
 - **The practice git** (`src/shellgit.js`, ARCHITECTURE §9f, October 2026): `git` in the shell, added with `SHELL.register` (the old
   "needs the internet" stub no longer names git). init/status/add/rm/mv/restore/commit/log/diff/show/branch/switch/checkout/merge (with
   conflicts)/reset/tag/stash/revert/cherry-pick/blame/clean/config/reflog, `log --graph` (git's graph.c ported, topo order) and a few
@@ -170,15 +174,22 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   multi-commit picks, interactive modes. Compare with the real git with `node test_git.js --real` after changing it (its scenarios include
   editor runs through a scripted GIT_EDITOR and eight random histories drawn with `--graph`); `git switch` now refuses during a merge,
   cherry-pick or revert, as git does (`git checkout` still says "resolve your current index first").
-- SC 108 The Command Line (`src/course_shell.js`, grades 7-12): lessons 1-4 (where am I: prompt, tree, paths, cd; making and moving things:
-  mkdir, touch, echo >, cp, mv, rm, wildcards; looking inside files: cat, head, tail, wc, grep, find, diff, file; pipes and redirection:
-  > >> < | 2> /dev/null $?, sort, uniq -c, cut, tr, McIlroy's word-count pipeline), 8 exercises (`sh-<n>-<k>`; kind `shell` graded by
-  `src/shellgrade.js`, plus `answer`), the `fstree` figure, `course.setups` trees `lesson1`..`lesson4`. Lesson examples are terminals (`terminal.js: playBlock`); each has its own
-  files, so an example must not depend on an earlier one; mark examples whose commands fail on purpose with `expectError: true`.
-  Planned next (two lessons per PR): 5 running your programs (python, javac/java, g++, < input, > output, exit status; needs the
-  sandboxes, so test_course.js shell will need a Python runner for its exercises); 6 Windows cmd and PowerShell (a dialect switch over the
-  same file system); 7 a first script (variables, for, if, chmod +x, #!); 8 a project (tidy a messy folder). Lesson 3 promises lesson 7
-  says more about regular expressions.
+- SC 108 The Command Line (`src/course_shell.js`, grades 7-12, finished October 2026): 10 lessons. 1 where am I; 2 making and moving things;
+  3 looking inside files; 4 pipes and redirection; 5 checkpoint one; 6 running your programs (python with arguments, javac/java, g++ and why
+  `./`, a program's input and output with `<` `>` `|`, exit statuses with `sys.exit`, `&&`, `||`, `$?`); 7 Windows: cmd and PowerShell (the
+  practice terminal's Windows mode, `src/shellwin.js`); 8 a first script (#!, chmod +x, variables and arguments, for, if/[ ]; Bourne's
+  `fi`/`esac`/`done` story); 9 checkpoint two; 10 project: tidy a messy folder (case, a dry run `plan.sh`, testing on a copy in /tmp, never
+  overwrite with `[ -e ]`; Toy Story 2 story; ends with stretch goals and "where to go from here"). 24 skills. Exercises `sh-<n>-<k>`; the
+  checkpoints' are `sh-9-*` and `sh-11-*`. Kinds `shell` (graded by `src/shellgrade.js`) and `answer`/`choice`. Setups in `course.setups`
+  (`lesson1`..`lesson8`, `checkpoint1`, `checkpoint2`, `project`, `project2`). Lesson examples are terminals (`terminal.js: playBlock`); each
+  has its own files, so an example must not depend on an earlier one; mark examples whose commands fail on purpose with `expectError: true`.
+  Terminal examples ignore `predict`: use "Guess first" reveals. Exercises from lesson 8 on check the student's script itself with a `{cmd}`
+  test that runs it on a fresh folder (`/tmp/t`). `test_course.js shell` runs programs through node copies of the interpreters (`shellHooks`).
+  Fixed while writing it (October 2026), each checked against bash 5.2 or coreutils 9.4: scripts, `( )` and `$( )` run in a child shell
+  (`inChild`: a script's `cd` and variables no longer leak; it sees only exported variables); `ls` at a terminal quotes names like GNU ls
+  (`'holiday photo.jpg'`); `^`/`$` in the middle of a basic regular expression are plain characters; Python's `sys.exit(n)` and a C++
+  `main`'s return value are exit statuses (pyworker/cppworker), and the terminal prints `input()`'s prompt when stdin is a file (`promptsOut`).
+  The Windows mode's cmd output is from memory (no cmd.exe to compare with); PowerShell's was compared with a real pwsh 7.4.6.
 - SC 099 What Is a Computer? (`src/course_computer.js`, `lang: 'none'`, `standard: 1`, first in the catalogue; finished October 2026): 11 lessons in
   three units. Unit one, the machine: 1 the parts; 2 the processor and memory; 3 storage, input and output; 4 software; 5 Checkpoint one.
   Unit two, inside the bytes: 6 everything is numbers (ASCII/Unicode, pixels and colour, sound samples, compression); 7 switches that think
@@ -199,8 +210,8 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   boids, Langton's ant, the sandpile, slime mould; a convex hull race, the Mandelbrot set, L-systems, Voronoi; a Sudoku solver race, n queens, an MST race;
   Reversi against MCTS, a genetic algorithm, Huffman coding). The owner reports that students loved
   the sorting race: races with a bet first (sorting, maze), things to play against the computer (Hanoi, the tour) and long-running
-  simulations (Life, raindrops) are what to add more of. Redraw counters once a frame (`onceAFrame` in algo_puzzles.js), never per step. `#/real-world` (`src/applied.js`) has 30 topics,
-  147 examples tagged by field, and links to the lessons. The tour's top-bar step describes these pages: update it when they change.
+  simulations (Life, raindrops) are what to add more of. Redraw counters once a frame (`onceAFrame` in algo_puzzles.js), never per step. `#/real-world` (`src/applied.js`) has 31 topics in five themes
+  (`APPLIED.GROUPS`: add a new topic to one), 152 examples tagged by field, and links to the lessons (one row per course). The tour's top-bar step describes these pages: update it when they change.
 - **Pictures** (ARCHITECTURE §9h): `{ photo: 'id' | ['a','b'], caption }` in a lesson; `img/<id>.jpg` + `img/<id>.json` made only by
   `node scripts/fetch-image.js` (Wikimedia Commons; public domain, CC0, CC BY, CC BY-SA only; `--search` first). Look at each picture
   before writing its alt text. Served from `dist/img/` (content-hashed, lazy); credits on About. Wikimedia rate-limits this machine: one

@@ -585,7 +585,26 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('functions last for the session', await run('k 3'), 'kw 3\n', 0);
     eq('$0 stays at the prompt', await run('f0() { echo $0; }; f0'), 'bash\n', 0);
     eq('$0 stays in a script', await run('printf \'g() { echo "$0 $1"; }\\ng x\\n\' > fs.sh; bash fs.sh', NOHIST), 'fs.sh x\n', 0);
-    eq('a function from a script stays', await run('g y'), 'bash y\n', 0);
+    // ls at a terminal quotes as GNU ls does (shell-escape), and the other names get a space to line up; into a pipe, names are bare
+    {
+      const { run: rq } = fresh();
+      await rq('mkdir q; cd q; touch "holiday photo.jpg" beach.png "it\'s.txt" "x=y" "#h" "m#h" "a{b}" \'d$\'; mkdir "old dir"', NOHIST);
+      eq('ls quotes at a terminal', await rq('ls -1'), "a{b}\nbeach.png\n'd$'\n'#h'\n'holiday photo.jpg'\n\"it's.txt\"\nm#h\n'old dir'\n'x=y'\n", 0);
+      eq('ls lines up in columns', await rq('ls'), " a{b}       'd$'  'holiday photo.jpg'   m#h       'x=y'\n beach.png  '#h'  \"it's.txt\"           'old dir'\n", 0);
+      eq('ls -F puts the mark after the quotes', await rq('ls -dF "old dir"'), "'old dir'/\n", 0);
+      eq('ls into a pipe: bare names', await rq('ls | head -3'), 'a{b}\nbeach.png\nd$\n', 0);
+      await rq('cd ~; rm -r q', NOHIST);
+    }
+    eq('a function from a script ends with it (a child bash)', await run('g y'), 'bash: g: command not found\n', 127);
+    eq('a function from a sourced script stays', await run('source fs.sh >/dev/null; g y'), 'bash y\n', 0);
+    // a script and ( ) and $( ) run in a child: what they change ends with them, as in bash
+    eq('a script\'s cd and variables end with it', await run('printf \'cd /tmp\\nv=1\\npwd\\n\' > cd.sh; v=0; bash cd.sh; pwd; echo $v', NOHIST), '/tmp\n/home/student\n0\n', 0);
+    eq('./script too', await run('chmod +x cd.sh; ./cd.sh; pwd', NOHIST), '/tmp\n/home/student\n', 0);
+    eq('a script sees only exported variables', await run('printf \'echo "[$a][$b]"\\n\' > ex.sh; a=1; export b=2; bash ex.sh; unset a b', NOHIST), '[][2]\n', 0);
+    eq('source keeps the cd', await run('source cd.sh; pwd; cd', NOHIST), '/tmp\n/tmp\n', 0);
+    eq('( ) keeps nothing', await run('w=1; (w=2; arr=(a b); cd /tmp; f9() { :; }); echo "$w ${#arr[@]}"; pwd; type f9 2>&1 | head -1'), '1 0\n/home/student\nbash: type: f9: not found\n', 0);
+    eq('$( ) keeps nothing', await run('w=1; x=$(w=5; echo $w); echo "$w $x"'), '1 5\n', 0);
+    eq('( ) sees the parent\'s arrays and functions', await run('arr=(p q); f8() { echo f8; }; (echo ${arr[1]}; f8; arr[1]=z); echo ${arr[1]}; unset -f f8; unset arr w'), 'q\nf8\nq\n', 0);
     eq('local', await run('greet() { local name=$1; echo "Hello, $name"; }; name=Bob; greet Ada; echo $name'), 'Hello, Ada\nBob\n', 0);
     eq('local without a value', await run('f() { local x; echo "[$x]"; x=inner; }; x=outer; f; echo $x'), '[]\nouter\n', 0);
     eq('local keeps words together', await run('f() { local s=$1; echo "$s"; }; f "a  b"'), 'a  b\n', 0);

@@ -16,6 +16,22 @@ const course = window.COURSES.find(c => c.id === 'lisp');
   ok(e && !e.error && /15/.test(e.steps[e.steps.length - 1].note) && /n \u2192 5/.test(e.steps[0].note), 'a closure is substituted with the value it remembers');
 }
 
+// assignment: the substitution model does not apply (SICP §3.1.3), so the stepper refuses set! with a message instead of wrong steps
+{
+  const t = SUBST.create({ maxSteps: 300 }).traceProgram('(define (make-counter) (let ((n 0)) (lambda () (set! n (+ n 1)) n)))\n(define c (make-counter))\n(c)');
+  const e = t.items.find(i => i.kind !== 'define');
+  ok(e && e.error === SUBST.SET_MSG, 'set! inside a closure is refused with the explanation');
+  const g = SUBST.create({ maxSteps: 300 }).traceProgram('(define x 1)\n(set! x 2)');
+  ok(g.error === SUBST.SET_MSG, 'a top-level set! is refused too');
+}
+// streams: cons-stream and delay are evaluated by the interpreter, and stepping still ends at the interpreter's value
+{
+  const t = SUBST.create({ maxSteps: 300 }).traceProgram('(define (from n) (cons-stream n (from (+ n 1))))\n(stream-car (stream-cdr (from 1)))');
+  const e = t.items.find(i => i.kind !== 'define'), last = e && e.steps[e.steps.length - 1];
+  ok(e && !e.error && last && last.note === 'value: 2', 'a stream is stepped to its value');
+}
+
+let skipped = 0;
 course.lessons.forEach((L, li) => {
   let k = 0;
   for (const b of L.blocks) {
@@ -23,6 +39,9 @@ course.lessons.forEach((L, li) => {
     k++;
     if (b.expectError) continue;
     const name = 'lesson ' + (li + 1) + ' playground ' + k;
+    // a playground that assigns has no substitution button (noSubst: true on the block, app.js), and every one that assigns must say so
+    if (/\(set!/.test(b.play) && !b.noSubst) ok(false, name + ' uses set! but is not marked noSubst: true, so the page would offer a substitution the stepper refuses');
+    if (b.noSubst) { skipped++; continue; }
     let t;
     try { t = SUBST.create({ maxSteps: 300, onOutput: () => {} }).traceProgram(b.play); }
     catch (e) { ok(false, name + ' crashed the stepper: ' + e.message); continue; }
@@ -40,5 +59,5 @@ course.lessons.forEach((L, li) => {
     });
   }
 });
-console.log(problems ? problems + ' problems' : 'subst OK (' + checked + ' playgrounds stepped, ' + compared + ' final values compared)');
+console.log(problems ? problems + ' problems' : 'subst OK (' + checked + ' playgrounds stepped, ' + compared + ' final values compared, ' + skipped + ' marked noSubst)');
 process.exit(problems ? 1 : 0);

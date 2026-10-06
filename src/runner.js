@@ -6,7 +6,8 @@
 
    Everything that comes back from a sandbox is untrusted data: it is checked, and shown only as text.
 
-   window.PYRUN.run(code, {stdin, execLimit, turtle:{mount,width,height}, onOutput, onInput, args, argv0}) → Promise<{out, err}>
+   window.PYRUN.run(code, {stdin, execLimit, turtle:{mount,width,height}, onOutput, onInput, args, argv0, promptsOut}) → Promise<{out, err, exit}>
+                                                                  (promptsOut: input()'s prompt is printed even when stdin is given, as python does: the terminal)
    window.PYRUN.trace(code, {…, onStep}) → {done, next(), finish(), stop()}        window.PYRUN.cancel()
    window.CPPRUN.run(code, {stdin, onOutput, onInput, maxMs}) → Promise<{out, err}>    window.CPPRUN.trace(code, stdin) → Promise<{trace, err}>
    window.JAVARUN.run(code, {stdin, onOutput, onInput, maxMs, args, mainClass}) → Promise<{out, err}>     (the site's own Java interpreter, src/java.js; onInput without stdin: typed input)   window.JAVARUN.trace(code, stdin) → Promise<{result, err}>
@@ -231,7 +232,7 @@
     const execLimit = opts.execLimit || 6000;
     // A drawing takes as long as its animation, which the browser also slows down while the canvas is off screen: give it more time (Stop is always there).
     const turtle = !!opts.turtle;
-    return { t, totalMs: turtle ? 90000 : execLimit + 1500, idleMs: turtle ? 90000 : 8000, opts, payload: { code: String(code), stdin: opts.stdin == null ? null : String(opts.stdin), args: argList(opts.args), argv0: typeof opts.argv0 === 'string' ? opts.argv0 : 'main.py', execLimit, turtle: opts.turtle ? { width: opts.turtle.width, height: opts.turtle.height } : undefined } };
+    return { t, totalMs: turtle ? 90000 : execLimit + 1500, idleMs: turtle ? 90000 : 8000, opts, payload: { code: String(code), stdin: opts.stdin == null ? null : String(opts.stdin), args: argList(opts.args), argv0: typeof opts.argv0 === 'string' ? opts.argv0 : 'main.py', promptsOut: opts.promptsOut === true, execLimit, turtle: opts.turtle ? { width: opts.turtle.width, height: opts.turtle.height } : undefined } };
   };
   window.PYRUN = {
     run: (code, opts) => py.run(pyJob('run', code, opts)),

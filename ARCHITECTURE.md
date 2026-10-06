@@ -72,7 +72,7 @@ site/
     site.js              SITE: name, role, contact, home-page text, footer; about (html), licence (code and content
                          licences) and sourceUrl (the repository) for #/about
     course_python.js     SC 101 (13 lessons)   ─┐
-    course_lisp.js       SC 102 (11 lessons)    │ each pushes one course object onto window.COURSES
+    course_lisp.js       SC 102 (16 lessons)    │ each pushes one course object onto window.COURSES
     course_cpp.js        SC 103 (11 lessons)    │
     course_math.js       SC 104 (13 lessons)   ─┤
     course_modern.js     SC 105 (runtime: 'full') ─┘
@@ -307,6 +307,13 @@ button and every Scheme playground not marked `expectError` a "Show the substitu
   by `MAX_STACK` (200 000 frames, then "maximum recursion depth exceeded"), not by the JS call stack; `do`, named-let
   inits, `letrec` and quasiquote still recurse into `evaluate`. Integers beyond 2^53 are BigInts (`isInt`, `norm`,
   `arith` in scheme.js keep arithmetic exact and fold results back to plain numbers when they fit).
+  Streams (October 2026, for SC 102 lesson 14): `delay` and `cons-stream` are special forms (`cons-stream a b` is `(cons a (delay b))`),
+  `force` evaluates a promise once and keeps the value (`SPromise`), and MIT's stream procedures are there (`stream-car`/`-cdr`/`-pair?`/
+  `-null?`, `empty-stream?`, `stream`, `list->stream`, `stream->list`, `stream-head`, `stream-tail`, `stream-ref`, `stream-length`,
+  `stream-map`). A promise prints as `#[promise]` and a stream as the items forced so far, `{1 2 ...}` (MIT's form; not checked against a
+  real MIT Scheme, and no lesson prints one). The substitution stepper (`subst.js`) refuses every `set!` (`SUBST.SET_MSG`: the model stops
+  being true there, which is SC 102 lesson 13's point); a playground that uses `set!` carries `noSubst: true`, which hides its "Show the
+  substitution" button, and `test_subst.js` fails if one does not.
 - Memory stepper (C++): `CPPSTEP.trace(code, stdin, {prepare, errorText, maxSteps, maxMs})` runs in the C++ sandbox (`CPPRUN.trace`; the
   result is plain data and comes back by message, `CPPSTEP.render` draws it in the page) and runs the program
   under JSCPP's debugger (`debug: true`), stopping whenever the line changes, and records every snapshot:
@@ -763,6 +770,27 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   `test_course.js shell` runs it through a fresh shell and the empty history must fail. Progress saves the history as the exercise's
   "code". `answer`-kind exercises work in a shell lesson too (mathgrade). The `fstree` figure draws a setup's tree with paths.
   `setup NAME` in the Code Lab's terminal writes a lesson's tree into the home directory (`terminal.js: mount`).
+  Programs typed in a lesson's terminal (lesson 6 onwards) run through the same sandboxes as the Run button; `test_course.js shell` gives the
+  shell node's copies of the interpreters (`shellHooks`: Skulpt, java.js, JSCPP, scheme.js) with what the sandboxes add, so examples and
+  exercises that run `python`, `javac`/`java` or `g++` are tested like the rest. An exercise can test a student's *script* by running it
+  from a clean start in a `{cmd}` test (`rm -rf /tmp/t; …; ./tidy.sh /tmp/t; find /tmp/t | sort`), which is how lessons 8-10 check that
+  the script works and not only that the files ended up right.
+- **Scripts run in a child shell** (`inChild`, October 2026): `bash s.sh`, `./s.sh` and `bash -c` get a copy of the shell that sees only the
+  exported variables and no functions, arrays or aliases, and everything they change (variables, `cd`, functions, options) is put back when
+  they end, as bash's child process would; `( … )` and `$( … )` get a full copy, also put back. Only `source` runs in the shell itself.
+  (Before, a script's `cd` and variables leaked into the prompt.) Cases in `difftest/shell.txt` compare it with bash.
+- **ls at a terminal quotes names** as GNU ls does (coreutils' shell-escape style, `lsQuote`): `'holiday photo.jpg'`, `"it's.txt"`,
+  `'it'\''s$x'`, and in columns or with `-l` the other names get a space in front to line up; `-F`'s mark goes after the quotes. Into a pipe
+  or a file (`io.tty` false) names are bare, as in ls. Checked against coreutils 9.4 through `script`; names here cannot hold control
+  characters, so the `$'\t'` form is not needed.
+- **Basic regular expressions** (grep without -E, sed, expr): `^` is an anchor only at the start (or after `\(`, `\|`) and `$` only at the
+  end (or before `\)`, `\|`); elsewhere they are plain characters, as in GNU's (`sed 's|$f|X|'` finds the text `$f`).
+- **Exit statuses of programs**: a Python program's `sys.exit(n)` (Skulpt has none: `pyworker.js` adds `exit` to the `sys` module's source as
+  it is read, and turns SystemExit into the run's `exit`; `sys.exit("text")` prints the text as an error with status 1) and a teaching C++
+  program's `return n` from `main` (`cppworker.js`: JSCPP returns it) reach `$?`, `&&`, `||` and `if`; the Lab and lesson examples note
+  "(the program ended with status n)". In the terminal, Python's `input("prompt")` prints its prompt even when the input comes from `<` or a
+  pipe, as python does (`promptsOut` in the run message; lessons and graders keep the old behaviour). `test_typed.js` runs both in the real
+  worker sources.
 - **More commands** (October 2026): `basename`, `dirname`, `realpath` (walks the path as the real one does), `du [-s -h -a -c]` (sizes as an
   ext4 disk gives them: whole 4 KB blocks, a directory one block), `expr` (GNU's grammar and exit statuses, BigInt numbers), `yes` (into a
   pipe it stops by itself after 1 MB; elsewhere the output cap stops it), `fold`, `paste`, `comm` (with the unsorted-input warnings),
@@ -831,10 +859,32 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
     than exact (100%) renames; a merge commit's combined diff in `git show`; submodules (a nested repository's files are just files).
     Known small differences from git: `blame`'s "Not Committed Yet" time is the shell's clock (git's is the moment you run it), and the
     line diff is Myers' (git's xdiff can pick a different but equally short diff when lines repeat).
+- **Windows: cmd and PowerShell** (`shellwin.js`, `test_win.js`, October 2026, for SC 108 lesson 7). `cmd` and `powershell`/`pwsh` at the
+  bash prompt start the Command Prompt of Windows 11 (10.0.22631) or PowerShell 7.4.6 over the same file system. `sh.dialect` is a stack
+  whose top reads the lines (shell.js consults it only in `exec`, `prompt` and `complete`); `exit [n]` returns to the shell that started it
+  (they nest, 16 at most), history is shared, and `cmd /c` and `pwsh -c` run one line as a child (their `cd` ends with them).
+  - **Paths.** `C:\` is `/` but shows only `Users` (= /home, so `C:\Users\student` is `~`), `Temp` (= /tmp) and a read-only
+    `Windows\System32` of 0-byte stand-ins kept outside the file system. Names are found ignoring case when one entry matches, `\` and `/`
+    both separate, output uses `\`. The working directory is `fs.cwd`, shared with bash on purpose (inside C:\Windows it is `/` plus
+    `sh.win.overlay`). Writes go through `fs.*`, so the caps hold; line ends stay `\n`.
+  - **cmd** reads a line as cmd does (`%VAR%` first, then `"` `^` `& && || |` and redirections), with its own messages, ERRORLEVEL (9009
+    for an unknown command), the blank line before each prompt and its Y/N questions through `io.ask`. dir (with its header and totals),
+    cd, type, copy, move, ren, del, mkdir, rmdir, xcopy, echo, find, findstr, sort, more, tree, set and %VAR% forms, a one-command `if`,
+    where, whoami, ver, prompt, cls, help. No `for`, `goto`, `( )` blocks or batch files (it says so). **All of cmd is from memory**: there
+    was no cmd.exe to compare with.
+  - **PowerShell** parses pwsh's two modes (arguments and expressions) and runs pipelines of objects (file items, MatchInfo, measure
+    results, PSCustomObjects), binds parameters as pwsh does (prefixes, positions, mandatory prompts) and formats like Out-Default at 120
+    columns (the FileSystem table and list views, autosized tables). About 40 cmdlets with their aliases, variables, strings with `$x` and
+    `$(…)`, operators, `if/foreach/while/for`, functions and `.ps1` scripts; errors in pwsh 7's concise view; `>>` asks for the rest of an
+    unfinished line. Formats and messages were compared with a real pwsh 7.4.6 (Linux build, en-US) and adapted to Windows (Mode `-a---`,
+    a plain space before AM). No classes, `switch`, `try`/`catch` or `param()` blocks. Caps: 200 000 steps and 100 000 items a line, call
+    depth 100, the usual output and size caps; null-prototype dictionaries.
+  - **Lessons and the grader.** `{cmd}` checks always run in bash (the dialect is saved and put back), and in node `shellgrade.js` loads
+    shellwin.js. A lesson listing shows each line's prompt (`$`, `C:\Users\student>`, `PS C:\…>`) from `SHELLWIN.listingPrompts`, which
+    follows `cmd`/`powershell`/`cd`/`exit` as text. The dialect is not saved: a reloaded terminal starts in bash.
 - **Not there (yet):** job control (`&`), `select`, `eval`, `let`, `trap`, `getopts`, process substitution (`<(…)`), `>&2` and other fd
   redirections, extended globs (`@(a|b)`, `shopt -s extglob`), `**` (`globstar`), `nocasematch`, `${!prefix*}` and namerefs, `ln` (the file system
-  has no links), `tar`, `ssh` and anything needing a network (those names answer with a sentence saying so), a Windows `cmd`/PowerShell dialect
-  (planned with the course). In a pipeline every part runs in this shell, so `… | read x` and `… | mapfile a` set the variable (bash runs them
+  has no links), `tar`, `ssh` and anything needing a network (those names answer with a sentence saying so). In a pipeline every part runs in this shell, so `… | read x` and `… | mapfile a` set the variable (bash runs them
   in a subshell; a known difference).
 
 ## 9g. Algorithms in motion and Where it is used (`algos.js`, `algo_*.js`, `applied.js`)
@@ -871,7 +921,11 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
 - **Where it is used** (`#/real-world`): `APPLIED.TOPICS`, each `{ id, title, idea, uses: [{ f: field, t: text }], jobs, learn: [href],
   teach }`, rendered with a filter by field (software engineering, cybersecurity, engineering & science, data & AI, games & graphics, web &
   mobile), a search box, contents, and a by-course index for teachers. Lesson links are labelled from `window.COURSES` at page time and a
-  link to a missing lesson is left out; `test_browser.js` checks every link resolves. Every example names a real system or event: check it
+  link to a missing lesson is left out; `test_browser.js` checks every link resolves. The topics are shown in themes (`APPLIED.GROUPS`:
+  writing programs, data structures and algorithms, inside the machine, the mathematics of computing, bigger ideas), each topic in exactly
+  one, which `test_app.js` checks along with unique ids, known fields and real lesson links: a new topic must be added to a group. A topic's
+  lessons are shown one row per course; each field has a colour (`--f-<field>` in the page's CSS, with dark-mode values) on its tags and
+  filter chips. 31 topics, 152 examples (October 2026; "Learning from examples" links SC 109). Every example names a real system or event: check it
   before adding one, and keep the two that describe this site true when the site changes.
 
 ## 9k. Standards alignment (`standards.js`, `scripts/standards-map.js`, `test_standards.js`)
