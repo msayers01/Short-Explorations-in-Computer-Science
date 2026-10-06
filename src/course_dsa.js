@@ -1,15 +1,16 @@
 // Lesson content, (c) 2026 Michael Sayers, licensed CC BY-SA 4.0 (see LICENSE-CONTENT.md).
 // Data Structures and Algorithms, in Java, on the site's own interpreter (src/java.js). Every structure and algorithm is shown three ways:
-// an interactive figure to step through (src/widgets.js: growth, arrayops, dynarray, search, sortlab, mergeviz, partition, linkedlist, stackqueue, callstack, hashtable, bst, heap, graph), code to write, and a cost to count.
+// an interactive figure to step through (src/widgets.js: growth, arrayops, dynarray, search, sortlab, mergeviz, partition, linkedlist, stackqueue, callstack, hashtable, bst, heap, graph;
+// src/widgets_dsa.js: dptable, mst, avl), code to write, and a cost to count.
 window.COURSES = window.COURSES || [];
 window.COURSES.push({
   id: 'dsa', code: 'SC 107', short: 'DSA', lang: 'java', standard: 1,
   title: 'Data Structures and Algorithms',
   grades: 'Grades 11–12 · after Java, or C++ with the Java primer',
-  audience: `<p><b>Grades 11–12</b>, after <em>Introduction to Java</em> (SC 106) or after <em>Introduction to C++</em> and lesson 1 of SC 106. This is the course that every computer science degree puts second: how data is arranged in memory, what each arrangement makes cheap and what it makes expensive, and how to tell, before running anything, how a program's running time will grow with its input. It is the material of technical interviews, of the searching and sorting questions on the AP Computer Science A exam, and of every system that has to stay fast as it grows.</p><p>The code is Java, but every idea transfers unchanged to any language. Each lesson has interactive figures you can step through, code you write, and costs you count. Fifteen lessons, in three units of four, four and three, each ending in a <em>checkpoint</em> of mixed questions, lead to a project that uses a hash table, a sort and a heap on one problem. The course keeps a list of the skills it teaches, from counting steps to Dijkstra's algorithm, and the Review page shows which of them are secure.</p>`,
-  tagline: 'How data is arranged, what each arrangement costs, and how to know before you run it: arrays, searching, sorting, lists, stacks and queues, recursion, hash tables, trees, heaps and graphs.',
+  audience: `<p><b>Grades 11–12</b>, after <em>Introduction to Java</em> (SC 106) or after <em>Introduction to C++</em> and lesson 1 of SC 106. This is the course that every computer science degree puts second: how data is arranged in memory, what each arrangement makes cheap and what it makes expensive, and how to tell, before running anything, how a program's running time will grow with its input. It is the material of technical interviews, of the searching and sorting questions on the AP Computer Science A exam, and of every system that has to stay fast as it grows.</p><p>The code is Java, but every idea transfers unchanged to any language. Each lesson has interactive figures you can step through, code you write, and costs you count. Nineteen lessons, in four units (of four, four, three and three lessons), each ending in a <em>checkpoint</em> of mixed questions, lead to a project that uses a hash table, a sort and a heap on one problem. The course keeps a list of the skills it teaches, from counting steps to rebalancing a tree, and the Review page shows which of them are secure.</p>`,
+  tagline: 'How data is arranged, what each arrangement costs, and how to know before you run it: arrays, searching, sorting, lists, stacks and queues, recursion, hash tables, trees, heaps, graphs, dynamic programming, greedy algorithms and balanced trees.',
   description: `<p>Two programs can give the same answer and differ in running time by a factor of a billion. The difference is rarely the computer, the language or how neatly the code is written. It is the <em>arrangement</em> of the data and the <em>method</em> that works on it: a data structure and an algorithm. Choosing them is the part of programming that separates a program that works on the test file from one that still works when the file is a million times bigger.</p>
-<p>This course teaches the classical structures (arrays, lists, stacks, queues, hash tables, trees, graphs) and the classical algorithms on them (searching, sorting, traversal), and, more than any one of them, the habit of asking <em>how does the cost grow?</em> and the tools to answer it. Everything is shown three ways: as a picture you can step through one operation at a time, as Java code you write and check, and as a count of steps you can predict and then measure.</p>
+<p>This course teaches the classical structures (arrays, lists, stacks, queues, hash tables, trees, graphs) and the classical algorithms on them (searching, sorting, traversal, shortest routes, spanning trees), the two great techniques for designing new ones (dynamic programming and greedy choice), and, more than any one of them, the habit of asking <em>how does the cost grow?</em> and the tools to answer it. Everything is shown three ways: as a picture you can step through one operation at a time, as Java code you write and check, and as a count of steps you can predict and then measure.</p>
 <p>Programs run in the Java interpreter built into this site, instantly and offline. It is slower than a real machine, so experiments use thousands of items where a laptop would use millions; the shapes of the curves are the same, and that is what matters.</p>`,
   outcomes: [
     'Count the steps an algorithm takes as a function of its input size, and name its order of growth',
@@ -24,18 +25,20 @@ window.COURSES.push({
     'Insert into, search, walk and delete from a binary search tree, and explain why its shape decides its speed',
     'Store a heap in an array, write sift up and sift down, and use a priority queue for the k best of many',
     'Search a graph breadth first and depth first, and find shortest routes with Dijkstra\'s algorithm',
+    'Turn a recursion with repeated subproblems into a table filled by a loop, and read the answer back from it',
+    'Say when a greedy choice is safe, and build a minimum spanning tree with Kruskal\'s algorithm and union-find or with Prim\'s algorithm',
+    'Keep a search tree balanced with rotations, and say what AVL and red-black trees guarantee',
     'Predict a running time from a doubling experiment, and check a prediction by measuring',
     'Choose a structure for a task by the operations the task needs most'
   ],
-  howItWorks: `<h3>How to use these pages</h3><p>Each lesson has three kinds of thing to do. <b>Figures</b> with Step and Play buttons show a structure changing one operation at a time; use them until you can predict the next step. <b>Code</b> boxes run in your browser; change the sizes and watch the counts. <b>Exercises</b> are of two kinds: programs the checker runs on hidden inputs, and questions with a number for an answer, which the checker also marks. Where an exercise asks for a method, write only the method, with the word <code>static</code>; the checker supplies the class and a <code>main</code>.</p><p>You need the Java of SC 106 lessons 1–4: types, loops and methods. Arrays (SC 106 lesson 6) are introduced again in lesson 1 here, as it goes. Classes appear from lesson 6 on and are explained where they appear; SC 106 lesson 9 teaches them in full.</p><p>Lessons 5, 10 and 14 are <b>checkpoints</b>: they teach nothing new, and mix questions on the unit before them (counting, searching and sorting; lists, stacks, recursion and hashing; trees, heaps and graphs), because ideas that look alike are only told apart by being asked about together. The course names 29 skills, such as <em>binary search</em> and <em>sift a heap</em>. Every quick check and exercise says which skill it practises, and the skills map on the course page shows each as not started, practising or secure.</p>`,
+  howItWorks: `<h3>How to use these pages</h3><p>Each lesson has three kinds of thing to do. <b>Figures</b> with Step and Play buttons show a structure changing one operation at a time; use them until you can predict the next step. <b>Code</b> boxes run in your browser; change the sizes and watch the counts. <b>Exercises</b> are of two kinds: programs the checker runs on hidden inputs, and questions with a number for an answer, which the checker also marks. Where an exercise asks for a method, write only the method, with the word <code>static</code>; the checker supplies the class and a <code>main</code>.</p><p>You need the Java of SC 106 lessons 1–4: types, loops and methods. Arrays (SC 106 lesson 6) are introduced again in lesson 1 here, as it goes. Classes appear from lesson 6 on and are explained where they appear; SC 106 lesson 9 teaches them in full.</p><p>Lessons 5, 10, 14 and 18 are <b>checkpoints</b>: they teach nothing new, and mix questions on the unit before them (counting, searching and sorting; lists, stacks, recursion and hashing; trees, heaps and graphs; dynamic programming, greedy algorithms and balanced trees), because ideas that look alike are only told apart by being asked about together. The course names 30 skills, such as <em>binary search</em> and <em>sift a heap</em>. Every quick check and exercise says which skill it practises, and the skills map on the course page shows each as not started, practising or secure.</p>`,
   // The named skills of the course (LESSON_STANDARD.md §4). Every quick check and exercise names the skill it practises; the skills map on
   // the course page and on #/today shows each as not started, practising or secure.
   skills: [
     { id: 'count-steps', name: 'Count steps and name the order of growth' },
     { id: 'array-cost', name: 'Say what an array makes cheap and what it makes dear' },
     { id: 'dynamic-array', name: 'Explain why a growing array doubles' },
-    { id: 'binary-search', name: 'Search a sorted array by halving' },
-    { id: 'midpoint-overflow', name: 'Avoid the overflow in (lo + hi) / 2' },
+    { id: 'binary-search', name: 'Search a sorted array by halving, without overflow' },
     { id: 'selection-sort', name: 'Write selection sort and count its comparisons' },
     { id: 'insertion-sort', name: 'Write insertion sort and say when it is fast' },
     { id: 'sort-stability', name: 'Say what a stable sort guarantees' },
@@ -58,8 +61,10 @@ window.COURSES.push({
     { id: 'graph-storage', name: 'Choose lists or a matrix to store a graph' },
     { id: 'bfs-queue', name: 'Search a graph breadth first and depth first' },
     { id: 'dijkstra', name: 'Find shortest routes with Dijkstra\'s algorithm' },
-    { id: 'map-counting', name: 'Count items with a hash map' },
-    { id: 'top-k', name: 'Find the k most frequent items with a heap' }
+    { id: 'dp-table', name: 'Solve a problem with a table of subproblems' },
+    { id: 'greedy-mst', name: 'Choose greedily: spanning trees and union-find' },
+    { id: 'avl-rotation', name: 'Keep a search tree balanced with rotations' },
+    { id: 'map-counting', name: 'Count items with a hash map' }
   ],
   lessons: [
     /* ================================================================== */
@@ -153,7 +158,7 @@ public class Main {
     }
 }`, caption: 'It prints <code>4 values: [12, 99, 7, 3]</code> and then the whole array with four spare zeros after them. The last insert, at index 1, moved 7 and 3 one cell right to make room for 99. The loop runs from the end backwards so that no value is overwritten before it has been moved. Reverse it (j from i upwards) and run again: the first move overwrites the value that was about to be moved, and every cell after i ends up holding a copy of the same number.' },
         `<h2>A growing array</h2>
-<p>An array cannot grow, and yet <code>ArrayList</code> grows every time you call <code>add</code>. The trick is that an <code>ArrayList</code> is an array with spare room, plus a count. When the room runs out it makes a <em>new, bigger</em> array, copies everything across, and forgets the old one. The question is how much bigger. Grow by one cell each time and every append copies everything: appending <code>n</code> items costs <code>1 + 2 + … + n</code>, O(n²). Grow by <em>doubling</em> and something better happens. Append items in the figure and keep an eye on the copies.</p>`,
+<p>An array cannot grow, and yet <code>ArrayList</code> grows every time you call <code>add</code>. The trick is that an <code>ArrayList</code> is an array with spare room, plus a count. When the room runs out it makes a <em>new, bigger</em> array, copies everything across, and forgets the old one. The question is how much bigger. Grow by one cell each time and every append copies everything: appending <code>n</code> items costs <code>1 + 2 + … + n</code>, O(n²). Grow by <em>doubling</em> (or by any constant factor: Java's <code>ArrayList</code> grows by half again, 10, 15, 22, 33, …) and something better happens. Append items in the figure and keep an eye on the copies.</p>`,
         { fig: 'dynarray', caption: 'Appends are usually one step. Now and then the array is full, and every value is copied into a new array twice the size. Append thirty or so and compare the two counts: the copies never reach twice the appends.' },
         `<p>Count the copies when the capacity has just reached <code>n</code>: the last doubling copied <code>n/2</code> values, the one before it <code>n/4</code>, and so on: <code>n/2 + n/4 + n/8 + … &lt; n</code>. By then more than <code>n/2</code> values have been appended, so the copies are fewer than twice the appends: under two copies per append on average. Any single append may be expensive, but the expense is paid for by the cheap ones around it. The technical word is <em>amortized</em>: appending to a doubling array is O(1) amortized, and that is why <code>ArrayList.add</code> is safe to call in a loop a million times.</p>`,
         { predict: true, play: `import java.util.Arrays;
@@ -266,7 +271,7 @@ public class Main {
 <li>The answer to the opening question: count steps as a function of <code>n</code>, not seconds on one input, and read the shape off the code before you run it. Constants and smaller terms are dropped: the <em>order of growth</em>, O(f(n)), says how the cost scales.</li>
 <li>The shapes: O(1), O(log n), O(n), O(n log n), O(n²), O(2ⁿ). Read them off the code: a loop is n, a nested loop multiplies, halving is log n.</li>
 <li>An array is cells side by side; cell i is at <code>base + 4i</code>, so indexing is O(1). Inserting or removing in the middle shifts everything after it: O(n). Finding a value by scanning: O(n). An array cannot grow.</li>
-<li>A growing array doubles when full; the copies total less than twice the appends, so an append is O(1) amortized. That is <code>ArrayList</code>.</li>
+<li>A growing array multiplies its capacity when full (doubling here; Java's <code>ArrayList</code> grows by half again); the copies total a constant times the appends, so an append is O(1) amortized. That is how <code>ArrayList</code> works.</li>
 <li>The doubling experiment: run on n and 2n and look at the ratio of costs. 2 means linear, 4 quadratic, about 1 logarithmic.</li>
 </ul></div>`
       ]
@@ -349,7 +354,7 @@ public class Main {
         System.out.println("(lo + hi) >>> 1 = " + alsoSafe);
     }
 }`, caption: 'It prints <code>lo + hi = -794967296</code>, then <code>(lo + hi) / 2 = -397483648</code>, then 1750000000 twice. lo + hi is 3.5 billion, above the int limit of about 2.1 billion, so it wraps to a negative number and mid is negative: a[mid] would throw. Both fixes give the right middle, 1,750,000,000. Java’s Arrays.binarySearch has used >>> 1 since 2006. Change lo and hi to 1000 and 2000: now all three lines agree.' },
-        { check: "Why did <code>(lo + hi) / 2</code> hide a bug for twenty years?", skill: 'midpoint-overflow', options: ["It rounds the wrong way", "lo + hi can overflow an int when the array is huge, giving a negative middle", "It is slower than subtraction"], answer: 1, wrong: ["Rounding down is harmless here: mid only has to lie inside lo … hi, and it does. The trouble comes earlier, in the sum, before the division.", null, "Speed was never the problem: an addition is as fast as a subtraction. The sum can be larger than an int can hold, and then it wraps to a negative number."], why: "For arrays over a billion elements the sum exceeds the largest int, wraps negative, and the index is garbage. lo + (hi − lo) / 2 cannot overflow." },
+        { check: "Why did <code>(lo + hi) / 2</code> hide a bug for twenty years?", skill: 'binary-search', options: ["It rounds the wrong way", "lo + hi can overflow an int when the array is huge, giving a negative middle", "It is slower than subtraction"], answer: 1, wrong: ["Rounding down is harmless here: mid only has to lie inside lo … hi, and it does. The trouble comes earlier, in the sum, before the division.", null, "Speed was never the problem: an addition is as fast as a subtraction. The sum can be larger than an int can hold, and then it wraps to a negative number."], why: "For arrays over a billion elements the sum exceeds the largest int, wraps negative, and the index is garbage. lo + (hi − lo) / 2 cannot overflow." },
         `<div class="stmt"><p><span class="kind">Rule.</span> Write the middle as <code>lo + (hi − lo) / 2</code>. It costs nothing, it is right for every array Java can make, and it marks you as someone who has read Bloch's article.</p></div>
 <h2>Finding a boundary instead of a value</h2>
 <p>Binary search is more than a way to find a value. The same halving finds the <em>boundary</em> in any array that is false up to some point and true from there on. Where does 3 first appear in a sorted array that has several 3s? Where would 4 go if we inserted it? What is the largest whole number whose square is at most 10¹²? Each of these is "find the first index where a condition becomes true", and each takes O(log n).</p>
@@ -1513,7 +1518,7 @@ public class Main {
 <li>A stack is push, pop, peek on one end: last in, first out. An array and a top index give O(1) for everything; double when full.</li>
 <li>A queue is enqueue at the back, dequeue at the front: first in, first out. In an array it must be a ring, with head and tail that wrap with <code>%</code>, and a grow that copies in queue order.</li>
 <li>Stacks: brackets, undo, postfix arithmetic, the call stack. Queues: anything served in arrival order, and breadth-first search.</li>
-<li>In Java, <code>ArrayDeque</code> is both (push/pop from one end, offer/poll from the other), and a deque besides. <code>java.util.Stack</code> is a historical mistake.</li>
+<li>In Java, <code>ArrayDeque</code> is both: <code>push</code> and <code>pop</code> work at the front; <code>offer</code> adds at the back and <code>poll</code> takes from the front. It is a deque besides. <code>java.util.Stack</code> is a historical mistake.</li>
 <li>A structure that refuses to do things is easier to make fast and easier to reason about, and still lets you match brackets, evaluate a formula, undo, and serve requests in order: that answers the opening question. The next lesson is about the stack you never see: the one that holds every method call.</li>
 </ul></div>`
       ]
@@ -1570,7 +1575,7 @@ public class Main {
     public static void main(String[] args) {
         countDown(3);
     }
-}`, expectError: true, caption: 'The site’s interpreter stops after a few hundred frames (the exact number depends on the browser); a real JVM manages about ten thousand before the same error, more if asked. Either way the fix is the same: a base case that is reached. Here, if (n &lt; 0) return 0; at the top.' },
+}`, expectError: true, caption: 'The site’s interpreter stops after a few hundred frames (the exact number depends on the browser); a real JVM manages ten or twenty thousand, depending on its stack size, and more if asked. Either way the fix is the same: a base case that is reached. Here, if (n &lt; 0) return 0; at the top.' },
         `<p>That limit matters for a design decision. A recursion that goes <code>n</code> deep, like <code>sum</code> above, is fine for an array of a hundred, already too deep for the interpreter on this site at a thousand (a real JVM copes with that), and fatal for an array of a million. A loop has no such limit. The rule of thumb: recursion is for problems whose depth is small, which means problems that <em>halve</em> rather than problems that <em>decrement</em>. Binary search and merge sort go log n deep; summing an array one element at a time goes n deep, and should be a loop. Predict where the code below finds 123456 in a sorted array whose cells hold 0, 2, 4, …, and what it returns for 7.</p>`,
         { predict: true, play: `public class Main {
     // the binary search of lesson 2, written as it is usually thought: look in the half that can contain it
@@ -1620,7 +1625,7 @@ public class Main {
     }
 }`, caption: 'It prints 177, 1,973, 21,891 and 242,785 calls for n = 10, 15, 20 and 25, and then <code>fibMemo(90) = 2880067194370816120</code> with 179 calls. Five more on n, about eleven times the calls: fib(25) takes a quarter of a million. The memoised version remembers every answer and makes 179 calls for fib(90), about two per n. Same definition, same recursion; the only change is that no sub-problem is solved twice.' },
         { check: "Plain fib(30) makes about 2.7 million calls. With a memo, about how many?", skill: 'memoization', options: ["About 60", "About 30,000", "Still 2.7 million"], answer: 0, wrong: [null, "The memo does far better than that: it cuts the work to one computation for each value of n, about two calls each, so about 60 calls, not thousands.", "A memo does change the work: once fib(k) is stored, asking for it again is a lookup and not a fresh pair of calls. The tree of repeated calls never grows."], why: "Each n from 2 to 30 is computed once, with two calls each: 1 + 2 × 29 = 59. The cost drops to the number of distinct sub-problems." },
-        `<div class="stmt"><p><span class="kind">Memoisation.</span> If a recursion solves the same sub-problem more than once, store each answer the first time and look it up after. The cost drops from the number of calls to the number of <em>distinct</em> sub-problems. This is the first step towards dynamic programming, a subject of its own beyond this course.</p></div>
+        `<div class="stmt"><p><span class="kind">Memoisation.</span> If a recursion solves the same sub-problem more than once, store each answer the first time and look it up after. The cost drops from the number of calls to the number of <em>distinct</em> sub-problems. This is the first step towards dynamic programming, the subject of lesson 15.</p></div>
 <h2>The Tower of Hanoi</h2>
 <p>Lucas's puzzle is the classic recursion: a loop that solves it does exist, but it is far from obvious, while the recursive method is three lines. To move <code>n</code> discs from peg A to peg C using B as the spare: move <code>n − 1</code> discs from A to B (using C as the spare), move the last disc from A to C, move the <code>n − 1</code> discs from B to C (using A as the spare). The base case is zero discs: do nothing. Predict how many moves three discs take, and how many eight take.</p>`,
         { predict: true, play: `public class Main {
@@ -1698,7 +1703,7 @@ public class Main {
             prompt: `<p>A robot stands at the top-left corner of a grid with <code>rows</code> rows and <code>cols</code> columns and can only step right or down. Write</p><pre class="code">static long paths(int rows, int cols)</pre><p>that returns the number of different routes to the bottom-right corner. Think recursively: from a grid with one row or one column there is exactly one route; otherwise the first step is either down (leaving a grid with one row fewer) or right (one column fewer). The plain recursion is exponential; add a memo so that <code>paths(18, 18)</code> is instant. The memo must be a field, declared outside the method.</p>`,
             starter: `static long[][] memo = new long[20][20];   // 0 = not yet computed (no real answer is 0)\n\nstatic long paths(int rows, int cols) {\n    // base case: one row or one column\n    // if memo[rows][cols] is known, return it\n    // otherwise compute paths(rows - 1, cols) + paths(rows, cols - 1), store it, return it\n    return 0;\n}`,
             solution: `static long[][] memo = new long[20][20];\n\nstatic long paths(int rows, int cols) {\n    if (rows == 1 || cols == 1) return 1;\n    if (memo[rows][cols] != 0) return memo[rows][cols];\n    memo[rows][cols] = paths(rows - 1, cols) + paths(rows, cols - 1);\n    return memo[rows][cols];\n}`,
-            mustNotContain: [{ re: /\bfor\s*\(|\bwhile\s*\(/, msg: 'Recursion with a memo, not a loop; the loop version is dynamic programming, beyond this course.' }],
+            mustNotContain: [{ re: /\bfor\s*\(|\bwhile\s*\(/, msg: 'Recursion with a memo, not a loop; the loop version is dynamic programming, the subject of lesson 15.' }],
             hints: ['if (rows == 1 || cols == 1) return 1;', 'if (memo[rows][cols] != 0) return memo[rows][cols];', 'memo[rows][cols] = paths(rows - 1, cols) + paths(rows, cols - 1); return memo[rows][cols];'],
             tests: [
               { call: 'paths(1, 1) + " " + paths(1, 5) + " " + paths(5, 1)', expect: '1 1 1', name: 'a single row or column' },
@@ -2311,7 +2316,7 @@ public class Main {
 }`, caption: 'Removing 1 (a leaf) leaves 3 with only a right child. Removing 14 puts its only child, 13, in its place. Removing the root, 8, which has two children, takes the smallest key of its right subtree, 10, and puts it at the root; the old node for 10 had no left child, so deleting it just lifts its right subtree (13) into its place. The last line is <code>(10 (3 . (6 (4 . .) (7 . .))) (13 . .))</code>, and the keys still read in order. Change the last removal to 3 (two children) and predict the new key in its place.' },
         `<h2>Staying balanced</h2>
 <p>Back to the opening question. A plain search tree has no defence against a bad order: all its cost is in its height and nothing keeps the height down. The fix, which Adelson-Velsky and Landis found in 1962, is for the tree to repair itself. After each insertion or deletion it checks the heights along the path it came down, and if two subtrees of a node differ by more than one level it applies a <b>rotation</b>: a few link changes that lift one node and lower another, keeping the search rule true while evening out the heights. An <b>AVL tree</b> keeps every node's two subtrees within one level of each other, which guarantees a height of at most about 1.44 · log₂ n. A <b>red-black tree</b> uses a looser rule, colouring nodes red or black to limit how lopsided it can get, for a height of at most 2 · log₂(n + 1) but fewer rotations. Either way search, insert and delete are all O(log n), <em>whatever the order of arrival</em>, with the same <code>Node</code> and the same search rule plus a little bookkeeping.</p>
-<p>You do not have to write one. Java's <code>TreeMap</code> is a red-black tree, and <code>TreeSet</code> is built on a <code>TreeMap</code>: the structure behind the sorted collections you met in SC 106. That is why they print in order and can answer "the largest key at or below 5" in O(log n), which a hash table cannot do.</p>`,
+<p>Lesson 17 writes one. In everyday code you use the library's: Java's <code>TreeMap</code> is a red-black tree, and <code>TreeSet</code> is built on a <code>TreeMap</code>: the structure behind the sorted collections you met in SC 106. That is why they print in order and can answer "the largest key at or below 5" in O(log n), which a hash table cannot do.</p>`,
         { predict: true, play: `import java.util.TreeSet;
 
 public class Main {
@@ -2417,7 +2422,7 @@ public class Main {
       standards: ['3B-AP-12', '3B-AP-11', '3B-AP-10'],
       title: 'Heaps and priority queues', summary: 'A queue that always serves the smallest item first; why neither a sorted nor an unsorted array can do it cheaply; the binary heap, a tree stored flat in an array; sift up and sift down in O(log n); heapsort; Java’s PriorityQueue; and the k-largest pattern.',
       blocks: [
-        `<p>In 1964 J. W. J. Williams published a short paper in <em>Communications of the ACM</em> called &ldquo;Algorithm 232: Heapsort&rdquo;. Sorting was already well studied, but his method had a property that its rivals lacked. Merge sort needs a second array. Quicksort can slow to n&sup2; on an unlucky input. Williams&rsquo;s method needed no spare array and took n log n steps whatever the input. To do it he described a new way to arrange numbers, the <em>heap</em>: a tree with no pointers at all, stored flat in an ordinary array, with the smallest (or the largest) value always in the first cell.</p>
+        `<p>In 1964 J. W. J. Williams published a short paper in <em>Communications of the ACM</em> called &ldquo;Algorithm 232: Heapsort&rdquo;. Sorting was already well studied, but his method had a property that its rivals lacked. Merge sort needs a second array. Quicksort can slow to n&sup2; on an unlucky input. Williams&rsquo;s method took n log n steps whatever the input, and the same year Robert Floyd showed how to run it inside the very array being sorted, with no spare one. To do it he described a new way to arrange numbers, the <em>heap</em>: a tree with no pointers at all, stored flat in an ordinary array, with the smallest (or the largest) value always in the first cell.</p>
 <p>The heap turned out to be more useful than the sort it was invented for. Any program that must always deal with the most urgent thing next, while new things keep arriving, wants one. So how can a tree live in an array, and why does that make the smallest item both easy to find and cheap to take out?</p>
 <h2>Smallest first</h2>
 <div class="stmt"><p><span class="kind">Priority queue.</span> A collection with three operations: <code>add(x)</code> puts an item in; <code>peek()</code> shows the <em>smallest</em> item without removing it; <code>poll()</code> removes and returns the smallest. Unlike a queue, the order of arrival does not matter: what comes out next is decided by size (the &ldquo;priority&rdquo;), and the item that has waited longest is not necessarily next.</p></div>
@@ -2522,7 +2527,7 @@ public class Main {
 }`, predict: true, caption: 'It prints <code>removed 1: [2, 3, 4, 5, 9, 8]</code>, <code>removed 2: [3, 5, 4, 8, 9]</code> and <code>removed 3: [4, 5, 9, 8]</code>. The first removal moves 4 to the root, and 4 swaps with the 2, the smaller of 3 and 2. The items come out 1, 2, 3 in order, and each removal repaired the heap with at most a few swaps instead of re-sorting. The <code>c + 1 &lt; size</code> test is there because a node may have only a left child.' },
         { check: 'Sifting down, an item <code>9</code> has two children, <code>7</code> (left) and <code>5</code> (right). Which does it swap with?', skill: 'heap-sift', options: ['The left child, 7: always go left', 'The right child, 5: the smaller child', 'The left child, 7: the larger, so the big values stay near the top'], answer: 1, wrong: ['Left or right does not matter; the values do. After swapping with 7 the 7 would sit above the 5, a parent larger than its child, and the heap rule would break.', null, 'That is the rule for a <em>max</em>-heap, where the larger child goes up. In a min-heap the smaller child must go up, or it ends up under a larger parent.'], why: 'The smaller child, 5, moves up and becomes the parent of 7, which is larger than 5, so the rule holds there. Then the 9 carries on down from where the 5 was.' },
         `<h2>Heapsort</h2>
-<p>A priority queue sorts for free: add everything, then poll until empty, and the items come out in order. That is n adds and n polls, O(n log n), but it uses a second array. Williams&rsquo;s trick was to do it in the <em>same</em> array. Use a <em>max</em>-heap (parent ≥ children, the largest at the root) and two phases.</p>
+<p>A priority queue sorts for free: add everything, then poll until empty, and the items come out in order. That is n adds and n polls, O(n log n), but it uses a second array. The heapsort used today, Williams&rsquo;s idea as Floyd improved it, does it in the <em>same</em> array; its fast bottom-up build is Floyd&rsquo;s. Use a <em>max</em>-heap (parent ≥ children, the largest at the root) and two phases.</p>
 <div class="stmt"><p><span class="kind">Heapsort.</span> <b>Build:</b> turn the array into a max-heap by sifting down every node that has a child, from the last of them, index <code>n/2 − 1</code>, back to 0. <b>Sort:</b> repeat n − 1 times: swap the root with the last cell of the heap, shrink the heap by one (that cell now holds its final value, the largest left), and sift the new root down.</p>
 <p><span class="kind">Cost.</span> The sort phase is n sift-downs of at most log n: O(n log n), whatever the input, and it needs only a few variables beyond the array. Building looks like another n log n but is only O(n): half the nodes are leaves and never move, a quarter move at most one level, and so on. The sort is not stable. In practice quicksort and merge sort usually run faster, which is why heapsort is mostly used as a guarantee: the fallback of lesson 4&rsquo;s introsort.</p></div>`,
         { play: `import java.util.Arrays;
@@ -3206,6 +3211,766 @@ class Roads {
 <li>A binary search tree keeps smaller keys to the left and larger to the right: search, insert and delete cost its height, about log₂ n if it is balanced and n if the keys arrived sorted. An in-order walk reads the keys in order; the smallest key is the end of the left chain.</li>
 <li>A heap is stored in an array (children of i at 2i + 1 and 2i + 2) and only keeps each parent at most its children. Sift up and sift down are O(log n), so a priority queue adds and removes the smallest in O(log n). A min-heap of size k finds the k largest.</li>
 <li>A graph is stored as neighbour lists when it is sparse, and as a matrix when it is dense. Breadth-first search uses a queue and finds the fewest roads; a stack gives depth-first search; Dijkstra uses a priority queue and finds the shortest total length when no road is negative.</li>
+<li>Next: problems whose answers are built from the answers to smaller ones, and a table that stores them: dynamic programming.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      standard: 1,
+      standards: ['3A-AP-15', '3B-AP-11', '3B-AP-12', '3B-AP-13'],
+      title: 'Dynamic programming', summary: 'From lesson 8’s memo to a table filled by a loop: overlapping subproblems and optimal substructure; the fewest coins, and why the greedy way can fail; a table in two dimensions for the longest common subsequence; reading the answer back out of the table; and what a table costs.',
+      blocks: [
+        `<p>In the autumn of 1950 Richard Bellman, a mathematician from Stanford, spent a term at the RAND Corporation in Santa Monica, California, which did research for the United States Air Force. His subject was what he called multistage decision processes: a sequence of decisions in which each one changes the situation for the next, and the best plan is the best whole sequence. In his autobiography, <em>Eye of the Hurricane</em> (1984), he told how he named it. The Secretary of Defense, a man called Wilson, "had a pathological fear and hatred of the word, research", he wrote; RAND worked for the Air Force, and the Air Force answered to Wilson, so Bellman wanted a name that hid the fact that he was doing mathematics. "Planning" would not do. He chose "programming", and added "dynamic" because "it's impossible to use the word, dynamic, in a pejorative sense". It was, he said, "something not even a Congressman could object to".</p>
+<p>The story has a crack in it, which Stuart Russell and Peter Norvig point out in their textbook on artificial intelligence: Charles Wilson became Secretary of Defense only in 1953, after Bellman's first paper with the name had appeared. Memory may have polished the tale. The name stuck all the same, and so did the idea, which you have already half met. In lesson 8 a memo made <code>fib(90)</code> take 179 calls instead of more than nine billion billion, because no small problem was solved twice. This lesson takes the next step: throw the recursion away and fill a <em>table</em> of small answers with a loop. When can a problem be solved by filling in a table, and in what order must the table be filled?</p>
+<h2>From a memo to a table</h2>
+<p>Look at what the memo of lesson 8 did. <code>fib(n)</code> needs <code>fib(n − 1)</code> and <code>fib(n − 2)</code>; those need smaller ones; and each answer, once found, sat in the array <code>memo</code>. The recursion decided the order in which the cells were filled: the smallest first, because the calls go all the way down before any of them returns. A loop can fill the same cells in the same order with no calls at all.</p>
+<details class="reveal"><summary>Guess first: if fib(90) is worked out in a table, one cell per value, how many cells does the table need, and how many additions?</summary><p><b>91 cells</b>, for fib(0) to fib(90), and <b>89 additions</b>, one for each cell from 2 to 90; cells 0 and 1 are the base cases. The memo of lesson 8 did the same 89 additions, but needed 179 calls to reach them.</p></details>
+<div class="stmt"><p><span class="kind">Dynamic programming.</span> A problem can be solved by filling a table when it has two properties. <b>Overlapping subproblems:</b> the same smaller problems come up again and again, so it pays to solve each once and store the answer. <b>Optimal substructure:</b> the best answer to the whole problem is built from the best answers to smaller ones.</p>
+<p><span class="kind">Bottom up.</span> Give every subproblem a cell. Write the rule (the <em>recurrence</em>) that computes a cell from smaller cells, fill the cells that need nothing (the base cases) by hand, and then fill the rest in an order in which every cell's inputs are already there. The answer is in the last cell filled.</p></div>
+<p>Here is <code>fib</code> as a table. Predict the eleven numbers on the first line, and whether <code>fib(90)</code> takes noticeably longer than <code>fib(10)</code>.</p>`,
+        { predict: true, play: `public class Main {
+    static long fib(int n) {
+        long[] table = new long[n + 1];          // table[i] will hold fib(i)
+        table[0] = 0;
+        if (n > 0) table[1] = 1;
+        for (int i = 2; i <= n; i++) {
+            table[i] = table[i - 1] + table[i - 2];   // both are already in the table
+        }
+        return table[n];
+    }
+
+    public static void main(String[] args) {
+        for (int n = 0; n <= 10; n++) System.out.print(fib(n) + " ");
+        System.out.println();
+        System.out.println("fib(90) = " + fib(90));
+    }
+}`, caption: 'It prints <code>0 1 1 2 3 5 8 13 21 34 55</code> and then <code>fib(90) = 2880067194370816120</code>, the same number as the memo of lesson 8, at once. The loop does 89 additions for fib(90) and makes no recursive calls, so there is no call stack to overflow however large n is. Each cell needs only the two before it, so two variables would do instead of the whole array; try rewriting it that way. Then change the loop to run downwards from n to 2 and see what goes wrong.' },
+        { check: 'A bottom-up loop fills a table of answers. What must be true of the order in which it fills the cells?', skill: 'dp-table', options: ['Every cell must be filled after the cells it is computed from', 'The cells must be filled from the last one back to the first', 'Any order works, because each cell is filled only once'], answer: 0, wrong: [null, 'Backwards is wrong for fib: table[n] would be computed from table[n − 1] and table[n − 2] before they hold anything, and they would still be 0.', 'Each cell is filled once, but its value is read from other cells. If they are still empty (0 in a new Java array), the cell gets a wrong answer, silently.'], why: 'A cell is computed from smaller cells, so they must already hold their answers. For fib that means increasing i; for a table in two dimensions it usually means row by row, left to right.' },
+        `<p>The table version has one more advantage over the memo. A memo recursion goes as deep as its chain of calls: <code>fibMemo(90)</code> needs 90 frames on the call stack, and lesson 8 showed that the stack runs out after a few hundred in this site's interpreter. A loop needs one frame however large the table. For the problems below, whose tables can have thousands of cells along one chain, that is the difference between working and crashing.</p>
+<h2>Fewest coins</h2>
+<p>A machine must pay out an amount using as few coins as possible. The natural method is <em>greedy</em>: take the largest coin that fits, take it again while it still fits, then move to the next coin down. For the coins of the euro or the dollar, greedy always gives the fewest. But give the machine coins of 1, 3 and 4 and ask for 6: greedy takes 4, then 1, then 1, three coins, when two 3s would do. The first choice looked best and was a mistake, and greedy never takes a choice back.</p>
+<div class="stmt"><p><span class="kind">The recurrence.</span> Let <code>best[a]</code> be the fewest coins that make the amount <code>a</code>. The last coin used is one of the coins <code>c</code>, and what is left, <code>a − c</code>, must itself be made with the fewest coins. So <code>best[a] = 1 + the smallest best[a − c]</code>, over every coin <code>c ≤ a</code>, with <code>best[0] = 0</code>.</p>
+<p><span class="kind">The order.</span> Every <code>a − c</code> is smaller than <code>a</code>, so filling <code>best[1]</code>, <code>best[2]</code>, … upwards always finds its inputs ready.</p></div>
+<p>The recurrence tries <em>every</em> last coin instead of guessing the largest, and the table makes that cheap: each <code>best[a − c]</code> is a lookup, not a fresh search. Predict the table for amounts 0 to 10 with coins 4, 3 and 1, and the two counts for 6 and for 10.</p>`,
+        { predict: true, play: `import java.util.Arrays;
+
+public class Main {
+    static int greedy(int[] coins, int amount) {       // coins largest first: take the biggest that fits
+        int count = 0;
+        for (int c : coins)
+            while (amount >= c) { amount -= c; count++; }
+        return count;
+    }
+    static int[] fewest(int[] coins, int amount) {     // best[a] = the fewest coins that make a
+        int[] best = new int[amount + 1];
+        for (int a = 1; a <= amount; a++) {
+            best[a] = Integer.MAX_VALUE;
+            for (int c : coins)
+                if (c <= a && best[a - c] + 1 < best[a]) best[a] = best[a - c] + 1;
+        }
+        return best;
+    }
+    public static void main(String[] args) {
+        int[] coins = {4, 3, 1};
+        int[] best = fewest(coins, 10);
+        System.out.println("table: " + Arrays.toString(best));
+        for (int a : new int[] {6, 10}) System.out.println(a + ": greedy " + greedy(coins, a) + ", fewest " + best[a]);
+    }
+}`, caption: 'It prints <code>table: [0, 1, 2, 1, 1, 2, 2, 2, 2, 3, 3]</code>, then <code>6: greedy 3, fewest 2</code> and <code>10: greedy 4, fewest 3</code>. For 10, greedy pays 4 + 4 + 1 + 1; the table finds 4 + 3 + 3. Each cell tried all three coins, so the whole table cost about 3 × 10 steps. Because there is a 1-coin, every amount can be made and best[a − c] is never MAX_VALUE; with coins that cannot make every amount, adding 1 to MAX_VALUE overflows to a large negative number, which the exercise below has to guard against. Change the coins to 25, 10, 5, 1 (American coins) and see that greedy and the table agree.' },
+        `<details class="reveal"><summary>Guess first: until 1971 Britain's coins included the threepence (3 pence), the sixpence (6), the shilling (12), the florin (24) and the half-crown (30). What does greedy pay for 48 pence, and what is the fewest?</summary><p>Greedy takes the half-crown (30), then a shilling (12), then a sixpence (6): <b>three coins</b>. Two florins make 48 with <b>two</b>. A coin system for which greedy always finds the fewest coins is called <em>canonical</em>; the euro and the dollar are canonical, and Britain's old coins were not. The only way to be sure for every amount, without proving something about the coins first, is to try every last coin, which is what the table does.</p></details>`,
+        { check: 'With coins of 1, 3 and 4, the greedy method pays 6 as 4 + 1 + 1. Why does the table find 3 + 3 instead?', skill: 'dp-table', options: ['It tries every coin as the last one and keeps the best, using answers it has already stored', 'It tries the coins from the smallest up instead of from the largest down', 'It is greedy too, but it looks one coin further ahead'], answer: 0, wrong: [null, 'Smallest first would pay 6 as six 1-coins. The order of the coins does not matter to the table: it tries all of them for every amount.', 'Looking one coin ahead would still miss answers that need more foresight. The table is not a better guess; it compares every possibility, cheaply, because the smaller answers are stored.'], why: 'best[6] = 1 + the smallest of best[5], best[3] and best[2], which are 2, 1 and 2. The 3-coin wins: 1 + best[3] = 2. Greedy commits to the 4 before looking at what it leaves behind.' },
+        `<h2>A table in two dimensions</h2>
+<p>Some problems need two numbers to name a subproblem, and then the table is a grid. The classic one compares two sequences. A <em>subsequence</em> of a word is what is left after crossing out some of its letters, keeping the rest in order: HMN is a subsequence of HUMAN. The <em>longest common subsequence</em> (LCS) of two words is the longest word that is a subsequence of both. It measures how alike two sequences are, which is why it is at the heart of comparing files: the Unix program <code>diff</code>, written by James Hunt and Douglas McIlroy at Bell Labs in the 1970s, shows the lines two versions of a file do <em>not</em> have in common, and finding the lines they do share is an LCS problem. Comparing DNA sequences, letter by letter, uses close relatives of the same table.</p>
+<div class="stmt"><p><span class="kind">The subproblems.</span> <code>L[i][j]</code> is the length of the LCS of the first <code>i</code> letters of <code>x</code> and the first <code>j</code> letters of <code>y</code>. Row 0 and column 0 are an empty word, so they are 0.</p>
+<p><span class="kind">The recurrence.</span> Look at the last letters, <code>x[i − 1]</code> and <code>y[j − 1]</code>. If they are the same, that letter ends a longest common subsequence: <code>L[i][j] = L[i − 1][j − 1] + 1</code>. If they differ, at least one of them is not used, so drop one or the other and keep the better: <code>L[i][j] = max(L[i − 1][j], L[i][j − 1])</code>.</p>
+<p><span class="kind">The order.</span> Every cell needs the cell above it, the cell to its left and the cell diagonally above-left. Filling row by row, left to right, always has them ready. The answer is the bottom-right cell.</p></div>`,
+        { fig: 'dptable', x: 'HUMAN', y: 'CHIMPANZEE', caption: 'HUMAN down the side, CHIMPANZEE across the top. Step through the filling: a matching letter takes the diagonal plus one, a mismatch the larger of up and left. Then keep stepping to read the answer back from the corner. Type two words of your own (up to ten letters) and fill their table.' },
+        `<p>In code the table is an <code>int[m + 1][n + 1]</code>, which Java fills with zeros, so row 0 and column 0 need no work. Predict the three lengths: HUMAN with CHIMPANZEE (you have just watched it), SUNDAY with SATURDAY, and PYTHON with JAVA.</p>`,
+        { predict: true, play: `public class Main {
+    // the length of the longest common subsequence of x and y
+    static int lcs(String x, String y) {
+        int[][] L = new int[x.length() + 1][y.length() + 1];   // row 0 and column 0 stay 0: an empty word
+        for (int i = 1; i <= x.length(); i++) {
+            for (int j = 1; j <= y.length(); j++) {
+                if (x.charAt(i - 1) == y.charAt(j - 1)) L[i][j] = L[i - 1][j - 1] + 1;   // the same letter: one more than the diagonal
+                else L[i][j] = Math.max(L[i - 1][j], L[i][j - 1]);                      // drop the last letter of one word or the other
+            }
+        }
+        return L[x.length()][y.length()];
+    }
+
+    public static void main(String[] args) {
+        System.out.println(lcs("HUMAN", "CHIMPANZEE"));
+        System.out.println(lcs("SUNDAY", "SATURDAY"));
+        System.out.println(lcs("PYTHON", "JAVA"));
+    }
+}`, caption: 'It prints 4, 5 and 0. HUMAN and CHIMPANZEE share HMAN; SUNDAY and SATURDAY share SUDAY, five letters; PYTHON and JAVA have no letter in common. Notice the index shift: row i is about the first i letters, so its own letter is charAt(i − 1). Forgetting that shift is the commonest bug in a two-dimensional table. Try two words of your own, and two copies of the same word.' },
+        `<h2>Reading the answer back</h2>
+<p>The bottom-right cell says <em>how long</em> the answer is, not what it is. The letters can be read back out of the full table by asking, at each cell, which rule produced its number, starting from the corner.</p>
+<div class="stmt"><p><span class="kind">Reconstruction.</span> Start at <code>L[m][n]</code>. If the two letters of the cell are the same, that letter is in the answer: record it and step diagonally to <code>L[i − 1][j − 1]</code>. If not, step to whichever of the cell above and the cell to the left holds the larger number (where the value came from); on a tie, choose one fixed way, here up. Stop at row 0 or column 0. The letters were found from the end backwards, so reverse them.</p></div>
+<p>The same move works on every table in this lesson: keep the table, and walk back from the answer to the cells it came from. For the coins, the coin used for <code>a</code> is any <code>c</code> with <code>best[a] == best[a − c] + 1</code>. Predict the three words this program prints.</p>`,
+        { predict: true, play: `public class Main {
+    static String lcs(String x, String y) {
+        int m = x.length(), n = y.length();
+        int[][] L = new int[m + 1][n + 1];
+        for (int i = 1; i <= m; i++)
+            for (int j = 1; j <= n; j++)
+                L[i][j] = x.charAt(i - 1) == y.charAt(j - 1) ? L[i - 1][j - 1] + 1 : Math.max(L[i - 1][j], L[i][j - 1]);
+        StringBuilder sb = new StringBuilder();
+        int i = m, j = n;
+        while (i > 0 && j > 0) {                                  // walk back from the bottom-right corner
+            if (x.charAt(i - 1) == y.charAt(j - 1)) {             // this letter is in the answer
+                sb.append(x.charAt(i - 1));
+                i--; j--;
+            } else if (L[i - 1][j] >= L[i][j - 1]) i--;           // go to where the number came from
+            else j--;
+        }
+        return sb.reverse().toString();                            // the letters were collected backwards
+    }
+
+    public static void main(String[] args) {
+        System.out.println(lcs("HUMAN", "CHIMPANZEE"));
+        System.out.println(lcs("SUNDAY", "SATURDAY"));
+        System.out.println(lcs("GATTACA", "TACTICAL"));
+    }
+}`, caption: 'It prints <code>HMAN</code>, <code>SUDAY</code> and <code>ATCA</code>. The walk takes at most m + n steps, because each step moves up, left or both. Two words can have several different longest common subsequences of the same length (GATTACA and TACTICAL also share TACA); which one comes out depends on the tie rule. Change >= to > and run again: the first two answers stay, and the third becomes TACA.' },
+        `<h2>What it costs</h2>
+<div class="stmt"><p><span class="kind">The cost of a table.</span> Time: the number of cells times the work for one cell. Memory: the number of cells you keep. For the coins, <code>amount + 1</code> cells and one step per coin: O(amount × coins). For the LCS of words of lengths m and n, <code>(m + 1)(n + 1)</code> cells and constant work each: O(m n) time and memory.</p></div>
+<p>Compare that with the alternatives. Trying every subsequence of a word of 30 letters means 2³⁰, about a billion, of them; the table for two such words has 961 cells. When only the final number is needed, the memory can often shrink, since each row of the LCS table needs only the row above it, so two rows of length <code>n + 1</code> suffice. Reading the letters back, though, needs the whole table.</p>
+<table class="growth-table"><thead><tr><th>Memo (lesson 8)</th><th>Table (this lesson)</th></tr></thead><tbody>
+<tr><td>Recursion, with a lookup before each call</td><td>Loops, in an order you choose</td></tr>
+<tr><td>Solves only the subproblems that are reached</td><td>Fills every cell, needed or not</td></tr>
+<tr><td>As deep as the longest chain of calls: risks a stack overflow</td><td>No depth at all</td></tr>
+<tr><td>Easiest to write straight from the recurrence</td><td>Needs the order worked out, and usually runs faster</td></tr>
+</tbody></table>`,
+        { check: 'Two strings of 1,000 and 2,000 characters are compared with the LCS table. About how many cells does the table have?', skill: 'dp-table', options: ['About 3,000: one per character', 'About 2,000,000: one per pair of prefixes', 'About 2¹⁰⁰⁰: one per subsequence'], answer: 1, wrong: ['Adding the lengths counts the characters, but a cell stands for a pair: the first i characters of one string with the first j of the other. Pairs multiply.', null, 'That is the number of subsequences that a brute-force search would try. The table avoids that: it has one cell per pair (i, j).'], why: 'The table has (1,000 + 1) × (2,000 + 1), about two million cells, each filled in constant time: O(m n). Millions of steps is quick; 2¹⁰⁰⁰ is beyond any computer.' },
+        { aside: `<p><b>Common mistakes in this lesson.</b> Filling a table in an order where a cell is computed before the cells it reads, which leaves Java's default 0 in them and gives a wrong answer with no error. Forgetting the shift between table indexes and string positions (<code>L[i][j]</code> is about <code>charAt(i − 1)</code>). Making the table one row and column too small, so there is no row for the empty word. Adding 1 to <code>Integer.MAX_VALUE</code> as "infinity", which overflows. Assuming greedy works because it worked on the example you tried. Writing down the recurrence before saying in words what one cell <em>means</em>: decide that first, and the recurrence usually follows.</p>` },
+        {
+          ex: {
+            id: 'ds-16-1', kind: 'trace', skill: 'dp-table', title: 'Trace the coin table',
+            prompt: `<p>This program fills the table <code>best</code> for coins 1, 3 and 4, amounts 1 to 6. It starts each cell at <code>a</code> (a coins of 1 always work) and then tries every coin as the last one. Fill in the table: each row is the moment just after line 12 has run, with the values of <code>a</code> and <code>best[a]</code> then. The first row is done for you.</p>`,
+            code: `public class Main {\n    public static void main(String[] args) {\n        int[] coins = {1, 3, 4};\n        int[] best = new int[7];\n        for (int a = 1; a <= 6; a++) {\n            best[a] = a;\n            for (int c : coins) {\n                if (c <= a && best[a - c] + 1 < best[a]) {\n                    best[a] = best[a - c] + 1;\n                }\n            }\n            System.out.println(best[a]);\n        }\n    }\n}`,
+            vars: ['a', 'best[a]'],
+            steps: [
+              { line: 12, values: { a: '1', 'best[a]': '1' }, show: true },
+              { line: 12, values: { a: '2', 'best[a]': '2' } },
+              { line: 12, values: { a: '3', 'best[a]': '1' }, why: { 'best[a]': { '3': 'Three 1-coins make 3, but the coin 3 alone does it too: best[0] + 1 = 1, which is smaller.', '2': 'Try the coin 3: best[3 − 3] + 1 = best[0] + 1 = 1.' } } },
+              { line: 12, values: { a: '4', 'best[a]': '1' }, why: { 'best[a]': { '2': 'The coin 4 alone makes 4: best[0] + 1 = 1.', '4': 'The cell starts at 4, but the coin 4 gives best[0] + 1 = 1.' } } },
+              { line: 12, values: { a: '5', 'best[a]': '2' } },
+              { line: 12, values: { a: '6', 'best[a]': '2' }, why: { 'best[a]': { '3': 'That is the greedy answer, 4 + 1 + 1. The coin 3 gives best[6 − 3] + 1 = best[3] + 1 = 2: two 3-coins.' } } }
+            ],
+            hints: ['For each a, the cell starts at a. Then for c = 1, 3 and 4 (only if c ≤ a), compare best[a − c] + 1 with the cell, and keep the smaller.', 'The finished table is best[1..6] = 1, 2, 1, 1, 2, 2. For 6, the coin 3 leaves 3, which costs 1, so 6 costs 2.'],
+            solution: '<p>a goes 1 to 6; best[a] is 1, 2, 1, 1, 2, 2. 3 and 4 are single coins; 5 is 4 + 1; 6 is 3 + 3, which greedy would miss. The program prints them one per line.</p>',
+            followup: 'Extend the trace to a = 7 and a = 8 before running a changed program. Which coins give the best answer for each, and is there more than one way?'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-16-2', kind: 'parsons', skill: 'dp-table', title: 'Put it in order: the LCS table',
+            prompt: `<p>Build the method</p><pre class="code">static int lcsLength(String x, String y)</pre><p>that returns the length of the longest common subsequence of <code>x</code> and <code>y</code> by filling the table of this lesson row by row. Not every block belongs: two of them have an index wrong.</p>`,
+            lines: ['static int lcsLength(String x, String y) {', '    int[][] L = new int[x.length() + 1][y.length() + 1];', '    for (int i = 1; i <= x.length(); i++) {', '        for (int j = 1; j <= y.length(); j++) {', '            if (x.charAt(i - 1) == y.charAt(j - 1)) L[i][j] = L[i - 1][j - 1] + 1;', '            else L[i][j] = Math.max(L[i - 1][j], L[i][j - 1]);', '        }', '    }', '    return L[x.length()][y.length()];', '}'],
+            distractors: ['int[][] L = new int[x.length()][y.length()];', 'if (x.charAt(i) == y.charAt(j)) L[i][j] = L[i - 1][j - 1] + 1;'],
+            tests: [
+              { call: 'lcsLength("HUMAN", "CHIMPANZEE")', expect: '4', name: 'HUMAN and CHIMPANZEE' },
+              { call: 'lcsLength("SUNDAY", "SATURDAY") + " " + lcsLength("PYTHON", "JAVA")', expect: '5 0', name: 'a long match and none' },
+              { call: 'lcsLength("", "ABC") + " " + lcsLength("SAME", "SAME")', expect: '0 4', name: 'an empty word, and a word with itself' },
+              { call: 'lcsLength("ABCBDAB", "BDCABA")', expect: '4', name: 'a classic example' }
+            ],
+            hints: ['The table has one more row and one more column than the words have letters: row 0 and column 0 are the empty word.', 'Row i is about the first i letters, so its own letter is x.charAt(i - 1), and the same for j. The diagonal is L[i - 1][j - 1].'],
+            followup: 'Change the method so that it keeps only two rows of the table (the row above and the row being filled). How much memory does that save for two words of 10,000 letters?'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-16-3', skill: 'dp-table', title: 'Fewest coins',
+            prompt: `<p>Write a method</p><pre class="code">static int fewestCoins(int[] coins, int amount)</pre><p>that returns the smallest number of coins (each value may be used as often as you like) that add up to exactly <code>amount</code>, or <code>-1</code> if the amount cannot be made at all. The coins are positive and may come in any order, and there may be no coin of 1. <code>fewestCoins(new int[] {1, 3, 4}, 6)</code> is 2, <code>fewestCoins(new int[] {2}, 3)</code> is -1, and an amount of 0 needs 0 coins. Fill a table with a loop: one test asks for 10,000.</p>`,
+            starter: `static int fewestCoins(int[] coins, int amount) {\n    int[] best = new int[amount + 1];   // best[a]: fewest coins for a, or -1 if a cannot be made\n    // best[0] is 0; fill best[1], best[2], ... in order, trying every coin as the last one\n    return best[amount];\n}`,
+            solution: `static int fewestCoins(int[] coins, int amount) {\n    int[] best = new int[amount + 1];\n    for (int a = 1; a <= amount; a++) {\n        best[a] = -1;\n        for (int c : coins) {\n            if (c <= a && best[a - c] != -1 && (best[a] == -1 || best[a - c] + 1 < best[a])) {\n                best[a] = best[a - c] + 1;\n            }\n        }\n    }\n    return best[amount];\n}`,
+            hints: ['Use -1 in a cell for "cannot be made". Start each cell at -1, then try every coin c with c <= a.', 'A coin c helps only if best[a - c] is not -1. Then best[a - c] + 1 is a candidate: take it if the cell is still -1 or the candidate is smaller.', 'Loop a from 1 up to amount, so that best[a - c] is always filled before it is read. best[0] is already 0, because Java fills a new array with zeros.'],
+            tests: [
+              { call: 'fewestCoins(new int[] {1, 3, 4}, 6)', expect: '2', name: 'coins 1, 3, 4 and the amount 6' },
+              { call: 'fewestCoins(new int[] {1, 5, 10, 25}, 63) + " " + fewestCoins(new int[] {25, 10, 1}, 30)', expect: '6 3', name: 'greedy works for the first and fails for the second' },
+              { call: 'fewestCoins(new int[] {2}, 3) + " " + fewestCoins(new int[] {2}, 0)', expect: '-1 0', name: 'impossible, and nothing to pay' },
+              { call: 'fewestCoins(new int[] {5, 7}, 24) + " " + fewestCoins(new int[] {5, 7}, 23) + " " + fewestCoins(new int[] {5, 7}, 11)', expect: '4 -1 -1', name: 'no coin of 1' },
+              { call: 'fewestCoins(new int[] {30, 24, 12, 6, 3, 1}, 48)', expect: '2', name: 'the old British coins: two florins' },
+              { call: 'fewestCoins(new int[] {7, 13, 29}, 10000)', expect: '348', name: 'ten thousand (a table, not a deep recursion)' }
+            ],
+            failTip: 'If the tests without a coin of 1 give large negative numbers, a cell meant as "impossible" was used as if it were a count: check best[a - c] != -1 before adding 1. If the last test fails with a stack overflow, the answer is recursive: fill the table with a loop instead.',
+            followup: 'Also return which coins to use: keep a second array last[a] that records the coin that gave best[a], and walk back from amount, subtracting last[a] each time.'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-16-4', skill: 'dp-table', title: 'The common part',
+            prompt: `<p>Write a method</p><pre class="code">static String lcs(String x, String y)</pre><p>that returns a longest common subsequence of <code>x</code> and <code>y</code>. Fill the table of this lesson, then read the letters back from the bottom-right corner with exactly this rule, so that your answer is the one the checker expects when there are several: if the two letters of the cell are equal, take the letter and step diagonally; otherwise step <b>up</b> when the cell above holds at least as much as the cell to the left, and <b>left</b> otherwise. <code>lcs("HUMAN", "CHIMPANZEE")</code> is <code>"HMAN"</code>; two words with no letter in common give <code>""</code>.</p>`,
+            starter: `static String lcs(String x, String y) {\n    int m = x.length(), n = y.length();\n    int[][] L = new int[m + 1][n + 1];\n    // 1. fill the table row by row\n    // 2. walk back from L[m][n], collecting the letters\n    return "";\n}`,
+            solution: `static String lcs(String x, String y) {\n    int m = x.length(), n = y.length();\n    int[][] L = new int[m + 1][n + 1];\n    for (int i = 1; i <= m; i++) {\n        for (int j = 1; j <= n; j++) {\n            if (x.charAt(i - 1) == y.charAt(j - 1)) L[i][j] = L[i - 1][j - 1] + 1;\n            else L[i][j] = Math.max(L[i - 1][j], L[i][j - 1]);\n        }\n    }\n    String s = "";\n    int i = m, j = n;\n    while (i > 0 && j > 0) {\n        if (x.charAt(i - 1) == y.charAt(j - 1)) {\n            s = x.charAt(i - 1) + s;\n            i--;\n            j--;\n        } else if (L[i - 1][j] >= L[i][j - 1]) {\n            i--;\n        } else {\n            j--;\n        }\n    }\n    return s;\n}`,
+            hints: ['Copy the filling loops from the lesson. For the walk back, start with int i = m, j = n and loop while both are above 0.', 'Equal letters: put the letter in front of the answer so far (s = x.charAt(i - 1) + s) and decrease both i and j. Otherwise compare L[i - 1][j] with L[i][j - 1]: up (i--) if the first is at least the second, else left (j--).', 'Adding each letter at the front builds the answer in the right order; adding at the end gives it backwards, and then you must reverse it.'],
+            tests: [
+              { call: '"[" + lcs("HUMAN", "CHIMPANZEE") + "]"', expect: '[HMAN]', name: 'HUMAN and CHIMPANZEE' },
+              { call: '"[" + lcs("ABCBDAB", "BDCABA") + "] [" + lcs("GATTACA", "TACTICAL") + "]"', expect: '[BCBA] [ATCA]', name: 'several answers: the tie rule decides' },
+              { call: '"[" + lcs("PYTHON", "JAVA") + "] [" + lcs("", "ABC") + "]"', expect: '[] []', name: 'nothing in common, and an empty word' },
+              { call: '"[" + lcs("SAME", "SAME") + "] [" + lcs("AAAA", "AA") + "]"', expect: '[SAME] [AA]', name: 'a word with itself, and repeats' },
+              { setup: '        String a = "", b = "";\n        for (int k = 0; k < 200; k++) { a += (char) (\'A\' + (k * 7) % 4); b += (char) (\'A\' + (k * 5) % 3); }', call: 'lcs(a, b).length() + " " + lcs(a, b).substring(0, 12)', expect: '150 ACBACBACBACB', name: 'two strings of 200 letters' }
+            ],
+            failTip: 'If the letters come out reversed, you added each one at the end while walking backwards. If an answer has the right length but different letters, check the tie rule: up when L[i - 1][j] >= L[i][j - 1].',
+            followup: 'Write diff for two arrays of lines: walk back through the table and print each line of the first file that is not in the LCS with "- " in front, and each such line of the second file with "+ ". That is the core of the diff program.'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li><b>Dynamic programming</b> solves a problem by solving its subproblems once each and storing the answers in a table. It works when subproblems <em>overlap</em> (the same ones come up again) and the best answer is <em>built from best answers</em> to smaller problems.</li>
+<li>To write one: say what one cell means, write the recurrence that computes it from smaller cells, fill the base cases, and fill the rest in an order where every cell's inputs are ready. The answer to the opening question: <em>a problem can be solved by a table when its answer is built from answers to smaller copies that repeat, and the table must be filled smallest first, so that every cell finds its inputs already there.</em></li>
+<li>Fewest coins: <code>best[a] = 1 + min best[a − c]</code>. Greedy (largest coin first) is right for some coin systems and wrong for others; the table is right for all of them.</li>
+<li>Longest common subsequence: a two-dimensional table, filled row by row; a match extends the diagonal, a mismatch takes the larger of up and left. The letters are read back by walking from the corner to where each number came from.</li>
+<li>Cost: cells × work per cell. A table needs no recursion and so no stack depth; a memo solves only the subproblems it reaches. Both turn exponential searches into polynomial ones.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      standard: 1,
+      standards: ['3B-AP-10', '3B-AP-11', '3B-AP-12'],
+      title: 'Greedy choices and minimum spanning trees', summary: 'Algorithms that take the best-looking step and never go back, and how to tell when that is safe; the minimum spanning tree; Kruskal’s algorithm and the union-find structure that answers “already joined?” almost instantly; and Prim’s algorithm with a priority queue.',
+      blocks: [
+        `<p>In 1926 Otakar Borůvka, a young assistant at the university in Brno, in what is now the Czech Republic, published two papers about a problem a friend had brought him. Jindřich Saxel worked for the West Moravian Power Company, which was bringing electricity to the towns and villages of southern Moravia, and the question was how to join a set of places with power lines so that every place was connected and the total length of line was as small as possible. Borůvka's first paper, "On a certain minimal problem", was written for mathematicians; the second, for an engineering journal, worked his method through on a map of forty towns. Together they give the first known algorithm for what is now called the <em>minimum spanning tree</em>.</p>
+<p>Others found the problem again: Vojtěch Jarník in 1930, in a letter to Borůvka that he published, Joseph Kruskal in 1956 and Robert Prim in 1957. All their methods are <em>greedy</em>: at every step they take the cheapest-looking line and never take it back. In lesson 15 a greedy method paid 6 as 4 + 1 + 1 when 3 + 3 was better. So why can a greedy choice be trusted for power lines when it could not be trusted for coins, and how can a program tell, quickly, whether a new line would only close a loop?</p>
+<h2>Greedy choices</h2>
+<div class="stmt"><p><span class="kind">Greedy algorithm.</span> Build the answer one choice at a time; at each step make the choice that looks best now, by a simple rule, and never undo it. Greedy algorithms are short and fast. They are right only for problems where a proof shows that the greedy choice can always be part of a best answer; for other problems they give an answer that looks reasonable and is not the best.</p>
+<p><span class="kind">The usual proof (an exchange).</span> Take any best answer that does not contain the greedy choice. Swap the greedy choice in for one of its parts, and show that the result is still allowed and no worse. Then a best answer that starts with the greedy choice exists, and the rest of the problem is a smaller copy of the same one.</p></div>
+<p>Here is a greedy rule that is right. One room, many requests to book it, each from a start hour to an end hour; two bookings clash if they overlap. Which bookings should be accepted, to accept as many as possible? Take the request that <em>ends first</em>, then the next that starts after it ends, and so on. Exchange argument: the booking that ends first can replace the first booking of any best plan, because it ends no later, so it clashes with nothing that one did not. Predict which bookings the program accepts.</p>`,
+        { predict: true, play: `public class Main {
+    public static void main(String[] args) {
+        // requests to book one room, {start, end}, sorted by the hour they end
+        int[][] booking = {{9, 10}, {10, 11}, {9, 12}, {12, 13}, {11, 14}, {13, 15}, {14, 16}};
+        int freeAt = 0, taken = 0;
+        for (int[] b : booking) {
+            if (b[0] >= freeAt) {                     // it starts after the last one taken has ended
+                System.out.println("take " + b[0] + "-" + b[1]);
+                freeAt = b[1];
+                taken++;
+            }
+        }
+        System.out.println(taken + " bookings");
+    }
+}`, caption: 'It takes 9-10, 10-11, 12-13 and 13-15: <code>4 bookings</code>. 9-12 and 11-14 clash with a booking already taken, and 14-16 starts before 13-15 ends. No plan fits five, and the program needed one pass after the sort: O(n log n) for the sort, O(n) for the choosing. Now move {9, 12} to the front of the list, where a sort by start hour might put it, and run again: it takes 9-12 first and fits only three.' },
+        { check: 'For the room bookings, which greedy rule always accepts the most bookings?', skill: 'greedy-mst', options: ['Take the booking that ends first, then repeat with what is left', 'Take the shortest booking first, then repeat', 'Take the booking that starts first, then repeat'], answer: 0, wrong: [null, 'Shortest first fails on 9-12, 11-13, 12-16: it takes the short 11-13, which clashes with both others, and gets one booking where two (9-12 and 12-16) fit.', 'Starting first fails when the first booking is long: 8-18 starts first and blocks everything else, however many short bookings fit inside it.'], why: 'The booking that ends first leaves the most time free for the rest, and the exchange argument shows it can replace the first booking of any best plan. The other two rules sound just as sensible, which is why a greedy rule needs a proof, or at least a hunt for counterexamples.' },
+        `<h2>Spanning trees</h2>
+<div class="stmt"><p><span class="kind">Spanning tree.</span> Take a connected graph whose edges have costs (lesson 13). A <em>spanning tree</em> is a set of its edges that connects every vertex and contains no cycle. With <code>V</code> vertices it always has exactly <code>V − 1</code> edges: one fewer and some vertex is cut off, one more and there is a loop. A <em>minimum spanning tree</em> (MST) is a spanning tree whose total cost is as small as possible.</p>
+<p><span class="kind">Why greedy is safe here (the cut rule).</span> Split the vertices into two groups, any way you like. The cheapest edge that crosses from one group to the other belongs to a minimum spanning tree. (Exchange: if a best tree does not use it, add it; that makes a loop, which must cross the split a second time somewhere; remove that other crossing edge, which costs at least as much, and the tree is no worse.)</p></div>
+<p>Every algorithm in this lesson is the cut rule applied over and over, with a different way of choosing the split. A minimum spanning tree is not the same as the shortest routes of lesson 13: Dijkstra makes each village as close as possible to <em>one</em> starting village, while a spanning tree makes the <em>whole network</em> as cheap as possible, and some villages may then be a long way round from each other.</p>
+<details class="reveal"><summary>Guess first: a minimum spanning tree of 1,000 villages, with a road between every pair, is to be found. How many roads are there to choose from, and how many end up in the tree?</summary><p>There are 1,000 × 999 / 2 = <b>499,500</b> roads, and the tree uses exactly <b>999</b> of them, one fewer than the villages. Almost every road is left out; the art is choosing which 999 to keep without trying the astronomically many possible trees.</p></details>
+<h2>Kruskal's algorithm</h2>
+<div class="stmt"><p><span class="kind">Kruskal's algorithm.</span> Sort the edges by cost, cheapest first. Go through them in that order, and add an edge to the tree unless its two ends are already connected by edges in the tree, in which case it would close a loop and is skipped. Stop when the tree has <code>V − 1</code> edges.</p></div>
+<p>Each edge Kruskal adds is the cheapest that joins two separate groups, so the cut rule says it belongs. The figure runs it on eight villages: the map of lesson 13 with different costs. Watch the skipped roads.</p>`,
+        { fig: 'mst', mode: 'kruskal', caption: 'The roads in order of cost on the right; ✓ marks a road built, a struck-out road would have closed a loop. Under each village is its parent in the union-find forest described next: a village that says root stands for its whole group. B–D (3) is skipped because B and D are both already in A’s group, and G–H (5) because both are in E’s.' },
+        `<p>The whole cost of Kruskal's algorithm hangs on one question, asked once per edge: <em>are these two vertices already connected?</em> Searching the tree built so far (lesson 13's breadth-first search) would answer it, but at O(V) a time. The <em>union-find</em> structure, also called a disjoint-set forest, answers it in practically constant time.</p>
+<div class="stmt"><p><span class="kind">Union-find.</span> Each group of connected vertices is a tree of pointers stored in an array <code>parent</code>, and the vertex at the top, the <em>root</em> (whose parent is itself), names the group. <code>find(x)</code> follows parents from <code>x</code> up to the root. Two vertices are connected when their roots are equal. <code>union(a, b)</code> joins two groups by making one root the parent of the other.</p>
+<p><span class="kind">Two tricks keep the trees flat.</span> <b>Union by size:</b> hang the smaller group under the root of the larger one, so a tree of n vertices is never more than log₂ n levels deep. <b>Path compression:</b> after <code>find</code> has walked up to the root, point every vertex it passed straight at the root, so the next <code>find</code> is one step.</p></div>
+<p>Vertices are numbers, so <code>parent</code> is an <code>int</code> array: at first every vertex is its own root. Predict the three lines.</p>`,
+        { predict: true, play: `import java.util.Arrays;
+
+public class Main {
+    static int[] parent = new int[8], size = new int[8];
+
+    static int find(int x) {                               // the root of x's group
+        if (parent[x] != x) parent[x] = find(parent[x]);   // path compression: hang x straight under the root
+        return parent[x];
+    }
+    static boolean union(int a, int b) {
+        int ra = find(a), rb = find(b);
+        if (ra == rb) return false;                        // already one group
+        if (size[ra] < size[rb]) { int t = ra; ra = rb; rb = t; }
+        parent[rb] = ra;                                   // the smaller group goes under the larger one's root
+        size[ra] += size[rb];
+        return true;
+    }
+
+    public static void main(String[] args) {
+        for (int v = 0; v < 8; v++) { parent[v] = v; size[v] = 1; }
+        union(0, 2); union(4, 5); union(2, 3); union(6, 7);
+        System.out.println(find(3) + " " + find(5) + " " + (find(0) == find(5)));
+        System.out.println(union(3, 5) + " " + union(0, 4) + " " + size[find(4)] + " " + Arrays.toString(parent));
+    }
+}`, caption: 'It prints <code>0 4 false</code>: {0, 2, 3} has root 0 and {4, 5} has root 4. Then <code>true false 5 [0, 1, 0, 0, 0, 4, 6, 6]</code>: union(3, 5) joins the two groups, with root 4 (a group of 2) hung under root 0 (a group of 3); union(0, 4) finds them already joined and returns false; the group now has 5 members. Vertex 5 still points at 4, two steps from the root; the next find(5) will compress it to point at 0. Add System.out.println(find(5) + " " + parent[5]); at the end to see it.' },
+        `<p>With union-find, Kruskal's algorithm is a sort and one loop: <code>union</code> returns <code>false</code> exactly when the edge would close a loop. Predict which roads it builds, in order, and the total cost. (Skipped roads are printed in brackets.)</p>`,
+        { predict: true, play: `public class Main {
+    static int[] parent = new int[8], size = new int[8];
+    static int find(int x) { if (parent[x] != x) parent[x] = find(parent[x]); return parent[x]; }
+    static boolean union(int a, int b) {
+        int ra = find(a), rb = find(b);
+        if (ra == rb) return false;
+        if (size[ra] < size[rb]) { int t = ra; ra = rb; rb = t; }
+        parent[rb] = ra; size[ra] += size[rb];
+        return true;
+    }
+    public static void main(String[] args) {
+        // the eight villages A..H are 0..7; each road is {a, b, cost}, sorted by cost
+        int[][] roads = {{2,3,1}, {0,1,2}, {4,5,2}, {0,2,3}, {1,3,3}, {4,6,4}, {5,7,4}, {6,7,5}, {2,4,6}, {3,5,7}};
+        for (int v = 0; v < 8; v++) { parent[v] = v; size[v] = 1; }
+        int total = 0, built = 0;
+        for (int[] r : roads) {
+            if (built == 7) break;                          // 8 villages need 7 roads
+            String name = "" + "ABCDEFGH".charAt(r[0]) + "ABCDEFGH".charAt(r[1]);
+            if (union(r[0], r[1])) { total += r[2]; built++; System.out.print(name + " "); }
+            else System.out.print("(" + name + ") ");       // already joined: a loop
+        }
+        System.out.println();
+        System.out.println(built + " roads, total cost " + total);
+    }
+}`, caption: 'It prints <code>CD AB EF AC (BD) EG FH (GH) CE</code> and <code>7 roads, total cost 22</code>, the figure’s run in code. BD is skipped because A–B, A–C and C–D already connect B to D, and GH because E–G and E–F–H already connect G to H. The loop stops at the seventh road, so DF is never looked at. The "" + at the start of name makes Java join the two chars as text; without it, char + char is a number. Change the cost of B–D to 0 and move it to the front, to keep the list sorted: predict which roads are skipped now, and the new total.' },
+        { check: 'Kruskal\'s algorithm reaches the road B–D, and <code>find(B)</code> and <code>find(D)</code> return the same root. What does it do, and why?', skill: 'greedy-mst', options: ['Skips the road: B and D are already connected, so it would close a loop', 'Builds the road: it is the cheapest one left', 'Replaces the most expensive road on the loop with it'], answer: 0, wrong: [null, 'Being cheapest is not enough. A spanning tree has no loops, and a road between two villages that are already connected adds cost without connecting anything new.', 'Kruskal never takes a road back: it is greedy. The roads already built were cheaper than this one, because the list is sorted, so none of them should be replaced by it.'], why: 'The same root means the same group, and a group is connected through roads already built. Adding B–D would make a cycle. Because the roads come cheapest first, every road on that cycle is no more expensive than B–D, so skipping it loses nothing.' },
+        `<div class="stmt"><p><span class="kind">Cost.</span> Sorting the E edges takes O(E log E). With union by size and path compression together, any run of m finds and unions on n elements takes O(m α(n)) steps, as Robert Tarjan proved in 1975, where α is the inverse of the very fast-growing Ackermann function: it is at most 4 for any number of elements a computer could ever hold. So the loop is practically O(E), and Kruskal's algorithm is O(E log E), the cost of its sort.</p></div>
+<h2>Prim's algorithm</h2>
+<div class="stmt"><p><span class="kind">Prim's algorithm.</span> Grow one tree from a starting vertex. At every step add the cheapest edge that leads from a vertex in the tree to a vertex outside it, and that vertex joins the tree. Keep the edges leaving the tree in a priority queue (lesson 12), cheapest first; an edge whose far end has joined the tree in the meantime is thrown away when it comes out. Stop when every vertex is in the tree.</p>
+<p><span class="kind">Cost.</span> Each edge goes into the queue at most twice and comes out once: O(E log E), which is O(E log V). The split of the cut rule is always "the tree so far against the rest".</p></div>
+<p>Prim's algorithm looks almost exactly like Dijkstra's algorithm of lesson 13: a priority queue, a set of finished vertices, stale entries skipped. The one difference is the number used to order the queue. Dijkstra orders by the <em>total distance from the start</em>; Prim orders by the <em>cost of the single edge</em> that would join the tree.</p>`,
+        { fig: 'mst', mode: 'prim', caption: 'Prim from A on the same villages. Dark villages are in the tree; the queue on the right holds the roads leaving it, cheapest first. B–D (3) is still in the queue when D joins through C–D (1); when B–D comes out it is thrown away. The tree is the same as Kruskal’s, grown from one place instead of all over the map.' },
+        { long: true, predict: true, play: `import java.util.*;
+
+class Edge {
+    int to, cost;
+    Edge(int to, int cost) { this.to = to; this.cost = cost; }
+}
+
+class Road implements Comparable<Road> {          // a road from the tree to a village outside it, waiting in the queue
+    int to, cost;
+    Road(int to, int cost) { this.to = to; this.cost = cost; }
+    public int compareTo(Road other) { return Integer.compare(cost, other.cost); }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        int n = 8;
+        int[][] roads = {{0,1,2}, {0,2,3}, {1,3,3}, {2,3,1}, {2,4,6}, {3,5,7}, {4,5,2}, {4,6,4}, {5,7,4}, {6,7,5}};
+        List<List<Edge>> adj = new ArrayList<>();
+        for (int v = 0; v < n; v++) adj.add(new ArrayList<>());
+        for (int[] r : roads) { adj.get(r[0]).add(new Edge(r[1], r[2])); adj.get(r[1]).add(new Edge(r[0], r[2])); }
+
+        boolean[] inTree = new boolean[n];
+        PriorityQueue<Road> pq = new PriorityQueue<>();
+        pq.add(new Road(0, 0));                         // start at A: a road of cost 0 from nowhere
+        int total = 0;
+        String joined = "";
+        while (!pq.isEmpty()) {
+            Road r = pq.poll();
+            if (inTree[r.to]) continue;                 // its village joined the tree meanwhile: skip it
+            inTree[r.to] = true;
+            total += r.cost;
+            joined += "ABCDEFGH".charAt(r.to) + "" + r.cost + " ";
+            for (Edge e : adj.get(r.to))
+                if (!inTree[e.to]) pq.add(new Road(e.to, e.cost));
+        }
+        System.out.println(joined);
+        System.out.println("total cost " + total);
+    }
+}`, caption: 'It prints <code>A0 B2 C3 D1 E6 F2 G4 H4</code> and <code>total cost 22</code>: each village with the cost of the road that brought it into the tree. The total is Kruskal’s, as it must be, since both build a minimum spanning tree. D joins for 1 even though C–D was not the first road seen from D’s side; E joins for 6 because, once A to D are in, C–E is the cheapest road out. Compare it with Dijkstra in lesson 13: replace r.cost by the distance from A (keep a dist array and order by it) and you have turned Prim into Dijkstra.' },
+        `<p>Which should you use? Kruskal's needs the edges in a list and union-find; it is the natural choice when the edges arrive as a list, and its groups growing all over the map are easy to follow. Prim's needs adjacency lists and a priority queue, the same tools as Dijkstra, and suits graphs stored that way. Both give a minimum spanning tree; when several roads cost the same, they may choose different trees of the same total. The site's <a href="#/algorithms/mst">shortest network race</a> runs Kruskal, Prim and Borůvka's own method side by side on maps you draw.</p>`,
+        { check: 'Prim\'s algorithm and Dijkstra\'s algorithm both take the smallest entry from a priority queue. What number orders the queue in each?', skill: 'greedy-mst', options: ['Prim: the cost of the one edge joining a vertex to the tree. Dijkstra: the total distance from the start', 'Both: the total distance from the start', 'Prim: the total distance from the start. Dijkstra: the cost of one edge'], answer: 0, wrong: [null, 'Then Prim would build Dijkstra’s tree of shortest routes, which can cost more in total: it keeps every village close to the start, not the network cheap.', 'It is the other way round. Dijkstra cares about whole routes from the start; Prim cares only about the next edge, because the network’s total is a sum of edges.'], why: 'Prim wants the cheapest network, so a vertex is worth its one connecting edge. Dijkstra wants the shortest routes from one place, so a vertex is worth its whole distance from the start. Same machinery, different key, different tree.' },
+        { aside: `<p><b>Common mistakes in this lesson.</b> Trusting a greedy rule because it worked on one example (try to break it first). Forgetting to sort the edges before Kruskal's loop. Comparing <code>parent[a] == parent[b]</code> instead of <code>find(a) == find(b)</code>: two vertices can be in one group with different parents. Calling <code>union</code> on two vertices instead of on their roots, which loses part of a group. Forgetting that a spanning tree of V vertices has V − 1 edges, so the graph is not connected if fewer are found. Ordering Prim's queue by distance from the start, which turns it into Dijkstra and builds a different tree.</p>` },
+        {
+          ex: {
+            id: 'ds-17-1', kind: 'trace', skill: 'greedy-mst', title: 'Trace Kruskal',
+            prompt: `<p>Kruskal's algorithm on five villages, with a plain union-find (no union by size or compression, to keep the table short). The roads are already sorted by cost. Fill in the table: the first five rows are the moments just after line 13 has run, before the road is decided, with the cost of the road, the two roots and the total so far; the last row is after line 19, when the loop is over, so write <code>-</code> for the variables that no longer exist. The first row is done for you.</p>`,
+            code: `public class Main {\n    static int[] parent = {0, 1, 2, 3, 4};\n\n    static int find(int x) {\n        while (parent[x] != x) x = parent[x];\n        return x;\n    }\n\n    public static void main(String[] args) {\n        int[][] roads = {{0, 1, 2}, {1, 2, 3}, {0, 2, 4}, {3, 4, 5}, {2, 3, 7}};\n        int total = 0;\n        for (int[] r : roads) {\n            int ra = find(r[0]), rb = find(r[1]);\n            if (ra != rb) {\n                parent[rb] = ra;\n                total += r[2];\n            }\n        }\n        System.out.println(total);\n    }\n}`,
+            vars: ['r[2]', 'ra', 'rb', 'total'],
+            steps: [
+              { line: 13, values: { 'r[2]': '2', ra: '0', rb: '1', total: '0' }, show: true },
+              { line: 13, values: { 'r[2]': '3', ra: '0', rb: '2', total: '2' }, why: { ra: { '1': 'find(1) follows the parent of 1, which the first road set to 0. The root is 0.' } } },
+              { line: 13, values: { 'r[2]': '4', ra: '0', rb: '0', total: '5' }, why: { rb: { '2': 'The second road made 0 the parent of 2, so find(2) is 0: the same root as 0. This road would close a loop.' } } },
+              { line: 13, values: { 'r[2]': '5', ra: '3', rb: '4', total: '5' }, why: { total: { '9': 'The road of cost 4 was skipped, because its two ends had the same root: the total stayed 5.' } } },
+              { line: 13, values: { 'r[2]': '7', ra: '0', rb: '3', total: '10' }, why: { rb: { '4': 'find(3): 3 is still a root (the last road made 3 the parent of 4, not the other way round).' } } },
+              { line: 19, values: { 'r[2]': '-', ra: '-', rb: '-', total: '17' }, why: { total: { '10': 'The last road joined {0, 1, 2} with {3, 4}: it was built, so 7 was added.' } } }
+            ],
+            hints: ['find follows parent until it reaches a village that is its own parent. When the two roots differ, the road is built: parent[rb] becomes ra and the cost is added.', 'The roads of cost 2, 3, 5 and 7 are built; the road of cost 4 joins 0 and 2, which already share the root 0, so it is skipped. The rows are (2, 0, 1, 0), (3, 0, 2, 2), (4, 0, 0, 5), (5, 3, 4, 5), (7, 0, 3, 10), then the total 17.'],
+            solution: '<p>Rows: (2, 0, 1, 0), (3, 0, 2, 2), (4, 0, 0, 5), (5, 3, 4, 5), (7, 0, 3, 10), and after the loop the total is 17. Four roads join five villages; the road of cost 4 is the one that would have closed the loop 0–1–2. The program prints <code>17</code>.</p>',
+            followup: 'Add a sixth road {1, 4, 1} at the front of the list, so the list is still sorted. Trace again: which road is skipped now, and what is the total?'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-17-2', kind: 'parsons', skill: 'greedy-mst', title: 'Put it in order: find with compression',
+            prompt: `<p>Build the method</p><pre class="code">static int find(int[] parent, int x)</pre><p>that returns the root of <code>x</code>'s group and compresses the path, written with loops instead of recursion: first walk up to find the root, then walk up the same path again, pointing every vertex on it straight at the root. Not every block belongs.</p>`,
+            prelude: 'import java.util.Arrays;\n',
+            lines: ['static int find(int[] parent, int x) {', '    int root = x;', '    while (parent[root] != root) root = parent[root];', '    while (parent[x] != root) {', '        int next = parent[x];', '        parent[x] = root;', '        x = next;', '    }', '    return root;', '}'],
+            distractors: ['while (parent[root] != 0) root = parent[root];', 'x = parent[x];'],
+            tests: [
+              { setup: '        int[] p = {0, 0, 1, 2, 3};', call: 'find(p, 4) + " " + Arrays.toString(p)', expect: '0 [0, 0, 0, 0, 0]', name: 'a chain: every vertex on the path now points at the root' },
+              { setup: '        int[] p = {1, 2, 2, 2};', call: 'find(p, 0) + " " + find(p, 3) + " " + Arrays.toString(p)', expect: '2 2 [2, 2, 2, 2]', name: 'the root is not 0' },
+              { setup: '        int[] p = {0};', call: 'find(p, 0) + " " + Arrays.toString(p)', expect: '0 [0]', name: 'a root on its own' },
+              { setup: '        int[] p = {5, 0, 1, 2, 3, 5};', call: 'find(p, 4) + " " + Arrays.toString(p)', expect: '5 [5, 5, 5, 5, 5, 5]', name: 'a longer path' }
+            ],
+            hints: ['The first loop only moves root upwards; x stays where it started, ready for the second walk.', 'In the second loop, save parent[x] in next before you overwrite it with root, then move x to next. Moving x with x = parent[x] after the overwrite would jump straight to the root and leave the rest of the path uncompressed.'],
+            followup: 'Write the recursive version in two lines (if (parent[x] != x) parent[x] = find(parent[x]); return parent[x];) and check that it gives the same arrays. Why is its recursion never deep when union by size is used?'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-17-3', skill: 'greedy-mst', title: 'A union-find class',
+            prompt: `<p>Complete the class <code>UnionFind</code> for the elements <code>0</code> to <code>n − 1</code>. <code>find(x)</code> returns the root of <code>x</code>'s group and compresses the path. <code>union(a, b)</code> joins the groups of <code>a</code> and <code>b</code> and returns <code>true</code>, or returns <code>false</code> if they were already one group; it hangs the root of the smaller group under the root of the larger (on equal sizes, <code>b</code>'s root goes under <code>a</code>'s). <code>connected(a, b)</code> says whether they are in one group, <code>groups()</code> is the number of groups, and <code>sizeOf(x)</code> the number of elements in <code>x</code>'s group. Write only the class.</p>`,
+            classes: true,
+            starter: `class UnionFind {\n    private int[] parent, size;\n    private int groups;\n\n    UnionFind(int n) {\n        // every element is the root of a group of size 1\n    }\n\n    int find(int x) {\n        return x;\n    }\n\n    boolean union(int a, int b) {\n        return false;\n    }\n\n    boolean connected(int a, int b) { return find(a) == find(b); }\n\n    int groups() { return groups; }\n\n    int sizeOf(int x) { return 1; }\n}`,
+            solution: `class UnionFind {\n    private int[] parent, size;\n    private int groups;\n\n    UnionFind(int n) {\n        parent = new int[n];\n        size = new int[n];\n        groups = n;\n        for (int i = 0; i < n; i++) {\n            parent[i] = i;\n            size[i] = 1;\n        }\n    }\n\n    int find(int x) {\n        if (parent[x] != x) parent[x] = find(parent[x]);\n        return parent[x];\n    }\n\n    boolean union(int a, int b) {\n        int ra = find(a), rb = find(b);\n        if (ra == rb) return false;\n        if (size[ra] < size[rb]) { int t = ra; ra = rb; rb = t; }\n        parent[rb] = ra;\n        size[ra] += size[rb];\n        groups--;\n        return true;\n    }\n\n    boolean connected(int a, int b) { return find(a) == find(b); }\n\n    int groups() { return groups; }\n\n    int sizeOf(int x) { return size[find(x)]; }\n}`,
+            hints: ['The constructor makes both arrays of length n, sets parent[i] = i and size[i] = 1, and groups = n.', 'union: find both roots; if they are equal return false. Otherwise make ra the root of the larger group (swap if size[ra] < size[rb]), then parent[rb] = ra, size[ra] += size[rb], one group fewer, return true.', 'The size of a group is kept only at its root, so sizeOf(x) is size[find(x)]. find can be the two-line recursion of the lesson or the two loops of the last exercise.'],
+            tests: [
+              { name: 'unions, and a union that changes nothing', main: '        UnionFind u = new UnionFind(6);\n        System.out.println(u.groups() + " " + u.union(0, 1) + " " + u.union(2, 3) + " " + u.union(1, 0) + " " + u.groups());', expect: '6 true true false 4' },
+              { name: 'connected, sizeOf and groups', main: '        UnionFind u = new UnionFind(6);\n        u.union(0, 1); u.union(2, 3);\n        System.out.println(u.connected(0, 1) + " " + u.connected(1, 2) + " " + u.union(1, 3) + " " + u.connected(0, 2) + " " + u.sizeOf(3) + " " + u.groups());', expect: 'true false true true 4 3' },
+              { name: 'the smaller group goes under the larger', main: '        UnionFind w = new UnionFind(8);\n        w.union(0, 1); w.union(2, 3); w.union(0, 2); w.union(4, 5); w.union(4, 0);\n        System.out.println(w.find(5) + " " + w.find(3) + " " + w.sizeOf(5) + " " + w.groups());', expect: '0 0 6 3' },
+              { name: 'one element', main: '        UnionFind one = new UnionFind(1);\n        System.out.println(one.groups() + " " + one.find(0) + " " + one.union(0, 0) + " " + one.sizeOf(0));', expect: '1 0 false 1' },
+              { name: 'every other element', main: '        UnionFind c = new UnionFind(10);\n        for (int i = 0; i < 10; i += 2) c.union(i, (i + 4) % 10);\n        System.out.println(c.groups() + " " + c.connected(0, 8) + " " + c.connected(1, 3) + " " + c.sizeOf(6));', expect: '6 true false 5' },
+              { name: 'a chain of a thousand unions', main: '        UnionFind big = new UnionFind(1000);\n        for (int i = 1; i < 1000; i++) big.union(i - 1, i);\n        System.out.println(big.groups() + " " + big.connected(0, 999) + " " + big.sizeOf(500));', expect: '1 true 1000' }
+            ],
+            failTip: 'If the third test gives a root other than 0, union is not hanging the smaller group under the larger one, or is comparing the sizes of a and b instead of their roots. If sizeOf is wrong after several unions, the size was added to a vertex that is not a root.',
+            followup: 'Use your class to count the pieces of a graph (lesson 13 did it with a search): one union per edge, then groups(). Which method would you choose for a graph whose edges arrive one at a time, and why?'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-17-4', skill: 'greedy-mst', title: 'The cheapest network',
+            prompt: `<p>Write</p><pre class="code">static int mstCost(int n, int[][] roads)</pre><p>that returns the total cost of a minimum spanning tree of the villages <code>0</code> to <code>n − 1</code>, or <code>-1</code> if the roads do not connect them all. Each road is <code>{a, b, cost}</code>, usable both ways, and the roads come in any order. Use Kruskal's algorithm. A comparator is supplied: <code>Arrays.sort(roads, new ByCost())</code> sorts the roads by cost. Keep the union-find inside the method as an <code>int[] parent</code>. One village needs no roads and costs 0.</p>`,
+            prelude: 'import java.util.*;\n\nclass ByCost implements Comparator<int[]> {\n    public int compare(int[] a, int[] b) { return Integer.compare(a[2], b[2]); }\n}\n',
+            starter: `static int mstCost(int n, int[][] roads) {\n    Arrays.sort(roads, new ByCost());\n    int[] parent = new int[n];\n    // every village is its own root; then build each road whose ends have different roots\n    return 0;\n}`,
+            solution: `static int mstCost(int n, int[][] roads) {\n    Arrays.sort(roads, new ByCost());\n    int[] parent = new int[n];\n    for (int v = 0; v < n; v++) parent[v] = v;\n    int total = 0, built = 0;\n    for (int[] r : roads) {\n        int a = r[0], b = r[1];\n        while (parent[a] != a) a = parent[a];\n        while (parent[b] != b) b = parent[b];\n        if (a != b) {\n            parent[b] = a;\n            total += r[2];\n            built++;\n        }\n    }\n    return built == n - 1 ? total : -1;\n}`,
+            hints: ['Start with parent[v] = v for every village. For each road, after sorting, find the roots of both ends by following parent until a village is its own parent.', 'If the roots differ, join them (parent[rootB] = rootA), add the cost and count the road. If they are equal, skip the road.', 'At the end a spanning tree has n - 1 roads. If fewer were built, some village is unreachable: return -1.'],
+            tests: [
+              { call: 'mstCost(8, new int[][] {{0,1,2}, {0,2,3}, {1,3,3}, {2,3,1}, {2,4,6}, {3,5,7}, {4,5,2}, {4,6,4}, {5,7,4}, {6,7,5}})', expect: '22', name: 'the eight villages of the lesson' },
+              { call: 'mstCost(3, new int[][] {{0,2,3}, {1,2,2}, {0,1,1}})', expect: '3', name: 'a triangle: the dearest road is left out' },
+              { call: 'mstCost(4, new int[][] {{0,1,1}, {2,3,1}}) + " " + mstCost(1, new int[][] {}) + " " + mstCost(2, new int[][] {{0,1,9}})', expect: '-1 0 9', name: 'not connected, one village, two villages' },
+              { call: 'mstCost(4, new int[][] {{0,3,10}, {2,3,3}, {0,1,2}, {1,2,2}, {0,1,1}})', expect: '6', name: 'two roads between the same villages' },
+              { setup: '        int[][] ring = new int[100][];\n        for (int i = 0; i < 100; i++) ring[i] = new int[] {i, (i + 1) % 100, 5};', call: 'mstCost(100, ring)', expect: '495', name: 'a ring of a hundred: one road is not needed' },
+              { setup: '        int[][] grid = new int[180][];\n        int k = 0;\n        for (int i = 0; i < 100; i++) {\n            if (i % 10 < 9) grid[k++] = new int[] {i, i + 1, 1 + (i * 7) % 5};\n            if (i < 90) grid[k++] = new int[] {i, i + 10, 1 + (i * 3) % 5};\n        }', call: 'mstCost(100, grid)', expect: '188', name: 'a 10 by 10 grid of villages' }
+            ],
+            failTip: 'If the triangle gives 6 or the grid is too expensive, the roads are not sorted before the loop, or a road whose ends already share a root is being built. If a connected graph gives -1, check that built counts every road added and that the test is built == n - 1.',
+            followup: 'Return the roads of the tree as well as the cost. Then make the find loops compress the path, and add union by size: does the answer change? (It should not; only the speed does.)'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li>A <b>greedy algorithm</b> makes the best-looking choice and never undoes it. It is right when an exchange argument shows the greedy choice can always be part of a best answer (the booking that ends first; the cheapest edge across a cut), and wrong otherwise (the largest coin first).</li>
+<li>A <b>minimum spanning tree</b> connects all V vertices with V − 1 edges of least total cost. It is not the tree of shortest routes from one vertex.</li>
+<li><b>Kruskal</b>: sort the edges, add each one unless it would close a loop. <b>Union-find</b> answers "already connected?": roots name groups, union by size keeps trees shallow, path compression flattens them; together, practically constant time per operation. Total O(E log E).</li>
+<li><b>Prim</b>: grow one tree, always adding the cheapest edge leaving it, from a priority queue. It is Dijkstra's algorithm with a different key: one edge's cost, not the distance from the start.</li>
+<li>The answer to the opening question: greedy is safe for power lines because of the cut rule, which a coin system need not obey; and a new line only closes a loop when its two ends already have the same root in the union-find.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      standard: 1,
+      standards: ['3B-AP-12', '3B-AP-11', '3B-AP-13'],
+      title: 'Balanced search trees', summary: 'Why a search tree needs a guarantee and not just luck; keys chosen to collide; the rotation, which changes a tree’s shape and not its order; AVL trees, their four cases and their height; and what red-black trees, the trees inside Java’s TreeMap and HashMap, do differently.',
+      blocks: [
+        `<p>On 28 December 2011, at the Chaos Communication Congress in Berlin, two security researchers, Alexander Klink and Julian Wälde, showed how to knock a web server over with a few specially written requests. Web software puts the fields of a submitted form into a hash table (lesson 9). The hash functions of Java, PHP, Python, Ruby and others were public and predictable, so the two could compute thousands of field names that all had the same hash code. Every name landed in the same bucket, the table became one long chain, and each insertion walked the whole chain. The security advisory issued that day said such requests could keep a processor at 100% for up to several hours, depending on the server.</p>
+<p>Java's lasting answer came with Java 8 in 2014, in a change titled "Handle Frequent HashMap Collisions with Balanced Trees". When one bucket of a large enough <code>HashMap</code> collects eight entries, its chain is turned into a balanced search tree, so a bucket of n colliding keys costs O(log n) per lookup instead of O(n). But lesson 11 showed that a search tree is only as good as its shape, and someone who chooses the keys can also choose their order: sorted keys turn a plain search tree into a chain. So how can a tree stay short <em>whatever</em> order its keys arrive in, without rebuilding itself from scratch?</p>
+<h2>Keys that collide on purpose</h2>
+<p>Finding colliding keys for Java's strings takes no cleverness. <code>String.hashCode</code> is <code>s[0]·31ⁿ⁻¹ + s[1]·31ⁿ⁻² + … + s[n−1]</code>, computed in <code>int</code>. Two letters, "Aa" and "BB", give 65 · 31 + 97 and 66 · 31 + 66, which are both 2112. Any string glued together from those two blocks therefore has the same hash code as any other of the same length. Predict how many different hash codes the 1,024 strings below have.</p>`,
+        { predict: true, play: `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("Aa".hashCode() + " " + "BB".hashCode());
+        List<String> keys = new ArrayList<>();
+        keys.add("");
+        for (int round = 0; round < 10; round++) {          // glue "Aa" or "BB" onto every key, ten times over
+            List<String> longer = new ArrayList<>();
+            for (String k : keys) { longer.add(k + "Aa"); longer.add(k + "BB"); }
+            keys = longer;
+        }
+        Set<Integer> codes = new HashSet<>();
+        for (String k : keys) codes.add(k.hashCode());
+        System.out.println(keys.size() + " keys, " + codes.size() + " hash code: " + codes);
+        System.out.println(keys.get(1) + " and " + keys.get(1023) + " collide");
+    }
+}`, caption: 'It prints <code>2112 2112</code>, then <code>1024 keys, 1 hash code: [-1253014912]</code> (the sum overflows an int and wraps round, as lesson 2’s midpoint did), then two of the colliding keys. Ten rounds of choosing between two blocks give 2¹⁰ keys, all in one bucket of any hash table. A chain of 1,024 makes inserting them all cost about half a million comparisons; a balanced tree of 1,024 is about 10 levels deep. Change 10 to 12 and the keys become 4,096, still with one hash code.' },
+        `<h2>Rotations</h2>
+<p>A search tree can be reshaped without breaking its rule, a little at a time. The tool is the <em>rotation</em>, which changes three links and moves one node up a level and another down.</p>
+<div class="stmt"><p><span class="kind">Right rotation at y.</span> Let <code>x</code> be the left child of <code>y</code>. Then <code>x</code> takes <code>y</code>'s place, <code>y</code> becomes the right child of <code>x</code>, and the right subtree of <code>x</code> (the keys between <code>x</code> and <code>y</code>) moves across to become the left subtree of <code>y</code>. In code: <code>x = y.left; y.left = x.right; x.right = y;</code> and the parent's link now points at <code>x</code>. A <span class="kind">left rotation</span> is the mirror image.</p>
+<p><span class="kind">What a rotation keeps.</span> The in-order sequence of keys, so the tree is still a search tree. <span class="kind">What it changes.</span> The heights: the subtree under <code>x</code> rises one level and the subtree to the right of <code>y</code> sinks one. It costs O(1), however big the subtrees are, because only three links change.</p></div>
+<p>Predict the shape after rotating right at the root, and the in-order walk before and after.</p>`,
+        { predict: true, play: `class Node {
+    int key;
+    Node left, right;
+    Node(int key, Node left, Node right) { this.key = key; this.left = left; this.right = right; }
+}
+
+public class Main {
+    static Node rotateRight(Node y) {
+        Node x = y.left;
+        y.left = x.right;        // x's right subtree (the keys between x and y) moves across to y
+        x.right = y;             // y goes down, to the right of x
+        return x;                // x is the new root of this subtree
+    }
+
+    static String shape(Node t) { return t == null ? "." : "(" + t.key + " " + shape(t.left) + " " + shape(t.right) + ")"; }
+    static String inOrder(Node t) { return t == null ? "" : inOrder(t.left) + t.key + " " + inOrder(t.right); }
+
+    public static void main(String[] args) {
+        Node root = new Node(5, new Node(3, new Node(2, null, null), new Node(4, null, null)), new Node(7, null, null));
+        System.out.println(shape(root) + "   in order: " + inOrder(root));
+        root = rotateRight(root);
+        System.out.println(shape(root) + "   in order: " + inOrder(root));
+    }
+}`, caption: 'Before: <code>(5 (3 (2 . .) (4 . .)) (7 . .))</code>; after: <code>(3 (2 . .) (5 (4 . .) (7 . .)))</code>, and both walks read <code>2 3 4 5 7</code>. 3 rose to the root, 5 went down to its right, and 4, which is bigger than 3 and smaller than 5, moved from 3’s right to 5’s left: the only place it could go. Write rotateLeft (the mirror image), apply it to the new root, and check that you get the first tree back.' },
+        { check: 'A rotation is applied somewhere in a binary search tree. Which of these can it change?', skill: 'avl-rotation', options: ['The heights of some subtrees, but not the in-order sequence of keys', 'The in-order sequence, but not any heights', 'Which keys are in the tree'], answer: 0, wrong: [null, 'It is the other way round. A rotation is designed so that every key stays between the same neighbours (the subtree that moves is exactly the keys between x and y), and its whole purpose is to change heights.', 'No key is added or removed: three links change, and the same nodes are all still there.'], why: 'The rotation keeps the search tree rule, so an in-order walk gives the same keys in the same order. What changes is the shape: one side gets a level shorter and the other a level taller, which is exactly what rebalancing needs.' },
+        `<h2>AVL trees</h2>
+<p>Rotations can fix a shape; the question is when to apply them. Adelson-Velsky and Landis, whose 1962 paper opened lesson 11, gave a rule that can be checked node by node as the tree changes.</p>
+<div class="stmt"><p><span class="kind">The AVL rule.</span> At every node, the heights of the left and right subtrees differ by at most 1. Each node stores its own <code>height</code> (a leaf has 1, an empty subtree 0), and its <em>balance</em> is the left height minus the right height: −1, 0 or +1 in a valid tree.</p>
+<p><span class="kind">Insert.</span> Insert as in any search tree, as a new leaf. Then walk back up the path to the root, updating each height. The first node whose balance has become +2 or −2 is repaired by one or two rotations, after which its subtree has the same height as before the insert, so nothing above it needs repair.</p>
+<p><span class="kind">The four cases</span>, named by the way the new key went from the unbalanced node <code>t</code>. <b>Left-left</b> (into the left subtree of <code>t</code>'s left child): rotate right at <code>t</code>. <b>Right-right</b>: rotate left at <code>t</code>. <b>Left-right</b> (into the right subtree of the left child): first rotate left at the child, which turns it into left-left, then rotate right at <code>t</code>. <b>Right-left</b>: the mirror image.</p></div>
+<p>The figure does all of this one step at a time, with each node's balance written beside it. Load 3, 1, 2 and insert the 2 to see the double rotation.</p>`,
+        { fig: 'avl', keys: [1, 2], next: 3, caption: 'The keys 1 and 2 are in; 3 is ready to insert. Insert and step: 3 goes in as a leaf, the walk back up finds 1 at balance −2, and a left rotation lifts 2 to the root. Then try 4, 5, 6, 7 in turn, or load 3, 1, 2 for the left-right case. The small numbers are the balances; a red ring marks the node out of balance.' },
+        `<p>In code, the recursion does the walking back up for free: each call returns after its recursive call has inserted the key further down, so the code after the recursive call runs on the way back up, bottom first. Predict the seven shapes as the keys 1 to 7 arrive in sorted order, the order that made lesson 11's plain tree a chain.</p>`,
+        { long: true, predict: true, play: `class Node {
+    int key, height = 1;                       // a new node is a leaf: height 1
+    Node left, right;
+    Node(int key) { this.key = key; }
+}
+
+public class Main {
+    static int h(Node t) { return t == null ? 0 : t.height; }
+    static void fix(Node t) { t.height = 1 + Math.max(h(t.left), h(t.right)); }
+    static Node rotateRight(Node y) { Node x = y.left; y.left = x.right; x.right = y; fix(y); fix(x); return x; }
+    static Node rotateLeft(Node x) { Node y = x.right; x.right = y.left; y.left = x; fix(x); fix(y); return y; }
+
+    static Node insert(Node t, int key) {
+        if (t == null) return new Node(key);
+        if (key < t.key) t.left = insert(t.left, key);
+        else if (key > t.key) t.right = insert(t.right, key);
+        else return t;                                                                // already there
+        fix(t);                                                                       // on the way back up
+        int balance = h(t.left) - h(t.right);
+        if (balance > 1 && key < t.left.key) return rotateRight(t);                     // left-left
+        if (balance > 1) { t.left = rotateLeft(t.left); return rotateRight(t); }         // left-right
+        if (balance < -1 && key > t.right.key) return rotateLeft(t);                    // right-right
+        if (balance < -1) { t.right = rotateRight(t.right); return rotateLeft(t); }      // right-left
+        return t;
+    }
+
+    static String shape(Node t) { return t == null ? "." : "(" + t.key + " " + shape(t.left) + " " + shape(t.right) + ")"; }
+
+    public static void main(String[] args) {
+        Node root = null;
+        for (int k = 1; k <= 7; k++) {
+            root = insert(root, k);
+            System.out.println("insert " + k + ": " + shape(root));
+        }
+    }
+}`, caption: 'Inserting 3 rotates left at 1, so 2 becomes the root; 5 rotates left at 3; 6 rotates left at the root, and 4 takes over; 7 rotates left at 5. The last line is <code>insert 7: (4 (2 (1 . .) (3 . .)) (6 (5 . .) (7 . .)))</code>, a perfectly balanced tree of height 3, where lesson 11’s plain tree had a chain of height 7. Every rotation was a right-right case, because sorted keys always go right. Insert 7 down to 1 instead and every rotation is left-left; try 2, 6, 4 for a double rotation.' },
+        { check: 'The keys 3, 1, 2 are inserted, in that order, into an empty AVL tree. What happens when 2 arrives?', skill: 'avl-rotation', options: ['A double rotation: left at 1, then right at 3, and 2 becomes the root', 'A single right rotation at 3, and 1 becomes the root', 'Nothing: three keys are always balanced'], answer: 0, wrong: [null, 'A single right rotation at 3 would lift 1 and leave 2 hanging under it: 1 at the root, 3 to its right and 2 to the left of 3, with a balance of −2 at 1. The new key went left then right, and that zigzag needs two rotations.', '3, 1, 2 makes a zigzag of height 3: 3 at the root with balance +2. Three keys are balanced only when the middle one is the root.'], why: '2 goes left of 3 and right of 1: the left-right case. Rotating left at 1 lifts 2 above 1 (a left-left shape), and rotating right at 3 lifts 2 to the root, with 1 and 3 as its children.' },
+        `<h2>How tall can it get?</h2>
+<div class="stmt"><p><span class="kind">The height guarantee.</span> An AVL tree with n keys has height less than about <code>1.44 · log₂(n + 2)</code>. So search, insert and delete are all O(log n) on every input, sorted or not.</p></div>
+<p>Why? Think of the <em>thinnest</em> AVL tree of height h, the one with the fewest nodes. Its root has one subtree of height h − 1 and, being as thin as the rule allows, one of height h − 2, each as thin as possible itself. So the fewest nodes N(h) = N(h − 1) + N(h − 2) + 1: the Fibonacci recurrence of lesson 8 again, plus one. The Fibonacci numbers grow by a factor of about 1.618 at each step, so the number of nodes grows exponentially with the height, and the height grows only logarithmically with the number of nodes; working out the constant gives the 1.44. Predict the heights for 1,000 keys inserted in sorted order and in a shuffled order, into a plain tree and into an AVL tree.</p>`,
+        { long: true, predict: true, play: `import java.util.Random;
+
+class Node {
+    int key, height = 1;
+    Node left, right;
+    Node(int key) { this.key = key; }
+}
+
+public class Main {
+    static int rotations = 0, plainHeight = 0;
+    static int h(Node t) { return t == null ? 0 : t.height; }
+    static void fix(Node t) { t.height = 1 + Math.max(h(t.left), h(t.right)); }
+    static Node rotateRight(Node y) { rotations++; Node x = y.left; y.left = x.right; x.right = y; fix(y); fix(x); return x; }
+    static Node rotateLeft(Node x) { rotations++; Node y = x.right; x.right = y.left; y.left = x; fix(x); fix(y); return y; }
+    static Node avl(Node t, int key) {                 // the AVL insert of the last example, with the cases folded together
+        if (t == null) return new Node(key);
+        if (key < t.key) t.left = avl(t.left, key); else if (key > t.key) t.right = avl(t.right, key); else return t;
+        fix(t);
+        int balance = h(t.left) - h(t.right);
+        if (balance > 1) { if (key > t.left.key) t.left = rotateLeft(t.left); return rotateRight(t); }
+        if (balance < -1) { if (key < t.right.key) t.right = rotateRight(t.right); return rotateLeft(t); }
+        return t;
+    }
+    static Node plain(Node t, int key) {               // lesson 11's insert, as a loop, counting levels
+        if (t == null) { plainHeight = Math.max(plainHeight, 1); return new Node(key); }
+        Node cur = t;
+        int depth = 2;
+        while (true) {
+            Node next = key < cur.key ? cur.left : cur.right;
+            if (next == null) break;
+            cur = next;
+            depth++;
+        }
+        if (key < cur.key) cur.left = new Node(key); else cur.right = new Node(key);
+        plainHeight = Math.max(plainHeight, depth);
+        return t;
+    }
+
+    public static void main(String[] args) {
+        int n = 1000;
+        int[] keys = new int[n];
+        for (int i = 0; i < n; i++) keys[i] = i + 1;
+        for (String order : new String[] {"sorted", "shuffled"}) {
+            if (order.equals("shuffled")) {
+                Random rnd = new Random(42);
+                for (int i = n - 1; i > 0; i--) { int j = rnd.nextInt(i + 1); int t = keys[i]; keys[i] = keys[j]; keys[j] = t; }
+            }
+            Node a = null, p = null;
+            rotations = 0; plainHeight = 0;
+            for (int k : keys) { a = avl(a, k); p = plain(p, k); }
+            System.out.println(order + ": plain height " + plainHeight + ", AVL height " + h(a) + " after " + rotations + " rotations");
+        }
+    }
+}`, caption: 'It prints <code>sorted: plain height 1000, AVL height 10 after 990 rotations</code> and <code>shuffled: plain height 27, AVL height 12 after 713 rotations</code>. Sorted keys make the plain tree a chain; the AVL tree is as short as a tree of 1,000 nodes can be, since 2¹⁰ = 1,024. Shuffled keys give the plain tree a reasonable 27, and the AVL tree 12, under its bound of 1.44 · log₂ 1002 ≈ 14.4. The price is under one rotation per insert, each O(1). (The plain tree is built with a loop: a recursive insert into a chain of 1,000 would need 1,000 frames.)' },
+        `<h2>Red-black trees</h2>
+<p>AVL trees are not the only balanced trees, nor the commonest. Rudolf Bayer described a different scheme in 1972, and Leonidas Guibas and Robert Sedgewick recast it in 1978 with nodes coloured red and black, the form in most libraries today, including Java's.</p>
+<div class="stmt"><p><span class="kind">Red-black tree.</span> A search tree whose nodes are each red or black, with these rules: the root is black; a red node has no red child; and every path from a node down to an empty link passes through the same number of black nodes. The longest path can then alternate red and black while the shortest is all black, so no path is more than twice as long as another, and the height is at most <code>2 · log₂(n + 1)</code>.</p>
+<p><span class="kind">Repairs.</span> A new key goes in as a red leaf. If its parent is red, the tree recolours nodes on the way up and, at the end, makes at most two rotations. A deletion needs at most three.</p></div>
+<table class="growth-table"><thead><tr><th></th><th>AVL tree</th><th>Red-black tree</th></tr></thead><tbody>
+<tr><td>Balance rule</td><td>subtree heights differ by at most 1</td><td>colour rules: no red pair, equal black counts</td></tr>
+<tr><td>Height, at most about</td><td>1.44 log₂ n</td><td>2 log₂ n</td></tr>
+<tr><td>Rotations per insert</td><td>at most 2</td><td>at most 2</td></tr>
+<tr><td>Rotations per delete</td><td>up to one per level</td><td>at most 3</td></tr>
+<tr><td>Better for</td><td>many lookups, fewer changes</td><td>many changes</td></tr>
+<tr><td>In Java</td><td>not in the library</td><td><code>TreeMap</code>, <code>TreeSet</code>, and a crowded bucket of <code>HashMap</code></td></tr>
+</tbody></table>
+<p>Both give O(log n) for search, insert and delete whatever the order of arrival, which is all a program using <code>TreeMap</code> needs to know. A <code>HashMap</code> remains the faster map on ordinary keys; its tree buckets are there for the bad day when keys collide, by accident or on purpose.</p>`,
+        { check: 'Java\'s <code>TreeMap</code> is a red-black tree rather than an AVL tree. What does that choice give up, and what does it gain?', skill: 'avl-rotation', options: ['It allows a somewhat taller tree (up to about 2 log₂ n instead of 1.44 log₂ n) in exchange for fewer rotations when keys are deleted', 'It gives up the O(log n) guarantee in exchange for speed', 'It gives up the sorted order of the keys in exchange for less memory'], answer: 0, wrong: [null, 'Both kinds keep O(log n) on every input; the difference is only in the constant: 2 log₂ n against 1.44 log₂ n.', 'Both are binary search trees, so both keep the keys in order: an in-order walk of either is sorted. The colour costs one bit per node.'], why: 'A red-black tree tolerates more imbalance, so it repairs itself with fewer rotations on changes, while searches may go a level or two deeper. Both bounds are logarithmic, which is the guarantee that matters.' },
+        { aside: `<p><b>Common mistakes in this lesson.</b> Forgetting to update the heights after a rotation, or updating them in the wrong order: the node that went down (<code>y</code> in a right rotation) first, then the node that came up, whose height depends on it. Forgetting to hang the rotated subtree back into the parent's link (<code>t.left = rotateLeft(t.left)</code>, not just <code>rotateLeft(t.left)</code>). Using a single rotation for a zigzag (left-right or right-left), which only moves the imbalance to the other side. Computing the balance from stored heights that were not updated after the insert below. Thinking that balance means "the same number of keys on each side": the rule is about heights.</p>` },
+        {
+          ex: {
+            id: 'ds-18-1', skill: 'avl-rotation', kind: 'answer', title: 'Balance by hand',
+            prompt: `<p>Work on paper. Insert the keys <code>10, 20, 30, 25, 28</code>, in that order, into an empty AVL tree, rebalancing after each insert as in this lesson. Then answer with whole numbers or keys.</p>`,
+            parts: [
+              { label: '(a) After 10, 20 and 30 have been inserted, which key is at the root?', answer: '20', width: '6rem', wrong: [{ match: '10', msg: 'Without balancing, 10 would stay at the root with a chain of two to its right. The balance of 10 is then −2, and a left rotation lifts 20 above it.' }, { match: '30', msg: 'The rotation lifts the middle key, 20, not the last one.' }] },
+              { label: '(b) After 28 has also been inserted, which key is the parent of 25 and 30?', answer: '28', width: '6rem', wrong: [{ match: '30', msg: '28 went left of 30 and right of 25, a zigzag: the left-right case at 30. Two rotations lift 28 into 30’s place, with 25 and 30 below it.' }, { match: '25', msg: 'A single rotation at 30 would lift 25, but 28 went right of 25: the left-right case needs two rotations, and 28 ends up on top.' }] },
+              { label: '(c) What is the height of the tree with all five keys?', answer: '3', width: '6rem', wrong: [{ match: '5', msg: 'That is the height of the plain search tree, a chain 10, 20, 30, 25, 28. The AVL tree is 20 above 10 and 28, with 25 and 30 under 28.' }, { match: '4', msg: 'Count the nodes on the longest path: 20, 28, 25. Three.' }] },
+              { label: '(d) How many single rotations did the five inserts need in all? (A double rotation counts as two.)', answer: '3', width: '6rem', wrong: [{ match: '2', msg: 'One for 30 (left at 10), none for 25, and two for 28 (left at 25, right at 30).' }, { match: '1', msg: 'The insert of 28 is a zigzag, which needs two rotations, as well as the one for 30.' }] },
+              { label: '(e) The keys 1, 2, 3, …, 15 are inserted in order into an empty AVL tree. What is its height?', answer: '4', width: '6rem', wrong: [{ match: '15', msg: 'That is the plain tree, a chain. The AVL tree of 15 keys inserted in order turns out perfectly balanced: 2⁴ − 1 = 15.' }, { match: '5', msg: 'Close, but sorted keys into an AVL tree fill it level by level: 15 = 2⁴ − 1 keys make a full tree of height 4.' }] }
+            ],
+            hints: ['After each insert, walk back up from the new leaf and compute each node’s balance (left height minus right height). The first node at +2 or −2 is repaired: one rotation if the new key went the same way twice, two if it zigzagged.', 'After 10, 20, 30: the tree is 20 with children 10 and 30. 25 goes left of 30 (no repair). 28 goes left of 30 and right of 25: at 30 the balance is +2, a left-right case.'],
+            solution: `<p>(a) <b>20</b>: 10, 20, 30 is a right-right chain, and a left rotation at 10 lifts 20. (b) <b>28</b>: 28 makes 30 unbalanced in the left-right case; rotating left at 25 and right at 30 puts 28 in 30's place, with 25 on its left and 30 on its right. (c) <b>3</b>: 20 at the root, 10 and 28 below it, 25 and 30 below 28. (d) <b>3</b> rotations. (e) <b>4</b>, a perfect tree, where a plain tree would have height 15.</p>`,
+            followup: 'Insert the same five keys into a plain search tree and draw it. Then delete 10 from the AVL tree: which node becomes unbalanced, and which rotation fixes it?'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-18-2', kind: 'parsons', skill: 'avl-rotation', title: 'Put it in order: rotate right',
+            prompt: `<p>Build the method</p><pre class="code">static Node rotateRight(Node y)</pre><p>of an AVL tree. <code>Node</code> has <code>int key, height</code> and <code>Node left, right</code>, and <code>Node.h(t)</code> is the height of <code>t</code>, or 0 for <code>null</code>. The method lifts <code>y</code>'s left child into its place, updates both heights in the right order and returns the new root of the subtree. Not every block belongs.</p>`,
+            prelude: 'class Node {\n    int key, height = 1;\n    Node left, right;\n    Node(int key) { this.key = key; }\n    Node(int key, Node left, Node right) { this.key = key; this.left = left; this.right = right; this.height = 1 + Math.max(h(left), h(right)); }\n    static int h(Node t) { return t == null ? 0 : t.height; }\n    static String shape(Node t) { return t == null ? "." : "(" + t.key + " " + shape(t.left) + " " + shape(t.right) + ")"; }\n    static String heights(Node t) { return t == null ? "" : heights(t.left) + t.key + ":" + t.height + " " + heights(t.right); }\n}\n',
+            lines: ['static Node rotateRight(Node y) {', '    Node x = y.left;', '    y.left = x.right;', '    x.right = y;', '    y.height = 1 + Math.max(Node.h(y.left), Node.h(y.right));', '    x.height = 1 + Math.max(Node.h(x.left), Node.h(x.right));', '    return x;', '}'],
+            distractors: ['y.right = x.left;', 'return y;'],
+            tests: [
+              { setup: '        Node r = rotateRight(new Node(3, new Node(2, new Node(1), null), null));', call: 'Node.shape(r) + " " + Node.heights(r)', expect: '(2 (1 . .) (3 . .)) 1:1 2:2 3:1', name: 'a left-left chain becomes balanced' },
+              { setup: '        Node r = rotateRight(new Node(5, new Node(3, new Node(2), new Node(4)), new Node(7)));', call: 'Node.shape(r) + " " + Node.heights(r)', expect: '(3 (2 . .) (5 (4 . .) (7 . .))) 2:1 3:3 4:1 5:2 7:1', name: 'the middle subtree moves across' },
+              { setup: '        Node r = rotateRight(new Node(8, new Node(4, new Node(2, new Node(1), new Node(3)), new Node(6, new Node(5), new Node(7))), new Node(9)));', call: 'Node.shape(r) + " " + Node.heights(r)', expect: '(4 (2 (1 . .) (3 . .)) (8 (6 (5 . .) (7 . .)) (9 . .))) 1:1 2:2 3:1 4:4 5:1 6:2 7:1 8:3 9:1', name: 'bigger subtrees, same three links' }
+            ],
+            hints: ['Save the left child first: Node x = y.left. Then the right subtree of x moves to be the left subtree of y, and y becomes the right child of x.', 'Update y’s height before x’s: y is now below x, and x’s height depends on it. Return x, the new top of the subtree.'],
+            followup: 'Write rotateLeft, the mirror image, and check that rotateLeft(rotateRight(t)) gives back a tree of the same shape as t.'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-18-3', skill: 'avl-rotation', title: 'An AVL tree',
+            prompt: `<p>Complete <code>AVL</code>, a set of <code>int</code> keys in an AVL tree. <code>Node</code> (with a stored <code>height</code>), the two rotations, <code>fix</code> (which recomputes a node's height from its children) and the printing are written for you. Write the private <code>insert(Node t, int key)</code>: insert as in a search tree (a key already present changes nothing; a new one adds 1 to <code>size</code>), then, on the way back up, update the height and repair the four cases of this lesson with the rotations. Write only the classes.</p>`,
+            classes: true,
+            starter: `class Node {\n    int key, height = 1;\n    Node left, right;\n    Node(int key) { this.key = key; }\n    static int h(Node t) { return t == null ? 0 : t.height; }\n    static String shape(Node t) { return t == null ? "." : "(" + t.key + " " + shape(t.left) + " " + shape(t.right) + ")"; }\n}\n\nclass AVL {\n    private Node root;\n    private int size;\n\n    int size() { return size; }\n    int height() { return Node.h(root); }\n    String shape() { return Node.shape(root); }\n\n    void insert(int key) { root = insert(root, key); }\n\n    private void fix(Node t) { t.height = 1 + Math.max(Node.h(t.left), Node.h(t.right)); }\n    private Node rotateRight(Node y) { Node x = y.left; y.left = x.right; x.right = y; fix(y); fix(x); return x; }\n    private Node rotateLeft(Node x) { Node y = x.right; x.right = y.left; y.left = x; fix(x); fix(y); return y; }\n\n    private Node insert(Node t, int key) {\n        // 1. insert as in a plain search tree (count a new node in size)\n        // 2. fix(t), then compute the balance: height of left minus height of right\n        // 3. balance > 1: left-left or left-right; balance < -1: right-right or right-left\n        return t;\n    }\n}`,
+            solution: `class Node {\n    int key, height = 1;\n    Node left, right;\n    Node(int key) { this.key = key; }\n    static int h(Node t) { return t == null ? 0 : t.height; }\n    static String shape(Node t) { return t == null ? "." : "(" + t.key + " " + shape(t.left) + " " + shape(t.right) + ")"; }\n}\n\nclass AVL {\n    private Node root;\n    private int size;\n\n    int size() { return size; }\n    int height() { return Node.h(root); }\n    String shape() { return Node.shape(root); }\n\n    void insert(int key) { root = insert(root, key); }\n\n    private void fix(Node t) { t.height = 1 + Math.max(Node.h(t.left), Node.h(t.right)); }\n    private Node rotateRight(Node y) { Node x = y.left; y.left = x.right; x.right = y; fix(y); fix(x); return x; }\n    private Node rotateLeft(Node x) { Node y = x.right; x.right = y.left; y.left = x; fix(x); fix(y); return y; }\n\n    private Node insert(Node t, int key) {\n        if (t == null) {\n            size++;\n            return new Node(key);\n        }\n        if (key < t.key) t.left = insert(t.left, key);\n        else if (key > t.key) t.right = insert(t.right, key);\n        else return t;\n        fix(t);\n        int balance = Node.h(t.left) - Node.h(t.right);\n        if (balance > 1) {\n            if (key > t.left.key) t.left = rotateLeft(t.left);\n            return rotateRight(t);\n        }\n        if (balance < -1) {\n            if (key < t.right.key) t.right = rotateRight(t.right);\n            return rotateLeft(t);\n        }\n        return t;\n    }\n}`,
+            mustNotContain: [{ re: /java\.util|TreeSet|TreeMap|ArrayList|int\s*\[\s*\]/, msg: 'Build the tree from Node objects, with rotations: no arrays and no library collections.' }],
+            hints: ['Start as lesson 11 did: null means the place for a new Node (size++ and return it); smaller keys go into t.left = insert(t.left, key), larger into t.right; an equal key returns t unchanged.', 'After the recursive call, fix(t) and compute int balance = Node.h(t.left) - Node.h(t.right). If balance > 1 the left side is too tall: if the key went right of t.left (key > t.left.key) it is the left-right case, so first t.left = rotateLeft(t.left). Then return rotateRight(t).', 'The mirror for balance < -1: if key < t.right.key, first t.right = rotateRight(t.right); then return rotateLeft(t). Otherwise return t.'],
+            tests: [
+              { name: 'the four cases with three keys', main: '        int[][] seqs = {{3, 2, 1}, {1, 2, 3}, {3, 1, 2}, {1, 3, 2}};\n        for (int[] s : seqs) {\n            AVL a = new AVL();\n            for (int k : s) a.insert(k);\n            System.out.println(a.shape() + " " + a.height());\n        }', expect: '(2 (1 . .) (3 . .)) 2\n(2 (1 . .) (3 . .)) 2\n(2 (1 . .) (3 . .)) 2\n(2 (1 . .) (3 . .)) 2' },
+              { name: 'one to seven in order', main: '        AVL a = new AVL();\n        for (int k = 1; k <= 7; k++) a.insert(k);\n        System.out.println(a.shape() + " " + a.height() + " " + a.size());', expect: '(4 (2 (1 . .) (3 . .)) (6 (5 . .) (7 . .))) 3 7' },
+              { name: 'a double rotation below the root', main: '        AVL a = new AVL();\n        for (int k : new int[] {10, 20, 30, 25, 28}) a.insert(k);\n        System.out.println(a.shape() + " " + a.height());', expect: '(20 (10 . .) (28 (25 . .) (30 . .))) 3' },
+              { name: 'repeated keys change nothing', main: '        AVL a = new AVL();\n        for (int k : new int[] {5, 5, 5, 3, 3}) a.insert(k);\n        System.out.println(a.shape() + " " + a.size());', expect: '(5 (3 . .) .) 2' },
+              { name: 'no rotation needed', main: '        AVL a = new AVL();\n        for (int k : new int[] {50, 40, 60, 30, 45, 70, 20}) a.insert(k);\n        System.out.println(a.shape() + " " + a.height());', expect: '(50 (40 (30 (20 . .) .) (45 . .)) (60 . (70 . .))) 4' },
+              { name: 'hundreds of keys, sorted both ways and mixed', main: '        AVL up = new AVL(), down = new AVL(), mix = new AVL();\n        for (int k = 1; k <= 100; k++) up.insert(k);\n        for (int k = 200; k >= 1; k--) down.insert(k);\n        for (int k = 0; k < 500; k++) mix.insert((k * 37) % 500);\n        System.out.println(up.height() + " " + down.height() + " " + mix.height() + " " + mix.size());', expect: '7 8 10 500' }
+            ],
+            failTip: 'If the sorted tests give heights like 100 and 200, the tree is never rebalanced: check that the code after the recursive calls runs, and that its result is returned and stored (t.left = insert(...)). If 3, 1, 2 comes out as (1 . (3 (2 . .) .)), the left-right case used a single rotation: rotate left at t.left first.',
+            followup: 'Add a counter of rotations and compare 1,000 sorted inserts with 1,000 shuffled ones. Then write contains(int key): does it need to know that the tree is an AVL tree?'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-18-4', skill: 'avl-rotation', title: 'Is it balanced?',
+            prompt: `<p>Write</p><pre class="code">static boolean isAVL(Node t)</pre><p>that says whether every node of the tree <code>t</code> has subtrees whose heights differ by at most 1. Do not trust any stored height: the class <code>Node</code> here has only <code>int key</code> and <code>Node left, right</code>, so compute heights yourself. The empty tree is balanced. Visit each node once: a helper that returns the height of a balanced subtree, or <code>-1</code> as soon as it finds one that is not, does it in O(n).</p>`,
+            prelude: 'class Node {\n    int key;\n    Node left, right;\n    Node(int key) { this.key = key; }\n    Node(int key, Node left, Node right) { this.key = key; this.left = left; this.right = right; }\n}\n',
+            starter: `static boolean isAVL(Node t) {\n    // write a helper: the height of t if it is balanced, or -1 if it is not\n    return false;\n}`,
+            solution: `static int check(Node t) {\n    if (t == null) return 0;\n    int l = check(t.left);\n    int r = check(t.right);\n    if (l < 0 || r < 0 || Math.abs(l - r) > 1) return -1;\n    return 1 + Math.max(l, r);\n}\n\nstatic boolean isAVL(Node t) {\n    return check(t) >= 0;\n}`,
+            hints: ['A helper static int check(Node t): an empty tree has height 0. Otherwise check both children first.', 'If either child returned -1, or the two heights differ by more than 1, return -1. Otherwise return 1 + the larger of the two.', 'isAVL(t) is then check(t) >= 0. Computing a fresh height at every node instead would visit the nodes far below many times: O(n²) on a chain.'],
+            tests: [
+              { call: 'isAVL(null) + " " + isAVL(new Node(1)) + " " + isAVL(new Node(2, new Node(1), new Node(3)))', expect: 'true true true', name: 'empty, one node, three nodes' },
+              { call: 'isAVL(new Node(3, new Node(2, new Node(1), null), null)) + " " + isAVL(new Node(3, new Node(1, null, new Node(2)), new Node(4)))', expect: 'false true', name: 'a chain of three, and a tree that leans by one' },
+              { call: 'isAVL(new Node(5, new Node(3, new Node(2, new Node(1), null), new Node(4)), new Node(7, null, new Node(8))))', expect: 'true', name: 'every node within one' },
+              { call: 'isAVL(new Node(4, new Node(2, new Node(1), new Node(3)), new Node(6, null, new Node(7, null, new Node(8)))))', expect: 'false', name: 'the root is fine but 6 is not' },
+              { call: 'isAVL(new Node(8, new Node(4, new Node(2, new Node(1), null), new Node(6)), new Node(10, null, new Node(12, null, new Node(13)))))', expect: 'false', name: 'the trouble is deep on the right' },
+              { setup: '        Node chain = null;\n        for (int k = 150; k >= 1; k--) chain = new Node(k, null, chain);', call: 'isAVL(chain)', expect: 'false', name: 'a chain of 150' }
+            ],
+            failTip: 'If the test "the root is fine but 6 is not" says true, only the root was checked: every node must obey the rule, so the -1 has to travel up from wherever it is found. If a chain of three says true, compare heights with Math.abs(l - r) > 1.',
+            followup: 'Extend the check to also make sure the tree is a search tree: every key in the left subtree smaller and every key in the right larger. Hint: pass down the range of keys a subtree is allowed to hold.'
+          }
+        },
+        `<div class="recap"><h3>In this lesson</h3><ul>
+<li>A plain search tree is fast only when the order of arrival is kind. When keys can be chosen by an opponent, as in the 2011 attacks on hash tables, a structure needs a <em>guarantee</em>.</li>
+<li>A <b>rotation</b> changes three links, moves one node up and one down, keeps the in-order sequence and costs O(1). It is how every balanced tree changes shape.</li>
+<li>An <b>AVL tree</b> keeps the subtree heights at every node within 1 of each other. After an insert, the first unbalanced node on the way up is fixed by one rotation (left-left, right-right) or two (left-right, right-left), and the height is always below about 1.44 log₂ n.</li>
+<li>A <b>red-black tree</b> uses colours instead of heights, allows height up to 2 log₂ n and repairs with fewer rotations on deletion. Java's <code>TreeMap</code> and <code>TreeSet</code> are red-black trees, and so is a crowded <code>HashMap</code> bucket since Java 8.</li>
+<li>The answer to the opening question: a tree stays short whatever the order of arrival by checking its balance on the way back up after every change and rotating where a rule is broken, a few O(1) repairs instead of a rebuild.</li>
+</ul></div>`
+      ]
+    },
+    /* ================================================================== */
+    {
+      standards: ['3A-AP-15', '3B-AP-10', '3B-AP-11', '3B-AP-12', '3B-AP-13'],
+      title: 'Checkpoint: tables, greedy choices, balanced trees', checkpoint: true, summary: 'No new ideas: mixed questions on dynamic programming, greedy algorithms and minimum spanning trees, union-find and balanced trees. Memo or table? Greedy or a table? Kruskal, Prim or Dijkstra? Plain tree, AVL tree or heap? Then a choice of algorithm and a table that counts routes round rocks.',
+      blocks: [
+        `<p>This lesson teaches nothing new. It mixes questions from the last three lessons with the ideas they are most often confused with: a memo and a table solve the same problem in different ways, a greedy method and a table can both claim to find the best answer, Prim's and Dijkstra's algorithms are nearly the same program, and a search tree, a balanced search tree and a heap are all trees with at most two children per node. They are only told apart by being asked about together. Answer each question before you look back. If one surprises you, the lesson it came from is linked on the Review page, and the question will come back there in a day.</p>
+<p>Ready? Here is the first: lesson 8's memo and lesson 15's table give the same Fibonacci numbers with the same additions, so what is the table for?</p>
+<h2>Mixed questions</h2>`,
+        { check: '<code>fibMemo(n)</code> (lesson 8) and the bottom-up <code>fib(n)</code> with a table (lesson 15) do the same additions. Which problem does the table avoid?', skill: 'dp-table', options: ['A deep chain of recursive calls, which can overflow the call stack for large n', 'Computing the same value twice', 'Using memory for the answers'], answer: 0, wrong: [null, 'The memo already avoids that: each value is computed once and then looked up. That is what makes both of them fast.', 'Both store about n answers: the memo array and the table are the same size.'], why: 'The memo version reaches fib(n) through a chain of n nested calls, one frame each; the loop fills the table with one frame however large n is. Same work, no depth.' },
+        { check: 'Which of these problems is a good fit for dynamic programming?', skill: 'dp-table', options: ['The fewest coins to pay an amount, where the best answer is built from best answers for smaller amounts that come up again and again', 'Finding the largest number in an unsorted array', 'Searching a sorted array for one value'], answer: 0, wrong: [null, 'One pass of a loop does it, and no subproblem ever repeats: there is nothing to store.', 'Binary search halves the range and never meets the same subproblem twice. Its log₂ n steps are already the best possible.'], why: 'Dynamic programming needs overlapping subproblems and optimal substructure. Paying 63 needs the best ways to pay 62, 58, 53 and 38, and those need the same smaller amounts again: a table of amounts solves each once.' },
+        { check: 'In the table for the longest common subsequence, what does the cell <code>L[3][5]</code> hold?', skill: 'dp-table', options: ['The length of the longest common subsequence of the first 3 letters of one word and the first 5 letters of the other', 'Whether letter 3 of one word equals letter 5 of the other', 'The length of the longest common subsequence of the whole words'], answer: 0, wrong: [null, 'Comparing those letters is how the cell is filled, but the cell stores a length: the best so far for the two beginnings.', 'That is only the bottom-right cell. Every other cell answers the same question for shorter beginnings of the words.'], why: 'Every cell is a subproblem: the two prefixes, of lengths i and j. Saying what one cell means, before writing the recurrence, is the first step of every table.' },
+        { check: 'Coins of 1, 5, 10 and 25 cents (the American coins) pay 63 cents. What do the greedy method and the table give?', skill: 'greedy-mst', options: ['Both give 6 coins: for this coin system greedy is always right', 'Greedy gives more coins than the table', 'The table gives more coins than greedy'], answer: 0, wrong: [null, 'For coins of 1, 3 and 4 it would, but American coins are a system for which greedy is always right: 25 + 25 + 10 + 1 + 1 + 1 cannot be beaten.', 'The table tries every possibility, so it can never do worse than greedy; at best greedy ties with it.'], why: 'Greedy takes 25, 25, 10, 1, 1, 1: six coins, and the table agrees. Whether greedy is safe depends on the coins, which is why a greedy method needs a proof and a table does not.' },
+        { check: 'Kruskal\'s algorithm takes the cheapest remaining edge and skips it if it would close a loop. Why is this greedy choice safe, when greedy coin-paying is not?', skill: 'greedy-mst', options: ['The cheapest edge joining two separate groups always belongs to some minimum spanning tree (the cut rule)', 'Graphs are smaller than coin problems, so greedy has fewer chances to go wrong', 'It is not safe: Kruskal finds a good tree, but not always the cheapest'], answer: 0, wrong: [null, 'Size has nothing to do with it: greedy fails on the coins 1, 3, 4 with an amount of only 6. Safety comes from a proof.', 'Kruskal always finds a minimum spanning tree. The exchange argument of lesson 16 shows that swapping in the cheapest edge across a split can never make the tree dearer.'], why: 'The cut rule: split the vertices into two groups; the cheapest edge between them is in a minimum spanning tree. Each edge Kruskal adds is the cheapest joining two of its groups, so every step is safe.' },
+        { check: 'In a union-find, why does <code>union</code> hang the root of the <em>smaller</em> group under the root of the larger?', skill: 'greedy-mst', options: ['So that no element gets deep: an element sinks a level only when its group at least doubles, so depth stays under log₂ n', 'So that the larger group keeps its name', 'Because the smaller group has fewer edges to copy'], answer: 0, wrong: [null, 'Which root names the group does not matter to the algorithm; only whether two elements share a root. The rule is about depth.', 'Nothing is copied: union changes a single entry of the parent array. The choice of which root goes under decides how deep the trees get.'], why: 'Hanging the smaller group under the larger puts fewer elements one level deeper. Each time an element goes deeper, the size of its group at least doubles, which can happen at most log₂ n times. Path compression then flattens the trees further.' },
+        { check: 'On the same map, Prim\'s algorithm builds a minimum spanning tree and Dijkstra\'s algorithm builds a tree of shortest routes from village A. Are they the same tree?', skill: 'greedy-mst', options: ['Not in general: Dijkstra keeps each village close to A, Prim keeps the total cost of the network low', 'Always: both take the smallest entry from a priority queue', 'Only if the start is the same village for both'], answer: 0, wrong: [null, 'They use the same machinery with a different key. Dijkstra orders the queue by total distance from A, Prim by the cost of one edge, and that changes which edges are chosen.', 'Even from the same start they differ: Prim does not care how far a village is from A, only how cheaply it can be connected to the tree.'], why: 'A minimum spanning tree can make two villages a long way round from each other if that saves cable; a shortest-route tree can use dear edges if they make the routes from A shorter. Each is the best tree for a different question.' },
+        { check: 'Which of these is <em>not</em> changed by a rotation in a binary search tree?', skill: 'avl-rotation', options: ['The order in which an in-order walk visits the keys', 'Which node is the root of the subtree', 'The heights of the subtrees involved'], answer: 0, wrong: [null, 'A rotation does change that: the child moves up into its parent’s place. That is how it changes the shape.', 'Changing heights is the purpose of a rotation: one side gets a level shorter, the other a level taller.'], why: 'A rotation keeps every key between the same neighbours, so the tree is still a search tree with the same in-order sequence. Only the shape changes, which is why it can be used freely to rebalance.' },
+        { check: 'The keys 1, 2, 3, …, 1023 are inserted in increasing order into a plain binary search tree and into an AVL tree. What are their heights?', skill: 'bst-balance', options: ['1023 for the plain tree; 10 for the AVL tree', 'Both about 10, because both are binary search trees', '1023 for both, because the keys arrived sorted'], answer: 0, wrong: [null, 'Being a search tree says nothing about shape. Sorted keys make a plain search tree a chain: each new key goes right of the last.', 'The AVL tree rotates after every insert that unbalances it, so sorted arrivals cannot make it a chain. Its height stays below 1.44 log₂ n.'], why: 'The plain tree is a chain of 1,023 nodes. The AVL tree, rebalancing as it goes, ends up perfectly balanced: 1,023 = 2¹⁰ − 1 keys in 10 full levels.' },
+        { check: 'A program must keep a growing set of numbers and, at any time, list them all in sorted order and also find the largest number below a given value, each step in O(log n) or better per operation. Which structure fits?', skill: 'avl-rotation', options: ['A balanced search tree, such as Java\'s TreeSet', 'A min-heap', 'A hash set'], answer: 0, wrong: [null, 'A heap knows only its smallest item. It cannot list in order without taking everything out, and it cannot find the largest number below a value without looking at all of them.', 'A hash set finds an exact number in O(1) on average but has no order at all: no sorted listing, no "largest below".'], why: 'A balanced search tree keeps the keys in order with O(log n) height: an in-order walk lists them, and floor(x) follows one path down. That is why TreeSet and TreeMap are red-black trees.' },
+        { check: 'A red-black tree may be up to about 2 log₂ n tall, and an AVL tree only about 1.44 log₂ n. Why do libraries such as Java\'s still prefer red-black trees?', skill: 'avl-rotation', options: ['They need fewer rotations when keys are deleted, and both heights are O(log n)', 'Red-black trees keep the keys in a better order', 'AVL trees cannot delete keys'], answer: 0, wrong: [null, 'Both are binary search trees: both keep exactly the same sorted order.', 'AVL trees can delete keys; a deletion may just need a rotation at several levels on the way up, where a red-black tree needs at most three.'], why: 'Both guarantee O(log n). The red-black tree is looser, so it repairs itself with less work when the tree changes; the AVL tree is tighter, so searches are a little shorter. For a general-purpose map, cheap changes won.' },
+        { check: 'A road map has 5,000 junctions and 20,000 roads. Which job is Kruskal\'s algorithm for?', skill: 'greedy-mst', options: ['Choosing the cheapest set of roads that still connects every junction', 'Finding the shortest route between two junctions', 'Finding the route with the fewest roads between two junctions'], answer: 0, wrong: [null, 'That is Dijkstra’s algorithm (lesson 13): it adds up distances along routes from a start, which Kruskal never does.', 'That is breadth-first search: it counts edges, layer by layer from the start.'], why: 'Kruskal builds a minimum spanning tree: 4,999 roads, no loops, least total cost. It answers a question about the whole network, not about a route between two places.' },
+        `<p>Two jobs to finish the unit. The first needs no code: choose the method. The second fills a table that counts routes.</p>`,
+        {
+          ex: {
+            id: 'ds-19-1', kind: 'choice', skill: 'greedy-mst', title: 'Which method?',
+            prompt: `<p>A school district will connect its 40 schools with fibre-optic cable. Cable can run only along certain streets, and the cost of each possible stretch between two schools is known. Every school must be able to reach every other school through the network, and the district wants to spend as little as possible. Which method gives the cheapest network?</p>`,
+            options: [
+              { text: 'Dijkstra\'s algorithm from the district office, building the routes it finds.', why: 'That gives each school its shortest route to the office, which can use expensive stretches a cheaper network would avoid. The question is about the total cost of the network, not about distances from one school.' },
+              { text: 'Kruskal\'s algorithm: sort the stretches by cost and lay each one that does not close a loop, using union-find.', ok: true },
+              { text: 'Breadth-first search from the district office, laying the edges it uses.', why: 'Breadth-first search ignores the costs entirely: it finds the routes with the fewest stretches.' },
+              { text: 'Try every set of 39 stretches and keep the cheapest that connects all 40 schools.', why: 'It would give the right answer, but the number of sets is astronomically large; no computer could finish.' }
+            ],
+            hints: ['The district wants the least total cost of a network that connects everything. Which structure of lesson 16 is exactly that?', 'A minimum spanning tree. Kruskal and Prim both find one; of these options, one names Kruskal.'],
+            solution: '<p>Kruskal\'s algorithm: it builds a minimum spanning tree, the cheapest set of stretches that connects every school, in O(E log E). Prim\'s algorithm would do equally well. Dijkstra and breadth-first search answer questions about routes from one place, and trying every set is hopeless.</p>',
+            followup: 'The district then wants every school within 10 km of the office, measured along the cable. Does the minimum spanning tree still do, and which algorithm would check it?'
+          }
+        },
+        {
+          ex: {
+            id: 'ds-19-2', skill: 'dp-table', title: 'Routes round the rocks',
+            prompt: `<p>Lesson 8 counted the routes of a robot that steps only right or down across a grid, with a memo. Now some cells hold rocks, and no route may step on one. Write</p><pre class="code">static long paths(boolean[][] rock)</pre><p>that returns the number of routes from the top-left cell to the bottom-right cell, where <code>rock[r][c]</code> is <code>true</code> for a cell with a rock. Fill a table <code>ways[r][c]</code>, the number of routes from the start to cell (r, c), row by row with loops: a rock cell has 0 routes, the start has 1 (unless it is a rock), and any other cell has the routes from the cell above plus the routes from the cell to the left. A 3 by 3 grid with no rocks has 6 routes; with a rock in the middle, 2.</p>`,
+            starter: `static long paths(boolean[][] rock) {\n    int rows = rock.length, cols = rock[0].length;\n    long[][] ways = new long[rows][cols];\n    // fill ways row by row, left to right\n    return ways[rows - 1][cols - 1];\n}`,
+            solution: `static long paths(boolean[][] rock) {\n    int rows = rock.length, cols = rock[0].length;\n    long[][] ways = new long[rows][cols];\n    for (int r = 0; r < rows; r++) {\n        for (int c = 0; c < cols; c++) {\n            if (rock[r][c]) ways[r][c] = 0;\n            else if (r == 0 && c == 0) ways[r][c] = 1;\n            else ways[r][c] = (r > 0 ? ways[r - 1][c] : 0) + (c > 0 ? ways[r][c - 1] : 0);\n        }\n    }\n    return ways[rows - 1][cols - 1];\n}`,
+            hints: ['Three cases for each cell: a rock (0), the start (1), and the rest (from above plus from the left).', 'The top row has no cell above it and the left column no cell to the left: count those as 0, for example with (r > 0 ? ways[r - 1][c] : 0).', 'Use long: the 18 by 18 grid has more than two billion routes.'],
+            tests: [
+              { setup: '        boolean[][] g = new boolean[3][3];', call: 'paths(g)', expect: '6', name: '3 by 3, no rocks' },
+              { setup: '        boolean[][] g = new boolean[3][3];\n        g[1][1] = true;', call: 'paths(g)', expect: '2', name: 'a rock in the middle' },
+              { setup: '        boolean[][] g = new boolean[2][3];\n        g[0][1] = true;\n        g[1][1] = true;', call: 'paths(g)', expect: '0', name: 'a wall of rocks: no route' },
+              { setup: '        boolean[][] one = new boolean[1][1];\n        boolean[][] blocked = new boolean[1][1];\n        blocked[0][0] = true;', call: 'paths(one) + " " + paths(blocked)', expect: '1 0', name: 'one cell, free and blocked' },
+              { setup: '        boolean[][] g = new boolean[4][5];\n        g[0][1] = true;\n        g[2][2] = true;\n        g[1][3] = true;', call: 'paths(g)', expect: '3', name: 'three rocks' },
+              { setup: '        boolean[][] g = new boolean[18][18];', call: 'paths(g)', expect: '2333606220', name: '18 by 18, the answer of lesson 8' },
+              { setup: '        boolean[][] g = new boolean[30][30];\n        for (int i = 1; i < 29; i += 3) g[i][(i * 7) % 30] = true;', call: 'paths(g)', expect: '13875033601426784', name: '30 by 30 with ten rocks' }
+            ],
+            failTip: 'If a rock in the middle still gives 6, the rock cells are not being set to 0 before they are added into their neighbours. If the top row or left column throws an exception, a cell is reading ways[-1][c] or ways[r][-1]: treat the missing neighbour as 0.',
+            followup: 'Lesson 8’s memo used 0 for "not yet computed". With rocks, 0 is also a real answer. How would you change the memo version so that it still works, and which version do you prefer now?'
+          }
+        },
+        `<div class="recap"><h3>Unit four in a few lines</h3><ul>
+<li>Dynamic programming stores the answers to overlapping subproblems in a table and fills it so that every cell's inputs are ready: fewest coins, the longest common subsequence, routes round rocks. A table does the memo's work without its deep recursion; the answer is read back by walking from the last cell.</li>
+<li>A greedy algorithm takes the best-looking step and never goes back. It is right when an exchange argument proves it (the booking that ends first, the cheapest edge across a cut) and can be wrong otherwise (coins of 1, 3 and 4).</li>
+<li>A minimum spanning tree connects every vertex with least total cost. Kruskal sorts the edges and uses union-find to skip loops; Prim grows one tree with a priority queue, like Dijkstra but keyed by one edge's cost.</li>
+<li>Balanced search trees keep O(log n) height whatever the order of arrival, by rotating after changes: AVL trees keep heights within one, red-black trees use colours. Java's TreeMap is a red-black tree.</li>
 <li>Next: a project that uses a hash table, a sort and a heap on one problem, the busiest words in a text.</li>
 </ul></div>`
       ]
@@ -3279,7 +4044,7 @@ public class Main {
         System.out.println(Arrays.toString(top));
     }
 }`, predict: true, long: true, caption: `The heap never holds more than 3 words. &ldquo;the&rdquo; has 4. &ldquo;and&rdquo; and &ldquo;cat&rdquo; have 2 each, and &ldquo;and&rdquo; is earlier in the alphabet, so it ranks first of the two. The three words with 1 (bird, dog, saw) are thrown away one at a time as better ones arrive. The heap gives the worst first, so the answer is filled from the end of the array backwards.` },
-        { check: 'You have d different words and want the top k. What does the heap plan cost after the counting?', skill: 'top-k', options: ['O(d log k)', 'O(d log d)', 'O(k²)', 'O(d)'], answer: 0, why: 'Each of the d entries is added to a heap that never holds more than k + 1 items, so each add and each poll costs O(log k). Sorting all d entries instead would cost O(d log d), which is more when k is small.', wrong: [, 'That is the cost of sorting every entry. The heap is only ever k items deep, so its operations cost log k, not log d.', 'k is the size of the answer, not the number of operations. Every one of the d entries has to be looked at.', 'Looking at d entries is O(d), but each one also touches the heap, which costs O(log k) each.'] },
+        { check: 'You have d different words and want the top k. What does the heap plan cost after the counting?', skill: 'priority-queue', options: ['O(d log k)', 'O(d log d)', 'O(k²)', 'O(d)'], answer: 0, why: 'Each of the d entries is added to a heap that never holds more than k + 1 items, so each add and each poll costs O(log k). Sorting all d entries instead would cost O(d log d), which is more when k is small.', wrong: [, 'That is the cost of sorting every entry. The heap is only ever k items deep, so its operations cost log k, not log d.', 'k is the size of the answer, not the number of operations. Every one of the d entries has to be looked at.', 'Looking at d entries is O(d), but each one also touches the heap, which costs O(log k) each.'] },
         `<h2>Choosing</h2>
 <table class="growth-table"><thead><tr><th>Plan</th><th>Time to count</th><th>Gives</th><th>Memory</th></tr></thead><tbody>
 <tr><td>Hash table, then sort the entries</td><td>O(n + d log d)</td><td>everything, by count</td><td>d entries</td></tr>
@@ -3288,7 +4053,7 @@ public class Main {
 </tbody></table>
 <p>For the billion-word question: if the text has fewer than a few million different words, the hash table fits in memory and the heap picks the top ten almost for free. If it does not fit, sorting the text in pieces on disk and merging them (lesson 4's merge) is how McIlroy's pipeline scales, which is why it has lasted. The right answer depends on which resource you lack, and you can now say which one each plan spends.</p>
 <p><b>Common mistakes in this project.</b> Using <code>==</code> to compare words; use <code>equals</code>. Forgetting the last run in the sorted-array count. Making the heap hold <em>all</em> the entries, which is a slow sort. Reversing the comparison so the heap throws away the best word. Forgetting a rule for ties: without one, two runs can print the same words in a different order.</p>`,
-        { check: 'In the <code>Word</code> class of the heap plan, <code>compareTo</code> says a word with a smaller count is &ldquo;less&rdquo;. Why does a min-heap of these keep the <em>best</em> k?', skill: 'top-k', options: ['It polls the smallest, which is the worst of the k + 1 held, so the best k stay', 'It sorts the words by count in the end', 'It keeps the k smallest counts', 'It only works if all the counts differ'], answer: 0, why: 'A min-heap gives up its smallest item first. After each add, the smallest of the k + 1 items is the one that cannot be in the top k, so polling it leaves the k best.', wrong: [, 'The heap is never sorted. It only knows its smallest item, which is all it needs.', 'The smallest is thrown away, so the largest counts are the ones that survive.', 'Ties are handled by the second line of compareTo, the alphabet.'] },
+        { check: 'In the <code>Word</code> class of the heap plan, <code>compareTo</code> says a word with a smaller count is &ldquo;less&rdquo;. Why does a min-heap of these keep the <em>best</em> k?', skill: 'priority-queue', options: ['It polls the smallest, which is the worst of the k + 1 held, so the best k stay', 'It sorts the words by count in the end', 'It keeps the k smallest counts', 'It only works if all the counts differ'], answer: 0, why: 'A min-heap gives up its smallest item first. After each add, the smallest of the k + 1 items is the one that cannot be in the top k, so polling it leaves the k best.', wrong: [, 'The heap is never sorted. It only knows its smallest item, which is all it needs.', 'The smallest is thrown away, so the largest counts are the ones that survive.', 'Ties are handled by the second line of compareTo, the alphabet.'] },
         { ex: {
             id: 'ds-12-1', skill: 'map-counting', title: 'The most common word',
             prompt: `<p>Write</p><pre class="code">static String mostCommon(String[] words)</pre><p>that returns the word that occurs most often in <code>words</code>. If several words share the highest count, return the alphabetically first of them. For an empty array return the empty string <code>""</code>. Use a <code>HashMap</code>: the tests include a text of thousands of words.</p>`,
@@ -3328,7 +4093,7 @@ public class Main {
           }
         },
         { ex: {
-            id: 'ds-12-2', skill: 'top-k', title: 'The top k words',
+            id: 'ds-12-2', skill: 'priority-queue', title: 'The top k words',
             prompt: `<p>Complete <code>TopWords.top(words, k)</code>. It returns an array of at most <code>k</code> strings of the form <code>"word count"</code>, the most frequent word first; for equal counts the alphabetically earlier word comes first. <code>Word</code> is given, and its <code>compareTo</code> already makes the <em>worse</em> word the smaller. Count with a <code>HashMap</code> and keep only the best <code>k</code> in a <code>PriorityQueue&lt;Word&gt;</code>. Do not sort.</p>`,
             classes: true,
             prelude: 'import java.util.*;\n',

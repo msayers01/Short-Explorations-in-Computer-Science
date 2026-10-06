@@ -198,7 +198,7 @@
         { f: 'swe', t: 'Divide-and-conquer algorithms such as merge sort, quicksort and the Fast Fourier Transform are recursive.' }
       ],
       jobs: ['Compiler engineer', 'Game AI programmer', 'Backend developer'],
-      learn: ['python/13', 'lisp/4', 'lisp/8', 'dsa/8', 'cpp/4', 'java/4'],
+      learn: ['python/13', 'lisp/4', 'lisp/8', 'dsa/8', 'dsa/15', 'cpp/4', 'java/4'],
       teach: 'Hook: two mirrors facing each other, or a set of nesting dolls. Where is the base case? What would happen without one?'
     },
     {
@@ -213,7 +213,7 @@
         { f: 'games', t: 'Characters in games find their way around a level with A* search on a grid or a "navigation mesh".' }
       ],
       jobs: ['Network engineer', 'Penetration tester', 'Backend developer', 'Game AI programmer'],
-      learn: ['math/6', 'dsa/13'],
+      learn: ['math/6', 'dsa/13', 'dsa/16'],
       teach: 'Activity: draw the classroom friendships (or the school\'s hallways) as a graph. Find the shortest path between two points by breadth-first search, one ring at a time.'
     },
     {
@@ -228,7 +228,7 @@
         { f: 'data', t: 'Decision trees, and "forests" of many of them, are among the most widely used machine-learning models for tables of data.' }
       ],
       jobs: ['Database engineer', 'Compiler engineer', 'Web developer', 'Machine-learning engineer'],
-      learn: ['shell/1', 'math/6', 'dsa/11', 'lisp/8', 'lisp/16'],
+      learn: ['shell/1', 'math/6', 'dsa/11', 'dsa/17', 'lisp/8', 'lisp/16'],
       teach: 'Hook: open a computer\'s file browser and follow a path such as /home/student/projects down from the root. Every folder has exactly one parent. Why can a folder not be inside itself?'
     },
     {

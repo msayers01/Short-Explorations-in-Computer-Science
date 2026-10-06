@@ -1123,7 +1123,7 @@
 <li>Clustering: build the tree, then remove its k − 1 longest roads, and k groups of close points are left (single-linkage clustering).</li>
 <li>An approximate travelling salesperson tour: walk round the minimum spanning tree and skip towns already visited. When distances obey the triangle inequality, the tour is at most twice as long as the best one (see the <a href="#/algorithms/tour">untangle the tour</a> demo).</li>
 </ul>`,
-    taught: [{ href: '#/dsa/13', text: 'SC 107, Graphs' }, { href: '#/dsa/12', text: 'SC 107, Heaps and priority queues' }, { href: '#/math/6', text: 'SC 104, Graphs and paths (trees)' }]
+    taught: [{ href: '#/dsa/16', text: 'SC 107, Greedy choices and minimum spanning trees' }, { href: '#/dsa/13', text: 'SC 107, Graphs' }, { href: '#/dsa/12', text: 'SC 107, Heaps and priority queues' }, { href: '#/math/6', text: 'SC 104, Graphs and paths (trees)' }]
   });
 
   // ================================================================== tests (node test_algos.js)
