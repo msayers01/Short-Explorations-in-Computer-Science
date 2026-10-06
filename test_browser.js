@@ -623,6 +623,13 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   const realLinks = await page.evaluate(() => [...document.querySelectorAll('main a[href^="#/"]')].map((a) => a.getAttribute('href')).filter((h) => /^#\/[a-z]+\/\d+/.test(h)));
   const badLinks = await page.evaluate((hs) => hs.filter((h) => { const [, c, n] = h.match(/^#\/([a-z]+)\/(\d+)/); const course = window.COURSES.find((x) => x.id === c); return !course || !course.lessons[+n - 1]; }), realLinks);
   check('real world: the page lists topics, and every lesson it links to exists', realLinks.length >= 20 && badLinks.length === 0, badLinks.slice(0, 5));
+  // ---- the later figures of SC 104 and SC 107 (widgets_math.js, widgets_dsa.js): each draws, and stepping it to the end gives the lesson's answer
+  {
+    const figEnd = async (hash, nth, finish) => { await goto(hash); const f = page.locator('.fig').nth(nth); await f.scrollIntoViewIfNeeded(); if (finish) { const b = f.locator('button:has-text("Finish")'); if (await b.count()) await b.click(); } return { svg: await f.locator('svg').count(), text: await f.innerText() }; };
+    const lcs = await figEnd('#/dsa/15', 0, true), kr = await figEnd('#/dsa/16', 0, true), pr = await figEnd('#/dsa/16', 1, true), avl = await figEnd('#/dsa/17', 0, false), bd = await figEnd('#/math/16', 0, false), rt = await figEnd('#/math/18', 0, false);
+    check('later figures: the LCS table ends at HMAN, Kruskal and Prim at a total cost of 22, and the AVL, birthday and recursion-tree figures draw',
+      /answer: HMAN/.test(lcs.text) && /total cost: 22/.test(kr.text) && /total cost: 22/.test(pr.text) && avl.svg > 0 && /50\.7%/.test(bd.text) && rt.svg > 0, { lcs: lcs.text.slice(0, 80), kr: kr.text.slice(0, 80), bd: bd.text.slice(0, 80) });
+  }
   // ---- standards: the page lists them with their lessons, filters work, and a lesson shows its own standards
   await goto('#/standards');
   const stdInfo = await page.evaluate(() => {

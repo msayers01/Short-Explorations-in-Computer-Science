@@ -85,6 +85,8 @@ const scripts = [
   'src/backup.js',
   'src/review.js',     // spaced review (#/today) and the skills map
   'src/widgets.js',
+  'src/widgets_dsa.js',    // SC 107's later figures (widgets.js's helpers through WIDGET_KIT)
+  'src/widgets_math.js',   // SC 104's later figures
   'src/portfolio.js',
   'src/classroom.js',
   'src/ojibwe.js',

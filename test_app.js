@@ -55,6 +55,9 @@ console.error = quiet;
   check('INT_MAX is accepted', g('2147483647', '2147483647'), true);
   check('INT_MAX - 1 is not', g('2147483647', '2147483646'), false);
   check('a decimal keeps its tolerance', g('0.3333333333', '0.33333333333'), true);
+  check('2ⁿ and 2**n are 2^n', [g('2^n', '2ⁿ'), g('2^n', '2**n'), g('O(2^n)', 'O(2ⁿ)')].join(), 'true,true,true');
+  check('log(n) is log n', [g('log n', 'log(n)'), g('n log n', 'n log(n)'), g('n log n', 'n  log(n)'), g('O(log n)', 'O(log(n))'), g('log2 n', 'log2(n)')].join(), 'true,true,true,true,true');
+  check('but n is not n^2', g('n^2', 'n'), false);
 }
 
 // the Real world page: every topic is in exactly one theme, ids are unique, every field is known, and every lesson link names a real lesson

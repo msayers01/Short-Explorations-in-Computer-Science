@@ -74,7 +74,7 @@ site/
     course_python.js     SC 101 (13 lessons)   ─┐
     course_lisp.js       SC 102 (16 lessons)    │ each pushes one course object onto window.COURSES
     course_cpp.js        SC 103 (11 lessons)    │
-    course_math.js       SC 104 (13 lessons)   ─┤
+    course_math.js       SC 104 (20 lessons)   ─┤
     course_modern.js     SC 105 (runtime: 'full') ─┘
     style.css            design tokens, layout, course accents, every component's styles
     cppstep.js           C++ memory stepper → window.CPPSTEP { trace, render, describe } (uses JSCPP's debugger)
@@ -104,7 +104,8 @@ site/
     guide.js             the teacher guide (one HTML string) → window.GUIDE; build.js also writes dist/teacher-guide.html
     qr.js                QR encoder → window.QR
     teach.js             assignments / submissions / grade book → window.TEACH
-    widgets.js           interactive SVG figures → window.WIDGETS[name](mount, block, course)
+    widgets.js           interactive SVG figures → window.WIDGETS[name](mount, block, course); its helpers → window.WIDGET_KIT
+    widgets_dsa.js, widgets_math.js   SC 107's and SC 104's later figures (dptable, mst, avl; birthday, rectree), added to WIDGETS
     review.js            spaced review (#/today) and the skills map → window.REVIEW (node: test_review.js)
     portfolio.js         student portfolio page (#/portfolio) → window.PORTFOLIO
     classroom.js         classroom (projector) mode → window.CLASSROOM

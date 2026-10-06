@@ -128,7 +128,7 @@
         { f: 'web', t: 'Caches keep recent answers so a site does not have to work them out again; they are hash tables keyed by the question. Memcached and Redis are well-known examples.' }
       ],
       jobs: ['Backend developer', 'Security engineer', 'DevOps engineer', 'Database engineer'],
-      learn: ['python/11', 'java/13', 'modern/8', 'math/13'],
+      learn: ['python/11', 'java/13', 'modern/8', 'dsa/9', 'math/13'],
       teach: 'Hook: explain why "Forgot your password?" sends a reset link instead of your old password. (The site does not know it: it only kept a hash.)'
     },
     {
@@ -142,7 +142,7 @@
         { f: 'eng', t: 'The Fast Fourier Transform (1965) does in about n log n steps what took n² before; it is used in audio, radio, medical imaging and more.' }
       ],
       jobs: ['Backend developer', 'Performance engineer', 'Site reliability engineer', 'Data engineer'],
-      learn: ['dsa/1', 'math/13', 'lisp/6', 'python/14'],
+      learn: ['dsa/1', 'math/13', 'math/18', 'lisp/6', 'python/14'],
       teach: 'Activity: time a program on n and on 2n items (the doubling experiment). Ask students to predict the second time before running it.'
     },
     {
@@ -198,7 +198,7 @@
         { f: 'swe', t: 'Divide-and-conquer algorithms such as merge sort, quicksort and the Fast Fourier Transform are recursive.' }
       ],
       jobs: ['Compiler engineer', 'Game AI programmer', 'Backend developer'],
-      learn: ['python/13', 'lisp/4', 'lisp/8', 'dsa/8', 'cpp/4', 'java/4'],
+      learn: ['python/13', 'lisp/4', 'lisp/8', 'dsa/8', 'dsa/15', 'cpp/4', 'java/4'],
       teach: 'Hook: two mirrors facing each other, or a set of nesting dolls. Where is the base case? What would happen without one?'
     },
     {
@@ -213,7 +213,7 @@
         { f: 'games', t: 'Characters in games find their way around a level with A* search on a grid or a "navigation mesh".' }
       ],
       jobs: ['Network engineer', 'Penetration tester', 'Backend developer', 'Game AI programmer'],
-      learn: ['math/6', 'dsa/13'],
+      learn: ['math/6', 'dsa/13', 'dsa/16'],
       teach: 'Activity: draw the classroom friendships (or the school\'s hallways) as a graph. Find the shortest path between two points by breadth-first search, one ring at a time.'
     },
     {
@@ -228,7 +228,7 @@
         { f: 'data', t: 'Decision trees, and "forests" of many of them, are among the most widely used machine-learning models for tables of data.' }
       ],
       jobs: ['Database engineer', 'Compiler engineer', 'Web developer', 'Machine-learning engineer'],
-      learn: ['shell/1', 'math/6', 'dsa/11', 'lisp/8', 'lisp/16'],
+      learn: ['shell/1', 'math/6', 'dsa/11', 'dsa/17', 'lisp/8', 'lisp/16'],
       teach: 'Hook: open a computer\'s file browser and follow a path such as /home/student/projects down from the root. Every folder has exactly one parent. Why can a folder not be inside itself?'
     },
     {
@@ -326,7 +326,7 @@
         { f: 'data', t: 'Machine learning shuffles its data and starts from random weights; fixing the seed makes an experiment repeatable.' }
       ],
       jobs: ['Data scientist', 'Quantitative analyst', 'Game designer', 'Cryptographer'],
-      learn: ['python/12', 'cpp/11', 'lisp/13'],
+      learn: ['python/12', 'cpp/11', 'lisp/13', 'math/16', 'math/17'],
       teach: 'Hook: ask the class to write down a "random" list of 20 coin flips, then flip a real coin 20 times. Which list has the longer runs? People are bad random generators, and so are simple formulas.'
     },
     {
@@ -392,7 +392,7 @@
         { f: 'sec', t: 'Simple substitution ciphers like Caesar\'s fall to letter counting (frequency analysis), a method described by the scholar al-Kindi in the 9th century.' }
       ],
       jobs: ['Cryptographer', 'Security engineer', 'Payments developer'],
-      learn: ['math/4', 'math/16', 'python/16', 'computer/10', 'cpp/13'],
+      learn: ['math/4', 'math/20', 'math/17', 'python/16', 'computer/10', 'cpp/13'],
       teach: 'Hook: check the last digit of an ISBN-10 from a book in the room (the instructions are short), or a test card number with the Luhn check. What kinds of typing mistake does it catch?'
     },
     {

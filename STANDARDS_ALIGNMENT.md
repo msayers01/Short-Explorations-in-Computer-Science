@@ -123,7 +123,11 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 | 13. Counting steps | 3B-AP-11 |
 | 14. Easy to check, hard to find | 3B-AP-11 |
 | 15. Checkpoint three | 3B-AP-11 |
-| 16. Project: a lock made of arithmetic | 2-NI-06, 3A-NI-06, 3B-AP-10, 3B-NI-04 |
+| 16. Chance, counted | 3B-DA-07, 6.1.2.3, 7.1.2.2, 7.1.2.4, 7.1.2.5, 7.1.2.6, 9.1.2.2, 9.1.2.3 |
+| 17. Expected value and algorithms that flip coins | 3B-AP-10, 3B-AP-11, 3B-DA-07 |
+| 18. Sums and recurrences | 3B-AP-11, 3B-AP-13, 9.2.4.7, 9.3.7.4 |
+| 19. Checkpoint four | 3B-AP-10, 3B-AP-11, 3B-DA-07 |
+| 20. Project: a lock made of arithmetic | 2-NI-06, 3A-NI-06, 3B-AP-10, 3B-NI-04 |
 
 ### SC 105 Modern C++
 
@@ -178,7 +182,11 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 | 12. Heaps and priority queues | 3B-AP-12, 3B-AP-11, 3B-AP-10 |
 | 13. Graphs | 3B-AP-12, 3B-AP-10, 3B-AP-11 |
 | 14. Checkpoint: trees, heaps, graphs | 3B-AP-10, 3B-AP-11, 3B-AP-12, 3B-AP-13 |
-| 15. Project: the busiest words | 3B-AP-12, 3B-AP-11, 3A-DA-10 |
+| 15. Dynamic programming | 3A-AP-15, 3B-AP-11, 3B-AP-12, 3B-AP-13 |
+| 16. Greedy choices and minimum spanning trees | 3B-AP-10, 3B-AP-11, 3B-AP-12 |
+| 17. Balanced search trees | 3B-AP-12, 3B-AP-11, 3B-AP-13 |
+| 18. Checkpoint: tables, greedy choices, balanced trees | 3A-AP-15, 3B-AP-10, 3B-AP-11, 3B-AP-12, 3B-AP-13 |
+| 19. Project: the busiest words | 3B-AP-12, 3B-AP-11, 3A-DA-10 |
 
 ### SC 108 The Command Line
 
@@ -217,7 +225,7 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 | **2-CS-02** Design projects combining hardware and software to collect and exchange data | SC 099 L1, SC 099 L3, SC 099 L5, SC 099 L8 |  |
 | **2-NI-04** Model the role of protocols in sending data across networks | SC 099 L8, SC 099 L9 |  |
 | **2-NI-05** Explain how physical and digital security protect information | SC 099 L10 |  |
-| **2-NI-06** Apply several methods of information protection and model how well each works | SC 099 L10, SC 101 L16, SC 104 L16 |  |
+| **2-NI-06** Apply several methods of information protection and model how well each works | SC 099 L10, SC 101 L16, SC 104 L20 |  |
 | **2-DA-07** Represent data using multiple encoding schemes | SC 099 L2, SC 099 L6 |  |
 | **2-DA-08** Collect data with computational tools and transform it | SC 108 L3 |  |
 | **2-DA-09** Refine computational models based on the data they generate | SC 101 L12, SC 103 L11, SC 109 L6 |  |
@@ -236,13 +244,13 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 | **3A-CS-03** Develop guidelines for systematic troubleshooting | SC 101 L9, SC 103 L9, SC 103 L10, SC 106 L12, SC 106 L14 |  |
 | **3A-NI-04** Evaluate scalability and reliability of networks (routers, switches, servers, topology, addressing) | SC 099 L8 |  |
 | **3A-NI-05** Give examples of how malware and attacks affect sensitive data | SC 099 L10 |  |
-| **3A-NI-06** Recommend security measures for scenarios (efficiency, feasibility, ethics) | SC 104 L16 |  |
+| **3A-NI-06** Recommend security measures for scenarios (efficiency, feasibility, ethics) | SC 104 L20 |  |
 | **3A-DA-09** Translate between bit representations of characters, numbers, images | SC 099 L2, SC 099 L6, SC 099 L9, SC 101 L16, SC 103 L8 |  |
-| **3A-DA-10** Evaluate tradeoffs in how data is organized and where it is stored | SC 099 L3, SC 099 L5, SC 101 L6, SC 101 L11, SC 105 L8, SC 105 L9, SC 106 L13, SC 106 L14, SC 107 L1, SC 107 L5, SC 107 L6, SC 107 L9, SC 107 L10, SC 107 L15, SC 108 L2 |  |
+| **3A-DA-10** Evaluate tradeoffs in how data is organized and where it is stored | SC 099 L3, SC 099 L5, SC 101 L6, SC 101 L11, SC 105 L8, SC 105 L9, SC 106 L13, SC 106 L14, SC 107 L1, SC 107 L5, SC 107 L6, SC 107 L9, SC 107 L10, SC 107 L19, SC 108 L2 |  |
 | **3A-DA-12** Create computational models of relationships among data elements | SC 101 L12, SC 101 L15, SC 103 L11, SC 104 L6, SC 104 L7, SC 104 L10, SC 109 L1, SC 109 L2, SC 109 L6 |  |
 | **3A-AP-13** Create prototypes that use algorithms to solve problems | SC 101 L16, SC 105 L10, SC 106 L15, SC 108 L8, SC 108 L9, SC 108 L10 | Bot Arena |
 | **3A-AP-14** Use lists to simplify solutions instead of many simple variables | SC 100 L6, SC 101 L6, SC 101 L7, SC 101 L10, SC 101 L11, SC 101 L15, SC 103 L7, SC 105 L2, SC 105 L5, SC 106 L6, SC 106 L8, SC 106 L10 |  |
-| **3A-AP-15** Justify the choice of control structures and discuss tradeoffs | SC 101 L3, SC 101 L4, SC 101 L5, SC 102 L3, SC 102 L5, SC 103 L2, SC 103 L3, SC 103 L5, SC 106 L2, SC 106 L3 |  |
+| **3A-AP-15** Justify the choice of control structures and discuss tradeoffs | SC 101 L3, SC 101 L4, SC 101 L5, SC 102 L3, SC 102 L5, SC 103 L2, SC 103 L3, SC 103 L5, SC 106 L2, SC 106 L3, SC 107 L15, SC 107 L18 |  |
 | **3A-AP-17** Decompose problems using procedures, modules and/or objects | SC 101 L8, SC 101 L10, SC 102 L2, SC 102 L5, SC 102 L9, SC 102 L13, SC 103 L4, SC 105 L3, SC 105 L4, SC 105 L5, SC 105 L6, SC 105 L9, SC 106 L4, SC 106 L9, SC 106 L11, SC 106 L14, SC 108 L10 |  |
 | **3A-AP-18** Build artifacts from procedures, data+procedures, or interrelated programs | SC 101 L8, SC 102 L2, SC 103 L4, SC 105 L4, SC 106 L4, SC 108 L4, SC 108 L6, SC 108 L7 |  |
 | **3A-AP-21** Evaluate and refine artifacts to make them more usable and accessible |  | Code Lab |
@@ -252,15 +260,15 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 | **3B-CS-01** Categorize the roles of operating system software | SC 099 L3, SC 099 L4, SC 099 L5, SC 108 L1, SC 108 L2, SC 108 L7, SC 108 L8, SC 108 L9 |  |
 | **3B-CS-02** Illustrate how hardware implements logic, input and output | SC 099 L2, SC 099 L7, SC 104 L1, SC 104 L5, SC 104 L7, SC 104 L10 |  |
 | **3B-NI-03** Describe issues that affect network functionality | SC 099 L8 |  |
-| **3B-NI-04** Compare ways developers protect devices and information from unauthorized access | SC 104 L16 |  |
+| **3B-NI-04** Compare ways developers protect devices and information from unauthorized access | SC 104 L20 |  |
 | **3B-DA-05** Use data analysis tools to find patterns in data from complex systems | SC 101 L16, SC 104 L8, SC 104 L10, SC 108 L3, SC 108 L4, SC 108 L5, SC 109 L2, SC 109 L7 |  |
-| **3B-DA-07** Evaluate how well models and simulations test and refine hypotheses | SC 101 L12, SC 103 L11, SC 109 L3, SC 109 L4 |  |
+| **3B-DA-07** Evaluate how well models and simulations test and refine hypotheses | SC 101 L12, SC 103 L11, SC 104 L16, SC 104 L17, SC 104 L19, SC 109 L3, SC 109 L4 |  |
 | **3B-AP-08** Describe how artificial intelligence drives software and physical systems | SC 109 L1, SC 109 L4, SC 109 L5, SC 109 L8 |  |
 | **3B-AP-09** Implement an AI algorithm to play a game or solve a problem | SC 109 L2, SC 109 L5, SC 109 L6, SC 109 L7, SC 109 L8 | Bot Arena |
-| **3B-AP-10** Use and adapt classic algorithms | SC 101 L13, SC 101 L14, SC 101 L15, SC 102 L11, SC 102 L15, SC 103 L12, SC 103 L13, SC 104 L4, SC 104 L5, SC 104 L16, SC 105 L7, SC 105 L9, SC 107 L2, SC 107 L3, SC 107 L4, SC 107 L5, SC 107 L12, SC 107 L13, SC 107 L14 | Algorithms in motion |
-| **3B-AP-11** Evaluate algorithms for efficiency, correctness and clarity | SC 101 L14, SC 101 L15, SC 102 L6, SC 102 L10, SC 102 L14, SC 102 L15, SC 103 L12, SC 103 L13, SC 104 L3, SC 104 L4, SC 104 L5, SC 104 L13, SC 104 L14, SC 104 L15, SC 107 L1, SC 107 L2, SC 107 L3, SC 107 L4, SC 107 L5, SC 107 L9, SC 107 L10, SC 107 L11, SC 107 L12, SC 107 L13, SC 107 L14, SC 107 L15, SC 109 L3 | Algorithms in motion |
-| **3B-AP-12** Compare and contrast fundamental data structures and their uses | SC 101 L6, SC 101 L11, SC 102 L7, SC 102 L8, SC 102 L10, SC 102 L12, SC 102 L14, SC 102 L15, SC 103 L6, SC 103 L7, SC 103 L8, SC 103 L10, SC 104 L2, SC 104 L5, SC 104 L6, SC 104 L10, SC 105 L1, SC 105 L2, SC 105 L5, SC 105 L8, SC 106 L6, SC 106 L8, SC 106 L10, SC 106 L13, SC 107 L1, SC 107 L5, SC 107 L6, SC 107 L7, SC 107 L9, SC 107 L10, SC 107 L11, SC 107 L12, SC 107 L13, SC 107 L14, SC 107 L15, SC 109 L7 |  |
-| **3B-AP-13** Illustrate the flow of execution of a recursive algorithm | SC 101 L13, SC 102 L4, SC 102 L5, SC 102 L6, SC 102 L8, SC 102 L10, SC 104 L3, SC 104 L5, SC 107 L4, SC 107 L5, SC 107 L8, SC 107 L10, SC 107 L11, SC 107 L14 |  |
+| **3B-AP-10** Use and adapt classic algorithms | SC 101 L13, SC 101 L14, SC 101 L15, SC 102 L11, SC 102 L15, SC 103 L12, SC 103 L13, SC 104 L4, SC 104 L5, SC 104 L17, SC 104 L19, SC 104 L20, SC 105 L7, SC 105 L9, SC 107 L2, SC 107 L3, SC 107 L4, SC 107 L5, SC 107 L12, SC 107 L13, SC 107 L14, SC 107 L16, SC 107 L18 | Algorithms in motion |
+| **3B-AP-11** Evaluate algorithms for efficiency, correctness and clarity | SC 101 L14, SC 101 L15, SC 102 L6, SC 102 L10, SC 102 L14, SC 102 L15, SC 103 L12, SC 103 L13, SC 104 L3, SC 104 L4, SC 104 L5, SC 104 L13, SC 104 L14, SC 104 L15, SC 104 L17, SC 104 L18, SC 104 L19, SC 107 L1, SC 107 L2, SC 107 L3, SC 107 L4, SC 107 L5, SC 107 L9, SC 107 L10, SC 107 L11, SC 107 L12, SC 107 L13, SC 107 L14, SC 107 L15, SC 107 L16, SC 107 L17, SC 107 L18, SC 107 L19, SC 109 L3 | Algorithms in motion |
+| **3B-AP-12** Compare and contrast fundamental data structures and their uses | SC 101 L6, SC 101 L11, SC 102 L7, SC 102 L8, SC 102 L10, SC 102 L12, SC 102 L14, SC 102 L15, SC 103 L6, SC 103 L7, SC 103 L8, SC 103 L10, SC 104 L2, SC 104 L5, SC 104 L6, SC 104 L10, SC 105 L1, SC 105 L2, SC 105 L5, SC 105 L8, SC 106 L6, SC 106 L8, SC 106 L10, SC 106 L13, SC 107 L1, SC 107 L5, SC 107 L6, SC 107 L7, SC 107 L9, SC 107 L10, SC 107 L11, SC 107 L12, SC 107 L13, SC 107 L14, SC 107 L15, SC 107 L16, SC 107 L17, SC 107 L18, SC 107 L19, SC 109 L7 |  |
+| **3B-AP-13** Illustrate the flow of execution of a recursive algorithm | SC 101 L13, SC 102 L4, SC 102 L5, SC 102 L6, SC 102 L8, SC 102 L10, SC 104 L3, SC 104 L5, SC 104 L18, SC 107 L4, SC 107 L5, SC 107 L8, SC 107 L10, SC 107 L11, SC 107 L14, SC 107 L15, SC 107 L17, SC 107 L18 |  |
 | **3B-AP-14** Construct solutions from student-created procedures, modules, objects | SC 101 L8, SC 102 L9, SC 102 L10, SC 102 L11, SC 102 L13, SC 102 L15, SC 102 L16, SC 105 L4, SC 105 L6, SC 105 L9, SC 105 L10, SC 106 L9, SC 106 L11, SC 106 L15 |  |
 | **3B-AP-15** Analyze a large problem and find generalizable patterns | SC 102 L16, SC 107 L4, SC 107 L5 |  |
 | **3B-AP-16** Demonstrate code reuse with libraries and APIs | SC 105 L1, SC 105 L2, SC 105 L5, SC 105 L7, SC 106 L7, SC 106 L8, SC 106 L10, SC 106 L13 |  |
@@ -323,20 +331,21 @@ Benchmark codes read grade.strand.standard.benchmark (9 = high school). "Taught"
 
 | Benchmark | Lessons | Fit |
 |---|---|---|
-| **6.1.2.3** Experimental probability from experiments where the theoretical probability is known; make predictions | SC 101 L12, SC 103 L11 | Taught. Simulations compared with the exact probability (dice, the birthday problem). |
-| **7.1.2.2** Approximate a probability from long-run frequency | SC 101 L12, SC 103 L11 | Taught. The lessons try it thousands of times and watch the share settle. |
-| **7.1.2.4** Sample spaces for compound events by decomposing them | SC 104 L2 | In part. Counting rules are taught; sample spaces are not named as such. |
-| **7.1.2.5** Design and use a simulation for compound events | SC 101 L12, SC 103 L11 | In part. Simulations of single dice and the birthday problem; no two-dice or other compound-event simulation. |
-| **7.1.2.6** Probabilities of compound events by lists, tables, trees or simulation | SC 101 L12 | In part. Simulation yes; no tree diagrams or organized-list method. |
+| **6.1.2.3** Experimental probability from experiments where the theoretical probability is known; make predictions | SC 101 L12, SC 103 L11, SC 104 L16 | Taught. Simulations compared with the exact probability (dice, the birthday problem). |
+| **7.1.2.2** Approximate a probability from long-run frequency | SC 101 L12, SC 103 L11, SC 104 L16 | Taught. The lessons try it thousands of times and watch the share settle. |
+| **7.1.2.4** Sample spaces for compound events by decomposing them | SC 104 L2, SC 104 L16 | Taught. Sample spaces of compound events (two dice, repeated throws, rooms of birthdays) built with the product rule. |
+| **7.1.2.5** Design and use a simulation for compound events | SC 101 L12, SC 103 L11, SC 104 L16 | Taught. Simulations of dice, and of rooms of 23 birthdays (a compound event) checked against the exact answer. |
+| **7.1.2.6** Probabilities of compound events by lists, tables, trees or simulation | SC 101 L12, SC 104 L16 | In part. Simulation, and organized lists (a program lists all 36 outcomes of two dice); no tree diagrams. |
 | **7.3.6.3** Evaluate algebraic expressions applying the order of operations | SC 101 L1 | In part. Arithmetic expressions and precedence; not algebraic expressions with exponents and absolute value as such. |
 | **8.1.1.4** Use the equation of a linear model; interpret the slope and intercepts | SC 109 L6 | In part. Fits y = w x by minimizing squared error and reads the slope; no intercept, no bivariate data in context. |
 | **9.1.1.11** Statistical models with linear and exponential functions, including regression; judge fit | SC 109 L6 | In part. Fitting a line and measuring its error; no residuals or correlation coefficient. |
 | **9.1.1.15** Identify and explain misleading uses of data | SC 109 L3 | In part. Accuracy misleads when labels are rare; not about distorted displays. |
-| **9.1.2.2** Events as subsets; Venn diagrams; unions, intersections and complements | SC 104 L2 | In part. Sets, Venn diagrams, union and complement are taught, but not framed as events. |
+| **9.1.2.2** Events as subsets; Venn diagrams; unions, intersections and complements | SC 104 L2, SC 104 L16 | Taught. Sets and Venn diagrams, then events as subsets of a sample space, with "or", "and" and "not" as union, intersection and complement. |
+| **9.1.2.3** Conditional probability and independence | SC 104 L16 | In part. Both defined and used with dice, with independence told apart from mutual exclusion; no two-way tables of data. |
 | **9.2.4.5** if-then statements: inverse, converse and contrapositive | SC 104 L1 | Taught. Taught as implication, converse and contrapositive, with the theorem that an implication equals its contrapositive. |
 | **9.2.4.6** Validity of a logical argument; counterexamples | SC 104 L1, SC 104 L3 | Taught. Counterexamples, and why checking cases is not proving. |
-| **9.2.4.7** Construct logical arguments from definitions and theorems | SC 104 L2, SC 104 L3, SC 104 L4 | Taught. Proofs, including induction and a proof that Euclid’s algorithm is right. |
-| **9.3.7.4** Sequences expressed recursively and by an explicit formula | SC 101 L13 | In part. Recursive definitions (Fibonacci, factorial); no arithmetic or geometric sequences with explicit formulas. |
+| **9.2.4.7** Construct logical arguments from definitions and theorems | SC 104 L2, SC 104 L3, SC 104 L4, SC 104 L18 | Taught. Proofs, including induction and a proof that Euclid’s algorithm is right. |
+| **9.3.7.4** Sequences expressed recursively and by an explicit formula | SC 101 L13, SC 104 L18 | Taught. Recursive definitions (Fibonacci, factorial, the costs of recursive programs) and arithmetic and geometric sequences with explicit formulas for their sums. |
 
 **Benchmarks with no lesson:**
 
@@ -352,7 +361,6 @@ Benchmark codes read grade.strand.standard.benchmark (9 = high school). "Taught"
 - 8.3.7.2 Linear and non-linear visual patterns; the nth term
 - 8.3.7.5 How changing m or b changes the graph of f(x) = mx + b
 - 9.1.1.8 Inferences about a population from random samples, with simulated samples
-- 9.1.2.3 Conditional probability and independence
 - 9.2.3.4 Decomposition to find surface area and volume of solids
 - 9.2.4.14 Sequences of transformations of geometric figures
 - 9.3.5.4 Matrices to represent and manipulate data
