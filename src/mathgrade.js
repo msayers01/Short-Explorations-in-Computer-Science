@@ -17,8 +17,9 @@
 (function () {
   const norm = s => String(s == null ? '' : s).trim().toLowerCase()
     .replace(/[\u2212\u2013\u2014]/g, '-').replace(/\u00d7/g, '*').replace(/\u00b7/g, '*')
-    .replace(/\u00b2/g, '^2').replace(/\u00b3/g, '^3')
-    .replace(/\s+/g, '').replace(/\.$/, '');
+    .replace(/\u00b2/g, '^2').replace(/\u00b3/g, '^3').replace(/\u207f/g, '^n').replace(/\*\*/g, '^')   // n², 2ⁿ and Python's 2**n as n^2, 2^n
+    .replace(/\s+/g, '').replace(/\.$/, '')
+    .replace(/log(_?2)?\(([a-z])\)/g, 'log$1$2');   // log(n), log2(n): the brackets of a one-letter argument do not matter
   const asNum = s => { let t = norm(s); if (/^[-+]?\d{1,3}(,\d{3})+(\.\d*)?$/.test(t)) t = t.replace(/,/g, ''); return /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/.test(t) ? Number(t) : null; };
   const same = (got, want) => {
     const g = norm(got), w = norm(want);
