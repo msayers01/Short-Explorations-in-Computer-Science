@@ -75,6 +75,11 @@ const row = (dir, len, name) => (dir ? 'd----' : '-a---') + '           10/5/202
     eq('powershell -Command', await run('powershell -Command "Get-Content notes.txt | Measure-Object -Line"'), '\nLines Words Characters Property\n----- ----- ---------- --------\n    1                  \n\n', 0);
     eq('pwsh -c failure', await run('pwsh -c "Get-Content nope"; echo $?'), "Get-Content: Cannot find path 'C:\\Users\\student\\nope' because it does not exist.\n1\n");
     eq('pwsh -c exit', await run("pwsh -c 'exit 7'; echo $?"), '7\n');
+    // PowerShell hands a program its arguments as one line: a path with a space and backslashes must arrive as it was (no doubled backslashes)
+    {
+      const { run: r2 } = fresh({ tree: Object.assign({ 'my dir/notes.txt': 'tulip bed\n' }, TREE) });
+      eq('pwsh to findstr: a path with a space', await r2('pwsh -c "findstr /m tulip \'C:\\Users\\student\\my dir\\notes.txt\'"'), 'C:\\Users\\student\\my dir\\notes.txt\n', 0);
+    }
     eq('pwsh -Version', await run('pwsh -Version'), 'PowerShell 7.4.6\n', 0);
     eq('pwsh bad argument', await run('pwsh -Bogus'), "The argument '-Bogus' is not recognized as the name of a script file. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.\n\nUsage: pwsh[.exe] [-Login] [[-File] <filePath> [args]]\n", 64);
     fs.write('/home/student/s.ps1', '"in a script"\nexit 5\n');
@@ -290,6 +295,7 @@ const row = (dir, len, name) => (dir ? 'd----' : '-a---') + '           10/5/202
     eq('find without quotes', await run('find hello notes.txt'), 'FIND: Parameter format not correct\n\n', 2);
     eq('find missing file', await run('find "x" nope.txt'), 'File not found - NOPE.TXT\n\n', 2);
     eq('findstr', await run('findstr o notes.txt'), 'hello\n\n', 0);
+    eq('findstr /m names the one file', await run('findstr /m o notes.txt'), 'notes.txt\n\n', 0);
     eq('findstr several words', await run('findstr "roses hello" notes.txt garden\\flowers.txt'), 'notes.txt:hello\ngarden\\flowers.txt:roses\n\n');
     eq('findstr /i /c:', await run('findstr /i /c:"THE KEY" garden\\shed\\key.txt'), 'the key is under the pot\n\n');
     eq('findstr /n /s', await run('findstr /n /s "o" garden\\*.txt'), 'garden\\flowers.txt:1:roses\ngarden\\shed\\key.txt:1:the key is under the pot\n\n');

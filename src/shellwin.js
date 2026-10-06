@@ -946,7 +946,7 @@
       }
       const list = await readNamed(c, f);
       if (!list.length) { io.err('FINDSTR: Cannot open ' + f + '\n'); code = 2; continue; }
-      for (const [it, shown, isDir] of list) { if (isDir) { io.err('FINDSTR: Cannot open ' + f + '\n'); code = 2; continue; } scan(it.node.d, prefixed ? shown + ':' : ''); }
+      for (const [it, shown, isDir] of list) { if (isDir) { io.err('FINDSTR: Cannot open ' + f + '\n'); code = 2; continue; } scan(it.node.d, prefixed || o.m ? shown + ':' : ''); }   // /m prints the file's name even when there is only one file
     }
     return found ? 0 : code || 1;
   }
@@ -2148,7 +2148,10 @@
     if (direct) ctx.flush();
     let buf = '';
     const nio = Object.assign({}, io, { out: direct ? io.out : (s) => { buf += s; if (buf.length > LIMITS.out) throw new WinStop('output', 1); }, err: (s) => io.err(s), tty: !!io.tty && direct, stdin: stdinText !== null ? { text: stdinText, pos: 0 } : null, piped: !direct });
-    const quote = (a) => (/[\s"]/.test(a) || a === '' ? '"' + a.replace(/"/g, '\\"') + '"' : a);
+    // the arguments go to a command of this file as one line, read back by words(): there " only groups (it is removed) and a backslash is an
+    // ordinary character, so an argument with a space is put in quotes as it is, and a " inside one cannot be passed (cmd has no escape for
+    // it; it is left out, as the grouping would leave it out). No backslash escaping: words() would keep the backslashes.
+    const quote = (a) => (/[\s"]/.test(a) || a === '' ? '"' + a.split('"').join('') + '"' : a);
     let code;
     const fake = { kind: 'ps', run: st.run, env: st.env, el: 0, dirs: [], echo: true, exited: null, noBlank: false };
     if (key === 'cmd') code = await startCmd(sh, st, args.map(quote).join(' '), nio);
