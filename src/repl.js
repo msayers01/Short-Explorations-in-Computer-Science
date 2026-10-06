@@ -56,7 +56,7 @@
   }
 
   async function python(o) {
-    o.out('Python 3.9.0 (Skulpt, in your browser)\nType exit() or press Ctrl+D on an empty line to leave. Each entry runs again with the ones before it, so they should not take long.\n');
+    o.out('Python 3.7 (Skulpt, in your browser)\nType exit() or press Ctrl+D on an empty line to leave. Each entry runs again with the ones before it, so they should not take long.\n');
     const seed = Math.floor(Math.random() * 1e9);
     const kept = [];   // { text, answers: [lines given to input()] }
     let shown = 0;     // characters of output already on the screen

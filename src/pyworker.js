@@ -16,8 +16,15 @@
   const post = (m) => { if (isWorker) self.postMessage(m); else parent.postMessage(m, '*'); };
   const listen = (f) => { if (isWorker) self.onmessage = (e) => f(e.data); else addEventListener('message', (e) => { if (e.source === parent) f(e.data); }); };
   // Skulpt's sys has no exit(): it is added to the module's source as it is read. It raises SystemExit, and the run ends with python's status (exitOf).
-  const SYS_EXIT = '\nvar $sysModule=$builtinmodule;$builtinmodule=function(n){var m=$sysModule(n);m.exit=new Sk.builtin.func(function(a){throw new Sk.builtin.SystemExit(a===undefined?Sk.builtin.none.none$:a);});return m;};';
-  const read = (x) => { if (Sk.builtinFiles === undefined || Sk.builtinFiles.files[x] === undefined) throw "File not found: '" + x + "'"; return x === 'src/builtin/sys.js' ? Sk.builtinFiles.files[x] + SYS_EXIT : Sk.builtinFiles.files[x]; };
+  // pylib.js adds sys.platform and sys.stderr the same way.
+  const SYS_EXIT = '\nvar $sysModule=$builtinmodule;$builtinmodule=function(n){var m=$sysModule(n);m.exit=new Sk.builtin.func(function(a){throw new Sk.builtin.SystemExit(a===undefined?Sk.builtin.none.none$:a);});if(self.PYLIB)self.PYLIB.patchSys(m,Sk);return m;};';
+  // Skulpt's library, then the student's own modules in the program's folder (import helper → ./helper.py, pylib.js moduleFile)
+  const read = (x) => {
+    if (Sk.builtinFiles !== undefined && Sk.builtinFiles.files[x] !== undefined) return x === 'src/builtin/sys.js' ? Sk.builtinFiles.files[x] + SYS_EXIT : Sk.builtinFiles.files[x];
+    const own = self.PYLIB ? self.PYLIB.moduleFile(x) : undefined;
+    if (own !== undefined) return own;
+    throw "File not found: '" + x + "'";
+  };
   // sys.exit(): no argument or None is status 0, a whole number is that status (as a byte), anything else is printed (to stderr) with status 1
   function exitOf(e) {
     const a = e.args && e.args.v ? e.args.v : [], v = a.length ? a[0] : Sk.builtin.none.none$;
@@ -28,7 +35,9 @@
 
   function errText(e) {
     let s = e && e.toString ? e.toString() : String(e);
-    if (e && e.traceback && e.traceback.length) { const tb = e.traceback[0]; if (tb && tb.lineno && !/line \d+/.test(s)) s += ' on line ' + tb.lineno; }
+    const at = self.PYLIB ? self.PYLIB.place(e) : '';   // the student's own line, not a line inside json or open() (pylib.js)
+    if (at) s = s.replace(/ on line \d+$/, '') + at;
+    else if (e && e.traceback && e.traceback.length) { const tb = e.traceback[0]; if (tb && tb.lineno && !/line \d+/.test(s)) s += ' on line ' + tb.lineno; }
     return s.replace(/^TimeLimitError: .*$/, 'Time limit exceeded: the program ran for too long. Is there a loop that never ends?');
   }
   // How the step-through shows a value.
@@ -50,6 +59,9 @@
     let buf = '', timer = 0;
     const flush = () => { if (timer) { clearTimeout(timer); timer = 0; } if (buf) { post({ t: 'out', id, text: buf }); buf = ''; } };
     const output = (s) => { buf += s; if (buf.length >= 4096) flush(); else if (!timer) timer = setTimeout(flush, 0); };
+    // the files the program sees (pylib.js): a copy, whose changes go back to the page with 'done'; sys.stderr goes to the page as fd 2
+    PYLIB.begin(msg.fs || null);
+    PYLIB.onErr = (s) => { flush(); post({ t: 'out', id, text: String(s), fd: 2 }); };
     const inputs = msg.stdin != null ? String(msg.stdin).split('\n') : null;
     const inputfun = (prompt) => {
       if (inputs) { if (msg.promptsOut && prompt != null) output(String(prompt)); const v = inputs.shift(); return v === undefined ? '' : v; }   // python prints the prompt even when the input comes from a file (the terminal asks for that)
@@ -77,7 +89,7 @@
     }
     Sk.misceval.asyncToPromise(() => Sk.importMainWithBody('<stdin>', false, String(msg.code), true), handlers)
       .then(() => ({ err: null, exit: 0 }), (e) => e instanceof Sk.builtin.SystemExit ? exitOf(e) : { err: errText(e), exit: 1 })
-      .then((r) => { flush(); cur = null; post({ t: 'done', id, err: r.err, exit: r.exit }); });
+      .then((r) => { flush(); cur = null; post({ t: 'done', id, err: r.err, exit: r.exit, files: PYLIB.changes() }); });
   }
 
   // A program that stays running (Bot Arena persistent mode): input() waits, in this worker, for the next turn (src/botio.js), and the
@@ -85,6 +97,7 @@
   function startBot(msg) {
     const id = msg.id, io = BOTIO.make(msg.sab, post, id);
     cur = { id, waitInput: null, waitStep: null, fast: false };
+    PYLIB.begin(null);
     let pending = '';
     const inputfun = () => {   // one line; '' when the input has ended
       for (;;) {
@@ -111,6 +124,9 @@
   });
 
   // Fail closed: if the lockdown of the dangerous modules did not happen, no program may run.
-  if (typeof SANDBOX === 'undefined' || !SANDBOX.removed) post({ t: 'fatal', error: 'The Python sandbox could not be locked down.' });
-  else post({ t: 'ready' });
+  if (typeof SANDBOX === 'undefined' || !SANDBOX.removed) { post({ t: 'fatal', error: 'The Python sandbox could not be locked down.' }); return; }
+  // files, os, json, functools, heapq, typing, and open() and OSError as Python 3 has them (pylib.js); compiled once, without breakpoints
+  try { PYLIB.install(Sk); Sk.configure({ output: () => {}, read, __future__: Sk.python3 }); PYLIB.setup(Sk); }
+  catch (e) { post({ t: 'fatal', error: 'The Python sandbox could not be prepared (' + errText(e) + ').' }); return; }
+  post({ t: 'ready' });
 })();

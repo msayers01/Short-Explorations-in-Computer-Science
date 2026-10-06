@@ -6,7 +6,8 @@
 
    Everything that comes back from a sandbox is untrusted data: it is checked, and shown only as text.
 
-   window.PYRUN.run(code, {stdin, execLimit, turtle:{mount,width,height}, onOutput, onInput, args, argv0, promptsOut}) → Promise<{out, err, exit}>
+   window.PYRUN.run(code, {stdin, execLimit, turtle:{mount,width,height}, onOutput, onErrOutput, onInput, args, argv0, promptsOut, fs}) → Promise<{out, err, exit, files}>
+     (fs: the files the program sees, pylib.js begin(); files: what it changed; onErrOutput: sys.stderr, else onOutput)
                                                                   (promptsOut: input()'s prompt is printed even when stdin is given, as python does: the terminal)
    window.PYRUN.trace(code, {…, onStep}) → {done, next(), finish(), stop()}        window.PYRUN.cancel()
    window.CPPRUN.run(code, {stdin, onOutput, onInput, maxMs}) → Promise<{out, err}>    window.CPPRUN.trace(code, stdin) → Promise<{trace, err}>
@@ -125,7 +126,11 @@
     function onMessage(r, o, m) {
       if (r.finished || !m || typeof m !== 'object' || m.id !== r.id) return;
       r.last = Date.now();
-      if (m.t === 'out' && typeof m.text === 'string') {
+      if (m.t === 'out' && typeof m.text === 'string' && m.fd === 2) {   // sys.stderr (Python): shown, but not part of the output a grader compares
+        r.errOut = (r.errOut || 0) + m.text.length;
+        if (o.onErrOutput) o.onErrOutput(m.text); else if (o.onOutput) o.onOutput(m.text);
+        if (r.errOut > MAX_OUT) { dropChannel(r.ch); finish(r, { err: 'The program printed more than it was allowed to, so it was stopped.' }); }
+      } else if (m.t === 'out' && typeof m.text === 'string') {
         r.out += m.text;
         if (o.onOutput) o.onOutput(m.text);
         if (r.out.length > MAX_OUT) { dropChannel(r.ch); finish(r, { err: 'The program printed more than it was allowed to, so it was stopped.' }); }
@@ -149,7 +154,7 @@
       } else if (m.t === 'result' && m.trace && typeof m.trace === 'object') {
         r.result = m.trace;
       } else if (m.t === 'done') {
-        finish(r, { err: typeof m.err === 'string' ? m.err.slice(0, 20000) : null, exit: Number(m.exit) || 0, result: r.result, needInput: m.needInput === true });
+        finish(r, { err: typeof m.err === 'string' ? m.err.slice(0, 20000) : null, exit: Number(m.exit) || 0, result: r.result, needInput: m.needInput === true, files: fileChanges(m.files) });
       }
     }
 
@@ -161,6 +166,17 @@
     };
   }
 
+  // What a Python program changed in its copy of the files (pylib.js changes()), as the worker says: only absolute paths and text, bounded.
+  // The terminal applies it through its file system's own checks (shell.js applyChanges); anything else here is dropped.
+  function fileChanges(c) {
+    if (!c || typeof c !== 'object') return null;
+    const okPath = (p) => typeof p === 'string' && p.startsWith('/') && p.length <= 4096;
+    let budget = 2500000;
+    const paths = (a) => (Array.isArray(a) ? a.slice(0, 2000).filter(okPath) : []);
+    const write = Array.isArray(c.write) ? c.write.slice(0, 2000).filter((w) => Array.isArray(w) && okPath(w[0]) && typeof w[1] === 'string' && (budget -= w[1].length) >= 0).map((w) => [w[0], w[1]]) : [];
+    const out = { rm: paths(c.rm), mkdir: paths(c.mkdir), write };
+    return out.rm.length || out.mkdir.length || out.write.length ? out : null;
+  }
   const py = Engine({ srcId: 'py-src', timeoutMessage: 'Time limit exceeded: the program ran for too long. Is there a loop that never ends?' });
   const cpp = Engine({ srcId: 'cpp-src', timeoutMessage: 'Time limit exceeded: the program ran for too long. Is there a loop that never ends?' });
   const java = Engine({ srcId: 'java-src', timeoutMessage: 'Time limit exceeded: the program ran for too long. Is there a loop that never ends?' });
@@ -232,7 +248,7 @@
     const execLimit = opts.execLimit || 6000;
     // A drawing takes as long as its animation, which the browser also slows down while the canvas is off screen: give it more time (Stop is always there).
     const turtle = !!opts.turtle;
-    return { t, totalMs: turtle ? 90000 : execLimit + 1500, idleMs: turtle ? 90000 : 8000, opts, payload: { code: String(code), stdin: opts.stdin == null ? null : String(opts.stdin), args: argList(opts.args), argv0: typeof opts.argv0 === 'string' ? opts.argv0 : 'main.py', promptsOut: opts.promptsOut === true, execLimit, turtle: opts.turtle ? { width: opts.turtle.width, height: opts.turtle.height } : undefined } };
+    return { t, totalMs: turtle ? 90000 : execLimit + 1500, idleMs: turtle ? 90000 : 8000, opts, payload: { code: String(code), stdin: opts.stdin == null ? null : String(opts.stdin), args: argList(opts.args), argv0: typeof opts.argv0 === 'string' ? opts.argv0 : 'main.py', promptsOut: opts.promptsOut === true, execLimit, turtle: opts.turtle ? { width: opts.turtle.width, height: opts.turtle.height } : undefined, fs: opts.fs || undefined } };
   };
   window.PYRUN = {
     run: (code, opts) => py.run(pyJob('run', code, opts)),

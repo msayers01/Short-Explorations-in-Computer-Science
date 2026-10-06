@@ -1398,13 +1398,34 @@
         if (!io.ask) stdin = '';
         else { io.err('(this program reads input: type each value and press Enter; an empty line ends the input)\n'); const lines = []; while (lines.length < 10000) { const l = await io.ask(''); if (l === '' || l == null) break; lines.push(l); } stdin = lines.join('\n') + (lines.length ? '\n' : ''); }
       }
-      const r = await opts.run(bin.lang, bin.src, { stdin: stdin == null ? null : stdin, args, std: bin.std, name, onOutput: (s) => { sh.outBytes += s.length; io.out(s); }, onInput: io.ask ? (p) => io.ask(p) : null });
+      const r = await opts.run(bin.lang, bin.src, { stdin: stdin == null ? null : stdin, args, std: bin.std, name, onOutput: (s) => { sh.outBytes += s.length; io.out(s); }, onError: (s) => { sh.outBytes += s.length; io.err(s); }, onInput: io.ask ? (p) => io.ask(p) : null,
+        fs: bin.lang === 'python' ? sh.filesFor(name) : undefined });
+      if (r && r.files) sh.applyChanges(r.files, io, name);   // what a Python program wrote, made or removed, kept even if it then failed
       if (sh.cancelled) throw new Stop('cancel', 130);
       if (r && r.err) { io.err(r.err.replace(/\n?$/, '\n')); return r.exit || 1; }
       return (r && r.exit) || 0;
     }
     const readsInput = (lang, src) => lang === 'cpp' ? /\b(cin|getline|scanf|getchar)\b/.test(src) : lang === 'c' ? /\b(scanf|getchar|fgets|getline|fgetc|getc|fread|gets)\b/.test(src) : lang === 'java' ? /\bScanner\b|System\.in/.test(src) : lang === 'scheme' ? /\(read\)/.test(src) : /\binput\s*\(/.test(src);
     sh.runProgram = runProgram;
+    // A Python program works on a copy of the files (src/pylib.js): every directory and file, the current directory and the exported
+    // variables. When it ends, what it changed comes back and is applied here through the file system's own checks and limits, in the
+    // order that makes sense: removals, then new folders, then files. A change refused here is reported, as the shell reports a failed write.
+    sh.filesFor = (name) => {
+      const entries = [], env = Object.create(null);
+      const walk = (abs, n) => { if (entries.length >= 5000) return; if (n.t === 'd') { if (abs !== '/') entries.push([abs, 'd']); for (const k of Object.keys(n.c).sort()) walk((abs === '/' ? '' : abs) + '/' + k, n.c[k]); } else entries.push([abs, 'f', n.d]); };
+      walk('/', fs.root);
+      for (const k of sh.exported) if (has(sh.vars, k)) env[k] = String(sh.vars[k]);
+      env.PWD = fs.cwd;
+      const prog = typeof name === 'string' && name !== 'python' ? fs.resolve(name) : null;   // import finds modules beside the program (python -c: here)
+      return { cwd: fs.cwd, home: HOME, env, entries, importDir: prog && fs.isFile(prog) ? prog.slice(0, prog.lastIndexOf('/')) || '/' : fs.cwd };
+    };
+    sh.applyChanges = (c, io, name) => {
+      const tell = (p, e) => io.err(name + ': could not keep ' + tilde(p) + ': ' + (e instanceof FsError ? e.message : String(e && e.message || e)) + '\n');
+      const inside = (p) => typeof p === 'string' && (p.startsWith('/home/') || p.startsWith('/tmp/'));
+      for (const p of (c.rm || []).filter(inside)) { try { const n = fs.stat(p); if (n && n.t === 'd') fs.rmTree(p); else if (n) fs.unlink(p); } catch (e) { tell(p, e); } }
+      for (const p of (c.mkdir || []).filter(inside)) { try { if (!fs.isDir(p)) fs.mkdir(p, true); } catch (e) { tell(p, e); } }
+      for (const w of (c.write || [])) { if (!Array.isArray(w) || !inside(w[0]) || typeof w[1] !== 'string') continue; try { fs.write(w[0], w[1]); } catch (e) { tell(w[0], e); } }
+    };
 
     // ----- the entry point. A line typed at the terminal (io.tty) gets history expansion and aliases, as in an interactive bash; other
     // callers (the grader, the differential tests) get a script's rules. The text is run a line at a time.
@@ -1461,11 +1482,25 @@
     // with spaces and quotes in names escaped; display holds the bare names for a list.
     sh.complete = (line) => {
       if (dialect() && dialect().complete) return dialect().complete(line);
-      const m = line.match(/(?:^|[\s|;&()<>])((?:[^\s|;&()<>\\]|\\.)*)$/);
-      let word = m ? m[1] : line, start = line.length - word.length;
-      let quote = '';
-      if (word[0] === '"' || word[0] === "'") { quote = word[0]; word = word.slice(1); }
-      word = word.replace(/\\(.)/g, '$1');
+      // the word being completed starts after the last separator outside quotes, so a quoted argument such as  -c "print(x)"  is one word
+      // (a closing quote is not the start of a new one); word is its text without quotes and backslashes; quote, a quote still open at the end
+      let start = 0, inQ = '';
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (inQ) { if (c === inQ) inQ = ''; else if (c === '\\' && inQ === '"') i++; continue; }
+        if (c === '\\') { i++; continue; }
+        if (c === '"' || c === "'") inQ = c;
+        else if (/[\s|;&()<>]/.test(c)) start = i + 1;
+      }
+      let word = '';
+      for (let i = start, q = ''; i < line.length; i++) {
+        const c = line[i];
+        if (q) { if (c === q) q = ''; else if (c === '\\' && q === '"' && i + 1 < line.length && /["\\$`]/.test(line[i + 1])) word += line[++i]; else word += c; }
+        else if (c === '"' || c === "'") q = c;
+        else if (c === '\\') { if (i + 1 < line.length) word += line[++i]; }
+        else word += c;
+      }
+      const quote = inQ;
       const before = line.slice(0, start).trim();
       const atCommand = before === '' || /(?:^|[|;&(]|&&|\|\|)\s*$/.test(before) || /\b(sudo|man|help|which|type|xargs|time|command)\s*$/.test(before);
       const cmdWord = (before.match(/(?:^|[|;&(]|&&|\|\|)\s*([^\s|;&()<>]+)[^|;&()]*$/) || [])[1];
@@ -1481,7 +1516,7 @@
           if (!n.startsWith(namePart) || (n.startsWith('.') && !namePart.startsWith('.'))) continue;
           const isDir = fs.isDir(dir === '/' ? '/' + n : dir + '/' + n);
           if (dirsOnly && !isDir) continue;
-          display.push(n + (isDir ? '/' : '')); items.push(quote + dirPart + esc(n) + (isDir ? '/' : quote + ' '));
+          display.push(n + (isDir ? '/' : '')); items.push(quote + esc(dirPart) + esc(n) + (isDir ? '/' : quote + ' '));
         }
       }
       return { start, items, display };
@@ -3061,11 +3096,11 @@
   const CLASS_BYTES = 'Êþº¾\u0000\u0000\u0000A';
   const ELF_BYTES = '\u007fELF\u0002\u0001\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000';
   const className = (src) => { const m = src.match(/public\s+class\s+([A-Za-z_$][\w$]*)/) || src.match(/\bclass\s+([A-Za-z_$][\w$]*)/); return m ? m[1] : null; };
-  def('python python3', { cat: 'run', use: 'python [file.py [arguments]]', desc: 'With no file, start Python\'s interactive shell (>>>; exit() or Ctrl+D leaves). With a file, run a Python program. Its input comes from the keyboard, or from a file with < input.txt; its output can go to a file with > out.txt.',
-    ex: ['python hello.py', 'python game.py < moves.txt', 'python report.py > report.txt'],
+  def('python python3', { cat: 'run', use: 'python [file.py [arguments]]', desc: 'With no file, start Python\'s interactive shell (>>>; exit() or Ctrl+D leaves). With a file, run a Python program. Its input comes from the keyboard, or from a file with < input.txt; its output can go to a file with > out.txt. The program can also read and write the files here itself (open, os), and import a module beside it (import helper finds helper.py). python -c "code" runs the code given.',
+    ex: ['python hello.py', 'python game.py < moves.txt', 'python report.py > report.txt', 'python -c "import os; print(os.listdir())"'],
     async run(args, io, sh) {
       if (args[0] === '-c') { if (args[1] === undefined) { io.err('Argument expected for the -c option\n'); return 2; } return sh.runProgram({ lang: 'python', src: args[1] }, 'python', args.slice(2), io); }
-      if (args[0] === '--version' || args[0] === '-V') { io.out('Python 3.9.0 (Skulpt, in your browser)\n'); return 0; }
+      if (args[0] === '--version' || args[0] === '-V') { io.out('Python 3.7 (Skulpt, in your browser)\n'); return 0; }
       if (!args.length && io.ask && !io.stdin && sh.hooks.repl) return sh.hooks.repl('python', io, sh);   // the interactive shell (src/repl.js)
       if (!args.length || args[0].startsWith('-')) { io.err('python: the interactive Python shell needs the keyboard. Give it a file: python hello.py\n'); return 2; }
       const abs = sh.fs.resolve(args[0]), n = sh.fs.stat(abs);

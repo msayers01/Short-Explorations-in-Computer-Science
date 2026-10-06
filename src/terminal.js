@@ -23,8 +23,14 @@
     const SHELL = window.SHELL;
     let fs = o.fs;
     const stopAll = () => { for (const k of ['PYRUN', 'JAVARUN', 'CPPRUN', 'CLANGRUN']) if (window[k]) window[k].cancel(); };   // a lesson's terminal has no Lab to ask
-    const repl = (lang, io2, sh2) => (window.REPL && window.REPL[lang] ? window.REPL[lang]({ ask: io2.ask, out: io2.out, err: io2.err, Scheme: window.Scheme, cancelled: () => sh2.cancelled,
-      run: (code, p) => lang === 'java' ? window.JAVARUN.run(code, { stdin: '', onOutput: p.onOutput }) : window.PYRUN.run(code, { execLimit: 15000, onOutput: p.onOutput, onInput: p.onInput }) }) : Promise.resolve(127));
+    // Python's >>> runs every entry again from the start, so each run gets the files as they were when it began, and what the entries so
+    // far changed is applied again after each (the same result each time: writing a file twice leaves it as once)
+    const repl = (lang, io2, sh2) => {
+      const base = lang === 'python' && sh2.filesFor ? sh2.filesFor() : undefined;
+      return window.REPL && window.REPL[lang] ? window.REPL[lang]({ ask: io2.ask, out: io2.out, err: io2.err, Scheme: window.Scheme, cancelled: () => sh2.cancelled,
+        run: (code, p) => lang === 'java' ? window.JAVARUN.run(code, { stdin: '', onOutput: p.onOutput })
+          : window.PYRUN.run(code, { execLimit: 15000, onOutput: p.onOutput, onInput: p.onInput, fs: base }).then((r) => { if (r && r.files && sh2.applyChanges) sh2.applyChanges(r.files, io2, 'python'); return r; }) }) : Promise.resolve(127);
+    };
     const hooks = Object.assign({ fs, run, compile, nano, typedInput, repl, cancel: () => { if (o.stop) o.stop(); else stopAll(); } }, o.hooks || {});
     let sh = SHELL.makeShell(hooks);
     if (Array.isArray(o.history)) sh.history = o.history.filter((s) => typeof s === 'string' && s.length < 2000).slice(-SHELL.LIMITS.history);
@@ -165,7 +171,10 @@
     async function run(lang, src, p) {
       const onOutput = (s) => p.onOutput(String(s));
       const args = Array.isArray(p.args) ? p.args.map(String) : [];   // the words after the program's name: sys.argv[1:], main(String[] args)
-      if (lang === 'python') { const r = await window.PYRUN.run(src, { stdin: p.stdin == null ? null : p.stdin, promptsOut: true, execLimit: 15000, args, argv0: typeof p.name === 'string' ? p.name : 'main.py', onOutput, onInput: p.onInput ? (q) => p.onInput(q) : undefined }); return { err: r.err, exit: r.err ? (/^Stopped/.test(r.err) ? 130 : (r.exit || 1)) : (r.exit || 0) }; }
+      if (lang === 'python') {   // with the terminal's files (p.fs, shell.js filesFor); what it changed comes back as files (shell.js applyChanges)
+        const r = await window.PYRUN.run(src, { stdin: p.stdin == null ? null : p.stdin, promptsOut: true, execLimit: 15000, args, argv0: typeof p.name === 'string' ? p.name : 'main.py', onOutput, onErrOutput: p.onError ? (s) => p.onError(String(s)) : undefined, onInput: p.onInput ? (q) => p.onInput(q) : undefined, fs: p.fs });
+        return { err: r.err, exit: r.err ? (/^Stopped/.test(r.err) ? 130 : (r.exit || 1)) : (r.exit || 0), files: r.files };
+      }
       // Java and the teaching C++ read typed input a line at a time as they ask (runner.js); a pipe or a file (< in.txt) is given all at once
       const onInput = p.stdin == null && p.onInput ? (q) => p.onInput(q) : undefined;
       if (lang === 'java') {

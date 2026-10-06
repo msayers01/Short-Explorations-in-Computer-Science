@@ -339,6 +339,12 @@ const eq = (name, r, out, exit) => { check(name + ' output', r.out, out); if (ex
     eq('tab completion escapes spaces', { out: sh.complete('cat my').items.join(','), exit: 0 }, 'my\\ file.txt ');
     eq('tab completion inside quotes', { out: sh.complete('cat "my').items.join(','), exit: 0 }, '"my file.txt" ');
     eq('tab completion after an escaped space', { out: sh.complete('cat my\\ fi').items.join(','), exit: 0 }, 'my\\ file.txt ');
+    // a closing quote does not start a new word: Tab after  python -c "print(x)"  offers nothing (it used to complete the quote as a file name)
+    eq('tab completion after a closed quote', { out: sh.complete('python -c "import sys; print(dir(sys))"').items.join(','), exit: 0 }, '');
+    eq('tab completion after a closed single quote', { out: sh.complete("echo 'a b'").items.join(','), exit: 0 }, '');
+    eq('tab completion in a quoted dir with a space', { out: sh.complete('cat "my f').items.join(','), exit: 0 }, '"my file.txt" ');
+    eq('tab completion of a word glued to a quote', { out: sh.complete('cat m"y f').items.join(','), exit: 0 }, '"my file.txt" ');
+    eq('tab completion: a separator inside quotes is not one', { out: sh.complete('echo "x | ca').items.join(','), exit: 0 }, '');
     eq('tab completion display is bare', { out: sh.complete('ls od').display.join(','), exit: 0 }, 'odd dir/');
     await run('rm "my file.txt"; rmdir "odd dir"');
   }

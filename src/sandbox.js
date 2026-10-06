@@ -10,6 +10,8 @@
 
    lockDown() deletes those files from the standard library Skulpt imports from, so `import document` fails with
    "No module named document". It runs once when this file loads, after Skulpt and before any program can run.
+   It also removes Skulpt's builtin jseval(), which runs JavaScript in the sandbox: nothing outside the sandbox is reachable that way
+   (lockdown.js and the worker see to that), but a Python program has no business writing the sandbox's own messages.
    Exposed as window.SANDBOX (browser) or module.exports (node tests). */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -22,6 +24,7 @@
     Sk = Sk || (typeof globalThis !== 'undefined' ? globalThis.Sk : undefined);
     if (!Sk || !Sk.builtinFiles || !Sk.builtinFiles.files) return 0;
     let n = 0;
+    if (Sk.builtins && Sk.builtins.jseval) { delete Sk.builtins.jseval; delete Sk.builtin.jseval; n++; }
     for (const k of Object.keys(Sk.builtinFiles.files)) {
       const m = /^src\/lib\/([^/.]+)/.exec(k);   // src/lib/document.js, src/lib/urllib/request/__init__.js, src/lib/urllib2.py ...
       if (m && BLOCKED.has(m[1])) { delete Sk.builtinFiles.files[k]; n++; }

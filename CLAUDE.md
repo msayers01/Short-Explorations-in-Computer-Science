@@ -17,6 +17,7 @@ not written down there.
     node test_java.js      # the Java interpreter against what javac/java print (a few seconds)
     node test_typed.js     # typed input (Scanner, cin answered as the program asks), in the real worker sources (a few seconds)
     node test_c.js         # C in the Lab and terminal: the real clang worker in node (compile, run, -std, argv, typed scanf; about 15 s)
+    node test_pylib.js     # Python's files, os, json, functools, heapq in Skulpt against CPython's output (--update records from python3)
     node test_shell.js     # the practice shell: file system, parser, every command, limits, hostile saved copies (a second)
     node test_win.js       # the Windows mode of the shell: cmd and PowerShell (under a second)
     node test_git.js       # the practice git (--real also runs its scenarios through the real git and compares)
@@ -180,6 +181,11 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   virtual file system with caps, saved under `shortcourses.shell.v1`, in backups) and `src/terminal.js` (the Terminal panel in the Code Lab:
   history, Tab completion, nano, `edit`, the `~/lab` mirror). `g++`/`javac` compile through check-only modes of the sandboxes; `./prog`,
   `java`, `python`, `scheme` run through the usual runners. `cmd` and `powershell`/`pwsh` switch it to a Windows dialect over the same files (`src/shellwin.js`, ARCHITECTURE §9f). Not done: terminal tasks in teacher assignments.
+- **Python's files and missing modules** (`src/pylib.js`, ARCHITECTURE §9f, October 2026): a Python program in the terminal works on a copy of
+  the terminal's files (open, os, os.path, import of a helper.py beside it) and its changes are applied back through the shell's file system;
+  json, functools, heapq, typing, sys.platform and sys.stderr (fd 2, never in graded output) are added; Skulpt's `jseval` is removed. In the Lab
+  the Python tabs are the folder (writes reported, not kept); lessons get an empty one. `node test_pylib.js` compares with CPython; after
+  changing pylib.js, `node test_pylib.js --update` re-records from python3 (check the diff of `difftest/pylib-expected.json`).
 - **The practice git** (`src/shellgit.js`, ARCHITECTURE §9f, October 2026): `git` in the shell, added with `SHELL.register` (the old
   "needs the internet" stub no longer names git). init/status/add/rm/mv/restore/commit/log/diff/show/branch/switch/checkout/merge (with
   conflicts)/reset/tag/stash/revert/cherry-pick/blame/clean/config/reflog, `log --graph` (git's graph.c ported, topo order) and a few
