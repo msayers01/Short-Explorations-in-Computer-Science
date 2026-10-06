@@ -128,7 +128,7 @@
         { f: 'web', t: 'Caches keep recent answers so a site does not have to work them out again; they are hash tables keyed by the question. Memcached and Redis are well-known examples.' }
       ],
       jobs: ['Backend developer', 'Security engineer', 'DevOps engineer', 'Database engineer'],
-      learn: ['python/11', 'java/13', 'modern/8', 'math/13'],
+      learn: ['python/11', 'java/13', 'modern/8', 'dsa/9', 'math/13'],
       teach: 'Hook: explain why "Forgot your password?" sends a reset link instead of your old password. (The site does not know it: it only kept a hash.)'
     },
     {
