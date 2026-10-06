@@ -125,7 +125,7 @@ import math     math.sqrt(x)  math.pi  math.floor(x)
 import turtle   t = turtle.Turtle()  t.forward(100)
                 t.right(90)  t.penup()  t.pendown()  t.goto(x, y)
                 t.color("red")  t.speed(0)  turtle.done()</code></pre>
-<p class="ref-note">This Python runs in your browser (Skulpt). Most of Python 3 works; there are no third-party packages, and a program is stopped after about 6 seconds.</p>`,
+<p class="ref-note">This Python runs in your browser (Skulpt, which is Python 3.7). Most of the language works, with <code>math</code>, <code>random</code>, <code>json</code>, <code>functools</code>, <code>heapq</code>, <code>collections</code> and <code>re</code>; there are no third-party packages. <code>open()</code> and <code>os.listdir()</code> see this language's tabs (so <code>open("data.txt")</code> reads a tab named data.txt), and <code>import helper</code> uses a tab named helper.py; files a program writes are kept only when it runs in the Terminal. A program here is stopped after about 15 seconds.</p>`,
     cpp: `<h3>C++ quick reference</h3>
 <h4>Program shape</h4>
 <pre><code>#include &lt;iostream&gt;
@@ -1177,8 +1177,14 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       try {
         if (lang === 'python') {
           const usesTurtle = usesTurtleIn(code);
-          const r = await window.PYRUN.run(code, { execLimit: 15000, args, argv0: curFile().name, onOutput: (s) => out.write(s), onInput: (p) => out.ask(p), turtle: usesTurtle ? turtleOptions() : undefined });
+          // the program's folder is ~/lab holding this language's tabs, so open('data.txt') reads a data.txt tab (pylib.js); what it writes is not kept here
+          const labFs = { cwd: '/home/student/lab', importDir: '/home/student/lab', entries: [['/home/student/lab', 'd']].concat(filesOf('python').map((f) => ['/home/student/lab/' + f.name, 'f', f === curFile() ? code : String(f.code)])) };
+          const r = await window.PYRUN.run(code, { execLimit: 15000, args, argv0: curFile().name, onOutput: (s) => out.write(s), onInput: (p) => out.ask(p), turtle: usesTurtle ? turtleOptions() : undefined, fs: labFs });
           if (r.err) showError('python', r.err); else if (!r.out && !usesTurtle && !r.exit) out.note('(the program finished without printing anything)');
+          if (r.files && r.files.write.concat(r.files.mkdir, r.files.rm).length) {
+            const names = r.files.write.map((w) => w[0]).concat(r.files.mkdir).map((p) => p.replace(/^\/home\/student\/lab\//, ''));
+            out.note('(' + (names.length ? 'the program wrote ' + names.slice(0, 5).join(', ') + (names.length > 5 ? ' and ' + (names.length - 5) + ' more' : '') + '. ' : 'the program changed files. ') + 'Files a program writes are not kept in the Code Lab: run it in the Terminal (python ' + curFile().name + ' in the folder lab) to keep them.)');
+          }
           stopped = /stopped|cancel/i.test(r.err || '') && !r.out;
           if (!r.err && r.exit) { out.note('(the program ended with status ' + r.exit + ')'); exit = r.exit; }   // sys.exit(n)
         } else if (lang === 'scheme') {

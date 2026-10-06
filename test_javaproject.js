@@ -115,6 +115,7 @@ const DOG = 'import java.util.List;\nimport java.util.*;\n\npublic class Dog {\n
   check('cleanArgs: not an object', [LU.cleanArgs('x'), LU.cleanArgs(null), LU.cleanArgs(['a'])], [{}, {}, {}]);
   // error locations for the editor's marker
   check('python', LU.errorLine('python', "NameError: name 'x' is not defined on line 3"), 3);
+  check('python: a line of another file is not marked here', LU.errorLine('python', 'ZeroDivisionError: integer division or modulo by zero on line 12 of helper.py'), 0);
   check('teaching C++', LU.errorLine('cpp', 'main.cpp:4:5 something'), 4);
   check('full C++', LU.errorLine('cppfull', "main.cpp:7:3: error: use of undeclared identifier 'x'"), 7);
   check('scheme has no lines', LU.errorLine('scheme', ';Unbound variable: x'), 0);

@@ -27,6 +27,8 @@ const py = async (code) => {
   }
 
   check('turtle is still in the standard library', Sk.builtinFiles.files['src/lib/turtle.js'] !== undefined);
+  const js = await py("print(jseval('1+1'))");
+  check('jseval is gone', js.err && /jseval/.test(js.err) && !js.out, JSON.stringify(js));
 
   // --- 2. packed links: a tiny link that inflates to a huge document must be refused, and ordinary ones must round-trip
   require('./src/teach.js');

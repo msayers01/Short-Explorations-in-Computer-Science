@@ -404,6 +404,10 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('terminal: javac *.java compiles the files together; java Main gets its arguments; the stack trace names each file (as JDK 21)', /Dog\.class\s+Dog\.java\s+Main\.class\s+Main\.java\n2 one\nException in thread "main" java\.lang\.ArrayIndexOutOfBoundsException: Index 2 out of bounds for length 1\n\s*at Dog\.bark\(Dog\.java:6\)\n\s*at Main\.main\(Main\.java:4\)/.test(tt), tt.slice(-500));
   tt = await term('printf \'import sys\\nprint(sys.argv)\\n\' > argv.py; python argv.py x "y z"');
   check('terminal: python file.py words gives sys.argv', /\['argv\.py', 'x', 'y z'\]/.test(tt), tt.slice(-200));
+  // Python sees the terminal's files (src/pylib.js): reads, lists, imports a module beside it, writes a file the shell then has; stderr is
+  // the shell's stderr (2>/dev/null hides it); writing outside /home and /tmp is refused as in Linux
+  tt = await term(`mkdir -p pyf && cd pyf && printf 'a\\nb' > in.txt && printf 'def twice(x):\\n    return 2 * x\\n' > helper.py && python -c "import os, json, sys, helper; print(sorted(os.listdir()), open('in.txt').read().split(), helper.twice(21), sys.platform); open('out.json', 'w').write(json.dumps({'n': 1})); print('oops', file=sys.stderr)" 2>/dev/null; cat out.json; echo; python -c "open('/etc/x', 'w')"; cd ~; rm -r pyf`);
+  check('terminal: python reads, lists and writes the terminal\'s files, imports a module beside it, and has json, sys.platform and sys.stderr', /\['helper\.py', 'in\.txt'\] \['a', 'b'\] 42 linux\n\{"n": 1\}\n/.test(tt) && !/oops/.test(tt) && /PermissionError: \[Errno 13\] Permission denied: '\/etc\/x' on line 1\n/.test(tt), tt.slice(-500));
   tt = await term('printf \'#include <iostream>\\nusing namespace std;\\nint main() { cout << "from c++" << endl; }\\n\' > m.cpp; g++ m.cpp -o m && ./m; printf \'int main() { oops }\\n\' > bad.cpp; g++ bad.cpp -o bad; ls bad');
   check('terminal: g++ and ./program through the C++ sandbox; a bad program makes no file', /from c\+\+\n/.test(tt) && /Syntax error/.test(tt) && /ls: cannot access 'bad'/.test(tt), tt.slice(-400));
   tt = await term('echo "print(42)" > lab/fromterm.py; echo "int main() {}" > lab/m2.cpp; ls lab');
@@ -421,6 +425,8 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('terminal: a listed fit can be chosen with the keyboard', (await page.locator('.term-inp').inputValue()) === 'cd notes/' && (await page.locator('.term-ac').isHidden()), await page.locator('.term-inp').inputValue());
   await page.fill('.term-inp', 'ec'); await page.keyboard.press('Tab');
   check('terminal: Tab completes a command', (await page.locator('.term-inp').inputValue()) === 'echo ');
+  await page.fill('.term-inp', 'python -c "print(1)"'); await page.keyboard.press('Tab');
+  check('terminal: Tab after a closing quote adds nothing', (await page.locator('.term-inp').inputValue()) === 'python -c "print(1)"', await page.locator('.term-inp').inputValue());
   // readline keys: Ctrl+R searches the history backwards (again for older), Enter runs the match; Ctrl+A/E/K/W/Y edit the line
   await page.fill('.term-inp', ''); await page.keyboard.press('Control+r'); await page.keyboard.type('tr a');
   check('terminal: Ctrl+R finds the newest command containing the text', /reverse-i-search\)`tr a'/.test(await page.locator('.lab-term .term-ps1').textContent()) && /tr a-z A-Z/.test(await page.locator('.term-inp').inputValue()), [await page.locator('.lab-term .term-ps1').textContent(), await page.locator('.term-inp').inputValue()]);

@@ -34,7 +34,7 @@
   }
   function errorLine(lang, err) {
     const s = String(err || '');
-    const m = lang === 'cpp' || lang === 'cppfull' ? (s.match(/main\.cpp:(\d+)/) || s.match(/\bline (\d+)/i)) : lang === 'c' ? (s.match(/main\.c:(\d+):\d+: (?:fatal )?error/) || s.match(/main\.c:(\d+):/)) : lang === 'python' ? s.match(/\bline (\d+)/i) : null;
+    const m = lang === 'cpp' || lang === 'cppfull' ? (s.match(/main\.cpp:(\d+)/) || s.match(/\bline (\d+)/i)) : lang === 'c' ? (s.match(/main\.c:(\d+):\d+: (?:fatal )?error/) || s.match(/main\.c:(\d+):/)) : lang === 'python' ? s.match(/\bline (\d+)\b(?! of )/i) : null;   // "on line 2 of helper.py" is in another tab
     return m ? +m[1] : 0;
   }
   return { splitArgs, cleanArgs, errorLine, ARG_LANGS, MAX };

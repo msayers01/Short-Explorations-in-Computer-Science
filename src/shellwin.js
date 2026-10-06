@@ -2912,6 +2912,10 @@
   /* ---------------- Tab completion in cmd and PowerShell ---------------- */
   function complete(sh, st, line) {
     const P = paths(sh);
+    // just after a closing quote (python -c "print(1)"): no word to complete; it used to complete a file name glued to the quote
+    let inQ = '';
+    for (const c of line) { if (inQ) { if (c === inQ) inQ = ''; } else if (c === '"' || (st.kind === 'ps' && c === "'")) inQ = c; }
+    if (!inQ && /["']$/.test(line) && (line.endsWith('"') || st.kind === 'ps')) return { start: line.length, items: [], display: [] };
     const m = line.match(/(?:^|[\s|;&(])("?)([^\s|;&("]*)$/);
     const quote = m ? m[1] : '', word = m ? m[2] : '', start = line.length - word.length - quote.length;
     const before = line.slice(0, start).trim();

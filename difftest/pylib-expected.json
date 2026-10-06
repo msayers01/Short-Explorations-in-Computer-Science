@@ -1,0 +1,60 @@
+{
+ "python": "Python 3.11.15",
+ "cases": {
+  "read a file: whole, lines, a last line without a newline": {
+   "out": "'one\\ntwo\\nthree'\n['one\\n', 'two\\n', 'three']\n'one\\n'\n'two\\n'\n'three'\n'one\\n' 'tw' 'o\\n' 'three' ''\nTrue\nValueError I/O operation on closed file.\n['one', 'two', 'three']\n5\n",
+   "err": "",
+   "exc": ""
+  },
+  "write, append, x, print(file=), writelines, seek and tell": {
+   "out": "6 'hello\\none-2\\na\\nb\\n'\n['hello', 'one-2', 'a', 'b', 'more']\nFileExistsError 17 [Errno 17] File exists: 'new.txt'\none 3\n'ONE\\ntwo\\nthree'\n''\n",
+   "err": "",
+   "exc": ""
+  },
+  "errors: missing file, a folder, no folder, the wrong mode, not str": {
+   "out": "FileNotFoundError 2 'No such file or directory' 'nope.txt' True [Errno 2] No such file or directory: 'nope.txt'\nIsADirectoryError 21 'Is a directory' 'sub' True [Errno 21] Is a directory: 'sub'\nFileNotFoundError 2 'No such file or directory' 'nofolder/x.txt' True [Errno 2] No such file or directory: 'nofolder/x.txt'\nIsADirectoryError 21 'Is a directory' 'sub' True [Errno 21] Is a directory: 'sub'\nIOError catches it: FileNotFoundError\nUnsupportedOperation not writable\nUnsupportedOperation not readable\nTypeError write() argument must be str, not int\nValueError must have exactly one of create/read/write/append mode\n[Errno 2] No such file or directory: 'x.txt'\nplain message\n[Errno 2] No such file or directory\n",
+   "err": "",
+   "exc": "FileNotFoundError: [Errno 2] No such file or directory: 'missing.txt'"
+  },
+  "os and os.path on the files": {
+   "out": "['data.txt', 'notes.txt', 'sub'] ['data.txt', 'notes.txt', 'sub'] ['b.txt']\nTrue True False True False\n13 6\nFileExistsError 17\n[Errno 17] File exists: 'made'\n['data2.txt'] False\nOSError 39 Directory not empty\nIsADirectoryError [Errno 21] Is a directory: 'sub'\nNotADirectoryError [Errno 20] Not a directory: 'notes.txt'\n[Errno 2] No such file or directory: 'gone.txt'\nsub ['deep'] ['a.txt']\nsub/deep [] ['b.txt']\nA sub\nTrue / posix '\\n' . ..\nTrue\nNone dflt student\n",
+   "err": "",
+   "exc": ""
+  },
+  "os.path: pure string functions": {
+   "out": "'' ('', '')  '' ('', '') . False\n'/' ('/', '')  '/' ('/', '') / True\n'a' ('', 'a') a '' ('a', '') a False\n'a/' ('a', '')  'a' ('a/', '') a False\n'/a/b' ('/a', 'b') b '/a' ('/a/b', '') /a/b True\n'a/b/' ('a/b', '')  'a/b' ('a/b/', '') a/b False\n'//a' ('//', 'a') a '//' ('//a', '') //a True\n'///a/b' ('///a', 'b') b '///a' ('///a/b', '') /a/b True\n'a/./b/../c' ('a/./b/..', 'c') c 'a/./b/..' ('a/./b/../c', '') a/c False\n'../x' ('..', 'x') x '..' ('../x', '') ../x False\n'/..' ('/', '..') .. '/' ('/..', '') / True\n'a/..' ('a', '..') .. 'a' ('a/..', '') . False\n'.hidden' ('', '.hidden') .hidden '' ('.hidden', '') .hidden False\n'f.tar.gz' ('', 'f.tar.gz') f.tar.gz '' ('f.tar', '.gz') f.tar.gz False\n'dir.d/file' ('dir.d', 'file') file 'dir.d' ('dir.d/file', '') dir.d/file False\n'...' ('', '...') ... '' ('...', '') ... False\n'a..b' ('', 'a..b') a..b '' ('a.', '.b') a..b False\na/b/c a/b /b/c x a/\nb/c ../.. . ../../x/y\n/usr/l /home/student/x /home/student a~\n",
+   "err": "",
+   "exc": ""
+  },
+  "json: dumps": {
+   "out": "{\"name\": \"Ada\", \"age\": 36, \"langs\": [\"en\", \"fr\"], \"ok\": true, \"none\": null, \"pi\": 3.14}\n[1, 2.5, -0.0, 1e+20, 1.5e-07, 100000000000000000000, \"a\\\"b\\\\c\\n\\t\\u0001\"]\n{\n  \"b\": 1,\n  \"a\": [\n    1,\n    {\n      \"c\": 2\n    }\n  ],\n  \"e\": {},\n  \"f\": []\n}\n{\n\t\"a\": 2,\n\t\"b\": 1\n}\n[1,2] {\"a\":1}\n\"caf\\u00e9 \\u2603 \\ud83d\\ude00\" \"café ☃ 😀\"\n{\"1\": \"t\", \"2.5\": \"x\", \"null\": \"n\"}\n[1, 2] Infinity NaN -Infinity\nTypeError keys must be str, int, float, bool or None, not tuple\nTypeError Object of type set is not JSON serializable\n[1, 2]\n{\n\"x\": 1,\n\"y\": null\n}\n",
+   "err": "",
+   "exc": ""
+  },
+  "json: loads, errors, files": {
+   "out": "{'a': [1, 2.0, -300.0, True, False, None], 'b': 'xé\\n\"q\"', 'c': {}, 'd': [], 'e': '😀', 'f': 0.5}\nint float float True\nplain 12 0 [nan, inf]\n'' -> Expecting value: line 1 column 1 (char 0) | Expecting value 1 1 0 True\n'[1, 2' -> Expecting ',' delimiter: line 1 column 6 (char 5) | Expecting ',' delimiter 1 6 5 True\n'{\"a\" 1}' -> Expecting ':' delimiter: line 1 column 6 (char 5) | Expecting ':' delimiter 1 6 5 True\n'{a: 1}' -> Expecting property name enclosed in double quotes: line 1 column 2 (char 1) | Expecting property name enclosed in double quotes 1 2 1 True\n'[1,]' -> Expecting value: line 1 column 4 (char 3) | Expecting value 1 4 3 True\n'[1 2]' -> Expecting ',' delimiter: line 1 column 4 (char 3) | Expecting ',' delimiter 1 4 3 True\n'1 2' -> Extra data: line 1 column 3 (char 2) | Extra data 1 3 2 True\n'\"abc' -> Unterminated string starting at: line 1 column 1 (char 0) | Unterminated string starting at 1 1 0 True\n'tru' -> Expecting value: line 1 column 1 (char 0) | Expecting value 1 1 0 True\n'{\"a\": 1,}' -> Expecting property name enclosed in double quotes: line 1 column 9 (char 8) | Expecting property name enclosed in double quotes 1 9 8 True\n'\"a\\\\qb\"' -> Invalid \\escape: line 1 column 3 (char 2) | Invalid \\escape 1 3 2 True\n'\\n\\n  x' -> Expecting value: line 3 column 3 (char 4) | Expecting value 3 3 4 True\nTrue\n{\n  \"scores\": [\n    3,\n    1,\n    2\n  ],\n  \"name\": \"test\"\n}\n{'a': 2} ['1.5'] ['x']\n",
+   "err": "",
+   "exc": ""
+  },
+  "functools": {
+   "out": "24 10\nTypeError reduce() of empty iterable with no initial value\n11 9 () {'base': 2}\n23416728348467685 CacheInfo(hits=78, misses=81, maxsize=None, currsize=81)\n9 9 16 CacheInfo(hits=1, misses=2, maxsize=128, currsize=2)\nCacheInfo(hits=1, misses=5, maxsize=2, currsize=2)\nCacheInfo(hits=0, misses=0, maxsize=2, currsize=0)\n2 2 2 CacheInfo(hits=1, misses=2, maxsize=None, currsize=2)\nhi hello says hi hello\nTrue True True False True\n['fig', 'kiwi', 'pear', 'apple']\n[3, 2, 1]\n",
+   "err": "",
+   "exc": ""
+  },
+  "heapq": {
+   "out": "[5]\n[3, 5]\n[3, 5, 8]\n[1, 3, 8, 5]\n[1, 3, 8, 5, 9]\n[1, 3, 2, 5, 9, 8]\n[1, 3, 2, 5, 9, 8, 7]\n[1, 3, 2, 3, 9, 8, 7, 5]\n[2, 3, 5, 3, 9, 8, 7]\n[3, 3, 5, 7, 9, 8]\n[3, 7, 5, 8, 9]\n[5, 7, 9, 8]\n[7, 8, 9]\n[8, 9]\n[9]\n[]\n[1, 2, 3, 3, 5, 7, 8, 9]\n[0, 1, 2, 3, 4, 7, 6, 9, 5, 8]\n-1 0 [1, 3, 2, 4, 4, 7, 6, 9, 5, 8]\n1 [2, 3, 6, 4, 4, 7, 10, 9, 5, 8]\n[9, 8, 5] [1, 2] [1, 3]\n['banana', 'apple'] ['fig', 'pear', 'kiwi']\n[0, 1, 2, 4, 5, 7, 8, 9]\n[(1, 'y'), (1, 'z'), (2, 'a'), (2, 'b')]\nIndexError index out of range\n",
+   "err": "",
+   "exc": ""
+  },
+  "import the student's own modules from the folder": {
+   "out": "42 helper 7 1\nImportError\n",
+   "err": "",
+   "exc": ""
+  },
+  "typing, sys.platform, sys.stderr": {
+   "out": "6 6 {'a': (1, 2)}\nlinux\nto stdout\n",
+   "err": "to stderr 42\nwritten\n",
+   "exc": ""
+  }
+ }
+}

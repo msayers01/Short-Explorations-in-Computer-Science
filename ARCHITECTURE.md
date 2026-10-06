@@ -86,7 +86,9 @@ site/
     cppworker.js         the C++ runtime inside a worker: JSCPP, program runs and memory-stepper traces
     pyboot.js            the few lines inside the turtle iframe that receive the interpreter by message (its hash is in the CSP)
     cpputil.js           ensureMainReturns, cppErrorText: used by cppworker.js and the node tests
-    sandbox.js           removes Skulpt's page- and network-reaching modules (document, urllib, webbrowser, image, ...) → SANDBOX
+    sandbox.js           removes Skulpt's page- and network-reaching modules (document, urllib, webbrowser, image, ...) and jseval → SANDBOX
+    pylib.js             what the Python worker adds to Skulpt: files (open, os, os.path on a copy the page gives), json, functools, heapq, typing,
+                         sys.platform and sys.stderr → PYLIB (test_pylib.js compares with CPython)
     scheme.js            Scheme interpreter (MIT/SICP dialect) → window.Scheme / module.exports
                          (all c[ad]r up to 4 deep; eval with system-global-environment, always global)
     subst.js             substitution-model stepper over scheme.js ASTs → window.SUBST
@@ -792,6 +794,28 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
   "(the program ended with status n)". In the terminal, Python's `input("prompt")` prints its prompt even when the input comes from `<` or a
   pipe, as python does (`promptsOut` in the run message; lessons and graders keep the old behaviour). `test_typed.js` runs both in the real
   worker sources.
+- **Python and files** (October 2026, `src/pylib.js`, `test_pylib.js`): a Python program gets a copy of the files with its run message
+  (`fs`: every directory and file, the current directory, the exported variables, and `importDir`, the program's own folder) and works on it
+  with Python 3's `open()` (r w a x and +, text only; read, readline(s), iteration, write, print(file=), seek(0), with), `os` (getcwd, chdir,
+  listdir, mkdir, makedirs, remove, rmdir, rename, walk, environ, getenv, stat) and `os.path` (posixpath's own algorithms), with OSError and
+  its subclasses and CPython's messages (`[Errno 2] No such file or directory: 'x'`). Writing is allowed under /home and /tmp only, with
+  the shell's size limits. When the run ends the worker sends what changed (`files`: rm, mkdir, write); `runner.js` keeps only absolute paths
+  and text within a budget, and `shell.js applyChanges` applies it through the file system's own checks (a refused change is reported
+  `python: could not keep x: ...`). So `python report.py` can write `report.txt` and `cat` shows it. `import helper` finds `helper.py` (and
+  packages) in the program's folder: `pyworker.js read` asks `PYLIB.moduleFile`, which serves `.py` files only (Skulpt would run a `.js` module
+  as JavaScript). `sys.stderr` goes to the page as `{t:'out', fd: 2}`: the terminal's stderr (so `2>/dev/null` works), the Lab's output, and
+  never `r.out`, which graders compare. The `>>>` shell gives every replay the files as they were when it started and applies the changes
+  again after each entry (the same result each time). In the Code Lab the folder is ~/lab holding the Python tabs (so `open('data.txt')`
+  reads a data.txt tab); what a program writes there is reported and not kept. Lessons and exercises get an empty home folder. Skulpt
+  lacked or stubbed os, json, functools and heapq; `test_pylib.js` runs eleven programs in Skulpt and compares stdout, stderr and the final
+  error with a real CPython's (recorded in `difftest/pylib-expected.json`; `node test_pylib.js --update` records again from the local
+  python3). Not there: binary files (`'rb'`, bytes), `os.system`, `shutil`, `pathlib`, `statistics` (CPython computes it with exact
+  fractions, which a float version would not match in the last digit), `csv`, `dataclasses`. Skulpt itself is Python 3.7: `python
+  --version` and the `>>>` banner say so (no walrus operator). An error raised inside the library (json, open) is reported at the student's
+  own innermost line (`PYLIB.place`; Skulpt names the innermost frame), `on line 2 of helper.py` when it is in their module, which the Lab
+  does not mark in the open tab (`labutil.js errorLine`).
+- **Tab completion and quotes**: the word being completed starts after the last separator outside quotes, so Tab after
+  `python -c "print(x)"` offers nothing (it used to glue a file name to the closing quote); the Windows mode has the same fix.
 - **More commands** (October 2026): `basename`, `dirname`, `realpath` (walks the path as the real one does), `du [-s -h -a -c]` (sizes as an
   ext4 disk gives them: whole 4 KB blocks, a directory one block), `expr` (GNU's grammar and exit statuses, BigInt numbers), `yes` (into a
   pipe it stops by itself after 1 MB; elsewhere the output cap stops it), `fold`, `paste`, `comm` (with the unsorted-input warnings),

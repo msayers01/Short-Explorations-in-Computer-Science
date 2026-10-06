@@ -538,6 +538,10 @@ const row = (dir, len, name) => (dir ? 'd----' : '-a---') + '           10/5/202
     check('parameters', sh.complete('Get-ChildItem -Rec').items.join(','), '-Recurse ');
     check('parameters of an alias', sh.complete('ls -Fi').display.join(','), '-Filter,-File');
     check('ps paths', sh.complete('Get-Content garden/sh').items.join(','), 'garden/shed\\');
+    check('nothing after a closing quote (ps)', sh.complete("python -c 'print(1)'").items.join(','), '');
+    await run('cmd');
+    check('nothing after a closing quote (cmd)', sh.complete('python -c "print(dir(x))"').items.join(','), '');
+    check('cmd: an open quote still completes', sh.complete('type "gar').items.length > 0, true);
     const fs2 = fresh(); fs2.fs.mkdir('/home/student/my stuff'); await fs2.run('cmd');
     check('names with spaces are quoted', fs2.sh.complete('cd my').items.join(','), '"my stuff\\');
   }
