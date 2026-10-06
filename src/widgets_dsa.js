@@ -58,7 +58,7 @@
       while (i > 0 && j > 0) {
         if (x[i - 1] === y[j - 1]) {
           word = x[i - 1] + word; i--; j--; path.push([i, j]);
-          list.push(snap({ path: path.slice(), word, taken: [i + 1, j + 1], msg: 'Both words have ' + x[i] + ' here: it is in the answer. Go diagonally up to the left. Letters so far, read backwards: ' + word + '.' }));
+          list.push(snap({ path: path.slice(), word, taken: [i + 1, j + 1], msg: 'Both words have ' + x[i] + ' here: it is in the answer. Go diagonally up to the left. Letters so far (each new one goes in front): ' + word + '.' }));
         } else if (L[i - 1][j] >= L[i][j - 1]) {
           i--; path.push([i, j]);
           list.push(snap({ path: path.slice(), word, msg: 'Different letters, and the cell above holds ' + L[i][j] + ', at least as much as the cell to the left: the number came from above. Go up.' }));
@@ -124,7 +124,7 @@
       let total = 0, built = 0;
       const find = (v) => { if (parent[v] !== v) parent[v] = find(parent[v]); return parent[v]; };
       const snap = (cur, msg) => list.push({ cur, msg, state: state.slice(), parent: parent.slice(), total, built, chips: order.map((k) => ({ t: name(E[k]), s: state[k], hot: k === cur })) });
-      snap(-1, 'Sort the roads by length, shortest first (the list on the right). Every town starts in a group of its own: each is its own parent.');
+      snap(-1, 'Sort the roads by cost, cheapest first (the list on the right). Every village starts in a group of its own: each is its own parent.');
       for (const k of order) {
         if (built === 7) { state[k] = 'left'; continue; }
         const [a, c, w] = E[k];
@@ -133,7 +133,7 @@
         const ra = find(a), rc = find(c);
         if (ra === rc) {
           state[k] = 'skip';
-          snap(k, N[a] + '–' + N[c] + ' (' + w + '): find(' + N[a] + ') and find(' + N[c] + ') are both ' + N[ra] + '.' + long + ' The two towns are already joined, so this road would close a loop. Skip it.');
+          snap(k, N[a] + '–' + N[c] + ' (' + w + '): find(' + N[a] + ') and find(' + N[c] + ') are both ' + N[ra] + '.' + long + ' The two villages are already joined, so this road would close a loop. Skip it.');
         } else {
           let big = ra, small = rc;
           if (size[big] < size[small]) { big = rc; small = ra; }
@@ -142,7 +142,7 @@
           snap(k, N[a] + '–' + N[c] + ' (' + w + '): find(' + N[a] + ') = ' + N[ra] + ' and find(' + N[c] + ') = ' + N[rc] + ', different groups.' + long + ' Build it, and union: the root ' + N[small] + ' now points at ' + N[big] + ' (' + why + '). Roads built: ' + built + ', total ' + total + '.');
         }
       }
-      snap(-1, 'Seven roads join all eight towns: a spanning tree has one road fewer than it has towns, so Kruskal can stop. Total length ' + total + ', the least possible. The roads still on the list were never needed.');
+      snap(-1, 'Seven roads join all eight villages: a spanning tree has one road fewer than it has villages, so Kruskal can stop. Total cost ' + total + ', the least possible. The roads still on the list were never needed.');
     }
 
     function prim() {
@@ -154,20 +154,20 @@
       const snap = (cur, msg) => list.push({ cur, msg, state: state.slice(), inTree: inTree.slice(), total, built, order, chips: pq.slice().sort((p, q) => p.w - q.w || p.k - q.k).map((e) => ({ t: N[e.from] + '–' + N[e.to] + ' ' + e.w, hot: false })) });
       const join = (v) => { inTree[v] = true; order += N[v]; for (const [w, wt, k] of adj[v]) if (!inTree[w]) pq.push({ from: v, to: w, w: wt, k }); };
       join(0);
-      snap(-1, 'Start with town A alone in the tree. Every road from A to a town outside the tree goes into the priority queue: A–B 2 and A–C 3.');
+      snap(-1, 'Start with village A alone in the tree. Every road from A to a village outside the tree goes into the priority queue: A–B 2 and A–C 3.');
       while (pq.length && built < 7) {
         pq.sort((p, q) => p.w - q.w || p.k - q.k);
         const e = pq.shift();
         if (inTree[e.to]) { state[e.k] = 'skip'; snap(e.k, 'Take the shortest road in the queue, ' + N[e.from] + '–' + N[e.to] + ' ' + e.w + '. But ' + N[e.to] + ' joined the tree after this road was queued: it would close a loop. Throw it away.'); continue; }
         state[e.k] = 'take'; total += e.w; built++;
         join(e.to);
-        snap(e.k, 'Take the shortest road in the queue, ' + N[e.from] + '–' + N[e.to] + ' ' + e.w + '. ' + N[e.to] + ' is outside the tree, so build it: ' + N[e.to] + ' joins the tree, and its roads to towns still outside go into the queue. Total ' + total + '.');
+        snap(e.k, 'Take the shortest road in the queue, ' + N[e.from] + '–' + N[e.to] + ' ' + e.w + '. ' + N[e.to] + ' is outside the tree, so build it: ' + N[e.to] + ' joins the tree, and its roads to villages still outside go into the queue. Total ' + total + '.');
       }
-      snap(-1, 'All eight towns are in the tree, joined by seven roads of total length ' + total + ': the same total as Kruskal, and here the very same roads, found in a different order. ' + (pq.length ? 'The roads left in the queue are never looked at.' : ''));
+      snap(-1, 'All eight villages are in the tree, joined by seven roads of total cost ' + total + ': the same total as Kruskal, and here the very same roads, found in a different order. ' + (pq.length ? 'The roads left in the queue are never looked at.' : ''));
     }
     (mode === 'kruskal' ? kruskal : prim)();
 
-    const svg = sv('svg', { class: 'gr-svg', viewBox: '0 0 490 250', role: 'img', 'aria-label': 'A map of eight towns and ten roads' });
+    const svg = sv('svg', { class: 'gr-svg', viewBox: '0 0 490 250', role: 'img', 'aria-label': 'A map of eight villages and ten roads' });
     const chipRow = el('div', { class: 'gr-chips' }), extraRow = el('div', { class: 'gr-chips' });
     const msg = el('div', { class: 'fig-status gr-msg', role: 'status', 'aria-live': 'polite' });
     const sum = el('div', { class: 'bst-stats' });
@@ -186,7 +186,7 @@
         const dark = mode === 'prim' ? s.inTree[v] : false;
         svg.append(sv('circle', { cx: x, cy: y, r: R, fill: dark ? 'var(--accent)' : 'var(--paper-2)', stroke: s.cur >= 0 && (E[s.cur][0] === v || E[s.cur][1] === v) ? 'var(--ink)' : 'var(--accent)', 'stroke-width': s.cur >= 0 && (E[s.cur][0] === v || E[s.cur][1] === v) ? 3.5 : 1.8 }));
         svg.append(txt(x, y + 5, N[v], { 'text-anchor': 'middle', 'font-size': 15, 'font-weight': 700, fill: dark ? 'var(--accent-ink)' : 'var(--ink)' }));
-        if (mode === 'kruskal') {   // under each town: its parent in the union-find forest (a root points at itself)
+        if (mode === 'kruskal') {   // under each village: its parent in the union-find forest (a root points at itself)
           const p = s.parent[v];
           svg.append(mono(x, y + R + 14, p === v ? 'root' : '→' + N[p], { 'text-anchor': 'middle', 'font-size': 11, 'font-weight': p === v ? 700 : 400, fill: p === v ? 'var(--ink)' : 'var(--ink-2)' }));
         }
@@ -195,12 +195,12 @@
       if (mode === 'kruskal') extraRow.replaceChildren(...s.parent.map((p, v) => el('span', { class: 'gr-chip' + (p === v ? ' gr-next' : '') }, N[v] + '→' + N[p])));
       else extraRow.replaceChildren(el('span', { class: 'gr-chip' }, s.order.split('').join(' ')));
       msg.textContent = s.msg;
-      sum.textContent = 'roads built: ' + s.built + ' of 7 · total length: ' + s.total;
-      svg.setAttribute('aria-label', 'Map of eight towns and ten roads. ' + s.msg);
+      sum.textContent = 'roads built: ' + s.built + ' of 7 · total cost: ' + s.total;
+      svg.setAttribute('aria-label', 'Map of eight villages and ten roads. ' + s.msg);
     }
-    const lab1 = mode === 'kruskal' ? 'roads, shortest first (✓ built, struck out: would close a loop)' : 'priority queue: roads out of the tree, shortest first';
-    const lab2 = mode === 'kruskal' ? 'parent array (a root points at itself)' : 'towns in the tree, in the order they joined';
-    const key = mode === 'kruskal' ? 'Heavy lines: roads built. Dashed: a road skipped because it would close a loop. Under each town: its parent in the union-find forest.' : 'Dark towns: in the tree. Heavy lines: roads built. Dashed: a road thrown away because both its towns were already in the tree.';
+    const lab1 = mode === 'kruskal' ? 'roads, cheapest first (✓ built, struck out: would close a loop)' : 'priority queue: roads out of the tree, cheapest first';
+    const lab2 = mode === 'kruskal' ? 'parent array (a root points at itself)' : 'villages in the tree, in the order they joined';
+    const key = mode === 'kruskal' ? 'Heavy lines: roads built. Dashed: a road skipped because it would close a loop. Under each village: its parent in the union-find forest.' : 'Dark villages: in the tree. Heavy lines: roads built. Dashed: a road thrown away because both its villages were already in the tree.';
     mount.append(el('div', { class: 'gr-wrap' }, el('div', { class: 'gr-left fig-scroll' }, svg),
       el('div', { class: 'gr-side' }, el('div', { class: 'gr-lab' }, lab1), chipRow, el('div', { class: 'gr-lab' }, lab2), extraRow)),
     el('p', { class: 'gr-key' }, key), sum, msg);
