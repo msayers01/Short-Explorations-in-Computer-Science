@@ -341,6 +341,7 @@ body.tour-on { overflow-x: hidden; }
 .fig-mount svg { display: block; width: 100%; height: auto; font-family: var(--sans); }
 .fig figcaption { font-family: var(--sans); font-size: 0.9rem; color: var(--ink-2); margin-top: 0.6rem; line-height: 1.4; }
 .fig-tools { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.5rem 0; font-family: var(--sans); font-size: 0.9rem; }
+.fig-tools select { max-width: 100%; }
 .fig-tools input[type=text], .fig-tools input[type=number], .fig-tools select { font: inherit; font-family: var(--mono); font-size: 0.85rem; padding: 0.3rem 0.5rem; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); border-radius: 3px; }
 .fig-tools input[type=range] { accent-color: var(--accent); }
 .fig-tools .fig-note { color: var(--ink-2); margin-left: auto; }

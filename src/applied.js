@@ -142,7 +142,7 @@
         { f: 'eng', t: 'The Fast Fourier Transform (1965) does in about n log n steps what took n² before; it is used in audio, radio, medical imaging and more.' }
       ],
       jobs: ['Backend developer', 'Performance engineer', 'Site reliability engineer', 'Data engineer'],
-      learn: ['dsa/1', 'math/13', 'lisp/6', 'python/14'],
+      learn: ['dsa/1', 'math/13', 'math/18', 'lisp/6', 'python/14'],
       teach: 'Activity: time a program on n and on 2n items (the doubling experiment). Ask students to predict the second time before running it.'
     },
     {
@@ -326,7 +326,7 @@
         { f: 'data', t: 'Machine learning shuffles its data and starts from random weights; fixing the seed makes an experiment repeatable.' }
       ],
       jobs: ['Data scientist', 'Quantitative analyst', 'Game designer', 'Cryptographer'],
-      learn: ['python/12', 'cpp/11', 'lisp/13'],
+      learn: ['python/12', 'cpp/11', 'lisp/13', 'math/16', 'math/17'],
       teach: 'Hook: ask the class to write down a "random" list of 20 coin flips, then flip a real coin 20 times. Which list has the longer runs? People are bad random generators, and so are simple formulas.'
     },
     {
@@ -392,7 +392,7 @@
         { f: 'sec', t: 'Simple substitution ciphers like Caesar\'s fall to letter counting (frequency analysis), a method described by the scholar al-Kindi in the 9th century.' }
       ],
       jobs: ['Cryptographer', 'Security engineer', 'Payments developer'],
-      learn: ['math/4', 'math/16', 'python/16', 'computer/10', 'cpp/13'],
+      learn: ['math/4', 'math/20', 'math/17', 'python/16', 'computer/10', 'cpp/13'],
       teach: 'Hook: check the last digit of an ISBN-10 from a book in the room (the instructions are short), or a test card number with the Luhn check. What kinds of typing mistake does it catch?'
     },
     {
