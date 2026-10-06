@@ -29,6 +29,8 @@
   }
 
   const W = window.WIDGETS = {};
+  // the drawing helpers, for the figure files that add to WIDGETS after this one (widgets_dsa.js, widgets_math.js)
+  window.WIDGET_KIT = { sv, txt, mono, stepper, NS };
 
   /* ---------- 1. Python names → objects ---------- */
   W.names = function (mount) {
