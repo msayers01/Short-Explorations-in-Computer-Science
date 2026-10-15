@@ -30,12 +30,14 @@
     function state(st, v) { if (cfg.onState) cfg.onState({ state: st, v: v || 0 }); }
 
     async function workerChannel() {
-      const src = cfg.source ? await cfg.source() : text(cfg.srcId);   // the real-C++ compiler's source is downloaded first
+      // the real-C++ compiler's source is downloaded first; Full Python's comes with an init message that hands the worker its checked files
+      const got = cfg.source ? await cfg.source((v) => state('loading', v)) : text(cfg.srcId);
+      const src = typeof got === 'string' ? got : got.text, init = typeof got === 'string' ? null : got.init;
       state('loading', 0);
       return new Promise((resolve, reject) => {
         let w, url, ready = false, timer = 0;
         const arm = () => { clearTimeout(timer); timer = setTimeout(() => { if (!ready) { ch.kill(); state('failed'); reject(new Error('the worker did not start')); } }, cfg.startMs || 20000); };
-        try { url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' })); w = new Worker(url); } catch (e) { state('failed'); reject(e); return; }
+        try { url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' })); w = new Worker(url); if (init) w.postMessage(init); } catch (e) { state('failed'); reject(e); return; }
         const ch = { kind: 'worker', onmessage: null, send: (m) => w.postMessage(m), kill: () => { clearTimeout(timer); w.terminate(); URL.revokeObjectURL(url); if (ready) state('idle'); } };
         w.onmessage = (e) => {
           const m = e.data;
@@ -236,6 +238,84 @@
     cancel: () => { clangTyped.cancel(); clang.cancel(); }
   };
 
+  // ---------- Full Python: CPython 3.14 (Pyodide, built for WebAssembly), src/pyfullworker.js ----------
+  // Like Full C++: nothing is fetched until the student agrees (PYFULLRUN.allow); then the page downloads Pyodide's files from this site (dist/pyodide/<version>/,
+  // about 6 MB, kept by the browser), unpacks the gzipped ones, and checks every file against the SHA-256 the build recorded (BUILD.pyodide.files) before
+  // any of it runs. The worker is lockdown.js + Pyodide's loader + its engine + pyfullworker.js; the engine and the standard library reach it as bytes in an
+  // 'init' message, since lockdown.js has taken fetch away. The checked bytes are kept in this page, so a worker ended by a time limit starts again without
+  // downloading. Turtle drawings and the step-through stay on the teaching Python (Skulpt).
+  const PYO = () => (window.BUILD && window.BUILD.pyodide) || null;
+  const pyListeners = new Set();
+  let pyState = { state: 'idle', v: 0 }, pyAllowedNow = false, pyFiles = null;
+  const PYKEY = 'se.realpy';
+  const hex = (buf) => Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  async function pyDownload(progress) {
+    const P = PYO();
+    if (!P) throw new Error('this copy of the site was built without it');
+    if (location.protocol !== 'http:' && location.protocol !== 'https:') throw new Error('it only works when the site is opened from a web address, not from a file on this computer');
+    const base = new URL(P.path, location.href).href, names = Object.keys(P.files);
+    const total = names.reduce((n, k) => n + (Number(P.files[k].bytes) || 0), 0) || 1;
+    let done = 0;
+    const got = {};
+    for (const name of names) {
+      const info = P.files[name];
+      const r = await fetch(base + name + (info.gz ? '.gz' : ''));
+      if (!r.ok) throw new Error('the Full Python files are not on this site (' + r.status + ')');
+      const parts = [], reader = r.body.getReader();
+      for (;;) { const c = await reader.read(); if (c.done) break; parts.push(c.value); done += c.value.length; if (progress) progress(Math.min(1, done / total)); }
+      let buf = await new Blob(parts).arrayBuffer();
+      if (info.gz) buf = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+      if (hex(await crypto.subtle.digest('SHA-256', buf)) !== info.sha256) throw new Error('a Full Python file (' + name + ') is not the one this version of the site expects, so it was not used');
+      got[name] = buf;
+    }
+    // The engine is an ES module; the worker is a classic script, so its one export becomes a global and the URL it would look itself up by goes
+    // (its WebAssembly is found through the loader, which asks the fetch in pyfullworker.js).
+    let asm = new TextDecoder().decode(got['pyodide.asm.mjs']);
+    if (!/export default _createPyodideModule;\s*$/.test(asm)) throw new Error('the Full Python engine is not in the shape this site expects');
+    asm = asm.replace(/export default _createPyodideModule;\s*$/, 'self.__createPyodideModule = _createPyodideModule;\n').replace(/new URL\("pyodide\.asm\.wasm",\s*import\.meta\.url\)\.href/g, '"pyodide.asm.wasm"').replace(/import\.meta\.url/g, '""');
+    const glue = text('pyfull-src').split('/*@@PYODIDE@@*/');
+    if (glue.length !== 2) throw new Error('the Full Python worker is missing from this page');
+    return { text: glue[0] + ';\n' + new TextDecoder().decode(got['pyodide.js']) + ';\n' + asm + ';\n' + glue[1],
+      init: { t: 'init', base, lock: new TextDecoder().decode(got['pyodide-lock.json']), files: { 'pyodide.asm.wasm': got['pyodide.asm.wasm'], 'python_stdlib.zip': got['python_stdlib.zip'] } } };
+  }
+  function pyfullSource(progress) {
+    if (!pyFiles) pyFiles = pyDownload(progress).catch((e) => { pyFiles = null; throw e; });   // a failed download is tried again next time
+    return pyFiles;
+  }
+  const pyfull = Engine({
+    workerOnly: true, source: pyfullSource, startMs: 60000,
+    onState: (s) => { pyState = s; pyListeners.forEach((f) => { try { f(s); } catch (e) { /* a listener's problem is its own */ } }); },
+    startError: (e) => 'Full Python could not be loaded: ' + (e && e.message || e) + '.',
+    timeoutMessage: 'Time limit exceeded: the program ran for too long. Is there a loop that never ends?'
+  });
+  // a run: fs (the files it sees, as pylib.js), name (the file's path in tracebacks), typed input (typedRunner)
+  const pyfullJob = (code, opts, ms, typed) => ({ t: 'run', totalMs: ms + 1500, idleMs: Math.max(8000, ms + 1500), opts, payload: { code: String(code), stdin: opts.stdin == null ? null : String(opts.stdin),
+    args: argList(opts.args), argv0: typeof opts.argv0 === 'string' ? opts.argv0 : undefined, name: typeof opts.name === 'string' ? opts.name : undefined, fs: opts.fs || undefined, typed, maxOut: MAX_OUT } });
+  const pyfullTyped = typedRunner(pyfull, (code, ms, typed, extra, o) => pyfullJob(code, o, ms, typed));
+  window.PYFULLRUN = {
+    /** can this copy of the site offer Full Python at all? → null, or the reason it cannot */
+    unavailable() {
+      if (!PYO()) return 'this copy of the site does not include it';
+      if (location.protocol !== 'http:' && location.protocol !== 'https:') return 'it needs the site to be opened from a web address (not as a file on this computer)';
+      if (typeof Worker === 'undefined' || typeof WebAssembly === 'undefined' || typeof DecompressionStream === 'undefined') return 'this browser cannot run it';
+      if (!window.isSecureContext || !(window.crypto && window.crypto.subtle)) return 'it needs the site to be opened with https:// (the files are checked as they arrive, which a plain http:// address does not allow)';
+      return null;
+    },
+    mb: () => (PYO() ? PYO().mb : 0),
+    version: () => (PYO() ? PYO().python : ''),
+    allowed() { if (pyAllowedNow) return true; try { return localStorage.getItem(PYKEY) === '1'; } catch (e) { return false; } },
+    allow() { pyAllowedNow = true; try { localStorage.setItem(PYKEY, '1'); } catch (e) { /* kept for this visit only */ } },
+    state: () => pyState,
+    subscribe(f) { pyListeners.add(f); return () => pyListeners.delete(f); },
+    /** run(code, {stdin, onOutput, onErrOutput, onInput, args, argv0, name, fs, execLimit}) → Promise<{out, err, exit, files}>; no stdin and an onInput: typed as it asks */
+    run(code, opts) {
+      opts = opts || {}; const ms = opts.execLimit || 15000;
+      if (opts.stdin == null && typeof opts.onInput === 'function') return pyfullTyped.run(code, opts, ms);
+      return pyfull.run(pyfullJob(code, Object.assign({}, opts, { stdin: opts.stdin == null ? '' : opts.stdin }), ms, undefined));
+    },
+    cancel: () => { pyfullTyped.cancel(); pyfull.cancel(); }
+  };
+
   // program arguments (the Lab's Arguments box, or the words after  python app.py  /  java Main  in the terminal): plain strings, a bounded number
   const argList = (a) => (Array.isArray(a) ? a.slice(0, 1000).map(String) : []);
   // a job for the compiler's worker: compiling gets 60 s, then the program its own runMs from the worker's 'phase' message (above)
@@ -271,11 +351,13 @@
     async function run(code, opts, ms, extra) {
       const mine = gen, lines = [], times = [], t0 = Date.now(), seed = (Math.random() * 2147483647) | 0;
       let out = '';
+      let errOut = '';
       const onOutput = (s) => { out += s; if (opts.onOutput) opts.onOutput(s); };
+      const onErrOutput = (s) => { errOut += s; if (opts.onErrOutput) opts.onErrOutput(s); else if (opts.onOutput) opts.onOutput(s); };   // stderr (Full Python): skipped apart on a replay
       for (;;) {
-        const r = done(await engine.run(job(code, ms, { lines, times, t0, seed, skip: out.length }, extra, Object.assign({}, opts, { onOutput, onNote: lines.length ? undefined : opts.onNote, onInput: undefined }))));
+        const r = done(await engine.run(job(code, ms, { lines, times, t0, seed, skip: out.length, skipErr: errOut.length }, extra, Object.assign({}, opts, { onOutput, onErrOutput, onNote: lines.length ? undefined : opts.onNote, onInput: undefined }))));
         if (mine !== gen) return { out, err: 'Stopped.', exit: 130 };
-        if (!r.needInput) return { out, err: r.err, exit: r.exit };
+        if (!r.needInput) return { out, err: r.err, exit: r.exit, files: r.files || null };
         if (lines.length >= 5000) return { out, err: 'The program asked for more lines of input than it is allowed here.', exit: 1 };
         const v = await new Promise((resolve) => { wait = resolve; Promise.resolve(opts.onInput('')).then(resolve, () => resolve(null)); });
         wait = null;

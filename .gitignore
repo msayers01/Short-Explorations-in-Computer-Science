@@ -1,4 +1,5 @@
 node_modules/
 dist/clang/
+dist/pyodide/
 dist/img/
 img/.*.download

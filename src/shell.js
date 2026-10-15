@@ -1417,7 +1417,7 @@
       for (const k of sh.exported) if (has(sh.vars, k)) env[k] = String(sh.vars[k]);
       env.PWD = fs.cwd;
       const prog = typeof name === 'string' && name !== 'python' ? fs.resolve(name) : null;   // import finds modules beside the program (python -c: here)
-      return { cwd: fs.cwd, home: HOME, env, entries, importDir: prog && fs.isFile(prog) ? prog.slice(0, prog.lastIndexOf('/')) || '/' : fs.cwd };
+      return { cwd: fs.cwd, home: HOME, env, entries, importDir: prog && fs.isFile(prog) ? prog.slice(0, prog.lastIndexOf('/')) || '/' : fs.cwd, program: prog && fs.isFile(prog) ? prog : undefined };
     };
     sh.applyChanges = (c, io, name) => {
       const tell = (p, e) => io.err(name + ': could not keep ' + tilde(p) + ': ' + (e instanceof FsError ? e.message : String(e && e.message || e)) + '\n');
@@ -3100,7 +3100,7 @@
     ex: ['python hello.py', 'python game.py < moves.txt', 'python report.py > report.txt', 'python -c "import os; print(os.listdir())"'],
     async run(args, io, sh) {
       if (args[0] === '-c') { if (args[1] === undefined) { io.err('Argument expected for the -c option\n'); return 2; } return sh.runProgram({ lang: 'python', src: args[1] }, 'python', args.slice(2), io); }
-      if (args[0] === '--version' || args[0] === '-V') { io.out('Python 3.7 (Skulpt, in your browser)\n'); return 0; }
+      if (args[0] === '--version' || args[0] === '-V') { io.out(((sh.hooks.pyVersion && sh.hooks.pyVersion()) || 'Python 3.7 (Skulpt, in your browser)') + '\n'); return 0; }   // Full Python: its own version
       if (!args.length && io.ask && !io.stdin && sh.hooks.repl) return sh.hooks.repl('python', io, sh);   // the interactive shell (src/repl.js)
       if (!args.length || args[0].startsWith('-')) { io.err('python: the interactive Python shell needs the keyboard. Give it a file: python hello.py\n'); return 2; }
       const abs = sh.fs.resolve(args[0]), n = sh.fs.stat(abs);

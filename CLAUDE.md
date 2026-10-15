@@ -45,7 +45,7 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - **Content Security Policy** is written by `build.js` into every page and `dist/_headers`: inline scripts allowed by hash only (all of
   `src/*.js` is ONE inline script, so the policy is three hashes; Cloudflare refuses a `_headers` line over 2000 characters, and build.js
   now fails rather than write one),
-  `connect-src 'self'` (only for the Full C++ download), `img-src 'self' data: blob:` (the lessons' pictures), `worker-src blob:`, no other origin. A new inline script needs nothing (its hash is
+  `connect-src 'self'` (only for the Full C++ and Full Python downloads), `img-src 'self' data: blob:` (the lessons' pictures), `worker-src blob:`, no other origin. A new inline script needs nothing (its hash is
   computed); a new external resource must be added deliberately. Fonts are embedded as data URIs.
 - **Student code never runs in the page.** Python (Skulpt) and C++ (JSCPP) run in Web Workers built from inert `<script type="text/plain">`
   blocks (`src/runner.js`); turtle graphics in a sandboxed iframe without `allow-same-origin`. Scheme runs in the page (own interpreter,
@@ -56,6 +56,17 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - Ids of exercises are never renumbered (progress and portfolios are keyed by them); `lint/exercise-ids.txt` and `test_lessons.js` enforce it.
 - Build nodes with `el()` (the DOM's own `append` prints `null`/`false` as text; `src/domsafe.js` is a net under that, not a licence).
 - JSCPP is patched (`patches/*.patch`, applied to node_modules by `scripts/patch-jscpp.js`, baked into `vendor/jscpp.min.js`).
+
+## Two Python engines (ARCHITECTURE §9d2)
+
+- **Teaching**: Skulpt (Python 3.7), in the bundle, offline; turtle, the Lab's Step through, every lesson. `src/pylib.js` adds files, os, json,
+  functools, heapq, typing to it.
+- **Full Python**: CPython 3.14 (Pyodide 314.0.7, pinned), downloaded on demand (about 6 MB, every file checked against its SHA-256) after the
+  student agrees (`se.realpy`); runs in a worker that lockdown.js has stripped of fetch before Pyodide starts (the files arrive as bytes).
+  The Lab's Python Engine button (`S.fullPy`), the terminal's `python` (follows the Lab), assignments with `runtime: 'full'` (teach.js
+  `FULL_LANGS`), and `runtime: 'full'` on a Python course/lesson/exercise (none yet). Turtle always runs on Skulpt. Files: `src/pyfullworker.js`
+  (the HARNESS Python: fresh `__main__`, modules restored, CPython tracebacks, `js`/`pyodide` refused), `runner.js PYFULLRUN`, `app.js fullPy()`.
+  Typed input is the Java/C replay. Licence texts in `licenses/` (the npm package has none). Not verified: Safari, low-end devices, production.
 
 ## Java (ARCHITECTURE §9e)
 

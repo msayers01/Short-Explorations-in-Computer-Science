@@ -131,8 +131,11 @@ const THIRD_PARTY = [
   { name: 'IBM Plex Mono', pkg: '@fontsource/ibm-plex-mono', file: 'LICENSE', url: 'https://github.com/IBM/plex', role: 'is the typeface for code' },
   { name: 'Clang and LLVM, as packaged by clang-wasm', pkg: '@live-codes/clang-wasm', file: 'LICENSE', url: 'https://github.com/live-codes/clang-wasm', role: 'is the real C and C++ compiler (Clang 22 built for WebAssembly), downloaded only when a student chooses Full C++ or runs C',
     extra: 'THIRD-PARTY-NOTICES.md' },
-  { name: 'PEG.js', pkg: 'pegjs', file: 'LICENSE', url: 'https://pegjs.org/', role: 'generated the C++ parser inside JSCPP' }
-].map(t => { const j = pkg(t.pkg); return { name: t.name, version: j.version, licence: j.license, url: t.url, role: t.role, changes: t.changes || '', text: licenceText(t.pkg, t.file) + (t.extra ? '\n\n' + licenceText(t.pkg, t.extra) : '') }; });
+  { name: 'PEG.js', pkg: 'pegjs', file: 'LICENSE', url: 'https://pegjs.org/', role: 'generated the C++ parser inside JSCPP' },
+  // The npm package of Pyodide carries no licence file, so the texts are kept in licenses/ (MPL 2.0 from mozilla.org, CPython's from its v3.14.2 tag).
+  { name: 'Pyodide, with CPython', pkg: 'pyodide', textFiles: ['licenses/MPL-2.0.txt', 'licenses/CPython-LICENSE.txt'], url: 'https://pyodide.org/', role: 'is the real Python (CPython built for WebAssembly), downloaded only when a student chooses Full Python',
+    changes: 'Used unchanged. Pyodide is under the Mozilla Public License 2.0 (its source is at https://github.com/pyodide/pyodide); the CPython inside it and its standard library are under the Python Software Foundation License (below), and the libraries built into it (such as zlib, libffi and SQLite) under their own permissive licences, listed by the Pyodide project.' }
+].map(t => { const j = pkg(t.pkg); return { name: t.name, version: j.version, licence: t.textFiles ? j.license + ' (Pyodide); PSF-2.0 (CPython)' : j.license, url: t.url, role: t.role, changes: t.changes || '', text: t.textFiles ? t.textFiles.map((f) => r(f).replace(/\r\n/g, '\n').trim()).join('\n\n') : licenceText(t.pkg, t.file) + (t.extra ? '\n\n' + licenceText(t.pkg, t.extra) : '') }; });
 // Real C++ (Clang compiled to WebAssembly). Its files are not in the page: they are about 29 MB, so build.js copies them next to it, to dist/clang/<version>/,
 // and the page downloads them (once; the browser keeps them) only when a student picks Full C++ or opens the Modern C++ course.
 // The directory name carries the version, so the files can be cached forever (see _headers below).
@@ -148,6 +151,25 @@ for (const [from, to] of clangFiles) {
   clangBytes += fs.statSync(dest).size;
 }
 console.log('copied the real-C++ compiler to dist/' + CLANG_DIR, (clangBytes / 1024 / 1024).toFixed(1), 'MB');
+// Full Python (Pyodide: CPython built for WebAssembly), the same way: copied to dist/pyodide/<version>/, downloaded by the page only when a student
+// chooses Full Python. The two big scripts are stored gzipped (13.5 MB becomes about 6 MB; the page unpacks them with DecompressionStream), and the
+// page checks every file, unpacked, against the SHA-256 recorded here (BUILD.pyodide.files) before any of it runs (runner.js PYFULLRUN).
+const PY_PKG = pkg('pyodide');
+const PY_DIR = 'pyodide/' + PY_PKG.version + '/';
+const PY_LOCK = JSON.parse(r('node_modules/pyodide/pyodide-lock.json'));
+const pyFiles = {};
+let pyBytes = 0;
+fs.rmSync('dist/pyodide', { recursive: true, force: true });
+fs.mkdirSync('dist/' + PY_DIR, { recursive: true });
+for (const [name, gz] of [['pyodide.asm.wasm', true], ['pyodide.asm.mjs', true], ['python_stdlib.zip', false], ['pyodide.js', false], ['pyodide-lock.json', true]]) {
+  const data = fs.readFileSync('node_modules/pyodide/' + name);
+  const out = gz ? require('zlib').gzipSync(data, { level: 9 }) : data;
+  pyFiles[name] = { sha256: crypto.createHash('sha256').update(data).digest('hex'), gz, bytes: out.length };
+  fs.writeFileSync('dist/' + PY_DIR + name + (gz ? '.gz' : ''), out);
+  pyBytes += out.length;
+}
+for (const f of ['MPL-2.0.txt', 'CPython-LICENSE.txt']) fs.copyFileSync('licenses/' + f, 'dist/' + PY_DIR + f);
+console.log('copied Full Python (Pyodide ' + PY_PKG.version + ', Python ' + PY_LOCK.info.python + ') to dist/' + PY_DIR, (pyBytes / 1024 / 1024).toFixed(1), 'MB');
 // Pictures for the lessons (img/: a JPEG and a JSON of its credits each; scripts/fetch-image.js makes both). They are files next to the
 // page, not data in it, so a lesson's pictures are downloaded only when it is read. The name carries a hash of the content, so a
 // picture can be cached forever; the credits (title, alt text, author, licence, source) go into the page as window.BUILD.images.
@@ -177,7 +199,8 @@ for (const s of SHOWCASE.skipped) console.log('showcase: left out', s);
 console.log('showcase:', SHOWCASE.projects.length, 'project(s)');
 const BUILD = { showcase: SHOWCASE.projects, date: new Date().toISOString().slice(0, 10), thirdParty: THIRD_PARTY, images: IMAGES, icons: ICONS, clang: { path: CLANG_DIR, mb: Math.round(clangBytes / 1024 / 1024), llvm: CLANG_PKG.version,
   // The page checks the compiler script it downloads against this before running it. (The script then checks every compiler file it fetches against hashes it carries.)
-  sha256: crypto.createHash('sha256').update(fs.readFileSync('dist/' + CLANG_DIR + 'toolchain.js')).digest('hex') } };
+  sha256: crypto.createHash('sha256').update(fs.readFileSync('dist/' + CLANG_DIR + 'toolchain.js')).digest('hex') },
+  pyodide: { path: PY_DIR, mb: Math.round(pyBytes / 1024 / 1024), version: PY_PKG.version, python: PY_LOCK.info.python, files: pyFiles } };
 // The same notices as a file at the repository root, for copies of the source and of dist/index.html.
 fs.writeFileSync('THIRD-PARTY-NOTICES.md', '# Third-party notices\n\nThe built site (dist/index.html) and vendor/jscpp.min.js include the '
   + 'following software. Each is used under the licence reproduced here.\n'
@@ -194,6 +217,8 @@ const javaSrc = WS.java.map(r).join(';\n');
 const schemeSrc = WS.scheme.map(r).join(';\n');   // Scheme runs in the page, except for a Bot Arena bot that stays running between turns
 const bootSrc = r('src/pyboot.js');
 const clangSrc = r('src/clangworker.js');   // the toolchain itself is downloaded (see CLANG_DIR); only this glue is in the page
+// Full Python's worker: lockdown first, then (put in by runner.js at the marker, once downloaded and checked) Pyodide's loader and engine, then the glue
+const pyfullSrc = r('src/lockdown.js') + '\n;/*@@PYODIDE@@*/\n' + r('src/pyfullworker.js');
 const dataBlock = (id, text) => `<script type="text/plain" id="${id}">${clean(text)}</script>\n`;
 const inline = [];   // the exact text of every inline script, for the CSP hashes
 const scriptTag = (text) => { inline.push(text); return `<script>${text}</script>\n`; };
@@ -202,7 +227,7 @@ let body = scriptTag(`/* build info and third-party licences (build.js) */\nwind
 // Content-Security-Policy line of dist/_headers past the 2000 characters Cloudflare allows for a line of that file, and the deploy failed.)
 // The files are joined with a semicolon between them, so a file that ends in `})()` cannot call the next file's opening parenthesis.
 body += scriptTag(scripts.map((s) => `/* ${s} */\n${scriptSafe(r(s))}\n`).join(';\n'));
-body += dataBlock('py-src', pySrc) + dataBlock('cpp-src', cppSrc) + dataBlock('java-src', javaSrc) + dataBlock('scheme-src', schemeSrc) + dataBlock('py-boot', bootSrc) + dataBlock('clang-src', clangSrc);
+body += dataBlock('py-src', pySrc) + dataBlock('cpp-src', cppSrc) + dataBlock('java-src', javaSrc) + dataBlock('scheme-src', schemeSrc) + dataBlock('py-boot', bootSrc) + dataBlock('clang-src', clangSrc) + dataBlock('pyfull-src', pyfullSrc);
 const indexHashes = inline.map(sha).concat(sha(clean(bootSrc)));   // the last one is the script inside the sandboxed iframe (see pyboot.js)
 const html = headFor(indexHashes) + body + '</body>\n</html>\n';
 fs.mkdirSync('dist', { recursive: true });
@@ -229,7 +254,7 @@ const common = ['X-Content-Type-Options: nosniff', 'Referrer-Policy: no-referrer
 // of another site, or opened from a file, the page is not isolated, and persistent mode says so and is off.
 const isolation = ['Cross-Origin-Opener-Policy: same-origin', 'Cross-Origin-Embedder-Policy: require-corp'];
 const rule = (paths, hashes, extra) => paths.map(p => p + '\n').join('') + ['Content-Security-Policy: ' + csp(hashes)].concat(common, extra || []).map(h => '  ' + h + '\n').join('') + '\n';
-const immutable = ['/' + CLANG_DIR + '*', '/img/*'].map((p) => p + '\n  Cache-Control: public, max-age=31536000, immutable\n  X-Content-Type-Options: nosniff\n\n').join('');
+const immutable = ['/' + CLANG_DIR + '*', '/' + PY_DIR + '*', '/img/*'].map((p) => p + '\n  Cache-Control: public, max-age=31536000, immutable\n  X-Content-Type-Options: nosniff\n\n').join('');
 // Cloudflare serves the page at "/" from index.html, and a rule written for "/" or "/index.html" is not applied to that response (a request for /index.html only gets
 // a redirect to "/", which carries the headers: the document itself does not), so the isolation headers are on "/*", which matches "/" too. They do no harm to the other
 // files (every page and file here is same-origin). The policy above stays in the page's <meta> as well, which is what applies at "/".

@@ -45,6 +45,17 @@ async function session(lang, lines) {
   r = await session('scheme', ['(define (sq x) (* x x))', '(sq 12)', '(display "hi")', '(car (quote ()))', '(+ 1', '2)', '(exit)']);
   check('scheme: definitions stay, values are shown MIT-style, errors do not end the session, open parentheses continue', /1 \]=> \(define \(sq x\) \(\* x x\)\)\n;Value: sq\n1 \]=> \(sq 12\)\n;Value: 144\n1 \]=> \(display "hi"\)\nhi\n;Unspecified return value\n1 \]=> \(car \(quote \(\)\)\)\n;[^\n]+\n1 \]=> \(\+ 1\n2\)\n;Value: 3\n1 \]=> \(exit\)\n;Moriturus te saluto\./.test(r.screen) && r.exit === 0, r.screen);
 
+  // Full Python's >>>: CPython's own traceback for the replayed program ("<stdin>"), renamed and renumbered per entry as Python 3.14 shows it.
+  // The runner here is the local python3 reading the program from stdin, which names it "<stdin>" as Full Python's terminal does.
+  if (require('child_process').spawnSync('python3', ['--version']).status === 0) {
+    const cp = require('child_process');
+    const fsession = async (lines) => { let screen = '', i = 0; const o = { full: true, banner: 'Python 3.x (CPython)', out: (s) => { screen += s; }, err: (s) => { screen += s; }, ask: (p) => { const v = i < lines.length ? lines[i++] : null; screen += p + (v == null ? '^D' : v) + '\n'; return Promise.resolve(v); },
+      run: (code, p) => { const r = cp.spawnSync('python3', ['-'], { input: code, encoding: 'utf8' }); p.onOutput(r.stdout); return Promise.resolve({ err: r.status ? r.stderr.replace(/\n$/, '') : null }); }, cancelled: () => false }; const exit = await REPL.python(o); return { screen: screen.slice(screen.indexOf('>>> ')), exit }; };
+    r = await fsession(['def f(n):', '    return 10 // n', '', 'x = 6', 'x * 7', 'f(0)', 'print(', ')', 'y', 'exit()']);
+    check('full python >>>: values, a traceback through two entries named <python-input-N>, a syntax error, a NameError',
+      /^>>> def f\(n\):\n\.\.\.     return 10 \/\/ n\n\.\.\. \n>>> x = 6\n>>> x \* 7\n42\n>>> f\(0\)\nTraceback \(most recent call last\):\n  File "<python-input-3>", line 1, in <module>\n    f\(0\)\n  File "<python-input-0>", line 2, in f\n    return 10 \/\/ n\nZeroDivisionError: integer division or modulo by zero\n>>> print\(\n\.\.\. \)\n\n>>> y\nTraceback \(most recent call last\):\n  File "<python-input-5>", line 1, in <module>\n    y\nNameError: name 'y' is not defined\n>>> exit\(\)\n$/.test(r.screen) && r.exit === 0, r.screen);
+  }
+
   // jshell, with the site's Java interpreter as the runner
   const JAVA = require('./src/java.js');
   const jsession = async (lines) => { let screen = '', i = 0; const o = { out: (s) => { screen += s; }, err: (s) => { screen += s; }, ask: (p) => { const v = i < lines.length ? lines[i++] : null; screen += p + (v == null ? '^D' : v) + '\n'; return Promise.resolve(v); }, run: (code, p) => { const r = JAVA.run(code, '', { write: p.onOutput }); return Promise.resolve(r); }, cancelled: () => false }; const exit = await REPL.java(o); return { screen: screen.slice(screen.indexOf('jshell> ')), exit }; };

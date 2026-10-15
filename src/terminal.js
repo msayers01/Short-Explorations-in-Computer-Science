@@ -17,21 +17,27 @@
   const A = () => window.__app.internal;
 
   /* ---------------- the panel ----------------
-     o: { fs, title, hooks: {edit?, setup?}, armConfirm, isFull?, cppStd?, cStd?, stop?, before?(), after?(), onReset?() → fs, resetTitle, onClose?, persist?: key, history?: [] } */
+     o: { fs, title, hooks: {edit?, setup?}, armConfirm, isFull?, fullPy?, cppStd?, cStd?, stop?, before?(), after?(), onReset?() → fs, resetTitle, onClose?, persist?: key, history?: [] } */
   function makePanel(o) {
     const { el } = window.__h;
     const SHELL = window.SHELL;
     let fs = o.fs;
-    const stopAll = () => { for (const k of ['PYRUN', 'JAVARUN', 'CPPRUN', 'CLANGRUN']) if (window[k]) window[k].cancel(); };   // a lesson's terminal has no Lab to ask
+    const stopAll = () => { for (const k of ['PYRUN', 'JAVARUN', 'CPPRUN', 'CLANGRUN', 'PYFULLRUN']) if (window[k]) window[k].cancel(); };   // a lesson's terminal has no Lab to ask
     // Python's >>> runs every entry again from the start, so each run gets the files as they were when it began, and what the entries so
     // far changed is applied again after each (the same result each time: writing a file twice leaves it as once)
     const repl = (lang, io2, sh2) => {
-      const base = lang === 'python' && sh2.filesFor ? sh2.filesFor() : undefined;
-      return window.REPL && window.REPL[lang] ? window.REPL[lang]({ ask: io2.ask, out: io2.out, err: io2.err, Scheme: window.Scheme, cancelled: () => sh2.cancelled,
+      const base = lang === 'python' && sh2.filesFor ? sh2.filesFor() : undefined, full = lang === 'python' && fullPy();
+      const runPy = (code, p) => full ? R().pyFull.run(code, { execLimit: 15000, onOutput: p.onOutput, onErrOutput: p.onOutput, onInput: p.onInput, fs: base, name: '<stdin>', argv0: '', host: box })
+        : window.PYRUN.run(code, { execLimit: 15000, onOutput: p.onOutput, onInput: p.onInput, fs: base });
+      return window.REPL && window.REPL[lang] ? window.REPL[lang]({ ask: io2.ask, out: io2.out, err: io2.err, Scheme: window.Scheme, cancelled: () => sh2.cancelled, full,
+        banner: full ? 'Python ' + window.PYFULLRUN.version() + ' (CPython, in your browser)' : undefined,
         run: (code, p) => lang === 'java' ? window.JAVARUN.run(code, { stdin: '', onOutput: p.onOutput })
-          : window.PYRUN.run(code, { execLimit: 15000, onOutput: p.onOutput, onInput: p.onInput, fs: base }).then((r) => { if (r && r.files && sh2.applyChanges) sh2.applyChanges(r.files, io2, 'python'); return r; }) }) : Promise.resolve(127);
+          : runPy(code, p).then((r) => { if (r && r.files && sh2.applyChanges) sh2.applyChanges(r.files, io2, 'python'); return r; }) }) : Promise.resolve(127);
     };
-    const hooks = Object.assign({ fs, run, compile, nano, typedInput, repl, cancel: () => { if (o.stop) o.stop(); else stopAll(); } }, o.hooks || {});
+    // Python follows the Code Lab's engine: Full Python when it is chosen there (o.fullPy), the teaching Python otherwise
+    const fullPy = () => !!(o.fullPy && o.fullPy() && window.PYFULLRUN && !window.PYFULLRUN.unavailable());
+    const pyVersion = () => (fullPy() ? 'Python ' + window.PYFULLRUN.version() : null);
+    const hooks = Object.assign({ fs, run, compile, nano, typedInput, repl, pyVersion, cancel: () => { if (o.stop) o.stop(); else stopAll(); } }, o.hooks || {});
     let sh = SHELL.makeShell(hooks);
     if (Array.isArray(o.history)) sh.history = o.history.filter((s) => typeof s === 'string' && s.length < 2000).slice(-SHELL.LIMITS.history);
     if (o.aliases) sh.aliases = SHELL.cleanAliases(o.aliases);   // a saved session's aliases come back (they are checked: a saved copy is untrusted)
@@ -171,6 +177,12 @@
     async function run(lang, src, p) {
       const onOutput = (s) => p.onOutput(String(s));
       const args = Array.isArray(p.args) ? p.args.map(String) : [];   // the words after the program's name: sys.argv[1:], main(String[] args)
+      if (lang === 'python' && fullPy()) {   // Full Python: python file.py as CPython runs it; -c code is "<string>" in tracebacks, as there
+        const c = p.name === 'python', fsp = p.fs || {};
+        const r = await R().pyFull.run(src, { stdin: p.stdin == null ? null : p.stdin, execLimit: 15000, args, argv0: c ? '-c' : String(p.name), name: c ? '<string>' : (fsp.program || String(p.name)), onOutput, onErrOutput: p.onError ? (s) => p.onError(String(s)) : undefined, onInput: p.stdin == null && p.onInput ? (q) => p.onInput(q) : undefined, fs: p.fs, host: box });
+        if (r.err && /^Full Python is not available|^Not run:|needs to download/.test(r.err)) return { err: 'python: ' + r.err, exit: 127 };
+        return { err: r.err, exit: r.err ? (/^Stopped/.test(r.err) ? 130 : (r.exit || 1)) : (r.exit || 0), files: r.files };
+      }
       if (lang === 'python') {   // with the terminal's files (p.fs, shell.js filesFor); what it changed comes back as files (shell.js applyChanges)
         const r = await window.PYRUN.run(src, { stdin: p.stdin == null ? null : p.stdin, promptsOut: true, execLimit: 15000, args, argv0: typeof p.name === 'string' ? p.name : 'main.py', onOutput, onErrOutput: p.onError ? (s) => p.onError(String(s)) : undefined, onInput: p.onInput ? (q) => p.onInput(q) : undefined, fs: p.fs });
         return { err: r.err, exit: r.err ? (/^Stopped/.test(r.err) ? 130 : (r.exit || 1)) : (r.exit || 0), files: r.files };
@@ -330,7 +342,7 @@
     // setup NAME: the files of a lesson, into the home directory (src/shellgrade.js finds the lesson)
     const setup = (name, sh) => { const SG = window.SHELLGRADE; if (!SG) return null; const tree = SG.setupFor(name); if (!tree) return null; SG.populate(sh.fs, tree); sh.fs.cwd = SHELL.HOME; return 'the files for ' + name + ' are in your home directory now (you are there: ls to see them)'; };
     const panel = makePanel({
-      fs: SHELL.makeFS(saved && saved.fs), history: saved && saved.history, aliases: saved && saved.aliases, persist: KEY, armConfirm: ctx.armConfirm, isFull: ctx.isFull, cppStd: ctx.cppStd, cStd: ctx.cStd, stop: ctx.stop,
+      fs: SHELL.makeFS(saved && saved.fs), history: saved && saved.history, aliases: saved && saved.aliases, persist: KEY, armConfirm: ctx.armConfirm, isFull: ctx.isFull, fullPy: ctx.fullPy, cppStd: ctx.cppStd, cStd: ctx.cStd, stop: ctx.stop,
       hooks: { edit, setup }, before: syncIn, after: syncOut, onClose: ctx.onClose,
       onReset: () => { try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ } mirrored = new Set(); return SHELL.makeFS(null); },
       resetTitle: 'Forget every file and folder made in this terminal (the Code Lab files stay)',

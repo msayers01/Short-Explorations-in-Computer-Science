@@ -68,12 +68,13 @@
 
   // Anything that arrives in a link or a back-up is checked and coerced here: ids are short plain words (they become object keys),
   // the language is one we run, and every field has the type the rest of the code expects. Returns null if it is not an assignment.
+  const FULL_LANGS = ['cpp', 'python'];   // the languages with a Full engine (Full C++, Full Python), which an assignment may ask for
   function normalize(a) {
     if (!a || typeof a !== 'object' || typeof a.id !== 'string' || !ID_RE.test(a.id) || !Object.prototype.hasOwnProperty.call(LANG_LABEL, a.lang)) return null;
     return Object.assign({ id: a.id, v: 1, title: str(a.title, 200), lang: a.lang, text: str(a.text), starter: str(a.starter, 100000),
       tests: (Array.isArray(a.tests) ? a.tests : []).filter(t => t && typeof t === 'object').slice(0, 200).map(t => ({ k: t.k === 'call' ? 'call' : 'stdin', in: str(t.in, 5000), expect: str(t.expect, 5000), hidden: !!t.hidden })),
       hints: strs(a.hints), roster: strs(a.roster, 200), author: str(a.author, 200), due: str(a.due, 200), created: Number.isFinite(a.created) ? a.created : Date.now() },
-      a.lang === 'cpp' && a.runtime === 'full' ? { runtime: 'full' } : {});   // only C++ has a choice of engine; absent means the built-in teaching interpreter
+      FULL_LANGS.includes(a.lang) && a.runtime === 'full' ? { runtime: 'full' } : {});   // C++ and Python have a choice of engine; absent means the built-in teaching one
   }
   // The same for a submission link: who, which assignment, the program, and what the student's own check showed.
   function cleanSub(sub) {
@@ -83,10 +84,10 @@
   }
 
   // ---------- assignment model
-  function studentCopy(a) { return Object.assign({ v: 1, id: a.id, title: a.title, lang: a.lang, text: a.text, starter: a.starter, tests: (a.tests || []).filter(t => !t.hidden).map(t => ({ k: t.k, in: t.in, expect: t.expect })), hints: a.hints || [], roster: a.roster || [], author: a.author || '', due: a.due || '', created: a.created }, a.lang === 'cpp' && a.runtime === 'full' ? { runtime: 'full' } : {}); }
+  function studentCopy(a) { return Object.assign({ v: 1, id: a.id, title: a.title, lang: a.lang, text: a.text, starter: a.starter, tests: (a.tests || []).filter(t => !t.hidden).map(t => ({ k: t.k, in: t.in, expect: t.expect })), hints: a.hints || [], roster: a.roster || [], author: a.author || '', due: a.due || '', created: a.created }, FULL_LANGS.includes(a.lang) && a.runtime === 'full' ? { runtime: 'full' } : {}); }
   function toEx(a, includeHidden) {
     const tests = (a.tests || []).filter(t => includeHidden === 'hidden' ? t.hidden : (includeHidden || !t.hidden)).map(t => t.k === 'call' ? { call: t.in, expect: t.expect } : { stdin: t.in, expect: t.expect, name: t.in ? 'input ' + JSON.stringify(t.in) : 'output' });
-    return { id: 'asg-' + a.id, lang: a.lang, runtime: a.lang === 'cpp' && a.runtime === 'full' ? 'full' : undefined, title: a.title, tests, hints: a.hints || [], followup: '' };
+    return { id: 'asg-' + a.id, lang: a.lang, runtime: FULL_LANGS.includes(a.lang) && a.runtime === 'full' ? 'full' : undefined, title: a.title, tests, hints: a.hints || [], followup: '' };
   }
   function textToHtml(t) {   // plain text with paragraphs, `code`, and lines starting with "- " as bullets
     const paras = String(t || '').replace(/\r/g, '').split(/\n{2,}/);
@@ -168,10 +169,18 @@
       const field = (label, input, note) => el('label', { class: 'teach-field' }, el('span', { class: 'teach-label' }, label), input, note ? el('span', { class: 'muted small' }, note) : null);
       f.title = el('input', { class: 'find-inp wide', value: a.title, placeholder: 'e.g. Leap years' });
       f.lang = el('select', { class: 'teach-select' }, Object.keys(LANG_LABEL).map(l => { const o = el('option', { value: l }, LANG_LABEL[l]); if (l === a.lang) o.selected = true; return o; }));
-      f.runtime = el('select', { class: 'teach-select' }, el('option', { value: '' }, 'Teaching interpreter (built in, works offline)'), el('option', { value: 'full' }, 'Full C++ (real compiler, downloaded once)'));
+      const fullOpt = el('option', { value: 'full' }), runtimeLabel = el('span', { class: 'teach-label' }), runtimeNote = el('span', { class: 'muted small' });
+      f.runtime = el('select', { class: 'teach-select' }, el('option', { value: '' }, 'Teaching interpreter (built in, works offline)'), fullOpt);
       f.runtime.value = a.runtime === 'full' ? 'full' : '';
-      const runtimeField = field('C++ engine', f.runtime, 'Full C++ has strings, vectors, classes and the whole library; students and you download about 28 MB the first time, and it needs the site opened from a web address.');
-      const showRuntime = () => { runtimeField.style.display = f.lang.value === 'cpp' ? '' : 'none'; };
+      const runtimeField = el('label', { class: 'teach-field' }, runtimeLabel, f.runtime, runtimeNote);
+      const showRuntime = () => {
+        const py = f.lang.value === 'python';
+        runtimeField.style.display = FULL_LANGS.includes(f.lang.value) ? '' : 'none';
+        runtimeLabel.textContent = py ? 'Python engine' : 'C++ engine';
+        fullOpt.textContent = py ? 'Full Python (the real Python ' + ((window.PYFULLRUN && window.PYFULLRUN.version()) || '3') + ', downloaded once)' : 'Full C++ (real compiler, downloaded once)';
+        runtimeNote.textContent = py ? 'Full Python has the newest language and all of the standard library, but no turtle; students and you download about ' + ((window.PYFULLRUN && window.PYFULLRUN.mb()) || 6) + ' MB the first time, and it needs the site opened from a web address.'
+          : 'Full C++ has strings, vectors, classes and the whole library; students and you download about 28 MB the first time, and it needs the site opened from a web address.';
+      };
       f.lang.addEventListener('change', showRuntime); showRuntime();
       f.author = el('input', { class: 'find-inp', value: a.author, placeholder: 'shown to students' });
       f.due = el('input', { class: 'find-inp', value: a.due, placeholder: 'e.g. Friday 10 October' });
@@ -194,7 +203,7 @@
       (a.tests || []).forEach(addRow); if (!a.tests || !a.tests.length) addRow();
       const testsTable = el('table', { class: 'teach-table tests' }, el('thead', {}, el('tr', {}, el('th', {}, 'Kind'), el('th', {}, 'Input given / expression called'), el('th', {}, 'Expected output / value'), el('th', {}, 'Hidden'), el('th', {}, ''))), testsBody);
       const collect = () => ({
-        id: a.id, v: 1, title: f.title.value.trim(), lang: f.lang.value, runtime: f.lang.value === 'cpp' && f.runtime.value === 'full' ? 'full' : undefined, text: f.text.value, starter: f.starter.value, author: f.author.value.trim(), due: f.due.value.trim(), created: a.created,
+        id: a.id, v: 1, title: f.title.value.trim(), lang: f.lang.value, runtime: FULL_LANGS.includes(f.lang.value) && f.runtime.value === 'full' ? 'full' : undefined, text: f.text.value, starter: f.starter.value, author: f.author.value.trim(), due: f.due.value.trim(), created: a.created,
         hints: f.hints.value.split('\n').map(s => s.trim()).filter(Boolean), roster: f.roster.value.split('\n').map(s => s.trim()).filter(Boolean),
         tests: rows.map(r => ({ k: r.kind.value, in: r.inp.value.replace(/\r/g, ''), expect: r.exp.value.replace(/\r/g, ''), hidden: r.hid.checked })).filter(t => t.in !== '' || t.expect !== '')
       });
@@ -254,7 +263,7 @@
         submitBox.append(el('div', { class: 'toolbar' }, el('span', { class: 'small' }, 'Name:'), nameInp, make), outBox);
       }
       bar.append(
-        el('div', { class: 'ex-bar-text' }, el('span', { class: 'ex-label' }, 'Assignment'), ' ', el('b', {}, a.title), el('span', { class: 'ex-bar-where' }, (a.author ? ' · ' + a.author : '') + (a.due ? ' · due ' + a.due : '') + (a.runtime === 'full' ? ' · Full C++' : '') + ' · ' + ex.tests.length + ' visible test' + (ex.tests.length === 1 ? '' : 's'))),
+        el('div', { class: 'ex-bar-text' }, el('span', { class: 'ex-label' }, 'Assignment'), ' ', el('b', {}, a.title), el('span', { class: 'ex-bar-where' }, (a.author ? ' · ' + a.author : '') + (a.due ? ' · due ' + a.due : '') + (a.runtime === 'full' ? (a.lang === 'python' ? ' · Full Python' : ' · Full C++') : '') + ' · ' + ex.tests.length + ' visible test' + (ex.tests.length === 1 ? '' : 's'))),
         el('div', { class: 'toolbar' }, check, submitBtn, el('button', { class: 'btn quiet', onclick: () => { instr.hidden = !instr.hidden; file.asgSeen = true; ctx.save(); } }, 'Task'), hintBtn, el('button', { class: 'btn quiet', title: 'Put the starter code back', onclick: (e) => ctx.armConfirm(e.currentTarget, 'Replace your code with the starter?', () => { ctx.setCode(a.starter || ''); }) }, 'Reset to starter')),
         instr, verdict, hintBox, submitBox);
       file.asgSeen = true; ctx.save();

@@ -366,6 +366,15 @@ Random r = new Random();  r.nextInt(6) + 1</code></pre>
   ].map((r) => r.length === 1 ? '<tr><th colspan="2">' + r[0] + '</th></tr>' : '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join('') + '</tbody></table><p class="ref-note">On a Mac, Cmd works wherever Ctrl is shown for the editor.</p>';
 
   // The same quick reference for the Full C++ engine: the note at the end changes, and the library is no longer limited.
+  // Full Python: the same quick reference, with what the real Python adds and its own note.
+  REFERENCE.pyfull = REFERENCE.python.replace(/<p class="ref-note">[\s\S]*<\/p>$/, `<h4>With Full Python you can also use</h4>
+<pre><code>match command:            # structural pattern matching
+    case "go" | "walk": ...
+    case _: ...
+if (n := len(xs)) > 3: ...    # assignment expressions
+from dataclasses import dataclass
+import statistics, csv, pathlib, datetime, fractions, decimal, itertools</code></pre>
+<p class="ref-note">Full Python is the real Python (CPython, version shown on the Engine button) running in your browser, with all of its standard library; there are no third-party packages such as numpy. Errors are Python's own tracebacks, and <code>sys.stderr</code> is shown in red. <code>open()</code> and <code>os</code> see this language's tabs, as with the teaching Python; files a program writes are kept only when it runs in the Terminal. Turtle drawings and Step through use the teaching Python. Python is downloaded the first time you use it (about 6 MB), and only this engine needs the internet.</p>`);
   REFERENCE.cppfull = REFERENCE.cpp.replace(/<p class="ref-note">[\s\S]*<\/p>$/, `<h4>With Full C++ you can also use</h4>
 <pre><code>#include &lt;string&gt;   #include &lt;vector&gt;   #include &lt;algorithm&gt;
 string s = "hello";  s += " world";  s.size()  s.substr(0, 5)
@@ -396,6 +405,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     }
     if (!S.panels) S.panels = {};
     S.fullCpp = S.fullCpp === true;
+    S.fullPy = S.fullPy === true;
     if (!STANDARDS.some(s => s[0] === S.cppStd)) S.cppStd = STANDARDS[1][0];
     if (!C_STANDARDS.some(s => s[0] === S.cStd)) S.cStd = C_STANDARDS[2][0];
     S.args = window.LABUTIL ? window.LABUTIL.cleanArgs(S.args) : {};   // the Arguments box of each language: strings only (labutil.js)
@@ -734,7 +744,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       document.documentElement.setAttribute('data-course', LANG_INFO[l].accent);
       editor.setLang(l); editor.value = curFile().code;
       renderTabs(); renderToolbar(); renderStatusBar(); renderExBar(); renderAsgBar(); out.hide(); replBox.hidden = l !== 'scheme'; turtleBox.hidden = true; traceBox.hidden = true; stdinBox.hidden = true; substBox.hidden = true; endMem(); setErrMark(null); renderArgs();
-      refBody.innerHTML = REFERENCE[l === 'cpp' && isFull() ? 'cppfull' : l]; renderTemplates(); repl.reset(); engineChanged();
+      refBody.innerHTML = REFERENCE[l === 'cpp' && isFull() ? 'cppfull' : l === 'python' && isFullPy() ? 'pyfull' : l]; renderTemplates(); repl.reset(); engineChanged();
     }
 
     // ----- file tabs
@@ -860,9 +870,22 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const stdSel = el('select', { class: 'teach-select std-sel', 'aria-label': 'Language standard', title: 'Which version of C++ the compiler accepts. C++20 is the default; checks on exercises always use it.', onchange: () => { S.cppStd = stdSel.value; save(); } }, STANDARDS.map(([v, label]) => el('option', { value: v }, label)));
     stdSel.value = S.cppStd;
     const engineBtn = el('button', { class: 'btn quiet', onclick: () => { S.fullCpp = !S.fullCpp; save(); engineChanged(); } });
+    // Python has two as well: the teaching one (Skulpt, Python 3.7: turtle drawings, the step-through, offline) and Full Python (CPython 3.14, downloaded once).
+    // A program that draws with turtle always runs on the teaching one.
+    const isFullPy = () => S.lang === 'python' && (exFull() || S.fullPy === true);
+    const pyEngineBtn = el('button', { class: 'btn quiet', onclick: () => { S.fullPy = !S.fullPy; save(); engineChanged(); } });
     const cStdSel = el('select', { class: 'teach-select std-sel', 'aria-label': 'C standard', title: 'Which version of C the compiler accepts (with the GNU extensions, as gcc has by default). C17 is the default.', onchange: () => { S.cStd = cStdSel.value; save(); } }, C_STANDARDS.map(([v, label]) => el('option', { value: v }, label)));
     cStdSel.value = S.cStd;
     function engineChanged() {
+      if (S.lang === 'python') {
+        const why = window.PYFULLRUN.unavailable(), forced = exFull();
+        pyEngineBtn.textContent = isFullPy() ? 'Engine: Python ' + window.PYFULLRUN.version() : 'Engine: Teaching';
+        pyEngineBtn.disabled = forced || (!isFullPy() && !!why);
+        pyEngineBtn.title = forced ? 'This exercise or assignment is written for Full Python' : (!isFullPy() && why ? 'Full Python is not available here: ' + why : isFullPy() ? 'Full Python is the real Python ' + window.PYFULLRUN.version() + ' with all of its standard library. Turtle drawings and Step through still use the teaching Python. Click to go back to the teaching Python, which works offline.' : 'The teaching Python (Python 3.7) can draw with turtle, step through a program and works offline. Click for Full Python, the real Python ' + window.PYFULLRUN.version() + ' with all of its standard library (downloads about ' + window.PYFULLRUN.mb() + ' MB the first time).');
+        refBody.innerHTML = REFERENCE[isFullPy() ? 'pyfull' : 'python'];
+        renderToolbar();
+        return;
+      }
       if (S.lang !== 'cpp') return;
       const why = window.CLANGRUN.unavailable(), forced = exFull();
       engineBtn.textContent = isFull() ? 'Engine: Full C++' : 'Engine: Teaching';
@@ -872,7 +895,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       endMem(); renderToolbar();
     }
     const fileInput = el('input', { type: 'file', accept: '.py,.cpp,.cc,.cxx,.h,.c,.java,.scm,.ss,.rkt,.txt', hidden: '', onchange: openFiles });
-    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'c' ? cStdSel : null, S.lang === 'python' ? stepBtn : null, S.lang === 'java' && window.JAVASTEP ? jstepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, S.lang === 'cpp' || S.lang === 'c' || S.lang === 'java' ? inputBtn : null, hasArgs() ? argsBtn : null, findBtn, tplBtn, refBtn, window.TERMINAL ? termBtn : null, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
+    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'python' ? pyEngineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'c' ? cStdSel : null, S.lang === 'python' ? stepBtn : null, S.lang === 'java' && window.JAVASTEP ? jstepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, S.lang === 'cpp' || S.lang === 'c' || S.lang === 'java' ? inputBtn : null, hasArgs() ? argsBtn : null, findBtn, tplBtn, refBtn, window.TERMINAL ? termBtn : null, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
     function setFont(d) { S.fontSize = Math.min(24, Math.max(11, S.fontSize + d)); save(); editor.el.style.setProperty('--lab-font', S.fontSize + 'px'); editor.render(); }
 
     // ----- find / replace bar
@@ -914,7 +937,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     // ----- side panels: templates, reference
     const tplBox = el('div', { class: 'lab-panel', hidden: '' });
     const refBox = el('div', { class: 'lab-panel lab-ref', hidden: '' });
-    const refBody = el('div', { class: 'prose ref-body', html: REFERENCE[S.lang === 'cpp' && S.fullCpp ? 'cppfull' : S.lang] });
+    const refBody = el('div', { class: 'prose ref-body', html: REFERENCE[S.lang === 'cpp' && S.fullCpp ? 'cppfull' : S.lang === 'python' && S.fullPy ? 'pyfull' : S.lang] });
     refBox.append(el('div', { class: 'panel-head' }, el('b', {}, 'Quick reference'), el('button', { class: 'btn quiet', onclick: () => togglePanel('ref') }, '×')), refBody);
     function renderTemplates() {
       tplBox.innerHTML = '';
@@ -1063,7 +1086,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     // ----- the terminal (src/terminal.js in front of src/shell.js). ~/lab in it mirrors the files here, both ways.
     function removeLabFile(l, f) { const i = S.files[l].indexOf(f); if (i < 0) return; S.files[l].splice(i, 1); histDrop(l, f.name); if (!S.files[l].length) S.files[l].push({ name: LANG_INFO[l].first, code: '' }); if (S.active[l] >= S.files[l].length) S.active[l] = S.files[l].length - 1; else if (i < S.active[l]) S.active[l]--; save(); }
     const term = window.TERMINAL && window.SHELL ? window.TERMINAL.mount({
-      el, armConfirm, isTouch, Runners, isFull, cppStd: () => S.cppStd, cStd: () => S.cStd, stop,
+      el, armConfirm, isTouch, Runners, isFull, fullPy: () => S.fullPy === true, cppStd: () => S.cppStd, cStd: () => S.cStd, stop,
       labFiles: () => { const all = []; for (const l in LANG_INFO) for (const f of S.files[l]) all.push({ lang: l, name: f.name, code: f.code, set: (c) => { if (c !== f.code) snapshot(l, f, 'terminal'); f.code = c; save(); }, remove: () => removeLabFile(l, f) }); return all; },
       addLabFile: (l, name, code) => { if (!hasLang(l)) return; S.files[l].push({ name: uniqueName(l, name), code }); save(); },
       labChanged: () => { if (editor.value !== curFile().code) editor.value = curFile().code; applyErrMark(); renderTabs(); renderStatusBar(); renderExBar(); renderAsgBar(); },
@@ -1132,6 +1155,17 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
         const file = proj ? S.files.java.find((f) => f.name === w.file) : curFile();
         return file ? { file, line: w.line } : null;
       }
+      if (lang === 'python') {
+        // Full Python's traceback names each frame (File "/home/student/lab/helper.py", line 2): the innermost one in a tab of this Lab;
+        // the teaching Python says "on line 2 of helper.py" for a module of the student's
+        const frames = [...String(err).matchAll(/File "([^"]+)", line (\d+)/g)].map((m) => [m[1].replace(/^\/home\/student\/lab\//, ''), +m[2]]);
+        const other = String(err).match(/\bon line (\d+) of ([^\s/]+\.py)\b/);
+        if (other) frames.push([other[2], +other[1]]);
+        if (frames.length) {
+          for (let i = frames.length - 1; i >= 0; i--) { const file = filesOf('python').find((f) => f.name === frames[i][0]) || (frames[i][0] === 'main.py' || frames[i][0] === '<string>' ? curFile() : null); if (file) return { file, line: frames[i][1] }; }
+          return null;
+        }
+      }
       const n = window.LABUTIL ? window.LABUTIL.errorLine(lang, err) : 0;
       return n ? { file: curFile(), line: n } : null;
     }
@@ -1139,7 +1173,8 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     // The error marker in the editor: one line of one file, kept while that file is unchanged (any edit, from the editor or the terminal, drops it)
     let errMark = null;
     function setErrMark(loc, err) {
-      errMark = loc ? { file: loc.file, line: loc.line, code: loc.file.code, msg: ((String(err || '').split('\n').find((l) => /^\S+:\d+:\d+: (fatal )?error:/.test(l))) || String(err || '').split('\n')[0]).replace(/^[^\s:]+:\d+:(\d+:)? ?/, '').slice(0, 300) || 'error' } : null;
+      const lines = String(err || '').split('\n'), tb = /^(Traceback|\s+File ")/.test(lines[0]);   // a Python traceback: its last line says what went wrong
+      errMark = loc ? { file: loc.file, line: loc.line, code: loc.file.code, msg: ((tb ? lines.filter((l) => l.trim()).pop() : lines.find((l) => /^\S+:\d+:\d+: (fatal )?error:/.test(l))) || lines[0]).replace(/^[^\s:]+:\d+:(\d+:)? ?/, '').slice(0, 300) || 'error' } : null;
       applyErrMark();
     }
     function applyErrMark() {
@@ -1157,7 +1192,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     }
     function commandLine(lang, proj, args) {
       const tail = args.length ? ' ' + args.map(shellWord).join(' ') : '';
-      if (lang === 'python') return 'python ' + shellWord(curFile().name) + tail;
+      if (lang === 'python') return (isFullPy() && !usesTurtleIn(editor.value) ? 'python3 ' : 'python ') + shellWord(curFile().name) + tail;
       if (lang === 'java' && proj) return 'javac ' + proj.files.map((f) => shellWord(f.name)).join(' ') + ' && java ' + (proj.main || 'Main') + tail;
       if (lang === 'c') { const exe = curFile().name.replace(/\.c$/, '') || 'main'; return 'gcc -std=' + S.cStd + ' ' + shellWord(curFile().name) + ' -o ' + shellWord(exe) + ' && ./' + shellWord(exe) + tail; }
       return ((window.__app.COMMANDS || {})[lang === 'cpp' && isFull() ? 'cppfull' : lang] || '') + tail;
@@ -1179,11 +1214,15 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
           const usesTurtle = usesTurtleIn(code);
           // the program's folder is ~/lab holding this language's tabs, so open('data.txt') reads a data.txt tab (pylib.js); what it writes is not kept here
           const labFs = { cwd: '/home/student/lab', importDir: '/home/student/lab', entries: [['/home/student/lab', 'd']].concat(filesOf('python').map((f) => ['/home/student/lab/' + f.name, 'f', f === curFile() ? code : String(f.code)])) };
-          const r = await window.PYRUN.run(code, { execLimit: 15000, args, argv0: curFile().name, onOutput: (s) => out.write(s), onInput: (p) => out.ask(p), turtle: usesTurtle ? turtleOptions() : undefined, fs: labFs });
+          const full = isFullPy() && !usesTurtle;   // Full Python; a drawing stays on the teaching Python, which has the turtle
+          if (isFullPy() && usesTurtle) out.note('(turtle drawings run on the teaching Python)');
+          const r = full
+            ? await window.__runners.pyFull.run(code, { execLimit: 15000, args, argv0: curFile().name, name: '/home/student/lab/' + curFile().name, onOutput: (s) => out.write(s), onErrOutput: (s) => out.errWrite(s), onInput: (p) => out.ask(p), fs: labFs, host: out.el })
+            : await window.PYRUN.run(code, { execLimit: 15000, args, argv0: curFile().name, onOutput: (s) => out.write(s), onInput: (p) => out.ask(p), turtle: usesTurtle ? turtleOptions() : undefined, fs: labFs });
           if (r.err) showError('python', r.err); else if (!r.out && !usesTurtle && !r.exit) out.note('(the program finished without printing anything)');
           if (r.files && r.files.write.concat(r.files.mkdir, r.files.rm).length) {
             const names = r.files.write.map((w) => w[0]).concat(r.files.mkdir).map((p) => p.replace(/^\/home\/student\/lab\//, ''));
-            out.note('(' + (names.length ? 'the program wrote ' + names.slice(0, 5).join(', ') + (names.length > 5 ? ' and ' + (names.length - 5) + ' more' : '') + '. ' : 'the program changed files. ') + 'Files a program writes are not kept in the Code Lab: run it in the Terminal (python ' + curFile().name + ' in the folder lab) to keep them.)');
+            out.note('(' + (names.length ? 'the program wrote ' + names.slice(0, 5).join(', ') + (names.length > 5 ? ' and ' + (names.length - 5) + ' more' : '') + '. ' : 'the program changed files. ') + 'Files a program writes are not kept in the Code Lab: run it in the Terminal (' + (full ? 'python3 ' : 'python ') + curFile().name + ' in the folder lab) to keep them.)');
           }
           stopped = /stopped|cancel/i.test(r.err || '') && !r.out;
           if (!r.err && r.exit) { out.note('(the program ended with status ' + r.exit + ')'); exit = r.exit; }   // sys.exit(n)
@@ -1227,7 +1266,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const usesTurtleIn = (code) => /\b(import\s+turtle|from\s+turtle\s+import)\b/.test(code);
     function turtleOptions() { turtleBox.hidden = false; turtleMount.textContent = ''; if (turtleBox.scrollIntoView) turtleBox.scrollIntoView({ block: 'nearest' });   // the browser pauses the drawing of a frame that is off screen
      return { mount: turtleMount, width: Math.min(560, turtleMount.clientWidth || 560), height: 360 }; }
-    function stop() { window.PYRUN.cancel(); window.CPPRUN.cancel(); window.JAVARUN.cancel(); window.CLANGRUN.cancel(); }
+    function stop() { window.PYRUN.cancel(); window.CPPRUN.cancel(); window.JAVARUN.cancel(); window.CLANGRUN.cancel(); if (window.PYFULLRUN) window.PYFULLRUN.cancel(); }
 
     // ----- Python tracer
     function startTrace() {
@@ -1552,6 +1591,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     if (idx >= 0) { if (files[idx].code.trim() === '' || files[idx].code === o.code) files[idx].code = o.code; }
     else { files.push({ name: uniqueNameFor(l, (o.name || 'from-course') + LANG_INFO[l].ext), code: o.code, ex: o.ex || undefined }); idx = files.length - 1; }
     if (l === 'cpp' && o.runtime === 'full') S.fullCpp = true;
+    if (l === 'python' && o.runtime === 'full') S.fullPy = true;
     S.lang = l; S.active[l] = idx; save();
     location.hash = '#/lab';
   }

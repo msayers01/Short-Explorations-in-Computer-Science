@@ -68,6 +68,7 @@
     if (!isObj(l)) return null;
     const out = { lang: LANGS.includes(l.lang) ? l.lang : 'python', files: {}, active: {}, fontSize: l.fontSize === undefined ? 15 : fin(l.fontSize, 11, 24) || 15, wrap: !!l.wrap, panels: {} };
     if (l.fullCpp === true) out.fullCpp = true;
+    if (l.fullPy === true) out.fullPy = true;   // the Code Lab's Python engine is Full Python
     if (['gnu++17', 'gnu++20', 'gnu++23'].includes(l.cppStd) && l.cppStd !== 'gnu++20') out.cppStd = l.cppStd;
     if (['gnu99', 'gnu11', 'gnu23'].includes(l.cStd)) out.cStd = l.cStd;   // C's standard (gnu17, the default, is not written)
     for (const lang of LANGS) {
@@ -206,6 +207,7 @@
   function mergeLab(mine, theirs) {
     const out = { lang: mine.lang, files: {}, active: Object.assign({}, mine.active), fontSize: mine.fontSize, wrap: mine.wrap, panels: Object.assign({}, theirs.panels, mine.panels) };
     if (mine.fullCpp) out.fullCpp = true;
+    if (mine.fullPy) out.fullPy = true;
     if (mine.cppStd) out.cppStd = mine.cppStd;
     if (mine.cStd) out.cStd = mine.cStd;
     if (mine.args || theirs.args) out.args = Object.assign({}, theirs.args, mine.args);

@@ -37,7 +37,7 @@ must move between people travels inside a URL.
      `document`, `urllib` and other modules that reach out; do not add one back. Nothing the sandboxes send back is trusted: it is
      checked and shown as text. Scheme runs in the page: it is our own interpreter, with no way to name a host object, a step limit and
      no `eval`.
-   - `build.js` writes a Content Security Policy (script hashes; `connect-src 'self'`, which exists only for the Full C++ download; `img-src 'self'` for the lessons' pictures, §9h) into every page and into `dist/_headers`. A new inline
+   - `build.js` writes a Content Security Policy (script hashes; `connect-src 'self'`, which exists only for the Full C++ and Full Python downloads; `img-src 'self'` for the lessons' pictures, §9h) into every page and into `dist/_headers`. A new inline
      script needs no change (its hash is computed); a new external resource must be added to the policy deliberately.
 
 The site's own scripts are concatenated into one inline `<script>` (joined with `;`), so the policy carries one hash for them, one for the
@@ -505,7 +505,7 @@ with `runtime: 'full'` (SC 105); an exercise inherits `runtime` from its course 
 - **Loading.** `runner.js` (`CLANGRUN`) fetches `toolchain.js`, puts `self.CLANG_BASE` and it in front of `clangworker.js` (a data block,
   `clang-src`) and starts a blob Web Worker from the lot. No iframe fallback: if the worker cannot start, it says so. The worker downloads
   the rest from `CLANG_BASE` (progress messages feed the "Getting the C++ compiler… 34%" line). This is why the policy has
-  `connect-src 'self'`; it is the only reason, and it also lets the Python and JSCPP workers ask for this site's own (public) files.
+  `connect-src 'self'`; it is the only reason (with Full Python's download, §9d2), and it also lets the Python and JSCPP workers ask for this site's own (public) files.
 - **Consent.** Nothing is fetched until the student agrees (`CLANGRUN.allow()`, remembered in localStorage under `se.realcpp`); the box
   is shown in the output panel or the verdict (`fullCpp()` in app.js).
 - **The output panel is drawn as a terminal** (`outputPanel()` in app.js, `.out.term` in style.css): dark in both themes, a title bar with a
@@ -572,6 +572,55 @@ with `runtime: 'full'` (SC 105); an exercise inherits `runtime` from its course 
   test serves `dist/` from a local web server (the compiler cannot load from `file://`).
 - Updating the compiler: bump `@live-codes/clang-wasm` (exact version), rebuild, run `npm test` and the browser test. Its notices are
   appended to `THIRD-PARTY-NOTICES.md` by `build.js`.
+
+## 9d2. Full Python (CPython 3.14 in the browser, `src/pyfullworker.js`)
+
+Python has two engines, like C++. The *teaching Python* is Skulpt (Python 3.7, in the page, offline): it draws with turtle, has the
+Lab's Step through, and runs the lessons. *Full Python* is CPython 3.14 built for WebAssembly by Pyodide (`pyodide`, pinned in
+`package.json`): the newest language (match, `:=`, dataclasses), all of the standard library, CPython's own tracebacks, no third-party
+packages (Pyodide's packages are never loaded). It is used by the Lab's Python "Engine" button (`S.fullPy`, in back-ups), the terminal's
+`python` when that is chosen, assignments that ask for it (`runtime: 'full'`, `teach.js FULL_LANGS`), and any course, lesson block or
+exercise with `runtime: 'full'` and `lang: 'python'` (none yet). A program that uses turtle always runs on the teaching Python, and says so.
+
+- **Files.** `build.js` copies Pyodide to `dist/pyodide/<version>/` (git-ignored): the engine (`pyodide.asm.wasm`, 9.6 MB) and its script
+  (`pyodide.asm.mjs`) and the lock file gzipped, the standard library zip and the loader (`pyodide.js`) as they are: about 6 MB to download.
+  `BUILD.pyodide = {path, mb, version, python, files: {name: {sha256, gz, bytes}}}`; the hashes are of the unpacked files. The directory is
+  `immutable` in `_headers`. The npm package has no licence file: `licenses/MPL-2.0.txt` (Pyodide) and `licenses/CPython-LICENSE.txt` (from
+  CPython's v3.14.2 tag) go into the About page's credits and next to the files.
+- **Loading** (`runner.js PYFULLRUN`). After the student agrees (`se.realpy`, the same box as Full C++, `fullPy()` in app.js) the page fetches
+  each file from `/pyodide/<version>/`, unpacks the gzipped ones with `DecompressionStream`, checks every one against its SHA-256 and keeps
+  the checked bytes in memory, so a worker ended by a time limit restarts in about 2 s without a download. The worker's text is the
+  `pyfull-src` block (lockdown.js, then pyfullworker.js) with Pyodide's loader and engine put in at a marker; the engine is an ES module, so
+  its `export default` becomes a global and its `import.meta.url` goes (the worker is a classic script). lockdown.js runs first, so the
+  worker has no fetch, importScripts, Worker or IndexedDB; the wasm and the standard library arrive as bytes in the `init` message, and a
+  stand-in `fetch` that serves only those exists while Pyodide starts and is deleted before any program runs. No change to the policy:
+  `'unsafe-eval'` (already there for Skulpt) covers compiling the WebAssembly, `connect-src 'self'` the download.
+- **Running** (the `HARNESS` Python in pyfullworker.js). Each run is `python file.py`: a fresh `__main__` module, `sys.argv`, the working
+  directory, `os.environ` (the terminal's exported variables), `sys.path[0]` the program's folder, `random` seeded fresh (or with the
+  replay's seed), `sys.dont_write_bytecode`. Before each run the modules loaded since start-up are dropped and the ones loaded at start-up
+  put back as they were (a program that changed `math.tau` does not change the next one). `import js`, `pyodide`, `_pyodide` and
+  `pyodide_js` are refused while a program runs (Pyodide's bridge to JavaScript; the worker has nothing to reach, but the door stays shut).
+  Errors are CPython's tracebacks without the harness's frame (`format_exception`), a syntax error is `format_exception_only`, and the
+  source lines come from `linecache`, so they match a real terminal. `SystemExit` gives the status (a string is printed, status 1).
+- **Files of the program.** The same snapshot as the teaching Python (`fs`, §9f "Python and files"), written into Pyodide's in-memory file
+  system before each run (`/home` and `/tmp` emptied and refilled); `/`, `/etc`, `/usr` are made read-only with chmod, so writing there is a
+  PermissionError (its errno prints as 2, WebAssembly's EACCES, where Linux says 13). After the run `/home` and `/tmp` are compared with the
+  snapshot and the changes go back as `files`, exactly as the teaching Python's do.
+- **Input.** stdin given (a pipe, `<`, a test) is read as text. Typed input uses the replay Java and C use (`typedRunner`): a read past the
+  lines typed so far ends the run with `needInput`, and the program runs again from the start with one more line; random is seeded the same
+  way each time, and output (stdout and stderr counted apart, `skip`/`skipErr`) already on the screen is not sent again. A program that
+  catches the end of its input with a bare `except:` cannot keep running: from that moment every line it runs raises again (a trace function).
+  Time (`time.time()`) is not replayed, so a program that prints the time before asking shows a different value on the replay.
+- **stderr** is `{t:'out', fd: 2}`: red in the output panel (`errWrite`), the terminal's stderr, never in `r.out`, which graders compare.
+- **The terminal** follows the Lab's engine (`ctx.fullPy`): `python --version` says `Python 3.14.2`, `python file.py` names the file by its
+  absolute path in tracebacks and `python -c` names it `<string>`, as CPython does. The `>>>` shell replays as before; its tracebacks are
+  renamed `<python-input-N>` and renumbered per entry, as Python 3.14's own REPL shows them (`repl.js errTextFull`, tested against the
+  local python3 in `test_repl.js`).
+- **The Lab** marks the innermost traceback frame that is one of its tabs (`errorLoc`); the reference panel has a `pyfull` page.
+- **Tested** in `test_browser.js` (over http, with `_headers`): the agreement before any request, five requests all under /pyodide/,
+  Python 3.14 syntax and statistics, typed input, stderr, the traceback and its link, turtle on Skulpt, the terminal's version, files and
+  `-c`, an assignment checked on Full Python, the time limit and a restart, `js`/`pyodide` refused and no network, a tampered loader refused.
+  Not verified: low-end devices, Safari, and the production URL.
 
 ## 9e. Java (the site's own interpreter)
 
