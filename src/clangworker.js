@@ -88,7 +88,9 @@
   const NEED_INPUT = { needInput: true };
   function typedInput(ty) {
     const lines = Array.isArray(ty.lines) ? ty.lines : [], times = Array.isArray(ty.times) ? ty.times : [];
-    const t0 = Number(ty.t0) || Date.now(), began = Date.now();
+    // the run starts, and each typed line arrives, at the start of its second: a replay's program then reads the same time() as the run before
+    // it unless it computes for most of a second (from the very moment given, a replay a millisecond slower could read the next second)
+    const sec = (t) => Math.floor(t / 1000) * 1000, t0 = sec(Number(ty.t0) || Date.now()), began = Date.now();
     let k = 0, ended = false, shift = 0, a = (Number(ty.seed) | 0) || 1;
     const clock = () => t0 + (Date.now() - began) + shift;
     return {
@@ -97,7 +99,7 @@
       more() {   // stdin's next chunk: the next typed line, or null at the end of the input; past the last line typed so far, the run ends here
         if (ended) return null;
         if (k >= lines.length) throw NEED_INPUT;
-        const at = Number(times[k]) || 0; if (at > clock()) shift += at - clock();
+        const at = sec(Number(times[k]) || 0); if (at > clock()) shift += at - clock();
         const v = lines[k++];
         if (v == null) { ended = true; return null; }
         return String(v) + '\n';

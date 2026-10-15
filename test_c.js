@@ -69,7 +69,7 @@ function spawn() {
 }
 // the page's loop (runner.js typedRunner), with the answers given in advance
 async function typed(w, code, answers, opts) {
-  const lines = [], times = [], t0 = Date.now(); let out = '', rounds = 0; const shown = [];
+  const lines = [], times = [], t0 = Math.floor(Date.now() / 1000) * 1000 + 999; let out = '', rounds = 0; const shown = [];   // t0: the worst moment, a millisecond before the second ticks over
   for (;;) {
     const r = await w.run(Object.assign({ code, lang: 'c', typed: { lines, times, t0, seed: 4242, skip: out.length } }, opts));
     rounds++; out += r.out;
