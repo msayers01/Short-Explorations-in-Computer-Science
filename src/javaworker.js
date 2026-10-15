@@ -38,12 +38,14 @@
     opts.write = (s) => { if (skip) { if (s.length <= skip) { skip -= s.length; return; } s = s.slice(skip); skip = 0; } write(s); };
     let a = (Number(ty.seed) | 0) || 1;   // mulberry32
     opts.random = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-    const t0 = Number(ty.t0) || Date.now(), began = Date.now();
+    // the run starts, and each typed line arrives, at the start of its second: a replay's program then reads the same time() as the run before
+    // it unless it computes for most of a second (from the very moment given, a replay a millisecond slower could read the next second)
+    const sec = (t) => Math.floor(t / 1000) * 1000, t0 = sec(Number(ty.t0) || Date.now()), began = Date.now();
     opts.clock = () => t0 + (Date.now() - began) + shift;
     opts.more = () => {
       if (ended) return '';
       if (k >= lines.length) throw JAVA.NEED_INPUT;
-      const at = Number(times[k]) || 0; if (at > opts.clock()) shift += at - opts.clock();
+      const at = sec(Number(times[k]) || 0); if (at > opts.clock()) shift += at - opts.clock();
       const v = lines[k++];
       if (v == null) { ended = true; return ''; }
       return String(v) + '\n';
