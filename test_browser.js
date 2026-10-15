@@ -1034,9 +1034,11 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   // The page is served with the headers of dist/_headers (its rules for /index.html and /*), so what ships is what is tested: cross-origin isolation among them.
   const indexHeaders = {}; { let on = false; for (const line of fs.readFileSync(path.join(root, '_headers'), 'utf8').split('\n')) { if (!line.trim()) { on = false; continue; } if (!/^\s/.test(line)) { if (line.trim() === '/index.html' || line.trim() === '/*') on = true; continue; } if (on) { const i = line.indexOf(':'); indexHeaders[line.slice(0, i).trim()] = line.slice(i + 1).trim(); } } }
   let tamper = false;   // when set, the server hands out a changed compiler script
+  let tamperPy = false;   // and this, a changed Pyodide loader
   const server = http.createServer((req, res) => {
     const p = path.join(root, decodeURIComponent(req.url.split('?')[0]).replace(/^\/$/, '/index.html'));
     if (!p.startsWith(root) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); res.end('no'); return; }
+    if (tamperPy && p.endsWith('pyodide.js')) { const body = Buffer.concat([fs.readFileSync(p), Buffer.from(';self.__tampered = true;')]); res.writeHead(200, { 'Content-Type': 'text/javascript', 'Content-Length': body.length }); res.end(body); return; }
     if (tamper && p.endsWith('toolchain.js')) { const body = Buffer.concat([fs.readFileSync(p), Buffer.from(';self.__tampered = true;')]); res.writeHead(200, { 'Content-Type': 'text/javascript', 'Content-Length': body.length }); res.end(body); return; }
     res.writeHead(200, Object.assign({ 'Content-Type': types[path.extname(p)] || 'application/octet-stream', 'Content-Length': fs.statSync(p).size }, p.endsWith('index.html') ? indexHeaders : {})); fs.createReadStream(p).pipe(res);
   });
@@ -1289,6 +1291,71 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
     check('arena persistent: a syntax error forfeits before turn 1', /Player 2 .* wins after 1 turn/.test(bannerBad) && /forfeits before turn 1/.test(await hp.locator('.arena-log').last().innerText()), bannerBad);
     void B;
     await hp.goto(origin + '/index.html#/lab'); await hp.waitForSelector('#app > *');
+  }
+  // ---- Full Python: CPython (Pyodide) downloaded on demand, every file checked, run in a worker with no network
+  {
+    const pyReqs = [], pyOther = [];
+    hp.on('request', (rq) => { const u = rq.url(); if (u.includes('/pyodide/')) pyReqs.push(u); else if (!u.startsWith(origin) && !u.startsWith('blob:') && !u.startsWith('data:')) pyOther.push(u); });
+    check('full python is unavailable when the site is opened as a file', /web address/.test(await page.evaluate(() => window.PYFULLRUN.unavailable() || '')));
+    await hp.goto(origin + '/index.html#/lab'); await hp.reload(); await hp.waitForSelector('#app > *');
+    await hp.click('.lang-btn:has-text("Python")');
+    check('full python: the Lab offers the choice of engine, teaching by default', (await hp.locator('.lab-toolbar button:has-text("Engine: Teaching")').count()) === 1);
+    await hp.click('.lab-toolbar button:has-text("Engine: Teaching")');
+    check('full python: choosing it names the version', (await hp.locator('.lab-toolbar button:has-text("Engine: Python 3.14")').count()) === 1, await hp.locator('.lab-toolbar').innerText());
+    await setHpCode('import sys, statistics\nfrom dataclasses import dataclass\n@dataclass\nclass P:\n    x: int\nmatch P(3):\n    case P(x=n) if (m := n * 2) > 5:\n        print("matched", m)\nprint(sys.version_info[:2], statistics.median([3, 1, 2]))\nprint("to stderr", file=sys.stderr)\nname = input("Name? ")\nprint("Hi", name)\n');
+    await hp.click('.lab-toolbar button:has-text("Run")');
+    await hp.waitForSelector('.clang-gate');
+    check('full python: the first run asks before downloading anything', pyReqs.length === 0 && /Python 3\.14[\s\S]*about \d+ MB/.test(await hp.locator('.clang-gate').innerText()), [pyReqs, await hp.locator('.clang-gate').innerText()]);
+    await hp.click('button:has-text("Download it and continue")');
+    await hp.waitForSelector('.lab-out .inline-input', { timeout: 120000 });
+    await hp.fill('.lab-out .inline-input', 'Ada'); await hp.press('.lab-out .inline-input', 'Enter');
+    await hp.waitForFunction(() => /Hi Ada/.test(document.querySelector('.lab-out .out-text').textContent), null, { timeout: 60000 });
+    r = await hpOut();
+    check('full python: match, :=, dataclasses and statistics run as Python 3.14; input() is typed as it asks', /matched 6\n\(3, 14\) 2\n/.test(r) && /Name\? Ada\nHi Ada\n/.test(r), r);
+    check('full python: stderr is shown in red, apart from the output', (await hp.locator('.lab-out .out-text .err', { hasText: 'to stderr' }).count()) === 1, r);
+    check('full python: the download came from this site only, under /pyodide/<version>/, and only what the build lists', pyReqs.length === 5 && pyReqs.every((u) => u.startsWith(origin + '/pyodide/')) && pyOther.length === 0, [pyReqs, pyOther]);
+    check('full python: agreeing and the engine choice are remembered', (await hp.evaluate(() => localStorage.getItem('se.realpy'))) === '1' && (await hp.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.lab.v1')).fullPy)) === true);
+    await setHpCode('def f(n):\n    return 10 // n\n\nprint(f(0))\n');
+    await hp.click('.lab-toolbar button:has-text("Run")');
+    await hp.waitForFunction(() => /^(exit|error)/.test(document.querySelector('.lab-out .term-status').textContent), null, { timeout: 60000 });
+    r = await hpOut();
+    check('full python: an error is Python\'s own traceback, with a link to the line where it happened', /Traceback \(most recent call last\):\n  File "\/home\/student\/lab\/main\.py", line 4, in <module>[\s\S]*line 2, in f[\s\S]*ZeroDivisionError: division by zero/.test(r) && /go to line 2/.test(r), r);
+    await setHpCode('import turtle\nt = turtle.Turtle()\nt.forward(30)\nprint("drawn")\n');
+    await hp.click('.lab-toolbar button:has-text("Run")');
+    await hp.waitForFunction(() => /drawn/.test(document.querySelector('.lab-out .out-text').textContent), null, { timeout: 30000 });
+    check('full python: a turtle drawing runs on the teaching Python, and says so', /turtle drawings run on the teaching Python/.test(await hpOut()) && (await hp.frameLocator('#lab-turtle iframe').locator('canvas').count()) > 0, await hpOut());
+    // the terminal follows the Lab's engine: python --version, files read and written, -c, exit statuses
+    await hp.click('.lab-toolbar button:has-text("Terminal")'); await hp.waitForSelector('.lab-term .term-inp');
+    const hpTerm = async (cmd) => { await hp.fill('.term-inp', cmd); await hp.press('.term-inp', 'Enter'); await hp.waitForFunction(() => /^exit/.test(document.querySelector('.lab-term .term-status').textContent) && !document.querySelector('.lab-term .term-inp').disabled, null, { timeout: 60000 }); return hp.locator('.lab-term .term-scroll').innerText(); };
+    r = await hpTerm(`cd ~ && mkdir -p pyfull && cd pyfull && python --version && echo hello > in.txt && printf 'import os\\nprint(open("in.txt").read().upper(), sorted(os.listdir()))\\nopen("out.txt", "w").write("written")\\n' > t.py && python t.py && cat out.txt && echo; python -c "1/0"; echo "status $?"; cd ~ && rm -r pyfull`);
+    check('full python terminal: python is Python 3.14, reads and writes the terminal\'s files, and -c shows CPython\'s traceback and status', /Python 3\.14\.\d+\n/.test(r) && /HELLO\n \['in\.txt', 't\.py'\]\nwritten\n/.test(r) && /File "<string>", line 1, in <module>[\s\S]*ZeroDivisionError: division by zero\nstatus 1\n/.test(r), r.slice(-700));
+    await hp.click('.lab-toolbar button:has-text("Terminal")');
+    // an assignment for Full Python is checked on it
+    const pyLink = await hp.evaluate(async () => {
+      const a = { v: 1, id: 'pyfullasg', title: 'Median', lang: 'python', runtime: 'full', text: 'Print the median of the numbers given.', starter: 'import statistics\n', tests: [{ k: 'stdin', in: '3 1 2', expect: '2' }, { k: 'stdin', in: '4 1 3 2', expect: '2.5' }], hints: [], roster: [], author: 'Ms T', due: '', created: 1 };
+      return location.href.split('#')[0] + '#/assign?a=' + await window.TEACH.pack(window.TEACH.studentCopy(window.TEACH.normalize(a)));
+    });
+    await hp.goto('about:blank'); await hp.goto(pyLink); await hp.waitForSelector('.asg-bar');
+    check('full python assignment: the bar says Full Python and the engine is fixed', /Full Python/.test(await hp.locator('.asg-bar').innerText()) && (await hp.locator('.lab-toolbar button:has-text("Engine: Python 3.14")').isDisabled()), await hp.locator('.asg-bar').innerText());
+    await setHpCode('import statistics\nprint(statistics.median(map(int, input().split())))\n');
+    await hp.click('.asg-bar button:has-text("Check")');
+    await hp.waitForSelector('.asg-bar .verdict:not([hidden]) .v-title', { timeout: 120000 });
+    check('full python assignment: the program is checked on Full Python (statistics is not in the teaching Python)', /2 of 2 tests passed|passes every test|Correct|Yes|Exactly|That works/.test(await hp.locator('.asg-bar .verdict').innerText()), await hp.locator('.asg-bar .verdict').innerText());
+    // limits: a loop that never ends is stopped and the next program runs; the worker has no network and no way to Pyodide's bridge to JavaScript
+    const lim = await hp.evaluate(async () => {
+      const t0 = Date.now(), loop = await window.PYFULLRUN.run('while True:\n    pass', { execLimit: 1500 }), ms = Date.now() - t0;
+      const after = await window.PYFULLRUN.run('print("alive")', {});
+      const sealed = await window.PYFULLRUN.run('import sys\nfor m in ("js", "pyodide", "pyodide_js", "_pyodide"):\n    try:\n        __import__(m)\n        print(m, "imported")\n    except ImportError:\n        print(m, "refused")\nimport urllib.request\ntry:\n    urllib.request.urlopen("http://example.com")\nexcept Exception as e:\n    print("network:", type(e).__name__)', {});
+      return { loop: loop.err, ms, after: after.out, sealed: sealed.out, sealedErr: sealed.err };
+    });
+    check('full python: a loop that never ends is stopped, and the next program runs', /Time limit exceeded/.test(lim.loop || '') && lim.ms < 10000 && lim.after === 'alive\n', lim);
+    check('full python: programs cannot import the bridge to JavaScript or reach the network', /js refused\npyodide refused\npyodide_js refused\n_pyodide refused\nnetwork: \w+/.test(lim.sealed) && !/imported/.test(lim.sealed), lim);
+    tamperPy = true;
+    const tpy = await (await browser.newContext()).newPage();
+    await tpy.goto(origin + '/index.html#/'); await tpy.waitForSelector('#app > *'); await tpy.evaluate(() => window.PYFULLRUN.allow());
+    const tamperedPy = await tpy.evaluate(() => window.PYFULLRUN.run('print(1)', {}));
+    check('full python: a file that is not the one the site was built with is refused, and nothing runs', /not the one this version of the site expects/.test(tamperedPy.err || '') && !tamperedPy.out, tamperedPy);
+    tamperPy = false; await tpy.close();
   }
   check('full c++: no policy violations, no page errors', hpViolations.length === 0 && hpErrors.length === 0, [hpViolations, hpErrors]);
   await hp.close(); server.close();

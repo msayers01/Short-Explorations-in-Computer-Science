@@ -121,7 +121,8 @@ check('broken storage does not throw', Object.keys(BACKUP.collect(broken, { teac
   const cppAsg = { id: 'cppasg23', v: 1, title: 'Words', lang: 'cpp', runtime: 'full', text: '', starter: '', tests: [], hints: [], roster: [], author: '', due: '', created: 5 };
   check('assignment: Full C++ is kept for a C++ assignment', T.normalize(cppAsg).runtime === 'full');
   check('assignment: no runtime key when the teaching interpreter is meant', !('runtime' in T.normalize(Object.assign({}, cppAsg, { runtime: undefined }))));
-  check('assignment: a runtime on a Python assignment is dropped', !('runtime' in T.normalize(Object.assign({}, cppAsg, { lang: 'python' }))));
+  check('assignment: Full Python is kept for a Python assignment', T.normalize(Object.assign({}, cppAsg, { lang: 'python' })).runtime === 'full' && T.toEx(T.studentCopy(T.normalize(Object.assign({}, cppAsg, { lang: 'python' }))), false).runtime === 'full');
+  for (const l of ['java', 'scheme', 'c', '__proto__']) check('assignment: a runtime on a ' + l + ' assignment is dropped', !T.normalize(Object.assign({}, cppAsg, { lang: l })) || !('runtime' in T.normalize(Object.assign({}, cppAsg, { lang: l }))));
   for (const evil of ['FULL', 'teaching', 1, true, {}, ['full'], '__proto__']) check('assignment: runtime ' + J(evil) + ' is dropped', !('runtime' in T.normalize(Object.assign({}, cppAsg, { runtime: evil }))), T.normalize(Object.assign({}, cppAsg, { runtime: evil })));
   const copy = T.studentCopy(T.normalize(cppAsg));
   check('assignment: the student copy carries Full C++', copy.runtime === 'full' && T.toEx(copy, false).runtime === 'full');
@@ -129,6 +130,12 @@ check('broken storage does not throw', Object.keys(BACKUP.collect(broken, { teac
   const labC = Object.assign({}, lab, { fullCpp: true, cppStd: 'gnu++23' });
   const sc = store(); BACKUP.apply(sc, BACKUP.parse(J({ app: 'short-explorations-backup', v: 1, saved: new Date().toISOString(), data: { lab: labC } })).data, 'replace');
   check('lab: the engine and the standard survive a backup', sc.dump('shortcourses.lab.v1').fullCpp === true && sc.dump('shortcourses.lab.v1').cppStd === 'gnu++23', sc.dump('shortcourses.lab.v1'));
+  const sp = store(); BACKUP.apply(sp, BACKUP.parse(J({ app: 'short-explorations-backup', v: 1, saved: new Date().toISOString(), data: { lab: Object.assign({}, lab, { fullPy: true }) } })).data, 'replace');
+  check('lab: the Full Python choice survives a backup', sp.dump('shortcourses.lab.v1').fullPy === true, sp.dump('shortcourses.lab.v1'));
+  for (const evil of ['true', 1, {}, [true], null]) {
+    const se = store(); BACKUP.apply(se, BACKUP.parse(J({ app: 'short-explorations-backup', v: 1, saved: new Date().toISOString(), data: { lab: Object.assign({}, lab, { fullPy: evil }) } })).data, 'replace');
+    check('lab: fullPy ' + J(evil) + ' is dropped', !('fullPy' in se.dump('shortcourses.lab.v1')), se.dump('shortcourses.lab.v1'));
+  }
   for (const evil of ['gnu++99', 'c++20', 20, {}, null, '-std=gnu++20 -fsomething']) {
     const sh = store(); BACKUP.apply(sh, BACKUP.parse(J({ app: 'short-explorations-backup', v: 1, saved: new Date().toISOString(), data: { lab: Object.assign({}, lab, { cppStd: evil }) } })).data, 'replace');
     check('lab: standard ' + J(evil) + ' is dropped', !('cppStd' in sh.dump('shortcourses.lab.v1')), sh.dump('shortcourses.lab.v1'));

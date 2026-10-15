@@ -231,6 +231,35 @@
       compile: (code, opts) => fullCpp((o) => window.CLANGRUN.compile(code, o), Object.assign({}, opts, { lang: 'c' }))   // the terminal's gcc
     }
   };
+  // Full Python (PYFULLRUN in runner.js): CPython 3.14 as WebAssembly, the same kind of download (about 6 MB) and its own agreement.
+  // opts: {stdin, onOutput, onErrOutput, onInput (typed input), args, argv0, name, fs, execLimit, host}
+  Runners.pyFull = {
+    available: () => !window.PYFULLRUN.unavailable(),
+    run: (code, opts) => fullPy((o) => window.PYFULLRUN.run(code, o), opts)
+  };
+  async function fullPy(go, opts) {
+    opts = Object.assign({}, opts);
+    const P = window.PYFULLRUN, host = opts.host, none = (err) => ({ out: '', err, exit: 1 });
+    const why = P.unavailable();
+    if (why) return none('Full Python is not available here: ' + why + '. The teaching Python still works.');
+    if (!P.allowed()) {
+      if (!host) return none('Full Python needs to download Python first. Run a program in the Code Lab with Full Python chosen to do that.');
+      const yes = await new Promise((resolve) => {
+        const box = el('div', { class: 'clang-gate' },
+          el('p', {}, el('b', {}, 'Full Python is the real Python ' + P.version() + '. '), 'It runs in your browser, so nothing you write leaves this device, but the first time your browser has to download it: about ' + P.mb() + ' MB. After that it is kept on this device, and only this part of the site needs the internet.'),
+          el('div', { class: 'toolbar' }, el('button', { class: 'btn primary', onclick: () => { P.allow(); box.remove(); resolve(true); } }, 'Download it and continue'), el('button', { class: 'btn quiet', onclick: () => { box.remove(); resolve(false); } }, 'Not now')));
+        host.hidden = false; host.append(box);
+      });
+      if (!yes) return none('Not run: Python was not downloaded.');
+    }
+    const status = el('div', { class: 'clang-status', role: 'status' });
+    const show = (st) => { if (st.state === 'ready') { status.remove(); return; } status.textContent = st.state === 'loading' && st.v ? 'Getting Python… ' + Math.round(st.v * 100) + '% (this happens the first time only)' : 'Starting Python…'; if (host && !status.isConnected) host.append(status); };
+    if (host) { host.hidden = false; show(P.state()); }
+    const unsub = P.subscribe(show);
+    const userOut = opts.onOutput, userErr = opts.onErrOutput;
+    try { return await go(Object.assign(opts, { onOutput: (t) => { status.remove(); if (userOut) userOut(t); }, onErrOutput: userErr ? (t) => { status.remove(); userErr(t); } : undefined })); }
+    finally { unsub(); status.remove(); }
+  }
   async function fullCpp(go, opts) {
     opts = Object.assign({}, opts);
     const C = window.CLANGRUN, host = opts.host, none = (err) => ({ out: '', err, parts: [], notes: '', exit: 0 });
@@ -262,10 +291,10 @@
   // The output panel is drawn as a terminal: a title bar with a status pill, a prompt line with the command that "ran", the program's
   // output (stderr in red, notes dimmed), a blinking cursor while the program runs, and input() answered on an inline prompt.
   // Everything written into it is text: output from a sandbox is never interpreted as HTML.
-  const COMMANDS = { python: 'python main.py', scheme: 'scheme main.scm', cpp: 'g++ main.cpp -o main && ./main', cppfull: 'clang++ -std=c++20 main.cpp -o main && ./main', c: 'gcc main.c -o main && ./main', java: 'javac Main.java && java Main' };
+  const COMMANDS = { python: 'python main.py', pyfull: 'python3 main.py', scheme: 'scheme main.scm', cpp: 'g++ main.cpp -o main && ./main', cppfull: 'clang++ -std=c++20 main.cpp -o main && ./main', c: 'gcc main.c -o main && ./main', java: 'javac Main.java && java Main' };
   // A program waiting at input() is ended when its output panel is cleared or leaves the page; otherwise it would hold the engine's queue forever.
   const askers = new Set();
-  const abandonAsk = (a) => { askers.delete(a); a.resolve(null); for (const k of ['PYRUN', 'JAVARUN', 'CPPRUN', 'CLANGRUN']) if (window[k]) window[k].cancel(); };   // CLANGRUN: C's typed input
+  const abandonAsk = (a) => { askers.delete(a); a.resolve(null); for (const k of ['PYRUN', 'JAVARUN', 'CPPRUN', 'CLANGRUN', 'PYFULLRUN']) if (window[k]) window[k].cancel(); };   // CLANGRUN, PYFULLRUN: typed input by replay
   document.addEventListener('routed', () => { for (const a of [...askers]) if (!a.row.isConnected) abandonAsk(a); });
   // opts.tools (the Code Lab): Copy, Wrap and Clear buttons in the title bar; opts.wrap the starting state of Wrap, opts.onWrap(on) to keep it.
   function outputPanel(opts) {
@@ -314,6 +343,8 @@
         else setStatus('ok', 'exit ' + (info.exit || 0) + (secs ? ' \u00b7 ' + secs : ''));
       },
       write(s) { printed += s; put(document.createTextNode(s)); },
+      /** what a program writes to stderr (Full Python's sys.stderr): shown in red, and not part of what it printed */
+      errWrite(s) { put(el('span', { class: 'err' }, s)); },
       value(s) { printed += s.replace(/^;Value: /, '') + '\n'; line('val', s); },
       /** what the program printed (and, for Scheme, the values it showed) since the run began: for comparing with a prediction */
       printed() { return printed; },
@@ -344,12 +375,19 @@
   const usesTurtle = (code) => /\b(import\s+turtle|from\s+turtle\s+import)\b/.test(code);
   async function runCell(lang, code, out, opts) {
     opts = opts || {};
-    out.start(COMMANDS[lang === 'cpp' && opts.runtime === 'full' ? 'cppfull' : lang] || '');
+    out.start(COMMANDS[lang === 'cpp' && opts.runtime === 'full' ? 'cppfull' : lang === 'python' && opts.runtime === 'full' && !usesTurtle(code) ? 'pyfull' : lang] || '');
     let exit = 0;
     try { exit = await runCellBody(lang, code, out, opts); } catch (e) { out.error(String(e && e.message || e)); }
     out.finish({ exit });
   }
   async function runCellBody(lang, code, out, opts) {
+    if (lang === 'python' && opts.runtime === 'full' && !usesTurtle(code)) {   // Full Python (a drawing stays on the teaching Python, which has the turtle)
+      const r = await Runners.pyFull.run(code, { onOutput: (s) => out.write(s), onErrOutput: (s) => out.errWrite(s), onInput: opts.stdin == null ? (p) => out.ask(p) : undefined, stdin: opts.stdin, host: out.el });
+      if (r.err) out.error(r.err);
+      else if (!r.out && !r.exit) out.note('(the program finished without printing anything)');
+      if (!r.err && r.exit) { out.note('(the program ended with status ' + r.exit + ')'); return r.exit; }
+      return r.err ? 1 : 0;
+    }
     if (lang === 'python') {
       // a program that draws gets a canvas in a sandboxed frame (src/runner.js), shown where opts.turtleMount is
       const turtle = opts.turtleMount && usesTurtle(code) ? (opts.turtleMount.hidden = false, { mount: opts.turtleMount, width: Math.min(480, opts.turtleMount.clientWidth || 480), height: 320 }) : undefined;
@@ -515,13 +553,15 @@
     if (ex.mustNotContain) for (const rule of ex.mustNotContain) if (rule.re.test(code)) return { passed: false, results: [], error: rule.msg };
     const results = [];
     if (lang === 'python') {
+      // an exercise or assignment written for Full Python is checked on it (opts.host shows the download agreement the first time)
+      const PY = ex.runtime === 'full' ? { run: (c, o) => Runners.pyFull.run(c, Object.assign({ host }, o)) } : Runners.python;
       const exprTests = ex.tests.filter(t => t.call !== undefined);
       const ioTests = ex.tests.filter(t => t.call === undefined);
       if (exprTests.length) {
         const M = '\x00GRADE\x00';
         const harness = '\n\nprint("' + M + '")\ndef __g(f):\n    try:\n        print("R:" + repr(f()))\n    except Exception as __e:\n        print("E:" + type(__e).__name__ + ": " + str(__e))\n' +
           exprTests.map(t => '__g(lambda: ' + t.call + ')\n').join('');
-        const r = await Runners.python.run(code + harness, { stdin: '' });
+        const r = await PY.run(code + harness, { stdin: '' });
         if (r.err && !r.out.includes(M)) return { passed: false, results, error: r.err };
         const lines = r.out.split(M + '\n')[1] ? r.out.split(M + '\n')[1].split('\n') : [];
         exprTests.forEach((t, i) => {
@@ -531,7 +571,7 @@
         });
       }
       for (const t of ioTests) {
-        const r = await Runners.python.run(code, { stdin: t.stdin || '' });
+        const r = await PY.run(code, { stdin: t.stdin || '' });
         results.push({ name: t.name || (t.stdin ? 'input: ' + JSON.stringify(t.stdin) : 'program output'), expected: t.expect, got: r.out, ok: !r.err && norm(r.out) === norm(t.expect), err: r.err, io: true });
       }
     } else if (lang === 'scheme') {

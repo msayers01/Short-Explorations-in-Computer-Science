@@ -55,10 +55,30 @@
     return (inEntry ? 'Traceback (most recent call last):\n  File "<stdin>", line ' + n + ', in <module>\n' : '') + msg + '\n';
   }
 
+  // Full Python (o.full) gives CPython's own traceback, for the whole replayed program run as "<stdin>". Python 3.14's REPL calls each entry
+  // <python-input-N> and counts lines within it, so each "<stdin>" frame is renamed and renumbered by segs (where each entry starts, and
+  // whether it was wrapped as an expression), its source line is the entry's own, and the carets under it (columns of the wrapped text) go.
+  function errTextFull(err, segs, entry) {
+    const src = String(err).replace(/__repl_v/g, '_').split('\n'), out = [];
+    const place = (n) => { for (let i = segs.length - 1; i >= 0; i--) if (n > segs[i].start) { const k = n - segs[i].start - (segs[i].wrapped ? 1 : 0); return { i, line: Math.min(Math.max(k, 1), segs[i].lines.length) }; } return null; };
+    for (let i = 0; i < src.length; i++) {
+      const m = src[i].match(/^(\s*)File "<stdin>", line (\d+)(.*)$/);
+      if (!m) { out.push(src[i]); continue; }
+      const at = place(+m[2]);
+      if (!at) continue;
+      out.push(m[1] + 'File "<python-input-' + segs[at.i].num + '>", line ' + at.line + m[3]);
+      const code = (segs[at.i].lines[at.line - 1] || '').trim();
+      while (i + 1 < src.length && /^\s{4,}/.test(src[i + 1]) && !/^\s*File "/.test(src[i + 1])) i++;   // the wrapped text's line and its carets
+      if (code) out.push('    ' + code);
+    }
+    return out.join('\n').replace(/\n*$/, '\n');
+  }
+
   async function python(o) {
-    o.out('Python 3.7 (Skulpt, in your browser)\nType exit() or press Ctrl+D on an empty line to leave. Each entry runs again with the ones before it, so they should not take long.\n');
+    o.out((o.banner || 'Python 3.7 (Skulpt, in your browser)') + '\nType exit() or press Ctrl+D on an empty line to leave. Each entry runs again with the ones before it, so they should not take long.\n');
     const seed = Math.floor(Math.random() * 1e9);
-    const kept = [];   // { text, answers: [lines given to input()] }
+    const kept = [];   // { text, answers: [lines given to input()], entry, wrapped, num }
+    let inputs = 0;    // Python 3.14 numbers every entry, kept or not: <python-input-N>
     let shown = 0;     // characters of output already on the screen
     for (;;) {
       let entry = await o.ask('>>> ');
@@ -88,13 +108,21 @@
         });
         return { err: r && r.err, printed };
       };
-      const lines = entry.split('\n').length;
+      const lines = entry.split('\n').length, num = inputs++;
       let r = await attempt(before + asExpr(entry)), wrapped = true;
-      if (r.err && /^SyntaxError|^ParseError|bad input|invalid syntax/i.test(r.err) && !r.printed) { mine.length = 0; r = await attempt(before + entry + '\n'); wrapped = false; }
+      if (r.err && (o.full ? /SyntaxError|IndentationError/ : /^SyntaxError|^ParseError|bad input|invalid syntax/i).test(r.err) && !r.printed) { mine.length = 0; r = await attempt(before + entry + '\n'); wrapped = false; }
       if (o.cancelled && o.cancelled()) return 130;
       shown += r.printed.length;
-      if (r.err) { if (/^Stopped/.test(r.err)) return 130; o.err(errText(r.err, start, entry, wrapped)); continue; }
-      kept.push({ text: wrapped ? asExpr(entry) : entry, answers: mine.slice() });
+      if (r.err) {
+        if (/^Stopped/.test(r.err)) return 130;
+        if (o.full) {
+          let at = PRELUDE_LINES; const segs = kept.map((k) => { const sg = { start: at, wrapped: k.wrapped, lines: k.entry.split('\n'), num: k.num }; at += k.text.split('\n').length; return sg; });
+          segs.push({ start: at, wrapped, lines: entry.split('\n'), num });
+          o.err(errTextFull(r.err, segs, entry));
+        } else o.err(errText(r.err, start, entry, wrapped));
+        continue;
+      }
+      kept.push({ text: wrapped ? asExpr(entry) : entry, answers: mine.slice(), entry, wrapped, num });
     }
   }
 
@@ -197,5 +225,5 @@
     }
   }
 
-  return { python, scheme, java, needsMore, _internal: { asExpr, errText, PRELUDE, classify, javaProgram } };
+  return { python, scheme, java, needsMore, _internal: { asExpr, errText, errTextFull, PRELUDE, classify, javaProgram } };
 });
