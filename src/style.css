@@ -18,7 +18,7 @@
   --err: #b42318;
   --err-soft: #fbeae8;
   --warn: #8a5a00;
-  --k-fig: #0b6e7a; --k-warn: #a35a00; --k-quiz: #6b3fa0; --k-ink: #ffffff;   /* the colours that mark the kinds of block in a lesson */
+  --k-fig: #0b6e7a; --k-warn: #a35a00; --k-quiz: #6b3fa0; --k-ink: #ffffff;   /* the colors that mark the kinds of block in a lesson */
   --link: #1a4fa3;
   --serif: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
   --sans: 'Source Sans 3', 'Segoe UI', Helvetica, Arial, sans-serif;
@@ -37,7 +37,7 @@
 :root[data-course="scratch"] { --accent: #c2185b; --accent-soft: #fbe4ec; }
 :root[data-course="shell"] { --accent: #3d4a5c; --accent-soft: #e6e9ef; }
 :root[data-course="computer"] { --accent: #8a5a10; --accent-soft: #f6ecd9; }
-:root[data-course="algorithms"] { --accent: #0b6e7a; --accent-soft: #e0f1f3; }   /* the #/algorithms pages: the colour of the lessons' figures */
+:root[data-course="algorithms"] { --accent: #0b6e7a; --accent-soft: #e0f1f3; }   /* the #/algorithms pages: the color of the lessons' figures */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --paper: #131313; --paper-2: #1c1c1c; --ink: #ececea; --ink-2: #b0b0ac; --ink-3: #8f8f8b; --rule: #333331; --rule-2: #262624; --code-bg: #1b1b1a;
@@ -231,7 +231,7 @@ body.tour-on { overflow-x: hidden; }
 .onpage li.current a { color: var(--ink); font-weight: 600; border-left-color: var(--accent); box-shadow: none; }
 .onpage li.map-quiz a, .onpage li.map-exercises a { color: var(--accent); }
 .nav-mobile .onpage { display: none; }
-/* every block of a lesson is a card with a coloured rail and a labelled pill, one colour per kind, so a skimming eye can find
+/* every block of a lesson is a card with a colored rail and a labeled pill, one color per kind, so a skimming eye can find
    the examples, the figures, the checks and the exercises without reading */
 .blk { --blk: var(--accent); --blk-ink: var(--accent-ink); --blk-glyph: "\25B6"; margin: 2rem 0; border-left: 4px solid var(--blk); padding: 0 0 0 1rem; }
 .blk-tag { display: inline-flex; align-items: center; gap: 0.45rem; font-family: var(--sans); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--blk-ink); background: var(--blk); padding: 0.32rem 0.65rem 0.3rem; border-radius: 3px; margin: 0 0 0.7rem; }
@@ -662,7 +662,7 @@ html.classroom .out-text, html.classroom .term-input, html.classroom .nano { fon
 .bit .bit-w { font-family: var(--sans); font-size: 0.75rem; color: var(--ink-3); } .bit .bit-v { font-family: var(--mono); font-size: 1.3rem; font-weight: 700; }
 .bit.on { background: var(--accent); border-color: var(--accent); } .bit.on .bit-w, .bit.on .bit-v { color: var(--accent-ink); }
 .bits-out { font-family: var(--mono); font-size: 0.95rem; margin: 0.6rem 0 0.2rem; }
-/* SC 099 figures: codes, pixels, colour, sampling, gates, adder, packets, passwords, robot */
+/* SC 099 figures: codes, pixels, color, sampling, gates, adder, packets, passwords, robot */
 .codes-tbl code { font-family: var(--mono); }
 .px-fig { display: grid; grid-template-columns: auto 1fr; gap: 1.2rem; align-items: start; }
 .px-grid { display: grid; grid-template-columns: repeat(8, 2rem); gap: 2px; background: var(--rule); padding: 2px; width: max-content; }
@@ -910,7 +910,7 @@ table.mem-vars tr.fresh td { animation: mem-fresh 0.6s ease-out; }
 @keyframes mem-fresh { from { background: var(--accent-soft); } to { background: transparent; } }
 table.mem-vars tr.mem-hit td, .mem-cell.mem-hit { outline: 2px solid var(--link); outline-offset: -2px; }
 @media (prefers-reduced-motion: reduce) { table.mem-vars tr.fresh td { animation: none; } }
-/* ---------- Java step-through (javastep.js; Code Lab "Step through" for Java): the memory stepper's look, call stack beside the objects. Colours are the theme's tokens, so dark mode follows. */
+/* ---------- Java step-through (javastep.js; Code Lab "Step through" for Java): the memory stepper's look, call stack beside the objects. Colors are the theme's tokens, so dark mode follows. */
 .jstep-box { border: 1px solid var(--rule); margin-top: 0.7rem; background: var(--paper); }
 .jstep-box[hidden] { display: none; }
 .jstep-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -1141,7 +1141,7 @@ html.classroom .about { padding-bottom: 7rem; }
 @media (max-width: 560px) { .oj-clock-item .oj { font-size: 1.08rem; } }
 @media print { .oj-clock-links { display: none; } }
 
-/* An Ojibwe/English pair inside a button: the English takes the button's own text colour (readable on a filled button). */
+/* An Ojibwe/English pair inside a button: the English takes the button's own text color (readable on a filled button). */
 .btn .oj-pair .oj-en { color: inherit; opacity: 0.85; font-size: 0.8em; }
 
 /* Lessons estimated to take longer than an hour (app.js lessonMinutes) */
@@ -1178,7 +1178,7 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .play-turtle { margin: 0.6rem 0; min-height: 40px; }
 .play-turtle iframe { border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); }
 
-/* Scratch-style blocks (widgets.js: blocks), with the palette colours students know */
+/* Scratch-style blocks (widgets.js: blocks), with the palette colors students know */
 .sb-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 0.6rem 1rem; align-items: start; font-family: var(--sans); }
 .sb-head { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 0.4rem; }
 .sb-arrow { font-size: 1.6rem; color: var(--ink-3); padding-top: 1.6rem; }
@@ -1210,7 +1210,7 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .sb-pair > * { min-width: 0; }   /* a wide block line scrolls inside its own box rather than widening the page */
 .sb-pair > div { overflow-x: auto; }
 
-/* ---------- the courses page and the grouped catalogue (app.js: coursesPage, groupedCatalog) */
+/* ---------- the courses page and the grouped catalog (app.js: coursesPage, groupedCatalog) */
 .courses-head h1 { font-size: 2.4rem; font-weight: 400; margin-bottom: 0.6rem; }
 .courses-tools { display: flex; flex-wrap: wrap; gap: 0.8rem 1.4rem; align-items: center; margin: 1.4rem 0 0.4rem; }
 .course-search { font: inherit; font-family: var(--sans); font-size: 1rem; color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 3px; padding: 0.5rem 0.7rem; flex: 1 1 18rem; max-width: 26rem; }
@@ -1409,7 +1409,7 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 .ps-tool:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-3); }
 .ps-tool:disabled { opacity: 0.35; cursor: default; }
 .ps-empty { color: var(--ink-3); padding: 0.3rem; }
-/* k nearest neighbours (widgets.js knn) */
+/* k nearest neighbors (widgets.js knn) */
 .knn-new { cursor: grab; outline: none; }
 .knn-new:focus-visible circle { stroke: var(--link); stroke-width: 4; }
 .knn-key { margin: 0.2rem 0 0; }
@@ -1556,7 +1556,7 @@ h1 .dev-tag { font-size: 0.78rem; position: relative; top: -0.25em; }
 
 /* The Code Lab as an IDE: a deep navy editor with a soft blue glow, in light and dark mode alike (the terminal below it was always dark).
    The tokens are redefined on the three IDE parts, so everything inside them (tabs, line numbers, highlighting, autocomplete, the status bar)
-   follows. Lesson playgrounds keep the page's own theme. Syntax colours follow VS Code's Dark+; text contrast is at least 4.5:1 on the navy. */
+   follows. Lesson playgrounds keep the page's own theme. Syntax colors follow VS Code's Dark+; text contrast is at least 4.5:1 on the navy. */
 .lab-tabs, .lab-editor, .lab-statusbar {
   --paper: #0f1f36; --paper-2: #12294a; --code-bg: #0b1727; --ink: #d6e2f5; --ink-2: #a9bddb; --ink-3: #7f97ba; --rule: #1f3a63; --rule-2: #182f52;
   --accent: #4da3ff; --accent-ink: #04111f; --accent-soft: rgba(77, 163, 255, 0.14); --err: #ff8a80; --ok: #6fdc8c; --warn: #e8c46a;

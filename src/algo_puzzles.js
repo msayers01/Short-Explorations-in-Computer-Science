@@ -1,8 +1,8 @@
 /* Algorithms in motion: puzzles and simulations. Four demos for the #/algorithms page (see src/algos.js for the frame):
    - hanoi: the Towers of Hanoi, to play by hand (click a peg, or press 1, 2, 3) or to watch solved by recursion, with the move count
      against the fewest possible, 2^n - 1;
-   - tour: the travelling salesman: click the towns in order to draw your own round trip, then race the computer, which builds a tour
-     with the nearest-neighbour rule and untangles it with 2-opt until no two roads cross;
+   - tour: the traveling salesman: click the towns in order to draw your own round trip, then race the computer, which builds a tour
+     with the nearest-neighbor rule and untangles it with 2-opt until no two roads cross;
    - life: Conway's Game of Life on a grid you draw on, with gliders, oscillators and a glider gun to start from;
    - raindrops: estimating pi by letting random drops fall on a square with a quarter circle in it (the Monte Carlo method).
    The algorithms are pure (no DOM) and checked by selfTest() in node (test_algos.js). */
@@ -23,10 +23,10 @@
   const legal = (pegs, f, t) => f !== t && pegs[f].length > 0 && (pegs[t].length === 0 || pegs[t][pegs[t].length - 1] > pegs[f][pegs[f].length - 1]);
   const startPegs = (n) => [Array.from({ length: n }, (_, k) => n - k), [], []];
 
-  // ---------- the travelling salesman: points [x, y], a tour is an order of the point indexes
+  // ---------- the traveling salesman: points [x, y], a tour is an order of the point indexes
   const dist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
   function tourLength(pts, t) { let s = 0; for (let k = 0; k < t.length; k++) s += dist(pts[t[k]], pts[t[(k + 1) % t.length]]); return s; }
-  /** Nearest neighbour: from the first town, always go to the nearest town not yet visited. Yields the tour after each town is added. */
+  /** Nearest neighbor: from the first town, always go to the nearest town not yet visited. Yields the tour after each town is added. */
   function* nearestNeighbour(pts) {
     const n = pts.length; if (!n) return [];
     const used = new Uint8Array(n), t = [0]; used[0] = 1; yield t.slice();
@@ -46,7 +46,7 @@
   function crossings(pts, t) {
     const n = t.length; let c = 0;
     for (let i = 0; i < n; i++) for (let j = i + 2; j < n; j++) {
-      if (i === 0 && j === n - 1) continue;   // neighbouring roads share a town
+      if (i === 0 && j === n - 1) continue;   // neighboring roads share a town
       if (crosses(pts[t[i]], pts[t[(i + 1) % n]], pts[t[j]], pts[t[(j + 1) % n]])) c++;
     }
     return c;
@@ -82,7 +82,7 @@
     return pts;
   }
 
-  // ---------- the Game of Life on an R x C grid (cells 0/1), the edges wrapping round
+  // ---------- the Game of Life on an R x C grid (cells 0/1), the edges wrapping around
   function lifeStep(g, R, C) {
     const out = new Uint8Array(R * C);
     for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
@@ -285,7 +285,7 @@
         else if (ml < cl - 1e-9) msg = 'You beat the computer by ' + unit(cl - ml) + ' km! Its quick rules found a good tour, not the best one.';
         else if (Math.abs(ml - cl) < 1e-6) msg = 'A tie: you found the same length as the computer.';
         else msg = 'The computer wins by ' + unit(ml - cl) + ' km. Look for places where your roads cross.';
-      } else if (comp.length) msg = phase === '2opt' ? 'Untangling: two roads swapped for two shorter ones.' : phase === 'start' ? 'Starting from your tour.' : 'Nearest neighbour: always drive to the closest town not yet visited.';
+      } else if (comp.length) msg = phase === '2opt' ? 'Untangling: two roads swapped for two shorter ones.' : phase === 'start' ? 'Starting from your tour.' : 'Nearest neighbor: always drive to the closest town not yet visited.';
       big.replaceChildren(compDone && ml != null && ml < cl - 1e-9 ? el('span', { class: 'pz-win' }, msg) : msg);
       if (compDone && ml != null && ml < cl - 1e-9 && sound.on() && snd) snd.play([523, 659, 784, 1047]);
       cv.redraw();
@@ -319,7 +319,7 @@
       [...Object.entries(PATTERNS).map(([k, p]) => el('option', { value: k }, p.name)), el('option', { value: 'random' }, 'Random soup'), el('option', { value: 'empty' }, 'Empty: draw your own')]);
     presetSel.value = 'gun';
     host.append(el('div', { class: 'algo-controls' }, el('label', {}, 'Start from ', presetSel), el('button', { class: 'btn', onclick: () => load(presetSel.value) }, 'Load again')));
-    host.append(el('p', { class: 'ap-hint' }, 'Click or drag on the grid to bring cells to life or clear them, at any time, even while it runs. Every cell looks at its eight neighbours: a live cell with two or three live neighbours survives; an empty cell with exactly three comes to life; every other cell is empty in the next generation.'));
+    host.append(el('p', { class: 'ap-hint' }, 'Click or drag on the grid to bring cells to life or clear them, at any time, even while it runs. Every cell looks at its eight neighbors: a live cell with two or three live neighbors survives; an empty cell with exactly three comes to life; every other cell is empty in the next generation.'));
     const stats = el('div', { class: 'pz-stats' });
     let geo = { ox: 0, oy: 0, cs: 1 };
     const cv = api.canvas(host, { label: 'The Game of Life', maxWidth: 1100, height: (w) => Math.round(w * R / C), draw });
@@ -368,7 +368,7 @@
     const el = api.el;
     let seed = 1 + Math.floor(Math.random() * 99999), rnd = A.rng(seed), n = 0, inside = 0, recent = [], history = [];
     const stats = el('div', { class: 'pz-stats' }), big = el('p', { class: 'pz-big', role: 'status' });
-    host.append(el('p', { class: 'ap-hint' }, 'Rain falls at random on a square tile 1 metre across. A quarter of a circle is painted on it, with the corner as its centre. The painted part is π/4 of the square, so 4 × (drops inside) ÷ (all drops) should come close to π. Does it? Watch the estimate on the right as more drops fall.'));
+    host.append(el('p', { class: 'ap-hint' }, 'Rain falls at random on a square tile 1 meter across. A quarter of a circle is painted on it, with the corner as its center. The painted part is π/4 of the square, so 4 × (drops inside) ÷ (all drops) should come close to π. Does it? Watch the estimate on the right as more drops fall.'));
     const cv = api.canvas(host, { label: 'Random drops on a square, and the estimate of pi as they fall', maxWidth: 1100, height: (w) => Math.round(Math.max(240, Math.min(440, w * 0.45))), draw });
     host.append(stats, big);
     const pl = api.player(host, {
@@ -436,30 +436,30 @@
     hanoi(n - 1, spare, goal, start)</code></pre>
 <p>Counting the moves gives the formula: moves(n) = 2 × moves(n − 1) + 1, and moves(1) = 1, so moves(n) = 2<sup>n</sup> − 1. One disc more doubles the work: the clearest example of exponential growth there is.</p>
 <h2>Things to try</h2>
-<ul><li>Solve 3 discs in 7 moves, then 4 in 15. Notice that the smallest disc moves every other turn, always round the pegs in the same direction.</li>
+<ul><li>Solve 3 discs in 7 moves, then 4 in 15. Notice that the smallest disc moves every other turn, always around the pegs in the same direction.</li>
 <li>Watch the computer with 6 discs and count how often the biggest disc moves. (Once.)</li></ul>`,
     taught: RECURSION });
   A.register({ id: 'tour', group: 'Paths and graphs', title: 'Untangle the tour',
     blurb: 'Plan a round trip through every town, then race the computer: it drives to the nearest town each time, then uncrosses roads until none cross. Can you beat it?',
     mount: mountTour,
-    about: `<h2>The travelling salesman problem</h2>
+    about: `<h2>The traveling salesman problem</h2>
 <p>Visit every town once and come back, by the shortest round trip. It sounds simple, but the number of possible tours grows faster than any power: with 12 towns there are 19,958,400 different round trips, with 25 towns more than 3 × 10<sup>23</sup>. Nobody knows a method that is guaranteed to find the best tour quickly for every map; it is one of the NP-hard problems of SC 104 lesson 14. In practice programs find very good tours with quick rules, and this demo uses two of them.</p>
 <h2>The computer's two rules</h2>
-<ul><li><b>Nearest neighbour.</b> From the green town, always drive to the closest town not yet visited. Quick, and usually 20 to 25% longer than the best tour, because the last roads have to come a long way home.</li>
+<ul><li><b>Nearest neighbor.</b> From the green town, always drive to the closest town not yet visited. Quick, and usually 20 to 25% longer than the best tour, because the last roads have to come a long way home.</li>
 <li><b>2-opt.</b> Look at every pair of roads. If replacing roads a–b and c–d by a–c and b–d makes the trip shorter, do it, and reverse the part in between. Two roads that cross can always be uncrossed this way, so when 2-opt stops, no roads cross. The result is usually within about 5% of the best tour, but not always the best: which is why you can sometimes win.</li></ul>
 <h2>Where it is used</h2>
-<p>Delivery routes, the order in which a machine drills holes in a circuit board, and planning which stars a telescope looks at in one night are all travelling salesman problems. In 2006 a team including William Cook solved one with 85,900 points, from the layout of a computer chip, and proved its tour the shortest.</p>`,
+<p>Delivery routes, the order in which a machine drills holes in a circuit board, and planning which stars a telescope looks at in one night are all traveling salesman problems. In 2006 a team including William Cook solved one with 85,900 points, from the layout of a computer chip, and proved its tour the shortest.</p>`,
     taught: [{ href: '#/math/14', text: 'SC 104 Lesson 14: Easy to check, hard to find' }, { href: '#/math/6', text: 'SC 104 Lesson 6: Graphs and paths' }] });
   A.register({ id: 'life', group: GROUP, title: 'The Game of Life',
     blurb: 'Draw living cells on a grid and press Play. Three simple rules make gliders that fly, oscillators that pulse, and a gun that fires gliders for ever.',
     mount: mountLife,
     about: `<h2>Three rules</h2>
-<p>The mathematician John Horton Conway invented the Game of Life in 1970, and Martin Gardner made it famous in his column in <em>Scientific American</em> that October. Every cell of the grid is alive or empty, and all of them change at once, by counting their eight neighbours: a live cell with 2 or 3 live neighbours stays alive; an empty cell with exactly 3 comes to life; every other cell is empty in the next generation. Here the grid wraps around: what leaves at the right comes back at the left.</p>
+<p>The mathematician John Horton Conway invented the Game of Life in 1970, and Martin Gardner made it famous in his column in <em>Scientific American</em> that October. Every cell of the grid is alive or empty, and all of them change at once, by counting their eight neighbors: a live cell with 2 or 3 live neighbors stays alive; an empty cell with exactly 3 comes to life; every other cell is empty in the next generation. Here the grid wraps around: what leaves at the right comes back at the left.</p>
 <h2>What to look for</h2>
 <ul><li><b>Still lifes</b> never change, like the 2 × 2 block. <b>Oscillators</b> repeat: the blinker every 2 generations, the pulsar every 3.</li>
 <li><b>Spaceships</b> move. The glider travels one cell diagonally every 4 generations.</li>
 <li>Conway offered a $50 prize for a pattern that grows for ever. Bill Gosper won it in 1970 with the <b>glider gun</b>, which fires a new glider every 30 generations.</li>
-<li>The <b>R-pentomino</b>, five cells, takes 1,103 generations to settle down on an endless grid (on this small wrapped grid its gliders crash back into it). Colours show age: new cells are blue, old ones purple.</li></ul>
+<li>The <b>R-pentomino</b>, five cells, takes 1,103 generations to settle down on an endless grid (on this small wrapped grid its gliders crash back into it). Colors show age: new cells are blue, old ones purple.</li></ul>
 <p>Life is a <em>cellular automaton</em>, and it can compute: people have built logic gates, and even a whole computer, out of gliders and guns. Simple rules, applied everywhere at once, can do anything a program can.</p>` });
   A.register({ id: 'raindrops', group: GROUP, title: 'Raindrops for π',
     blurb: 'Let random raindrops fall on a square with a quarter circle on it, and count. The more drops, the closer 4 × inside ÷ all comes to π: the Monte Carlo method.',
@@ -483,13 +483,13 @@
       if (pegs[2].length !== n || pegs[2].some((d, k) => d !== n - k)) fails.push('hanoi ' + n + ': the tower did not end on peg 3 in order');
     }
     if (legal([[2, 1], [], []], 1, 0) || !legal([[2, 1], [], []], 0, 1) || legal([[1], [2], []], 1, 0)) fails.push('hanoi: legal() is wrong');
-    // the tour: nearest neighbour visits every town once; 2-opt never lengthens, ends with no improving swap and no crossings
+    // the tour: nearest neighbor visits every town once; 2-opt never lengthens, ends with no improving swap and no crossings
     for (let k = 0; k < 40; k++) {
       const n = 4 + (k % 20), pts = makeTowns(n, 100 + k);
       if (pts.length !== n) { fails.push('makeTowns gave ' + pts.length + ' of ' + n); continue; }
       let r, it = nearestNeighbour(pts); do r = it.next(); while (!r.done);
       const nn = r.value;
-      if (nn.length !== n || new Set(nn).size !== n) { fails.push('nearest neighbour did not visit every town once'); continue; }
+      if (nn.length !== n || new Set(nn).size !== n) { fails.push('nearest neighbor did not visit every town once'); continue; }
       let prev = tourLength(pts, nn), t = nn; it = twoOpt(pts, nn);
       for (;;) { r = it.next(); if (r.done) { t = r.value; break; } const L = tourLength(pts, r.value.tour); if (L > prev + 1e-9) fails.push('2-opt made a tour longer'); prev = L; }
       if (new Set(t).size !== n) fails.push('2-opt lost a town');

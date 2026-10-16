@@ -24,7 +24,7 @@ add lessons, figures and exercise types. LESSON_STANDARD.md is how a lesson is w
 
 ## Layout
 
-    src/site.js            site name, home and About page text, contact links, licence, source link
+    src/site.js            site name, home and About page text, contact links, license, source link
     src/course_computer.js SC 099 What Is a Computer?: the parts, the CPU, memory and storage, bits and bytes, software (no code)
     src/course_scratch.js  SC 100 From Scratch to Python: the blocks beside the lines, for students coming from Scratch
     src/course_python.js   SC 101 Introduction to Python: lessons, examples, exercises and their tests
@@ -130,7 +130,7 @@ that each expression ends at the value the interpreter prints.
 
 ## Design
 
-White paper, Newsreader / Source Sans 3 / IBM Plex Mono, with an accent colour per course. Light and dark
+White paper, Newsreader / Source Sans 3 / IBM Plex Mono, with an accent color per course. Light and dark
 modes follow the system preference and can be switched in the top bar. Design tokens are the `--` variables
 at the top of `src/style.css`.
 
@@ -159,7 +159,7 @@ instead of code; `hints`, `followup` and `failTip` work as before:
 
 - `kind: 'answer'` — one text field per part: `parts: [{ label, answer: '40' | ['40', 'forty'],
   re: /regex/, wrong: [{ match: '41' | [...], msg }], placeholder, width, unit }]`.
-  Comparison ignores case, spacing, unicode minus/×/², trailing full stop; numeric strings
+  Comparison ignores case, spacing, unicode minus/×/², trailing period; numeric strings
   compare as numbers; T/F/1/0/true/false are interchangeable. Add `exact: true` to a part to compare as text only
   (for answers that are strings of digits, such as a binary string `01`, which must not equal the number 1).
 - `kind: 'choice'` — `options: [{ text, ok: true, why }]`; `why` is shown when that wrong
@@ -178,8 +178,8 @@ for definitions and theorems, `<div class="proof">…<span class="qed">∎</span
 ## Interpreter limits
 
 - C++ (JSCPP): no `std::string`, `vector`, classes, references (`int&`); no
-  single-element array initialisers; elements of a char array filled by
-  `cin >>` cannot be assigned to (initialise the array instead).
+  single-element array initializers; elements of a char array filled by
+  `cin >>` cannot be assigned to (initialize the array instead).
 - Scheme: floating-point numbers only (`(/ 1 3)` prints `.333333333333`).
 - Python (Skulpt): Python 3 core; no third-party modules.
 
@@ -238,10 +238,10 @@ copied from the dictionary or supplied by a fluent speaker or an Ojibwe language
 top of `src/ojibwe.js`.
 Dictionary entries are © The Ojibwe People's Dictionary, CC BY-NC-SA 3.0; keep the attribution.
 
-## Licence
+## License
 
 The program code is under the MIT License (`LICENSE`). The lessons, examples, exercises and the guide for teachers
 are under CC BY-SA 4.0, the Ojibwe word list (`src/ojibwe.js`) is under CC BY-NC-SA 3.0 as the Ojibwe People's
 Dictionary requires, and the Lisp course's material adapted from *Structure and Interpretation of Computer Programs*
-keeps that book's CC BY-SA 4.0: see `LICENSE-CONTENT.md`. Bundled third-party software is listed with its licences
+keeps that book's CC BY-SA 4.0: see `LICENSE-CONTENT.md`. Bundled third-party software is listed with its licenses
 in `THIRD-PARTY-NOTICES.md`, which `node build.js` regenerates.

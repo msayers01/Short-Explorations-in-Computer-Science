@@ -1,4 +1,4 @@
-/* A small Unix-style shell with a virtual file system, for practising the command line.
+/* A small Unix-style shell with a virtual file system, for practicing the command line.
 
    Nothing here touches the real computer: the file system is a tree in memory (saved to localStorage by the Code Lab), every command is
    written here, and programs (python, java, g++, scheme) are handed to the site's sandboxes through hooks. No eval, no network, no DOM:

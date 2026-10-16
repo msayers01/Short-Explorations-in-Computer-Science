@@ -211,19 +211,22 @@ async function verifyTrace(ex) {
     console.log((ok ? 'OK  ' : 'BAD ') + ex.id + '  solution:' + (s.passed ? 'pass' : 'FAIL') + '  starter:' + (st.passed ? 'PASSES(!)' : 'fails'));
     if (!s.passed) console.log('   ', s.error || s.results.filter(r => !r.ok));
   }
-  // also run playgrounds to make sure they execute without error
+  // also run playgrounds to make sure they execute without error (each problem fails the run, as a bad exercise does)
+  let playBad = 0;
   for (const [li, lesson] of course.lessons.entries()) for (const b of lesson.blocks) {
     if (!b || !b.play) continue;
     if (b.expectError) {   // the playground deliberately fails: make sure it does
-      if (course.lang === 'java') { const r = JAVA.run(b.play, b.stdin || '', { maxMs: 6000 }); if (!r.err) console.log('PLAY L' + (li+1) + ' was expected to fail but ran:', b.play.slice(0, 80)); }
+      if (course.lang === 'java') { const r = JAVA.run(b.play, b.stdin || '', { maxMs: 6000 }); if (!r.err) playBad++, console.log('PLAY L' + (li+1) + ' was expected to fail but ran:', b.play.slice(0, 80)); }
       continue;
     }
-    if (course.lang === 'shell') { if (b.expectError) continue;   /* some commands fail on purpose */ const { errs } = await shellRun(b.setup, b.play); if (errs.length) console.log('PLAY L' + (li+1) + ' a command failed:', errs.join('; ')); continue; }
-    if (course.lang === 'scheme') { const r = Scheme.runProgram(b.play, { stepLimit: 2e7 });   /* the page's limit for examples (app.js) */ if (r.error) console.log('PLAY L' + (li+1) + ' error:', r.error, '\n   ', b.play.slice(0, 60)); }
-    else if (course.lang === 'python') { if (/\bimport\s+turtle\b/.test(b.play)) continue;   /* turtle needs a canvas: the browser test runs those */ const r = await py(b.play, (b.testStdin || b.stdin || 'Ada\n1990\n5\n')); if (r.err) console.log('PLAY L' + (li+1) + ' error:', r.err, '\n   ', b.play.slice(0, 60)); }
-    else if (course.runtime === 'full') { const h = { src: b.play, stdins: [b.stdin || ''] }; const r = await (await full)(h.src, h.stdins); if (r.err) console.log('PLAY L' + (li+1) + ' error:', r.err.split('\n')[0], '\n   ', b.play.slice(0, 80)); else if (r.parts[0].err) console.log('PLAY L' + (li+1) + ' crashed:', r.parts[0].err.slice(0, 80), '\n   ', b.play.slice(0, 80)); else if (!r.parts[0].out.trim()) console.log('PLAY L' + (li+1) + ' printed nothing:', b.play.slice(0, 80)); }
-    else if (course.lang === 'cpp') { let out=''; try { JSCPP.run(b.play, b.stdin || '', { stdio: { write: s => out += s }, maxTimeout: 5000, unsigned_overflow: 'warn' }); } catch (e) { console.log('PLAY L' + (li+1) + ' error:', e.message, '\n   ', b.play.slice(0, 80)); } }
-    else if (course.lang === 'java') { const r = JAVA.run(b.play, b.stdin || '', { maxMs: 5000 }); if (r.err) console.log('PLAY L' + (li+1) + ' error:', r.err.split('\n')[0], '\n   ', b.play.slice(0, 80)); else if (!r.out.trim()) console.log('PLAY L' + (li+1) + ' printed nothing:', b.play.slice(0, 80)); }
+    if (course.lang === 'shell') { if (b.expectError) continue;   /* some commands fail on purpose */ const { errs } = await shellRun(b.setup, b.play); if (errs.length) playBad++, console.log('PLAY L' + (li+1) + ' a command failed:', errs.join('; ')); continue; }
+    if (course.lang === 'scheme') { const r = Scheme.runProgram(b.play, { stepLimit: 2e7 });   /* the page's limit for examples (app.js) */ if (r.error) playBad++, console.log('PLAY L' + (li+1) + ' error:', r.error, '\n   ', b.play.slice(0, 60)); }
+    else if (course.lang === 'python') { if (/\bimport\s+turtle\b/.test(b.play)) continue;   /* turtle needs a canvas: the browser test runs those */ const r = await py(b.play, (b.testStdin || b.stdin || 'Ada\n1990\n5\n')); if (r.err) playBad++, console.log('PLAY L' + (li+1) + ' error:', r.err, '\n   ', b.play.slice(0, 60)); }
+    else if (course.runtime === 'full') { const h = { src: b.play, stdins: [b.stdin || ''] }; const r = await (await full)(h.src, h.stdins); if (r.err) playBad++, console.log('PLAY L' + (li+1) + ' error:', r.err.split('\n')[0], '\n   ', b.play.slice(0, 80)); else if (r.parts[0].err) playBad++, console.log('PLAY L' + (li+1) + ' crashed:', r.parts[0].err.slice(0, 80), '\n   ', b.play.slice(0, 80)); else if (!r.parts[0].out.trim()) playBad++, console.log('PLAY L' + (li+1) + ' printed nothing:', b.play.slice(0, 80)); }
+    else if (course.lang === 'cpp') { let out=''; try { JSCPP.run(b.play, b.stdin || '', { stdio: { write: s => out += s }, maxTimeout: 5000, unsigned_overflow: 'warn' }); } catch (e) { playBad++, console.log('PLAY L' + (li+1) + ' error:', e.message, '\n   ', b.play.slice(0, 80)); } }
+    else if (course.lang === 'java') { const r = JAVA.run(b.play, b.stdin || '', { maxMs: 5000 }); if (r.err) playBad++, console.log('PLAY L' + (li+1) + ' error:', r.err.split('\n')[0], '\n   ', b.play.slice(0, 80)); else if (!r.out.trim()) playBad++, console.log('PLAY L' + (li+1) + ' printed nothing:', b.play.slice(0, 80)); }
   }
   console.log(bad ? bad + ' problems' : 'all exercises OK');
+  if (playBad) console.log(playBad + ' example' + (playBad === 1 ? '' : 's') + ' failed');
+  if (bad || playBad) process.exitCode = 1;   // npm test and CI stop here: a broken exercise or example is a failure, not just a line in the log
 })();

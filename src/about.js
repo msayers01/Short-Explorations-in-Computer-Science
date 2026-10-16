@@ -1,12 +1,12 @@
 /* About and credits (#/about).
 
-   Who made the site, what it keeps about a visitor, what people may do with it (the licence), and credit for
+   Who made the site, what it keeps about a visitor, what people may do with it (the license), and credit for
    everything in it that someone else made: the Ojibwe words and their sources, the book the Lisp course follows,
-   the software that runs inside the page (with each package's full licence text, which MIT asks every copy to
+   the software that runs inside the page (with each package's full license text, which MIT asks every copy to
    carry), and the typefaces.
 
    What only the author can decide lives in src/site.js: SITE.about (his own words), SITE.licence (the code and content
-   licences) and SITE.sourceUrl (the repository). The third-party list and licence
+   licenses) and SITE.sourceUrl (the repository). The third-party list and license
    texts are written into window.BUILD by build.js from the installed packages, so they cannot drift from what
    is actually bundled. Exposed as window.ABOUT { page() }. */
 (function () {
@@ -27,9 +27,9 @@
     const L = SITE.licence;
     const ojNote = h('p', {}, 'One part always has its own terms: the Ojibwe words and their notes (', h('code', {}, 'src/ojibwe.js'),
       ') are adapted from the Ojibwe People\u2019s Dictionary and are shared under ', ext(CC_BY_NC_SA_3, 'CC BY-NC-SA 3.0'),
-      ', as the dictionary requires: credit the dictionary, do not use them commercially, and share any changes under the same licence.');
+      ', as the dictionary requires: credit the dictionary, do not use them commercially, and share any changes under the same license.');
     const sicpNote = h('p', {}, 'The examples, exercises and project that the Lisp course adapts from ', ext(SICP, h('em', {}, 'Structure and Interpretation of Computer Programs')),
-      ' are shared under ', ext(CC_BY_SA_4, 'CC BY-SA 4.0'), ', as the book\u2019s licence requires for adaptations: credit the book and share any changes under the same licence.');
+      ' are shared under ', ext(CC_BY_SA_4, 'CC BY-SA 4.0'), ', as the book\u2019s license requires for adaptations: credit the book and share any changes under the same license.');
     if (!L || !L.code || !L.content) {
       return section('ab-licence', 'Using and sharing these courses',
         h('p', {}, 'The site is free to use for learning and teaching, in any classroom or at home, with nothing to sign up for. Teachers are welcome to use every lesson, exercise and tool with their students.'),
@@ -39,7 +39,7 @@
     return section('ab-licence', 'Using and sharing these courses',
       h('p', {}, 'The site is free to use for learning and teaching. You may also copy it, change it and share it, on these terms:'),
       h('div', { class: 'table-wrap' }, h('table', { class: 'ab-table' },
-        h('thead', {}, h('tr', {}, h('th', {}, 'Part of the site'), h('th', {}, 'Licence'))),
+        h('thead', {}, h('tr', {}, h('th', {}, 'Part of the site'), h('th', {}, 'License'))),
         h('tbody', {},
           h('tr', {}, h('td', {}, 'The lessons, exercises and the guide for teachers'), h('td', {}, ext(L.content.url, L.content.name))),
           h('tr', {}, h('td', {}, 'The program code (the Code Lab, interactive figures, teacher tools, Scheme interpreter and the rest)'), h('td', {}, ext(L.code.url, L.code.name))),
@@ -52,23 +52,23 @@
   function softwareList() {
     const tp = (window.BUILD && window.BUILD.thirdParty) || [];
     return [
-      h('p', {}, 'Programming languages run inside this one page, with nothing installed. These are the parts other people wrote; each is used under the licence named beside it, whose full text is below, as it asks.'),
+      h('p', {}, 'Programming languages run inside this one page, with nothing installed. These are the parts other people wrote; each is used under the license named beside it, whose full text is below, as it asks.'),
       h('ul', { class: 'ab-list' }, tp.map(t => h('li', {},
         ext(t.url, t.name), ' ', h('span', { class: 'ab-meta' }, t.version + ' \u00b7 ' + t.licence), ': ', t.role, '.',
         t.changes ? h('span', { class: 'ab-meta ab-changes' }, ' ' + t.changes) : null))),
       h('p', {}, 'Written for this site: the Java interpreter and its step-through, the Scheme interpreter, the substitution-model stepper, the C++ memory stepper, the practice terminal (its shell and its git), the QR code encoder, the code editor, the Code Lab, the teacher tools, the portfolio, classroom mode, the Bot Arena, the algorithm demonstrations and the interactive figures.'),
       tp.length ? h('details', { class: 'ab-licences' },
-        h('summary', {}, 'Full licence texts of the software above'),
+        h('summary', {}, 'Full license texts of the software above'),
         tp.map(t => h('div', { class: 'ab-lic' }, h('h4', {}, t.name + ' ' + t.version), h('pre', {}, t.text)))) : null
     ];
   }
 
-  // Every picture in the lessons, with who made it, its licence and where it came from (build.js reads img/*.json into BUILD.images).
+  // Every picture in the lessons, with who made it, its license and where it came from (build.js reads img/*.json into BUILD.images).
   function pictureList() {
     const imgs = Object.values((window.BUILD && window.BUILD.images) || {}).sort((a, b) => a.title.localeCompare(b.title));
     if (!imgs.length) return [];
     return [h('h3', { id: 'ab-pictures' }, 'Pictures'),
-      h('p', {}, 'The photographs and drawings in the lessons are in the public domain or shared under Creative Commons licences that allow reuse with credit. They were resized for the web and otherwise not changed. Each one links to its page on Wikimedia Commons, which has its full description and licence.'),
+      h('p', {}, 'The photographs and drawings in the lessons are in the public domain or shared under Creative Commons licenses that allow reuse with credit. They were resized for the web and otherwise not changed. Each one links to its page on Wikimedia Commons, which has its full description and license.'),
       h('details', { class: 'ab-licences' }, h('summary', {}, imgs.length + ' pictures and their credits'),
         h('ul', { class: 'ab-list' }, imgs.map((m) => h('li', {}, ext(m.source, m.title), m.date ? ' (' + m.date + ')' : '', ': ',
           (m.author && !/^unknown/i.test(m.author) ? m.author : m.credit || 'unknown author'), ' \u00b7 ', m.licenseUrl ? ext(m.licenseUrl, m.license) : m.license)))),
@@ -113,7 +113,7 @@
           h('a', { href: '#/ojibwe' }, 'Every word and its source'), ' is listed on its own page. The dictionary does not endorse this site.'),
         h('h3', {}, 'Books'),
         h('p', {}, 'The Lisp course follows parts of Harold Abelson and Gerald Jay Sussman with Julie Sussman, ', ext(SICP, h('em', {}, 'Structure and Interpretation of Computer Programs')),
-          ', 2nd edition (MIT Press, 1996), and adapts several of its examples, exercises and puzzles, and the symbolic-differentiation project; each is marked in the lesson with the section of the book it comes from. The book is licensed under ', ext(CC_BY_SA_4, 'CC BY-SA 4.0'), ' by the MIT Press, and the adapted material is shared under the same licence. The lessons rewrite the book\u2019s material for high-school students, with new explanations, examples and exercises around it.'),
+          ', 2nd edition (MIT Press, 1996), and adapts several of its examples, exercises and puzzles, and the symbolic-differentiation project; each is marked in the lesson with the section of the book it comes from. The book is licensed under ', ext(CC_BY_SA_4, 'CC BY-SA 4.0'), ' by the MIT Press, and the adapted material is shared under the same license. The lessons rewrite the book\u2019s material for high-school students, with new explanations, examples and exercises around it.'),
         h('p', {}, 'The C++ course\u2019s account of how often professional programmers get binary search wrong is from Jon Bentley\u2019s ', h('em', {}, 'Programming Pearls'), ' (Addison-Wesley).'),
         ...pictureList(),
         h('h3', {}, 'Software'),
@@ -121,7 +121,7 @@
         h('h3', {}, 'Typefaces'),
         h('p', {}, 'Newsreader (Production Type), Source Sans 3 (Adobe) and IBM Plex Mono (IBM), built into the page under the ', ext(OFL, 'SIL Open Font License'), '.'),
         h('h3', {}, 'Names'),
-        h('p', {}, 'Hour of Code is a trademark of Code.org, and Python of the Python Software Foundation. QR Code is a registered trademark of DENSO WAVE INCORPORATED. None of these organisations is connected with this site.')),
+        h('p', {}, 'Hour of Code is a trademark of Code.org, and Python of the Python Software Foundation. QR Code is a registered trademark of DENSO WAVE INCORPORATED. None of these organizations is connected with this site.')),
 
       h('footer', { class: 'ab-foot' },
         h('p', {}, SITE.footer),

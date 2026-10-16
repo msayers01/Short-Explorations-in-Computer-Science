@@ -302,7 +302,7 @@
             ctx.fillStyle = C.ink3; ctx.fillRect(x, y2 - bh, cw >= 4 ? cw - 1 : cw + 0.4, bh);
           }
         }
-        // ruled-out cells fade under a veil of the paper colour (lo and hi glide between steps)
+        // ruled-out cells fade under a veil of the paper color (lo and hi glide between steps)
         ctx.fillStyle = C.paper; ctx.globalAlpha = 0.78;
         const xl = PAD + Math.max(0, Math.min(n, lo)) * cw, xr = PAD + Math.max(0, Math.min(n, hi + 1)) * cw;
         if (xl > PAD) ctx.fillRect(PAD - 1, y1, xl - PAD + 1, ROW.zone);

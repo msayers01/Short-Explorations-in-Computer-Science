@@ -1,10 +1,10 @@
 # Third-party notices
 
-The built site (dist/index.html) and vendor/jscpp.min.js include the following software. Each is used under the licence reproduced here.
+The built site (dist/index.html) and vendor/jscpp.min.js include the following software. Each is used under the license reproduced here.
 
 ## Skulpt 1.2.0
 
-https://skulpt.org/. Runs the Python programs. Licence: MIT.
+https://skulpt.org/. Runs the Python programs. License: MIT.
 
 ```
 Copyright (c) 2009-2016 Scott Graham and contributors to the Skulpt Project
@@ -46,7 +46,7 @@ per:
 
 ## JSCPP 2.0.9
 
-https://github.com/felixhao28/JSCPP. Runs the C++ programs. Licence: MIT. Changed for this site: C++-style printing of decimals, integer division that truncates, a clear division-by-zero error, a repeatable srand, a correct strcmp (patches/jscpp-iostream.patch), and correct wrap-around of unsigned integers (patches/jscpp-unsigned.patch).
+https://github.com/felixhao28/JSCPP. Runs the C++ programs. License: MIT. Changed for this site: C++-style printing of decimals, integer division that truncates, a clear division-by-zero error, a repeatable srand, a correct strcmp (patches/jscpp-iostream.patch), and correct wrap-around of unsigned integers (patches/jscpp-unsigned.patch).
 
 ```
 The MIT License (MIT)
@@ -74,7 +74,7 @@ SOFTWARE.
 
 ## Lodash 4.18.1
 
-https://lodash.com/. Part of the JSCPP bundle. Licence: MIT.
+https://lodash.com/. Part of the JSCPP bundle. License: MIT.
 
 ```
 Copyright OpenJS Foundation and other contributors <https://openjsf.org/>
@@ -128,7 +128,7 @@ terms above.
 
 ## printf 0.6.1
 
-https://github.com/adaltas/node-printf. Part of the JSCPP bundle. Licence: MIT.
+https://github.com/adaltas/node-printf. Part of the JSCPP bundle. License: MIT.
 
 ```
 The MIT License (MIT)
@@ -156,7 +156,7 @@ SOFTWARE.
 
 ## pegjs-util 1.4.21
 
-https://github.com/rse/pegjs-util. Part of the JSCPP bundle. Licence: MIT.
+https://github.com/rse/pegjs-util. Part of the JSCPP bundle. License: MIT.
 
 ```
 Copyright (c) 2014-2021 Dr. Ralf S. Engelschall (http://engelschall.com/)
@@ -183,7 +183,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ## Newsreader 5.3.0
 
-https://github.com/productiontype/Newsreader. Is the typeface for text and headings. Licence: OFL-1.1.
+https://github.com/productiontype/Newsreader. Is the typeface for text and headings. License: OFL-1.1.
 
 ```
 Copyright 2020 The Newsreader Project Authors (http://github.com/productiontype/Newsreader) Newsreader-Italic[opsz,wght].ttf: Copyright 2020 The Newsreader Project Authors (http://github.com/productiontype/Newsreader)
@@ -283,7 +283,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
 ## Source Sans 3 5.3.0
 
-https://github.com/adobe-fonts/source-sans. Is the typeface for labels and buttons. Licence: OFL-1.1.
+https://github.com/adobe-fonts/source-sans. Is the typeface for labels and buttons. License: OFL-1.1.
 
 ```
 Google Inc.
@@ -383,7 +383,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
 ## IBM Plex Mono 5.3.0
 
-https://github.com/IBM/plex. Is the typeface for code. Licence: OFL-1.1.
+https://github.com/IBM/plex. Is the typeface for code. License: OFL-1.1.
 
 ```
 Copyright 2017 IBM Corp. All rights reserved. IBMPlexMono-ThinItalic.ttf: Copyright 2017 IBM Corp. All rights reserved. IBMPlexMono-ExtraLight.ttf: Copyright 2017 IBM Corp. All rights reserved. IBMPlexMono-ExtraLightItalic.ttf: Copyright 2017 IBM Corp. All rights reserved. IBMPlexMono-Light.ttf: Copyright 2017 IBM Corp. All rights reserved. IBMPlexMono-LightItalic.ttf: Copyright 2017 IBM Corp. All rights reserved. IBMPlexMono-Regular.ttf: Copyright 2017 IBM Corp. All rights reserved. IBMPlexMono-Italic.ttf: Copyright 2017 IBM Corp. All rights reserved. IBMPlexMono-Medium.ttf: Copyright 2017 IBM Corp. All rights reserved. IBMPlexMono-MediumItalic.ttf: Copyright 2017 IBM Corp. All rights reserved. IBMPlexMono-SemiBold.ttf: Copyright 2017 IBM Corp. All rights reserved. IBMPlexMono-SemiBoldItalic.ttf: Copyright 2017 IBM Corp. All rights reserved. IBMPlexMono-Bold.ttf: Copyright 2017 IBM Corp. All rights reserved. IBMPlexMono-BoldItalic.ttf: Copyright 2017 IBM Corp. All rights reserved.
@@ -483,7 +483,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
 ## Clang and LLVM, as packaged by clang-wasm 0.3.0
 
-https://github.com/live-codes/clang-wasm. Is the real C and C++ compiler (Clang 22 built for WebAssembly), downloaded only when a student chooses Full C++ or runs C. Licence: MIT.
+https://github.com/live-codes/clang-wasm. Is the real C and C++ compiler (Clang 22 built for WebAssembly), downloaded only when a student chooses Full C++ or runs C. License: MIT.
 
 ```
 MIT License
@@ -618,7 +618,7 @@ it is left out with the rest.
 
 ## PEG.js 0.10.0
 
-https://pegjs.org/. Generated the C++ parser inside JSCPP. Licence: MIT.
+https://pegjs.org/. Generated the C++ parser inside JSCPP. License: MIT.
 
 ```
 Copyright (c) 2010-2016 David Majda
@@ -647,7 +647,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 ## Pyodide, with CPython 314.0.7
 
-https://pyodide.org/. Is the real Python (CPython built for WebAssembly), downloaded only when a student chooses Full Python. Licence: MPL-2.0 (Pyodide); PSF-2.0 (CPython). Used unchanged. Pyodide is under the Mozilla Public License 2.0 (its source is at https://github.com/pyodide/pyodide); the CPython inside it and its standard library are under the Python Software Foundation License (below), and the libraries built into it (such as zlib, libffi and SQLite) under their own permissive licences, listed by the Pyodide project.
+https://pyodide.org/. Is the real Python (CPython built for WebAssembly), downloaded only when a student chooses Full Python. License: MPL-2.0 (Pyodide); PSF-2.0 (CPython). Used unchanged. Pyodide is under the Mozilla Public License 2.0 (its source is at https://github.com/pyodide/pyodide); the CPython inside it and its standard library are under the Python Software Foundation License (below), and the libraries built into it (such as zlib, libffi and SQLite) under their own permissive licenses, listed by the Pyodide project.
 
 ```
 Mozilla Public License Version 2.0

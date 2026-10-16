@@ -4,7 +4,7 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 
 ## Read this first
 
-- **Method.** Each lesson was mapped from its title, its summary and the skills it teaches, not by re-reading every paragraph. A lesson is listed under a standard when it *teaches or practises* it, not when it merely mentions it. Treat the map as a first draft for a teacher to confirm.
+- **Method.** Each lesson was mapped from its title, its summary and the skills it teaches, not by re-reading every paragraph. A lesson is listed under a standard when it *teaches or practices* it, not when it merely mentions it. Treat the map as a first draft for a teacher to confirm.
 - **CSTA wording.** The standard names are short paraphrases written from memory of the 2017 CSTA K-12 CS Standards, so check the codes against the official list at <https://csteachers.org/k12standards/> before quoting the table to anyone (a district, a grant). Codes whose numbering I could not vouch for (3B-AP-19 and the four 3B-IC standards) are left out.
 - **Grade bands.** CSTA level 2 is grades 6-8, 3A is 9-10, 3B is 11-12. A lesson is listed against the standards its content reaches, whatever its course's stated grades: an 8th grader in SC 101 meets 3A standards.
 - **Minnesota.** Only the 2022 Mathematics CS-integrated benchmarks are mapped (the document I was given). Other subjects' benchmarks are not.
@@ -208,7 +208,7 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 | Lesson | Standards |
 |---|---|
 | 1. Rules or examples? | 3A-DA-12, 3B-AP-08 |
-| 2. Your nearest neighbours | 3A-DA-12, 3B-AP-09, 3B-DA-05 |
+| 2. Your nearest neighbors | 3A-DA-12, 3B-AP-09, 3B-DA-05 |
 | 3. Is it any good? | 3B-AP-11, 3B-DA-07, 9.1.1.15 |
 | 4. Checkpoint one | 3B-AP-08, 3B-DA-07 |
 | 5. A line that learns | 3B-AP-08, 3B-AP-09 |
@@ -218,7 +218,7 @@ Which lessons address which standards. **Generated** by `node scripts/standards-
 
 ## By CSTA standard
 
-"Also on" means the standard is practised on that page but no lesson teaches it.
+"Also on" means the standard is practiced on that page but no lesson teaches it.
 
 | Standard | Lessons | Also on |
 |---|---|---|
@@ -327,7 +327,7 @@ Standards met by exactly one lesson (thin coverage): 2-NI-05, 2-DA-08, 2-AP-15, 
 
 Source: *2022 Minnesota Academic Standards in Mathematics, Computer Science Learning Progressions* (Minnesota Department of Education). Minnesota has no stand-alone CS standards; this document lists the mathematics benchmarks the standards committee marked as CS-integrated, in the CSTA concepts Data and Analysis and Algorithms and Programming. It is the only Minnesota source mapped here.
 
-Benchmark codes read grade.strand.standard.benchmark (9 = high school). "Taught" means a lesson teaches or practises the benchmark's content; "in part" means it touches part of it (the note says what is missing). Checked against the lesson text by searching it for the key terms, not by reading every lesson. Kindergarten to grade 5 benchmarks in the document are below the site's youngest course and are not mapped.
+Benchmark codes read grade.strand.standard.benchmark (9 = high school). "Taught" means a lesson teaches or practices the benchmark's content; "in part" means it touches part of it (the note says what is missing). Checked against the lesson text by searching it for the key terms, not by reading every lesson. Kindergarten to grade 5 benchmarks in the document are below the site's youngest course and are not mapped.
 
 | Benchmark | Lessons | Fit |
 |---|---|---|

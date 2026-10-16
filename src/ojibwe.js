@@ -15,7 +15,7 @@
    4. Dictionary entries are copyrighted by The Ojibwe People's Dictionary and licensed CC BY-NC-SA 3.0
       (https://ojibwe.lib.umn.edu/content/copyright-usage-restrictions). The attribution on #/ojibwe must stay,
       the use must stay non-commercial, and this file, an adaptation of their entries, is shared under the same
-      licence.
+      license.
 
    Exposed as window.OJIBWE { label(key, suffix), text(key), page(), clock(opts), timeWords(date),
    clockProgram(day, hour), WORDS, LESSON_WORDS, CANDIDATES, DAYS, HOURS, PARTS }. */
@@ -96,7 +96,7 @@
     const line = (k, w) => '    ' + pad(k + ': "' + w.oj + '",', 38) + '# ' + w.en;
     return '# The day and the hour in Ojibwe, as on the home page of this site.\n'
       + '# Every word comes from the Ojibwe People\'s Dictionary (ojibwe.lib.umn.edu),\n'
-      + '# used under the Creative Commons BY-NC-SA 3.0 licence.\n'
+      + '# used under the Creative Commons BY-NC-SA 3.0 license.\n'
       + '# Each word is a whole sentence: "Niizho-giizhigad" means "It is Tuesday".\n\n'
       + 'days = {\n' + DAYS.map((w, i) => line(String(i), w)).join('\n') + '\n}\n\n'
       + 'hours = {\n' + HOURS.slice(1).map((w, i) => line(String(i + 1), w)).join('\n') + '\n}\n\n'
@@ -236,7 +236,7 @@
         h('thead', {}, h('tr', {}, h('th', {}, 'English label'), h('th', {}, 'Dictionary entries found'), h('th', {}, 'Ojibwe to use'))),
         h('tbody', {}, cand))),
       h('footer', { class: 'oj-credit' },
-        h('p', {}, 'Dictionary entries are copyrighted by ', srcLink(OPD, 'The Ojibwe People\u2019s Dictionary'), ' (University of Minnesota, Department of American Indian Studies) and used under the ', srcLink('https://creativecommons.org/licenses/by-nc-sa/3.0/', 'Creative Commons BY-NC-SA 3.0 licence'), '. The dictionary does not endorse this site.'),
+        h('p', {}, 'Dictionary entries are copyrighted by ', srcLink(OPD, 'The Ojibwe People\u2019s Dictionary'), ' (University of Minnesota, Department of American Indian Studies) and used under the ', srcLink('https://creativecommons.org/licenses/by-nc-sa/3.0/', 'Creative Commons BY-NC-SA 3.0 license'), '. The dictionary does not endorse this site.'),
         window.ABOUT ? h('p', {}, 'Credits for the rest of the site are on the ', h('a', { href: '#/about' }, 'About page'), '.') : null));
     return main;
   }

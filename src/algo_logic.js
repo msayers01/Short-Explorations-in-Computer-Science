@@ -293,7 +293,7 @@
     return ((d1 > 1e-12 && d2 < -1e-12) || (d1 < -1e-12 && d2 > 1e-12)) && ((d3 > 1e-12 && d4 < -1e-12) || (d3 < -1e-12 && d4 > 1e-12));
   }
   /** Roads: the greedy triangulation (shortest pairs first, skipping any that would cross a road already built), so the map is flat
-      and connected, like real roads between neighbouring towns. Each road is [a, b, length]. */
+      and connected, like real roads between neighboring towns. Each road is [a, b, length]. */
   function makeRoads(pts) {
     const n = pts.length, pairs = [];
     for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) pairs.push([a, b, Math.hypot(pts[a][0] - pts[b][0], pts[a][1] - pts[b][1])]);
@@ -689,7 +689,7 @@
     return () => { p.stop(); cv.stop(); soloCv.stop(); later.cancel(); fin.cancel(); };
   }
   // ---------------------------------------------------------------- demo 2: n queens
-  /** A queen: a crown with five points on a base, centred at (x, y), s across. */
+  /** A queen: a crown with five points on a base, centered at (x, y), s across. */
   function drawQueen(ctx, x, y, s, fill, line) {
     const w = s * 0.78, hgt = s * 0.62, top = y - hgt / 2, bot = y + hgt / 2, l = x - w / 2, r = x + w / 2;
     ctx.beginPath();
@@ -880,7 +880,7 @@
     host.append(el('div', { class: 'algo-controls' }, countL,
       el('button', { class: 'btn', type: 'button', onclick: () => { seed = 1 + Math.floor(Math.random() * 999999); newMap(makeTowns(count, seed, AR)); } }, 'New towns'),
       el('button', { class: 'btn quiet', type: 'button', onclick: () => { mine.clear(); update(); } }, 'Clear my roads'), modeL),
-      el('p', { class: 'lg-hint' }, 'The towns need electricity. Every grey line is a route where a cable could run; its length is the distance. Click the routes to build a network that reaches every town, as short as you can make it. Then bet on an algorithm and press Play: three of them race to the shortest network there is.'),
+      el('p', { class: 'lg-hint' }, 'The towns need electricity. Every gray line is a route where a cable could run; its length is the distance. Click the routes to build a network that reaches every town, as short as you can make it. Then bet on an algorithm and press Play: three of them race to the shortest network there is.'),
       el('div', { class: 'algo-controls' }, el('label', {}, 'Who will win? ', betSel), measureL, el('label', {}, ovBox, ' Draw the algorithms on my map too')));
     function newMap(np) { pts = np; E = makeRoads(pts); best = runToEnd(kruskal(pts.length, E)); mine = new Set(); focusRoad = -1; p.reset(); update(); }
     function build() {
@@ -912,7 +912,7 @@
       onReset: () => { build(); p.status('Who will win? Make your bet, then press Play.'); update(); }
     });
     host.append(legend(el, [['background:var(--warn)', 'Your roads'], ['background:var(--ok);opacity:.45', 'The shortest network (after the race)'], ['background:var(--k-quiz)', 'Being looked at, or waiting in Prim’s queue (dashed)'],
-      ['background:var(--err);opacity:.6', 'Rejected: it would close a loop'], ['background:linear-gradient(90deg,hsl(40,65%,46%),hsl(150,65%,40%),hsl(260,65%,55%))', 'Towns of one colour are already joined']]));
+      ['background:var(--err);opacity:.6', 'Rejected: it would close a loop'], ['background:linear-gradient(90deg,hsl(40,65%,46%),hsl(150,65%,40%),hsl(260,65%,55%))', 'Towns of one color are already joined']]));
     const tableBox = el('div', { class: 'lg-wrap' }); host.append(tableBox);
     function* race() {
       let tick = 0, finished = 0, lastAt = -1, lastPlace = 0;
@@ -1067,7 +1067,7 @@
 <ul>
 <li><b>Plain backtracking</b> fills the empty cells in reading order and tries 1 to 9 in each, skipping digits already in the cell's row, column or box. It is the shortest program, and it can make a bad early choice and spend a long time below it before it finds out.</li>
 <li><b>Fewest candidates first</b> is the same search, but it always fills the empty cell that has the fewest digits left (in AI this is called <em>minimum remaining values</em>). A cell with one candidate is filled at once with no real guess; a cell with none is found straight away, so a wrong guess is noticed early.</li>
-<li><b>Propagation + fewest first</b> is Peter Norvig's solver from his 2006 essay <em>Solving Every Sudoku Puzzle</em>. It keeps the candidates of every cell, and after each digit it applies two rules until nothing changes: if a cell has only one candidate left, remove that digit from its 20 neighbours (a <em>naked single</em>); if a row, column or box has only one place left for a digit, put it there (a <em>hidden single</em>). Only when the rules are stuck does it guess, in the cell with the fewest candidates. Many puzzles need no guess at all.</li>
+<li><b>Propagation + fewest first</b> is Peter Norvig's solver from his 2006 essay <em>Solving Every Sudoku Puzzle</em>. It keeps the candidates of every cell, and after each digit it applies two rules until nothing changes: if a cell has only one candidate left, remove that digit from its 20 neighbors (a <em>naked single</em>); if a row, column or box has only one place left for a digit, put it there (a <em>hidden single</em>). Only when the rules are stuck does it guess, in the cell with the fewest candidates. Many puzzles need no guess at all.</li>
 </ul>
 <h2>How the race counts</h2>
 <p>A step is one change to the grid: a digit guessed (purple), a digit deduced by the rules (green), or a digit erased while backing up (a red flash). At each tick every solver makes one change, so the race measures how much each one has to write and rub out. The warmer a cell's background, the more often it was rewritten: that is where a solver struggled. It is not the whole cost: propagation does a lot of checking behind each step, and choosing the cell with fewest candidates means looking at every empty cell. Even so it wins by a long way on hard puzzles, because a guess avoided saves a whole branch of the search.</p>
@@ -1104,14 +1104,14 @@
 
   A.register({
     id: 'mst', group: 'Paths and graphs', title: 'Shortest network race',
-    blurb: 'Join every town with the least road you can, then bet and watch Kruskal, Prim and Borůvka race to the minimum spanning tree: a union-find of coloured groups merging, one tree growing, and every group reaching out at once.',
+    blurb: 'Join every town with the least road you can, then bet and watch Kruskal, Prim and Borůvka race to the minimum spanning tree: a union-find of colored groups merging, one tree growing, and every group reaching out at once.',
     mount: mountMST,
     about: `<h2>The problem</h2>
 <p>Every town must be joined to every other, directly or through other towns, using as little road (or cable, or pipe) as possible. A network with no loops that reaches every town is a <em>spanning tree</em>; for n towns it has exactly n − 1 roads. The shortest one is the <em>minimum spanning tree</em>. When all the road lengths are different, as here, there is only one, so all three algorithms always build the same network, though they build it in very different orders.</p>
 <h2>Why being greedy works: the cut property</h2>
 <p>Split the towns into two groups, any way you like. Among the roads that cross from one group to the other, the shortest one belongs to the shortest network. Why? Take any network that leaves that road out. It still has to cross between the groups somewhere, using a longer road. Add the short road: that makes a loop, which crosses between the groups twice, once along the short road and once along a longer one. Remove the longer one. Every town is still joined and the network is shorter, so a network without the short road could not have been the shortest. All three algorithms are greedy, building one short road at a time and never taking one back, and the cut property is why they never need to.</p>
 <ul>
-<li><b>Kruskal</b> (Joseph Kruskal, 1956) takes all the roads from shortest to longest and builds each one unless its two towns are already joined, since then it would close a loop. To answer “already joined?” quickly it keeps a <em>union-find</em> structure: each group of joined towns has one colour, and a new road merges two colours into one (the smaller group takes the larger's colour). Its groups appear all over the map at once. Cost: sorting the m roads, m log m, then almost nothing per road.</li>
+<li><b>Kruskal</b> (Joseph Kruskal, 1956) takes all the roads from shortest to longest and builds each one unless its two towns are already joined, since then it would close a loop. To answer “already joined?” quickly it keeps a <em>union-find</em> structure: each group of joined towns has one color, and a new road merges two colors into one (the smaller group takes the larger's color). Its groups appear all over the map at once. Cost: sorting the m roads, m log m, then almost nothing per road.</li>
 <li><b>Prim</b> grows one tree from the first town and always adds the shortest road from the tree to a town outside it (the cut: the tree against the rest). Vojtěch Jarník published it in 1930, Robert Prim found it again in 1957 and Edsger Dijkstra in 1959. Roads leaving the tree wait in a priority queue (dashed), and a road whose far end has joined the tree in the meantime is thrown away when it comes out. Cost: m log n with a binary heap.</li>
 <li><b>Borůvka</b> came first. In 1926 Otakar Borůvka, in Brno, solved the problem for the West Moravian electricity company, which was planning a network to bring power to the villages of southern Moravia. In each round, every group of joined towns picks its own shortest road out (dashed), and all of those are built at once. Each round at least halves the number of groups, so there are at most log₂ n rounds. Because the groups work independently, it is the one used on parallel computers.</li>
 </ul>
@@ -1121,7 +1121,7 @@
 <ul>
 <li>Designing networks of cables, pipes and roads, which is where the problem began.</li>
 <li>Clustering: build the tree, then remove its k − 1 longest roads, and k groups of close points are left (single-linkage clustering).</li>
-<li>An approximate travelling salesperson tour: walk round the minimum spanning tree and skip towns already visited. When distances obey the triangle inequality, the tour is at most twice as long as the best one (see the <a href="#/algorithms/tour">untangle the tour</a> demo).</li>
+<li>An approximate traveling salesperson tour: walk around the minimum spanning tree and skip towns already visited. When distances obey the triangle inequality, the tour is at most twice as long as the best one (see the <a href="#/algorithms/tour">untangle the tour</a> demo).</li>
 </ul>`,
     taught: [{ href: '#/dsa/16', text: 'SC 107, Greedy choices and minimum spanning trees' }, { href: '#/dsa/13', text: 'SC 107, Graphs' }, { href: '#/dsa/12', text: 'SC 107, Heaps and priority queues' }, { href: '#/math/6', text: 'SC 104, Graphs and paths (trees)' }]
   });

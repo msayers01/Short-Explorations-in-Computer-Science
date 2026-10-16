@@ -192,7 +192,7 @@
     function compute() {
       steps = []; const a = arr.slice();
       if (algo === 'bubble') {
-        record(a, { msg: 'Bubble sort: repeatedly compare neighbours and swap them if they are out of order.' });
+        record(a, { msg: 'Bubble sort: repeatedly compare neighbors and swap them if they are out of order.' });
         for (let i = 0; i < n - 1; i++) {
           let swapped = false;
           for (let j = 0; j < n - 1 - i; j++) {
@@ -622,10 +622,10 @@ xs mapped kept result`;
     mount.append(el('div', { class: 'fig-tools' }, preset('smiley'), preset('heart'), preset('clear'), el('span', { class: 'fig-note' }, 'Each row is one byte: 8 bytes hold the whole picture.')), el('div', { class: 'px-fig' }, grid, rows));
   };
 
-  /* ---------- SC 099: a colour is three numbers: red, green and blue light, one byte each ---------- */
+  /* ---------- SC 099: a color is three numbers: red, green and blue light, one byte each ---------- */
   W.colour = function (mount, b) {
     const val = Object.assign({ r: 255, g: 140, b: 0 }, b.start || {});
-    const swatch = el('div', { class: 'sw-chip', role: 'img', 'aria-label': 'The colour you made' });
+    const swatch = el('div', { class: 'sw-chip', role: 'img', 'aria-label': 'The color you made' });
     const out = el('p', { class: 'bits-out' });
     const sliders = {};
     const render = () => {
@@ -642,7 +642,7 @@ xs mapped kept result`;
     const rows3 = el('div', {}, row('r', 'Red'), row('g', 'Green'), row('b', 'Blue'));
     render();
     mount.append(el('div', { class: 'sw-fig' }, rows3, swatch),
-      out, el('div', { class: 'fig-tools' }, preset('White', 255, 255, 255), preset('Yellow', 255, 255, 0), preset('Grey', 128, 128, 128), preset('Black', 0, 0, 0)),
+      out, el('div', { class: 'fig-tools' }, preset('White', 255, 255, 255), preset('Yellow', 255, 255, 0), preset('Gray', 128, 128, 128), preset('Black', 0, 0, 0)),
       el('p', { class: 'fig-note' }, 'Each slider is one byte, 0 to 255. Red and green light together look yellow.'));
   };
 
@@ -747,7 +747,7 @@ xs mapped kept result`;
         svg.append(sv('rect', { x: x - 22, y: y + 17 + slot * 15, width: 44, height: 14, rx: 4, fill: 'var(--accent)' }), txt(x, y + 27.5 + slot * 15, p.n + ':' + p.t.replace(' ', '\u00b7'), { 'text-anchor': 'middle', 'font-size': 10, fill: 'var(--accent-ink)', 'font-family': 'var(--mono)' })); });
       const arrived = P.filter((p) => t >= p.route.length - 1).sort((a, c) => (a.route.length - c.route.length) || (a.n - c.n));
       note.textContent = t === 0 ? 'Your message, HELLO WORLD!, is cut into four packets. Each one carries a number and a piece of the message. All four are at your computer.'
-        : t <= maxHops ? 'Hop ' + t + '. Each router sends every packet on towards the server, and each packet may take a different road. Arrived at the server so far: ' + (arrived.length ? arrived.map((p) => '#' + p.n).join(', ') : 'none') + '.'
+        : t <= maxHops ? 'Hop ' + t + '. Each router sends every packet on toward the server, and each packet may take a different road. Arrived at the server so far: ' + (arrived.length ? arrived.map((p) => '#' + p.n).join(', ') : 'none') + '.'
           : 'The server has all four, but #1 came last because its road was longer. It puts them in order by number: ' + P.map((p) => p.t).join('') + '. The message is whole.';
     };
     const ctl = stepper(maxHops + 2, render, { interval: 1200 });
@@ -850,7 +850,7 @@ xs mapped kept result`;
       for (let i = 1; i < s.length; i++) { t = '(' + t + '·31 + ' + s.charCodeAt(i) + ')'; big = big * 31n + BigInt(s.charCodeAt(i)); }
       if (s.length > 1) t = t.slice(1, -1);
       const wrapped = BigInt.asIntN(32, big) !== big;
-      return 'hash("' + s + '") = ' + t + ' = ' + (wrapped ? big + ', which wraps round in 32 bits to ' + javaHash(s) : javaHash(s));
+      return 'hash("' + s + '") = ' + t + ' = ' + (wrapped ? big + ', which wraps around in 32 bits to ' + javaHash(s) : javaHash(s));
     }
     const indexLine = (h, n) => 'index = floorMod(' + h + ', ' + n + ') = ' + fm(h, n);
 
@@ -1197,11 +1197,11 @@ xs mapped kept result`;
       snap(-1, null, '', 'Start: A gets distance 0 and goes into the queue. Nothing else is known yet.');
       while (q.length) {
         const v = q.shift();
-        snap(v, null, '', 'Take ' + N[v] + ' from the front of the queue. Its neighbours are ' + names(adj[v]) + '.');
+        snap(v, null, '', 'Take ' + N[v] + ' from the front of the queue. Its neighbors are ' + names(adj[v]) + '.');
         adj[v].forEach(([w], k) => {
           const last = k === adj[v].length - 1, fin1 = () => { if (last) { done[v] = true; fin.push(N[v]); } return last ? ' ' + N[v] + ' is finished.' : ''; };
           if (dist[w] < 0) { dist[w] = dist[v] + 1; parent[w] = v; q.push(w); const t = fin1(); snap(v, [v, w], 'new', N[w] + ' is new: distance ' + dist[v] + ' + 1 = ' + dist[w] + ', parent ' + N[v] + '. It joins the back of the queue.' + t); }
-          else { const t = fin1(); snap(v, [v, w], 'skip', N[w] + ' was seen before: skip it. (This check is what stops the search going round and round.)' + t); }
+          else { const t = fin1(); snap(v, [v, w], 'skip', N[w] + ' was seen before: skip it. (This check is what stops the search going around and round.)' + t); }
         });
       }
       const path = []; for (let v = 7; v >= 0; v = parent[v]) path.unshift(N[v]);
@@ -1219,7 +1219,7 @@ xs mapped kept result`;
           else if (w !== p) snap(v, [v, w], 'skip', N[w] + ' is already visited: skip it.');
         }
         st.pop(); done[v] = true;
-        snap(p, null, '', N[v] + ' has no unvisited neighbours left: it is finished and leaves the stack.' + (p < 0 ? ' The first call returns.' : ' Back to ' + N[p] + '.'));
+        snap(p, null, '', N[v] + ' has no unvisited neighbors left: it is finished and leaves the stack.' + (p < 0 ? ' The first call returns.' : ' Back to ' + N[p] + '.'));
       }
       visit(0, -1);
       steps[steps.length - 1].msg += ' Every vertex was visited, in the order ' + fin.join(' ') + '.';
@@ -1465,7 +1465,7 @@ xs mapped kept result`;
         if (!(w in dist)) { dist[w] = dist[v] + 1; queue.push(w); found++; steps.push({ dist: { ...dist }, queue: queue.slice(), done: done.slice(), cur: v, edge: [v, w], msg: 'From ' + v + ': ' + w + ' is new. Its distance is ' + dist[v] + ' + 1 = ' + dist[w] + '; it joins the back of the queue.' }); }
       }
       done.push(v);
-      steps.push({ dist: { ...dist }, queue: queue.slice(), done: done.slice(), cur: v, edge: null, msg: 'Take ' + v + ' off the front of the queue' + (found ? '' : ': all of its neighbours were already seen') + '. ' + v + ' is finished.' });
+      steps.push({ dist: { ...dist }, queue: queue.slice(), done: done.slice(), cur: v, edge: null, msg: 'Take ' + v + ' off the front of the queue' + (found ? '' : ': all of its neighbors were already seen') + '. ' + v + ' is finished.' });
     }
     const unreached = Object.keys(graph).filter(v => !(v in dist));
     steps.push({ dist: { ...dist }, queue: [], done: done.slice(), cur: null, edge: null, msg: 'The queue is empty, so the search is over. ' + (unreached.length ? unreached.join(' and ') + ' were never reached: no road connects them to ' + start + '.' : 'Every vertex was reached.') });
@@ -1796,7 +1796,7 @@ xs mapped kept result`;
         for (let i = 1; i < n; i++) { const v = a[i]; let j = i; R && rec({ cmp2: [i], sortedTo: i, msg: 'Take a[' + i + '] = ' + v + '.' }); while (j > 0) { cmp++; if (a[j - 1] > v) { a[j] = a[j - 1]; moves++; j--; R && rec({ cmp2: [j, j + 1], sortedTo: i + 1, msg: a[j + 1] + ' > ' + v + ': shift it right.' }); } else { R && rec({ cmp2: [j - 1], sortedTo: i + 1, msg: a[j - 1] + ' ≤ ' + v + ': stop here.' }); break; } } a[j] = v; moves++; R && rec({ swap: [j], sortedTo: i + 1, msg: 'Put ' + v + ' in cell ' + j + '. The first ' + (i + 1) + ' values are sorted.' }); }
         R && rec({ sortedTo: n, msg: 'Sorted.' });
       } else {
-        R && rec({ msg: 'Bubble sort: compare neighbours, swap when out of order, until a pass makes no swap.' });
+        R && rec({ msg: 'Bubble sort: compare neighbors, swap when out of order, until a pass makes no swap.' });
         for (let i = 0; i < n - 1; i++) { let swapped = false; for (let j = 0; j < n - 1 - i; j++) { cmp++; R && rec({ cmp2: [j, j + 1], sortedFrom: n - i, msg: 'Compare ' + a[j] + ' and ' + a[j + 1] + '.' }); if (a[j] > a[j + 1]) { [a[j], a[j + 1]] = [a[j + 1], a[j]]; moves += 3; swapped = true; R && rec({ swap: [j, j + 1], sortedFrom: n - i, msg: 'Out of order: swap.' }); } } R && rec({ sortedFrom: n - i - 1, msg: 'End of pass ' + (i + 1) + '.' }); if (!swapped) break; }
         R && rec({ sortedFrom: 0, msg: 'Sorted.' });
       }
@@ -1933,7 +1933,7 @@ xs mapped kept result`;
     let steps = [];
     function compute() {
       steps = []; let a = arr.slice(); let cmp = 0;
-      steps.push({ a: a.slice(), width: 1, msg: 'Every single value is a sorted run of length 1. Merge neighbouring runs, doubling the run length each round.', cmp });
+      steps.push({ a: a.slice(), width: 1, msg: 'Every single value is a sorted run of length 1. Merge neighboring runs, doubling the run length each round.', cmp });
       for (let width = 1; width < n; width *= 2) {
         const out = a.slice();
         for (let lo = 0; lo < n; lo += 2 * width) {
@@ -2095,7 +2095,7 @@ xs mapped kept result`;
     const peek = el('button', { class: 'btn sm quiet', onclick: () => { if (kind === 'stack') { hot = top > 0 ? top - 1 : -1; render(top ? 'peek(): cells[top − 1] = ' + cells[top - 1] + ', without removing it.' : 'Empty: nothing to peek at.'); } else { hot = count ? head : -1; render(count ? 'peek(): cells[head] = ' + cells[head] + ', the front, without removing it.' : 'Empty: nothing to peek at.'); } } }, 'Peek');
     const reset = el('button', { class: 'btn sm quiet', onclick: () => { cells.fill(null); top = head = tail = count = 0; nextVal = 1; val.value = '1'; hot = -1; render(kind === 'stack' ? 'Empty stack: top is 0.' : 'Empty queue: head and tail both 0.'); } }, 'Reset');
     mount.append(svg, el('div', { class: 'fig-tools' }, el('label', {}, 'value ', val), add, remove, peek, reset), log);
-    render(kind === 'stack' ? 'An array of ' + cap + ' cells and an index, top: the number of items, and the cell the next push writes to.' : 'An array of ' + cap + ' cells and two indices. head is the front; tail is where the next item goes. Both move right and wrap round: a ring.');
+    render(kind === 'stack' ? 'An array of ' + cap + ' cells and an index, top: the number of items, and the cell the next push writes to.' : 'An array of ' + cap + ' cells and two indices. head is the front; tail is where the next item goes. Both move right and wrap around: a ring.');
   };
 
   /* ---------- 30. the call stack of a recursive function, frame by frame (DSA lesson 8) ---------- */
@@ -2227,7 +2227,7 @@ xs mapped kept result`;
     const tools = el('div', { class: 'fig-tools' }, el('span', {}, 'word'), input, el('button', { class: 'btn sm', onclick: run }, 'Load'), el('span', {}, 'read the'), mode);
     mount.append(el('div', { class: 'fig-scroll' }, svg), tools, presets, log, ctl.el);
   };
-  /* ---------- k nearest neighbours: drag a fruit, choose k, watch the label and the boundary (SC 109 lessons 2-3) ---------- */
+  /* ---------- k nearest neighbors: drag a fruit, choose k, watch the label and the boundary (SC 109 lessons 2-3) ---------- */
   // Fruit measured as width and height in cm. Most lemons are tall and narrow and most oranges round, but one lemon is round: the
   // point that k = 1 believes and a larger k outvotes. With b.test the figure also shows fruit it was not trained on, and how many of
   // each set k-NN labels right, so overfitting (k = 1: every training fruit right) and underfitting (k = 15: the majority) are visible.
@@ -2253,7 +2253,7 @@ xs mapped kept result`;
       : sv('polygon', Object.assign({ points: [[0, -9], [8, 6], [-8, 6]].map(([dx, dy]) => (X(p[0]) + dx) + ',' + (Y(p[1]) + dy)).join(' '), fill: FILL.l, stroke: 'var(--ink)', 'stroke-width': 1.2 }, attrs || {}));
     function render() {
       svg.replaceChildren();
-      // the regions: every small square coloured by the label k-NN would give a fruit there
+      // the regions: every small square colored by the label k-NN would give a fruit there
       const cell = 0.1;
       for (let x = X0; x < X1 - 1e-9; x += cell) for (let y = Y0; y < Y1 - 1e-9; y += cell) {
         const lab = vote(nearest([x + cell / 2, y + cell / 2], k)).label;
@@ -2274,7 +2274,7 @@ xs mapped kept result`;
       svg.append(g);
       status.textContent = 'New fruit ' + q[0].toFixed(1) + ' cm wide, ' + q[1].toFixed(1) + ' cm tall. The ' + (k === 1 ? 'nearest fruit is' : k + ' nearest are ' + v.o + ' orange and ' + v.l + ' lemon') + (k === 1 ? ' a' + (v.label === 'o' ? 'n orange' : ' lemon') : '') + ', so k-NN says: ' + NAME[v.label] + '.';
       if (showTest) {
-        // a training fruit is labelled by the training set, itself included: that is what "accuracy on the training set" means
+        // a training fruit is labeled by the training set, itself included: that is what "accuracy on the training set" means
         const trainRight = TRAIN.filter((t) => vote(nearest(t, k)).label === t[2]).length, testRight = TEST.filter((t) => vote(nearest(t, k)).label === t[2]).length;
         score.replaceChildren('k = ' + k + ': training fruit ', el('b', {}, trainRight + ' of ' + TRAIN.length), ' right; test fruit (never seen) ', el('b', {}, testRight + ' of ' + TEST.length), ' right.');
       }
@@ -2294,7 +2294,7 @@ xs mapped kept result`;
       render(); const f = svg.querySelector('.knn-new'); if (f) f.focus();
     });
     svg.style.touchAction = 'none';
-    const pick = el('select', { 'aria-label': 'k, the number of neighbours that vote', onchange: (e) => { k = +e.target.value; render(); } }, KS.map((n) => el('option', { value: String(n), selected: n === k ? '' : null }, String(n))));
+    const pick = el('select', { 'aria-label': 'k, the number of neighbors that vote', onchange: (e) => { k = +e.target.value; render(); } }, KS.map((n) => el('option', { value: String(n), selected: n === k ? '' : null }, String(n))));
     const tools = el('div', { class: 'fig-tools' }, el('label', {}, 'k = ', pick),
       b.test ? el('label', {}, el('input', { type: 'checkbox', checked: showTest ? '' : null, onchange: (e) => { showTest = e.target.checked; score.hidden = !showTest; render(); } }), ' show the test fruit (hollow)') : null,
       el('span', { class: 'fig-note' }, 'drag the ? (or focus it and use the arrow keys)'));

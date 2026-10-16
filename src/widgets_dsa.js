@@ -3,7 +3,7 @@
      dptable  lesson 15: the longest-common-subsequence table filled cell by cell, then the answer read back from the corner
      mst      lesson 16: Kruskal's algorithm with union-find (mode 'kruskal') or Prim's with a priority queue (mode 'prim'), on lesson 13's map with other lengths
      avl      lesson 17: insert into an AVL tree: the search, the heights and balance factors on the way back up, and each rotation
-   The figures reuse the classes of widgets.js's own figures (fig-tools, fig-status, bst-*, gr-*), and colour only with the theme's variables,
+   The figures reuse the classes of widgets.js's own figures (fig-tools, fig-status, bst-*, gr-*), and color only with the theme's variables,
    so that they follow the light and dark themes. */
 (function () {
   'use strict';

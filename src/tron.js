@@ -6,7 +6,7 @@
    The move is UP, DOWN, LEFT or RIGHT. The referee runs the bot afresh every turn ("restart mode"), so a bot keeps no memory between turns.
 
    Everything random uses the seeded generator below, so a seed plus the moves reproduces a match exactly (that is what a replay is).
-   Everything that arrives from a link or a file (a replay, a bot) is sanitised here before anything else sees it. */
+   Everything that arrives from a link or a file (a replay, a bot) is sanitized here before anything else sees it. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.TRON = factory();
@@ -192,7 +192,7 @@
           let mine = 0, theirs = 0; for (let i = 0; i < race.length; i++) { if (race[i] === 0) mine++; else if (race[i] > 0) theirs++; }
           const alone = territory(o, [to]).dist; let reach = 0; for (let i = 0; i < alone.length; i++) if (alone[i] >= 0) reach++;
           const clash = foes.some((f) => Math.abs(f.x - to.x) + Math.abs(f.y - to.y) === 1);   // a foe could step there this turn too, and both would crash
-          const score = (mine - theirs) * 10000 + reach * 10 - openNeighbours(o, to.x, to.y) - (clash ? 1e7 : 0);   // fewer open neighbours on a tie: hug walls, leave no pockets
+          const score = (mine - theirs) * 10000 + reach * 10 - openNeighbours(o, to.x, to.y) - (clash ? 1e7 : 0);   // fewer open neighbors on a tie: hug walls, leave no pockets
           if (score > bs) { bs = score; best = m; }
         }
         return best;

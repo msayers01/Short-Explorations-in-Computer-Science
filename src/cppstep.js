@@ -218,7 +218,7 @@
     const t0 = Date.now();
     let ticks = 0;
     try {
-      // run the setup before main's first line (global initialisers, entering main)
+      // run the setup before main's first line (global initializers, entering main)
       while (!(dbg.nextNode() && dbg.nextNode().sLine > 0)) { if (dbg.next() !== false) { result.finished = true; break; } }
       while (!result.finished) {
         const node = dbg.nextNode();

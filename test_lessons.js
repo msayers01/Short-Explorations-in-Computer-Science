@@ -176,6 +176,7 @@ if (fs.existsSync(IMG_DIR)) for (const f of fs.readdirSync(IMG_DIR).filter((f) =
 for (const file of FILES) {
   window.COURSES = []; const mod = require.resolve('./src/course_' + file + '.js'); delete require.cache[mod]; require(mod);
   const course = window.COURSES[0], C = course.code || course.id;
+  americanSpelling(C, course);
   const prefix = ID_PREFIX[file];
   if (!course.lessons.length) err(C, 'no lessons');
   course.lessons.forEach((L, li) => {
@@ -290,6 +291,29 @@ if (fs.existsSync(ICON_DIR)) for (const f of fs.readdirSync(ICON_DIR).filter((f)
   if (svg.length > 30 * 1024) err(where, 'over 30 KB: it goes into the page itself');
 }
 for (const id of pictures.keys()) if (!usedPictures.has(id)) err('img/' + id + '.json', 'this picture is not used by any lesson (remove it, or use it)');
+
+// ---- the site is written in American English (the owner's rule, October 2026): a British spelling in any text a student or teacher
+// reads is an error. Keys that name things in code (ids, figures, skills, pictures, setups) are not text, and a few words stay: Spectre (the
+// CPU flaw's name), and sed 's/colour/color/' (the shell course turns British spelling into American on purpose).
+function americanSpelling(where, root) {
+  const BRITISH = /\b(colour\w*|neighbour\w*|behaviour\w*|favourit\w*|honour\w*|flavour\w*|humour\w*|armour\w*|centre[sd]?|metres?|litres?|fibres?|theatres?|licences?|defences?|offences?|labell(ed|ing)|travell(ed|ing|er|ers)|cancell(ed|ing)|modell(ed|ing)|signall(ed|ing)|grey|catalogue[sd]?|judgement|sceptic\w*|maths|mould|practis(e|ed|es|ing)|(organ|recogn|real|memor|memo|initial|optim|normal|summar|emphas|minim|maxim|visual|prior|categor|apolog|final|capital|synchron|amort|hypothes|parenthes|standard|special|util|custom|character|critic|symbol|random|serial|sanit|magnet|token)is(e|ed|es|ing|er|ers|ation|ations)|analys(e|ed|es|ing)|towards|full stops?|whilst|amongst|learnt|spelt|fortnight)\b/i;
+  const SKIP_KEYS = new Set(['id', 'fig', 'skill', 'photo', 'setup', 'setups', 'mode', 'lang', 'runtime', 'kind', 'labName']);
+  const seen = new Set();
+  const walk = (v, at) => {
+    if (typeof v === 'string') {
+      const t = v.replace(/s\/colour\/color\/g?/g, '');
+      const m = t.match(BRITISH);
+      if (m) err(where, 'British spelling "' + m[0] + '" (' + at + '): the site is written in American English');
+      return;
+    }
+    if (!v || typeof v !== 'object' || seen.has(v)) return;
+    seen.add(v);
+    if (Array.isArray(v)) v.forEach((x, i) => walk(x, at + '[' + i + ']'));
+    else for (const k of Object.keys(v)) if (!SKIP_KEYS.has(k)) walk(v[k], at + '.' + k);
+  };
+  walk(root, '');
+}
+{ window.SITE = undefined; const m = require.resolve('./src/site.js'); delete require.cache[m]; require(m); americanSpelling('src/site.js', window.SITE); }
 
 // ---- exercise ids are never renumbered or removed: progress and portfolios are keyed by them
 const known = fs.existsSync(IDS_FILE) ? fs.readFileSync(IDS_FILE, 'utf8').split('\n').map((s) => s.trim()).filter((s) => s && !s.startsWith('#')) : [];

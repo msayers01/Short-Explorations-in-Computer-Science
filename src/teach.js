@@ -183,7 +183,7 @@
       };
       f.lang.addEventListener('change', showRuntime); showRuntime();
       f.author = el('input', { class: 'find-inp', value: a.author, placeholder: 'shown to students' });
-      f.due = el('input', { class: 'find-inp', value: a.due, placeholder: 'e.g. Friday 10 October' });
+      f.due = el('input', { class: 'find-inp', value: a.due, placeholder: 'e.g. Friday, October 10' });
       f.text = el('textarea', { class: 'teach-ta', rows: 6, placeholder: 'What the student must do. Blank lines make paragraphs, `backticks` make code, lines starting with "- " make a list.' }); f.text.value = a.text;
       f.starter = el('textarea', { class: 'teach-ta mono', rows: 6, spellcheck: 'false', placeholder: 'The code students start from' }); f.starter.value = a.starter;
       f.hints = el('textarea', { class: 'teach-ta', rows: 3, placeholder: 'One hint per line, shown in order' }); f.hints.value = (a.hints || []).join('\n');

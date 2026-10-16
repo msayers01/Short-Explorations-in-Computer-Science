@@ -3,7 +3,7 @@
      const v = ARENA.viewer(host, { maxWidth, onTurn(index, frame) })
      v.live(settings, players)  start showing a match as it is played      v.push(frame)  one more turn       v.finish(lines)  the match is over
      v.show(replay)             a finished replay (checked by TRON.cleanReplay, then re-simulated)             v.destroy()
-   Players are drawn in four colours AND with their number on the head, so the picture does not depend on telling colours apart. */
+   Players are drawn in four colors AND with their number on the head, so the picture does not depend on telling colors apart. */
 (function () {
   'use strict';
   const T = window.TRON;

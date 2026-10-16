@@ -2,8 +2,8 @@
    Registered as window.REPL (and module.exports for node: test_repl.js).
 
      REPL.python({ ask(prompt) → Promise<line|null>, out(text), err(text), run(code, {onOutput, onInput}) → Promise<{err}>, cancelled() }) → Promise<exit>
-     REPL.scheme({ ask, out, err, Scheme, cancelled }) → Promise<exit>
-     REPL.java({ ask, out, err, run(code, {onOutput}) → Promise<{err}>, cancelled }) → Promise<exit>      (jshell)
+     REPL.scheme({ ask, out, err, Scheme, canceled }) → Promise<exit>
+     REPL.java({ ask, out, err, run(code, {onOutput}) → Promise<{err}>, canceled }) → Promise<exit>      (jshell)
 
    Scheme's evaluator lives in the page, so its REPL keeps one environment and evaluates each entry in it.
    Python runs in a sandbox (Skulpt in a worker) that cannot be kept waiting between entries, so the Python REPL replays: each entry runs after all

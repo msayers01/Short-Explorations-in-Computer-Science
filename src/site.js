@@ -10,7 +10,7 @@ window.SITE = {
   contact: [
   ],
 
-  /* Introduction to the course catalogue on the home page. (html) */
+  /* Introduction to the course catalog on the home page. (html) */
   coursesIntro: `<p>Free, self-paced and not for credit. Each course is a handful of lessons with code you run and change on the page, and exercises that check your answer as you go.</p>
 <p><b>Never programmed at all?</b> <b>What Is a Computer?</b> starts before any code, with the machine itself. <b>Coming from Scratch?</b> <b>From Scratch to Python</b> turns the blocks you know into lines of Python, one block at a time. <b>New to programming? Start with Python.</b> Then <b>C++</b> shows what the machine is doing underneath, <b>Lisp</b> looks at programs the way a mathematician does, and <b>Java</b> is the language of AP Computer Science A and of Android. <b>Modern C++</b> continues C++ with a real compiler, and <b>Data Structures and Algorithms</b> is the course every degree puts second. <b>Mathematics of Computing</b> asks what a computer can and cannot do, with Python as its laboratory, and <b>How Machines Learn</b> builds small learning programs in Python once you have reached dictionaries in the Python course. <b>The Command Line</b> needs no experience and goes with any course.</p>
 <p>A programming lesson is one <b>Hour of Code</b>: 45–60 minutes, nothing to install. Mathematics lessons run longer and say so in their list.</p>`,
@@ -24,10 +24,10 @@ window.SITE = {
   /* Who made the site and why, shown at the top of #/about. (html) */
   about: `<p>These courses were written and built by Michael Sayers, for anyone who wants to learn to program. They are free, need no account and nothing installed, and keep every student's work on the student's own device.</p>`,
 
-  /* Licences, shown on #/about (the repository states the same in LICENSE and LICENSE-CONTENT.md). "code" covers the
-     program files; "content" covers the lessons, exercises and the teacher guide. Two parts keep the licences of
+  /* Licenses, shown on #/about (the repository states the same in LICENSE and LICENSE-CONTENT.md). "code" covers the
+     program files; "content" covers the lessons, exercises and the teacher guide. Two parts keep the licenses of
      their sources: src/ojibwe.js is CC BY-NC-SA 3.0 (the Ojibwe People's Dictionary), and the Lisp course's material
-     adapted from SICP is CC BY-SA 4.0, which is why the content licence is CC BY-SA 4.0. */
+     adapted from SICP is CC BY-SA 4.0, which is why the content license is CC BY-SA 4.0. */
   licence: {
     code: { name: 'MIT License', url: 'https://opensource.org/license/mit' },
     content: { name: 'CC BY-SA 4.0', url: 'https://creativecommons.org/licenses/by-sa/4.0/' }
@@ -37,5 +37,5 @@ window.SITE = {
   sourceUrl: 'https://github.com/msayers01/Short-Explorations-in-Computer-Science',
 
   /* Bottom of the home page. */
-  footer: '© 2026 Michael Sayers. Free to use, adapt and share under open licences.'
+  footer: '© 2026 Michael Sayers. Free to use, adapt and share under open licenses.'
 };

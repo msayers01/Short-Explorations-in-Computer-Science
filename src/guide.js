@@ -62,7 +62,7 @@ window.GUIDE = (function () {
       <tr><td><b>SC 106 Introduction to Java</b><br><span class="g-muted">15 lessons</span></td><td>Grades 10–12, after Python or with some experience. The language of AP Computer Science A.</td><td>Read the compiler’s messages, declare typed variables, make decisions, read input, write loops and methods, use arrays, Strings and ArrayLists, write classes, then inheritance and interfaces, exceptions, HashMap and HashSet, and a crafting-table project. Three checkpoint lessons. Checked with the real compiler’s own error messages, in the browser.</td></tr>
       <tr><td><b>SC 107 Data Structures and Algorithms</b><br><span class="g-muted">19 lessons</span></td><td>Grades 11–12, after Java (SC 106). The second course of every computer science degree.</td><td>Count the cost of code and name its order of growth; arrays and growing arrays; binary search; selection, insertion, merge sort and quicksort; linked lists, stacks and queues; recursion; hash tables; binary search trees; heaps and priority queues; graphs, breadth-first and depth-first search and Dijkstra’s shortest routes; dynamic programming; greedy choices and minimum spanning trees with union-find; balanced (AVL and red-black) search trees; a word-counting project. Four checkpoint lessons. Every structure as a figure to step through, code to write and a count to predict, all in Java.</td></tr>
       <tr><td><b>SC 108 The Command Line</b><br><span class="g-muted">10 lessons</span></td><td>Grades 7–12. No experience needed; pairs with any course.</td><td>The Unix shell in a practice terminal: where am I, paths and cd; making, copying, moving and removing files, wildcards; reading, counting and searching files with cat, wc, grep and find; pipes and redirection; a checkpoint. Then running your own Python, Java and C++ programs with arguments, input files and exit statuses; the same ideas in the Windows Command Prompt and PowerShell; a first script with variables, loops and if; a second checkpoint; and a project, a script that tidies a messy folder safely.</td></tr>
-      <tr><td><b>SC 109 How Machines Learn</b><br><span class="g-muted">8 lessons so far</span></td><td>Grades 9–12, after SC 101 up to Dictionaries (lesson 11).</td><td>Build the models behind machine learning in Python, small enough to read every line: a spam filter that learns from labelled messages, k nearest neighbours, the honest test (training and test sets, accuracy, the confusion table, overfitting), the perceptron, gradient descent, and decision trees built by information gain. The first course written to the lesson standard: named skills, and a checkpoint lesson of mixed questions after every three lessons.</td></tr>
+      <tr><td><b>SC 109 How Machines Learn</b><br><span class="g-muted">8 lessons so far</span></td><td>Grades 9–12, after SC 101 up to Dictionaries (lesson 11).</td><td>Build the models behind machine learning in Python, small enough to read every line: a spam filter that learns from labeled messages, k nearest neighbors, the honest test (training and test sets, accuracy, the confusion table, overfitting), the perceptron, gradient descent, and decision trees built by information gain. The first course written to the lesson standard: named skills, and a checkpoint lesson of mixed questions after every three lessons.</td></tr>
     </tbody>
   </table>
   <p>Courses marked <b>Under development</b> on the site (From Scratch to Python, Modern C++, How Machines Learn) are being written: their lessons are complete and checked, but more are coming and details may change.</p>
@@ -74,7 +74,7 @@ window.GUIDE = (function () {
 
 <section id="g-3">
   <h2>3. Inside a lesson</h2>
-  <p>Every lesson has the same parts in the same order, so students learn the routine once. A map under the lesson title lists the parts and links to them, the sections are numbered, and every block carries a coloured label saying what it is (Example, Interactive, Quick check, Watch out, Quiz, Exercise), each kind in its own colour, so a student skimming the page can find the examples or the exercises at a glance.</p>
+  <p>Every lesson has the same parts in the same order, so students learn the routine once. A map under the lesson title lists the parts and links to them, the sections are numbered, and every block carries a colored label saying what it is (Example, Interactive, Quick check, Watch out, Quiz, Exercise), each kind in its own color, so a student skimming the page can find the examples or the exercises at a glance.</p>
   <dl class="g-parts">
     <dt>Explanation</dt><dd>Short paragraphs that state each rule before showing it.</dd>
     <dt>Try it</dt><dd>A small program with a caption saying what to look for and what to change. Press Run, change something, run again. <em>Open in Code Lab</em> is there for students who want to keep going.</dd>
@@ -99,7 +99,7 @@ window.GUIDE = (function () {
       <tr><td class="g-time">0–5</td><td><b>Open the lesson together.</b> Read the summary line under the title aloud.</td></tr>
       <tr><td class="g-time">5–20</td><td><b>Do the explanation and the first two "Try it" boxes as a class</b>, projected (section 5). Have a student read the caption, predict, run, change one thing. Ask "what do you think this line does?" and let the Run button settle it.</td></tr>
       <tr><td class="g-time">20–40</td><td><b>Students continue alone or in pairs.</b> In a pair, one types and one reads the caption and the error messages; they swap at each "Try it". When a student is stuck, ask them to read the failed test aloud and to press Hint before asking you.</td></tr>
-      <tr><td class="g-time">40–55</td><td><b>Exercises.</b> Most students finish the first; strong students finish both and can extend it in the Code Lab or help a neighbour.</td></tr>
+      <tr><td class="g-time">40–55</td><td><b>Exercises.</b> Most students finish the first; strong students finish both and can extend it in the Code Lab or help a neighbor.</td></tr>
       <tr><td class="g-time">55–60</td><td><b>Recap.</b> Read the "In this lesson" box. Ask for the mistake they made and how they found it.</td></tr>
     </tbody>
   </table>
@@ -113,7 +113,7 @@ window.GUIDE = (function () {
 
 <section id="g-5">
   <h2>5. Projecting a lesson: classroom mode</h2>
-  <p>The button with a small screen on it, next to the light/dark switch, turns on <em>classroom mode</em>: large type, darker grey text, and the lesson list hidden so the lesson fills the screen. A bar at the bottom moves through the lesson one step at a time, with a coloured line in the margin showing where the class is.</p>
+  <p>The button with a small screen on it, next to the light/dark switch, turns on <em>classroom mode</em>: large type, darker gray text, and the lesson list hidden so the lesson fills the screen. A bar at the bottom moves through the lesson one step at a time, with a colored line in the margin showing where the class is.</p>
   <dl class="g-parts">
     <dt>Moving</dt><dd><em>Next</em> and <em>Back</em>, or the arrow keys, Page Up/Down, Space. A presentation clicker works. Click any paragraph to move the marker there.</dd>
     <dt>Reveal and Run</dt><dd>When the marker is on a "Predict" box or a "Try it" box, Enter reveals the answer or runs the program.</dd>
@@ -192,7 +192,7 @@ window.GUIDE = (function () {
     <dt>"My progress disappeared."</dt><dd>Progress is saved per device and per browser. The student is on a different computer or browser, or in a private window, or someone pressed Reset. There is no server to recover from. Have students save their work to a file (section 9) before changing computers.</dd>
     <dt>"It stops with a red message."</dt><dd>That is an error message, and it usually names the line. In the Code Lab common messages have a plain explanation under them, and a message that names a line has a "go to line" link. Python lesson 2 and Java lesson 1 teach how to read them.</dd>
     <dt>"Time limit exceeded."</dt><dd>The program ran too long, almost always a loop that never ends. Look at the loop's condition.</dd>
-    <dt>"The answer is right but the checker says no."</dt><dd>The output differs in a small way: a missing space, a full stop, a capital, or <code>5</code> where <code>5.0</code> was expected. Compare expected and actual character by character.</dd>
+    <dt>"The answer is right but the checker says no."</dt><dd>The output differs in a small way: a missing space, a period, a capital, or <code>5</code> where <code>5.0</code> was expected. Compare expected and actual character by character.</dd>
     <dt>"Save does nothing."</dt><dd>Some managed browsers block downloads. Use Share link instead.</dd>
     <dt>"The link is too long for a QR code."</dt><dd>QR codes hold about 3,000 characters. Shorten the instructions or starter code, or share the link itself.</dd>
     <dt>"A link won't open."</dt><dd>Very old browsers (Safari before 2023) cannot read the compressed links. Use a current browser.</dd>
@@ -217,7 +217,7 @@ window.GUIDE = (function () {
         <tr><td><code>#/portfolio</code></td><td>the student's portfolio</td></tr>
         <tr><td><code>#/guide</code></td><td>this guide</td></tr>
         <tr><td><code>#/ojibwe</code></td><td>the Ojibwe words on the site and their sources</td></tr>
-        <tr><td><code>#/about</code></td><td>what the site keeps, licence, credits</td></tr>
+        <tr><td><code>#/about</code></td><td>what the site keeps, license, credits</td></tr>
       </tbody></table>
     </div>
     <div>
@@ -248,7 +248,7 @@ window.GUIDE = (function () {
 </section>
 
 <footer class="g-foot">
-  <p>Courses, site and this guide written and built by Michael Sayers. Shared under the Creative Commons Attribution-ShareAlike 4.0 licence (CC BY-SA 4.0): use, adapt and share them, crediting the author and sharing changes the same way.</p>
+  <p>Courses, site and this guide written and built by Michael Sayers. Shared under the Creative Commons Attribution-ShareAlike 4.0 license (CC BY-SA 4.0): use, adapt and share them, crediting the author and sharing changes the same way.</p>
 </footer>
 `;
   function page() {

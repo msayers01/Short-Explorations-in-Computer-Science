@@ -1,9 +1,9 @@
 /* Algorithms in motion: nature and emergence. Four demos for the #/algorithms page (see src/algos.js for the frame), each a crowd of
    simple parts following local rules, with no part in charge, and a pattern that nobody wrote down:
    - boids: Craig Reynolds's flock (1986): separation, alignment and cohesion with sliders, a hawk the pointer steers, a spatial grid;
-   - ant: Langton's ant (1986) and its many-colour cousins: chaos for ten thousand steps, then a highway (bet first);
+   - ant: Langton's ant (1986) and its many-color cousins: chaos for ten thousand steps, then a highway (bet first);
    - sandpile: the Abelian sandpile of Bak, Tang and Wiesenfeld (1987): grains topple, avalanches of every size, a fractal;
-   - slime: a Physarum-style slime mould after Jeff Jones (2010): thousands of agents that follow and lay a fading trail make networks.
+   - slime: a Physarum-style slime mold after Jeff Jones (2010): thousands of agents that follow and lay a fading trail make networks.
    All four run their own animation loop (one simulation step, or a measured batch of steps, per frame) rather than api.player, whose
    steps-per-second clock jitters at one step a frame; the counters and pictures are redrawn once a frame, never per step.
    The algorithms are pure (no DOM, typed arrays) and checked by selfTest() in node (test_algos.js). */
@@ -14,7 +14,7 @@
 
   // ================================================================== pure algorithms
 
-  // ---------- boids. A flock is parallel Float32Arrays; the world wraps round (a torus), so no bird meets a wall.
+  // ---------- boids. A flock is parallel Float32Arrays; the world wraps around (a torus), so no bird meets a wall.
   const BOID = { sep: 1.5, ali: 1.0, coh: 1.0, view: 48, sepFrac: 0.5, maxSpeed: 3.2, minSpeed: 1.4, maxForce: 0.07, fear: 110 };
   function makeFlock(n, w, h, seed, p) {
     const r = A.rng(seed), P = p || BOID;
@@ -22,8 +22,8 @@
     for (let i = 0; i < n; i++) { const a = r() * TAU, s = P.minSpeed + (P.maxSpeed - P.minSpeed) * r(); f.x[i] = r() * w; f.y[i] = r() * h; f.vx[i] = Math.cos(a) * s; f.vy[i] = Math.sin(a) * s; }
     return f;
   }
-  /** Bucket the birds into square cells at least R wide, so a bird only looks at the 3 × 3 cells round it, not at every bird:
-      about n × (birds per neighbourhood) work instead of n². With fewer than 3 cells across, the wrapped cells would repeat, so
+  /** Bucket the birds into square cells at least R wide, so a bird only looks at the 3 × 3 cells around it, not at every bird:
+      about n × (birds per neighborhood) work instead of n². With fewer than 3 cells across, the wrapped cells would repeat, so
       then every column (or row) is looked at once. */
   function buildGrid(f, R) {
     const cols = Math.max(1, Math.floor(f.w / R)), rows = Math.max(1, Math.floor(f.h / R)), cw = f.w / cols, ch = f.h / rows;
@@ -35,7 +35,7 @@
     }
     return { cols, rows, cw, ch, cs: new Int32Array(Math.min(3, cols)), rs: new Int32Array(Math.min(3, rows)) };
   }
-  /** Call fn(j, dx, dy, d2) for every other bird within R of bird i (dx, dy pointing from i to j, the shortest way round). */
+  /** Call fn(j, dx, dy, d2) for every other bird within R of bird i (dx, dy pointing from i to j, the shortest way around). */
   function eachNeighbour(f, g, i, R, fn) {
     const { cols, rows, cw, ch, cs, rs } = g, R2 = R * R, hw = f.w / 2, hh = f.h / 2, xi = f.x[i], yi = f.y[i];
     const c0 = Math.min(cols - 1, Math.floor(xi / cw)), r0 = Math.min(rows - 1, Math.floor(yi / ch));
@@ -59,7 +59,7 @@
     out[0] += sx * wgt; out[1] += sy * wgt;
   }
   /** One step of the flock. Every bird looks only at the birds within view (P.view) and steers by three rules: separation (away from
-      birds that are too close, more strongly the closer they are), alignment (towards their average heading) and cohesion (towards their
+      birds that are too close, more strongly the closer they are), alignment (toward their average heading) and cohesion (toward their
       average position). preds are hawks {x, y}: a bird that sees one within P.fear flies away from it, three times as hard. All birds
       steer first and then move, so the order of the birds does not matter. dt is in frames of 1/60 s. */
   function flockStep(f, P, preds, dt) {
@@ -91,8 +91,8 @@
   /** How lined up the flock is: the length of the average of the unit headings, 0 for birds flying every way, 1 for all one way. */
   function order(f) { let sx = 0, sy = 0; for (let i = 0; i < f.n; i++) { const s = Math.hypot(f.vx[i], f.vy[i]) || 1; sx += f.vx[i] / s; sy += f.vy[i] / s; } return f.n ? Math.hypot(sx, sy) / f.n : 0; }
 
-  // ---------- Langton's ant and its cousins. A rule is a string of L and R, one letter per colour: on a cell of colour k the ant turns
-  // the way letter k says, moves the cell on to colour k + 1 (round to 0) and steps forward. "RL" is Langton's ant. The grid wraps round.
+  // ---------- Langton's ant and its cousins. A rule is a string of L and R, one letter per color: on a cell of color k the ant turns
+  // the way letter k says, moves the cell on to color k + 1 (round to 0) and steps forward. "RL" is Langton's ant. The grid wraps around.
   const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];   // up, right, down, left: R adds 1, L takes 1
   const RING = 8192;                              // the last 8192 positions, for spotting the highway
   function makeAnt(rule, W, H) {
@@ -135,7 +135,7 @@
   ];
   const validRule = (s) => /^[LR]{2,12}$/.test(s);
 
-  // ---------- the Abelian sandpile on an N × N grid: a cell with 4 or more grains topples, one to each neighbour; grains that topple
+  // ---------- the Abelian sandpile on an N × N grid: a cell with 4 or more grains topples, one to each neighbor; grains that topple
   // over the edge are lost. Unstable cells wait in a queue (each at most once, flagged by inQ), and a cell that holds h ≥ 4 topples
   // h >> 2 times at once: Dhar's abelian property says the order of the topplings does not change the result or their number.
   function makePile(N) { return { N, h: new Int32Array(N * N), q: new Int32Array(N * N), inQ: new Uint8Array(N * N), qh: 0, qn: 0, dropped: 0, lost: 0, topples: 0 }; }
@@ -158,13 +158,13 @@
   /** Drop one grain on cell i and let the avalanche run to the end; returns its size, the number of topplings. */
   function dropOne(p, i) { const t0 = p.topples; addGrains(p, i, 1); relax(p); return p.topples - t0; }
   const onGrid = (p) => { let s = 0; for (let i = 0; i < p.h.length; i++) s += p.h[i]; return s; };
-  /** A grid big enough that n grains dropped on the centre settle without touching the edge (the stable pile is a disc with about 2.1
-      grains a cell, so of radius about √(n / 6.7)). Odd, so there is a centre cell. */
+  /** A grid big enough that n grains dropped on the center settle without touching the edge (the stable pile is a disc with about 2.1
+      grains a cell, so of radius about √(n / 6.7)). Odd, so there is a center cell. */
   const pileSizeFor = (n) => 2 * Math.ceil(0.41 * Math.sqrt(n) + 3) + 1;
   const sizeBin = (s) => (s <= 0 ? 0 : 1 + Math.floor(Math.log2(s)));   // avalanche sizes in doubling bins: 1, 2-3, 4-7, ...
 
-  // ---------- slime mould (Jones 2010): agents on a W × H trail map, which wraps round. Each agent smells the trail at three sensors
-  // ahead of it (left, centre, right, sa radians apart, so cells ahead), turns towards the strongest by ra, steps ss forward and
+  // ---------- slime mold (Jones 2010): agents on a W × H trail map, which wraps around. Each agent smells the trail at three sensors
+  // ahead of it (left, center, right, sa radians apart, so cells ahead), turns toward the strongest by ra, steps ss forward and
   // deposits dep. Then the whole map diffuses (each cell becomes the mean of its 3 × 3 block) and fades (times 1 − decay).
   // presets: the agents as a share of the cells (Jones's networks form at a few per cent to about 15%), food on or off
   const SLIME_PRESETS = {
@@ -238,7 +238,7 @@
   }
   const fmt = (x) => Math.round(x).toLocaleString('en-US');
 
-  // ---------- colours as numbers, for ImageData: the theme's CSS colours read back through a canvas, which normalises any syntax
+  // ---------- colors as numbers, for ImageData: the theme's CSS colors read back through a canvas, which normalizes any syntax
   let probe = null;
   function rgb(css) {
     if (!probe) probe = document.createElement('canvas').getContext('2d');
@@ -285,7 +285,7 @@
     function stop() { pause(); dead = true; document.removeEventListener('visibilitychange', onHide); }
     return { play, pause, stop, isRunning: () => running, controls: bar, status: (t) => { status.textContent = t; }, speed: () => (speed ? +speed.value : 50) };
   }
-  /** A labelled slider with its value shown beside it. */
+  /** A labeled slider with its value shown beside it. */
   function slider(el, label, min, max, step, value, onInput, show) {
     const out = el('output', {}, show ? show(value) : String(value));
     const inp = el('input', { type: 'range', min, max, step, value, 'aria-label': label, oninput: () => { out.textContent = show ? show(+inp.value) : inp.value; onInput(+inp.value); } });
@@ -370,7 +370,7 @@
     const el = api.el, wide = (host.clientWidth || 800) >= 640, W = wide ? 160 : 96, H = wide ? 96 : 104;
     let rule = 'RL', ant = makeAnt(rule, W, H), hw = null, bet = '', lut = null, lutKey = '', told = false;
     const bm = bitmap(W, H);
-    host.append(el('p', { class: 'nt-hint' }, 'An ant stands on a grid of white cells. On a white cell it turns right, on a black cell it turns left; then it flips the colour of the cell it is leaving and steps forward. That is all. Before you press Play: will its drawing ever settle into a pattern?'));
+    host.append(el('p', { class: 'nt-hint' }, 'An ant stands on a grid of white cells. On a white cell it turns right, on a black cell it turns left; then it flips the color of the cell it is leaving and steps forward. That is all. Before you press Play: will its drawing ever settle into a pattern?'));
     const betSel = el('select', { 'aria-label': 'Your bet', onchange: () => { bet = betSel.value; lp.status(bet ? 'Bet made. Press Play.' : 'Make your bet, then press Play.'); } },
       el('option', { value: '' }, 'Make a bet…'), el('option', { value: 'soon' }, 'Yes, within 1,000 steps'), el('option', { value: 'late' }, 'Yes, but only after a long time'), el('option', { value: 'never' }, 'No, it stays a mess for ever'));
     const ruleSel = el('select', { 'aria-label': 'Rule', onchange: () => { if (ruleSel.value !== 'own') { ruleIn.value = ruleSel.value; load(ruleSel.value); } else ruleIn.focus(); } },
@@ -391,13 +391,13 @@
     function frame() {
       const k = perFrame(), w0 = ant.wraps || 0; antSteps(ant, k, !edge);
       after();
-      if (!edge && (ant.wraps || 0) > w0) { edge = true; lp.pause(); lp.status(hw ? 'The highway reached the edge. Press Play to let it wrap round.' : 'The ant reached the edge. Press Play to let it wrap round to the other side.'); }
+      if (!edge && (ant.wraps || 0) > w0) { edge = true; lp.pause(); lp.status(hw ? 'The highway reached the edge. Press Play to let it wrap around.' : 'The ant reached the edge. Press Play to let it wrap round to the other side.'); }
     }
     function after() {
       if (rule === 'RL' && !hw) { hw = highway(ant, 104); if (hw) verdict(); }
       const now = rule === 'RL' && hw ? highway(ant, 104) : null;
-      const phase = rule !== 'RL' ? '' : now ? 'the highway' : hw ? 'chaos again: the highway wrapped round into the mess' : ant.steps < 500 ? 'simple, symmetric shapes' : 'chaos';
-      stats.replaceChildren(el('span', {}, 'Step ', el('b', {}, fmt(ant.steps))), el('span', {}, 'Colours ', el('b', {}, String(ant.k))), phase ? el('span', {}, 'Now: ', el('b', {}, phase)) : null,
+      const phase = rule !== 'RL' ? '' : now ? 'the highway' : hw ? 'chaos again: the highway wrapped around into the mess' : ant.steps < 500 ? 'simple, symmetric shapes' : 'chaos';
+      stats.replaceChildren(el('span', {}, 'Step ', el('b', {}, fmt(ant.steps))), el('span', {}, 'Colors ', el('b', {}, String(ant.k))), phase ? el('span', {}, 'Now: ', el('b', {}, phase)) : null,
         hw ? el('span', {}, 'First highway from about step ', el('b', {}, fmt(hw.from))) : null);
       if (rule === 'RL' && !hw && !told && ant.steps >= 1000 && bet === 'soon') { told = true; big.replaceChildren(el('span', { class: 'nt-lose' }, '1,000 steps and still a mess: not that soon. Keep watching.')); }
       cv.redraw();
@@ -405,7 +405,7 @@
     function verdict() {
       const msg = 'At about step ' + fmt(hw.from) + ' the ant began repeating the same 104 steps, moving 2 cells diagonally each time: a highway, and it never stops building it. ';
       const res = bet === 'late' ? el('span', { class: 'nt-win' }, 'Your bet won! ') : bet === 'soon' ? el('span', { class: 'nt-lose' }, 'Your bet was too early: ') : bet === 'never' ? el('span', { class: 'nt-lose' }, 'Your bet lost: it did settle. ') : null;
-      big.replaceChildren(res, msg, 'Here the grid\'s edges wrap round, so the highway will come back on the other side and crash into the mess. What happens then?');
+      big.replaceChildren(res, msg, 'Here the grid\'s edges wrap around, so the highway will come back on the other side and crash into the mess. What happens then?');
       lp.status('');
     }
     function draw(ctx, w, h, c) {
@@ -432,8 +432,8 @@
     injectCss();
     const el = api.el, wide = (host.clientWidth || 800) >= 640, LIVE = wide ? 151 : 101, BINS = 26;
     let pile = makePile(LIVE), bm = bitmap(LIVE, LIVE), where = 'centre', hist = new Float64Array(BINS), quiet = 0, drops = 0, lastAv = 0, maxAv = 0, big = 0, lut = null, lutKey = '', rnd = A.rng(7);
-    host.append(el('p', { class: 'nt-hint' }, 'Grains of sand fall on a grid, one at a time. A cell may hold up to 3 grains; one with 4 topples, giving a grain to each of its four neighbours, which may topple in turn: an avalanche. Grains that topple off the edge are lost. The colours show 0, 1, 2 and 3 grains.'));
-    const whereSel = el('select', { 'aria-label': 'Where grains fall', onchange: () => { where = whereSel.value; } }, el('option', { value: 'centre' }, 'on the centre'), el('option', { value: 'random' }, 'anywhere at random'));
+    host.append(el('p', { class: 'nt-hint' }, 'Grains of sand fall on a grid, one at a time. A cell may hold up to 3 grains; one with 4 topples, giving a grain to each of its four neighbors, which may topple in turn: an avalanche. Grains that topple off the edge are lost. The colors show 0, 1, 2 and 3 grains.'));
+    const whereSel = el('select', { 'aria-label': 'Where grains fall', onchange: () => { where = whereSel.value; } }, el('option', { value: 'centre' }, 'on the center'), el('option', { value: 'random' }, 'anywhere at random'));
     const bigSel = el('select', { 'aria-label': 'How many grains to drop at once' }, [10, 12, 14, 15, 16, 17].map((k) => el('option', { value: String(k) }, '2^' + k + ' = ' + fmt(Math.pow(2, k)))));
     bigSel.value = wide ? '16' : '14';
     host.append(el('div', { class: 'algo-controls' }, el('label', {}, 'Drop grains ', whereSel), el('label', {}, 'or all at once: ', bigSel), el('button', { class: 'btn', type: 'button', onclick: () => bigDrop(+bigSel.value) }, 'Drop them')));
@@ -478,7 +478,7 @@
       ctx.fillStyle = c.paper2; ctx.fillRect(ox, oy, S, S);
       bm.draw(ctx, ox, oy, S, S, false);
       ctx.strokeStyle = c.rule; ctx.lineWidth = 1; ctx.strokeRect(ox + 0.5, oy + 0.5, S - 1, S - 1);
-      // the key to the colours
+      // the key to the colors
       const kx = side ? ox + S + 24 : ox, ky = side ? oy + 4 : oy + S + 10;
       ctx.font = '12px ' + (c.sans || 'sans-serif'); ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
       ['0', '1', '2', '3'].forEach((t, k) => { const x = kx + k * 46; ctx.fillStyle = '#' + (lut[k] & 0xffffff).toString(16).padStart(6, '0').replace(/(..)(..)(..)/, '$3$2$1'); ctx.fillRect(x, ky, 14, 14); ctx.strokeStyle = c.rule; ctx.strokeRect(x + 0.5, ky + 0.5, 13, 13); ctx.fillStyle = c.ink2; ctx.fillText(t, x + 19, ky + 7.5); });
@@ -503,14 +503,14 @@
     return () => { lp.stop(); cv.stop(); };
   }
 
-  // ---------------------------------------------------------------- demo: slime mould
+  // ---------------------------------------------------------------- demo: slime mold
   function mountSlime(host, api) {
     injectCss();
     const el = api.el, wide = (host.clientWidth || 800) >= 640, W = wide ? 320 : 180, H = wide ? 190 : 200;
     const DENS = [0.01, 0.02, 0.04, 0.1, 0.15, 0.25], cells = W * H;
     let P = Object.assign({ ss: 1, dep: 5, smell: 40 }, SLIME_PRESETS.network), density = P.density, start = 'random', food = [], s = null, lut = null, lutKey = '', ref = 1;
     const bm = bitmap(W, H);
-    host.append(el('p', { class: 'nt-hint' }, 'Thousands of tiny agents, each smelling the trail just ahead of it on the left, in the middle and on the right. Each turns towards the strongest smell, steps forward and leaves a little more; the trail spreads and fades. Click to put down food, or click food to take it away: try "Joining up food", and watch the network find the food.'));
+    host.append(el('p', { class: 'nt-hint' }, 'Thousands of tiny agents, each smelling the trail just ahead of it on the left, in the middle and on the right. Each turns toward the strongest smell, steps forward and leaves a little more; the trail spreads and fades. Click to put down food, or click food to take it away: try "Joining up food", and watch the network find the food.'));
     const presetSel = el('select', { 'aria-label': 'Preset', onchange: () => usePreset(presetSel.value) }, Object.entries(SLIME_PRESETS).map(([k, v]) => el('option', { value: k }, v.name)));
     const foodSel = el('select', { 'aria-label': 'Food', onchange: () => { food = makeFood(foodSel.value); foodSel.value = 'keep'; update(); if (!lp.isRunning()) cv.redraw(); } },
       el('option', { value: 'keep' }, 'Food…'), el('option', { value: 'none' }, 'No food'), el('option', { value: 'cities' }, 'Twelve towns'), el('option', { value: 'ring' }, 'A ring of eight'), el('option', { value: 'pair' }, 'Two far apart'));
@@ -526,7 +526,7 @@
     host.append(el('div', { class: 'algo-controls' }, el('label', {}, 'Preset ', presetSel), foodSel, countSel, el('label', {}, 'Start ', startSel)));
     host.append(el('div', { class: 'algo-controls' }, sa.label, ra.label, so.label, dc.label));
     const stats = el('div', { class: 'nt-stats' });
-    const cv = api.canvas(host, { label: 'A slime mould\'s trails forming a network', maxWidth: 1100, height: (w) => Math.round(w * H / W), draw });
+    const cv = api.canvas(host, { label: 'A slime mold\'s trails forming a network', maxWidth: 1100, height: (w) => Math.round(w * H / W), draw });
     cv.canvas.parentNode.classList.add('nt-canvas');
     host.append(stats);
     const lp = loop(host, api, { frame, reset: () => fresh(), resetText: 'Start again', speed: { label: 'Speed', value: 50 }, step: () => { slimeStep(s, P, food); cv.redraw(); update(); } });
@@ -567,54 +567,54 @@
 
   // ================================================================== registration
   A.register({ id: 'boids', group: GROUP, title: 'Flocking birds',
-    blurb: 'Hundreds of birds, each following three simple rules about its nearest neighbours, and no leader: yet they fly as one flock. Chase them with a hawk.',
+    blurb: 'Hundreds of birds, each following three simple rules about its nearest neighbors, and no leader: yet they fly as one flock. Chase them with a hawk.',
     mount: mountBoids,
     about: `<h2>Three rules and no leader</h2>
 <p>In 1986 the computer graphics researcher Craig Reynolds found a way to animate a flock without planning the path of every bird. Each of his "boids" (bird-oids) follows three rules, using only the boids it can see nearby:</p>
 <ul><li><b>Separation:</b> steer away from boids that are too close, harder the closer they are.</li>
-<li><b>Alignment:</b> steer towards the average heading of the boids around you.</li>
-<li><b>Cohesion:</b> steer towards the average position of the boids around you.</li></ul>
-<p>No boid knows where the flock is going, and no boid leads. The flock's shape, its turns and its splitting round an obstacle (or a hawk) all <em>emerge</em> from many small local decisions. Reynolds presented the model at the SIGGRAPH conference in 1987, in the paper "Flocks, Herds, and Schools: A Distributed Behavioral Model". The short film <em>Stanley and Stella in: Breaking the Ice</em> (1987) was the first made with it, and the bat swarms and marching penguins of <em>Batman Returns</em> (1992) came from it too.</p>
+<li><b>Alignment:</b> steer toward the average heading of the boids around you.</li>
+<li><b>Cohesion:</b> steer toward the average position of the boids around you.</li></ul>
+<p>No boid knows where the flock is going, and no boid leads. The flock's shape, its turns and its splitting around an obstacle (or a hawk) all <em>emerge</em> from many small local decisions. Reynolds presented the model at the SIGGRAPH conference in 1987, in the paper "Flocks, Herds, and Schools: A Distributed Behavioral Model". The short film <em>Stanley and Stella in: Breaking the Ice</em> (1987) was the first made with it, and the bat swarms and marching penguins of <em>Batman Returns</em> (1992) came from it too.</p>
 <h2>What to try</h2>
 <ul><li>Turn alignment to 0: the birds still stay together, but buzz about like gnats. Turn cohesion to 0 as well: a gas.</li>
 <li>Make the view very small: many little flocks that never find each other. Make it large: one big flock.</li>
 <li>The "lined up" number is the length of the average of every bird's direction: 100% when all fly the same way, near 0 when they fly every way. Watch it climb from a random start, with nobody telling the birds which way to go.</li></ul>
 <h2>The cost, and the grid</h2>
-<p>If every bird compared itself with every other bird, n birds would need about n² comparisons a step: 490,000 for 700 birds, sixty times a second. Instead the sky is cut into squares as wide as a bird can see, and each bird only looks in its own square and the eight around it. Each step then costs about n × (birds in a neighbourhood), which grows in step with n. Games and physics programs use the same trick to find what is near what.</p>`,
+<p>If every bird compared itself with every other bird, n birds would need about n² comparisons a step: 490,000 for 700 birds, sixty times a second. Instead the sky is cut into squares as wide as a bird can see, and each bird only looks in its own square and the eight around it. Each step then costs about n × (birds in a neighborhood), which grows in step with n. Games and physics programs use the same trick to find what is near what.</p>`,
     taught: [{ href: '#/python/12', text: 'SC 101 Lesson 12: Randomness and simulation' }, { href: '#/dsa/1', text: 'SC 107 Lesson 1: Counting the cost' }] });
   A.register({ id: 'langtons-ant', group: GROUP, title: 'Langton\'s ant',
-    blurb: 'An ant turns right on white, left on black, and flips the colour. For ten thousand steps it makes a mess. Will it ever settle down? Bet first.',
+    blurb: 'An ant turns right on white, left on black, and flips the color. For ten thousand steps it makes a mess. Will it ever settle down? Bet first.',
     mount: mountAnt,
     about: `<h2>Two rules</h2>
-<p>Chris Langton, a pioneer of the field he named "artificial life", described the ant in 1986. It stands on a grid of white cells, facing up. On a white cell it turns right, on a black cell it turns left; it flips the colour of the cell and steps forward. Nothing else.</p>
+<p>Chris Langton, a pioneer of the field he named "artificial life", described the ant in 1986. It stands on a grid of white cells, facing up. On a white cell it turns right, on a black cell it turns left; it flips the color of the cell and steps forward. Nothing else.</p>
 <h2>Three acts</h2>
 <ul><li>For the first few hundred steps it draws small, often symmetric shapes.</li>
 <li>Then comes chaos: a growing blob with no visible pattern, for about ten thousand steps.</li>
 <li>Then, at step 9,977 or so, it suddenly starts a <b>highway</b>: the same 104 steps over and over, each repeat moving it two cells diagonally, for ever. The demo spots it by checking that the ant's last three runs of 104 steps each moved it the same way.</li></ul>
 <p>Nobody has proved that the ant always builds a highway, whatever black cells it starts among; every experiment so far says it does. Leonid Bunimovich and Serge Troubetzkoy did prove that it can never stay inside a bounded region for ever. A rule this simple, with a future we cannot prove: that is the point of the demo. In fact the ant can compute anything a computer can, given the right starting cells.</p>
-<h2>More colours</h2>
-<p>Greg Turk and Jim Propp gave the ant more colours. A rule is a string of letters, one per colour: on a cell of colour k the ant turns as letter k says (L or R) and moves the cell on to the next colour. Langton's ant is RL. LLRR grows a symmetric shape for ever, RLR grows chaos for ever, LRRRRRLLR fills a square. Type your own rule and find a pattern nobody has named. Each step costs the same small amount of work, so the demo can take thousands of steps in one frame.</p>`,
+<h2>More colors</h2>
+<p>Greg Turk and Jim Propp gave the ant more colors. A rule is a string of letters, one per color: on a cell of color k the ant turns as letter k says (L or R) and moves the cell on to the next color. Langton's ant is RL. LLRR grows a symmetric shape for ever, RLR grows chaos for ever, LRRRRRLLR fills a square. Type your own rule and find a pattern nobody has named. Each step costs the same small amount of work, so the demo can take thousands of steps in one frame.</p>`,
     taught: [{ href: '#/math/7', text: 'SC 104 Lesson 7: Machines with a finite memory' }, { href: '#/math/11', text: 'SC 104 Lesson 11: The universal machine' }] });
   A.register({ id: 'sandpile', group: GROUP, title: 'The sandpile',
-    blurb: 'Drop grains of sand one at a time; a cell with four topples onto its neighbours. Most grains do nothing, some start avalanches across the whole pile, and a fractal grows.',
+    blurb: 'Drop grains of sand one at a time; a cell with four topples onto its neighbors. Most grains do nothing, some start avalanches across the whole pile, and a fractal grows.',
     mount: mountSand,
-    about: `<h2>Self-organised criticality</h2>
-<p>In 1987 the physicists Per Bak, Chao Tang and Kurt Wiesenfeld published this model in <em>Physical Review Letters</em>. Each cell holds 0 to 3 grains. A cell that reaches 4 topples: it loses 4 grains and each of its four neighbours gets one, which may make them topple too. Drop grains at random and the pile builds up by itself to a <em>critical</em> state, where one more grain may do nothing at all, or set off an avalanche that crosses the whole grid. Nobody tunes it there; it organises itself.</p>
+    about: `<h2>Self-organized criticality</h2>
+<p>In 1987 the physicists Per Bak, Chao Tang and Kurt Wiesenfeld published this model in <em>Physical Review Letters</em>. Each cell holds 0 to 3 grains. A cell that reaches 4 topples: it loses 4 grains and each of its four neighbors gets one, which may make them topple too. Drop grains at random and the pile builds up by itself to a <em>critical</em> state, where one more grain may do nothing at all, or set off an avalanche that crosses the whole grid. Nobody tunes it there; it organizes itself.</p>
 <p>The chart counts the avalanches by size, on doubling bins with a logarithmic scale for how often. Small avalanches are common and big ones rare, but there is no typical size: over many sizes the bars fall away in a nearly straight line, the mark of a <em>power law</em>, until the edge of the grid cuts the biggest avalanches short. (Drop grains anywhere at random to see it best.) Earthquakes, forest fires and solar flares show the same kind of law, which is why the model became famous.</p>
 <h2>Order does not matter</h2>
 <p>In 1990 Deepak Dhar proved that the final pile, and even the number of times each cell topples, does not depend on the order in which unstable cells topple: the sandpile is <em>abelian</em>. So the demo can topple a cell holding 400 grains 100 times at once, and keep the cells still to topple in a queue, each in it at most once. That is how 2<sup>16</sup> = 65,536 grains dropped on one cell settle in seconds, into the fractal with its fourfold symmetry. The pattern is not fully understood: mathematicians (Lionel Levine, Wesley Pegden and Charles Smart among them) are still proving things about its shape.</p>
 <h2>Check the bookkeeping</h2>
 <p>No grain is made or destroyed: grains dropped = grains on the grid + grains that fell off. A pile of n grains needs a disc of about n / 2.1 cells, and the number of topplings grows faster than n: try 2<sup>14</sup> and then 2<sup>16</sup>.</p>`,
     taught: [{ href: '#/dsa/7', text: 'SC 107 Lesson 7: Stacks and queues' }] });
-  A.register({ id: 'slime-mould', group: GROUP, title: 'Slime mould networks',
-    blurb: 'Thousands of agents follow a fading scent and leave more of it. Together they grow living networks, and join up the food you put down, like a real slime mould.',
+  A.register({ id: 'slime-mould', group: GROUP, title: 'Slime mold networks',
+    blurb: 'Thousands of agents follow a fading scent and leave more of it. Together they grow living networks, and join up the food you put down, like a real slime mold.',
     mount: mountSlime,
     about: `<h2>A brainless network builder</h2>
-<p><em>Physarum polycephalum</em> is a slime mould: one huge yellow cell with many nuclei, which creeps over the forest floor looking for food. It has no brain, yet it builds efficient networks of tubes between pieces of food. In 2000 Toshiyuki Nakagaki and colleagues showed that it can find the shortest way through a maze, and in January 2010 Atsushi Tero, Nakagaki and others reported in <em>Science</em> that, with oat flakes placed where the cities around Tokyo are, it grew a network much like the Tokyo railways, close in cost, speed and resistance to breakdowns.</p>
+<p><em>Physarum polycephalum</em> is a slime mold: one huge yellow cell with many nuclei, which creeps over the forest floor looking for food. It has no brain, yet it builds efficient networks of tubes between pieces of food. In 2000 Toshiyuki Nakagaki and colleagues showed that it can find the shortest way through a maze, and in January 2010 Atsushi Tero, Nakagaki and others reported in <em>Science</em> that, with oat flakes placed where the cities around Tokyo are, it grew a network much like the Tokyo railways, close in cost, speed and resistance to breakdowns.</p>
 <h2>The model</h2>
-<p>Jeff Jones described this agent model in 2010. Each agent has three sensors ahead of it, left, centre and right. Every step it turns towards the sensor with the strongest smell of trail (straight on if the centre is strongest, a random way if the centre is weakest), steps forward and deposits a little trail. Then the whole trail map diffuses, each cell becoming the average of its 3 × 3 block, and fades a little. A road that many agents use gets stronger and draws more agents: positive feedback. A road nobody uses fades away. The network is what is left.</p>
+<p>Jeff Jones described this agent model in 2010. Each agent has three sensors ahead of it, left, center and right. Every step it turns toward the sensor with the strongest smell of trail (straight on if the center is strongest, a random way if the center is weakest), steps forward and deposits a little trail. Then the whole trail map diffuses, each cell becoming the average of its 3 × 3 block, and fades a little. A road that many agents use gets stronger and draws more agents: positive feedback. A road nobody uses fades away. The network is what is left.</p>
 <ul><li>The <b>sensor angle</b> and <b>sensor distance</b> set the size of the holes in the net; the <b>turn</b> how sharply agents follow a trail; <b>fade</b> how long a road lasts without traffic.</li>
-<li>Food sources keep giving off a strong smell, so the network grows towards them and joins them up, often close to a short network joining all the points (a problem related to shortest paths and the minimum spanning tree).</li></ul>
+<li>Food sources keep giving off a strong smell, so the network grows toward them and joins them up, often close to a short network joining all the points (a problem related to shortest paths and the minimum spanning tree).</li></ul>
 <h2>The cost</h2>
 <p>Each step, every agent reads three cells and writes one, and every cell of the map is averaged: about (agents + cells) work a step, in plain arrays of numbers. That is why tens of thousands of agents can run sixty times a second in a web page.</p>`,
     taught: [{ href: '#/math/6', text: 'SC 104 Lesson 6: Graphs and paths' }] });
@@ -623,7 +623,7 @@
   function selfTest() {
     const fails = [];
     // boids: speeds stay between the limits; two close birds with only separation move apart; alignment brings headings together;
-    // the grid finds exactly the neighbours that comparing every pair finds
+    // the grid finds exactly the neighbors that comparing every pair finds
     {
       const f = makeFlock(300, 600, 400, 11, BOID);
       for (let k = 0; k < 120; k++) flockStep(f, BOID, [{ x: 300, y: 200 }], 1);
@@ -633,7 +633,7 @@
       for (let i = 0; i < 40; i++) {
         let a = 0, b = 0; eachNeighbour(f, g, i, 40, () => { a++; });
         for (let j = 0; j < f.n; j++) if (j !== i) { let dx = Math.abs(f.x[j] - f.x[i]), dy = Math.abs(f.y[j] - f.y[i]); dx = Math.min(dx, f.w - dx); dy = Math.min(dy, f.h - dy); if (dx * dx + dy * dy < 1600) b++; }
-        if (a !== b) { fails.push('boids: the grid found ' + a + ' neighbours, comparing every pair found ' + b); break; }
+        if (a !== b) { fails.push('boids: the grid found ' + a + ' neighbors, comparing every pair found ' + b); break; }
       }
       const two = makeFlock(2, 400, 400, 1, BOID); two.x.set([200, 204]); two.y.set([200, 200]); two.vx.set([0, 0]); two.vy.set([2, 2]);
       const onlySep = Object.assign({}, BOID, { ali: 0, coh: 0, sep: 1.5 });
@@ -658,12 +658,12 @@
       const b = makeAnt('RL', 300, 300); antSteps(b, 9000); if (highway(b, 104)) fails.push('ant: a highway was seen during the chaos');
       // the first steps by hand: R on white at the start, so it faces right and the start cell is black
       const c = makeAnt('RL', 9, 9); antSteps(c, 1); if (c.dir !== 1 || c.grid[4 * 9 + 4] !== 1 || c.x !== 5 || c.y !== 4) fails.push('ant: the first step is wrong');
-      // a rule of k colours keeps every cell below k, and LLRR's picture stays symmetric (it is known to grow symmetrically)
-      const m = makeAnt('LRRRRRLLR', 120, 120); antSteps(m, 20000); if (m.grid.some((v) => v >= 9)) fails.push('ant: a colour out of range');
+      // a rule of k colors keeps every cell below k, and LLRR's picture stays symmetric (it is known to grow symmetrically)
+      const m = makeAnt('LRRRRRLLR', 120, 120); antSteps(m, 20000); if (m.grid.some((v) => v >= 9)) fails.push('ant: a color out of range');
       if (!validRule('RL') || validRule('R') || validRule('RLX') || validRule('RLRLRLRLRLRLR')) fails.push('ant: validRule is wrong');
     }
     // sandpile: 4 grains make a cross; every grain is accounted for; one at a time or all at once gives the same pile and the same
-    // number of topplings (Dhar); the pile of 2^12 grains on the centre is stable and has the square's eight symmetries
+    // number of topplings (Dhar); the pile of 2^12 grains on the center is stable and has the square's eight symmetries
     {
       const N = 5, p = makePile(N), mid = 2 * N + 2; addGrains(p, mid, 4); relax(p);
       const cross = Array.from(p.h).join('');
@@ -680,7 +680,7 @@
       if (all.lost) fails.push('sandpile: the grid for ' + n + ' grains was too small (' + all.lost + ' fell off)');
       const at = (rr, cc) => all.h[rr * M + cc];
       let sym = true; for (let rr = 0; rr < M && sym; rr++) for (let cc = 0; cc < M; cc++) if (at(rr, cc) !== at(cc, rr) || at(rr, cc) !== at(M - 1 - rr, cc) || at(rr, cc) !== at(rr, M - 1 - cc)) { sym = false; break; }
-      if (!sym) fails.push('sandpile: the centre pile is not symmetric');
+      if (!sym) fails.push('sandpile: the center pile is not symmetric');
       const b = makePile(3); addGrains(b, 4, 1000); let steps = 0; while (!relax(b, 7)) steps++;   // relaxing in small slices ends the same
       if (b.dropped !== onGrid(b) + b.lost || b.h.some((v) => v > 3)) fails.push('sandpile: relaxing in slices went wrong');
       if (sizeBin(0) !== 0 || sizeBin(1) !== 1 || sizeBin(3) !== 2 || sizeBin(4) !== 3) fails.push('sandpile: sizeBin is wrong');
