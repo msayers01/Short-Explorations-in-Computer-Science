@@ -22,7 +22,7 @@
   /** The point with the smallest x (then smallest y): on the hull for certain, and where all three algorithms start. */
   function lowest(pts) { let s = 0; for (let i = 1; i < pts.length; i++) if (pts[i][0] < pts[s][0] || (pts[i][0] === pts[s][0] && pts[i][1] < pts[s][1])) s = i; return s; }
   // Each algorithm is a generator that yields once per orientation test (the step the race counts) and returns the hull as point
-  // indexes, starting at lowest() and going round with the inside on the positive side of every edge, with no point that lies on an
+  // indexes, starting at lowest() and going around with the inside on the positive side of every edge, with no point that lies on an
   // edge. v is a view it updates for the picture (what it has found so far, the three points it is testing); the tests pass {}.
 
   /** Gift wrapping (Jarvis 1973): from a hull point p, the next one is the point q with every other point on the inside of p→q. Finding
@@ -50,7 +50,7 @@
   }
 
   /** Graham's scan (1972): sort the points by angle around the lowest one (here a merge sort whose comparisons are orientation tests),
-      then walk round them keeping a stack, and pop the top whenever the last three points do not turn the right way. n log n to sort,
+      then walk around them keeping a stack, and pop the top whenever the last three points do not turn the right way. n log n to sort,
       then at most 2n tests, because every point is pushed once and popped at most once. */
   function* graham(pts, v) {
     v = v || {}; v.stack = []; v.test = null; v.phase = 'sort'; v.order = [];
@@ -148,8 +148,8 @@
   function runHull(gen, pts) { const it = gen(pts, {}); let r, tests = 0; while (!(r = it.next()).done) tests++; return { hull: r.value, tests }; }
 
   // ---------- the Mandelbrot set: c is inside when z → z² + c, from z = 0, never leaves the disc of radius 2
-  const BAIL = 1 << 16;   // escaping to |z| = 256 rather than 2 makes the smooth colouring below smooth
-  /** The smooth escape time of c = cx + i·cy: about the number of steps before |z| > 2, as a real number so colours blend; -1 when it
+  const BAIL = 1 << 16;   // escaping to |z| = 256 rather than 2 makes the smooth coloring below smooth
+  /** The smooth escape time of c = cx + i·cy: about the number of steps before |z| > 2, as a real number so colors blend; -1 when it
       has not escaped after max steps (inside, as far as max steps can tell). */
   function escape(cx, cy, max) {
     // the main cardioid and the disc to its left are inside: skipping them saves most of the work in the wide view
@@ -222,7 +222,7 @@
     }
     return { strings, capped: false, wanted: 0 };
   }
-  /** The turtle: F and G draw a step forward, f steps without drawing, + turns left, - right, | turns round, [ saves the place and
+  /** The turtle: F and G draw a step forward, f steps without drawing, + turns left, - right, | turns around, [ saves the place and
       ] returns to it. Writes segments (x1, y1, x2, y2, depth) into out (grown when too small) and returns { seg, count, box, depth }.
       bend(depth), when given, is added to the heading before every step: the wind. */
   function turtle(str, angleDeg, headingDeg, bend, out) {
@@ -364,13 +364,13 @@
     s.value = String(value);
     return { label: el('label', {}, label + ' ', s), sel: s };
   }
-  /** A labelled slider with its value shown beside it. */
+  /** A labeled slider with its value shown beside it. */
   function slider(el, label, min, max, step, value, show, oninput) {
     const out = el('output', {}, show(value));
     const r = el('input', { type: 'range', min, max, step, value, 'aria-label': label, oninput: () => { out.textContent = show(+r.value); oninput(+r.value); } });
     return { label: el('label', { class: 'geo-range' }, label + ' ', r, out), input: r, set: (v) => { r.value = v; out.textContent = show(+r.value); } };
   }
-  /** A CSS colour as [r, g, b] (the canvas parses it). */
+  /** A CSS color as [r, g, b] (the canvas parses it). */
   let probe = null;
   function rgb(css) {
     if (!probe) { const c = document.createElement('canvas'); c.width = c.height = 1; probe = c.getContext('2d', { willReadFrequently: true }); }
@@ -492,7 +492,7 @@
         else if (ln.alg.id === 'graham') shown = v.phase === 'scan' ? v.stack : null;
         else { shown = v.poly; closed = true; }
         if (ln.alg.id === 'graham' && v.phase === 'sort' && v.order && v.order.length) {
-          // the fan: every point coloured by where the sort has put it so far; a finished sort is a smooth rainbow round the pivot
+          // the fan: every point colored by where the sort has put it so far; a finished sort is a smooth rainbow around the pivot
           const m = v.order.length;
           v.order.forEach((i, j) => { ctx.fillStyle = 'hsl(' + Math.round(200 + 260 * j / m) + ',70%,' + (dark ? 62 : 46) + '%)'; ctx.fillRect(X(i) - rad, Y(i) - rad, 2 * rad, 2 * rad); });
           if (m < 400) { ctx.strokeStyle = css(ink3, 0.18); ctx.lineWidth = 1; ctx.beginPath(); for (const i of v.order) { ctx.moveTo(X(v.pivot), Y(v.pivot)); ctx.lineTo(X(i), Y(i)); } ctx.stroke(); }
@@ -532,17 +532,17 @@
     { id: 'mini', name: 'A mini-brot on the needle', cx: -1.7685, cy: 0, w: 0.042 },
     { id: 'spiral', name: 'Triple spiral', cx: -0.0886, cy: 0.6542, w: 0.012 },
     { id: 'deep', name: 'A spiral without end', cx: -0.7756837680090538, cy: 0.1364673682946901, w: 0.00004 }];
-  // The dive heads for a Misiurewicz point in Seahorse Valley (found by Newton's method on z₂₅ = z₂₄): the spiral round it repeats at
-  // every scale, so the picture stays full of colour all the way down instead of turning into a black blob, and the steps needed
+  // The dive heads for a Misiurewicz point in Seahorse Valley (found by Newton's method on z₂₅ = z₂₄): the spiral around it repeats at
+  // every scale, so the picture stays full of color all the way down instead of turning into a black blob, and the steps needed
   // grow slowly (about 60 more for each factor of 10).
   const DIVE = { cx: -0.7756837680090538, cy: 0.1364673682946901 };
-  const W_MIN = 3e-14;   // the narrowest view: by now a pixel is far smaller than the gap between neighbouring doubles
+  const W_MIN = 3e-14;   // the narrowest view: by now a pixel is far smaller than the gap between neighboring doubles
   function makeLut(c, palette) {
     const N = 1024, lut = new Uint32Array(N);
     let stops;
     if (palette === 'classic') stops = [[0, [0, 7, 100]], [0.16, [32, 107, 203]], [0.42, [237, 255, 255]], [0.6425, [255, 170, 0]], [0.8575, [0, 2, 0]], [1, [0, 7, 100]]];
     else if (palette === 'fire') stops = [[0, [10, 0, 20]], [0.3, [160, 20, 30]], [0.55, [250, 140, 20]], [0.75, [255, 240, 170]], [1, [10, 0, 20]]];
-    else {   // from the page's own colours: the paper fading into the accent and the link colour, warm near the edge of the set
+    else {   // from the page's own colors: the paper fading into the accent and the link color, warm near the edge of the set
       const paper = rgb(c.paper), acc = rgb(c.accent), link = rgb(c.link), warn = rgb(c.warn), ink = rgb(c.ink), soft = rgb(c.accentSoft);
       stops = [[0, soft], [0.3, mix(soft, acc, 0.5)], [0.46, acc], [0.6, link], [0.74, warn], [0.86, mix(paper, warn, 0.35)], [1, soft]];
     }
@@ -561,7 +561,7 @@
     let rw = 0, rh = 0, buf = null, bctx = null, img = null, u32 = null, val = null, job = null, imgDirty = false, overlayDirty = false;
     let jbuf = null, jctx = null, jimg = null, jc = null;
     const fly = select(el, 'Fly to', PLACES_M.map((p) => [p.id, p.name]), 'home', (id) => { const p = PLACES_M.find((x) => x.id === id); stopDive(); view = { cx: p.cx, cy: p.cy, w: p.w }; autoIter(); restart(); });
-    const fPal = select(el, 'Colours', [['theme', 'The page\'s colours'], ['classic', 'Classic blue and gold'], ['fire', 'Fire']], palette, (v) => { palette = v; lutKey = ''; overlayDirty = true; restart(); });
+    const fPal = select(el, 'Colors', [['theme', 'The page\'s colors'], ['classic', 'Classic blue and gold'], ['fire', 'Fire']], palette, (v) => { palette = v; lutKey = ''; overlayDirty = true; restart(); });
     const iters = slider(el, 'Steps', 0, 100, 1, toSlider(maxIt), (v) => String(fromSlider(v)), (v) => { maxIt = fromSlider(v); restart(); });
     function toSlider(m) { return Math.round(Math.log(m / 50) / Math.log(100) * 100); }
     function fromSlider(v) { const m = 50 * Math.pow(100, v / 100); return m < 1000 ? Math.round(m / 10) * 10 : Math.round(m / 100) * 100; }   // 50 to 5,000, on a log scale
@@ -573,7 +573,7 @@
       el('button', { class: 'btn quiet', type: 'button', onclick: () => { stopDive(); fly.sel.value = 'home'; view = { cx: -0.6, cy: 0, w: 3.4 }; maxIt = 250; iters.set(toSlider(maxIt)); restart(); } }, 'Reset'),
       fly.label, fPal.label));
     host.append(el('div', { class: 'algo-controls' }, iters.label, el('label', {}, orbitBox, ' Orbit under the pointer'), el('label', {}, juliaBox, ' Its Julia set')));
-    host.append(el('p', { class: 'geo-note' }, 'Click or tap to zoom in three times, there; drag to move. The black shape is the set itself; the colours outside say how fast a point escapes. Move the pointer over the picture to see a point\'s orbit: the path of z as z² + c is worked out again and again.'));
+    host.append(el('p', { class: 'geo-note' }, 'Click or tap to zoom in three times, there; drag to move. The black shape is the set itself; the colors outside say how fast a point escapes. Move the pointer over the picture to see a point\'s orbit: the path of z as z² + c is worked out again and again.'));
     const cv = api.canvas(host, { label: 'The Mandelbrot set', maxWidth: 1100, height: (w) => Math.round(Math.max(280, Math.min(640, w * 0.64))), draw });
     cv.canvas.parentNode.classList.add('geo-canvas'); cv.canvas.tabIndex = 0;
     const stats = el('p', { class: 'geo-stats', role: 'status' }), probeLine = el('p', { class: 'geo-stats' });
@@ -591,7 +591,7 @@
       return true;
     }
     // the palette position: a square root for the first few steps (the wide bands far from the set), then straight on at the same
-    // slope, about 67 steps a cycle, so a deep view, where every pixel takes hundreds of steps, still gets several colours
+    // slope, about 67 steps a cycle, so a deep view, where every pixel takes hundreds of steps, still gets several colors
     const colour = (nu) => (nu < 0 ? insideCol : lut[Math.floor((nu < 16 ? Math.max(0, 0.12 * (Math.sqrt(nu) - 1)) : 0.36 + 0.015 * (nu - 16)) * 1024) & 1023]);
     function work(budget) {
       const t0 = performance.now(), scale = view.w / rw, x0 = view.cx - view.w / 2, y0 = view.cy + rh * scale / 2;
@@ -681,10 +681,10 @@
     const num = (v, d) => (v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
     function info() {
       const zoom = 3.4 / view.w, d = Math.max(4, Math.ceil(Math.log10(zoom)) + 3), px = view.w / (rw || 1), ulp = Math.max(Math.abs(view.cx), Math.abs(view.cy), 1e-3) * 2.2e-16;
-      stats.replaceChildren(el('span', {}, 'Centre ', el('b', {}, num(view.cx, Math.min(16, d)) + (view.cy < 0 ? ' − ' : ' + ') + Math.abs(view.cy).toFixed(Math.min(16, d)) + 'i')),
+      stats.replaceChildren(el('span', {}, 'Center ', el('b', {}, num(view.cx, Math.min(16, d)) + (view.cy < 0 ? ' − ' : ' + ') + Math.abs(view.cy).toFixed(Math.min(16, d)) + 'i')),
         el('span', {}, 'Zoom ', el('b', {}, '×' + (zoom < 1e4 ? zoom.toPrecision(3) : zoom.toExponential(1).replace('e+', ' × 10^')))),
         el('span', {}, 'Steps ', el('b', {}, fmt(maxIt))),
-        px < 8 * ulp ? el('span', { class: 'geo-warn' }, 'Double precision is giving out: neighbouring pixels are now closer together than the numbers a double can tell apart, so the picture breaks into blocks.') : null);
+        px < 8 * ulp ? el('span', { class: 'geo-warn' }, 'Double precision is giving out: neighboring pixels are now closer together than the numbers a double can tell apart, so the picture breaks into blocks.') : null);
       if (probeC) {
         const e = escape(probeC[0], probeC[1], maxIt), c0 = num(probeC[0], Math.min(16, d)) + (probeC[1] < 0 ? ' − ' : ' + ') + Math.abs(probeC[1]).toFixed(Math.min(16, d)) + 'i';
         const o = orbit(probeC[0], probeC[1], maxIt), n = o.length - 1;
@@ -853,7 +853,7 @@
       el('button', { class: 'btn', type: 'button', onclick: () => { seed = 1 + Math.floor(Math.random() * 999999); fresh(); } }, 'New points'),
       el('button', { class: 'btn quiet', type: 'button', onclick: () => { pts = []; pl.reset(); later(); } }, 'Clear'), relaxBtn));
     host.append(el('div', { class: 'algo-controls' }, box('Voronoi cells', showCells, (v) => { showCells = v; }), box('Delaunay triangles', showTri, (v) => { showTri = v; }), box('Empty circles', showCirc, (v) => { showCirc = v; })));
-    host.append(el('p', { class: 'geo-note' }, 'Each point is a school, and each coloured cell is the part of town nearer to that school than to any other. Drag a point and watch its neighbours\' borders move; click or tap an empty place to add a school; double-click one to close it. Press Relax and every point moves to the middle of its cell, again and again: the cells even out.'));
+    host.append(el('p', { class: 'geo-note' }, 'Each point is a school, and each colored cell is the part of town nearer to that school than to any other. Drag a point and watch its neighbors\' borders move; click or tap an empty place to add a school; double-click one to close it. Press Relax and every point moves to the middle of its cell, again and again: the cells even out.'));
     const cv = api.canvas(host, { label: 'Points, their Voronoi cells and their Delaunay triangulation', maxWidth: 1100, height: (w) => Math.round(Math.max(280, Math.min(600, w * 0.6))), draw });
     cv.canvas.parentNode.classList.add('geo-canvas');
     const stats = el('p', { class: 'geo-stats', role: 'status' });
@@ -867,7 +867,7 @@
       speeds: [1, 60], speed: 70,
       start: () => { unevenStart = null; return relax(); },
       onStep: () => later(),
-      onDone: () => { relaxBtn.textContent = 'Relax'; later(); pl.status('Settled: every point sits at the centre of its own cell.'); },
+      onDone: () => { relaxBtn.textContent = 'Relax'; later(); pl.status('Settled: every point sits at the center of its own cell.'); },
       onReset: () => { relaxBtn.textContent = 'Relax'; later(); }
     });
     pl.controls.prepend(el('span', { class: 'geo-note' }, 'Play: Lloyd\'s relaxation.'));
@@ -943,14 +943,14 @@
 
   // ================================================================== registration
   A.register({ id: 'hull-race', group: GROUP, title: 'Convex hull race',
-    blurb: 'Stretch a rubber band round a cloud of points. Gift wrapping, Graham\'s scan and Quickhull race to find its shape: bet first, then see why the shape of the cloud picks the winner.',
+    blurb: 'Stretch a rubber band around a cloud of points. Gift wrapping, Graham\'s scan and Quickhull race to find its shape: bet first, then see why the shape of the cloud picks the winner.',
     mount: mountHull,
     about: `<h2>The convex hull</h2>
-<p>The convex hull of a set of points is the smallest convex shape that holds them all: the shape a rubber band takes when it is stretched round nails and let go. It is one of the first questions of computational geometry. Robots plan paths round the hulls of obstacles, games test whether two objects collide by their hulls, and statisticians peel hulls off a cloud of data to find its middle.</p>
+<p>The convex hull of a set of points is the smallest convex shape that holds them all: the shape a rubber band takes when it is stretched round nails and let go. It is one of the first questions of computational geometry. Robots plan paths around the hulls of obstacles, games test whether two objects collide by their hulls, and statisticians peel hulls off a cloud of data to find its middle.</p>
 <p>All three algorithms here are built on one question, asked of three points a, b and c: going from a to b, is c on the left, on the right, or straight ahead? The answer is the sign of a cross product, (b − a) × (c − a), which needs only two multiplications and no angles. That <em>orientation test</em> is what the race counts. (The points have whole-number coordinates, so every test is exact: with fractions, a computer can get the sign wrong for points that are almost in a line, and real geometry libraries take great care over that.)</p>
 <h2>Three algorithms</h2>
 <ul><li><b>Gift wrapping</b> (R. A. Jarvis, 1973, also called the Jarvis march). Start at the leftmost point. The next hull point is the one with every other point on its left: find it by looking at all n points. Repeat until you come back. That is n tests for each of the h points on the hull: <b>n·h</b>. When the hull has few points it is very fast; when every point is on the hull (try <em>On a circle</em>) it is n², the slowest of the three by far.</li>
-<li><b>Graham scan</b> (Ronald Graham, 1972). Sort the points by their angle round the lowest one; this is the coloured fan you see, turning into a smooth rainbow as the merge sort finishes. Then walk round them, keeping the hull so far on a stack: whenever the last three points turn the wrong way, the middle one cannot be on the hull, so pop it. Each point is pushed once and popped at most once, so the walk takes at most about 2n tests; the sort takes n log₂ n. Always <b>n log n</b>, whatever the points. Graham wrote it at Bell Labs, for a program that needed the hulls of thousands of points.</li>
+<li><b>Graham scan</b> (Ronald Graham, 1972). Sort the points by their angle around the lowest one; this is the colored fan you see, turning into a smooth rainbow as the merge sort finishes. Then walk around them, keeping the hull so far on a stack: whenever the last three points turn the wrong way, the middle one cannot be on the hull, so pop it. Each point is pushed once and popped at most once, so the walk takes at most about 2n tests; the sort takes n log₂ n. Always <b>n log n</b>, whatever the points. Graham wrote it at Bell Labs, for a program that needed the hulls of thousands of points.</li>
 <li><b>Quickhull</b> (William Eddy, 1977, and Alex Bykat, 1978). The leftmost and rightmost points are on the hull and split the rest in two. On each side, the point furthest from the line is on the hull too; everything in the triangle it makes can be thrown away at once, and the rest is split between the two new edges. Like quicksort: about <b>n log n</b> on average, and often much less, because a big triangle throws away most of the points in one go; but n² when the splits are lopsided.</li></ul>
 <h2>Things to try</h2>
 <ul><li><b>Few hull points.</b> With <em>In a triangle</em> the hull has 3 points, so gift wrapping needs only about 3n tests and wins easily. In a random rectangle of 1000 points the hull has only a few dozen, so it is close.</li>
@@ -959,16 +959,16 @@
 <p>Could anything beat n log n? Not in general: any algorithm that lists the hull in order could be used to sort numbers (put each number x at the point (x, x²) on a parabola: every point is on the hull, in order), so it cannot be faster than sorting. But that argument needs every point on the hull. In 1986 David Kirkpatrick and Raimund Seidel found an algorithm that takes n log h, which is never worse than either; Timothy Chan found a simpler one in 1996 by running gift wrapping on hulls of small groups found by Graham's scan.</p>`,
     taught: [{ href: '#/dsa/1', text: 'SC 107 Lesson 1: Counting the cost' }, { href: '#/dsa/4', text: 'SC 107 Lesson 4: Divide and conquer' }, { href: '#/math/13', text: 'SC 104 Lesson 13: Counting steps' }] });
   A.register({ id: 'mandelbrot', group: GROUP, title: 'The Mandelbrot set',
-    blurb: 'Square a number, add c, repeat: does it fly away? Colour every point by how fast it escapes, then zoom in for ever, or until the computer\'s numbers run out.',
+    blurb: 'Square a number, add c, repeat: does it fly away? Color every point by how fast it escapes, then zoom in for ever, or until the computer\'s numbers run out.',
     mount: mountMandel,
     about: `<h2>One rule, repeated</h2>
 <p>Pick a point c of the plane, thought of as a complex number. Start with z = 0 and repeat z → z² + c. For some c, z stays close to 0 for ever (for c = 0 it never moves; for c = −1 it jumps between −1 and 0). For others it flies off to infinity (for c = 1: 0, 1, 2, 5, 26, 677…). The <b>Mandelbrot set</b> is the set of points c whose z never escapes. Once |z| is more than 2 it is certain to escape, so a program counts the steps until |z| > 2 and gives up after a fixed number of steps (the slider): points that have not escaped by then are drawn as inside. This is the <em>escape-time</em> algorithm, and the orbit you see under the pointer is exactly that sequence of z's.</p>
-<p>The colours come from the number of steps. Counting whole steps gives stripes; the smooth colours use the size of z when it escapes to find a fraction of a step, n + 1 − log₂(log₂ |z|), so the bands melt into each other. Points on the boundary itself are the slowest of all: c = −2 sits right on the edge, its orbit 0, −2, 2, 2, 2… never escapes, but −2.01 does.</p>
+<p>The colors come from the number of steps. Counting whole steps gives stripes; the smooth colors use the size of z when it escapes to find a fraction of a step, n + 1 − log₂(log₂ |z|), so the bands melt into each other. Points on the boundary itself are the slowest of all: c = −2 sits right on the edge, its orbit 0, −2, 2, 2, 2… never escapes, but −2.01 does.</p>
 <h2>History</h2>
 <p>Pierre Fatou and Gaston Julia studied repeating z → z² + c around 1918, by hand. For each c, the starting points that stay bounded make the <em>Julia set</em> of c (tick "Its Julia set" to see it for the point under the pointer): it is all in one piece exactly when c is in the Mandelbrot set, and crumbles into dust when c is outside. Nobody could see these shapes until computers could draw them. Robert Brooks and Peter Matelski printed a first crude picture of the set in 1978; Benoit Mandelbrot, at IBM, published pictures of it in 1980 and made it famous; Adrien Douady and John Hubbard named it after him and proved in 1982 that it is all in one piece.</p>
 <h2>What it costs, and where the zoom gives out</h2>
 <p>Every pixel is its own calculation, of up to the step limit, so a picture of a million pixels at 1,000 steps can take a billion multiplications. Points inside the set are the most expensive, because they use every step; this program skips the two biggest inside parts (the heart-shaped cardioid and the disc beside it) with a formula. It draws a rough picture first, one pixel in every 8 × 8 block, then fills in, a little in each frame, so the page never freezes.</p>
-<p>The zoom has a limit. A JavaScript number is a 64-bit <em>double</em>, which keeps about 16 significant digits. Near c = −0.74, neighbouring doubles are about 10<sup>−16</sup> apart, so once the picture is about 10<sup>−13</sup> wide, a pixel is smaller than the gap between two numbers the computer can tell apart. Press <b>Dive</b> and watch: at a zoom of about 10<sup>13</sup> the fine detail turns into blocks. Programs that go deeper use numbers with more digits, and a clever trick: work out one orbit exactly, and only the small differences from it in ordinary doubles.</p>
+<p>The zoom has a limit. A JavaScript number is a 64-bit <em>double</em>, which keeps about 16 significant digits. Near c = −0.74, neighboring doubles are about 10<sup>−16</sup> apart, so once the picture is about 10<sup>−13</sup> wide, a pixel is smaller than the gap between two numbers the computer can tell apart. Press <b>Dive</b> and watch: at a zoom of about 10<sup>13</sup> the fine detail turns into blocks. Programs that go deeper use numbers with more digits, and a clever trick: work out one orbit exactly, and only the small differences from it in ordinary doubles.</p>
 <h2>Places to visit</h2>
 <ul><li><b>Seahorse Valley</b>, the gap between the cardioid and the big disc on its left: curled tails that become spirals of spirals.</li>
 <li><b>Elephant Valley</b>, on the right, near the cardioid's notch: rows of trunks.</li>
@@ -983,7 +983,7 @@
 <h2>History</h2>
 <p>The biologist Aristid Lindenmayer invented these systems in 1968 to describe how simple organisms, algae and fungi, grow cell by cell: every cell divides by the same rules at the same time. In the 1980s Przemysław Prusinkiewicz, a computer scientist, gave them the turtle and drew plants with them, and in 1990 the two wrote <em>The Algorithmic Beauty of Plants</em>; the fractal plant, bush and seaweed here are from that book. The curves are older than the systems: Helge von Koch described his snowflake in 1904, Wacław Sierpiński his triangle in 1915, David Hilbert his space-filling curve in 1891, and the dragon curve came from three physicists at NASA in the 1960s, John Heighway, Bruce Banks and William Harter, made famous by Martin Gardner in 1967.</p>
 <h2>Exponential growth, and the limit</h2>
-<p>Each generation multiplies the length of the string, so a few more generations go from a few thousand symbols to millions. That is why the generation slider stops where it does, and why a rule of your own is cut off at ${fmt(LS_CAP)} symbols: the program counts the next generation's length first, without building it, and refuses to make it if it is too long. The Koch snowflake's length grows by 4 each generation while the curve gets no wider: after infinitely many steps it is infinitely long round a finite area.</p>
+<p>Each generation multiplies the length of the string, so a few more generations go from a few thousand symbols to millions. That is why the generation slider stops where it does, and why a rule of your own is cut off at ${fmt(LS_CAP)} symbols: the program counts the next generation's length first, without building it, and refuses to make it if it is too long. The Koch snowflake's length grows by 4 each generation while the curve gets no wider: after infinitely many steps it is infinitely long around a finite area.</p>
 <h2>Things to try</h2>
 <ul><li>Change the angle of the fractal plant a degree at a time: the same rules make a different species.</li>
 <li>Write F=F+F-F-F+F with angle 90 (the quadratic Koch curve), or F=FF-[-F+F+F]+[+F-F-F] with angle 22.5.</li>
@@ -993,14 +993,14 @@
     blurb: 'Drag the schools around a town and watch who is nearest to which. The Voronoi cells and their twin, the Delaunay triangulation, redraw as you move; press Relax and the cells even out.',
     mount: mountVoronoi,
     about: `<h2>Who is nearest?</h2>
-<p>Put some points on a map: schools, post offices, mobile phone masts, fire stations. The <b>Voronoi cell</b> of a point is the part of the map nearer to it than to any other point. Between two neighbours the border is the line exactly halfway, at right angles to the line joining them, and the cells fit together with no gaps. Asking "which school is nearest to my house?" is asking which cell the house is in. The same picture appears in nature (the cells of a giraffe's coat, a dragonfly's wing, cracked mud) and in the nearest-neighbour method of machine learning, where each example claims the region nearest to it.</p>
+<p>Put some points on a map: schools, post offices, cell phone towers, fire stations. The <b>Voronoi cell</b> of a point is the part of the map nearer to it than to any other point. Between two neighbors the border is the line exactly halfway, at right angles to the line joining them, and the cells fit together with no gaps. Asking "which school is nearest to my house?" is asking which cell the house is in. The same picture appears in nature (the cells of a giraffe's coat, a dragonfly's wing, cracked mud) and in the nearest-neighbor method of machine learning, where each example claims the region nearest to it.</p>
 <p>The cells are named after Georgy Voronoy, who wrote about them in 1908; Peter Gustav Lejeune Dirichlet used them in 1850, and they are also called Dirichlet tessellations. In his report on the London cholera outbreak of 1854, John Snow marked the streets that were nearer, by walking, to the Broad Street pump than to any other pump: nearly all the deaths were inside.</p>
 <h2>The Delaunay triangulation</h2>
 <p>Join two points whenever their cells share a border and you get triangles: the <b>Delaunay triangulation</b>, after Boris Delaunay (1934). Its defining property: the circle through the three corners of any triangle has no other point inside it (tick "Empty circles"). Among all ways to triangulate the points it makes the fewest thin slivers, which is why it is used to build the meshes for engineering simulations, terrain models in maps and games, and the shapes of 3-D scans.</p>
-<p>This demo builds it with the <b>Bowyer–Watson</b> algorithm (Adrian Bowyer and David Watson, both 1981, in the same issue of <em>The Computer Journal</em>): start with one huge triangle round everything; add the points one at a time; the triangles whose circles contain the new point are no longer Delaunay, so remove them and join the new point to the edges of the hole they leave. As written here it checks every triangle for each new point, about n² work; with a search structure it is n log n. The cells are found separately, by cutting the whole box down to the part nearer each point than each of its neighbours.</p>
+<p>This demo builds it with the <b>Bowyer–Watson</b> algorithm (Adrian Bowyer and David Watson, both 1981, in the same issue of <em>The Computer Journal</em>): start with one huge triangle round everything; add the points one at a time; the triangles whose circles contain the new point are no longer Delaunay, so remove them and join the new point to the edges of the hole they leave. As written here it checks every triangle for each new point, about n² work; with a search structure it is n log n. The cells are found separately, by cutting the whole box down to the part nearer each point than each of its neighbors.</p>
 <h2>Lloyd's relaxation</h2>
-<p>Press Relax: every point moves to the centre of mass of its own cell, the cells are drawn again, and it repeats. Big cells shrink, small ones grow, and the points spread out as evenly as they can, ending close to a honeycomb of hexagons. Stuart Lloyd at Bell Labs invented this in 1957, to choose the levels for turning sound into numbers; the same loop is k-means clustering, which groups data in machine learning, and it is used to place stippling dots in drawings and to make even meshes.</p>`,
-    taught: [{ href: '#/ml/2', text: 'SC 109 Lesson 2: Your nearest neighbours' }] });
+<p>Press Relax: every point moves to the center of mass of its own cell, the cells are drawn again, and it repeats. Big cells shrink, small ones grow, and the points spread out as evenly as they can, ending close to a honeycomb of hexagons. Stuart Lloyd at Bell Labs invented this in 1957, to choose the levels for turning sound into numbers; the same loop is k-means clustering, which groups data in machine learning, and it is used to place stippling dots in drawings and to make even meshes.</p>`,
+    taught: [{ href: '#/ml/2', text: 'SC 109 Lesson 2: Your nearest neighbors' }] });
 
   // ================================================================== tests (node test_algos.js)
   function selfTest() {
@@ -1042,7 +1042,7 @@
     if (!(escape(-2.01, 0, 500) > 0)) fails.push('mandelbrot: -2.01 should escape');
     if (!(escape(0.26, 0, 5000) > 10)) fails.push('mandelbrot: 0.26, just past the cusp, should escape slowly');
     if (!(escape(0.5, 0.5, 100) > 0) || !(escape(-0.75, 0.1, 100) > 0)) fails.push('mandelbrot: points outside should escape');
-    if (escape(-0.1226, 0.7449, 2000) !== -1) fails.push('mandelbrot: -0.1226 + 0.7449i, the centre of the period-3 bulb, should be inside');
+    if (escape(-0.1226, 0.7449, 2000) !== -1) fails.push('mandelbrot: -0.1226 + 0.7449i, the center of the period-3 bulb, should be inside');
     // the shortcut for the cardioid and the disc agrees with plain iteration
     for (let k = 0; k < 400; k++) {
       const cx = -2 + 2.5 * r(), cy = -1.2 + 2.4 * r(); let x = 0, y = 0, n = 0;

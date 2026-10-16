@@ -124,7 +124,7 @@
     ['9.3.7.8', 'Compound interest as a recursive formula', '', ''],
   ];
 
-  // Pages of the site that are not courses and practise a standard without a lesson teaching it.
+  // Pages of the site that are not courses and practice a standard without a lesson teaching it.
   const SUPPORT = [
     { name: 'Algorithms in motion', href: '#/algorithms', note: '31 demos: sorting, searching, paths, games, puzzles, emergence, geometry, backtracking, compression', codes: ['3B-AP-10', '3B-AP-11', '3A-IC-26'] },
     { name: 'Bot Arena', href: '#/arena', note: 'Tron bots in Python, Java, C++ and Scheme', codes: ['3B-AP-09', '3A-AP-13'] },
@@ -235,7 +235,7 @@
       li.append(el('span', { class: 'std-code' }, code), el('p', { class: 'std-text' }, textOf(code)));
       if (extra) li.append(el('p', { class: 'std-fit' }, extra));
       if (hits.length) li.append(el('ul', { class: 'std-lessons', 'aria-label': 'Lessons' }, hits.map((h) => el('li', {}, el('a', { href: lessonHref(h), title: h.course.title }, lessonLabel(h))))));
-      if (sup.length) li.append(el('ul', { class: 'std-lessons', 'aria-label': 'Also practised on' }, sup.map((s) => el('li', {}, el('a', { href: s.href, title: s.note }, 'Also: ' + s.name)))));
+      if (sup.length) li.append(el('ul', { class: 'std-lessons', 'aria-label': 'Also practiced on' }, sup.map((s) => el('li', {}, el('a', { href: s.href, title: s.note }, 'Also: ' + s.name)))));
       if (!hits.length && !sup.length) li.append(el('p', { class: 'std-none' }, 'No lesson addresses this yet.'));
       li.dataset.covered = hits.length ? 'yes' : sup.length ? 'support' : 'no';
       li.dataset.text = norm(code + ' ' + textOf(code) + ' ' + (extra || '') + ' ' + hits.map(lessonLabel).join(' '));
@@ -289,7 +289,7 @@
         el('p', { class: 'tagline' }, 'Which lessons address which learning standards.'),
         el('div', { class: 'prose std-intro' },
           el('p', {}, 'Two sets of standards are listed: the CSTA K-12 Computer Science Standards (2017), which many states and districts use, and the computer-science-integrated benchmarks in the 2022 Minnesota Academic Standards in Mathematics. Each lesson shows its standards under its summary; here you can start from a standard and find the lessons.'),
-          el('p', {}, 'The author matched lessons to standards by what each lesson teaches. A lesson is listed when it teaches or practises the standard, not when it only mentions it; where a lesson covers only part of a benchmark, the entry says so. These are not endorsed by CSTA or the Minnesota Department of Education, and the standards below are short paraphrases. Check the exact wording at ',
+          el('p', {}, 'The author matched lessons to standards by what each lesson teaches. A lesson is listed when it teaches or practices the standard, not when it only mentions it; where a lesson covers only part of a benchmark, the entry says so. These are not endorsed by CSTA or the Minnesota Department of Education, and the standards below are short paraphrases. Check the exact wording at ',
             el('a', { href: 'https://csteachers.org/k12standards/', rel: 'noopener noreferrer' }, 'csteachers.org'), ' and at the ',
             el('a', { href: 'https://education.mn.gov/MDE/dse/stds/ComputerScience/', rel: 'noopener noreferrer' }, 'Minnesota Department of Education'), '.'))),
       el('div', { class: 'std-tools' }, el('div', { class: 'std-search' }, el('label', { for: 'std-q' }, 'Search'), input), fwRow, bandRow, showRow, status),

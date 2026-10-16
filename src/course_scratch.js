@@ -13,7 +13,7 @@ window.COURSES.push({
     { id: 'read-errors', name: 'Read an error message and fix the line' },
     { id: 'variables', name: 'Keep and change a value in a variable' },
     { id: 'text-or-number', name: 'Tell text from numbers: "5" and 5' },
-    { id: 'maths-symbols', name: 'Do sums with + - * /' },
+    { id: 'maths-symbols', name: 'Do arithmetic with + - * /' },
     { id: 'repeat-count', name: 'Repeat a set number of times with for' },
     { id: 'while-loop', name: 'Loop with while until something changes' },
     { id: 'compare-equals', name: 'Compare with == (not =)' },
@@ -26,7 +26,7 @@ window.COURSES.push({
     { id: 'return-value', name: 'Report an answer with return' },
     { id: 'contains', name: 'Ask if something is in a list or a word' },
     { id: 'turtle-art', name: 'Draw with the turtle: turns, pen up, loops' },
-    { id: 'remainder', name: 'Use % to wrap round and test even or odd' },
+    { id: 'remainder', name: 'Use % to wrap around and test even or odd' },
     { id: 'slices', name: 'Cut part of a word with [ : ]' },
     { id: 'string-methods', name: 'Change words: upper, lower, replace, split' }
       ],
@@ -116,24 +116,24 @@ turtle.done()`, caption: 'Run it and watch the canvas. Add one more t.right(90) 
         {
           ex: {
             id: 'sp-1-1', skill: 'print-text', title: 'Say hello',
-            prompt: `<p>Ask for the player's name. Then print two lines: <code>Hello, Ada!</code> and <code>Welcome to Python.</code> (That is the output when the player types <code>Ada</code>.) The greeting has a comma and a space after Hello, and an exclamation mark at the end.</p>`,
+            prompt: `<p>Ask for the player's name. Then print two lines: <code>Hello, Ada!</code> and <code>Welcome to Python.</code> (That is the output when the player types <code>Ada</code>.) The greeting has a comma and a space after Hello, and an exclamation point at the end.</p>`,
             starter: `name = input("What is your name? ")\n# print the two lines here\n`,
             solution: `name = input("What is your name? ")\nprint("Hello, " + name + "!")\nprint("Welcome to Python.")`,
             hints: ['The first line is three pieces joined with +: "Hello, " then the name then "!".', 'The second line is just print with the words in quotes.'],
             tests: [{ stdin: 'Ada', expect: 'Hello, Ada!\nWelcome to Python.' }, { stdin: 'Grace', expect: 'Hello, Grace!\nWelcome to Python.' }, { stdin: 'Max Power', expect: 'Hello, Max Power!\nWelcome to Python.' }],
-            failTip: 'Compare your output with the expected one letter by letter: the comma, the space after it, the exclamation mark, the full stop.',
-            followup: 'Stretch: add a third line that asks "What is your favourite food?" and prints "Yum, pizza!" (or whatever they typed).'
+            failTip: 'Compare your output with the expected one letter by letter: the comma, the space after it, the exclamation point, the period.',
+            followup: 'Stretch: add a third line that asks "What is your favorite food?" and prints "Yum, pizza!" (or whatever they typed).'
           }
         },
         {
           ex: {
             id: 'sp-1-2', skill: 'ask-input', title: 'Two questions',
-            prompt: `<p>Ask two questions, first <em>an animal</em> and then <em>a colour</em>. Print one line that joins them like this: for <code>cat</code> and <code>purple</code> print <code>A purple cat! Amazing.</code></p>`,
-            starter: `animal = input("Name an animal: ")\ncolour = input("Name a colour: ")\n# print the sentence here\n`,
-            solution: `animal = input("Name an animal: ")\ncolour = input("Name a colour: ")\nprint("A " + colour + " " + animal + "! Amazing.")`,
-            hints: ['The sentence is five pieces: "A ", the colour, " ", the animal, "! Amazing." Join them with +.', 'The spaces are inside the quotation marks: "A " has one at the end, and " " is a space on its own.'],
+            prompt: `<p>Ask two questions, first <em>an animal</em> and then <em>a color</em>. Print one line that joins them like this: for <code>cat</code> and <code>purple</code> print <code>A purple cat! Amazing.</code></p>`,
+            starter: `animal = input("Name an animal: ")\ncolor = input("Name a color: ")\n# print the sentence here\n`,
+            solution: `animal = input("Name an animal: ")\ncolor = input("Name a color: ")\nprint("A " + color + " " + animal + "! Amazing.")`,
+            hints: ['The sentence is five pieces: "A ", the color, " ", the animal, "! Amazing." Join them with +.', 'The spaces are inside the quotation marks: "A " has one at the end, and " " is a space on its own.'],
             tests: [{ stdin: 'cat\npurple', expect: 'A purple cat! Amazing.' }, { stdin: 'dog\ngreen', expect: 'A green dog! Amazing.' }, { stdin: 'octopus\nbright orange', expect: 'A bright orange octopus! Amazing.' }],
-            failTip: 'The colour comes before the animal, even though it was asked second. Check for a missing space between them.',
+            failTip: 'The color comes before the animal, even though it was asked second. Check for a missing space between them.',
             followup: 'Stretch: make it a mad-lib. Ask for a name, a place and a verb, and print a one-sentence story with all three.'
           }
         },
@@ -149,14 +149,14 @@ turtle.done()`, caption: 'Run it and watch the canvas. Add one more t.right(90) 
     /* ================================================================== */
     {
       standards: ['2-AP-11'], standard: 1,
-      title: 'Keeping score: variables', summary: 'set and change become =, numbers and words are different kinds of thing, the maths blocks become symbols, and a program keeps a score.',
+      title: 'Keeping score: variables', summary: 'set and change become =, numbers and words are different kinds of thing, the math blocks become symbols, and a program keeps a score.',
       blocks: [
         `<p>In 1972 a young engineer called Allan Alcorn built a game for a brand-new company, Atari. Two paddles, a ball, and two numbers at the top of the screen. The game was <em>Pong</em>. The numbers were the score. The story goes that the first machine went into a bar in California. Soon it stopped working, because the coin box was full.</p>`,
         { photo: 'pong-cabinet', caption: 'A Pong machine in a museum. Allan Alcorn signed it by the name. Players turned the two knobs. Coins went in the slot below.' },
         `<p>The score was not a small detail. Keeping count of something, and showing it, is the heart of almost every game. In Scratch, a score lives in a variable. You <code>set</code> it to 0 when the game starts. You <code>change</code> it by 1 when something good happens. Python has variables too. You used one in the last lesson: <code>name</code>. This lesson uses them for numbers. It also shows the one trap that catches everyone who comes from Scratch.</p>
 <p>So how does a program keep a score? And what is the trap?</p>
 <h2>Set and change</h2>`,
-        { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['variables', 'set [score] to (0)'], ['variables', 'change [score] by (1)'], ['variables', 'change [score] by (10)'], ['looks', 'say (score)']], python: 'score = 0\nscore = score + 1\nscore = score + 10\nprint(score)', caption: 'set is =. There is no change block. Instead you set the variable to its old value plus something. Read score = score + 1 as "the new score is the old score plus one". It is not a maths equation.' },
+        { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['variables', 'set [score] to (0)'], ['variables', 'change [score] by (1)'], ['variables', 'change [score] by (10)'], ['looks', 'say (score)']], python: 'score = 0\nscore = score + 1\nscore = score + 10\nprint(score)', caption: 'set is =. There is no change block. Instead you set the variable to its old value plus something. Read score = score + 1 as "the new score is the old score plus one". It is not a math equation.' },
         { play: `score = 0
 print("Start:", score)
 score = score + 1
@@ -165,12 +165,12 @@ score = score + 10
 print("Finished the level:", score)
 score = score - 3
 print("Hit a rock:", score)`, predict: true, caption: 'The score goes 0, 1, 11, 8. Each line changes score and prints it. The comma in print puts a space between the words and the number. Add a line that doubles the score: score = score * 2.' },
-        { check: "<code>lives = 3</code>, then <code>lives = lives - 1</code>. What is <code>lives</code>?", options: ["3", "2", "An error: lives cannot be on both sides"], answer: 1, why: "The right side is worked out with the old value, 3 − 1, and the result becomes the new value. That is the change block.", wrong: ["Lives changed. The right side is worked out with the old 3, and the answer goes back into lives.", null, "= is not a maths equation. It means: work out the right side, then keep the result under the name on the left. Lives on both sides is fine."], skill: 'variables' },
+        { check: "<code>lives = 3</code>, then <code>lives = lives - 1</code>. What is <code>lives</code>?", options: ["3", "2", "An error: lives cannot be on both sides"], answer: 1, why: "The right side is worked out with the old value, 3 − 1, and the result becomes the new value. That is the change block.", wrong: ["Lives changed. The right side is worked out with the old 3, and the answer goes back into lives.", null, "= is not a math equation. It means: work out the right side, then keep the result under the name on the left. Lives on both sides is fine."], skill: 'variables' },
         `<div class="stmt"><p><span class="kind">Rule 1.</span> <code>score = 0</code> is the <code>set</code> block. From now on the name <code>score</code> stands for 0. There is no "make a variable" step. The first <code>=</code> makes it.</p>
 <p><span class="kind">Rule 2.</span> <code>score = score + 1</code> is the <code>change</code> block. The right side is worked out first, with the old value. The result becomes the new value.</p>
 <p><span class="kind">Rule 3.</span> A variable's name has no quotation marks. <code>print(score)</code> shows the number. <code>print("score")</code> shows the word.</p></div>
-<h2>The maths blocks</h2>
-<p>Scratch's green maths blocks become the symbols on a calculator. Two surprises: multiply is <code>*</code>, because keyboards have no ×, and divide is <code>/</code>.</p>
+<h2>The math blocks</h2>
+<p>Scratch's green math blocks become the symbols on a calculator. Two surprises: multiply is <code>*</code>, because keyboards have no ×, and divide is <code>/</code>.</p>
 <div class="tbl-wrap"><table>
 <tr><th>Scratch block</th><th>Python</th><th>example</th></tr>
 <tr><td><code>(a) + (b)</code></td><td><code>a + b</code></td><td><code>7 + 2</code> is <code>9</code></td></tr>
@@ -200,8 +200,8 @@ print("Next year you will be", age + 1)`, stdin: '12', expectError: true, captio
         { play: `age = int(input("How old are you? "))
 print("Next year you will be", age + 1)
 print("In dog years you are", age * 7)
-print("You have lived about", age * 365, "days")`, stdin: '12', predict: true, caption: 'It prints 13, then 84, then 4380. The int( ) turned the text "12" into the number 12, so the maths works. Change the input in the box below the code and run again. Then take the int( ) off and read the error, so you recognise it next time.' },
-        { check: "The player types <code>9</code> into <code>age = input(\"Age? \")</code>. What is <code>age</code>?", options: ["The number 9", "The text \"9\"", "Nothing until you press Run"], answer: 1, why: "input always gives text, even when the player types digits. Wrap it in int( ) to get a number you can do maths with.", wrong: ["Scratch turns typed digits into a number for you. Python does not: input gives text.", null, "age gets its value as soon as the player answers. It is text at once."], skill: 'text-or-number' },
+print("You have lived about", age * 365, "days")`, stdin: '12', predict: true, caption: 'It prints 13, then 84, then 4380. The int( ) turned the text "12" into the number 12, so the math works. Change the input in the box below the code and run again. Then take the int( ) off and read the error, so you recognize it next time.' },
+        { check: "The player types <code>9</code> into <code>age = input(\"Age? \")</code>. What is <code>age</code>?", options: ["The number 9", "The text \"9\"", "Nothing until you press Run"], answer: 1, why: "input always gives text, even when the player types digits. Wrap it in int( ) to get a number you can do math with.", wrong: ["Scratch turns typed digits into a number for you. Python does not: input gives text.", null, "age gets its value as soon as the player answers. It is text at once."], skill: 'text-or-number' },
         `<div class="stmt"><p><span class="kind">Rule 4.</span> <code>input</code> always gives text. For a whole number write <code>int(input("…"))</code>. For a number with a decimal point, <code>float(input("…"))</code>.</p>
 <p><span class="kind">Rule 5.</span> In <code>print</code>, a comma between pieces prints them with a space between. It is happy to mix words and numbers. <code>+</code> only joins text with text, or adds number to number.</p></div>
 <h2>Naming things</h2>
@@ -214,7 +214,7 @@ coins = coins + 25
 lives = lives - 1
 print(name, "now has", lives, "lives and", coins, "coins")
 total = coins * 10 + lives * 100
-print("Score:", total)`, caption: 'Three variables, two kinds of thing. The score line uses the maths blocks: coins times ten plus lives times a hundred.' },
+print("Score:", total)`, caption: 'Three variables, two kinds of thing. The score line uses the math blocks: coins times ten plus lives times a hundred.' },
         `<details class="reveal"><summary>Puzzle: after <code>x = 5</code> and <code>x = x * 2</code> and <code>x = x + 1</code>, what is <code>x</code>?</summary><p><code>11</code>. Work line by line, like blocks. x is 5. Then x becomes 5 × 2, which is 10. Then x becomes 10 + 1. The old value is used on the right side, and the result replaces it.</p></details>`,
         { aside: `<p><b>Mistakes everyone makes in this lesson.</b> Adding 1 to the text that <code>input</code> gave, without <code>int</code>. Putting a variable's name in quotation marks, so the word prints instead of the value. Writing <code>score + 1</code> on its own line and expecting the score to change: without <code>score =</code> in front, the answer is worked out and thrown away. Using <code>x</code> for multiply. Spelling a variable two ways: <code>Score</code> and <code>score</code> are two different variables.</p>` },
         { fig: 'blockquiz', items: [
@@ -232,7 +232,7 @@ print("Score:", total)`, caption: 'Three variables, two kinds of thing. The scor
             solution: `age = int(input("How old are you? "))\nprint("You are", age * 7, "in dog years.")`,
             hints: ['The input is text. Wrap it: age = int(input("How old are you? ")).', 'print("You are", age * 7, "in dog years.") The commas add the spaces.'],
             tests: [{ stdin: '12', expect: 'You are 84 in dog years.' }, { stdin: '1', expect: 'You are 7 in dog years.' }, { stdin: '40', expect: 'You are 280 in dog years.' }],
-            failTip: 'If you see "cannot concatenate" or "unsupported operand", the age is still text: use int( ). Then check the spaces and the full stop.',
+            failTip: 'If you see "cannot concatenate" or "unsupported operand", the age is still text: use int( ). Then check the spaces and the period.',
             followup: 'Stretch: cat years are different. A cat is about 24 human years at age 2, then 4 more each year. Can you print that too?'
           }
         },
@@ -251,8 +251,8 @@ print("Score:", total)`, caption: 'Three variables, two kinds of thing. The scor
         `<div class="recap"><h3>In this lesson</h3><ul>
 <li>The questions were: how does a program keep a score, and what is the trap? A score is a variable. The trap is that <code>input</code> gives text, so you need <code>int</code>.</li>
 <li><code>set [score] to (0)</code> is <code>score = 0</code>. <code>change [score] by (1)</code> is <code>score = score + 1</code>: old value on the right, new value on the left.</li>
-<li>The maths blocks are <code>+ - * / %</code> and <code>round( )</code>. <code>pick random</code> is <code>random.randint(a, b)</code> after <code>import random</code>.</li>
-<li><code>input</code> gives text. To do maths with it, write <code>int(input("…"))</code>. Scratch converted for you. Python asks you to say so.</li>
+<li>The math blocks are <code>+ - * / %</code> and <code>round( )</code>. <code>pick random</code> is <code>random.randint(a, b)</code> after <code>import random</code>.</li>
+<li><code>input</code> gives text. To do math with it, write <code>int(input("…"))</code>. Scratch converted for you. Python asks you to say so.</li>
 <li>In <code>print</code>, commas put spaces between pieces and mix words and numbers. <code>+</code> joins text only.</li>
 </ul></div>`
       ]
@@ -279,7 +279,7 @@ turtle.done()`, caption: 'A square. Change range(4) to range(3) and right(90) to
         { check: "Which line is <code>repeat (6)</code> in Python?", options: ["<code>repeat 6:</code>", "<code>for i in range(6):</code>", "<code>for i in range(1, 6):</code>"], answer: 1, why: "range(6) counts 0, 1, 2, 3, 4, 5: six times. range(1, 6) would be only five.", wrong: ["Python has no word repeat. The loop word is for, with range.", null, "range(1, 6) counts 1, 2, 3, 4, 5. That is only five times."], skill: 'repeat-count' },
         `<div class="stmt"><p><span class="kind">Rule 1.</span> <code>for i in range(n):</code> is <code>repeat (n)</code>. The line ends with a colon.</p>
 <p><span class="kind">Rule 2.</span> The lines inside the loop are indented by four spaces, all by the same amount. The first line that is not indented is outside the loop, like the first block below the C.</p>
-<p><span class="kind">Rule 3.</span> <code>i</code> counts the repeats, starting at 0. The first time round it is 0, then 1, then 2. Scratch has no counter unless you make one. Python gives you one free.</p></div>
+<p><span class="kind">Rule 3.</span> <code>i</code> counts the repeats, starting at 0. The first time around it is 0, then 1, then 2. Scratch has no counter unless you make one. Python gives you one free.</p></div>
 <p>That free counter is useful. <code>i</code> changes every time round, so anything inside the loop that uses <code>i</code> changes too. Here it makes each line of a spiral a little longer than the last.</p>`,
         { play: `import turtle
 t = turtle.Turtle()
@@ -310,7 +310,7 @@ print("Total:", total)`, stdin: '10\n15\n5', predict: true, caption: 'It prints 
 while True:
     count = count + 1
 print("never printed")`, expectError: true, caption: 'After a few seconds the site says Time limit exceeded. In Scratch you would press the stop sign. Here nothing can stop a loop that has no way out, so the page stops it for you.' },
-        `<p>Most "forever" loops in real programs are really "repeat until" loops. Keep going <em>while</em> something is true. Scratch writes that as <code>repeat until &lt;…&gt;</code>. Python writes it as <code>while</code>, with the condition the other way round: keep going while the player has lives, instead of until the lives run out.</p>`,
+        `<p>Most "forever" loops in real programs are really "repeat until" loops. Keep going <em>while</em> something is true. Scratch writes that as <code>repeat until &lt;…&gt;</code>. Python writes it as <code>while</code>, with the condition the other way around: keep going while the player has lives, instead of until the lives run out.</p>`,
         { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['variables', 'set [lives] to (3)'], ['control', 'repeat until <(lives) = (0)>', [['looks', 'say (join [Lives: ] (lives))'], ['variables', 'change [lives] by (-1)']]], ['looks', 'say [Game over]']], python: 'lives = 3\nwhile lives > 0:\n    print("Lives:", lives)\n    lives = lives - 1\nprint("Game over")', caption: 'repeat until lives = 0 is while lives > 0. Scratch says when to stop. Python says when to keep going. Something inside the loop must change lives, or it is a forever loop.' },
         `<details class="reveal"><summary>Guess first: lives starts at 3. What are the lines the first loop below prints?</summary><p><code>Lives: 3</code>, <code>Lives: 2</code>, <code>Lives: 1</code>, then <code>Game over</code>. It never prints <code>Lives: 0</code>, because 0 &gt; 0 is false and the loop stops first.</p></details>`,
         { play: `lives = 3
@@ -323,7 +323,7 @@ countdown = 5
 while countdown > 0:
     print(countdown)
     countdown = countdown - 1
-print("Blast off!")`, caption: 'Two while loops. Each has a variable that moves towards the stopping point every time round. Delete the countdown = countdown - 1 line and think about what would happen, before you run it.' },
+print("Blast off!")`, caption: 'Two while loops. Each has a variable that moves toward the stopping point every time round. Delete the countdown = countdown - 1 line and think about what would happen, before you run it.' },
         { check: "<code>repeat until &lt;(lives) = (0)&gt;</code> becomes which line?", options: ["<code>while lives == 0:</code>", "<code>while lives &gt; 0:</code>", "<code>until lives == 0:</code>"], answer: 1, why: "Scratch says when to stop; Python says when to keep going. Keep going while lives is more than 0.", wrong: ["That keeps going only while lives is 0, the opposite. Python says when to keep going, not when to stop.", null, "Python has no word until. Use while, and say when to keep going."], skill: 'while-loop' },
         `<div class="stmt"><p><span class="kind">Rule 5.</span> <code>while condition:</code> repeats the indented lines as long as the condition is true. Use it when you do not know in advance how many times. Make sure something inside the loop changes the condition.</p>
 <p><span class="kind">Rule 6.</span> Use <code>for</code> when you know how many times. Use <code>while</code> when you are waiting for something to happen.</p></div>
@@ -338,7 +338,7 @@ for i in range(12):
         t.forward(80)
         t.right(90)
     t.right(30)
-turtle.done()`, caption: 'The inner loop (j) draws one square. The outer loop (i) draws twelve of them, turning 30 degrees each time: 12 × 30 is a full circle. Try range(36) with right(10), or a different colour.' },
+turtle.done()`, caption: 'The inner loop (j) draws one square. The outer loop (i) draws twelve of them, turning 30 degrees each time: 12 × 30 is a full circle. Try range(36) with right(10), or a different color.' },
         `<details class="reveal"><summary>Puzzle: how many times does <code>print("hi")</code> run? <code>for i in range(3):</code> then indented <code>for j in range(4):</code> then doubly indented <code>print("hi")</code></summary><p>12 times. The inner loop runs 4 times for each of the outer loop's 3 times: 3 × 4. A repeat (4) inside a repeat (3) in Scratch does the same.</p></details>`,
         { aside: `<p><b>Mistakes everyone makes in this lesson.</b> Forgetting the colon at the end of the <code>for</code> or <code>while</code> line. Not indenting the lines inside the loop, or indenting them by different amounts. Use four spaces, every time. Indenting the line that should come <em>after</em> the loop, so it runs every time round. Expecting <code>range(5)</code> to reach 5: it stops at 4. A <code>while</code> loop whose condition nothing changes. Forgetting that the turtle's turns must add up to 360 for a shape to close.</p>` },
         { fig: 'blockquiz', items: [
@@ -375,7 +375,7 @@ turtle.done()`, caption: 'The inner loop (j) draws one square. The outer loop (i
         `<div class="recap"><h3>In this lesson</h3><ul>
 <li><code>repeat (n)</code> is <code>for i in range(n):</code>. The lines inside are indented four spaces. The first line that is not indented comes after the loop.</li>
 <li><code>i</code> counts 0, 1, …, n−1 for free. <code>range(1, 11)</code> is 1 to 10. <code>range(10, 0, -1)</code> counts down.</li>
-<li><code>forever</code> is <code>while True:</code>. <code>repeat until</code> is <code>while</code> with the condition turned round. Something inside must move the condition towards stopping.</li>
+<li><code>forever</code> is <code>while True:</code>. <code>repeat until</code> is <code>while</code> with the condition turned around. Something inside must move the condition toward stopping.</li>
 <li>Set a total to 0 before a loop, change it inside, show it after: the loop everyone writes most.</li>
 <li>The question was: how can a loop draw a whole star from a few lines? A turtle leaves footprints. A star is one move and one turn of 144 degrees, repeated five times. A loop inside a loop draws a shape of shapes.</li>
 </ul></div>`
@@ -400,7 +400,7 @@ print("Goodbye.")`, stdin: 'turtle', predict: true, caption: 'The password match
         { check: "Which line asks \"is answer the same as yes?\"", options: ["<code>if answer = \"yes\":</code>", "<code>if answer == \"yes\":</code>", "<code>if answer is yes:</code>"], answer: 1, why: "One = sets a variable. Two == compare. Python refuses a single = in an if.", wrong: ["One = sets a variable. In an if, Python wants two equals signs to compare.", null, "yes has no quotation marks, so Python looks for a variable called yes. Use == and put the word in quotes."], skill: 'compare-equals' },
         `<div class="stmt"><p><span class="kind">Rule 1.</span> <code>if condition:</code> runs the indented lines only when the condition is true. Colon at the end, four spaces inside, like a loop.</p>
 <p><span class="kind">Rule 2.</span> Scratch's <code>=</code> block is <code>==</code> in Python. <code>&lt;</code> and <code>&gt;</code> are the same as in Scratch. Three more: <code>&lt;=</code> (less than or equal), <code>&gt;=</code> (more than or equal) and <code>!=</code> (not equal).</p></div>
-<p>What happens if you type one equals sign by mistake? Python refuses to run, and tells you the line. Run this one to see the message, so you recognise it later.</p>`,
+<p>What happens if you type one equals sign by mistake? Python refuses to run, and tells you the line. Run this one to see the message, so you recognize it later.</p>`,
         { play: `score = 10
 if score = 10:
     print("Ten!")`, expectError: true, caption: 'SyntaxError: bad input on line 2. Python saw "if score = 10" and could not make sense of it. Fix it to == and it runs.' },
@@ -520,9 +520,9 @@ else:
         { check: 'Which line makes the program wait for the player to type?', skill: 'ask-input', options: ['<code>print("Name? ")</code>', '<code>name = input("Name? ")</code>', '<code>say("Name? ")</code>'], answer: 1, wrong: ['print only shows words. It never waits, and it keeps no answer.', null, 'say is a Scratch word. Python does not have it.'], why: 'input shows the question, waits, and gives back what the player typed. Keep it in a variable, like name.' },
         { check: '<code>print("5" + "5")</code>. What does it show?', skill: 'print-text', options: ['<code>10</code>', '<code>55</code>', '<code>5 + 5</code>'], answer: 1, wrong: ['With quotation marks, the 5s are text. Text is not added up.', null, 'print shows the answer, not the sum sign. + glues the two pieces.'], why: 'In quotation marks, 5 is text. + between two pieces of text is the join block, so it glues them: 55.' },
         { check: 'The player types <code>9</code> into <code>age = input("Age? ")</code>. What does <code>print(age + 1)</code> do?', skill: 'text-or-number', options: ['It shows 10', 'It stops with an error', 'It shows 91'], answer: 1, wrong: ['input always gives text. The text "9" is not a number yet.', null, 'Python does not glue a number onto text. It stops with an error.'], why: 'input gives text, and text plus a number is an error. Wrap it: int(input("Age? ")).' },
-        { check: '<code>score = 4</code>, then <code>score = score + 3</code>, then <code>print(score)</code>. What does it show?', skill: 'variables', options: ['4', '7', 'An error: score is on both sides'], answer: 1, wrong: ['The second line changes score. It works out 4 + 3, and keeps the answer.', null, '= is not a maths sentence. It says: work out the right side, then keep it in the name on the left.'], why: 'The right side is worked out with the old value, 4 + 3. The answer 7 goes back into score. That is the change block.' },
+        { check: '<code>score = 4</code>, then <code>score = score + 3</code>, then <code>print(score)</code>. What does it show?', skill: 'variables', options: ['4', '7', 'An error: score is on both sides'], answer: 1, wrong: ['The second line changes score. It works out 4 + 3, and keeps the answer.', null, '= is not a math sentence. It says: work out the right side, then keep it in the name on the left.'], why: 'The right side is worked out with the old value, 4 + 3. The answer 7 goes back into score. That is the change block.' },
         { check: 'Which line asks "is score the same as 10?"', skill: 'compare-equals', options: ['<code>if score = 10:</code>', '<code>if score == 10:</code>', '<code>if score == "10":</code>'], answer: 1, wrong: ['One = keeps a value. To ask a question, use two.', null, 'Quotation marks turn 10 into text. A number is never equal to text.'], why: 'Two equals signs compare. One equals sign keeps a value. Numbers have no quotation marks.' },
-        { check: 'A loop starts with <code>n = 3</code> and <code>while n &gt; 0:</code>. Which line inside the loop makes it stop one day?', skill: 'while-loop', options: ['<code>print(n)</code>', '<code>n = n - 1</code>', '<code>n = 3</code>'], answer: 1, wrong: ['print shows n. It does not change n, so n stays 3 and the loop never ends.', null, 'That puts n back to 3 every time round. The loop never ends.'], why: 'Something inside the loop must move the condition towards false. Taking 1 off n each time does that.' },
+        { check: 'A loop starts with <code>n = 3</code> and <code>while n &gt; 0:</code>. Which line inside the loop makes it stop one day?', skill: 'while-loop', options: ['<code>print(n)</code>', '<code>n = n - 1</code>', '<code>n = 3</code>'], answer: 1, wrong: ['print shows n. It does not change n, so n stays 3 and the loop never ends.', null, 'That puts n back to 3 every time round. The loop never ends.'], why: 'Something inside the loop must move the condition toward false. Taking 1 off n each time does that.' },
         { check: 'Scratch has <code>repeat (4)</code> around <code>move</code> and <code>turn</code> blocks. Which line starts the Python loop?', skill: 'repeat-count', options: ['<code>for i in range(4):</code>', '<code>while True:</code>', '<code>for i in range(90):</code>'], answer: 0, wrong: [null, 'while True is forever. It never stops after four sides.', 'The 4 is how many times to repeat. 90 is the turn, which goes inside the loop.'], why: 'repeat (4) is for i in range(4). Four times round, with i counting 0, 1, 2, 3.' },
         { check: 'Two separate ifs: <code>if n &gt; 5:</code> prints big, and then <code>if n &gt; 2:</code> prints medium. What prints when n is 9?', skill: 'elif-chain', options: ['big only', 'big and medium', 'medium only'], answer: 1, wrong: ['That is what elif would do. Two separate ifs are two separate questions, so both run.', null, 'The first if is true as well, because 9 is more than 5.'], why: 'Each if asks its own question. 9 is more than 5 and more than 2, so both lines print. Use elif when only one answer should run.' },
         { check: 'Which line is true when age is 10, 11 or 12?', skill: 'and-or', options: ['<code>age &gt;= 10 and age &lt;= 12</code>', '<code>age &gt;= 10 or age &lt;= 12</code>', '<code>age == 10 and age == 12</code>'], answer: 0, wrong: [null, 'With or, one side is enough. Age 5 is under 12 and age 50 is over 10, so this is true for every age.', 'An age cannot be 10 and 12 at the same time, so this is never true.'], why: 'and needs both sides true: at least 10 and at most 12. Each side is a full comparison.' },
@@ -582,7 +582,7 @@ else:
 <p>So how can one name hold a whole list of things?</p>
 <h2>Making a list and adding to it</h2>
 <p>In Scratch you click "Make a List", give it a name, and use <code>add</code> to put things in. In Python a list is written in square brackets, with commas between the items. <code>.append()</code> adds one to the end.</p>`,
-        { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['variables', 'delete all of [shopping]'], ['variables', 'add [milk] to [shopping]'], ['variables', 'add [eggs] to [shopping]'], ['variables', 'add [bread] to [shopping]'], ['looks', 'say (shopping)']], python: 'shopping = []\nshopping.append("milk")\nshopping.append("eggs")\nshopping.append("bread")\nprint(shopping)', caption: '[] is an empty list. append puts a new item at the end. Printing a list shows all the items in brackets, with quotes round the words. That is how Python writes a list, so you can tell it from a sentence.' },
+        { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['variables', 'delete all of [shopping]'], ['variables', 'add [milk] to [shopping]'], ['variables', 'add [eggs] to [shopping]'], ['variables', 'add [bread] to [shopping]'], ['looks', 'say (shopping)']], python: 'shopping = []\nshopping.append("milk")\nshopping.append("eggs")\nshopping.append("bread")\nprint(shopping)', caption: '[] is an empty list. append puts a new item at the end. Printing a list shows all the items in brackets, with quotes around the words. That is how Python writes a list, so you can tell it from a sentence.' },
         `<details class="reveal"><summary>Guess first: the list has milk, eggs and bread. Then apples is appended. What does the line with <code>len</code> print?</summary><p><code>There are 4 things to buy.</code> Three items, plus apples, make four. len counts every item in the list.</p></details>`,
         { play: `shopping = ["milk", "eggs", "bread"]
 print(shopping)
@@ -662,7 +662,7 @@ answers = ["Yes!", "No way.", "Ask again later.", "Definitely.", "I doubt it.", 
 question = input("Ask the 8-ball a yes/no question: ")
 print("The 8-ball says:", random.choice(answers))`, stdin: 'Will I get a dog?', caption: 'Run it a few times. Add your own answers to the list. For a joke machine, make a list of jokes and choose one.' },
         `<details class="reveal"><summary>Puzzle: <code>a = [5, 10, 15, 20]</code>. What are <code>a[1]</code>, <code>a[-1]</code>, <code>len(a)</code>, <code>a[len(a) - 1]</code> and <code>a[4]</code>?</summary><p>10 (the second item), 20 (the last), 4, 20 (the last item again: position length minus one), and an IndexError, because the positions are 0 to 3.</p></details>`,
-        { aside: `<p><b>Mistakes everyone makes in this lesson.</b> Thinking <code>list[1]</code> is the first item: it is the second. Asking for <code>list[len(list)]</code>, which is one past the end. Writing <code>list.append("a", "b")</code>: append takes one thing at a time. Forgetting the quotes round a word, so Python looks for a variable called <code>milk</code>. Using <code>remove</code> on something that is not in the list (check with <code>in</code> first). Changing a list while a <code>for</code> loop is walking along it.</p>` },
+        { aside: `<p><b>Mistakes everyone makes in this lesson.</b> Thinking <code>list[1]</code> is the first item: it is the second. Asking for <code>list[len(list)]</code>, which is one past the end. Writing <code>list.append("a", "b")</code>: append takes one thing at a time. Forgetting the quotes around a word, so Python looks for a variable called <code>milk</code>. Using <code>remove</code> on something that is not in the list (check with <code>in</code> first). Changing a list while a <code>for</code> loop is walking along it.</p>` },
         { fig: 'blockquiz', items: [
           { stack: [['variables', 'add [pizza] to [foods]']], answer: 'foods.append("pizza")', hint: 'The list, a dot, append, and the item in brackets with quotes.' },
           { stack: [['looks', 'say (item (1) of [foods])']], answer: 'print(foods[0])', hint: 'Item 1 is position 0. Square brackets.' },
@@ -781,7 +781,7 @@ for s in scores:
         `<div class="stmt"><p><span class="kind">Rule 3.</span> The names in the brackets of <code>def</code> are parameters: the block's inputs. When you call the function, the values you give are matched to them in order.</p>
 <p><span class="kind">Rule 4.</span> <code>return value</code> ends the function and hands the value back. A function that returns can be used anywhere a value can: in a print, a sum, a condition, or another call. Without a return, the function hands back nothing.</p></div>
 <h2>Drawing with functions</h2>
-<p>Here is where functions pay off. A square is a loop. A flower is squares turned round a point. A garden is flowers in a row. Each is one function, built from the one before. The whole program is shorter than writing every flower out.</p>`,
+<p>Here is where functions pay off. A square is a loop. A flower is squares turned around a point. A garden is flowers in a row. Each is one function, built from the one before. The whole program is shorter than writing every flower out.</p>`,
         { play: `import turtle
 t = turtle.Turtle()
 t.speed(0)
@@ -819,14 +819,14 @@ def jump_to(x, y):
     t.goto(x, y)
     t.pendown()
 
-colours = ["red", "orange", "gold", "green", "blue", "purple"]
+colors = ["red", "orange", "gold", "green", "blue", "purple"]
 x = -170
 for i in range(6):
     jump_to(x, 0)
-    t.color(colours[i])
+    t.color(colors[i])
     polygon(i + 3, 24)
     x = x + 58
-turtle.done()`, caption: 'A triangle, a square, a pentagon and so on, each in a colour from a list. polygon(sides, size) is every shape from lesson 3 in one function. jump_to moves without drawing. Loops, lists and functions all fit in these few lines.' },
+turtle.done()`, caption: 'A triangle, a square, a pentagon and so on, each in a color from a list. polygon(sides, size) is every shape from lesson 3 in one function. jump_to moves without drawing. Loops, lists and functions all fit in these few lines.' },
         `<details class="reveal"><summary>Puzzle: what does this print? <code>def f(a, b): return a - b</code> then <code>print(f(10, 3), f(3, 10))</code></summary><p><code>7 -7</code>. The values are matched to the parameters in order. In the first call a is 10 and b is 3. In the second, a is 3 and b is 10. Order matters, so name your parameters so that the order is obvious.</p></details>`,
         { aside: `<p><b>Mistakes everyone makes in this lesson.</b> Calling a function before its <code>def</code>. Forgetting the brackets when calling: <code>cheer</code> on its own does nothing. Forgetting the colon or the indenting under <code>def</code>. Printing inside the function when you needed <code>return</code>, so that <code>x = f(3)</code> leaves x empty (Python calls it <code>None</code>). Giving the wrong number of values when calling. Writing <code>return</code> inside a <code>for</code> loop and wondering why it stops after one time round.</p>` },
         { fig: 'blockquiz', items: [
@@ -851,7 +851,7 @@ turtle.done()`, caption: 'A triangle, a square, a pentagon and so on, each in a 
         {
           ex: {
             id: 'sp-6-1', skill: 'define-call', title: 'A greeting block',
-            prompt: `<p>Write a function <code>greeting(name)</code> that <em>returns</em> (not prints) the text <code>Hello, </code> followed by the name and an exclamation mark: <code>greeting("Ada")</code> gives <code>Hello, Ada!</code>. Then write <code>shout(word)</code> that returns the word in capital letters followed by <code>!</code>: <code>shout("go")</code> gives <code>GO!</code>. (<code>word.upper()</code> gives the capitals.)</p>`,
+            prompt: `<p>Write a function <code>greeting(name)</code> that <em>returns</em> (not prints) the text <code>Hello, </code> followed by the name and an exclamation point: <code>greeting("Ada")</code> gives <code>Hello, Ada!</code>. Then write <code>shout(word)</code> that returns the word in capital letters followed by <code>!</code>: <code>shout("go")</code> gives <code>GO!</code>. (<code>word.upper()</code> gives the capitals.)</p>`,
             starter: `def greeting(name):\n    # return "Hello, " joined with the name and "!"\n\ndef shout(word):\n    # return the word in capitals with a ! on the end\n`,
             solution: `def greeting(name):\n    return "Hello, " + name + "!"\n\ndef shout(word):\n    return word.upper() + "!"`,
             hints: ['return "Hello, " + name + "!": join the three pieces of text with +.', 'return word.upper() + "!"', 'If the check says it got None, you printed instead of returning.'],
@@ -938,7 +938,7 @@ while room == "cellar":
 print("You climb the stairs.")`, stdin: 'open door\nlook\ntake key\ninventory\nopen door', caption: 'The order of the elifs matters. The "open door with key" line comes before the plain "open door" line, so it gets first go. Swap them and the door never opens. Add a "drop key" command that removes it.' },
         { check: "Which check is true only when the key is in the bag?", options: ["<code>\"key\" in bag</code>", "<code>bag == \"key\"</code>", "<code>bag.append(\"key\")</code>"], answer: 0, why: "in asks whether the item is somewhere in the list. The contains block.", wrong: [null, "bag is a whole list. A list is never equal to one word. Use in.", "append puts a key into the bag. It does not ask whether one is there."], skill: 'contains' },
         `<h2>Piece 3: a monster</h2>
-<p>A fight is a loop that goes round until someone runs out of health. Each turn, both sides roll a dice: that is <code>random.randint</code>. In Scratch you would use <code>repeat until</code> and <code>pick random</code>.</p>
+<p>A fight is a loop that goes around until someone runs out of health. Each turn, both sides roll a dice: that is <code>random.randint</code>. In Scratch you would use <code>repeat until</code> and <code>pick random</code>.</p>
 <details class="reveal"><summary>Guess first: the goblin has 6 health. Each of your hits takes 1 to 4. What is the fewest hits that can beat it? And the most?</summary><p>Two hits at the fewest (4 + 4 is 8, which is enough). Six at the most (six hits of 1). That is why every fight is different.</p></details>`,
         { fig: 'blocks', stack: [['event', 'when green flag clicked'], ['variables', 'set [health] to (10)'], ['variables', 'set [monster] to (6)'], ['control', 'repeat until <<(health) < (1)> or <(monster) < (1)>>', [['variables', 'change [monster] by (pick random (1) to (4)) * (-1)'], ['variables', 'change [health] by (pick random (1) to (3)) * (-1)']]]], python: 'health = 10\nmonster = 6\nwhile health > 0 and monster > 0:\n    monster = monster - random.randint(1, 4)\n    health = health - random.randint(1, 3)', caption: 'repeat until A or B is while not A and not B: keep fighting while both are above zero. Turn the condition round, like lesson 3.' },
         { play: `import random
@@ -1005,12 +1005,12 @@ while room != "won" and health > 0:
     elif way == "look":
         print("You are in the", room + ". Your bag:", bag)
     elif room == "hall" and way == "north":
-        room = "armoury"
-        print("An armoury. A key glints on a shelf.")
-    elif room == "armoury" and way == "take key" and "key" not in bag:
+        room = "armory"
+        print("An armory. A key glints on a shelf.")
+    elif room == "armory" and way == "take key" and "key" not in bag:
         bag.append("key")
         print("Taken.")
-    elif room == "armoury" and way == "south":
+    elif room == "armory" and way == "south":
         room = "hall"
         print("Back in the hall.")
     elif room == "hall" and way == "east":
@@ -1057,9 +1057,9 @@ if health <= 0:
             prompt: `<p>The machine has three snacks in a list: <code>chips</code>, <code>apple</code> and <code>cookie</code>. Keep asking <code>Snack? </code> until the user types <code>done</code>. If the answer is in the list, print <code>Here is your chips.</code> (with the snack's name) and add it to a list of things bought. If it is not, print <code>No cookie here.</code> (with what they asked for). At the end print <code>You bought 2 snacks.</code> with the right number.</p>`,
             starter: `snacks = ["chips", "apple", "cookie"]\nbought = []\nwhile True:\n    choice = input("Snack? ")\n    if choice == "done":\n        break\n    # in the list: print Here is your ..., and add it to bought\n    # not in the list: print No ... here.\n\nprint("You bought", len(bought), "snacks.")`,
             solution: `snacks = ["chips", "apple", "cookie"]\nbought = []\nwhile True:\n    choice = input("Snack? ")\n    if choice == "done":\n        break\n    if choice in snacks:\n        print("Here is your " + choice + ".")\n        bought.append(choice)\n    else:\n        print("No " + choice + " here.")\n\nprint("You bought", len(bought), "snacks.")`,
-            hints: ['if choice in snacks: then print("Here is your " + choice + ".") and bought.append(choice).', 'else: print("No " + choice + " here.") Use + so there is no space before the full stop.'],
+            hints: ['if choice in snacks: then print("Here is your " + choice + ".") and bought.append(choice).', 'else: print("No " + choice + " here.") Use + so there is no space before the period.'],
             tests: [{ stdin: 'chips\napple\ndone', expect: 'Here is your chips.\nHere is your apple.\nYou bought 2 snacks.' }, { stdin: 'pizza\ncookie\ndone', expect: 'No pizza here.\nHere is your cookie.\nYou bought 1 snacks.' }, { stdin: 'done', expect: 'You bought 0 snacks.' }, { stdin: 'chips\nchips\nchips\ndone', expect: 'Here is your chips.\nHere is your chips.\nHere is your chips.\nYou bought 3 snacks.' }],
-            failTip: 'If there is a space before the full stop (chips .), you used a comma in print; join the pieces with + instead. Check that done ends the loop before anything is printed for it.',
+            failTip: 'If there is a space before the period (chips .), you used a comma in print; join the pieces with + instead. Check that done ends the loop before anything is printed for it.',
             followup: 'Stretch: give each snack a price in a second list, and print the total at the end. (prices[snacks.index(choice)] finds the price.)'
           }
         },
@@ -1069,7 +1069,7 @@ if health <= 0:
             prompt: `<p>Write a function <code>winner(a, b)</code> for two players' choices, each <code>"rock"</code>, <code>"paper"</code> or <code>"scissors"</code>. It returns <code>"tie"</code> if they are the same, <code>"player 1"</code> if <code>a</code> beats <code>b</code>, and <code>"player 2"</code> otherwise. Rock beats scissors, scissors beats paper, paper beats rock.</p>`,
             starter: `def winner(a, b):\n    # same choice: tie\n    # the three ways a wins: return "player 1"\n    # otherwise: player 2\n`,
             solution: `def winner(a, b):\n    if a == b:\n        return "tie"\n    if (a == "rock" and b == "scissors") or (a == "scissors" and b == "paper") or (a == "paper" and b == "rock"):\n        return "player 1"\n    return "player 2"`,
-            hints: ['if a == b: return "tie"', 'Three ways player 1 wins, joined with or: (a == "rock" and b == "scissors") or (a == "scissors" and b == "paper") or (a == "paper" and b == "rock"). Brackets round each pair keep the and and or apart.', 'If it is not a tie and player 1 did not win, player 2 did: return "player 2" at the end, with no condition.'],
+            hints: ['if a == b: return "tie"', 'Three ways player 1 wins, joined with or: (a == "rock" and b == "scissors") or (a == "scissors" and b == "paper") or (a == "paper" and b == "rock"). Brackets around each pair keep the and and or apart.', 'If it is not a tie and player 1 did not win, player 2 did: return "player 2" at the end, with no condition.'],
             tests: [{ call: 'winner("rock", "rock")', expect: "'tie'" }, { call: 'winner("rock", "scissors")', expect: "'player 1'" }, { call: 'winner("scissors", "rock")', expect: "'player 2'" }, { call: 'winner("paper", "rock")', expect: "'player 1'" }, { call: 'winner("scissors", "paper")', expect: "'player 1'" }, { call: 'winner("rock", "paper")', expect: "'player 2'" }, { call: 'winner("paper", "scissors")', expect: "'player 2'" }, { call: 'winner("paper", "paper")', expect: "'tie'" }],
             failTip: 'None means a case fell through every if without a return. Check the tie first, then the three wins for player 1, then return "player 2" for everything else.',
             followup: 'Stretch: make it a game. The computer picks with random.choice(["rock", "paper", "scissors"]), you type yours, and the loop keeps score to three wins.'
@@ -1087,9 +1087,9 @@ if health <= 0:
     /* ================================================================== */
     {
       standards: ['2-AP-12', '2-AP-14', '2-AP-16'], standard: 1,
-      title: 'Project: turtle art', summary: 'Shapes become functions, colours and fills make them pretty, and loops turn one shape into a flower, a spiral and a sky full of stars.',
+      title: 'Project: turtle art', summary: 'Shapes become functions, colors and fills make them pretty, and loops turn one shape into a flower, a spiral and a sky full of stars.',
       blocks: [
-        `<p>Remember Seymour Papert from lesson 3? He made Logo, a language for kids. His team gave it a robot with a pen underneath. Kids typed <code>FORWARD 50</code> and it rolled forward and drew a line. They typed <code>RIGHT 90</code> and it turned. Papert called it the turtle. He said kids should teach the computer, not the other way round. Scratch was made by his students, years later, with the same idea.</p>`,
+        `<p>Remember Seymour Papert from lesson 3? He made Logo, a language for kids. His team gave it a robot with a pen underneath. Kids typed <code>FORWARD 50</code> and it rolled forward and drew a line. They typed <code>RIGHT 90</code> and it turned. Papert called it the turtle. He said kids should teach the computer, not the other way around. Scratch was made by his students, years later, with the same idea.</p>`,
         `<p>Your turtle is the same turtle, on a screen. In lesson 3 you drew squares and stars with <code>repeat</code>. Now you have functions. That changes everything. A shape becomes one word. One word, repeated and turned, becomes art.</p>
 <p>So what art can one function make?</p>
 <h2>A shape is a function</h2>
@@ -1107,10 +1107,10 @@ def square():
 for i in range(12):
     square()
     t.right(30)
-turtle.done()`, caption: 'Twelve squares, each turned 30 degrees more than the last. 12 × 30 = 360, so they go all the way round. Try 36 squares turning 10 degrees. Try 6 turning 60.' },
-        `<details class="reveal"><summary>Guess first: what if the loop says <code>range(4)</code> and <code>t.right(90)</code>?</summary><p>Four squares, each a quarter turn round. They make a bigger square with a cross in it. 4 × 90 = 360 again. The rule: the number of shapes times the turn should be 360, or the pattern will not close.</p></details>
+turtle.done()`, caption: 'Twelve squares, each turned 30 degrees more than the last. 12 × 30 = 360, so they go all the way around. Try 36 squares turning 10 degrees. Try 6 turning 60.' },
+        `<details class="reveal"><summary>Guess first: what if the loop says <code>range(4)</code> and <code>t.right(90)</code>?</summary><p>Four squares, each a quarter turn around. They make a bigger square with a cross in it. 4 × 90 = 360 again. The rule: the number of shapes times the turn should be 360, or the pattern will not close.</p></details>
 <div class="stmt"><p><span class="kind">Rule 1.</span> A shape is a function. Write it once, call it many times.</p>
-<p><span class="kind">Rule 2.</span> To go round in a circle of shapes, make <em>repeats × turn = 360</em>. 12 × 30, 36 × 10, 8 × 45.</p></div>
+<p><span class="kind">Rule 2.</span> To go around in a circle of shapes, make <em>repeats × turn = 360</em>. 12 × 30, 36 × 10, 8 × 45.</p></div>
 <p>Give the function an input, and one function draws every size. In Scratch that is a define block with an input bubble.</p>`,
         { fig: 'blocks', stack: [['myblocks', 'define polygon (sides) (size)'], ['control', 'repeat (sides)', [['motion', 'move (size) steps'], ['motion', 'turn right ((360) / (sides)) degrees']]]], python: 'def polygon(sides, size):\n    for i in range(sides):\n        t.forward(size)\n        t.right(360 / sides)', caption: 'Any shape with straight sides. The turn is 360 divided by the number of sides: 90 for a square, 120 for a triangle, 60 for a hexagon. polygon(3, 100) is a triangle; polygon(8, 40) is an octagon.' },
         { play: `import turtle
@@ -1129,9 +1129,9 @@ polygon(6, 100)
 polygon(8, 100)
 turtle.done()`, caption: 'Five shapes from one function, all starting at the same corner. Add polygon(40, 10): forty tiny sides look like a circle.' },
         { check: 'The turtle draws a shape with 10 sides. How many degrees does it turn at each corner?', options: ['10', '36', '90'], answer: 1, why: '360 ÷ 10 = 36. All the turns together always add up to 360, one full circle, whatever the shape.', wrong: ['10 is the number of sides, not the turn. The turn is 360 divided by the sides.', null, '90 is the turn for a square, which has 4 sides. For 10 sides it is 360 ÷ 10.'], skill: 'turtle-art' },
-        `<h2>Colour and fill</h2>
-<p>A turtle has a pen, and the pen has a colour. <code>t.color("red")</code> sets it. Lots of colour names work: <code>"blue"</code>, <code>"orange"</code>, <code>"purple"</code>, <code>"gold"</code>, <code>"hotpink"</code>. <code>t.pensize(3)</code> makes the line thicker. And a shape can be filled in: say <code>t.begin_fill()</code> before you draw it and <code>t.end_fill()</code> after.</p>`,
-        { fig: 'blocks', stack: [['pen', 'set pen color to [blue]'], ['pen', 'set pen size to (3)'], ['looks', 'say [fill the next shape]']], python: 't.color("blue")\nt.pensize(3)\nt.begin_fill()\nsquare()\nt.end_fill()', caption: 'Scratch has no fill block, so there is nothing to translate for begin_fill: it is new. The fill is the pen colour too.' },
+        `<h2>Color and fill</h2>
+<p>A turtle has a pen, and the pen has a color. <code>t.color("red")</code> sets it. Lots of color names work: <code>"blue"</code>, <code>"orange"</code>, <code>"purple"</code>, <code>"gold"</code>, <code>"hotpink"</code>. <code>t.pensize(3)</code> makes the line thicker. And a shape can be filled in: say <code>t.begin_fill()</code> before you draw it and <code>t.end_fill()</code> after.</p>`,
+        { fig: 'blocks', stack: [['pen', 'set pen color to [blue]'], ['pen', 'set pen size to (3)'], ['looks', 'say [fill the next shape]']], python: 't.color("blue")\nt.pensize(3)\nt.begin_fill()\nsquare()\nt.end_fill()', caption: 'Scratch has no fill block, so there is nothing to translate for begin_fill: it is new. The fill is the pen color too.' },
         { play: `import turtle
 t = turtle.Turtle()
 t.speed(0)
@@ -1145,22 +1145,22 @@ t.color("gold")
 t.begin_fill()
 star(150)
 t.end_fill()
-turtle.done()`, caption: 'A gold star, filled in. A five-point star turns 144 degrees at each point: 5 × 144 = 720, two full turns, which is why the lines cross. Change the colour. Try star(60) three times with a turn between them.' },
-        `<details class="reveal"><summary>Guess first: in the spiral below, what colour is the line drawn when <code>i</code> is 6?</summary><p>Red. <code>6 % 6</code> is 0, because 6 goes into 6 once with nothing left over. So the colour is <code>colours[0]</code>, the first one, and the colours start again.</p></details>
-<p>Colours can live in a list, and a loop can go through them. Here is a spiral that changes colour as it grows. Each line is a little longer than the last, and each one is the next colour.</p>`,
+turtle.done()`, caption: 'A gold star, filled in. A five-point star turns 144 degrees at each point: 5 × 144 = 720, two full turns, which is why the lines cross. Change the color. Try star(60) three times with a turn between them.' },
+        `<details class="reveal"><summary>Guess first: in the spiral below, what color is the line drawn when <code>i</code> is 6?</summary><p>Red. <code>6 % 6</code> is 0, because 6 goes into 6 once with nothing left over. So the color is <code>colors[0]</code>, the first one, and the colors start again.</p></details>
+<p>Colors can live in a list, and a loop can go through them. Here is a spiral that changes color as it grows. Each line is a little longer than the last, and each one is the next color.</p>`,
         { play: `import turtle
 t = turtle.Turtle()
 t.speed(0)
-colours = ["red", "orange", "gold", "green", "blue", "purple"]
+colors = ["red", "orange", "gold", "green", "blue", "purple"]
 
 for i in range(60):
-    t.color(colours[i % 6])
+    t.color(colors[i % 6])
     t.forward(i * 3)
     t.right(59)
-turtle.done()`, caption: 'i % 6 is the remainder when i is divided by 6: 0, 1, 2, 3, 4, 5, 0, 1 … so the colours go round and round. i * 3 makes each line longer. Change 59 to 90, to 120, to 61. Each gives a different spiral.' },
-        { check: 'In <code>colours[i % 6]</code>, what is <code>i % 6</code> when i is 13?', options: ['2', '1', '13'], answer: 1, why: '13 = 2 × 6 + 1, so the remainder is 1 and the colour is colours[1], orange. The % trick keeps a number inside the list, however big i gets.', wrong: ['13 ÷ 6 is 2 with 1 left over. 2 is how many times 6 fits in. % gives what is left over.', null, '% gives the remainder, not the number itself. The remainder is always smaller than 6.'], skill: 'remainder' },
+turtle.done()`, caption: 'i % 6 is the remainder when i is divided by 6: 0, 1, 2, 3, 4, 5, 0, 1 … so the colors go around and round. i * 3 makes each line longer. Change 59 to 90, to 120, to 61. Each gives a different spiral.' },
+        { check: 'In <code>colors[i % 6]</code>, what is <code>i % 6</code> when i is 13?', options: ['2', '1', '13'], answer: 1, why: '13 = 2 × 6 + 1, so the remainder is 1 and the color is colors[1], orange. The % trick keeps a number inside the list, however big i gets.', wrong: ['13 ÷ 6 is 2 with 1 left over. 2 is how many times 6 fits in. % gives what is left over.', null, '% gives the remainder, not the number itself. The remainder is always smaller than 6.'], skill: 'remainder' },
         `<h2>A flower, and some randomness</h2>
-<p>Put the two rules together. A petal is a function. A flower is a loop that draws petals round in a circle. Pick the colours with <code>random.choice</code> and no two flowers are the same.</p>`,
+<p>Put the two rules together. A petal is a function. A flower is a loop that draws petals around in a circle. Pick the colors with <code>random.choice</code> and no two flowers are the same.</p>`,
         { play: `import turtle
 import random
 t = turtle.Turtle()
@@ -1173,14 +1173,14 @@ def petal(size):
         t.forward(size)
         t.right(120)
 
-colours = ["hotpink", "orange", "gold", "violet"]
+colors = ["hotpink", "orange", "gold", "violet"]
 for i in range(12):
-    t.color(random.choice(colours))
+    t.color(random.choice(colors))
     t.begin_fill()
     petal(70)
     t.end_fill()
     t.right(30)
-turtle.done()`, caption: 'A petal is two sides at 60 degrees, twice. Twelve petals, 30 degrees apart, and a random colour each. Run it again: different colours. Change 12 and 30 to 8 and 45, or 18 and 20.' },
+turtle.done()`, caption: 'A petal is two sides at 60 degrees, twice. Twelve petals, 30 degrees apart, and a random color each. Run it again: different colors. Change 12 and 30 to 8 and 45, or 18 and 20.' },
         `<details class="reveal"><summary>Guess first: how could you draw stars all over the screen, in different places?</summary><p>Lift the pen with <code>t.penup()</code>, go somewhere with <code>t.goto(x, y)</code>, put the pen down with <code>t.pendown()</code>, and draw. For random places, <code>random.randint(-200, 200)</code> for x and y. The next program does it.</p></details>`,
         { play: `import turtle
 import random
@@ -1200,7 +1200,7 @@ for i in range(15):
     t.begin_fill()
     star(random.randint(10, 40))
     t.end_fill()
-turtle.done()`, caption: 'Fifteen stars, random places, random sizes, random colours. goto(x, y) uses the middle of the screen as (0, 0). Make the sky: more stars, smaller sizes, and one big one.' },
+turtle.done()`, caption: 'Fifteen stars, random places, random sizes, random colors. goto(x, y) uses the middle of the screen as (0, 0). Make the sky: more stars, smaller sizes, and one big one.' },
         { check: 'Why does the program say <code>t.penup()</code> before <code>t.goto()</code>?', options: ['So the turtle moves faster', 'So it does not draw a line on the way to the next star', 'goto does not work with the pen down'], answer: 1, why: 'With the pen down, every move draws. penup lifts the pen, goto moves, pendown puts it back for the star.', wrong: ['Pen up does not change the speed. It only stops the line.', null, 'goto works with the pen down or up. With the pen down, it draws a line as it goes.'], skill: 'turtle-art' },
         { fig: 'blockquiz', items: [
           { stack: [['myblocks', 'define hexagon']], answer: 'def hexagon():', hint: 'def, the name, brackets, a colon.' },
@@ -1226,20 +1226,20 @@ turtle.done()`, caption: 'Fifteen stars, random places, random sizes, random col
             id: 'sp-8-2', skill: 'turtle-art', kind: 'answer', title: 'Measure the drawing',
             prompt: `<p>Work these out from the rules in this lesson. You can test your answers in any turtle box above.</p>`,
             parts: [
-              { label: '(a) You want 9 squares going round in a full circle. How many degrees between each one?', answer: '40', width: '6rem', wrong: [{ match: '9', msg: 'That is the number of squares. The turn is 360 divided by it.' }, { match: '36', msg: 'That would be for 10 squares. 360 ÷ 9.' }] },
-              { label: '(b) A star turns 144 degrees at each of its 5 points. How many degrees in total, all the way round?', answer: '720', width: '6rem', wrong: [{ match: '360', msg: 'That is one full turn. A five-point star does more: 5 × 144.' }, { match: '144', msg: 'That is one turn. There are five of them.' }] },
+              { label: '(a) You want 9 squares going around in a full circle. How many degrees between each one?', answer: '40', width: '6rem', wrong: [{ match: '9', msg: 'That is the number of squares. The turn is 360 divided by it.' }, { match: '36', msg: 'That would be for 10 squares. 360 ÷ 9.' }] },
+              { label: '(b) A star turns 144 degrees at each of its 5 points. How many degrees in total, all the way around?', answer: '720', width: '6rem', wrong: [{ match: '360', msg: 'That is one full turn. A five-point star does more: 5 × 144.' }, { match: '144', msg: 'That is one turn. There are five of them.' }] },
               { label: '(c) The spiral program draws <code>t.forward(i * 3)</code> for i from 0 to 59. How long is the very last line?', answer: '177', width: '6rem', wrong: [{ match: '180', msg: 'Close. range(60) stops at 59, not 60, so the last i is 59. 59 × 3.' }, { match: '60', msg: 'That is the number of lines. The length of the last one is i × 3 with i = 59.' }] },
               { label: '(d) To draw a hexagon (6 sides), how many degrees does the turtle turn at each corner?', answer: '60', width: '6rem', wrong: [{ match: '120', msg: 'That is for a triangle. 360 ÷ 6.' }] }
             ],
-            hints: ['Repeats × turn = 360 for shapes going round in a circle. Sides × turn = 360 for the corners of one shape.', 'range(60) gives 0 up to 59. The last line is 59 × 3.'],
+            hints: ['Repeats × turn = 360 for shapes going around in a circle. Sides × turn = 360 for the corners of one shape.', 'range(60) gives 0 up to 59. The last line is 59 × 3.'],
             solution: '<p>(a) 360 ÷ 9 = 40. (b) 5 × 144 = 720, two full turns, which is why a star crosses itself. (c) The last i is 59, so 59 × 3 = 177. (d) 360 ÷ 6 = 60.</p>',
             followup: 'Stretch: a 7-point star turns 360 × 3 ÷ 7 degrees at each point (three full turns in seven). Work it out, then draw it. It is not a whole number, and the turtle does not mind.'
           }
         },
         `<div class="recap"><h3>In this lesson</h3><ul>
 <li>The question was: what art can one function make? A shape is a <code>def</code>. Give it inputs for size and sides, and one function draws them all.</li>
-<li>Shapes go round in a circle when <em>repeats × turn = 360</em>. A shape's corners add up to 360 too, so each turn is <code>360 / sides</code>.</li>
-<li><code>t.color("gold")</code>, <code>t.pensize(3)</code>, <code>t.begin_fill()</code> and <code>t.end_fill()</code> make it pretty. A list of colours and <code>i % 6</code> cycle through them.</li>
+<li>Shapes go around in a circle when <em>repeats × turn = 360</em>. A shape's corners add up to 360 too, so each turn is <code>360 / sides</code>.</li>
+<li><code>t.color("gold")</code>, <code>t.pensize(3)</code>, <code>t.begin_fill()</code> and <code>t.end_fill()</code> make it pretty. A list of colors and <code>i % 6</code> cycle through them.</li>
 <li><code>t.penup()</code>, <code>t.goto(x, y)</code>, <code>t.pendown()</code> move without drawing. <code>random.choice</code> and <code>random.randint</code> make every run different.</li>
 </ul></div>`
       ]
@@ -1353,7 +1353,7 @@ backwards = ""
 for letter in word:
     backwards = letter + backwards
 print(backwards)`, caption: 'Three loops. The first prints each letter twice. The second counts vowels: letter in "aeiou" is True for a, e, i, o, u. The third builds the word backwards by putting each new letter in front. (There is a shortcut: word[::-1]. Try it.)' },
-        `<details class="reveal"><summary>Guess first: in the backwards loop, what is <code>backwards</code> after the first three letters?</summary><p><code>"iar"</code>. Start with "". Add r in front: "r". Add a in front: "ar". Add i in front: "iar". Each letter goes to the front, so the word turns round.</p></details>`,
+        `<details class="reveal"><summary>Guess first: in the backwards loop, what is <code>backwards</code> after the first three letters?</summary><p><code>"iar"</code>. Start with "". Add r in front: "r". Add a in front: "ar". Add i in front: "iar". Each letter goes to the front, so the word turns around.</p></details>`,
         { check: 'Which line is True when the word has a letter z in it?', options: ['<code>"z" in word</code>', '<code>word == "z"</code>', '<code>len(word) == "z"</code>'], answer: 0, why: 'in looks for one string inside another. word == "z" is only True if the whole word is z.', wrong: [null, '== asks whether the whole word is z. It does not look inside the word.', 'len gives a number. A number is never equal to the text "z".'], skill: 'contains' },
         `<h2>Playing with words</h2>
 <p>A few more tools, and you can build ELIZA's tricks. <code>.replace(old, new)</code> swaps every old for new. <code>.count(x)</code> counts how often x appears. <code>.split()</code> cuts a sentence into a list of words at the spaces. And <code>*</code> with a number repeats a string.</p>`,
@@ -1377,12 +1377,12 @@ print("-" * 20)`, caption: 'ELIZA\'s best trick is the first line: swap "I feel"
         {
           ex: {
             id: 'sp-9-1', skill: 'string-methods', title: 'Shout it',
-            prompt: `<p>Write a function <code>shout(word)</code> that returns the word in capital letters with three exclamation marks after it. <code>shout("hello")</code> returns <code>"HELLO!!!"</code>.</p>`,
+            prompt: `<p>Write a function <code>shout(word)</code> that returns the word in capital letters with three exclamation points after it. <code>shout("hello")</code> returns <code>"HELLO!!!"</code>.</p>`,
             starter: `def shout(word):\n    # capitals, then "!!!"\n`,
             solution: `def shout(word):\n    return word.upper() + "!!!"`,
             hints: ['word.upper() gives the capitals.', 'return word.upper() + "!!!"'],
             tests: [{ call: 'shout("hello")', expect: "'HELLO!!!'" }, { call: 'shout("go team")', expect: "'GO TEAM!!!'" }, { call: 'shout("Python")', expect: "'PYTHON!!!'" }, { call: 'shout("")', expect: "'!!!'" }],
-            failTip: 'None means the function printed instead of returning. Check it is .upper() with brackets, and that there are exactly three exclamation marks.',
+            failTip: 'None means the function printed instead of returning. Check it is .upper() with brackets, and that there are exactly three exclamation points.',
             followup: 'Stretch: write whisper(word) that returns the word in lowercase with "..." after it, and a function that returns a word with its first letter in capitals (word[0].upper() + word[1:]).'
           }
         },

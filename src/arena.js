@@ -361,7 +361,7 @@
       if (!S.bots.length) { saved.append(el('span', { class: 'small' }, 'You have no saved bots on this device yet.')); return; }
       const boxes = S.bots.map((b) => ({ b, box: el('input', { type: 'checkbox' }) }));
       saved.append(...boxes.map(({ b, box }) => el('label', { class: 'arena-check' }, box, ' ' + b.name + ' (' + LABEL[b.lang] + ')')),
-        el('button', { class: 'btn sm', onclick: () => { for (const { b, box } of boxes) if (box.checked) { add({ name: b.name, lang: b.lang, source: b.source }); box.checked = false; } renderEntries(); } }, 'Add the ticked bots'));
+        el('button', { class: 'btn sm', onclick: () => { for (const { b, box } of boxes) if (box.checked) { add({ name: b.name, lang: b.lang, source: b.source }); box.checked = false; } renderEntries(); } }, 'Add the checked bots'));
     }
     async function addTexts(texts) {
       const problems = []; let added = 0;

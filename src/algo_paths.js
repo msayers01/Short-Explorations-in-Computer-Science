@@ -63,7 +63,7 @@
     }
     if (algo === 'dfs') {
       // the textbook stack version: a vertex may be pushed more than once; it is explored the first time it is popped, and its
-      // parent is the vertex that pushed that copy. Neighbours are pushed in reverse, so the first neighbour is explored first.
+      // parent is the vertex that pushed that copy. Neighbors are pushed in reverse, so the first neighbor is explored first.
       const st = [[s, -1]]; state[s] = 1; yield { t: 'push', i: s };
       while (st.length) {
         const [v, p] = st.pop();
@@ -127,7 +127,7 @@
     return { n: R * C, start: G.start, goal: G.goal, nbrs, h };
   }
 
-  // ---------- mazes: R x C cells; e[i] = passage from i to its east neighbour, s[i] = to its south neighbour
+  // ---------- mazes: R x C cells; e[i] = passage from i to its east neighbor, s[i] = to its south neighbor
   function newMaze(R, C, open) {
     const n = R * C, m = { R, C, n, e: new Uint8Array(n), s: new Uint8Array(n) };
     if (open) for (let i = 0; i < n; i++) { if (i % C < C - 1) m.e[i] = 1; if (i < n - C) m.s[i] = 1; }
@@ -344,7 +344,7 @@
   const TRAVERSALS = { bfs: 'Breadth-first (queue)', dfs: 'Depth-first (stack)', rdfs: 'Depth-first (recursion)', dijkstra: 'Dijkstra (priority queue)' };
   const BOX = { bfs: 'Queue, front first', dfs: 'Stack, top first', rdfs: 'Call stack, innermost first', dijkstra: 'Priority queue, smallest first' };
   /** Traverse graph G from s, one snapshot per step: { state[] (0 not reached, 1 in the queue/stack, 2 done), parent[], dist[], order[],
-      strip: [{ text, stale }], say, cur, edge }. Neighbours are read in alphabetical order. Returns { order, parent, dist }. */
+      strip: [{ text, stale }], say, cur, edge }. Neighbors are read in alphabetical order. Returns { order, parent, dist }. */
   function* graphTraverse(G, s, algo) {
     const n = G.n, L = G.labels, state = new Array(n).fill(0), parent = new Array(n).fill(-1), dist = new Array(n).fill(Infinity), order = [];
     let strip = () => [];
@@ -356,7 +356,7 @@
       yield snap(`Start at ${L[s]}: give it the label 0 and put it in the queue.`, s);
       while (head < q.length) {
         const v = q[head++]; state[v] = 2; order.push(v);
-        yield snap(`Take ${L[v]} from the front of the queue (visit number ${nth()}) and look at its neighbours.`, v);
+        yield snap(`Take ${L[v]} from the front of the queue (visit number ${nth()}) and look at its neighbors.`, v);
         for (const [w] of G.adj[v]) {
           if (state[w] === 0) { state[w] = 1; dist[w] = dist[v] + 1; parent[w] = v; q.push(w); yield snap(`${L[w]} has no label yet: label it ${dist[v]} + 1 = ${dist[w]} and add it to the back of the queue.`, v, [v, w]); }
           else yield snap(`${L[w]} already has a label: leave it alone.`, v, [v, w]);
@@ -375,7 +375,7 @@
         const ns = G.adj[v];
         for (let k = ns.length - 1; k >= 0; k--) {
           const w = ns[k][0];
-          if (state[w] !== 2) { state[w] = 1; st.push([w, v]); yield snap(`Push ${L[w]}. (Neighbours go on in reverse order, so the first one ends up on top.)`, v, [v, w]); }
+          if (state[w] !== 2) { state[w] = 1; st.push([w, v]); yield snap(`Push ${L[w]}. (Neighbors go on in reverse order, so the first one ends up on top.)`, v, [v, w]); }
           else yield snap(`${L[w]} is visited: do not push it.`, v, [v, w]);
         }
       }
@@ -390,7 +390,7 @@
           else yield snap(`${L[w]} is visited already: skip it.`, v, [v, w]);
         }
         calls.pop(); state[v] = 2;
-        yield snap(`dfs(${L[v]}) has tried every neighbour: it returns${calls.length ? ' to dfs(' + L[calls[calls.length - 1]] + ')' : ''}.`, calls.length ? calls[calls.length - 1] : v);
+        yield snap(`dfs(${L[v]}) has tried every neighbor: it returns${calls.length ? ' to dfs(' + L[calls[calls.length - 1]] + ')' : ''}.`, calls.length ? calls[calls.length - 1] : v);
       };
       yield* rec(s, -1);
       yield snap('The first call has returned: done. Same visit order as the stack version, but the call stack only ever holds the current path.');
@@ -915,7 +915,7 @@
     fillStarts();
     const [algoL] = selectBox(el, 'Algorithm', Object.entries(TRAVERSALS), algo, (v) => { algo = v; p.reset(); });
     host.append(el('div', { class: 'algo-controls ap-controls' }, presetL, startL, algoL),
-      el('p', { class: 'ap-hint' }, 'Click a vertex (or choose it above) to start from there. Neighbours are always read in alphabetical order.'));
+      el('p', { class: 'ap-hint' }, 'Click a vertex (or choose it above) to start from there. Neighbors are always read in alphabetical order.'));
     const wrap = el('div', { class: 'ap-graph' }), left = el('div'), side = el('div', { class: 'ap-side' });
     wrap.append(left, side); host.append(wrap);
     const boxTitle = el('p', { class: 'ap-side-title' }), strip = el('div', { class: 'ap-strip' }), say = el('p', { class: 'ap-say', 'aria-live': 'polite' }), order = el('p', { class: 'ap-order' });
@@ -1001,10 +1001,10 @@
     blurb: 'Draw walls and mud, then watch breadth-first search, depth-first search, Dijkstra, A* and greedy best-first search look for the goal. Compare how much each explores and whether its path is the cheapest.',
     mount: mountPathfinding,
     about: `<h2>One loop, five rules for choosing</h2>
-<p>All five algorithms keep a <em>frontier</em>: the cells they have found but not yet explored (purple). Each step takes one cell out of the frontier, explores it (teal), and adds its unexplored neighbours. They differ only in <em>which</em> frontier cell comes out next, that is, in the data structure that holds the frontier.</p>
+<p>All five algorithms keep a <em>frontier</em>: the cells they have found but not yet explored (purple). Each step takes one cell out of the frontier, explores it (teal), and adds its unexplored neighbors. They differ only in <em>which</em> frontier cell comes out next, that is, in the data structure that holds the frontier.</p>
 <ul>
 <li><b>Breadth-first search</b> takes the oldest cell: the frontier is a <em>queue</em>. It explores in rings of equal step count around the start, so the first path it finds to the goal has the fewest possible steps. It ignores mud: fewest steps is not the same as cheapest when steps cost different amounts.</li>
-<li><b>Depth-first search</b> takes the newest cell: the frontier is a <em>stack</em>. It runs down one corridor until it is stuck, then backs up to the last cell with an untried neighbour. It finds a path whenever one exists, but often a long, winding one; it promises nothing about length.</li>
+<li><b>Depth-first search</b> takes the newest cell: the frontier is a <em>stack</em>. It runs down one corridor until it is stuck, then backs up to the last cell with an untried neighbor. It finds a path whenever one exists, but often a long, winding one; it promises nothing about length.</li>
 <li><b>Dijkstra's algorithm</b> takes the cell with the smallest total cost from the start: the frontier is a <em>priority queue</em>. When every step costs zero or more, a cell's cost is final the moment it comes out, so the path it finds is the cheapest. Without mud and diagonals it explores in the same rings as BFS.</li>
 <li><b>A*</b> takes the cell with the smallest <i>g</i> + <i>h</i>, where <i>g</i> is the cost so far and <i>h</i> is an estimate of the cost still to go. Here <i>h</i> is the Manhattan distance (rows apart plus columns apart) or, with diagonal moves, the octile distance (diagonal steps of cost √2, then straight ones). Neither ever overestimates, because every step costs at least 1 and mud only adds; an estimate like that is called <em>admissible</em>, and with it A* still returns a cheapest path. It explores fewer cells than Dijkstra because it leans toward the goal; with <i>h</i> = 0 it <em>is</em> Dijkstra.</li>
 <li><b>Greedy best-first search</b> uses the estimate alone. In open country it heads straight for the goal and explores very little, but a wall in the way can lure it into a pocket, and mud does not slow it down: its path is often not the cheapest.</li>
@@ -1029,9 +1029,9 @@
     about: `<h2>A perfect maze is a tree</h2>
 <p>Think of each cell as a vertex and each opening between two cells as an edge. A <em>perfect</em> maze has exactly one route between any two cells: no loops and no unreachable corners. In graph language that is a <em>spanning tree</em> of the grid, so a perfect maze of <i>n</i> cells always has exactly <i>n</i> − 1 passages. Every generator here makes one, and each tries the same idea differently: open walls without ever closing a loop or leaving a cell out. They leave different textures, which you can see and which the status line measures by counting dead ends.</p>
 <ul>
-<li><b>Recursive backtracker</b> (a randomized depth-first search). Walk to a random unvisited neighbour, carving as you go, and back up along the stack (teal) when stuck. Long winding corridors and relatively few dead ends.</li>
-<li><b>Randomized Prim</b>. Grow the maze from one cell: repeatedly pick a random cell on the frontier (purple) and join it to a neighbour already in the maze. Many short dead ends that radiate from the start. Prim published the minimum spanning tree algorithm in 1957 (Jarník had found it in 1930); giving every wall a random weight turns it into a maze generator.</li>
-<li><b>Randomized Kruskal</b>. Visit the walls in random order and open a wall when the cells on its two sides are not yet connected. Each coloured region is one connected piece; a union-find structure answers "already connected?" almost instantly. Kruskal published it in 1956.</li>
+<li><b>Recursive backtracker</b> (a randomized depth-first search). Walk to a random unvisited neighbor, carving as you go, and back up along the stack (teal) when stuck. Long winding corridors and relatively few dead ends.</li>
+<li><b>Randomized Prim</b>. Grow the maze from one cell: repeatedly pick a random cell on the frontier (purple) and join it to a neighbor already in the maze. Many short dead ends that radiate from the start. Prim published the minimum spanning tree algorithm in 1957 (Jarník had found it in 1930); giving every wall a random weight turns it into a maze generator.</li>
+<li><b>Randomized Kruskal</b>. Visit the walls in random order and open a wall when the cells on its two sides are not yet connected. Each colored region is one connected piece; a union-find structure answers "already connected?" almost instantly. Kruskal published it in 1956.</li>
 <li><b>Wilson's algorithm</b> (1996). From a cell not yet in the maze, take a random walk (purple), erasing every loop the walk makes, until it hits the maze; then carve the walk. Slow to start, quicker as the maze grows. It picks each possible perfect maze with exactly equal probability: a <em>uniform spanning tree</em>.</li>
 <li><b>Aldous-Broder</b>. Wander at random; whenever you step into a cell for the first time, open the wall you came through. Also uniform (found independently by David Aldous and Andrei Broder around 1990), but it can take a very long time to visit the last few cells: use Finish.</li>
 <li><b>Recursive division</b>. Start with no inner walls. Split the room with a wall that has one gap, then divide each half the same way. Long straight walls and a boxy look.</li>
@@ -1069,13 +1069,13 @@
     blurb: 'Run BFS and DFS on a small graph and watch the queue, the stack or the call stack beside it, with a sentence for every step, the visit order on each vertex, and the search tree they leave behind. Dijkstra too.',
     mount: mountGraph,
     about: `<h2>The same loop with a different container</h2>
-<p>Both searches start at one vertex and keep a container of vertices still to deal with. <b>Breadth-first search</b> uses a <em>queue</em>: first in, first out. It labels the start 0, its neighbours 1, their new neighbours 2, and so on, so it visits the graph in layers and each label is the distance from the start (SC 104, lesson 6, proves it). <b>Depth-first search</b> uses a <em>stack</em>: last in, first out. It goes as deep as it can along one path and only backs up when it is stuck.</p>
-<p>Depth-first search is shown two ways. The <b>stack</b> version pushes every unvisited neighbour, so a vertex can be on the stack more than once; a copy popped after the vertex has been visited is thrown away (struck through). The <b>recursive</b> version calls itself for each unvisited neighbour, and the program's own <em>call stack</em> (SC 107, lesson 8) holds the vertices on the current path. Because the stack version pushes neighbours in reverse order, both visit the vertices in the same order and build the same tree.</p>
+<p>Both searches start at one vertex and keep a container of vertices still to deal with. <b>Breadth-first search</b> uses a <em>queue</em>: first in, first out. It labels the start 0, its neighbors 1, their new neighbors 2, and so on, so it visits the graph in layers and each label is the distance from the start (SC 104, lesson 6, proves it). <b>Depth-first search</b> uses a <em>stack</em>: last in, first out. It goes as deep as it can along one path and only backs up when it is stuck.</p>
+<p>Depth-first search is shown two ways. The <b>stack</b> version pushes every unvisited neighbor, so a vertex can be on the stack more than once; a copy popped after the vertex has been visited is thrown away (struck through). The <b>recursive</b> version calls itself for each unvisited neighbor, and the program's own <em>call stack</em> (SC 107, lesson 8) holds the vertices on the current path. Because the stack version pushes neighbors in reverse order, both visit the vertices in the same order and build the same tree.</p>
 <p>Each search leaves a <em>tree</em> behind (the thick edges): every visited vertex except the start remembers the edge it was reached by. The breadth-first tree contains a shortest path from the start to every vertex. The depth-first tree tends to be long and thin.</p>
 <h2>Dijkstra: when edges have weights</h2>
 <p>On the weighted graphs, "shortest" means smallest total weight, and BFS's count of edges is the wrong measure: on the towns graph, BFS reaches E from A in two roads costing 15, while the cheapest route uses four roads and costs 9. <b>Dijkstra's algorithm</b> replaces the queue with a <em>priority queue</em> ordered by the distance found so far. The smallest entry is final when it comes out, as long as no weight is negative; an entry for a vertex that has already come out is out of date and is thrown away. Dashed edges are the best routes found so far, which may still change.</p>
 <h2>Cost and uses</h2>
-<p>With the graph stored as lists of neighbours, BFS and DFS look at each vertex once and each edge twice (once from each end): time proportional to <i>V</i> + <i>E</i>. Dijkstra with a binary heap takes time proportional to (<i>V</i> + <i>E</i>) log <i>V</i>.</p>
+<p>With the graph stored as lists of neighbors, BFS and DFS look at each vertex once and each edge twice (once from each end): time proportional to <i>V</i> + <i>E</i>. Dijkstra with a binary heap takes time proportional to (<i>V</i> + <i>E</i>) log <i>V</i>.</p>
 <ul>
 <li>BFS: fewest hops in a network, degrees of separation in a social network, solving puzzles move by move, and copying garbage collectors (Cheney's algorithm walks live objects breadth-first).</li>
 <li>DFS: finding the connected pieces of a graph, detecting cycles, putting tasks in an order that respects their dependencies (topological sorting), and generating mazes (the recursive backtracker is a randomized DFS).</li>
@@ -1132,7 +1132,7 @@
       const where = `maze ${gen} ${R}x${C} seed ${sd}`;
       const m = newMaze(R, C, !!MAZE_GENS[gen].open); let bad = null;
       for (const ev of MAZE_GENS[gen].run(m, A.rng(sd))) {
-        if (ev.t === 'carve' || ev.t === 'wall') { const d = Math.abs(ev.a - ev.b); if (!(d === C || (d === 1 && ((ev.a / C) | 0) === ((ev.b / C) | 0)))) bad = 'an event joins cells that are not neighbours'; }
+        if (ev.t === 'carve' || ev.t === 'wall') { const d = Math.abs(ev.a - ev.b); if (!(d === C || (d === 1 && ((ev.a / C) | 0) === ((ev.b / C) | 0)))) bad = 'an event joins cells that are not neighbors'; }
       }
       if (bad) { fail(`${where}: ${bad}`); continue; }
       let pass = 0; for (let i = 0; i < m.n; i++) { if (i % C < C - 1 && m.e[i]) pass++; if (i < m.n - C && m.s[i]) pass++; if (i % C === C - 1 && m.e[i]) bad = 'a passage through the east boundary'; if (i >= m.n - C && m.s[i]) bad = 'a passage through the south boundary'; }

@@ -5,7 +5,7 @@
      OUTDIFF.compare(expected, got) → { rows: [{ n, kind: 'same'|'diff'|'missing'|'extra', exp, got, col }], note, firstBad }
        Lines are compared as the grader compares them: trailing spaces and blank lines at the end do not count. col is the index of the first
        character that differs on a 'diff' row, eEnd and gEnd where the differing part ends (what follows is the same on both lines).
-       note is one sentence, or '' when no reason is recognised.
+       note is one sentence, or '' when no reason is recognized.
      OUTDIFF.visible(text) → the text with spaces as · and tabs as → (for showing a line where white space matters) */
 (function (factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();

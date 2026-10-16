@@ -1,5 +1,5 @@
 /* Algorithms in motion: sorting. Two demonstrations, registered with ALGOS (src/algos.js):
-   - 'sorting': one algorithm at a time on up to 1000 values, drawn as bars, rainbow bars, dots or a colour wheel, with live counts
+   - 'sorting': one algorithm at a time on up to 1000 values, drawn as bars, rainbow bars, dots or a color wheel, with live counts
      (comparisons, swaps, writes, array accesses), an optional sound that follows the values, and a green sweep when it is done;
    - 'sort-race': up to four algorithms on copies of the same input, one operation each per tick, to see n² against n log n.
    The sorts themselves are pure generators (no DOM): each takes an array, sorts it in place and yields what it does, as events
@@ -189,7 +189,7 @@
 
   const ALGS = [
     { id: 'bubble', name: 'Bubble sort', gen: bubble, best: 'n', avg: 'n²', worst: 'n²', mem: '1', stable: true,
-      note: 'Compare neighbours and swap them when out of order; each pass carries the largest remaining value to the end. Stops after a pass with no swaps.' },
+      note: 'Compare neighbors and swap them when out of order; each pass carries the largest remaining value to the end. Stops after a pass with no swaps.' },
     { id: 'cocktail', name: 'Cocktail shaker sort', gen: cocktail, best: 'n', avg: 'n²', worst: 'n²', mem: '1', stable: true,
       note: 'Bubble sort in both directions: a pass right carries a large value to the end, a pass left carries a small one to the front.' },
     { id: 'selection', name: 'Selection sort', gen: selection, best: 'n²', avg: 'n²', worst: 'n²', mem: '1', stable: false,
@@ -203,7 +203,7 @@
     { id: 'merge', name: 'Merge sort (top-down)', gen: merge, best: 'n log n', avg: 'n log n', worst: 'n log n', mem: 'n', stable: true,
       note: 'Sort each half, then merge the two sorted halves through a scratch array, taking from the left on ties (lesson 4).' },
     { id: 'quick-lomuto', name: 'Quicksort (Lomuto, last value as pivot)', short: 'Quicksort (Lomuto)', gen: quickLomuto, best: 'n log n', avg: 'n log n', worst: 'n²', mem: 'log n to n (stack)', stable: false,
-      note: 'Partition round the last value as in lesson 4: smaller values to its left, then the pivot drops into its final place; sort each side. Sorted input is its worst case.' },
+      note: 'Partition around the last value as in lesson 4: smaller values to its left, then the pivot drops into its final place; sort each side. Sorted input is its worst case.' },
     { id: 'quick-hoare', name: 'Quicksort (Hoare, middle value as pivot)', short: 'Quicksort (Hoare)', gen: quickHoare, best: 'n log n', avg: 'n log n', worst: 'n²', mem: 'log n to n (stack)', stable: false,
       note: 'Hoare’s own partition: two fingers walk in from both ends and swap each pair that is on the wrong side of the pivot (the middle value). Fewer swaps than Lomuto, and good on sorted input.' },
     { id: 'heap', name: 'Heap sort', gen: heap, best: 'n log n', avg: 'n log n', worst: 'n log n', mem: '1', stable: false,
@@ -234,7 +234,7 @@
     const x = parseInt(m[1], 16); return ((x >> 16) * 0.3 + ((x >> 8) & 255) * 0.59 + (x & 255) * 0.11) < 110;
   }
   const hueCache = { key: '', list: null };
-  function hues(vmax, dark, wheel) {   // the wheel goes all the way round; bars and dots stop at violet, so the ends differ
+  function hues(vmax, dark, wheel) {   // the wheel goes all the way around; bars and dots stop at violet, so the ends differ
     const key = vmax + (dark ? 'd' : 'l') + (wheel ? 'w' : '');
     if (hueCache.key !== key) {
       const span = wheel ? 360 : 285;
@@ -333,7 +333,7 @@
 
   const fmt = (x) => Math.round(x).toLocaleString('en-US');
   const SIZES = [8, 16, 32, 50, 100, 200, 300, 500, 1000];
-  const VIEWS = [['bars', 'Bars'], ['rainbow', 'Rainbow bars'], ['dots', 'Dots'], ['wheel', 'Colour wheel']];
+  const VIEWS = [['bars', 'Bars'], ['rainbow', 'Rainbow bars'], ['dots', 'Dots'], ['wheel', 'Color wheel']];
   function select(el, label, options, value, onchange) {
     const s = el('select', { onchange: () => onchange(s.value) }, options.map(([v, t]) => el('option', { value: String(v) }, t)));
     s.value = String(value);
@@ -344,7 +344,7 @@
     const box = el('div', { class: 'algo-legend' });
     const colourful = view !== 'bars';
     box.append(
-      colourful ? sw2('linear-gradient(90deg,hsl(0,75%,50%),hsl(120,75%,45%),hsl(240,75%,55%))', 'colour = value') : sw2(c.ink3, 'value'),
+      colourful ? sw2('linear-gradient(90deg,hsl(0,75%,50%),hsl(120,75%,45%),hsl(240,75%,55%))', 'color = value') : sw2(c.ink3, 'value'),
       sw2(colourful ? (view === 'wheel' ? c.ink : c.ink) : c.link, 'being compared or read'),
       sw2(view === 'wheel' ? c.paper + ';outline:1px solid ' + c.rule : c.err, 'just moved (swap or write)'),
       sw2(c.quiz, 'pivot'),
@@ -549,7 +549,7 @@
   // ---------- registration
   const costRows = ALGS.map((x) => '<tr><td>' + x.name + '</td><td>' + x.best + '</td><td>' + x.avg + '</td><td>' + x.worst + '</td><td>' + x.mem + '</td><td>' + (x.stable ? 'yes' : 'no') + '</td></tr>').join('');
   const ABOUT_SORTING = `<h2>Reading the picture</h2>
-<p>Each bar (or dot, or slice of the wheel) is one cell of the array; its height, or its colour, is its value. Highlighted cells are the ones the algorithm is looking at right now: dark (blue in the plain bars view) when compared or read, red when a value has just been moved. A triangle marks a quicksort's pivot. The green strip grows under cells the algorithm <em>knows</em> are final: selection sort and heap sort fix one cell per pass, a quicksort pivot is final once its partition is done, but insertion sort and merge sort fix nothing until the very end. In the colour views a sorted array is a smooth rainbow, which makes it easy to see how much order there already is at each moment.</p>
+<p>Each bar (or dot, or slice of the wheel) is one cell of the array; its height, or its color, is its value. Highlighted cells are the ones the algorithm is looking at right now: dark (blue in the plain bars view) when compared or read, red when a value has just been moved. A triangle marks a quicksort's pivot. The green strip grows under cells the algorithm <em>knows</em> are final: selection sort and heap sort fix one cell per pass, a quicksort pivot is final once its partition is done, but insertion sort and merge sort fix nothing until the very end. In the color views a sorted array is a smooth rainbow, which makes it easy to see how much order there already is at each moment.</p>
 <p>The counts: a <b>comparison</b> is one test of two values; a <b>swap</b> exchanges two cells; a <b>write</b> puts one value in one cell (insertion sort's shifts, merge sort's merge, radix sort's dealing). <b>Array accesses</b> counts every read and write of the array itself: a comparison of two cells is two reads, a swap two reads and two writes. Merge sort compares values in its scratch array, so its comparisons cost no reads of the array; copying a run into the scratch array does.</p>
 <h2>The algorithms</h2>
 <div class="algo-sort-wrap"><table class="algo-sort-table"><thead><tr><th scope="col">Algorithm</th><th scope="col">Best</th><th scope="col">Average</th><th scope="col">Worst</th><th scope="col">Extra memory</th><th scope="col">Stable</th></tr></thead><tbody>${costRows}</tbody></table></div>
@@ -563,7 +563,7 @@
 <li><b>The Linux kernel</b> sorts with heap sort: no recursion, no extra memory, and n log n guaranteed.</li>
 <li><b>Insertion sort</b> survives inside nearly all of these, for parts of a few dozen values, where its short inner loop beats everything else. <b>Radix sort</b> is how graphics processors sort millions of keys, and how punched-card sorting machines worked a century ago: one column at a time, last digit first.</li>
 </ul>
-<p>Bubble sort, cocktail shaker sort and comb sort are here so you can recognise them; no library uses them.</p>`;
+<p>Bubble sort, cocktail shaker sort and comb sort are here so you can recognize them; no library uses them.</p>`;
   const ABOUT_RACE = `<h2>How the race works</h2>
 <p>Every lane sorts its own copy of the same input. At each tick every lane that has not finished does one step: one comparison, swap, write or read. So the finishing order is the order of total work, counted the way lesson 1 counts it, with no machine and no clock in the way. (On a real computer the steps do not all cost the same: merge sort's writes go to a second array, quicksort's inner loop is very short. The counts still decide who wins once n is large.)</p>
 <h2>Things to try</h2>
@@ -576,7 +576,7 @@
   const TAUGHT = [{ href: '#/dsa/3', text: 'DSA lesson 3: Sorting, the slow way first' }, { href: '#/dsa/4', text: 'DSA lesson 4: merge sort and quicksort' }];
 
   A.register({ id: 'sorting', title: 'Sorting algorithms', group: 'Sorting',
-    blurb: 'Eleven sorts on up to a thousand values, as bars, dots or a colour wheel, with every comparison and move counted, and sound if you want it.',
+    blurb: 'Eleven sorts on up to a thousand values, as bars, dots or a color wheel, with every comparison and move counted, and sound if you want it.',
     mount: mountSorting, about: ABOUT_SORTING, taught: TAUGHT });
   A.register({ id: 'sort-race', title: 'Sorting race', group: 'Sorting',
     blurb: 'Up to four sorts on the same input, one step each per tick: see n² fall behind n log n, and how the input changes the winner.',

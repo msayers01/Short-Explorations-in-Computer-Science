@@ -186,13 +186,13 @@
 
   // =====================================================================================================================
   // Rolling shapes: a rigid polygon rolls under gravity along a hilly track. The genome is K radii, one per spoke; the shape is
-  // the polygon through the spoke ends. Fitness is how far it gets before it stops, or the time runs out. Units are metres.
+  // the polygon through the spoke ends. Fitness is how far it gets before it stops, or the time runs out. Units are meters.
   // =====================================================================================================================
   const K = 16, R_MIN = 0.15, R_MAX = 0.75, TRACK = 120, G = 9.8, DT = 1 / 120, T_MAX = 30;
-  /** The track: a height every metre, downhill at first, then bumps and climbs that need a shape to keep its speed. */
+  /** The track: a height every meter, downhill at first, then bumps and climbs that need a shape to keep its speed. */
   function makeTrack(seed) {
     const rand = A.rng(seed || 7), hs = [];
-    // on average downhill (a quarter of a metre a metre), so each hilltop is lower than the last and a shape that loses little
+    // on average downhill (a quarter of a meter a meter), so each hilltop is lower than the last and a shape that loses little
     // energy gets over all of them; hills of random size, and bumps that grow along the track, take energy from shapes that bounce
     const amp = [];
     for (let k = 0; k < 20; k++) amp.push(0.8 + 1.6 * rand());
@@ -205,7 +205,7 @@
   }
   const trackY = (hs, x) => { const i = Math.max(0, Math.min(hs.length - 2, Math.floor(x))), f = Math.max(0, Math.min(1, x - i)); return hs[i] + (hs[i + 1] - hs[i]) * f; };
   const trackSlope = (hs, x) => { const i = Math.max(0, Math.min(hs.length - 2, Math.floor(x))); return hs[i + 1] - hs[i]; };
-  /** The rigid body of a genome: vertices about the centre of mass, mass and moment of inertia (uniform density 1). */
+  /** The rigid body of a genome: vertices about the center of mass, mass and moment of inertia (uniform density 1). */
   function shapeBody(genes) {
     const raw = genes.map((r, i) => [r * Math.cos(2 * Math.PI * i / K), r * Math.sin(2 * Math.PI * i / K)]);
     let area = 0, cx = 0, cy = 0, inertia = 0;
@@ -215,7 +215,7 @@
       inertia += cr * (x0 * x0 + x0 * x1 + x1 * x1 + y0 * y0 + y0 * y1 + y1 * y1) / 12;
     }
     cx /= area; cy /= area;
-    inertia -= area * (cx * cx + cy * cy);   // parallel axes: about the centre of mass
+    inertia -= area * (cx * cx + cy * cy);   // parallel axes: about the center of mass
     return { verts: raw.map(([x, y]) => [x - cx, y - cy]), mass: area, inertia };
   }
   function rollerNew(genes, hs) {
@@ -257,7 +257,7 @@
   const randomGenes = (rand) => Array.from({ length: K }, () => R_MIN + (R_MAX - R_MIN) * rand());
   /** The next generation of shapes: the best two survive unchanged, the rest are children of tournament-chosen parents, by
       uniform crossover (each spoke from either parent) and mutation (a spoke moved a little). scored: [{ genes, f, hue? }].
-      Returns [{ genes, hue, elite }]: a child takes the colour of its first parent, a little shifted, so families can be seen. */
+      Returns [{ genes, hue, elite }]: a child takes the color of its first parent, a little shifted, so families can be seen. */
   function shapesBreed(scored, rate, rand) {
     const s = scored.slice().sort((a, b) => b.f - a.f), hueOf = (x) => (x.hue == null ? 360 * rand() : x.hue);
     const out = s.slice(0, Math.min(2, s.length)).map((x) => ({ genes: x.genes.slice(), hue: hueOf(x), elite: true }));
@@ -426,7 +426,7 @@
     const s = el('select', { 'aria-label': label, style: 'max-width: 100%', onchange: () => onchange(s.value) }, options.map(([v, t]) => el('option', { value: v }, t)));
     s.value = value; return s;
   }
-  /** A labelled range slider with its value shown beside it. map turns the slider's 0..100 into the value, show into text. */
+  /** A labeled range slider with its value shown beside it. map turns the slider's 0..100 into the value, show into text. */
   function slider(el, label, value, map, show, onchange) {
     const input = el('input', { type: 'range', min: 0, max: 100, value, class: 'algo-speed', 'aria-label': label });
     const out = el('span', { class: 'pl-val', 'aria-hidden': 'true' });
@@ -462,7 +462,7 @@
     injectCss();
     const el = api.el;
     let b = rvNew(), toMove = 1, human = 1, ai = 2, gen = 0, timer = 0, tree = null, thinking = false, last = -1, flipped = [], placed = -1, focusSq = sqAt('d3'), picked = -1, info = null, note = '', over = false;
-    const firstSel = select(el, 'Your colour', [['b', 'You play Black and move first'], ['w', 'You play White; the computer starts']], 'b', () => newGame());
+    const firstSel = select(el, 'Your color', [['b', 'You play Black and move first'], ['w', 'You play White; the computer starts']], 'b', () => newGame());
     const strength = slider(el, 'Random games a move', 50, strengthOf, (n) => fmt(n));
     const searchBox = el('input', { type: 'checkbox', checked: 'checked', onchange: () => paint() });
     const movesBox = el('input', { type: 'checkbox', checked: 'checked', onchange: () => paint() });
@@ -975,7 +975,7 @@
       const per = bits.length / n, win = per < 5;
       bitsBox = el('div', { class: 'pl-bits', 'aria-label': 'The text in bits' }); outBox = el('div', { class: 'pl-out', 'aria-live': 'off' });
       result.append(el('h3', { class: 'pl-h3' }, 'The codes'), el('div', { style: 'overflow-x: auto' }, tb),
-        el('h3', { class: 'pl-h3' }, 'The text in bits, each letter’s code in its colour'), bitsBox,
+        el('h3', { class: 'pl-h3' }, 'The text in bits, each letter’s code in its color'), bitsBox,
         el('div', { class: 'pl-sizes' },
           box('bits in 8-bit ASCII', fmt(8 * n), '', '(8 a letter)'),
           box('bits with a fixed-length code', fmt(fixed * n), '', '(' + fixed + ' a letter for ' + k + ' different)'),
@@ -1100,7 +1100,7 @@
       for (const s of ['c3', 'd3', 'e3', 'c4', 'e4', 'c5', 'd5', 'e5']) p[sqAt(s)] = 2;
       for (const s of ['b2', 'd2', 'f2', 'b4', 'f4', 'b6', 'd6', 'f6']) p[sqAt(s)] = 1;
       // d4 is empty and surrounded by white, with black one beyond in all eight directions: all eight white discs flip
-      check(names(rvFlips(p, sqAt('d4'), 1)) === 'c3 c4 c5 d3 d5 e3 e4 e5', 'reversi: d4 should flip all eight neighbours, got ' + names(rvFlips(p, sqAt('d4'), 1)));
+      check(names(rvFlips(p, sqAt('d4'), 1)) === 'c3 c4 c5 d3 d5 e3 e4 e5', 'reversi: d4 should flip all eight neighbors, got ' + names(rvFlips(p, sqAt('d4'), 1)));
       p[sqAt('f6')] = 0;   // without the black disc beyond e5, the diagonal no longer flips
       check(names(rvFlips(p, sqAt('d4'), 1)) === 'c3 c4 c5 d3 d5 e3 e4', 'reversi: an open-ended ray flipped');
       // no wrap-around: a row ending at the edge flips nothing
@@ -1175,7 +1175,7 @@
       const circle = shapeBody(new Array(K).fill(0.5)), A16 = K / 2 * 0.25 * Math.sin(2 * Math.PI / K);
       check(Math.abs(circle.mass - A16) < 1e-9, 'shapes: the area of a regular polygon');
       const cx = circle.verts.reduce((s, v) => s + v[0], 0) / K, cy = circle.verts.reduce((s, v) => s + v[1], 0) / K;
-      check(Math.abs(cx) < 1e-9 && Math.abs(cy) < 1e-9 && circle.inertia > 0, 'shapes: the centre of mass of a regular polygon');
+      check(Math.abs(cx) < 1e-9 && Math.abs(cy) < 1e-9 && circle.inertia > 0, 'shapes: the center of mass of a regular polygon');
       const lop = shapeBody(new Array(K).fill(0.2).map((r, i) => (i < 3 ? 0.7 : r)));
       check(lop.inertia > 0 && lop.mass > 0 && lop.verts.length === K, 'shapes: a lopsided body');
       const hs = makeTrack(7), round = rollerRun(new Array(K).fill(0.4), hs), spiky = rollerRun(new Array(K).fill(0).map((_, i) => (i % 2 ? 0.15 : 0.75)), hs);

@@ -435,12 +435,12 @@
     const numFold = (name, f, init) => def(name, (a) => { let r = a.length ? num(a[0], name) : init; for (let i = 1; i < a.length; i++) r = f(r, num(a[i], name)); return r; }, 0);
     numFold('+', add, 0); numFold('*', mul, 1);
     def('-', (a) => { if (a.length === 1) return sub(0, num(a[0], '-')); let r = num(a[0], '-'); for (let i = 1; i < a.length; i++) r = sub(r, num(a[i], '-')); return r; }, 1);
-    const div = (r, d) => { if (d == 0) throw new SchemeError('Division by zero signalled by /.'); return (typeof r === 'bigint' || typeof d === 'bigint') && isInt(r) && isInt(d) && BigInt(r) % BigInt(d) === 0n ? norm(BigInt(r) / BigInt(d)) : Number(r) / Number(d); };
+    const div = (r, d) => { if (d == 0) throw new SchemeError('Division by zero signaled by /.'); return (typeof r === 'bigint' || typeof d === 'bigint') && isInt(r) && isInt(d) && BigInt(r) % BigInt(d) === 0n ? norm(BigInt(r) / BigInt(d)) : Number(r) / Number(d); };
     def('/', (a) => { if (a.length === 1) return div(1, num(a[0], '/')); let r = num(a[0], '/'); for (let i = 1; i < a.length; i++) r = div(r, num(a[i], '/')); return r; }, 1);
     const cmp = (name, f) => def(name, (a) => { for (let i = 0; i + 1 < a.length; i++) if (!f(num(a[i], name), num(a[i + 1], name))) return false; return true; }, 1);
     cmp('=', (a, b) => a == b); cmp('<', (a, b) => a < b); cmp('>', (a, b) => a > b); cmp('<=', (a, b) => a <= b); cmp('>=', (a, b) => a >= b);
     const parseBigRadix = (s, radix) => { const neg = s[0] === '-'; let r = 0n; for (const ch of s.replace(/^[-+]/, '').toLowerCase()) r = r * BigInt(radix) + BigInt(parseInt(ch, radix)); return neg ? -r : r; };
-    const intdiv = (name, a, b) => { num(a, name); num(b, name); if (b == 0) throw new SchemeError('Division by zero signalled by ' + name + '.'); };
+    const intdiv = (name, a, b) => { num(a, name); num(b, name); if (b == 0) throw new SchemeError('Division by zero signaled by ' + name + '.'); };
     const bigOp = (a, b, big, flt) => (isInt(a) && isInt(b) && (typeof a === 'bigint' || typeof b === 'bigint')) ? norm(big(BigInt(a), BigInt(b))) : flt(Number(a), Number(b));
     def('quotient', ([a, b]) => { intdiv('quotient', a, b); return bigOp(a, b, (x, y) => x / y, (x, y) => Math.trunc(x / y)); }, 2, 2);
     def('remainder', ([a, b]) => { intdiv('remainder', a, b); return bigOp(a, b, (x, y) => x % y, (x, y) => x % y); }, 2, 2);

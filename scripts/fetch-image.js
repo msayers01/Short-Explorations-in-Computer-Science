@@ -1,7 +1,7 @@
-// Fetch a picture for a lesson from Wikimedia Commons, check that its licence allows it, and store it in img/ with its credits.
+// Fetch a picture for a lesson from Wikimedia Commons, check that its license allows it, and store it in img/ with its credits.
 //
 //   node scripts/fetch-image.js <id> "File:Name on Commons.jpg" "alt text" ["short title"]
-//   node scripts/fetch-image.js --search "words"      lists Commons files that match, with licence, size and description
+//   node scripts/fetch-image.js --search "words"      lists Commons files that match, with license, size and description
 //   node scripts/fetch-image.js --icon <lang> "File:Logo.svg" "name"   a language's logo, kept as SVG: img/icons/<lang>.svg + .json.
 //      Logos may also be BSD or GPL (the Python logo is GPL, Java's mascot Duke BSD): they are shown only as small marks naming
 //      the language, credited on About, never changed.
@@ -49,7 +49,7 @@ function search(q) {
   if (!pages.length) { console.log('nothing found for ' + q); return; }
   for (const p of pages) {
     const ii = (p.imageinfo || [])[0] || {}, m = ii.extmetadata || {}, lic = strip((m.LicenseShortName || {}).value);
-    console.log((ALLOWED(lic || '-') ? 'OK  ' : 'NO  ') + p.title + '  [' + ii.width + 'x' + ii.height + ', ' + (lic || 'no licence') + ']');
+    console.log((ALLOWED(lic || '-') ? 'OK  ' : 'NO  ') + p.title + '  [' + ii.width + 'x' + ii.height + ', ' + (lic || 'no license') + ']');
     console.log('    ' + strip((m.ImageDescription || {}).value).slice(0, 220) + (m.DateTimeOriginal ? ' {' + strip(m.DateTimeOriginal.value).replace(/date QS:\S+/g, '').slice(0, 40) + '}' : ''));
   }
 }
@@ -75,7 +75,7 @@ function icon(lang, file, name) {
   const page = Object.values(JSON.parse(curl(api)).query.pages)[0];
   if (!page.imageinfo) throw new Error(file + ' is not on Commons');
   const ii = page.imageinfo[0], m = ii.extmetadata || {}, license = strip((m.LicenseShortName || {}).value);
-  if (!ICON_ALLOWED(license)) throw new Error(file + ': licence "' + license + '" is not free');
+  if (!ICON_ALLOWED(license)) throw new Error(file + ': license "' + license + '" is not free');
   const dir = path.join(DIR, 'icons'); fs.mkdirSync(dir, { recursive: true });
   // the SVG itself; when Wikimedia refuses original files to this machine (it answers with an HTML error page), its own 160 px
   // PNG rendering, which it asks clients to use instead
@@ -110,7 +110,7 @@ function main() {
   if (!page.imageinfo) throw new Error(file + ' is not on Commons');
   const ii = page.imageinfo[0], m = ii.extmetadata || {};
   const license = strip((m.LicenseShortName || {}).value), usage = strip((m.UsageTerms || {}).value);
-  if (!license || !ALLOWED(license)) throw new Error(file + ': licence "' + license + '" is not public domain, CC0, CC BY or CC BY-SA; not used');
+  if (!license || !ALLOWED(license)) throw new Error(file + ': license "' + license + '" is not public domain, CC0, CC BY or CC BY-SA; not used');
   if (/fair use|non-free/i.test(usage + ' ' + strip((m.Restrictions || {}).value))) throw new Error(file + ': restricted (' + usage + ')');
   const author = dedupe(strip((m.Artist || {}).value)) || 'Unknown', credit = dedupe(strip((m.Credit || {}).value)), description = strip((m.ImageDescription || {}).value), date = strip((m.DateTimeOriginal || {}).value).replace(/date QS:\S+/g, '').replace(/\s+/g, ' ').trim();
   fs.mkdirSync(DIR, { recursive: true });

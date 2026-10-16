@@ -328,7 +328,7 @@ Random r = new Random();  r.nextInt(6) + 1</code></pre>
       [/integer division by zero/, 'Division by zero. The divisor became 0 here; check the values before dividing.'],
       [/index out of bound/, 'An array index went past the array size. Valid indices are 0 to size - 1.'],
       [/overflow/, 'A number became too large for its type. Use long long, or check the arithmetic.'],
-      [/uninitialized|uninitialised/, 'A variable was read before it was given a value. Initialise it: int total = 0;'],
+      [/uninitialized|uninitialised/, 'A variable was read before it was given a value. Initialize it: int total = 0;'],
       [/Syntax error/, 'C++ could not read the program. Check for a missing semicolon at the end of the previous statement, unmatched braces or parentheses, and a missing #include or using namespace std;'],
       [/undefined|not defined|is not declared/, 'A name was used that was never declared. Declare variables with a type (int x = 0;), and define functions before main, or add an #include.']
     ],
@@ -857,7 +857,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     const saveBtn = el('button', { class: 'btn quiet', title: 'Download this file', onclick: download }, 'Save');
     const tplBtn = el('button', { class: 'btn quiet', onclick: () => togglePanel('tpl') }, 'Templates');
     const refBtn = el('button', { class: 'btn quiet', onclick: () => togglePanel('ref') }, 'Reference');
-    const termBtn = el('button', { class: 'btn quiet', title: 'A command line: practise Unix commands on your own files, and run your programs from it', onclick: () => toggleTerm() }, 'Terminal');
+    const termBtn = el('button', { class: 'btn quiet', title: 'A command line: practice Unix commands on your own files, and run your programs from it', onclick: () => toggleTerm() }, 'Terminal');
     const findBtn = el('button', { class: 'btn quiet', title: 'Find and replace (Ctrl+F / Ctrl+H)', onclick: () => openFind(false) }, 'Find');
     const inputBtn = el('button', { class: 'btn quiet', title: 'A box for the text the program reads (stdin), given all at once', onclick: () => { if (stdinBox.hidden) { showStdin(S.lang); stdinTa.focus(); } else stdinBox.hidden = true; } }, 'Input');
     const argsBtn = el('button', { class: 'btn quiet', title: 'Words to hand the program when it starts, as after its name on a command line: sys.argv in Python, args in main in Java, argv in C', 'aria-expanded': 'false', onclick: () => { argsOpen = !argsOpen; renderArgs(); if (argsOpen) argsInp.focus(); } }, 'Arguments');

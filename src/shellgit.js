@@ -821,7 +821,7 @@
     }
   }
 
-  /* ---------------- git log --graph: git's graph.c, ported (without the colours) ---------------- */
+  /* ---------------- git log --graph: git's graph.c, ported (without the colors) ---------------- */
   // --graph implies --topo-order: as git's sort_in_topological_order in "graph order", a commit comes after all its children, and the
   // tips and the parents that become ready are taken last-in first-out, so a merge's second parent's line is drawn first.
   function topo(R, list) {
@@ -1059,7 +1059,7 @@
         if (o.dry) continue;
         delete R.conflicts[p];
         if (!w) { delete R.index[p]; continue; }
-        for (const k of Object.keys(R.index)) if (k.startsWith(p + '/') || p.startsWith(k + '/')) delete R.index[k];   // a file where a directory was, or the other way round
+        for (const k of Object.keys(R.index)) if (k.startsWith(p + '/') || p.startsWith(k + '/')) delete R.index[k];   // a file where a directory was, or the other way around
         R.index[p] = { mode: modeOf(w.node), id: store(R, { type: 'blob', text: w.node.d }) };
       }
       R.idxDirty = true; flush(R);

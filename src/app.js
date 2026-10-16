@@ -510,7 +510,7 @@
       [/member reference type .* is a pointer|did you mean to use '->'/, 'The variable is a pointer to a struct, so its fields are reached with -> (p->x), not with a dot. The dot is for a struct itself (s.x).'],
       [/member reference base type .* is not a structure|no member named/, 'That struct has no field with this name, or the value is not a struct at all. Check the spelling against the struct definition.'],
       [/array type .* is not assignable/, 'An array cannot be given a new value with =. Copy a string with strcpy(dest, src) from <string.h>, or copy an array element by element in a loop.'],
-      [/incompatible (integer|pointer) to (pointer|integer)|incompatible pointer types/, 'A number is being used where an address (a pointer) is needed, or the other way round. scanf needs the address of a variable (&x), except for a string (char name[20]), which already is one.'],
+      [/incompatible (integer|pointer) to (pointer|integer)|incompatible pointer types/, 'A number is being used where an address (a pointer) is needed, or the other way around. scanf needs the address of a variable (&x), except for a string (char name[20]), which already is one.'],
       [/(too few|too many) arguments to function call/, 'The call passes a different number of arguments from the function\'s definition. Compare the two.'],
       [/conflicting types for|redefinition of/, 'The same name is declared twice in different ways. A prototype must match the function exactly (return type and parameters), and a variable or function may be defined only once.'],
       [/expected ';'|expected '\)'|expected '\}'|expected expression|expected identifier/, 'The compiler could not read the code at that point. Look at the line it points to and at the one before it: a missing semicolon, an unmatched bracket or brace, or a misspelt keyword.'],
@@ -1023,7 +1023,7 @@
     return box;
   }
   // A picture from img/ (build.js puts its credits in BUILD.images): { photo: 'id' | ['id', 'id'], caption }. It loads lazily, shows who
-  // made it and under which licence, and opens larger when tapped. If it cannot load (a copy opened from a file, or offline), a box
+  // made it and under which license, and opens larger when tapped. If it cannot load (a copy opened from a file, or offline), a box
   // with its title and description takes its place.
   const IMAGES = (window.BUILD && window.BUILD.images) || {};
   const photoCredit = (m) => {
@@ -1190,7 +1190,7 @@
   }
   (function initTheme() { try { const t = localStorage.getItem('shortcourses.theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) { } })();
 
-  // The catalogue, in groups, so a reader can find the kind of course they want. A course missing from every group is listed under
+  // The catalog, in groups, so a reader can find the kind of course they want. A course missing from every group is listed under
   // "More courses", so a new course is never hidden.
   const COURSE_GROUPS = [
     { id: 'start', title: 'Start here', blurb: 'No experience needed: what a computer is, the jump from Scratch blocks to typed code, and the command line.', ids: ['computer', 'scratch', 'shell'] },

@@ -24,7 +24,7 @@
     next.shuffle = (xs) => { for (let i = xs.length - 1; i > 0; i--) { const j = Math.floor(next() * (i + 1)); [xs[i], xs[j]] = [xs[j], xs[i]]; } return xs; };
     return next;
   }
-  /** The page's colours, read from the CSS variables, so canvases follow the light and dark themes. */
+  /** The page's colors, read from the CSS variables, so canvases follow the light and dark themes. */
   function colors() {
     const s = getComputedStyle(document.documentElement), v = (n) => s.getPropertyValue(n).trim();
     return { paper: v('--paper'), paper2: v('--paper-2'), ink: v('--ink'), ink2: v('--ink-2'), ink3: v('--ink-3'), rule: v('--rule'), rule2: v('--rule-2'),

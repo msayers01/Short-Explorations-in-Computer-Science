@@ -11,7 +11,7 @@
    too, each with the same three states, worked out from the checks and exercises that carry its tag.
 
    A lesson is "secure" in the skills map when every exercise is done and every quick check has been answered right at least twice more,
-   days apart (box 2 or higher: right at the 1-day and the 3-day review); "practising" when something has been done; "not yet" otherwise.
+   days apart (box 2 or higher: right at the 1-day and the 3-day review); "practicing" when something has been done; "not yet" otherwise.
 
    Storage: shortcourses.review.v1 = { v: 1, items: { id: { box, due, n, miss, last } } }. In the backup file (backup.js uses clean()).
    Exposed as window.REVIEW (browser) and module.exports (node tests: the scheduling and cleaning need no page). */
@@ -96,7 +96,7 @@
   const count = () => Object.keys(load().items).filter(known).length;
   const dueCount = () => Math.min(PER_DAY, dueIds(load(), known, Date.now()).length);
 
-  /** not yet / practising / secure, for one lesson. */
+  /** not yet / practicing / secure, for one lesson. */
   function lessonStatus(course, L) {
     const P = window.__app.internal.Progress;
     const checks = (L.blocks || []).filter((b) => b && b.check).map((b) => load().items[itemId(course.id, b)]);
@@ -105,7 +105,7 @@
     if (exs.every(Boolean) && checks.every((it) => it && it.box >= SECURE_BOX)) return 'secure';
     return 'practising';
   }
-  const STATUS = { none: 'Not started', practising: 'Practising', secure: 'Secure' };
+  const STATUS = { none: 'Not started', practising: 'Practicing', secure: 'Secure' };
   /** A course's named skills (course.skills, LESSON_STANDARD.md §4): what tags each, and where each is first taught. Quick checks and
       exercises name theirs with skill: 'id' or skill: ['id', ...]. */
   const tagsOf = (x) => [].concat(x && x.skill != null ? x.skill : []).map(String);
@@ -118,7 +118,7 @@
     }));
     return [...parts.values()];
   }
-  /** not yet / practising / secure, for one named skill: secure when its exercises are done and every quick check of it the student
+  /** not yet / practicing / secure, for one named skill: secure when its exercises are done and every quick check of it the student
       has met has been answered right at two reviews, days apart (as a lesson; a checkpoint's checks count once they are answered). */
   function skillStatus(course, part) {
     const P = window.__app.internal.Progress;
@@ -130,7 +130,7 @@
 
   // ---------- the page parts ----------
   const el = (...a) => window.__app.internal.el(...a);
-  /** The skills map of one course: one square per lesson, coloured by status, each a link to the lesson. */
+  /** The skills map of one course: one square per lesson, colored by status, each a link to the lesson. */
   function skillsMap(course, opts) {
     opts = opts || {};
     const st = course.lessons.map((L) => lessonStatus(course, L));
@@ -142,13 +142,13 @@
       const ps = skillParts(course).filter((p) => p.lesson >= 0), ss = ps.map((p) => skillStatus(course, p));
       const m = (k) => ss.filter((s) => s === k).length;
       named = el('details', { class: 'sk-named', open: opts.compact ? null : '' },
-        el('summary', {}, 'Skills: ' + m('secure') + ' of ' + ps.length + ' secure' + (m('practising') ? ', ' + m('practising') + ' practising' : '')),
+        el('summary', {}, 'Skills: ' + m('secure') + ' of ' + ps.length + ' secure' + (m('practising') ? ', ' + m('practising') + ' practicing' : '')),
         el('ul', { class: 'sk-chips' }, ps.map((p, i) => el('li', { class: 'sk-chip sk-' + ss[i] },
           el('a', { href: '#/' + course.id + '/' + (p.lesson + 1), title: p.skill.name + ' (lesson ' + (p.lesson + 1) + '): ' + STATUS[ss[i]] }, p.skill.name, el('span', { class: 'sr-only' }, ': ' + STATUS[ss[i]]))))));
     }
     return el('div', { class: 'skills-map' + (opts.compact ? ' compact' : '') },
       opts.title ? el('h3', {}, opts.title) : null,
-      el('p', { class: 'sk-sum small' }, n('secure') + ' secure · ' + n('practising') + ' practising · ' + n('none') + ' not started'), list, named);
+      el('p', { class: 'sk-sum small' }, n('secure') + ' secure · ' + n('practising') + ' practicing · ' + n('none') + ' not started'), list, named);
   }
   /** For the course page: what is due in this course, and the map. Nothing if the student has not started the course. */
   function coursePanel(course) {

@@ -6,7 +6,7 @@
    64-bit long as BigInt, double, char), String, StringBuilder, arrays (any depth), ArrayList, HashMap, HashSet, TreeMap, TreeSet,
    Map.Entry, Scanner on System.in, Random (Java's own generator, so a seeded program prints what real Java prints), Math, Integer,
    Double, Character, Arrays, Collections, System.out.print/println/printf, String.format, exceptions with try/catch/finally and
-   user-defined exception classes, switch (classic and arrow, and switch expressions with yield), enhanced for, labelled break/continue, var.
+   user-defined exception classes, switch (classic and arrow, and switch expressions with yield), enhanced for, labeled break/continue, var.
    Not covered: generics in user classes, lambdas and method references, nested or anonymous classes, enums, interfaces with default
    methods, threads, files, and checked-exception analysis of library calls and of `throw e` (`throw new X` and calls of the program's own
    methods and constructors are checked, as are catches that cannot happen).
@@ -534,7 +534,7 @@
   class JIter { constructor(items, src, desc) { this.items = items; this.i = 0; this.src = src; this.desc = desc; this.last = -1; } }   // list.iterator(): a snapshot, with remove() reaching the source
   class JCmp { constructor(base, rev) { this.base = base; this.rev = rev; } }   // Collections.reverseOrder(), cmp.reversed(): base null is the natural order
   class JEntry { constructor(key, value) { this.key = key; this.value = value; } }
-  class JavaThrow { constructor(obj) { this.obj = obj; } }   // a Java exception travelling through the JavaScript stack
+  class JavaThrow { constructor(obj) { this.obj = obj; } }   // a Java exception traveling through the JavaScript stack
   class Signal { constructor(k, label, v) { this.k = k; this.label = label; this.v = v; } }   // break / continue / return, as statement results
 
   function fmtDouble(x) {
@@ -698,7 +698,7 @@
   }
   const SYSOUT = { ps: 'out' }, SYSERR = { ps: 'err' }, SYSIN = { ins: true };
 
-  // HashMap iterates in the order of its buckets, and a program that prints a map shows that order; so the buckets are modelled
+  // HashMap iterates in the order of its buckets, and a program that prints a map shows that order; so the buckets are modeled
   // (hash spread, table size 16 doubling at 3/4 full), and within a bucket entries keep the order they were added in. TreeMap is sorted.
   class JMap {
     constructor(sorted, cmpFn, linked) { this.sorted = !!sorted; this.linked = !!linked; this.cmpFn = cmpFn || null; this.buckets = new Map(); this.size = 0; this.cap = 16; this.seq = 0; this.id = ++JObj.n; this.cache = null; }
@@ -1427,7 +1427,7 @@
     const has = (a, x) => isAll(a) || a.has(x);
     function definiteAssignment(body) {
       const tracked = new Map();   // slot → name, for locals declared without an initializer
-      const jumps = [];            // open loops / labelled blocks: { label, isLoop, breaks: [sets] }
+      const jumps = [];            // open loops / labeled blocks: { label, isLoop, breaks: [sets] }
       function dae(e, da) {        // expressions, in evaluation order → set after
         if (!e || typeof e !== 'object') return da;
         switch (e.k) {

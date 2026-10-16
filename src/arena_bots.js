@@ -1,6 +1,6 @@
 /* Bot Arena: the starter bot and a finished Flood Fill bot, in each language. Plain text, so the page and test_arena.js use the same files.
    All four share one structure and the same function names (readTurn, isOpen, legalMoves, then main), so a student who switches language
-   recognises it. Each starter reads one turn and prints the first move that does not crash; each solution picks the move whose reachable
+   recognizes it. Each starter reads one turn and prints the first move that does not crash; each solution picks the move whose reachable
    region is biggest. A line that starts with "LOG " is shown in the bot's log tab and ignored by the referee (these runtimes have no separate stderr).
    Exposed as window.TRONBOTS (browser) or module.exports (node). */
 (function (root, factory) {

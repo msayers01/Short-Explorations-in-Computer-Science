@@ -49,7 +49,7 @@ const scripts = [
   'src/scheme.js',
   'src/subst.js',
   'src/site.js',
-  'src/course_computer.js',   // SC 099, first in the catalogue: what a computer is
+  'src/course_computer.js',   // SC 099, first in the catalog: what a computer is
   'src/course_scratch.js',
   'src/course_python.js',
   'src/course_lisp.js',
@@ -102,7 +102,7 @@ const scripts = [
   'src/algo_paths.js',
   'src/algo_games.js',
   'src/algo_puzzles.js',
-  'src/algo_nature.js',   // flocking, ants, sandpiles, slime moulds: simple rules, surprising patterns
+  'src/algo_nature.js',   // flocking, ants, sandpiles, slime molds: simple rules, surprising patterns
   'src/algo_geometry.js', // convex hulls, the Mandelbrot set, L-system plants, Voronoi cells
   'src/algo_logic.js',    // backtracking and greedy choices: Sudoku, the eight queens, minimum spanning trees
   'src/algo_play.js',     // Reversi against Monte Carlo tree search, a genetic algorithm, Huffman coding
@@ -110,13 +110,13 @@ const scripts = [
   'src/standards.js',  // the #/standards page and the standards box under each lesson's summary
   'src/showcase.js'    // the #/showcase page: student projects from showcase/ (scripts/showcase.js reads the folders)
 ];
-// Third-party code bundled into the page, with each licence text read from the installed package, so the credits
-// on #/about always match what is bundled (the MIT licence asks for its notice to accompany every copy).
+// Third-party code bundled into the page, with each license text read from the installed package, so the credits
+// on #/about always match what is bundled (the MIT license asks for its notice to accompany every copy).
 const pkg = (name) => JSON.parse(r('node_modules/' + name + '/package.json'));
 const licenceText = (name, file) => {
   if (file) return r('node_modules/' + name + '/' + file).replace(/\r\n/g, '\n').trim();
   const m = r('node_modules/' + name + '/README.md').match(/\nLicen[cs]e\n-+\n([\s\S]*?)(\n#|\n[A-Z][^\n]*\n-+\n|$)/);
-  if (!m) throw new Error('no licence text found for ' + name);
+  if (!m) throw new Error('no license text found for ' + name);
   return m[1].trim();
 };
 const THIRD_PARTY = [
@@ -132,9 +132,9 @@ const THIRD_PARTY = [
   { name: 'Clang and LLVM, as packaged by clang-wasm', pkg: '@live-codes/clang-wasm', file: 'LICENSE', url: 'https://github.com/live-codes/clang-wasm', role: 'is the real C and C++ compiler (Clang 22 built for WebAssembly), downloaded only when a student chooses Full C++ or runs C',
     extra: 'THIRD-PARTY-NOTICES.md' },
   { name: 'PEG.js', pkg: 'pegjs', file: 'LICENSE', url: 'https://pegjs.org/', role: 'generated the C++ parser inside JSCPP' },
-  // The npm package of Pyodide carries no licence file, so the texts are kept in licenses/ (MPL 2.0 from mozilla.org, CPython's from its v3.14.2 tag).
+  // The npm package of Pyodide carries no license file, so the texts are kept in licenses/ (MPL 2.0 from mozilla.org, CPython's from its v3.14.2 tag).
   { name: 'Pyodide, with CPython', pkg: 'pyodide', textFiles: ['licenses/MPL-2.0.txt', 'licenses/CPython-LICENSE.txt'], url: 'https://pyodide.org/', role: 'is the real Python (CPython built for WebAssembly), downloaded only when a student chooses Full Python',
-    changes: 'Used unchanged. Pyodide is under the Mozilla Public License 2.0 (its source is at https://github.com/pyodide/pyodide); the CPython inside it and its standard library are under the Python Software Foundation License (below), and the libraries built into it (such as zlib, libffi and SQLite) under their own permissive licences, listed by the Pyodide project.' }
+    changes: 'Used unchanged. Pyodide is under the Mozilla Public License 2.0 (its source is at https://github.com/pyodide/pyodide); the CPython inside it and its standard library are under the Python Software Foundation License (below), and the libraries built into it (such as zlib, libffi and SQLite) under their own permissive licenses, listed by the Pyodide project.' }
 ].map(t => { const j = pkg(t.pkg); return { name: t.name, version: j.version, licence: t.textFiles ? j.license + ' (Pyodide); PSF-2.0 (CPython)' : j.license, url: t.url, role: t.role, changes: t.changes || '', text: t.textFiles ? t.textFiles.map((f) => r(f).replace(/\r\n/g, '\n').trim()).join('\n\n') : licenceText(t.pkg, t.file) + (t.extra ? '\n\n' + licenceText(t.pkg, t.extra) : '') }; });
 // Real C++ (Clang compiled to WebAssembly). Its files are not in the page: they are about 29 MB, so build.js copies them next to it, to dist/clang/<version>/,
 // and the page downloads them (once; the browser keeps them) only when a student picks Full C++ or opens the Modern C++ course.
@@ -172,7 +172,7 @@ for (const f of ['MPL-2.0.txt', 'CPython-LICENSE.txt']) fs.copyFileSync('license
 console.log('copied Full Python (Pyodide ' + PY_PKG.version + ', Python ' + PY_LOCK.info.python + ') to dist/' + PY_DIR, (pyBytes / 1024 / 1024).toFixed(1), 'MB');
 // Pictures for the lessons (img/: a JPEG and a JSON of its credits each; scripts/fetch-image.js makes both). They are files next to the
 // page, not data in it, so a lesson's pictures are downloaded only when it is read. The name carries a hash of the content, so a
-// picture can be cached forever; the credits (title, alt text, author, licence, source) go into the page as window.BUILD.images.
+// picture can be cached forever; the credits (title, alt text, author, license, source) go into the page as window.BUILD.images.
 const IMAGES = {};
 fs.rmSync('dist/img', { recursive: true, force: true });
 if (fs.existsSync('img')) {
@@ -203,8 +203,8 @@ const BUILD = { showcase: SHOWCASE.projects, date: new Date().toISOString().slic
   pyodide: { path: PY_DIR, mb: Math.round(pyBytes / 1024 / 1024), version: PY_PKG.version, python: PY_LOCK.info.python, files: pyFiles } };
 // The same notices as a file at the repository root, for copies of the source and of dist/index.html.
 fs.writeFileSync('THIRD-PARTY-NOTICES.md', '# Third-party notices\n\nThe built site (dist/index.html) and vendor/jscpp.min.js include the '
-  + 'following software. Each is used under the licence reproduced here.\n'
-  + THIRD_PARTY.map(t => `\n## ${t.name} ${t.version}\n\n${t.url}. ${t.role[0].toUpperCase() + t.role.slice(1)}. Licence: ${t.licence}.`
+  + 'following software. Each is used under the license reproduced here.\n'
+  + THIRD_PARTY.map(t => `\n## ${t.name} ${t.version}\n\n${t.url}. ${t.role[0].toUpperCase() + t.role.slice(1)}. License: ${t.licence}.`
     + (t.changes ? ' ' + t.changes : '') + '\n\n```\n' + t.text + '\n```\n').join(''));
 // The interpreters are not scripts of this page. Each sits in an inert <script type="text/plain"> block, and src/runner.js builds a
 // Web Worker (or a sandboxed iframe) from its text, so Python, C++ and Java programs run where they can reach nothing of the page.
@@ -222,7 +222,7 @@ const pyfullSrc = r('src/lockdown.js') + '\n;/*@@PYODIDE@@*/\n' + r('src/pyfullw
 const dataBlock = (id, text) => `<script type="text/plain" id="${id}">${clean(text)}</script>\n`;
 const inline = [];   // the exact text of every inline script, for the CSP hashes
 const scriptTag = (text) => { inline.push(text); return `<script>${text}</script>\n`; };
-let body = scriptTag(`/* build info and third-party licences (build.js) */\nwindow.BUILD = ${scriptSafe(JSON.stringify(BUILD))};\n`);
+let body = scriptTag(`/* build info and third-party licenses (build.js) */\nwindow.BUILD = ${scriptSafe(JSON.stringify(BUILD))};\n`);
 // All of the site's own scripts go into ONE inline <script>, so the policy carries one hash for them. (One hash per file put the
 // Content-Security-Policy line of dist/_headers past the 2000 characters Cloudflare allows for a line of that file, and the deploy failed.)
 // The files are joined with a semicolon between them, so a file that ends in `})()` cannot call the next file's opening parenthesis.

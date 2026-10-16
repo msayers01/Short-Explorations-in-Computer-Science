@@ -3,7 +3,7 @@
    that teach it, and an optional note for teachers. Readers: students (grades 8-12) and staff who may never have programmed.
    - GROUPS: the themes the page shows the topics in, in order: [{ id, title, blurb, topics: [topic ids] }]; each topic in exactly one.
    - TOPICS: [{ id, title, idea, uses: [{ f, t }], jobs: [...], learn: ['<courseId>/<lesson>'], teach? }]
-     f is a key of FIELDS; learn entries become links '#/<courseId>/<lesson>' labelled from window.COURSES at page time (a link to a
+     f is a key of FIELDS; learn entries become links '#/<courseId>/<lesson>' labeled from window.COURSES at page time (a link to a
      course or lesson that is not loaded is left out). test: every learn entry must name a real lesson that teaches the idea.
    - ids are also element ids (app.js scrolls to '#/real-world/<id>'), so they must not clash with other ids on the page.
    - every string here is our own constant text and is inserted as text (no html), so a search term can never become markup.
@@ -22,7 +22,7 @@
   const GROUPS = [
     { id: 'basics', title: 'Writing programs', blurb: 'The building blocks every language has, and the habits that make programs work.',
       topics: ['values-and-types', 'conditions-and-logic', 'loops', 'functions', 'lists-and-arrays', 'strings-and-text', 'classes-and-objects', 'errors-and-exceptions', 'testing-and-debugging'] },
-    { id: 'dsa', title: 'Data structures and algorithms', blurb: 'Ways to organise data, and ways to work on it quickly.',
+    { id: 'dsa', title: 'Data structures and algorithms', blurb: 'Ways to organize data, and ways to work on it quickly.',
       topics: ['big-o', 'searching-and-sorting', 'hashing', 'stacks-and-queues', 'linked-structures', 'recursion', 'trees', 'graphs'] },
     { id: 'machine', title: 'Inside the machine', blurb: 'What the computer underneath is really doing, and how you talk to it directly.',
       topics: ['binary-and-bits', 'cpu-and-memory', 'pointers-and-memory-safety', 'command-line'] },
@@ -38,7 +38,7 @@
       idea: 'Every value has a type (a whole number, a decimal, text, true or false) and takes a fixed amount of memory; a variable is a name for a value.',
       uses: [
         { f: 'eng', t: 'In 1996 the first Ariane 5 rocket was destroyed shortly after launch because its guidance software converted a 64-bit floating-point number into a 16-bit whole number that was too small to hold it.' },
-        { f: 'swe', t: 'Many systems store the time as a count of seconds since 1 January 1970. A signed 32-bit counter runs out on 19 January 2038 (the "Year 2038 problem"), so software and devices are moving to 64-bit counters.' },
+        { f: 'swe', t: 'Many systems store the time as a count of seconds since January 1, 1970. A signed 32-bit counter runs out on January 19, 2038 (the "Year 2038 problem"), so software and devices are moving to 64-bit counters.' },
         { f: 'web', t: 'Shops and banks store money as a whole number of cents, or in a special decimal type, because binary floating point cannot hold 0.1 exactly: 0.1 + 0.2 prints 0.30000000000000004 in Python and JavaScript.' },
         { f: 'sec', t: 'Integer overflow is a known cause of security holes: a size calculation wraps around to a small number, the program reserves too little memory, and later writes run past the end of it.' },
         { f: 'data', t: 'Data engineers choose column types on purpose: 32-bit numbers take half the memory of 64-bit ones, which matters when a table has hundreds of millions of rows.' }
@@ -67,7 +67,7 @@
       uses: [
         { f: 'games', t: 'Every video game runs a game loop: read the controls, update the world, draw a frame, many times a second.' },
         { f: 'eng', t: 'The small computers inside thermostats, washing machines and cars run a loop that never ends: read the sensors, decide, set the outputs, repeat.' },
-        { f: 'sec', t: 'Password-guessing attacks are loops over lists of likely passwords. Defences slow each guess down (password hashing such as bcrypt) or limit how many tries are allowed.' },
+        { f: 'sec', t: 'Password-guessing attacks are loops over lists of likely passwords. Defenses slow each guess down (password hashing such as bcrypt) or limit how many tries are allowed.' },
         { f: 'swe', t: 'A server is a loop at heart: wait for a request, answer it, wait for the next one.' },
         { f: 'data', t: 'Totals, averages and counts in a report are the accumulator pattern run over rows of data.' }
       ],
@@ -136,7 +136,7 @@
       idea: 'Describe how the work grows as the input grows: constant, logarithmic, linear, n log n, quadratic, exponential.',
       uses: [
         { f: 'swe', t: 'Code that is fast on 100 test records can be unusable on real data: a quadratic algorithm does 10,000 times more work when its input grows 100 times.' },
-        { f: 'sec', t: 'On 2 July 2019 one regular expression that backtracked badly used up the processors on Cloudflare\'s servers around the world and took many websites offline for about half an hour.' },
+        { f: 'sec', t: 'On July 2, 2019, one regular expression that backtracked badly used up the processors on Cloudflare\'s servers around the world and took many websites offline for about half an hour.' },
         { f: 'sec', t: 'Algorithmic-complexity attacks send input chosen to trigger a program\'s worst case (keys that collide in a hash table, deeply nested data, slow patterns) to knock a server over with little effort.' },
         { f: 'data', t: 'A database index turns a full scan of a table (linear) into a lookup that grows like log n, which is why data engineers add indexes to the columns people search by.' },
         { f: 'eng', t: 'The Fast Fourier Transform (1965) does in about n log n steps what took n² before; it is used in audio, radio, medical imaging and more.' }
@@ -166,7 +166,7 @@
         { f: 'swe', t: 'Every running program has a call stack that remembers which function called which. A "stack overflow" is what happens when it runs out of room, often from recursion that never stops.' },
         { f: 'web', t: 'A browser\'s Back button and an editor\'s Undo are stacks: the last thing you did is the first thing taken back.' },
         { f: 'swe', t: 'Compilers and calculators read expressions such as 3 + 4 * 2 with a stack (Dijkstra\'s shunting-yard algorithm).' },
-        { f: 'sec', t: 'A stack buffer overflow can overwrite the return address saved on the call stack and send the program somewhere the attacker chose. Stack canaries and non-executable stacks are defences against exactly this.' },
+        { f: 'sec', t: 'A stack buffer overflow can overwrite the return address saved on the call stack and send the program somewhere the attacker chose. Stack canaries and non-executable stacks are defenses against exactly this.' },
         { f: 'web', t: 'Queues let busy systems take work in order: print queues, message brokers between services (RabbitMQ, for example), and the buffers inside network routers.' },
         { f: 'games', t: 'Games collect events (key presses, network messages) in a queue and handle them in order each frame.' }
       ],
@@ -207,7 +207,7 @@
       uses: [
         { f: 'web', t: 'Routers inside large networks use link-state routing (OSPF and IS-IS): each router builds a map of the network as a graph and runs Dijkstra\'s shortest-path algorithm on it.' },
         { f: 'swe', t: 'Map apps find routes on a graph of roads, with refinements of Dijkstra\'s algorithm and A* search.' },
-        { f: 'sec', t: 'Attackers and defenders draw an organisation\'s accounts, computers and permissions as a graph and look for paths to an administrator account; the tool BloodHound does this for Microsoft Active Directory.' },
+        { f: 'sec', t: 'Attackers and defenders draw an organization\'s accounts, computers and permissions as a graph and look for paths to an administrator account; the tool BloodHound does this for Microsoft Active Directory.' },
         { f: 'swe', t: 'Package managers and build tools treat dependencies as a graph and install or build each part after the parts it needs (a topological sort).' },
         { f: 'data', t: 'Google\'s original PageRank treated the web as a graph of pages and links, and ranked pages by the links pointing to them.' },
         { f: 'games', t: 'Characters in games find their way around a level with A* search on a grid or a "navigation mesh".' }
@@ -233,9 +233,9 @@
     },
     {
       id: 'binary-and-bits', title: 'Binary, bits and bytes',
-      idea: 'Everything in a computer is stored as patterns of 0s and 1s; eight bits make a byte, and a pattern can mean a number, a letter, a colour or an instruction.',
+      idea: 'Everything in a computer is stored as patterns of 0s and 1s; eight bits make a byte, and a pattern can mean a number, a letter, a color or an instruction.',
       uses: [
-        { f: 'web', t: 'Colours on the web are three bytes written in hexadecimal: #FF8800 means red 255, green 136, blue 0.' },
+        { f: 'web', t: 'Colors on the web are three bytes written in hexadecimal: #FF8800 means red 255, green 136, blue 0.' },
         { f: 'sec', t: 'An IPv4 address is 32 bits, which allows about 4.3 billion addresses. A network mask such as 255.255.255.0 is a bit pattern combined with an address (a bitwise AND) to find which network it is on.' },
         { f: 'sec', t: 'Linux file permissions are bits: chmod 755 lets the owner read, write and run a file, and everyone else only read and run it.' },
         { f: 'eng', t: 'Microcontrollers are programmed by setting single bits in hardware registers, which switch pins on and off.' },
@@ -278,7 +278,7 @@
       id: 'classes-and-objects', title: 'Your own types: structs, classes and objects',
       idea: 'Group related values into one type, and let the type guard its own rules (an invariant) so the rest of the program cannot break them.',
       uses: [
-        { f: 'games', t: 'A game world is made of objects: each player, enemy and bullet has a position, health and behaviour.' },
+        { f: 'games', t: 'A game world is made of objects: each player, enemy and bullet has a position, health and behavior.' },
         { f: 'web', t: 'Android and iOS apps are built from classes supplied by the platform (screens, buttons, lists), and a screen is a tree of objects.' },
         { f: 'sec', t: 'A class that checks every change to its data (a bank account that refuses a negative balance) closes off whole kinds of bug; secure code applies the same idea to permissions and input.' },
         { f: 'swe', t: 'Large programs are divided into types with clear rules, so many people can work on them at once without breaking each other\'s assumptions.' },
@@ -295,7 +295,7 @@
         { f: 'web', t: 'A mobile app must cope with a lost connection or a server that does not answer: show a useful message, keep the user\'s work, and try again later.' },
         { f: 'sec', t: 'Error messages can leak secrets: a full error report shown to a visitor tells an attacker how the system is built. Real sites record the details privately and show the visitor a plain message.' },
         { f: 'eng', t: 'Safety-critical systems are designed to fail safe: when a check fails, the train stops or the machine shuts down rather than carrying on.' },
-        { f: 'swe', t: 'Checking input where it enters a program (is it really a number? is it in range?) is the first defence against bugs and attacks alike.' }
+        { f: 'swe', t: 'Checking input where it enters a program (is it really a number? is it in range?) is the first defense against bugs and attacks alike.' }
       ],
       jobs: ['Backend developer', 'Site reliability engineer', 'Safety engineer'],
       learn: ['python/2', 'python/9', 'java/12', 'lisp/1'],
@@ -429,7 +429,7 @@
       uses: [
         { f: 'sec', t: 'Cryptography rests on problems that are easy one way and believed hard the other, such as multiplying primes and factoring. Factoring is not known to be NP-complete, so proving P ≠ NP would not by itself prove RSA safe.' },
         { f: 'swe', t: 'SAT solvers, programs for the first problem proved NP-complete, handle many large real cases well; they are used to check chip designs and to work out which software packages can be installed together (libsolv, used by Fedora\'s DNF and openSUSE).' },
-        { f: 'eng', t: 'Delivery routes, timetables and chip layouts are NP-hard, so engineers settle for answers that are good rather than provably best (heuristics and approximation).' },
+        { f: 'eng', t: 'Delivery routes, schedules and chip layouts are NP-hard, so engineers settle for answers that are good rather than provably best (heuristics and approximation).' },
         { f: 'data', t: 'Planning and scheduling problems in AI are often NP-hard, which is why they are solved by search with clever pruning.' }
       ],
       jobs: ['Operations-research analyst', 'Logistics software engineer', 'Cryptographer', 'Verification engineer'],
@@ -452,17 +452,17 @@
     },
     {
       id: 'machine-learning', title: 'Learning from examples',
-      idea: 'Instead of writing the rules by hand, a program finds them in examples: the nearest neighbours of a new case, a line that separates two kinds, a tree of questions. It must then be tested on examples it has never seen.',
+      idea: 'Instead of writing the rules by hand, a program finds them in examples: the nearest neighbors of a new case, a line that separates two kinds, a tree of questions. It must then be tested on examples it has never seen.',
       uses: [
         { f: 'data', t: 'Email spam filters learn from mail that people have marked as spam or not. In 2002 Paul Graham\'s essay "A Plan for Spam" described a filter that scores each message by how often its words had appeared in spam and in ordinary mail, and filters built on that idea spread quickly.' },
-        { f: 'web', t: 'Shops and streaming services recommend things by finding customers or items that are close to each other in their data: the nearest-neighbour idea, with distances between people\'s choices instead of between fruit.' },
+        { f: 'web', t: 'Shops and streaming services recommend things by finding customers or items that are close to each other in their data: the nearest-neighbor idea, with distances between people\'s choices instead of between fruit.' },
         { f: 'data', t: 'From 2008 Google Flu Trends estimated flu from what people searched for. In early 2013 it estimated more than twice the doctor visits for flu-like illness that the US Centers for Disease Control and Prevention reported: a model that had fitted its past data too closely.' },
         { f: 'eng', t: 'Banks and doctors often prefer decision trees to other models because a person can read the questions a tree asks and check that they make sense.' },
         { f: 'sec', t: 'Some security tools learn what normal activity on a network or an account looks like, and raise an alarm for anything far from it, such as a login at an unusual hour from an unusual place.' }
       ],
       jobs: ['Machine learning engineer', 'Data scientist', 'Fraud analyst', 'Research scientist'],
       learn: ['ml/1', 'ml/2', 'ml/3', 'ml/5', 'ml/6', 'ml/7'],
-      teach: 'Hook: open SC 109 lesson 2 on the projector and drag the new fruit around the nearest-neighbour figure. Before each move, the class predicts which kind the computer will call it. Then ask: who chose the examples it learned from, and what would it get wrong if they were chosen badly?'
+      teach: 'Hook: open SC 109 lesson 2 on the projector and drag the new fruit around the nearest-neighbor figure. Before each move, the class predicts which kind the computer will call it. Then ask: who chose the examples it learned from, and what would it get wrong if they were chosen badly?'
     }
   ];
 

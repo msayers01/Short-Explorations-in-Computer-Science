@@ -270,6 +270,10 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
 - Skulpt reads `importScripts` while loading, so `lockdown.js` must come after Skulpt in the Python source (and before JSCPP).
 - `test_browser.js` uses `file://` for most checks and a local http server for Full C++. A copy of the site opened from a file cannot use
   Full C++ (by design: it says so).
+- **American English everywhere a user reads** (the owner's rule, October 2026): color, center, behavior, license, labeled, practice (verb),
+  recognize, math, gray, toward, "around" (not "round"), period (not full stop), dates as July 29, 1654. `test_lessons.js` fails on British
+  spellings in course data and `src/site.js`. Code names keep their spelling where renaming would break saved data or links (the `colour`
+  figure, the `practising` status key, route and skill ids such as `slime-mould` and `maths-symbols`). Quotations keep their original spelling.
 - Lesson text style: each lesson opens with a short true story, then rules in `stmt` boxes, runnable examples (`play`), three quick
   checks (`{ check, options, answer, why }`, one after each main idea, never two examples in a row without something between them),
   two graded exercises (`ex`) with hints and tests, then a `recap`. Check facts in the stories; do not invent. The renderer labels every
