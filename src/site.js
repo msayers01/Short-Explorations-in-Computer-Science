@@ -2,6 +2,8 @@
 window.SITE = {
   /* Shown in the top bar, the page title and the home page. */
   name: 'Short Explorations in Computer Science',
+  /* The name in the top bar on a phone, where the whole one does not fit. */
+  shortName: 'Short Explorations',
 
   /* One line under the name on the home page. */
   role: 'Free, self-paced courses from what a computer is and Scratch to Python, Lisp, C++, Java, the command line, data structures, machine learning and the mathematics of computing',
@@ -10,7 +12,10 @@ window.SITE = {
   contact: [
   ],
 
-  /* Introduction to the course catalog on the home page. (html) */
+  /* The sentence under the name at the top of the home page. */
+  lede: 'Free courses in programming and computer science that run entirely in your browser. Nothing to install, no account, and your work stays on your own device.',
+
+  /* Introduction to the course catalog: its first paragraph opens #/courses; the rest folds away under "Which course should I take?". (html) */
   coursesIntro: `<p>Free, self-paced and not for credit. Each course is a handful of lessons with code you run and change on the page, and exercises that check your answer as you go.</p>
 <p><b>Never programmed at all?</b> <b>What Is a Computer?</b> starts before any code, with the machine itself. <b>Coming from Scratch?</b> <b>From Scratch to Python</b> turns the blocks you know into lines of Python, one block at a time. <b>New to programming? Start with Python.</b> Then <b>C++</b> shows what the machine is doing underneath, <b>Lisp</b> looks at programs the way a mathematician does, and <b>Java</b> is the language of AP Computer Science A and of Android. <b>Modern C++</b> continues C++ with a real compiler, and <b>Data Structures and Algorithms</b> is the course every degree puts second. <b>Mathematics of Computing</b> asks what a computer can and cannot do, with Python as its laboratory, and <b>How Machines Learn</b> builds small learning programs in Python once you have reached dictionaries in the Python course. <b>The Command Line</b> needs no experience and goes with any course.</p>
 <p>A programming lesson is one <b>Hour of Code</b>: 45–60 minutes, nothing to install. Mathematics lessons run longer and say so in their list.</p>`,

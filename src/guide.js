@@ -119,7 +119,7 @@ window.GUIDE = (function () {
     <dt>Reveal and Run</dt><dd>When the marker is on a "Predict" box or a "Try it" box, Enter reveals the answer or runs the program.</dd>
     <dt>Spotlight</dt><dd>Dims everything but the current step, so nobody reads ahead to the answer.</dd>
     <dt>Timer and Blank</dt><dd>A thinking timer of 1 to 5 minutes; B blanks the screen when you want everyone looking at you.</dd>
-    <dt>A−, A+</dt><dd>Smaller or larger type for your room.</dd>
+    <dt>Aa</dt><dd>The <em>Aa</em> menu makes the type larger or smaller for your room, wraps long lines, and puts the output beside the editor or under it.</dd>
   </dl>
 </section>
 
@@ -128,7 +128,7 @@ window.GUIDE = (function () {
   <p>The Code Lab (top bar, or the card on the home page) is where students write their own programs in Python, C++, C, Java or Scheme. It has files with names, an editor with completion and search, and tools the lesson boxes do not have.</p>
   <dl class="g-parts">
     <dt>Files</dt><dd>Each language keeps its own files as tabs. <em>+ New</em> makes one; <em>Rename</em> is under the editor. Files are saved on the device automatically.</dd>
-    <dt>Run and Stop</dt><dd><em>Run</em> (or Ctrl+Enter) runs the current file. A program that reads input asks for each line in the output panel as it runs; for Java, C and C++, <em>Input</em> opens a box to give it all the input at once instead. <em>Arguments</em> (Python, Java and C) gives a program words to start with, as on a command line. <em>Stop</em> ends a stuck program; one that runs too long stops itself. In Java, Run compiles all the Java tabs together, so a program can be split into <code>Main.java</code>, <code>Dog.java</code> and so on.</dd>
+    <dt>Run and Stop</dt><dd><em>Run</em> (or Ctrl+Enter) runs the current file. A program that reads input asks for each line in the output panel as it runs; for Java, C and C++, <em>Input</em> opens a box to give it all the input at once instead. <em>Arguments</em> in the <em>Tools</em> menu (Python, Java and C) gives a program words to start with, as on a command line. <em>Stop</em> ends a stuck program; one that runs too long stops itself. In Java, Run compiles all the Java tabs together, so a program can be split into <code>Main.java</code>, <code>Dog.java</code> and so on.</dd>
     <dt>Error markers</dt><dd>An error that names a line has a "go to line" link, and the line gets a red pin in the editor's margin until the file changes or runs again.</dd>
     <dt>Step through (Python)</dt><dd>Runs the program one line at a time, showing every variable. The most useful tool for a student who cannot see why a loop does what it does.</dd>
     <dt>Step through (Java)</dt><dd>Runs the program one statement at a time and shows the call stack (each method call with its variables), the static fields and the objects and arrays they refer to, numbered so students can see when two variables share one object. Students can step backwards too. A program that reads with a <code>Scanner</code> takes its input from the Input box.</dd>
@@ -136,9 +136,9 @@ window.GUIDE = (function () {
     <dt>Turtle (Python), REPL and Substitution (Scheme)</dt><dd>A program that begins with <code>import turtle</code> gets a drawing canvas. For Scheme, the REPL lets students try one expression at a time, and <em>Substitution</em> shows an expression being rewritten step by step.</dd>
     <dt>Full Python</dt><dd>The Code Lab's Python has an <em>Engine</em> button: the teaching Python (built in, works offline, draws with turtle, can step through a program) or <em>Full Python</em>, the real Python 3.14 with all of its standard library (<code>match</code>, dataclasses, <code>statistics</code>, <code>csv</code>…), downloaded once (about 6 MB) after the student agrees. Errors are Python's own tracebacks. The Terminal's <code>python</code> follows the same choice, and an assignment can ask for Full Python. Turtle drawings always use the teaching Python.</dd>
     <dt>C</dt><dd>C runs on the real compiler that Full C++ uses (Clang), so it needs the same one-time download and the student's agreement; a picker chooses C99, C11, C17 or C23. <code>scanf</code> asks for each line as the program reads it, compiler errors mark their line, and <em>Arguments</em> fills <code>argv</code>. There is no step-through for C, and C itself does not check array indexes: a program that writes past the end of an array may go on with wrong values instead of stopping.</dd>
-    <dt>Templates and Reference</dt><dd>Small starting programs, and a one-page cheat sheet for the current language.</dd>
+    <dt>Templates and Reference</dt><dd>In the <em>Tools</em> menu, with find and replace: small starting programs, and a one-page cheat sheet for the current language.</dd>
     <dt>Terminal</dt><dd>A practice command line under the output: a Unix-style shell with its own files, saved on the device. Students can make folders, move files, use pipes and wildcards, write a shell script, and run their programs the way a developer does (<code>python hello.py</code>, <code>javac Main.java &amp;&amp; java Main</code>, <code>g++ main.cpp -o main &amp;&amp; ./main</code>, <code>gcc hello.c -o hello &amp;&amp; ./hello</code>). Their Code Lab files appear in its <code>lab</code> folder. Scripts can use functions, <code>case</code>, arrays and aliases, and tools such as <code>awk</code>; a practice <code>git</code> keeps versions of the files. <code>python</code>, <code>scheme</code> or <code>jshell</code> typed alone starts an interactive shell where each line runs at once. Nothing leaves the browser: there is no network and no real computer behind it. <code>help</code> lists the commands.</dd>
-    <dt>Share, Open, Save</dt><dd><em>Share link</em> copies a link that carries the program. <em>Save</em> downloads the file; <em>Open</em> loads one.</dd>
+    <dt>The File menu</dt><dd><em>Share as a link</em> copies a link that carries the program. <em>Save a copy</em> downloads the file; <em>Open from this device</em> loads one.</dd>
     <dt>From a lesson</dt><dd>Every exercise has <em>Open in Code Lab</em>. A file opened that way keeps a <em>Check against the exercise</em> button, and passing there counts in the course.</dd>
   </dl>
   <aside class="g-callout"><b>Phones and tablets.</b> Everything works on a touch screen. <em>Indent</em> and <em>Outdent</em> buttons stand in for the Tab key, and <em>Wrap</em> keeps long lines on screen.</aside>
@@ -181,7 +181,7 @@ window.GUIDE = (function () {
   <ul class="g-list">
     <li><b>Save my work to a file</b> (home page, under "Your work") saves everything on the device to one file; <b>Restore from a file</b> loads it on another computer. Teachers can tick the box that adds assignments and the grade book. The file holds code and names, so keep it private.</li>
     <li><b>A portfolio</b> (section 8) keeps a record of completed work.</li>
-    <li><b>Share link</b> in the Code Lab carries one program.</li>
+    <li><b>Share as a link</b> (the Code Lab's File menu) carries one program.</li>
   </ul>
   <p><b>Reset my progress</b>, at the bottom of the home page, clears everything on that device. Save to a file first.</p>
 </section>
@@ -193,7 +193,7 @@ window.GUIDE = (function () {
     <dt>"It stops with a red message."</dt><dd>That is an error message, and it usually names the line. In the Code Lab common messages have a plain explanation under them, and a message that names a line has a "go to line" link. Python lesson 2 and Java lesson 1 teach how to read them.</dd>
     <dt>"Time limit exceeded."</dt><dd>The program ran too long, almost always a loop that never ends. Look at the loop's condition.</dd>
     <dt>"The answer is right but the checker says no."</dt><dd>The output differs in a small way: a missing space, a period, a capital, or <code>5</code> where <code>5.0</code> was expected. Compare expected and actual character by character.</dd>
-    <dt>"Save does nothing."</dt><dd>Some managed browsers block downloads. Use Share link instead.</dd>
+    <dt>"Save does nothing."</dt><dd>Some managed browsers block downloads. Use Share as a link (in the File menu) instead.</dd>
     <dt>"The link is too long for a QR code."</dt><dd>QR codes hold about 3,000 characters. Shorten the instructions or starter code, or share the link itself.</dd>
     <dt>"A link won't open."</dt><dd>Very old browsers (Safari before 2023) cannot read the compressed links. Use a current browser.</dd>
     <dt>"C++ or Java says something is not supported."</dt><dd>The interpreters inside the browser cover what the courses teach: C++ without <code>std::string</code>, <code>vector</code> or classes (Full C++ has them), Java without lambdas or your own generic classes. Students who read ahead sometimes wander out of the subset; the Reference panel in the Code Lab lists what works.</dd>
