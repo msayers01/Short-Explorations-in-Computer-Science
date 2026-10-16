@@ -1,4 +1,6 @@
-# Short Explorations in Computer Science
+# Iterative Lab
+
+*Formerly Short Explorations in Computer Science.*
 
 Eight free, self-paced courses (From Scratch to Python, Introduction to Python, Introduction to Lisp, Introduction to C++,
 Introduction to the Mathematics of Computing, Modern C++, Introduction to Java, and Data Structures and Algorithms) with runnable examples and autograded exercises, a Code Lab

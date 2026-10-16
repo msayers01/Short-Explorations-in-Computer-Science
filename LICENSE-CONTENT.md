@@ -13,7 +13,7 @@ This repository contains program code and teaching material, under different lic
 
 Copyright (c) 2026 Michael Sayers. The lessons, examples, exercises and the guide for teachers are licensed under the
 Creative Commons Attribution-ShareAlike 4.0 International license. You may copy, adapt and share them, for any purpose,
-if you credit the author ("Short Explorations in Computer Science, by Michael Sayers", with a link to the source), say
+if you credit the author ("Iterative Lab, by Michael Sayers", with a link to the source), say
 what you changed, and share your adaptation under the same license.
 
 The Lisp course adapts examples, exercises and its final project from *Structure and Interpretation of Computer

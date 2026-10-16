@@ -1,4 +1,4 @@
-# Architecture — Short Explorations in Computer Science
+# Architecture — Iterative Lab
 
 Keep this file current: when a feature changes a module's interface, a storage key,
 a route, or a block format, update the matching section here in the same change.

@@ -1,9 +1,9 @@
 /* Site-wide settings and text. Fields marked (html) may contain HTML. */
 window.SITE = {
   /* Shown in the top bar, the page title and the home page. */
-  name: 'Short Explorations in Computer Science',
-  /* The name in the top bar on a phone, where the whole one does not fit. */
-  shortName: 'Short Explorations',
+  name: 'Iterative Lab',
+  /* The name in the top bar on a phone, if the whole one ever stops fitting there (it falls back to name). */
+  shortName: 'Iterative Lab',
 
   /* One line under the name on the home page. */
   role: 'Free, self-paced courses from what a computer is and Scratch to Python, Lisp, C++, Java, the command line, data structures, machine learning and the mathematics of computing',

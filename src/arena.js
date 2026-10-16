@@ -515,7 +515,7 @@
   }
 
   A.page = function (sub, query) {
-    document.title = (sub === 'tournament' ? 'Tournament — Bot Arena' : 'Bot Arena') + ' — ' + ((window.SITE && window.SITE.name) || 'Short Explorations in Computer Science');
+    document.title = (sub === 'tournament' ? 'Tournament — Bot Arena' : 'Bot Arena') + ' — ' + ((window.SITE && window.SITE.name) || 'Iterative Lab');
     return sub === 'tournament' ? tournamentPage() : playPage(query);
   };
 })();

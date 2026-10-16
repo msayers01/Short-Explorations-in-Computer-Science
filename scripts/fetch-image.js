@@ -12,7 +12,7 @@
 // Requests go through curl (it uses the environment's proxy), one at a time, with a User-Agent and the waits Wikimedia asks for.
 'use strict';
 const fs = require('fs'), path = require('path'), cp = require('child_process');
-const UA = 'ShortExplorationsCS/1.0 (free CS lessons for schools; https://github.com/msayers01/Short-Explorations-in-Computer-Science)';
+const UA = 'IterativeLab/1.0 (free CS lessons for schools; https://github.com/msayers01/Short-Explorations-in-Computer-Science)';
 const DIR = path.join(__dirname, '..', 'img');
 const ALLOWED = (lic) => /^(public domain|pd\b|pd-|cc0|cc[ -]by(-sa)?[ -]\d(\.\d)?|cc[ -]by(-sa)?$)/i.test(lic.trim()) && !/\b(nc|nd)\b/i.test(lic);
 const dedupe = (t) => { const h = t.length / 2; return t.length % 2 === 0 && t.slice(0, h) === t.slice(h) ? t.slice(0, h) : t; };   // Commons HTML can repeat a name in a hidden span
