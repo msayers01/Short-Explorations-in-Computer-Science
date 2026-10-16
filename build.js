@@ -32,7 +32,7 @@ const headFor = (hashes) => `<!DOCTYPE html>
 <meta name="color-scheme" content="light dark">
 <meta http-equiv="Content-Security-Policy" content="${csp(hashes)}">
 <meta name="referrer" content="no-referrer">
-<title>Short Explorations in Computer Science</title>
+<title>Iterative Lab</title>
 <style>
 ${fontFaces}
 ${r('src/style.css')}
@@ -238,7 +238,7 @@ const guideSrc = r('src/guide.js'); const gm = guideSrc.match(/const html = `([\
 const guideScript = "document.getElementById('g-print').addEventListener('click', function () { window.print(); });";
 const guideHashes = [sha(guideScript)];
 if (gm) {
-  const guide = headFor(guideHashes).replace('<title>Short Explorations in Computer Science</title>', '<title>A guide for teachers — Short Explorations in Computer Science</title>')
+  const guide = headFor(guideHashes).replace('<title>Iterative Lab</title>', '<title>A guide for teachers — Iterative Lab</title>')
     .replace('<div id="app"><noscript>These pages need JavaScript to run the code examples.</noscript></div>', '<main class="guide"><div class="g-tools"><button class="btn quiet tiny" id="g-print">Print or save as PDF</button></div>' + gm[1].replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16))).replace(/href="#\/([a-z]+)"/g, 'href="index.html#/$1"') + '</main>')
     + '<script>' + guideScript + '</script>\n</body>\n</html>\n';
   fs.writeFileSync('dist/teacher-guide.html', guide);

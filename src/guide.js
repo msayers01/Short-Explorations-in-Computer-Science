@@ -4,7 +4,7 @@
 window.GUIDE = (function () {
   const html = `
 <header class="g-hero">
-  <p class="g-kicker">Short Explorations in Computer Science</p>
+  <p class="g-kicker">Iterative Lab</p>
   <h1>A guide for teachers</h1>
   <p class="g-lede">How to run a class with this site. You do not need to know how to program: every lesson explains itself, checks answers itself, and gives hints. Your job is the one you already do.</p>
   <nav class="g-toc" aria-label="Contents">

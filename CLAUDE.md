@@ -1,6 +1,6 @@
 # Context for working on this repository
 
-Short Explorations in Computer Science: free, self-paced courses (Python, Lisp, C++, the mathematics of computing, Modern C++, Java), a Code Lab,
+Iterative Lab (named Short Explorations in Computer Science until October 2026; the repository keeps the old name): free, self-paced courses (Python, Lisp, C++, the mathematics of computing, Modern C++, Java), a Code Lab,
 and tools for teachers. **No backend, no accounts**: the built site is one `dist/index.html` (plus `dist/clang/<version>/`, see below).
 Everything a user makes lives in `localStorage`; anything that moves between people travels inside a URL. Hosted on Cloudflare Workers static
 assets. The owner is Michael Sayers; this repository is, in practice, used by the owner and Claude only.
