@@ -369,7 +369,17 @@ button and every Scheme playground not marked `expectError` a "Show the substitu
   1000 matches); a result opens its tab (switching language if needed) with the match selected, or at its line if the text has changed
   since. Replace all is armed (`armConfirm`, with the count), keeps each changed file's text in its history first, and goes through the
   editor for the current file (undoable) and straight into the others.
-- **Side by side** (`S.split`, a display choice of this device: `backup.js: cleanLab` leaves it out): `.lab-work` holds the editor area and
+- **The toolbar** (October 2026) is one row: Run/Stop, the language's stepper, the engine (a pill: Teaching / Full), the standard picker,
+  the teacher button, Input, then three menus built by `labMenu(label, title, items)` (`File`: new, open, save a copy, share as a link,
+  rename, history; `Tools`: find and replace, search all files, go to line, Arguments where the language has them, templates, reference,
+  keyboard shortcuts; `Aa`: larger/smaller text, which keep the menu open, and the wrap and side-by-side switches as `menuitemcheckbox`), and
+  Terminal at the right. Items are rebuilt each time a menu opens; arrows, Home/End, Escape (focus back on the button), Tab and a click
+  outside work as in a menu. The status bar under the editor keeps its own Rename, Wrap, History, Search files, Side by side and Shortcuts.
+  The long "Tips" list is under the Lab now. **The side column** (`.lab-side`: templates, reference, shortcuts, history, search) is
+  `hidden` while all of its panels are (a `MutationObserver` on their `hidden` attributes; it used to rely on `:empty`, which never matched,
+  so 22rem of the page stayed blank and Side by side could not turn on at a laptop's width).
+- **Side by side** (`S.split`, on unless turned off since October 2026; a display choice of this device: `backup.js: cleanLab` leaves it
+  out): `.lab-work` holds the editor area and
   `.lab-outcol` (verdict, arguments, input, output, terminal, step-throughs, turtle, REPL); `.split` makes them two grid columns. `applySplit`
   (a `ResizeObserver` on the main column) adds it only while that column is at least 860 px wide, so a narrow window or an open side panel
   puts the panels back under the editor without changing the setting.
@@ -963,8 +973,17 @@ A command line for learning the Unix shell, in the Code Lab (the **Terminal** bu
 
 ## 9g. Algorithms in motion and Where it is used (`algos.js`, `algo_*.js`, `applied.js`)
 
-- **The top bar** has four links: Courses (`#/courses`, marked on every course page too), Algorithms, Real world, Code Lab. A link per course
-  crowded it once there were ten courses; the courses page groups them instead (start here; programming languages; computer science).
+- **The top bar** has Courses (`#/courses`, marked on every course page too), Algorithms, Real world, Arena, Showcase, Code Lab and, once
+  there is something to review, Review. A link per course crowded it once there were ten courses; the courses page groups them instead (start
+  here; programming languages; computer science). Below 640 px the links fold behind a **Menu** button (`.nav-toggle`, which carries the
+  review count); every page draws the bar again, so the menu closes on navigation.
+- **The home page** (October 2026): the hero (greeting, name, `SITE.lede`, three ways in: Find a course, Open the Code Lab, For teachers;
+  the Ojibwe clock beside it), **Continue where you left off** (`Recent`, key `shortcourses.recent.v1`: the last lesson page opened, `{c, i}`,
+  used only if it names a lesson that exists; with the course's progress bar and the review count; not in backups, cleared by Reset my
+  progress), four doors (Code Lab, Algorithms, Arena, Real world), the courses as cards in their groups (`courseCard`: code, title, icons,
+  tagline clamped to two lines, grades, lessons, a bar once an exercise is done; colors from `--cc` on `[data-course]`), the advice on where to
+  start folded under "Which course should I take?" (the paragraphs of `SITE.coursesIntro` after the first), then Why this exists, Your work
+  and For teachers. The full list with search stays on `#/courses`.
 - **Algorithms in motion.** `algos.js` is the frame: `ALGOS.register({ id, title, group, blurb, mount(host, api) → cleanup, about, taught })`,
   the index (demos by `ALGOS.GROUPS`, in registration order) and one page per demo (crumbs, the demo, its `about`, "Taught in" links, previous
   and next). `api.player` gives every demo the same Play / Pause / Step / Reset and a log-scale speed slider over a generator of steps (many

@@ -410,7 +410,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
     if (!C_STANDARDS.some(s => s[0] === S.cStd)) S.cStd = C_STANDARDS[2][0];
     S.args = window.LABUTIL ? window.LABUTIL.cleanArgs(S.args) : {};   // the Arguments box of each language: strings only (labutil.js)
     S.outWrap = S.outWrap !== false;
-    S.split = S.split === true;   // side by side (a display choice of this device: backup.js leaves it out)
+    S.split = S.split !== false;   // side by side, on unless turned off (a display choice of this device: backup.js leaves it out); it needs a wide window
     return S;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
@@ -895,7 +895,71 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       endMem(); renderToolbar();
     }
     const fileInput = el('input', { type: 'file', accept: '.py,.cpp,.cc,.cxx,.h,.c,.java,.scm,.ss,.rkt,.txt', hidden: '', onchange: openFiles });
-    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'cpp' ? engineBtn : null, S.lang === 'python' ? pyEngineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'c' ? cStdSel : null, S.lang === 'python' ? stepBtn : null, S.lang === 'java' && window.JAVASTEP ? jstepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, teach ? teach.toolbarButton() : null, S.lang === 'cpp' || S.lang === 'c' || S.lang === 'java' ? inputBtn : null, hasArgs() ? argsBtn : null, findBtn, tplBtn, refBtn, window.TERMINAL ? termBtn : null, el('span', { class: 'spacer' }), openBtn, saveBtn, shareBtn, fontDown, fontUp, fileInput, status].filter(Boolean)); }
+    engineBtn.classList.add('engine-btn'); pyEngineBtn.classList.add('engine-btn');
+    // The less used commands live in three menus (File, Tools, Aa), so the toolbar is one row: Run, the stepper, the engine, Input, Terminal.
+    // The menus are built each time they open, so they always offer what fits the language (Arguments only where a program can read them).
+    const fileMenu = labMenu('File', 'Files: new, open, save, share, rename, history', () => [
+      { label: 'New file', act: newFile },
+      { label: 'Open from this device…', act: () => fileInput.click() },
+      { label: 'Save a copy', hint: 'Ctrl+S', title: 'Download this file', act: download },
+      { label: 'Share as a link', title: 'A link that carries this program inside it', act: share },
+      '-',
+      { label: 'Rename', act: () => rename(S.active[S.lang]) },
+      { label: 'History', title: 'Earlier versions of this file: what changed, and Restore', act: () => togglePanel('hist') }
+    ]);
+    const toolsMenu = labMenu('Tools', 'Find, arguments, templates, reference, shortcuts', () => [
+      { label: 'Find and replace', hint: 'Ctrl+F', act: () => openFind(false) },
+      { label: 'Search all files', hint: 'Ctrl+Shift+F', act: () => openSearch() },
+      { label: 'Go to line', hint: 'Ctrl+G', act: openGoto },
+      '-',
+      hasArgs() ? { label: 'Arguments', title: argsBtn.title, act: () => argsBtn.click() } : null,
+      { label: 'Templates', title: 'Starter programs', act: () => togglePanel('tpl') },
+      { label: 'Reference', title: 'A quick reference for this language', act: () => togglePanel('ref') },
+      { label: 'Keyboard shortcuts', act: () => togglePanel('keys') }
+    ]);
+    const viewMenu = labMenu('Aa', 'Text size, wrapping and layout', () => [
+      { label: 'Larger text', keep: true, act: () => setFont(1) },
+      { label: 'Smaller text', keep: true, act: () => setFont(-1) },
+      '-',
+      { label: 'Wrap long lines', checked: !!S.wrap, act: () => wrapBtn.click() },
+      { label: 'Output beside the editor', checked: !!S.split, title: splitBtn.title, act: () => splitBtn.click() }
+    ]);
+    function renderToolbar() { toolbar.innerHTML = ''; toolbar.append(...[runBtn, stopBtn, S.lang === 'python' ? stepBtn : null, S.lang === 'java' && window.JAVASTEP ? jstepBtn : null, S.lang === 'cpp' && window.CPPSTEP && !isFull() ? memBtn : null, S.lang === 'scheme' ? substBtn : null, S.lang === 'cpp' ? engineBtn : null, S.lang === 'python' ? pyEngineBtn : null, S.lang === 'cpp' && isFull() ? stdSel : null, S.lang === 'c' ? cStdSel : null, teach ? teach.toolbarButton() : null, S.lang === 'cpp' || S.lang === 'c' || S.lang === 'java' ? inputBtn : null, el('span', { class: 'tb-sep', 'aria-hidden': 'true' }), fileMenu, toolsMenu, viewMenu, el('span', { class: 'spacer' }), status, window.TERMINAL ? termBtn : null, fileInput].filter(Boolean)); }
+    /** A menu button: label, a title, and a function giving the items ({label, hint?, title?, act, keep?, checked?} or '-' for a line).
+        Arrow keys move through the items, Escape closes it and gives the focus back to the button, a click outside closes it. */
+    function labMenu(label, title, items) {
+      const btn = el('button', { class: 'btn quiet menu-btn', title, 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, label);
+      const pop = el('div', { class: 'menu-pop', role: 'menu', 'aria-label': label, hidden: '' });
+      const wrap = el('div', { class: 'menu' }, btn, pop);
+      const outside = (e) => { if (!wrap.contains(e.target)) close(false); };
+      function close(refocus) { if (pop.hidden) return; pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); document.removeEventListener('pointerdown', outside, true); if (refocus) btn.focus(); }
+      function open(focusFirst, focusIdx) {
+        pop.innerHTML = '';
+        for (const it of items()) {
+          if (!it) continue;
+          if (it === '-') { if (pop.lastChild && !pop.lastChild.classList.contains('menu-sep')) pop.append(el('div', { class: 'menu-sep', role: 'separator' })); continue; }
+          const b = el('button', { class: 'menu-item', role: it.checked == null ? 'menuitem' : 'menuitemcheckbox', 'aria-checked': it.checked == null ? null : String(it.checked), title: it.title || null, tabindex: '-1' },
+            el('span', { class: 'menu-label' }, it.label), it.hint ? el('span', { class: 'menu-hint' }, it.hint) : null);
+          b.addEventListener('click', () => { if (it.keep) { const i = [...pop.querySelectorAll('.menu-item')].indexOf(b); it.act(); open(false, i); } else { close(true); it.act(); } });
+          pop.append(b);
+        }
+        pop.classList.toggle('has-check', !!pop.querySelector('[role="menuitemcheckbox"]'));
+        pop.hidden = false; btn.setAttribute('aria-expanded', 'true'); document.addEventListener('pointerdown', outside, true);
+        pop.style.left = ''; pop.style.right = ''; if (pop.getBoundingClientRect().right > document.documentElement.clientWidth - 4) { pop.style.left = 'auto'; pop.style.right = '0'; }
+        const all = pop.querySelectorAll('.menu-item');
+        if (focusIdx != null && all[focusIdx]) all[focusIdx].focus(); else if (focusFirst && all[0]) all[0].focus();
+      }
+      btn.addEventListener('click', () => { if (pop.hidden) open(btn.matches(':focus-visible')); else close(false); });
+      btn.addEventListener('keydown', (e) => { if (e.key === 'ArrowDown' && pop.hidden) { e.preventDefault(); open(true); } });
+      pop.addEventListener('keydown', (e) => {
+        const all = [...pop.querySelectorAll('.menu-item')], i = all.indexOf(document.activeElement);
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); const n = all.length; if (n) all[((i < 0 ? (e.key === 'ArrowDown' ? -1 : 0) : i) + (e.key === 'ArrowDown' ? 1 : -1) + n) % n].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); if (all.length) all[e.key === 'Home' ? 0 : all.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(true); }
+        else if (e.key === 'Tab') close(false);
+      });
+      return wrap;
+    }
     function setFont(d) { S.fontSize = Math.min(24, Math.max(11, S.fontSize + d)); save(); editor.el.style.setProperty('--lab-font', S.fontSize + 'px'); editor.render(); }
 
     // ----- find / replace bar
@@ -1522,9 +1586,9 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
 
     // ----- assemble
     const head = el('header', { class: 'lab-head' },
-      el('div', {}, el('h1', {}, 'Code Lab'), el('p', { class: 'lab-sub' }, 'A place to write and run your own programs. Everything runs in your browser; files are saved on this device.')),
-      el('div', { class: 'lab-head-right' }, el('a', { class: 'lab-guide-link', href: '#/guide' }, 'Guide for teachers'), teach ? teach.teacherSwitch : null, langBar));
-    const help = el('details', { class: 'lab-help' }, el('summary', {}, 'Keyboard shortcuts and tips'),
+      el('div', { class: 'lab-title' }, el('h1', {}, 'Code Lab'), el('p', { class: 'lab-sub' }, 'Write and run programs in your browser. Files are saved on this device.')),
+      el('div', { class: 'lab-head-row' }, langBar, el('div', { class: 'lab-head-right' }, el('a', { class: 'lab-guide-link', href: '#/guide' }, 'Guide for teachers'), teach ? teach.teacherSwitch : null)));
+    const help = el('details', { class: 'lab-help' }, el('summary', {}, 'Tips: everything the Code Lab can do'),
       el('div', { class: 'prose', html: `<ul>
 <li><b>Shortcuts</b> under the editor lists every key. <b>Ctrl/Cmd + Enter</b> runs the program, <b>Ctrl/Cmd + G</b> goes to a line. <b>Ctrl/Cmd + Z</b> and <b>Ctrl/Cmd + Y</b> undo and redo. <b>Ctrl/Cmd + F</b> finds, <b>Ctrl/Cmd + H</b> finds and replaces, <b>Ctrl/Cmd + /</b> comments or uncomments the selected lines.</li>
 <li><b>Tab</b> indents (four spaces; two in Scheme) and <b>Shift + Tab</b> outdents; with several lines selected it indents them all. Enter after a colon or brace indents the next line for you. <b>Alt + ↑/↓</b> moves the current line, <b>Ctrl/Cmd + D</b> duplicates it, <b>Ctrl/Cmd + S</b> downloads the file.</li>
@@ -1532,7 +1596,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
 <li><b>Search files</b> (or <b>Ctrl/Cmd + Shift + F</b>) finds text in every tab of this language, or of all of them, with <b>match case</b> and <b>whole word</b>; click a result to open that tab at that line. <b>Replace all</b> there changes every file at once after a second click to confirm, and keeps each file's text in its History first. <b>Side by side</b> puts the output, the input box and the terminal beside the editor when the window is wide enough.</li>
 <li>Brackets and quotes close themselves; type the closing one to skip over it. The matching bracket is highlighted when the cursor is next to one.</li>
 <li>Start typing a name and a list of completions appears: <b>↑ ↓</b> to choose, <b>Tab</b> or <b>Enter</b> to accept, <b>Esc</b> to dismiss.</li>
-<li><b>+ New</b> makes a file and asks for its name; <b>Rename</b> is under the editor (double-clicking a tab also works). <b>Save</b> downloads the file; <b>Open</b> loads files from your device; <b>Share link</b> copies a link that carries the program inside it. Errors that mention a line number have a "go to line" link, and the line is marked in the editor (a red pin in the margin; point at it for the message) until you change the file or run again. The output panel's title bar has <b>Copy</b>, <b>Wrap</b> (long lines wrapped or kept whole) and <b>Clear</b>.</li>
+<li><b>+ New</b> makes a file and asks for its name; <b>Rename</b> is under the editor (double-clicking a tab also works). The <b>File</b> menu has <b>Save a copy</b> (downloads the file), <b>Open from this device</b> and <b>Share as a link</b>, which copies a link that carries the program inside it. Errors that mention a line number have a "go to line" link, and the line is marked in the editor (a red pin in the margin; point at it for the message) until you change the file or run again. The output panel's title bar has <b>Copy</b>, <b>Wrap</b> (long lines wrapped or kept whole) and <b>Clear</b>.</li>
 <li>Java: <b>Step through</b> runs the program one statement at a time and shows the call stack (each method call with its variables), the static fields and the objects and arrays they refer to, numbered so you can see when two variables share one object. You can step backwards as well as forwards. A program that reads with a <code>Scanner</code> takes its input from the Program input box.</li>
 <li>Java: <b>Run</b> compiles every Java tab together, as <code>javac *.java</code> would, so a program can be split into <code>Main.java</code>, <code>Dog.java</code> and so on; the tab you are in goes first, so its <code>main</code> runs if it has one. As in Java, a <code>public</code> class must be in a file of its own name. Tabs that declare a class another tab already has (separate programs, each with its own <code>Main</code>) are left out, and so are exercise files, which run alone.</li>
 <li><b>Arguments</b> (Python, Java and C) gives the program words to start with, as on a command line: <code>sys.argv[1:]</code> in Python, <code>args</code> in <code>main</code> in Java, <code>argv</code> in C. In the Terminal, <code>python app.py one two</code>, <code>java Main one two</code> and <code>./prog one two</code> do the same. The teaching C++ engine has no <code>argc</code>/<code>argv</code>.</li>
@@ -1547,6 +1611,10 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
 <li>On a phone or tablet, the <b>Indent</b> and <b>Outdent</b> buttons under the editor stand in for the Tab key, and <b>Wrap</b> keeps long lines on screen.</li></ul>` }));
     const editorArea = el('div', { class: 'lab-editor-area' }, tabs, findBar, gotoBar, editor.el, statusBar);
     const side = el('div', { class: 'lab-side' }, tplBox, refBox, keysBox, histBox, searchBox);
+    // The side column takes no room while all of its panels are closed (they are only hidden, so :empty never matched and kept 22rem blank).
+    const sideFit = () => { const none = [...side.children].every(c => c.hidden); if (side.hidden !== none) side.hidden = none; };
+    new MutationObserver(sideFit).observe(side, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
+    sideFit();
     // Side by side: the editor on the left, what the program prints and reads on the right. Two columns of the same elements (.lab-work and
     // .lab-outcol are plain blocks otherwise), only while the Lab's main column is wide enough: a side panel or a narrow window turns it off.
     const outCol = el('div', { class: 'lab-outcol' }, exVerdict, argsBox, stdinBox, out.el, term ? term.el : null, traceBox, memBox, jsBox, substBox, turtleBox, replBox);
@@ -1573,7 +1641,7 @@ struct Point { int x, y; };      class Counter { ... };</code></pre>
       if (ps.mode === 'subst' && S.lang === 'scheme') setTimeout(startSubst, 0);
     }
     if (teach && (kind === 'assign' || kind === 'review' || /(^|&)b=/.test(query || ''))) setTimeout(() => teach.handleQuery(kind, query), 0);
-    main.append(head, help, body, el('footer', { class: 'foot' }, el('span', {}, (window.SITE || {}).footer || ''), el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Delete all Code Lab files on this device (and the terminal\'s)? Click again to confirm', () => { try { localStorage.removeItem(KEY); if (LH()) localStorage.removeItem(LH().KEY); if (window.TERMINAL) localStorage.removeItem(window.TERMINAL.KEY); } catch (err) { } S = null; location.reload(); }) }, 'Reset the Code Lab')));
+    main.append(head, body, help, el('footer', { class: 'foot' }, el('span', {}, (window.SITE || {}).footer || ''), el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Delete all Code Lab files on this device (and the terminal\'s)? Click again to confirm', () => { try { localStorage.removeItem(KEY); if (LH()) localStorage.removeItem(LH().KEY); if (window.TERMINAL) localStorage.removeItem(window.TERMINAL.KEY); } catch (err) { } S = null; location.reload(); }) }, 'Reset the Code Lab')));
     setTimeout(() => editor.render(), 0);
     return main;
   }

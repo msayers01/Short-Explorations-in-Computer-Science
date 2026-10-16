@@ -5,6 +5,8 @@ const path = require('path');
 const { chromium } = require('playwright-core');
 const SITE = 'file://' + path.join(__dirname, 'dist/index.html');
 let bad = 0;
+// the Code Lab's File, Tools and Aa menus: open one and choose an item
+const labMenu = async (pg, menu, item) => { await pg.click(`.lab-toolbar .menu-btn:has-text("${menu}")`); await pg.click(`.lab-toolbar .menu-pop .menu-item:has-text("${item}")`); };
 const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + name + (detail !== undefined ? '\n  ' + JSON.stringify(detail) : '')); } else console.log('ok   ' + name); };
 
 (async () => {
@@ -202,7 +204,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await setCode(dogOk);
   // program arguments: the box under the toolbar; main(String[] args) gets the words, quotes keep spaces
   await tabNamed('Main.java').click();
-  await page.click('.lab-toolbar button:has-text("Arguments")'); await page.fill('#lab-args', 'one "two words"'); await runLab(); ot = await outText();
+  await labMenu(page, 'Tools', 'Arguments'); await page.fill('#lab-args', 'one "two words"'); await runLab(); ot = await outText();
   check('Lab: Java arguments reach main(String[] args)', /^2 one\|two words$/m.test(ot) && /java Main one 'two words'/.test(await page.locator('.lab-out .out-text .cmd').innerText()), ot);
   // the output panel's tools: Copy, Wrap, Clear
   await page.click('.lab-out .term-tool:has-text("Wrap")');
@@ -237,7 +239,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   // Python: sys.argv from the Arguments box, an error marker on the line Skulpt names, cleared by the next run
   await page.click('.lang-btn:has-text("Python")'); await page.waitForSelector('.lab-editor textarea');
   await setCode('import sys\nprint(sys.argv[1:])\nprint(len(sys.argv))');
-  await page.click('.lab-toolbar button:has-text("Arguments")'); await page.fill('#lab-args', 'a "b c"'); await runLab(); ot = await outText();
+  await labMenu(page, 'Tools', 'Arguments'); await page.fill('#lab-args', 'a "b c"'); await runLab(); ot = await outText();
   check('Lab: Python arguments reach sys.argv', /\['a', 'b c'\]\n3/.test(ot), ot);
   await page.fill('#lab-args', ''); await page.click('.args-box button[aria-label^="Close"]');
   await setCode('x = 1\nprint(y)\n'); await runLab();
@@ -333,8 +335,22 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   await page.click('.lab-hist button:has-text("Restore this version")'); await page.waitForTimeout(100);
   check('find in all files: History undoes Replace all in one file', (await page.locator('.lab-editor textarea').inputValue()) === 'import helper\nx = 1\nprint(total)\n' && /grand_total/.test(await page.evaluate(() => JSON.parse(localStorage.getItem('shortcourses.lab.v1')).files.python.find((f) => f.name === 'helper.py').code)), await page.locator('.lab-editor textarea').inputValue());
   await page.click('.lab-statusbar button:has-text("History")');
+  // the toolbar's menus, and the side column, which takes no room while its panels are closed
+  check('Lab: no empty side column while the panels are closed', await page.locator('.lab-side').isHidden());
+  await labMenu(page, 'Tools', 'Templates'); await page.waitForTimeout(100);
+  check('Lab: Tools > Templates opens the side panel', await page.locator('.lab-side').isVisible() && (await page.locator('.lab-side .tpl').count()) > 0 && await page.locator('.lab-toolbar .menu-pop').first().isHidden());
+  await labMenu(page, 'Tools', 'Templates'); await page.waitForTimeout(100);
+  check('Lab: closing it gives the room back', await page.locator('.lab-side').isHidden());
+  await page.focus('.lab-toolbar .menu-btn:has-text("Tools")'); await page.keyboard.press('ArrowDown');
+  const menuFocus = await page.evaluate(() => document.activeElement.textContent);
+  await page.keyboard.press('ArrowDown'); const menuFocus2 = await page.evaluate(() => document.activeElement.textContent);
+  await page.keyboard.press('Escape');
+  check('Lab: the menus work from the keyboard', /^Find and replace/.test(menuFocus) && /^Search all files/.test(menuFocus2) && (await page.evaluate(() => document.activeElement.textContent)) === 'Tools' && await page.locator('.lab-toolbar .menu-pop').nth(1).isHidden(), [menuFocus, menuFocus2]);
   // side by side: two columns while the main column is wide, under each other otherwise, and kept
   await page.setViewportSize({ width: 1400, height: 900 }); await page.waitForTimeout(100);
+  check('side by side: on by default', (await page.getAttribute('.lab-statusbar button:has-text("Side by side")', 'aria-pressed')) === 'true' && (await page.locator('.lab-work.split').count()) === 1);
+  await labMenu(page, 'Aa', 'Output beside the editor'); await page.waitForTimeout(200);
+  check('side by side: the Aa menu turns it off', (await page.locator('.lab-work.split').count()) === 0 && JSON.parse(await page.evaluate(() => localStorage.getItem('shortcourses.lab.v1'))).split === false);
   await page.click('.lab-statusbar button:has-text("Side by side")'); await page.waitForTimeout(200); await runLab();
   const box = async (sel) => page.locator(sel).first().boundingBox();
   let eb = await box('.lab-editor'), ob = await box('.lab-out');
@@ -532,12 +548,40 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
   check('tour: the lesson steps change the route and wait for their target', (await page.evaluate(() => location.hash)) === '#/python/1' && /Inside a lesson/.test(await page.locator('.tour-card h3').innerText()) && (await page.locator('.tour-spot:not(.hidden)').count()) === 1, await page.locator('.tour-card h3').innerText());
   await page.keyboard.press('Escape');
   check('tour: Esc ends it and leaves the page as it was', (await page.locator('.tour-card, .tour-spot, .tour-block').count()) === 0 && !(await page.evaluate(() => document.body.classList.contains('tour-on'))) && (await page.locator('.lesson-map').count()) === 1);
+  // every step finds its part of the page (a renamed or moved target would leave the card saying the part is not there)
+  await goto('#/'); await page.click('.tour-btn'); await page.waitForSelector('.tour-card:not(.moving)');
+  const tourMissing = [], tourN = await page.evaluate(() => window.TOUR.STEPS.length);
+  for (let i = 0; i < tourN; i++) {
+    if ((await page.locator('.tour-spot.hidden').count()) && !(await page.evaluate((k) => window.TOUR.STEPS[k].optional, i))) tourMissing.push(await page.locator('.tour-card h3').innerText());
+    if (i < tourN - 1) { await page.click('.tour-card .btn.primary'); await page.waitForSelector('.tour-card:not(.moving)'); }
+  }
+  check('tour: every step finds its target', tourMissing.length === 0, tourMissing);
+  await page.keyboard.press('Escape');
   // ---- the top bar, the courses page (grouped, with search), Algorithms in motion and the real-world page
   await goto('#/');
   const topLinks = await page.locator('.top-links a').allInnerTexts();
   check('top bar: Courses, Algorithms, Real world, Arena, Showcase and Code Lab instead of a link per course', topLinks.join('|') === 'Courses|Algorithms|Real world|Arena|Showcase|Code Lab', topLinks);
-  await goto('#/courses');
+  // the home page: three ways in, four doors, a card per course, and the lesson last opened on this device
   const courseCount = await page.evaluate(() => window.COURSES.length);
+  const cards = await page.locator('.home .course-card').evaluateAll((ls) => ls.map((l) => l.getAttribute('data-course')));
+  check('home: a card for every course, once', cards.length === courseCount && new Set(cards).size === courseCount, cards);
+  check('home: the hero has its three ways in, and the doors their pages', (await page.locator('.home-hero .hero-actions a').allInnerTexts()).join('|') === 'Find a course|Open the Code Lab|For teachers' && (await page.locator('.doors .door').count()) === 4);
+  await goto('#/java/2'); await goto('#/');
+  check('home: Continue where you left off names the last lesson opened', /Introduction to Java/.test(await page.locator('.continue').innerText()) && /Lesson 2,/.test(await page.locator('.continue').innerText()) && (await page.getAttribute('.continue .cont-go', 'href')) === '#/java/2', await page.locator('.continue').innerText().catch(() => null));
+  for (const bad of ['{"c":"__proto__","i":0}', '{"c":"java","i":999}', '{"c":"java","i":"1"}', '[1,2]', 'not json']) {
+    await page.evaluate((v) => localStorage.setItem('shortcourses.recent.v1', v), bad); await goto('#/');
+    check('home: a hostile saved lesson is ignored: ' + bad, (await page.locator('.continue .cont-go').count()) === 0 && (await page.locator('.home .course-card').count()) === courseCount);
+  }
+  await page.evaluate(() => localStorage.removeItem('shortcourses.recent.v1'));
+  // on a phone the top bar's links fold behind Menu
+  await page.setViewportSize({ width: 390, height: 844 }); await goto('#/');
+  const phoneTop = await page.locator('.top').boundingBox(), linksHidden = await page.locator('.top-links').isHidden();
+  await page.click('.nav-toggle');
+  check('top bar on a phone: one line, the links behind Menu', phoneTop.height < 70 && linksHidden && await page.locator('.top-links a:has-text("Code Lab")').isVisible() && (await page.getAttribute('.nav-toggle', 'aria-expanded')) === 'true' && (await page.evaluate(() => document.documentElement.scrollWidth)) <= 390, phoneTop);
+  await page.click('.top-links a:has-text("Code Lab")'); await page.waitForSelector('.lab-toolbar');
+  check('top bar on a phone: a link goes there and the menu is closed again', (await page.locator('.top-links').isHidden()) && (await page.evaluate(() => document.documentElement.scrollWidth)) <= 390);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await goto('#/courses');
   const listed = await page.locator('.courses-page .catalog li').evaluateAll((ls) => ls.map((l) => l.getAttribute('data-course')));
   check('courses page: every course is listed exactly once, in groups', listed.length === courseCount && new Set(listed).size === courseCount && (await page.locator('.course-group').count()) >= 3, listed);
   await page.fill('.course-search', 'java');
@@ -1173,7 +1217,7 @@ const check = (name, ok, detail) => { if (!ok) { bad++; console.log('BAD  ' + na
     check('C: the editor highlights preprocessor lines and C types', (await hp.locator('.lab-editor .hl .p').first().innerText()) === '#include <stdio.h>' && (await hp.locator('.lab-editor .hl .k:text-is("int")').count()) > 0);
     const statusDone = () => hp.waitForFunction(() => /^(exit|error|stopped)/.test(document.querySelector('.lab-out .term-status').textContent), null, { timeout: 90000 });
     await setHpCode('#include <stdio.h>\n\nint main(int argc, char *argv[]) {\n    printf("Hello, C! argc=%d", argc);\n    for (int i = 1; i < argc; i++) printf(" [%s]", argv[i]);\n    printf(" long=%zu\\n", sizeof(long));\n    return 0;\n}\n');
-    await hp.click('.lab-toolbar button:has-text("Arguments")'); await hp.fill('#lab-args', 'one "two words"');
+    await labMenu(hp, 'Tools', 'Arguments'); await hp.fill('#lab-args', 'one "two words"');
     await hp.click('.lab-toolbar button:has-text("Run")'); await statusDone();
     r = await hpOut();
     check('C: a program runs on the real compiler, with its arguments', /Hello, C! argc=3 \[one\] \[two words\] long=4\n/.test(r), r);

@@ -29,6 +29,19 @@
     setCode(id, code) { this.load().code[id] = code; this.save(); },
     reset() { this.data = { done: {}, code: {}, pass: {} }; this.save(); }
   };
+  // The last lesson opened on this device, for the home page's "Continue where you left off". A convenience of this device (not in
+  // backups); what is read back is used only if it names a lesson that exists.
+  const Recent = {
+    key: 'shortcourses.recent.v1',
+    set(course, idx) { try { localStorage.setItem(this.key, JSON.stringify({ c: course.id, i: idx })); } catch (e) { /* storage unavailable */ } },
+    get() {
+      let r = null; try { r = JSON.parse(localStorage.getItem(this.key) || 'null'); } catch (e) { return null; }
+      if (!r || typeof r !== 'object' || typeof r.c !== 'string' || !Number.isInteger(r.i)) return null;
+      const course = COURSES.find((c) => c.id === r.c);
+      return course && r.i >= 0 && r.i < course.lessons.length ? { course, idx: r.i } : null;
+    },
+    reset() { try { localStorage.removeItem(this.key); } catch (e) { } }
+  };
   // another tab saved: forget the copy held here, or the next save would write it back over that tab's work
   window.addEventListener('storage', (e) => { if (e.key === Progress.key || e.key === null) Progress.data = null; });
 
@@ -1163,9 +1176,14 @@
   function courseProgress(course) { const ids = course.lessons.flatMap(exerciseIds); return { done: ids.filter(id => Progress.isDone(id)).length, total: ids.length }; }
 
   function topBar(course) {
-    return el('nav', { class: 'top' },
-      el('a', { class: 'top-name', href: '#/' }, SITE.name),
-      el('div', { class: 'top-links' },   // a link per course crowded the bar: the courses have their own page, grouped (coursesPage)
+    // On a phone the links fold behind a Menu button (the bar was three lines tall); every page draws the bar again, so it closes itself.
+    const due = window.REVIEW && window.REVIEW.count() ? window.REVIEW.dueCount() : 0;
+    const toggle = el('button', { class: 'nav-toggle', 'aria-expanded': 'false', 'aria-controls': 'top-links', onclick: () => { const open = nav.classList.toggle('open'); toggle.setAttribute('aria-expanded', String(open)); } },
+      el('span', { html: '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5.5h14M3 10h14M3 14.5h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' }), 'Menu',
+      due ? el('span', { class: 'today-badge', 'aria-label': due + ' to review' }, String(due)) : null);
+    const nav = el('nav', { class: 'top' },
+      el('a', { class: 'top-name', href: '#/', 'aria-label': SITE.name }, el('span', { class: 'name-full' }, SITE.name), el('span', { class: 'name-short', 'aria-hidden': 'true' }, SITE.shortName || SITE.name)),
+      el('div', { class: 'top-links', id: 'top-links' },   // a link per course crowded the bar: the courses have their own page, grouped (coursesPage)
         el('a', { href: '#/courses', class: 'courses-link' + (course === 'courses' || (course && course.id) ? ' current' : '') }, 'Courses'),
         window.ALGOS ? el('a', { href: '#/algorithms', class: 'algos-link' + (course === 'algorithms' ? ' current' : '') }, 'Algorithms') : null,
         window.APPLIED ? el('a', { href: '#/real-world', class: 'applied-link' + (course === 'applied' ? ' current' : '') }, 'Real world') : null,
@@ -1176,7 +1194,9 @@
       el('div', { class: 'top-tools' },   // the three small controls sit close together so the links keep their room
         window.TOUR ? window.TOUR.button() : null,   // a guided tour of the site (src/tour.js)
         window.CLASSROOM ? window.CLASSROOM.button() : null,
-        el('button', { class: 'theme-btn', title: 'Toggle light/dark', 'aria-label': 'Toggle light/dark', onclick: toggleTheme }, themeIcon())));
+        el('button', { class: 'theme-btn', title: 'Toggle light/dark', 'aria-label': 'Toggle light/dark', onclick: toggleTheme }, themeIcon())),
+      toggle);
+    return nav;
   }
   function themeIcon() {
     return el('span', { html: '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 2.5v15A7.5 7.5 0 0 0 10 2.5z" fill="currentColor"/></svg>' });
@@ -1252,37 +1272,62 @@
     return main;
   }
 
+  // The home page: who it is for and the three ways in (a course, the Code Lab, the teacher's guide), where you left off, the other
+  // pages as four doors, and the courses as cards in their groups. The full list with search and the advice on where to start are #/courses.
+  function courseCard(c) {
+    const p = courseProgress(c), grades = (c.grades || '').split(' · ').slice(0, 2).join(' · ');
+    return el('a', { class: 'course-card', 'data-course': c.id, href: '#/' + c.id },
+      el('span', { class: 'card-code' }, c.code, devTag(c, true)),
+      el('span', { class: 'card-title' }, c.title, courseIcons(c, 'cat-icons')),
+      el('span', { class: 'card-desc' }, c.tagline),
+      el('span', { class: 'card-meta' }, [grades, c.lessons.length + ' lessons', p.done ? p.done + ' of ' + p.total + ' exercises done' : null].filter(Boolean).join(' · ')),
+      p.done ? el('span', { class: 'card-bar', 'aria-hidden': 'true' }, el('i', { style: 'width:' + Math.round(100 * p.done / Math.max(1, p.total)) + '%' })) : null);
+  }
+  function continueStrip() {
+    const r = Recent.get(), due = window.REVIEW && window.REVIEW.count() ? window.REVIEW.dueCount() : 0;
+    if (!r && !due) return null;
+    const review = due ? el('a', { class: 'cont-review', href: '#/today' }, due + (due === 1 ? ' quick check' : ' quick checks') + ' to review today') : null;
+    if (!r) return el('div', { class: 'continue' }, el('div', { class: 'cont-text' }, el('span', { class: 'cont-k' }, 'Review'), review));
+    const { course, idx } = r, p = courseProgress(course), L = course.lessons[idx];
+    return el('div', { class: 'continue', 'data-course': course.id },
+      el('div', { class: 'cont-text' }, el('span', { class: 'cont-k' }, 'Continue where you left off'),
+        el('span', {}, el('b', {}, course.title), ' · Lesson ' + (idx + 1) + ', ' + L.title), review),
+      p.done ? el('span', { class: 'card-bar cont-bar', title: p.done + ' of ' + p.total + ' exercises done' }, el('i', { style: 'width:' + Math.round(100 * p.done / p.total) + '%' })) : null,
+      el('a', { class: 'cont-go', href: '#/' + course.id + '/' + (idx + 1) }, 'Resume →'));
+  }
   function homePage() {
     const main = el('main', { class: 'home' });
+    const door = (href, kind, title, text) => el('a', { class: 'door', href }, el('span', { class: 'door-kind' }, kind), el('span', { class: 'door-title' }, title), el('span', { class: 'door-text' }, text));
+    const advice = (() => { const d = el('div', { html: SITE.coursesIntro }); return [...d.children].slice(1); })();   // the first paragraph says what the hero says
     main.append(
-      el('section', { class: 'hero' },
+      el('section', { class: 'hero home-hero' },
         el('div', { class: 'intro' },
           OJ() ? el('p', { class: 'oj-greet' }, OJ().label('greeting')) : null,
           el('h1', {}, SITE.name),
-          SITE.role ? el('p', { class: 'role' }, SITE.role) : null,
-          OJ() && OJ().clock ? OJ().clock({ links: true }) : null,
-          SITE.contact && SITE.contact.length ? el('p', { class: 'contact' }, SITE.contact.map((c, i) => [i ? ' · ' : null, c.href ? el('a', { href: c.href }, c.label) : el('span', {}, c.label)])) : null
-        )),
-      el('section', { class: 'section' },
-        el('h2', {}, 'Short courses'),
-        el('div', { class: 'prose', html: SITE.coursesIntro }),
+          el('p', { class: 'lede' }, SITE.lede || SITE.role),
+          el('div', { class: 'hero-actions' },
+            el('a', { class: 'btn primary', href: '#/courses' }, 'Find a course'),
+            el('a', { class: 'btn', href: '#/lab' }, 'Open the Code Lab'),
+            el('a', { class: 'btn quiet', href: '#/guide' }, 'For teachers')),
+          SITE.contact && SITE.contact.length ? el('p', { class: 'contact' }, SITE.contact.map((c, i) => [i ? ' · ' : null, c.href ? el('a', { href: c.href }, c.label) : el('span', {}, c.label)])) : null),
+        OJ() && OJ().clock ? el('div', { class: 'hero-side' }, OJ().clock({ links: true })) : null),
+      continueStrip(),
+      el('nav', { class: 'doors', 'aria-label': 'More to explore' },
+        door('#/lab', 'Build', 'Code Lab', 'Python, Java, C++, C and Scheme in your browser, with a terminal, git and step-through debugging.'),
+        window.ALGOS ? door('#/algorithms', 'Explore', 'Algorithms in motion', 'Bet on sorting races, play against the computer, and watch simulations run.') : null,
+        window.ARENA && window.ARENA.page ? door('#/arena', 'Compete', 'Bot Arena', 'Write a bot that plays Tron in Python, Java, C++ or Scheme, and run a tournament.') : null,
+        window.APPLIED ? door('#/real-world', 'Connect', 'Real world', 'Where each idea is used: real systems and events, and the jobs that use them.') : null),
+      el('section', { class: 'section home-courses' },
+        el('div', { class: 'section-head' }, el('h2', {}, 'Courses'), el('a', { href: '#/courses' }, 'All courses, with search')),
+        advice.length ? el('details', { class: 'reveal which-course' }, el('summary', {}, 'Which course should I take?'), el('div', { class: 'prose' }, advice)) : null,
+        courseGroups().map((g) => el('section', { class: 'card-group', id: 'group-' + g.id },
+          el('h3', { class: 'card-group-title' }, g.title),
+          el('div', { class: 'course-cards' }, g.courses.map(courseCard)))),
         SITE.pitch ? el('aside', { class: 'pitch', html: SITE.pitch }) : null,
-        el('div', { class: 'course-groups' }, groupedCatalog('')),
-        el('p', { class: 'more-pages' }, el('a', { href: '#/courses' }, 'All courses, with search'),
-          window.ALGOS ? [' · ', el('a', { href: '#/algorithms' }, 'Algorithms in motion')] : null,
-          window.SHOWCASE ? [' · ', el('a', { href: '#/showcase' }, 'Student showcase')] : null,
-          window.APPLIED ? [' · ', el('a', { href: '#/real-world' }, 'Where this is used in the real world')] : null,
-          window.STANDARDS ? [' · ', el('a', { href: '#/standards' }, 'Standards alignment')] : null)
-      ),
-      el('section', { class: 'section' },
-        el('h2', {}, 'Code Lab'),
-        el('ul', { class: 'catalog' }, el('li', { 'data-course': 'lab' },
-          el('a', { class: 'cat-code', href: '#/lab' }, 'LAB'),
-          el('div', { class: 'cat-body' },
-            el('a', { class: 'cat-title', href: '#/lab' }, 'Code Lab: a sandbox for your own programs'),
-            el('p', { class: 'cat-desc' }, 'A full editor for Python, C++, C, Java and Scheme that runs entirely in your browser: nothing to install, nothing to sign up for. Files and multi-file Java projects, templates, a quick reference, step-through debuggers for Python, Java and C++ (with memory), a turtle canvas, a Scheme REPL, and a terminal with a practice shell, git, and interactive Python, Scheme and Java.'),
-            el('p', { class: 'cat-meta' }, 'Your files are saved on this device. Share a program with a link.'))))
-      ),
+        el('p', { class: 'more-pages' }, [
+          window.SHOWCASE ? el('a', { href: '#/showcase' }, 'Student showcase') : null,
+          window.STANDARDS ? el('a', { href: '#/standards' }, 'Standards alignment') : null,
+          window.ABOUT ? el('a', { href: '#/about' }, 'About and credits') : null].filter(Boolean).map((a, i) => [i ? ' · ' : null, a]))),
       window.PORTFOLIO ? el('section', { class: 'section' },
         el('h2', {}, 'Your work'),
         el('div', { class: 'prose' }, el('p', {}, (() => { const n = Object.keys(Progress.load().done).length; return n ? 'You have completed ' + n + ' exercise' + (n === 1 ? '' : 's') + ' on this device. ' : 'Every exercise you complete is saved on this device. '; })(), el('a', { href: '#/portfolio' }, 'Make a portfolio'), ' to print your work, keep it as a web page, or send it to your teacher as a link.')),
@@ -1290,9 +1335,9 @@
       ) : document.createDocumentFragment(),
       el('section', { class: 'section' },
         el('h2', {}, 'For teachers'),
-        el('div', { class: 'prose' }, el('p', {}, 'Running a class with this site? ', el('a', { href: '#/guide' }, 'Read the guide for teachers'), ': how the lessons are built, a plan for an hour of coding, the Code Lab, and how to set assignments and collect students\u2019 work with nothing to install and no accounts.'))
+        el('div', { class: 'prose' }, el('p', {}, 'Running a class with this site? ', el('a', { href: '#/guide' }, 'Read the guide for teachers'), ': how the lessons are built, a plan for an hour of coding, the Code Lab, and how to set assignments and collect students’ work with nothing to install and no accounts.'))
       ),
-      el('footer', { class: 'foot' }, el('span', {}, SITE.footer), el('span', { class: 'foot-links' }, window.ABOUT ? [el('a', { href: '#/about' }, 'About and credits'), ' \u00b7 '] : null, window.STANDARDS ? [el('a', { href: '#/standards' }, 'Standards'), ' \u00b7 '] : null, el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Clear all saved progress and code? (Save it to a file first if you want it back.) Click again to confirm', () => { Progress.reset(); if (window.REVIEW) window.REVIEW.reset(); route(); }) }, 'Reset my progress')))
+      el('footer', { class: 'foot' }, el('span', {}, SITE.footer), el('span', { class: 'foot-links' }, window.ABOUT ? [el('a', { href: '#/about' }, 'About and credits'), ' · '] : null, window.STANDARDS ? [el('a', { href: '#/standards' }, 'Standards'), ' · '] : null, el('button', { class: 'linklike', onclick: (e) => armConfirm(e.currentTarget, 'Clear all saved progress and code? (Save it to a file first if you want it back.) Click again to confirm', () => { Progress.reset(); Recent.reset(); if (window.REVIEW) window.REVIEW.reset(); route(); }) }, 'Reset my progress')))
     );
     return main;
   }
@@ -1333,6 +1378,7 @@
 
   function lessonPage(course, idx) {
     const L = course.lessons[idx];
+    Recent.set(course, idx);
     const main = el('main', { class: 'lesson' });
     const nav = el('nav', { class: 'lesson-nav', 'aria-label': 'Lessons' },
       el('a', { class: 'nav-course', href: '#/' + course.id }, el('span', { class: 'course-code sm' }, course.code), el('span', {}, course.title)),

@@ -237,6 +237,11 @@ Cloudflare Workers Builds builds every PR (build command `npm run build`) and po
   it pulses until opened once, `shortcourses.tour.v1`) spotlights twelve real elements across `#/`, `#/python/1` and `#/lab`. Steps are
   `{route, target, title, text, place?, optional?}`; a target that moves or is renamed breaks its step silently (the card says the part is
   not on the page), so keep the browser check in `test_browser.js` passing. The step texts describe the UI: update them when it changes.
+- **UI refresh** (October 2026, ARCHITECTURE §9 and §9g): the home page is a hero with three ways in, "Continue where you left off"
+  (`Recent`, `shortcourses.recent.v1`, checked on read), four doors and course cards (`courseCard`, colors from `--cc`); the Lab's toolbar is
+  one row with File / Tools / Aa menus (`labMenu` in lab.js; tests open them with `labMenu(page, menu, item)`), Side by side is on by
+  default, and the side column hides while its panels are closed; below 640 px the top bar's links fold behind Menu (`.nav-toggle`).
+  `test_browser.js` now walks every tour step and fails if one loses its target.
 - **Standards** (ARCHITECTURE §9k): every lesson has `standards: [...]` (CSTA 2017 codes and Minnesota 2022 math benchmark codes); `src/standards.js` draws `#/standards` and the box under a lesson's summary; `node scripts/standards-map.js` rewrites `STANDARDS_ALIGNMENT.md` (commit it; `test_standards.js` fails if stale). Give a new lesson its `standards`. The mapping is the author's, from titles, summaries and keyword search, and the CSTA texts are paraphrases: say so, do not call a lesson "meets".
 - **Courses, Algorithms, Real world** (ARCHITECTURE §9g): the top bar is Courses / Algorithms / Real world / Arena / Code Lab. `#/courses` groups the
   courses (`COURSE_GROUPS` in app.js: add a new course to a group). `#/algorithms` has 31 interactive demos (`src/algos.js` frame,
